@@ -1,0 +1,828 @@
+/* ==========================================================================
+   OBLIVIATE OÜ — design system
+   --------------------------------------------------------------------------
+   Thesis: THE WORKING DOCUMENT.
+   Not a ledger as heirloom — a live, maintained working sheet. The product
+   this firm sells is administrative certainty: nothing goes wrong, and you
+   always know where you stand. So the site is bright, dry and exact; every
+   surface, rule and colour is borrowed from the artefacts of bookkeeping
+   (the analysis pad, the filing date, the form code, the statute reference)
+   rather than from any notion of "premium".
+
+   1. Fonts            6. Header / navigation
+   2. Tokens           7. Sheet components
+   3. Reset            8. Page furniture
+   4. Typography       9. Footer
+   5. Layout & motion 10. Utilities
+   ========================================================================== */
+
+/* --------------------------------------------------------------- 1. FONTS */
+@font-face {
+  font-family: 'Obliviate Text';
+  src: url('fonts/text-400.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Obliviate Text';
+  src: url('fonts/text-700.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Obliviate Mono';
+  src: url('fonts/mono-400.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Obliviate Mono';
+  src: url('fonts/mono-700.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+/* -------------------------------------------------------------- 2. TOKENS */
+:root {
+  /* — surfaces: warm paper, the same wash the mark is painted on */
+  --sheet:      #FFFCF8;
+  --sheet-2:    #FAF4EC;
+  --sand:       #F5EADB;   /* data zones — the apricot wash of the mark */
+  --sand-2:     #EFE0CB;
+  --plum:       #96285C;   /* the wordmark's own colour: brand, actions, links */
+  --plum-2:     #7E2050;
+
+  /* — ink */
+  --ink:        #1E1519;
+  --ink-2:      #4C3F45;
+  --ink-3:      #6A5B62;
+  --on-plum:    #FFFFFF;
+  --on-plum-2:  #F0D4E1;
+  --on-plum-3:  #E9C6D8;
+
+  /* — signal: reserved for filing dates and required marks. Nothing else.
+       Taken from the gold in the mark's canopy, not from an alarm palette. */
+  --amber:      #965D0D;
+  --amber-soft: #FBF1DF;
+
+  /* — rules: a real two-axis grid, the way a worksheet is ruled */
+  --rule:       #E2D3C2;
+  --rule-2:     #EDE2D4;
+  --rule-fine:  #F4ECE1;
+  --rule-plum:  rgba(255,255,255,.22);
+  --rule-plum-fine: rgba(255,255,255,.11);
+
+  /* — сцена: чёрный ровно такой, как холст самой работы, чтобы кадр исчез.
+       Розовый взят из свечения знака, а не подобран отдельно. */
+  --stage:      #08060A;
+  --on-stage:   #F6E9F0;
+  --on-stage-2: #E3C3D4;
+  --on-stage-3: #D5AFC4;
+  --lit:        #FF74AE;
+  --lit-2:      #FF9BC5;
+  --on-lit:     #1A0710;
+  --rule-stage: rgba(246,233,240,.20);
+
+  /* — type */
+  --ff: 'Obliviate Text', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --ff-mono: 'Obliviate Mono', ui-monospace, 'SF Mono', 'DejaVu Sans Mono', Menlo, Consolas, monospace;
+
+  --fs-h1:   clamp(1.6rem, 1rem + 3.05vw, 3.5rem);
+  --fs-h2:   clamp(1.3rem, 0.98rem + 1.6vw, 2.5rem);
+  --fs-h3:   clamp(1.125rem, 1.03rem + 0.42vw, 1.375rem);
+  --fs-lead: clamp(1.0625rem, 1rem + 0.36vw, 1.25rem);
+  --fs-body: 1rem;
+  --fs-sm:   0.9375rem;
+  --fs-xs:   0.8125rem;
+  --fs-code: 0.75rem;
+
+  --lh-tight: 1.06;
+  --lh-body:  1.62;
+  --tr-code:  0.1em;
+
+  /* — space */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 44px; --s-8: 64px; --s-9: 88px; --s-10: 120px;
+  --band:    clamp(64px, 7.2vw, 132px);
+  --shell:   1280px;
+  --gutter:  clamp(18px, 4vw, 56px);
+  --measure: 66ch;
+
+  /* — motion: things settle into alignment; they do not float in */
+  --ease:  cubic-bezier(.2,.6,.2,1);
+  --ease-snap: cubic-bezier(.3,.9,.25,1);
+  --t-1: 140ms; --t-2: 260ms; --t-3: 440ms;
+
+  --z-grid: 0; --z-body: 1; --z-nav: 70; --z-header: 80; --z-skip: 100;
+}
+
+/* --------------------------------------------------------------- 3. RESET */
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 104px; }
+body {
+  background: var(--sheet);
+  color: var(--ink);
+  font-family: var(--ff);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-synthesis-weight: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+img, svg, picture { display: block; max-width: 100%; height: auto; }
+[hidden] { display: none !important; }
+button, input, textarea, select { font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; padding: 0; }
+table { border-collapse: collapse; width: 100%; }
+:target { scroll-margin-top: 104px; }
+::selection { background: var(--plum); color: #fff; }
+
+:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
+.plum :focus-visible, .on-plum :focus-visible { outline-color: #fff; }
+
+.skip {
+  position: fixed; top: 8px; left: 8px; z-index: var(--z-skip);
+  background: var(--plum); color: #fff; padding: 11px 16px;
+  font-family: var(--ff-mono); font-size: var(--fs-code);
+  letter-spacing: var(--tr-code); text-transform: uppercase;
+  transform: translateY(-180%); transition: transform var(--t-2) var(--ease);
+}
+.skip:focus { transform: none; }
+
+/* ---------------------------------------------------------- 4. TYPOGRAPHY */
+h1, h2, h3, h4 {
+  font-weight: 700;
+  line-height: 1.14;
+  letter-spacing: -0.021em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.t-h1 { font-size: var(--fs-h1); line-height: var(--lh-tight); letter-spacing: -0.03em; }
+.t-h2 { font-size: var(--fs-h2); letter-spacing: -0.024em; }
+.t-h3 { font-size: var(--fs-h3); letter-spacing: -0.012em; line-height: 1.3; }
+
+.lead { font-size: var(--fs-lead); line-height: 1.55; color: var(--ink-2); max-width: 46ch; text-wrap: pretty; }
+.prose { max-width: var(--measure); }
+.prose > * + * { margin-top: 1.1em; }
+.prose p { color: var(--ink-2); text-wrap: pretty; }
+.prose a { color: var(--plum); font-weight: 700; box-shadow: inset 0 -1px 0 0 currentColor; }
+.prose a:hover { background: var(--sand); }
+
+/* — the mono voice: dates, rates, form codes, statute references, registry
+     numbers. Anything a bookkeeper would key in rather than write. */
+.mono, .code, .amber, .stat, .idx { font-family: var(--ff-mono); font-variant-numeric: tabular-nums lining-nums; }
+
+.label {
+  font-family: var(--ff-mono);
+  font-size: var(--fs-code);
+  letter-spacing: var(--tr-code);
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--plum);
+  display: block;
+}
+.on-plum .label, .plum .label { color: var(--on-plum-3); }
+
+/* — form code chip: TSD, KMD, INF, VD, OSS, EORI, LEI, § 4 */
+.code {
+  display: inline-flex; align-items: center;
+  font-size: var(--fs-code); font-weight: 700; letter-spacing: .06em;
+  color: var(--plum); background: var(--sheet);
+  border: 1px solid var(--rule);
+  padding: 4px 8px; max-width: 100%; overflow-wrap: anywhere;
+}
+.plum .code, .on-plum .code { color: #fff; background: transparent; border-color: var(--rule-plum); }
+
+/* — filing date marker. Vermilion appears here and on required fields only. */
+.amber { color: var(--amber); font-weight: 700; letter-spacing: -0.03em; }
+
+/* ------------------------------------------------------- 5. LAYOUT & MOTION */
+.shell { width: 100%; max-width: var(--shell); margin-inline: auto; padding-inline: var(--gutter); }
+.cols > *, .stack > *, .hero__grid > * { min-width: 0; }
+.band { padding-block: var(--band); position: relative; }
+.band--tight { padding-block: clamp(40px, 4.4vw, 68px); }
+.sand-band { background: var(--sand); }
+.sheet-2 { background: var(--sheet-2); }
+.plum { background: var(--plum); color: var(--on-plum); }
+.plum h1, .plum h2, .plum h3 { color: #fff; }
+.plum .lead, .plum p { color: var(--on-plum-2); }
+
+.cols { display: grid; gap: clamp(26px, 3.4vw, 52px); align-items: start; }
+@media (min-width: 900px) {
+  .cols--doc { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(36px, 5vw, 88px); }
+  .cols--aside { grid-template-columns: minmax(0, 8fr) minmax(0, 3.4fr); gap: clamp(32px, 4.5vw, 72px); }
+  .cols--even { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+/* — worksheet grid: shown only where the page is literally a sheet */
+.ruled { position: absolute; inset: 0; z-index: var(--z-grid); pointer-events: none; overflow: hidden; }
+.ruled::before {
+  content: ''; position: absolute; inset: -1px;
+  background-image:
+    linear-gradient(to right, var(--rule-fine) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--rule-fine) 1px, transparent 1px);
+  background-size: clamp(64px, 8vw, 108px) clamp(64px, 8vw, 108px);
+  opacity: .5;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0 26%, transparent 72%);
+  mask-image: linear-gradient(to bottom, #000 0 26%, transparent 72%);
+}
+.band > .shell, .hero > .shell, .phead > .shell { position: relative; z-index: var(--z-body); }
+
+/* — motion: rows and rules settle into place along one axis
+   Спрятать содержимое можно только там, где скрипт точно сможет его показать.
+   Если JS выключен или (scripting) браузеру неизвестен — запрос не совпадёт,
+   стартовые состояния не применятся, и страница просто видна целиком. */
+@media (scripting: enabled) {
+  [data-in] { opacity: 0; transition: opacity var(--t-3) var(--ease-snap); transition-delay: var(--d, 0ms); }
+  [data-in].is-in { opacity: 1; }
+  [data-in='rule'] { opacity: 1; transform: none; transform-origin: left center; scale: 0 1; transition: scale var(--t-3) var(--ease-snap); transition-delay: var(--d, 0ms); }
+  [data-in='rule'].is-in { scale: 1 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important; scroll-behavior: auto !important;
+  }
+  [data-in] { opacity: 1 !important; transform: none !important; }
+  [data-in='rule'] { scale: 1 1 !important; }
+}
+
+/* -------------------------------------------------------------- 6. HEADER */
+.hdr {
+  position: sticky; top: 0; z-index: var(--z-header);
+  background: var(--sheet);
+  border-bottom: 1px solid var(--rule-2);
+}
+/* На тёмной сцене шапка не нужна как объект: она растворяется, а маленькая
+   марка прячется — над сгибом знак должен быть один и большой. Как только
+   сцена уходит вверх, шапка возвращается на бумагу вместе с маркой. */
+.hdr.on-stage { background: var(--stage); border-bottom-color: transparent; }
+.hdr.on-stage .brand img { opacity: 0; visibility: hidden; }
+.hdr.on-stage .brand__txt { padding-left: 0; border-left: 0; color: #fff; }
+.hdr.on-stage .brand__txt small { color: var(--on-stage-2); }
+.hdr.on-stage .nav__link { color: var(--on-stage-2); }
+.hdr.on-stage .nav__link:hover,
+.hdr.on-stage .nav__link[aria-current='page'],
+.hdr.on-stage .nav__link[aria-expanded='true'] { color: #fff; }
+.hdr.on-stage .nav__link::after { background: var(--lit); }
+.hdr.on-stage .hdr__cta { background: var(--lit); color: var(--on-lit); border-color: var(--lit); }
+.hdr.on-stage .hdr__cta:hover { background: var(--lit-2); border-color: var(--lit-2); color: var(--on-lit); }
+.hdr.on-stage .burger i { background: var(--on-stage); }
+.hdr, .hdr .brand img, .hdr .brand__txt, .hdr .nav__link, .hdr .hdr__cta, .hdr .burger i {
+  transition: background-color var(--t-2) var(--ease), color var(--t-2) var(--ease),
+              border-color var(--t-2) var(--ease), opacity var(--t-2) var(--ease);
+}
+@media (max-width: 559px) { .hdr.on-stage .brand__txt { display: block; } }
+
+.hdr__in { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); height: clamp(74px, 7vw, 96px); }
+
+.brand { display: inline-flex; align-items: center; gap: 12px; flex: none; }
+.brand img { height: clamp(46px, 4.6vw, 60px); width: auto; }
+.brand__txt { display: none; font-weight: 700; font-size: 1.0625rem; letter-spacing: -.015em; line-height: 1.1; }
+.brand__txt small { display: block; font-family: var(--ff-mono); font-weight: 400; font-size: var(--fs-code); letter-spacing: var(--tr-code); text-transform: uppercase; color: var(--ink-3); margin-top: 4px; }
+@media (min-width: 560px) { .brand__txt { display: block; padding-left: 12px; border-left: 1px solid var(--rule-2); } }
+.brand--textonly img { display: none; }
+.brand--textonly .brand__txt { display: block; padding-left: 0; border-left: 0; }
+
+.nav { display: none; }
+@media (min-width: 1060px) { .nav { display: flex; align-items: center; gap: clamp(6px, 1.4vw, 22px); } }
+.nav__link {
+  position: relative; white-space: nowrap;
+  font-size: var(--fs-sm); font-weight: 700; letter-spacing: -.006em;
+  padding: 9px 2px; color: var(--ink-2);
+  transition: color var(--t-1) var(--ease);
+  background: none; border: 0; cursor: pointer;
+}
+.nav__link::after { content: ''; position: absolute; left: 0; right: 0; bottom: 2px; height: 2px; background: var(--plum); transform: scaleX(0); transform-origin: left; transition: transform var(--t-2) var(--ease-snap); }
+.nav__link:hover, .nav__link[aria-current='page'], .nav__link[aria-expanded='true'] { color: var(--ink); }
+.nav__link:hover::after, .nav__link[aria-current='page']::after { transform: scaleX(1); }
+.nav__toggle { display: inline-flex; align-items: center; gap: 6px; }
+.nav__toggle svg { transition: transform var(--t-2) var(--ease); }
+.nav__toggle[aria-expanded='true'] svg { transform: rotate(180deg); }
+
+.nav__group { position: relative; }
+.menu {
+  position: absolute; top: calc(100% + 10px); left: -14px; min-width: 350px;
+  background: var(--sheet); border: 1px solid var(--rule);
+  opacity: 0; visibility: hidden; transform: translateY(-6px);
+  transition: opacity var(--t-2) var(--ease), transform var(--t-2) var(--ease), visibility var(--t-2);
+}
+.nav__group.is-open .menu { opacity: 1; visibility: visible; transform: none; }
+.menu a { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: baseline; padding: 10px 14px; font-size: var(--fs-sm); color: var(--ink-2); border-bottom: 1px solid var(--rule-fine); }
+.menu a:last-child { border-bottom: 0; }
+.menu a .idx { font-size: var(--fs-code); color: var(--ink-3); }
+.menu a:hover, .menu a[aria-current='page'] { background: var(--sand); color: var(--ink); }
+.menu a:hover .idx, .menu a[aria-current='page'] .idx { color: var(--plum); }
+
+.hdr .hdr__cta { display: none; }
+@media (min-width: 1060px) { .hdr .hdr__cta { display: inline-flex; padding: 10px 16px; font-size: var(--fs-xs); } }
+
+.burger { display: inline-flex; flex-direction: column; justify-content: center; gap: 5px; width: 44px; height: 44px; margin-right: -8px; background: none; border: 0; cursor: pointer; }
+@media (min-width: 1060px) { .burger { display: none; } }
+.burger i { display: block; height: 2px; width: 21px; background: var(--ink); margin-inline: auto; transition: transform var(--t-2) var(--ease), opacity var(--t-1) var(--ease); }
+.burger[aria-expanded='true'] i:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.burger[aria-expanded='true'] i:nth-child(2) { opacity: 0; }
+.burger[aria-expanded='true'] i:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.drawer {
+  position: fixed; inset: 0; z-index: var(--z-nav);
+  background: var(--sheet); display: flex; flex-direction: column;
+  padding: calc(env(safe-area-inset-top) + 92px) var(--gutter) calc(28px + env(safe-area-inset-bottom));
+  overflow-y: auto; overscroll-behavior: contain;
+  opacity: 0; visibility: hidden; transform: translateY(-8px);
+  transition: opacity var(--t-2) var(--ease), transform var(--t-2) var(--ease), visibility var(--t-2);
+}
+.drawer.is-open { opacity: 1; visibility: visible; transform: none; }
+.drawer__list { border-top: 1px solid var(--rule); }
+.drawer__list a { display: grid; grid-template-columns: 38px 1fr; gap: 12px; align-items: baseline; padding: 15px 2px; border-bottom: 1px solid var(--rule-2); font-weight: 700; font-size: 1.0625rem; }
+.drawer__list a .idx { font-size: var(--fs-code); color: var(--ink-3); }
+.drawer__list a[aria-current='page'] { color: var(--plum); }
+.drawer__sub a { font-weight: 400; font-size: 1rem; color: var(--ink-2); background: var(--sheet-2); padding-inline: 12px; }
+.drawer__sub-t { font-family: var(--ff-mono); font-size: var(--fs-code); letter-spacing: var(--tr-code); text-transform: uppercase; color: var(--plum); padding: 20px 2px 8px; }
+.drawer__foot { margin-top: auto; padding-top: 32px; display: grid; gap: 14px; }
+body.is-locked { overflow: hidden; }
+
+/* ------------------------------------------------- 7. SHEET COMPONENTS */
+
+/* — buttons: square, plain, decisive */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 14px 22px; border: 1px solid var(--plum);
+  background: var(--plum); color: #fff;
+  font-size: var(--fs-sm); font-weight: 700; letter-spacing: -.006em;
+  cursor: pointer; text-align: left;
+  transition: background var(--t-1) var(--ease), color var(--t-1) var(--ease), border-color var(--t-1) var(--ease);
+}
+.btn:hover { background: var(--plum-2); border-color: var(--plum-2); }
+.btn svg { flex: none; transition: transform var(--t-2) var(--ease-snap); }
+.btn:hover svg { transform: translateX(3px); }
+.btn--ghost { background: transparent; color: var(--plum); border-color: var(--rule); }
+.btn--ghost:hover { background: var(--sand); border-color: var(--plum); color: var(--plum); }
+.plum .btn, .on-plum .btn { background: #fff; color: var(--plum); border-color: #fff; }
+.plum .btn:hover, .on-plum .btn:hover { background: var(--sand); border-color: var(--sand); }
+.plum .btn--ghost, .on-plum .btn--ghost { background: transparent; color: #fff; border-color: var(--rule-plum); }
+.plum .btn--ghost:hover, .on-plum .btn--ghost:hover { background: rgba(255,255,255,.08); border-color: #fff; color: #fff; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+@media (max-width: 560px) { .btn-row > .btn { flex: 1 1 100%; } }
+
+.link-a {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: var(--fs-sm); font-weight: 700; color: var(--plum);
+  padding-block: 5px; box-shadow: inset 0 -1px 0 0 var(--rule);
+  transition: box-shadow var(--t-1) var(--ease);
+}
+.link-a:hover { box-shadow: inset 0 -2px 0 0 var(--plum); }
+.link-a svg { transition: transform var(--t-2) var(--ease-snap); }
+.link-a:hover svg { transform: translate(2px, -2px); }
+.plum .link-a, .on-plum .link-a { color: #fff; box-shadow: inset 0 -1px 0 0 var(--rule-plum); }
+.plum .link-a:hover, .on-plum .link-a:hover { box-shadow: inset 0 -2px 0 0 #fff; }
+
+/* — section head: label, heading, and the rule that closes the field */
+.head { display: grid; gap: 14px; margin-bottom: clamp(26px, 3vw, 44px); }
+.head__row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px 20px; flex-wrap: wrap; }
+.head__row > * { min-width: 0; }
+.head hr { height: 1px; border: 0; background: var(--rule); }
+
+/* — the sheet: a bordered panel, the way a form is boxed */
+.sheet-panel { border: 1px solid var(--rule); background: var(--sheet); }
+.sheet-panel__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 11px 16px; border-bottom: 1px solid var(--rule); background: var(--sand);
+}
+.sheet-panel__head .label { color: var(--plum); }
+
+/* — rows: striped, ruled, right-aligned action. The core navigation object. */
+.rows { border-top: 1px solid var(--rule); }
+.rows > li { border-bottom: 1px solid var(--rule-2); }
+
+.row {
+  display: grid; grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: clamp(10px, 1.6vw, 20px); align-items: center;
+  padding: clamp(16px, 2.1vw, 26px) clamp(8px, 1.4vw, 16px);
+  transition: background var(--t-1) var(--ease), padding-left var(--t-2) var(--ease-snap);
+}
+/* линейка-выноска: приём страницы содержания. На узких экранах не нужна. */
+.row__lead { display: none; height: 1px; background: var(--rule-2); transition: background var(--t-2) var(--ease); }
+.row:hover .row__lead { background: var(--plum); }
+@media (min-width: 700px) {
+  .row { grid-template-columns: 52px auto minmax(24px, 1fr) auto; }
+  .row__lead { display: block; }
+}
+.row:hover { background: var(--sand); }
+@media (min-width: 720px) { .row:hover { padding-left: 24px; } }
+.row__idx { font-family: var(--ff-mono); font-size: var(--fs-code); color: var(--ink-3); transition: color var(--t-1) var(--ease); }
+.row:hover .row__idx { color: var(--plum); }
+.row__name { min-width: 0; font-weight: 700; font-size: clamp(1.0625rem, .96rem + .62vw, 1.5rem); letter-spacing: -.02em; }
+.row__meta { font-family: var(--ff-mono); font-size: var(--fs-code); color: var(--ink-3); letter-spacing: .04em; white-space: nowrap; display: none; }
+@media (min-width: 640px) { .row__meta { display: block; } }
+.row__go { color: var(--ink-3); display: grid; place-items: center; width: 22px; transition: color var(--t-1) var(--ease), transform var(--t-2) var(--ease-snap); }
+.row:hover .row__go { color: var(--plum); transform: translateX(3px); }
+
+/* — data table: the rate sheet */
+.dtable caption { text-align: left; }
+.dtable th, .dtable td { padding: clamp(11px, 1.4vw, 15px) clamp(8px, 1.2vw, 14px); border-bottom: 1px solid var(--rule-2); vertical-align: baseline; }
+.dtable thead th { border-bottom-color: var(--rule); background: var(--sand); }
+.dtable th { text-align: left; font-family: var(--ff-mono); font-size: var(--fs-code); letter-spacing: var(--tr-code); text-transform: uppercase; font-weight: 700; color: var(--plum); }
+.dtable tbody tr:nth-child(odd) { background: var(--sheet-2); }
+.dtable tbody tr:hover { background: var(--sand); }
+.dtable td.k { color: var(--ink-2); }
+.dtable td.v {
+  text-align: right; white-space: nowrap;
+  font-family: var(--ff-mono); font-weight: 700; font-size: clamp(.9375rem, .88rem + .28vw, 1.0625rem);
+  font-variant-numeric: tabular-nums lining-nums; color: var(--ink);
+}
+
+/* — the filing calendar: the two dates that govern the client's month */
+.cal { border-top: 0; }
+.cal__item { display: grid; gap: 14px 28px; padding: clamp(20px, 2.6vw, 30px) 0; border-bottom: 1px solid var(--rule-2); }
+@media (min-width: 800px) { .cal__item { grid-template-columns: 168px minmax(0, 1fr); } }
+.cal__day { display: flex; align-items: baseline; gap: 10px; align-self: start; }
+.cal__day b { font-family: var(--ff-mono); font-weight: 700; font-size: clamp(2.25rem, 1.5rem + 2.4vw, 3.25rem); line-height: .9; letter-spacing: -.05em; color: var(--amber); }
+.cal__day span { font-family: var(--ff-mono); font-size: var(--fs-code); letter-spacing: var(--tr-code); text-transform: uppercase; color: var(--ink-3); }
+.cal__forms { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+.cal__body { display: grid; gap: 14px; max-width: 64ch; }
+.cal__body p { color: var(--ink-2); }
+
+/* — statute clause: § hangs in the margin, as in a printed act */
+.clause { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: clamp(12px, 2vw, 22px); align-items: start; }
+.clause__mark { font-family: var(--ff-mono); font-weight: 700; font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.25rem); line-height: 1.1; color: var(--plum); }
+
+/* — numbered obligations / steps */
+.olist { counter-reset: o; border-top: 1px solid var(--rule); }
+.olist > li {
+  counter-increment: o;
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: clamp(10px, 1.8vw, 22px);
+  padding: clamp(12px, 1.6vw, 17px) 0; border-bottom: 1px solid var(--rule-2);
+  color: var(--ink-2);
+}
+.olist > li:nth-child(odd) { background: var(--sheet-2); }
+.sand-band .olist > li:nth-child(odd) { background: rgba(255,255,255,.5); }
+.olist > li::before {
+  content: counter(o, decimal-leading-zero);
+  font-family: var(--ff-mono); font-size: var(--fs-code); font-weight: 700;
+  color: var(--plum); padding-top: .3em; padding-left: 8px;
+}
+.olist--plain { counter-reset: none; }
+.olist--plain > li, .sand-band .olist--plain > li { background: transparent; }
+.olist--plain > li::before { content: '—'; color: var(--rule); font-weight: 400; }
+
+/* — definition rows: term and its statutory meaning */
+.defs { border-top: 1px solid var(--rule); }
+.defs > div { display: grid; gap: 8px 36px; padding: clamp(18px, 2.4vw, 26px) clamp(6px, 1vw, 12px); border-bottom: 1px solid var(--rule-2); }
+.defs > div:nth-child(odd) { background: var(--sheet-2); }
+.sand-band .defs > div:nth-child(odd) { background: rgba(255,255,255,.5); }
+@media (min-width: 860px) { .defs > div { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); } }
+.defs dt, .defs h3 { font-weight: 700; font-size: var(--fs-h3); letter-spacing: -.012em; line-height: 1.3; }
+.defs dd, .defs p { color: var(--ink-2); max-width: 62ch; }
+
+/* — checklist grid */
+.checks { display: grid; border-top: 1px solid var(--rule); }
+@media (min-width: 780px) { .checks { grid-template-columns: 1fr 1fr; column-gap: clamp(20px, 3.4vw, 56px); } }
+.checks > li { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: baseline; padding: clamp(11px, 1.5vw, 15px) 0; border-bottom: 1px solid var(--rule-2); color: var(--ink-2); }
+.checks > li::before { content: '✓'; font-family: var(--ff-mono); font-size: var(--fs-code); color: var(--plum); }
+
+/* — note / caveat: a stamped remark on the sheet */
+.note { border: 1px solid var(--amber); border-left-width: 3px; background: var(--amber-soft); padding: clamp(15px, 2vw, 20px) clamp(16px, 2.2vw, 24px); }
+.note p { color: #6B430A; }
+
+/* — testimonial */
+.quotes { display: grid; gap: clamp(38px, 5.4vw, 78px); }
+/* Отзыв — свидетельство, а не карточка. Рамка и подложка делали из трёх
+   свидетельств три одинаковых плитки; осталась одна вертикальная линейка —
+   ровно то, чем в документе отмечают цитату. */
+.quotes > figure {
+  display: grid; gap: clamp(16px, 2.1vw, 26px);
+  border-left: 2px solid var(--plum);
+  padding: clamp(4px, .6vw, 8px) 0 clamp(4px, .6vw, 8px) clamp(20px, 2.8vw, 44px);
+}
+.quotes blockquote {
+  font-size: clamp(1.125rem, 1rem + .78vw, 1.6rem); line-height: 1.5;
+  letter-spacing: -.014em; color: var(--ink); max-width: 58ch; text-wrap: pretty;
+}
+.quotes figcaption {
+  display: grid; gap: 3px;
+  font-family: var(--ff-mono); font-size: var(--fs-code); color: var(--ink-3); letter-spacing: .04em;
+}
+.quotes figcaption b {
+  color: var(--ink); font-size: var(--fs-lead); font-family: var(--ff);
+  font-weight: 700; letter-spacing: -.016em;
+}
+
+/* — external register */
+.reg { border-top: 1px solid var(--rule); }
+.reg > li { border-bottom: 1px solid var(--rule-2); }
+.reg > li:nth-child(odd) { background: var(--sheet-2); }
+.reg a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 24px; align-items: baseline; padding: clamp(13px, 1.7vw, 18px) clamp(8px, 1.4vw, 16px); transition: background var(--t-1) var(--ease), padding-left var(--t-2) var(--ease-snap); }
+.reg a:hover { background: var(--sand); }
+@media (min-width: 720px) { .reg a:hover { padding-left: 24px; } }
+.reg .n { font-weight: 700; letter-spacing: -.012em; }
+.reg .u { font-family: var(--ff-mono); font-size: var(--fs-code); color: var(--ink-3); display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.reg a:hover .u { color: var(--plum); }
+.reg .u svg { transition: transform var(--t-2) var(--ease-snap); }
+.reg a:hover .u svg { transform: translate(2px, -2px); }
+
+/* — document contents (service sidebar) */
+.contents { position: relative; }
+@media (min-width: 900px) { .contents__in { position: sticky; top: 118px; } }
+.contents__list { border-top: 1px solid var(--rule); }
+.contents__list li:nth-child(odd) { background: var(--sheet-2); }
+.sand-band .contents__list li:nth-child(odd) { background: rgba(255,255,255,.55); }
+.contents__list a { display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: baseline; padding: 11px 10px; border-bottom: 1px solid var(--rule-2); font-size: var(--fs-sm); color: var(--ink-2); transition: background var(--t-1) var(--ease), color var(--t-1) var(--ease); }
+.contents__list a .idx { font-size: var(--fs-code); color: var(--ink-3); }
+.contents__list a:hover { background: var(--sand); color: var(--ink); }
+.contents__list a[aria-current='page'] { background: var(--sand); color: var(--plum); font-weight: 700; }
+.contents__list a[aria-current='page'] .idx { color: var(--plum); }
+
+/* ------------------------------------------------------ 8. PAGE FURNITURE */
+.hero { position: relative; overflow: hidden; }
+.hero__in { padding-block: clamp(40px, 5vw, 76px) clamp(44px, 5.4vw, 84px); }
+.hero__grid { display: grid; gap: clamp(32px, 4vw, 64px); align-items: start; }
+@media (min-width: 1000px) { .hero__grid { grid-template-columns: minmax(0, 7fr) minmax(0, 4.6fr); gap: clamp(36px, 4.6vw, 76px); } }
+.hero__kicker { margin-bottom: clamp(18px, 2.4vw, 28px); }
+.hero__title { max-width: 17ch; }
+.hero__title .em { color: var(--plum); }
+.hero__cta { margin-top: clamp(26px, 3.2vw, 40px); }
+.hero__facts { margin-top: clamp(28px, 3.4vw, 44px); border-top: 1px solid var(--rule); display: grid; gap: 0; }
+@media (min-width: 560px) { .hero__facts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.hero__facts div { padding: 12px 0; border-bottom: 1px solid var(--rule-fine); }
+@media (min-width: 560px) { .hero__facts div { border-bottom: 0; border-left: 1px solid var(--rule-fine); padding-left: 14px; } .hero__facts div:first-child { border-left: 0; padding-left: 0; } }
+.hero__facts dt { font-family: var(--ff-mono); font-size: var(--fs-code); letter-spacing: var(--tr-code); text-transform: uppercase; color: var(--ink-3); }
+.hero__facts dd { font-family: var(--ff-mono); font-size: var(--fs-sm); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.hero__facts a { display: inline-block; padding-block: 4px; }
+.hero__facts a:hover { color: var(--plum); }
+
+.phead { border-bottom: 1px solid var(--rule); background: var(--sheet-2); }
+.phead__in { padding-block: clamp(24px, 3vw, 40px) clamp(26px, 3.2vw, 44px); }
+.crumb { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-family: var(--ff-mono); font-size: var(--fs-code); letter-spacing: .04em; color: var(--ink-3); margin-bottom: clamp(16px, 2vw, 26px); }
+.crumb a { padding-block: 5px; }
+.crumb a:hover { color: var(--plum); }
+.crumb li { display: flex; align-items: center; gap: 8px; }
+.crumb li + li::before { content: '/'; color: var(--rule); }
+.crumb [aria-current='page'] { color: var(--ink); }
+.phead__title { display: flex; align-items: center; gap: clamp(12px, 2vw, 20px); flex-wrap: wrap; }
+
+/* — contact form */
+.form { display: grid; gap: clamp(16px, 2vw, 22px); }
+.form__row { display: grid; gap: clamp(16px, 2vw, 22px); }
+@media (min-width: 640px) { .form__row { grid-template-columns: 1fr 1fr; } }
+.field { display: grid; gap: 7px; }
+.field label { font-family: var(--ff-mono); font-size: var(--fs-code); letter-spacing: var(--tr-code); text-transform: uppercase; font-weight: 700; color: var(--ink-3); }
+.field .req { color: var(--amber); }
+.field input, .field textarea {
+  width: 100%; background: var(--sheet); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 0;
+  padding: 12px 13px; font-size: var(--fs-body);
+  transition: border-color var(--t-1) var(--ease), box-shadow var(--t-1) var(--ease);
+}
+.field input:hover, .field textarea:hover { border-color: var(--ink-3); }
+.field input:focus, .field textarea:focus { outline: none; border-color: var(--plum); box-shadow: inset 0 0 0 1px var(--plum); }
+.field input:focus-visible, .field textarea:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
+.field textarea { resize: vertical; min-height: 128px; }
+.field .err { font-family: var(--ff-mono); font-size: var(--fs-code); color: var(--amber); }
+.field[data-invalid='true'] input, .field[data-invalid='true'] textarea { border-color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.form__status { font-family: var(--ff-mono); font-size: var(--fs-xs); }
+.form__status[data-state='ok'] { color: var(--plum); }
+.form__status[data-state='err'] { color: var(--amber); }
+button[data-busy='true'] { opacity: .55; pointer-events: none; }
+
+/* — contact particulars, set as a form's identification block */
+.cinfo { border-top: 1px solid var(--rule-plum); }
+.cinfo > div { display: grid; gap: 4px 16px; padding: 10px 0; border-bottom: 1px solid var(--rule-plum-fine); align-items: baseline; }
+@media (min-width: 600px) { .cinfo > div { grid-template-columns: minmax(0, 9rem) minmax(0, 1fr); } }
+.cinfo dd { overflow-wrap: anywhere; }
+.cinfo dt { font-family: var(--ff-mono); font-size: var(--fs-code); letter-spacing: var(--tr-code); text-transform: uppercase; color: var(--on-plum-3); }
+.cinfo dd { font-family: var(--ff-mono); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; color: #fff; }
+.cinfo a { display: inline-block; padding-block: 3px; }
+.cinfo a:hover { color: var(--sand); box-shadow: inset 0 -1px 0 0 currentColor; }
+
+/* ------------------------------------------------------------- 9. FOOTER */
+.ftr { border-top: 1px solid var(--rule); background: var(--sheet-2); }
+.ftr__grid { display: grid; gap: clamp(28px, 3.4vw, 48px); padding-block: clamp(38px, 4.4vw, 64px); }
+@media (min-width: 780px) { .ftr__grid { grid-template-columns: minmax(0, 4fr) minmax(0, 3fr) minmax(0, 3fr); gap: clamp(28px, 4vw, 64px); } }
+.ftr h2 { font-family: var(--ff-mono); font-size: var(--fs-code); font-weight: 700; letter-spacing: var(--tr-code); text-transform: uppercase; color: var(--plum); margin-bottom: 14px; }
+.ftr__links { display: grid; gap: 2px; }
+.ftr__links a { font-size: var(--fs-sm); color: var(--ink-2); width: fit-content; padding-block: 5px; }
+.ftr__links a:hover { color: var(--plum); box-shadow: inset 0 -1px 0 0 currentColor; }
+.ftr__brand img { height: 62px; width: auto; }
+.ftr__brand .wordmark { font-weight: 700; font-size: 1.125rem; letter-spacing: -.02em; }
+.ftr__ident { font-family: var(--ff-mono); font-size: var(--fs-code); line-height: 1.9; color: var(--ink-3); margin-top: 16px; }
+.ftr__ident a { color: var(--ink-2); display: inline-block; padding-block: 5px; }
+.ftr__ident a:hover { color: var(--plum); }
+.ftr__base { border-top: 1px solid var(--rule-2); }
+.ftr__base .shell { display: flex; flex-wrap: wrap; gap: 8px 28px; justify-content: space-between; padding-block: 14px; font-family: var(--ff-mono); font-size: var(--fs-code); color: var(--ink-3); }
+.ftr__base a { display: inline-block; padding-block: 4px; }
+.ftr__base a:hover { color: var(--plum); }
+
+/* ---------------------------------------------------------- 10. UTILITIES */
+.stack { display: grid; align-content: start; }
+.gap-2 { gap: var(--s-2); } .gap-3 { gap: var(--s-3); } .gap-4 { gap: var(--s-4); }
+.gap-5 { gap: var(--s-5); } .gap-6 { gap: var(--s-6); } .gap-7 { gap: var(--s-7); }
+.gap-8 { gap: var(--s-8); } .gap-9 { gap: var(--s-9); }
+.mt-4 { margin-top: var(--s-4); } .mt-5 { margin-top: var(--s-5); }
+.mt-6 { margin-top: var(--s-6); } .mt-7 { margin-top: var(--s-7); }
+.mw-none { max-width: none; } .mw-16 { max-width: 16ch; } .mw-20 { max-width: 20ch; }
+.mw-48 { max-width: 48ch; } .mw-52 { max-width: 52ch; } .mw-62 { max-width: 62ch; }
+.muted { color: var(--ink-3); }
+.tnum { font-variant-numeric: tabular-nums lining-nums; }
+.between { justify-content: space-between; }
+.d-1 { --d: 60ms; } .d-2 { --d: 120ms; } .d-3 { --d: 180ms; } .d-4 { --d: 240ms; }
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+@media print {
+  .hdr, .drawer, .ruled, .burger, .btn { display: none !important; }
+  body { background: #fff; color: #000; }
+  .plum { background: #fff !important; color: #000 !important; }
+  a[href^="http"]::after { content: ' (' attr(href) ')'; font-size: 10px; }
+}
+
+/* — panel body and identification block (contact) */
+.sheet-panel__body { padding: clamp(18px, 2.4vw, 28px); }
+.ident > div { display: grid; gap: 4px 16px; padding: 11px clamp(14px, 2vw, 18px); border-bottom: 1px solid var(--rule-2); }
+@media (min-width: 600px) { .ident > div { grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr); } }
+.ident dd { overflow-wrap: anywhere; }
+.ident > div:nth-child(odd) { background: var(--sheet-2); }
+.ident > div:last-child { border-bottom: 0; }
+.ident dt { font-family: var(--ff-mono); font-size: var(--fs-code); letter-spacing: var(--tr-code); text-transform: uppercase; color: var(--ink-3); padding-top: 2px; }
+.ident dd { font-family: var(--ff-mono); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.ident a { display: inline-block; padding-block: 3px; color: var(--plum); box-shadow: inset 0 -1px 0 0 var(--rule); }
+.ident a:hover { box-shadow: inset 0 -2px 0 0 var(--plum); }
+
+/* — table caption sits above its rows, like a form section title */
+.dtable caption { caption-side: top; padding-bottom: 14px; font-weight: 700; }
+
+/* ==========================================================================
+   THE OPENING — «числа умолкают»
+   Обещание фирмы, разыгранное буквально: сначала появляется
+   административный шум (реальные коды форм, ставки, сроки и параграфы
+   с их же страниц), он укладывается в сетку и уходит в шёпот — и только
+   после этого проявляется марка и слова клиента. Complexity → clarity.
+   Чистый CSS: ни строчки JS, transform + opacity, без layout-работы.
+   ========================================================================== */
+/* ============================================================
+   ОТКРЫТИЕ ГЛАВНОЙ — тёмная сцена
+
+   Логотип клиента — законченная композиция на чёрном со свечением,
+   впечатанным в изображение. Вырезать её нельзя: чёрное здесь и есть
+   рисунок. Поэтому сцена сама чёрная, а картинка кладётся в режиме
+   screen: на чёрном screen — тождество, и рамка кадра исчезает
+   полностью. Побочный подарок: свечение марки просвечивает поле
+   чисел под ней — свет буквально освещает бухгалтерию.
+   ============================================================ */
+.op {
+  position: relative; overflow: hidden;
+  background: var(--stage); color: var(--on-stage);
+  display: grid; justify-items: center; align-content: center;
+  /* Одна величина на всю сцену: от неё зависит и марка, и граница поля чисел. */
+  --mark-w: min(120%, 70vw, calc((100vh - 462px) * 1.517), 1040px);
+  --mark-h: calc(var(--mark-w) / 1.517);
+  /* 0.4889 — измеренная доля: где внутри ассета начинается словесный знак.
+     Поле чисел кончается ровно здесь, при любом размере окна. */
+  --cut: calc(var(--mark-h) * 0.4889 + clamp(18px, 2.4vw, 34px));
+  min-height: min(96vh, 900px);
+  padding-block: clamp(18px, 2.4vw, 34px) clamp(40px, 5vh, 96px);
+}
+
+/* Маска — это свет, а не виньетка. Раньше она вырезала середину, то есть
+   числа отсутствовали ровно там, где ярче всего светит знак. Теперь наоборот:
+   у марки — читаемая зона, дальше числа уходят во мрак, но не исчезают.
+   Сложность никуда не делась; просто её стало видно. */
+.op__lantern {
+  position: absolute; inset: 0 0 auto 0; height: var(--cut);
+  z-index: 0; pointer-events: none; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 72px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 72px), transparent 100%);
+}
+.op__field {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(clamp(104px, 12.5vw, 186px), 1fr));
+  align-content: space-between; padding: 3.4vh 2.5vw 0;
+  row-gap: clamp(10px, 1.8vh, 26px); column-gap: .4vw;
+  -webkit-mask-image: radial-gradient(62% 210% at 50% 118%,
+     #000 0 34%, rgba(0,0,0,.68) 58%, rgba(0,0,0,.26) 80%, rgba(0,0,0,.08) 100%);
+  mask-image: radial-gradient(62% 210% at 50% 118%,
+     #000 0 34%, rgba(0,0,0,.68) 58%, rgba(0,0,0,.26) 80%, rgba(0,0,0,.08) 100%);
+  animation: illuminate 1500ms cubic-bezier(.32,.72,.3,1) 260ms both;
+}
+@keyframes illuminate { from { opacity: 0; } to { opacity: 1; } }
+.op__field b {
+  font-family: var(--ff-mono); font-weight: 400;
+  font-size: clamp(.7rem, .55rem + .6vw, 1rem);
+  color: var(--on-stage-3); opacity: .44; white-space: nowrap; letter-spacing: .04em;
+  justify-self: start;
+  animation: settle 1250ms cubic-bezier(.16,1,.3,1) both;
+}
+/* только положение: видимостью управляет свет, не элемент */
+@keyframes settle {
+  from { transform: translate3d(var(--dx,0), var(--dy,0), 0) rotate(var(--r,0)); }
+  to   { transform: none; }
+}
+.op__field b:nth-child(7n+1) { --dx: -15vw; --dy:  11vh; --r:  -9deg; animation-delay:   0ms; }
+.op__field b:nth-child(7n+2) { --dx:  13vw; --dy: -10vh; --r:   7deg; animation-delay:  70ms; }
+.op__field b:nth-child(7n+3) { --dx:  -8vw; --dy: -14vh; --r:  10deg; animation-delay: 140ms; }
+.op__field b:nth-child(7n+4) { --dx:  17vw; --dy:   8vh; --r:  -6deg; animation-delay: 210ms; }
+.op__field b:nth-child(7n+5) { --dx: -19vw; --dy:  -7vh; --r:   4deg; animation-delay: 280ms; }
+.op__field b:nth-child(7n+6) { --dx:   7vw; --dy:  16vh; --r: -11deg; animation-delay: 350ms; }
+.op__field b:nth-child(7n+7) { --dx: -11vw; --dy: -17vh; --r:   8deg; animation-delay: 420ms; }
+.op__field b:nth-child(3n+2) { justify-self: center; }
+.op__field b:nth-child(5n+3) { justify-self: end; }
+
+/* Марка живёт прямо в секции: любой обёртке с z-index/opacity/transform
+   браузер отдал бы собственный контекст наложения и screen бы онемел. */
+.op__mark {
+  position: relative; z-index: 1;
+  /* Марка ограничена и шириной, и высотой окна: иначе на ноутбуке 1280×720
+     кнопки уезжают за нижний край, а подпись — единственное действие. */
+  /* Ширина выведена, а не подобрана: пропорции ассета 1500x963, значит
+     высота = 0.642 x ширина. Из высоты окна вычитаем шапку, отбивки и
+     пластину с подписью и кнопками — остаток и есть место для марки.
+     Поэтому кнопка «Küsi pakkumist» видна и на ноутбуке 1280x720. */
+  /* Постоянная 462px измерена, а не подобрана: это всё, что обязано
+     остаться на экране под маркой — шапка, отбивки, подпись, заголовок,
+     кнопки и запас. Пропорции ассета 1500x989, отсюда множитель. */
+  display: block; width: var(--mark-w); height: auto;
+  mix-blend-mode: screen;
+  margin: 0 auto;
+  animation: lightup 1100ms cubic-bezier(.16,1,.3,1) 380ms both;
+}
+@keyframes lightup { from { opacity: 0; } to { opacity: 1; } }
+
+.op__plate {
+  position: relative; z-index: 2; text-align: center;
+  display: grid; justify-items: center;
+  gap: 0;
+}
+.op__kick {
+  /* Перенос обязан идти по тире: иначе «selged» отрывается от «lahendused».
+     balance ставит перенос по длине строк, не по смыслу, поэтому здесь pretty. */
+  max-width: min(41rem, 94%); text-wrap: pretty; color: var(--on-stage-2);
+  margin-top: clamp(10px, 1.4vw, 22px);
+  margin-bottom: clamp(14px, 1.5vw, 20px);
+}
+.op__h1 {
+  max-width: 27ch; font-size: clamp(1.6rem, .95rem + 2.5vw, 3rem);
+  line-height: 1.1; letter-spacing: -.03em; color: #FFFFFF;
+}
+.op__h1 span { display: block; text-wrap: balance; }
+.op__h1 .em { color: var(--lit); }
+.op__plate .btn-row { margin-top: clamp(24px, 3.1vw, 44px); justify-content: center; }
+.op__plate .btn { background: var(--lit); color: var(--on-lit); border-color: var(--lit); }
+.op__plate .btn:hover { background: var(--lit-2); border-color: var(--lit-2); color: var(--on-lit); }
+.op__plate .btn--ghost { background: var(--stage); color: var(--on-stage); border-color: var(--rule-stage); }
+.op__plate .btn--ghost:hover { background: rgba(255,255,255,.07); border-color: var(--on-stage); color: #fff; }
+
+.op__ident {
+  position: relative; z-index: 2; background: var(--stage);
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 4px clamp(20px, 4vw, 52px);
+  border-top: 1px solid var(--rule-stage); padding-top: 16px;
+  margin-top: clamp(20px, 2.8vw, 34px);
+  font-family: var(--ff-mono); font-size: var(--fs-code); color: var(--on-stage-2); letter-spacing: .04em;
+}
+.op__ident a { display: inline-block; padding-block: 4px; color: inherit; }
+.op__ident a:hover { color: var(--lit); }
+
+/* второй такт: слова проявляются после того, как марка зажглась */
+.op__plate > *, .op__ident { animation: resolve 700ms cubic-bezier(.16,1,.3,1) both; }
+.op__kick            { animation-delay: 760ms; }
+.op__h1              { animation-delay: 880ms; }
+.op__plate .btn-row  { animation-delay: 1000ms; }
+.op__ident           { animation-delay: 1120ms; }
+@keyframes resolve { from { opacity: 0; } to { opacity: 1; } }
+
+@media (max-width: 760px) {
+  .op { min-height: min(100svh, 860px); }
+  .op__field {
+    inset: 0;
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 2vw; row-gap: clamp(8px, 1.4vh, 18px);
+    padding: 2.2vh 5vw 0;
+    -webkit-mask-image: radial-gradient(88% 190% at 50% 112%,
+       #000 0 30%, rgba(0,0,0,.66) 56%, rgba(0,0,0,.24) 80%, rgba(0,0,0,.07) 100%);
+    mask-image: radial-gradient(88% 190% at 50% 112%,
+       #000 0 30%, rgba(0,0,0,.66) 56%, rgba(0,0,0,.24) 80%, rgba(0,0,0,.07) 100%);
+  }
+  .op__field b { opacity: .4; font-size: .72rem; }
+  /* узкая мера удерживает перенос на тире и на маленьком экране */
+  .op__kick { max-width: min(20rem, 92%); }
+  .op__field b:nth-child(n+31) { display: none; }
+  /* На узком экране марка выходит за поля: подпись при этом обязана
+     остаться под ней, а не на строке ACCOUNTING SERVICES. */
+  .op__mark { width: 118%; max-width: none; margin-inline: -9%; margin-block: 0; }
+  /* Низкие телефоны (SE, старые Android): марку приходится ужать, иначе
+     действие уходит за экран. Знак остаётся первым, но не единственным. */
+  @media (max-height: 700px) {
+    .op { min-height: 0; padding-block: 6px clamp(20px, 3vh, 34px); }
+    .op__mark { width: 96%; margin-inline: 0; }
+    .op__kick { margin-top: 4px; margin-bottom: 8px; }
+    .op__plate .btn-row { margin-top: 14px; }
+    .op__ident { margin-top: 18px; }
+  }
+  .op__kick { margin-top: clamp(6px, 2.4vw, 16px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .op__field, .op__field b, .op__mark, .op__plate > *, .op__ident { animation: none !important; opacity: 1; transform: none; }
+  .op__field b { opacity: .44; }
+}

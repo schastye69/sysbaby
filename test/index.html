@@ -1,0 +1,3795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex,nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#05060a" id="themeColorMeta">
+<title>sys.baby — Business software you own</title>
+<!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
+     Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
+<meta name="sysbaby-build" content="v24">
+<meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
+<!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
+     независимость от внешних сервисов, не имеет права зависеть от Google
+     ради собственных букв: та же системная гарнитура, что и в OS, — одна
+     типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
+<link rel="stylesheet" href="shared/system.css?b=v24">
+<!-- Pre-paint only: read an introduction off the address bar and clean it out
+     again before anything renders. The OS does exactly this for its own entry
+     parameter, and the reason is the same: a link may CARRY state, but the
+     address the visitor ends up looking at should be the address they meant to
+     visit. Nobody arrives at sys.baby to read a query string. -->
+<script>
+(function () {
+  "use strict";
+  var m = /[?&]i=([^&]+)/.exec(location.search || "");
+  if (m) {
+    try {
+      var code = decodeURIComponent(m[1]).slice(0, 120);
+      if (code) window.localStorage.setItem("sysbaby.intro", code);
+    } catch (e) { /* storage blocked: the introduction is simply not recorded */ }
+    try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) { }
+  }
+})();
+</script>
+<script src="shared/portfolio.data.js?b=v24"></script>
+<script src="shared/pricing.data.js?b=v24"></script>
+<style>
+/* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
+   с прошлого прохода; на лендинге правила не было, и на телефоне каждое
+   касание дока и окон вспыхивало чужим цветом. */
+*{-webkit-tap-highlight-color:transparent}
+/* ==========================================================================
+   sys.baby landing — one stylesheet.
+   Dark graphite/navy base; colour arrives as light (gradients and glows),
+   never as flat fills. Motion is restrained and reversible.
+   ========================================================================== */
+
+/* --- tokens ------------------------------------------------------------ */
+/* Раньше здесь объявлялся второй, несовместимый мир: неоновый циан,
+   циановые границы, три радиальных свечения, поле частиц и сканирующая
+   полоса. ОС в это же время жила на индиго со стеклом. Убери логотип — и
+   было видно два разных продукта, а не одну среду.
+
+   Теперь всё приходит из shared/system.css. Ниже — только переходник:
+   старые имена переменных сохранены, чтобы не переписывать три тысячи строк
+   разом, но значения у них больше не свои. Второго источника правды нет. */
+:root{
+  --bg:var(--void);
+  --text:var(--ink);
+  --muted:var(--ink-2);
+  --accent:var(--seam);
+  --accent-soft:var(--seam-dim);
+  --border:var(--edge);
+  --glass:rgba(242,242,240,.035);
+  --win:var(--surface);
+  --win-strong:var(--raised);
+  --btn-bg:var(--ink);
+  --btn-fg:var(--void);
+  --ok:var(--state-good);
+  --err:var(--state-bad);
+  --err-bold:var(--state-bad);
+  --warn:var(--state-warn);
+  /* Челлендж основателя пересмотрел «плоский чёрный». Прежний живой фон
+     (стоковое видео с CDN GoDaddy + циановое поле частиц) не возвращается:
+     чужой ролик противоречит доктрине независимости, а плексус-созвездие —
+     самый затёртый фон эпохи. Но сам довод «место, а не страница» верен —
+     и ОС уже живёт в «Студии». Лендинг получает ту же комнату: глиняный
+     свет верхнего правого угла — та же лампа, что в обоях ОС (76% 16%),
+     нейтральное тепло понизу, графитовая глубина слева. Свет уведён от
+     текстовой колонки — тексту тихо. Ничего не стоит: три градиента. */
+  /* Калибровка по живому OLED: значения, видимые на скриншоте с десктопа,
+     на настоящем телефоне давятся в чёрный. Лампа поднята до .16 — того же
+     значения, которым «Студия» светит в обоях ОС: одна лампа, один ток.
+     Внутри лампы — ядро-уголёк, у пола — тёплый подъём: комната читается
+     и при дневном свете, текстовой колонке по-прежнему тихо. */
+  --radial1:rgba(126,134,152,.07);
+  --radial2:rgba(224,102,60,.16);
+  --radial3:rgba(242,238,232,.08);
+  --radial-core:rgba(255,150,96,.10);
+  --floor:rgba(224,102,60,.045);
+  --seam-line:rgba(230,116,68,.65);
+  --seam-glow:rgba(224,102,60,.38);
+  --shadow:0 30px 80px rgba(0,0,0,.45);
+  --ease:cubic-bezier(.16,1,.3,1);
+  --mono:ui-monospace,SFMono-Regular,"SF Mono","JetBrains Mono",Menlo,monospace;
+}
+[data-theme="light"]{
+  --bg:#eceef2;
+  --text:#17171b;
+  --muted:#63636b;
+  --accent:#3d5bff;
+  --accent-soft:rgba(61,91,255,.4);
+  --radial-core:transparent;
+  --floor:transparent;
+  --seam-line:var(--accent-soft);
+  --seam-glow:var(--accent-soft);
+  --border:rgba(20,20,30,.08);
+  --glass:rgba(255,255,255,.58);
+  --win:rgba(255,255,255,.58);
+  --win-strong:rgba(255,255,255,.92);
+  --btn-bg:#111114;
+  --btn-fg:#ffffff;
+  --err-bold:#c62b23;
+  /* light backdrop: the glow trio carries the OS light wallpaper's tri-tone,
+     blue -> violet -> peach, which is what gives that theme its warmth. */
+  --radial1:rgba(110,140,255,.14);
+  --radial2:rgba(215,120,255,.10);
+  --radial3:rgba(255,155,90,.08);
+  --shadow:0 30px 80px rgba(20,20,40,.14);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;padding:0;overflow:hidden}
+body{
+  background:var(--bg);
+  color:var(--text);
+  /* Та же системная гарнитура, что и в OS: одна типографика, ноль запросов. */
+  font-family:system-ui,-apple-system,"Segoe UI",Inter,Roboto,sans-serif;
+  font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  transition:background .6s var(--ease),color .6s var(--ease);
+}
+button,input,textarea{font-family:inherit;color:inherit}
+a{color:var(--accent)}
+::selection{background:var(--accent-soft);color:var(--btn-fg)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* --- backdrop ---------------------------------------------------------- */
+/* Фон был видеороликом с CDN GoDaddy — единственная внешняя зависимость
+   страницы, которая продаёт независимость от внешних сервисов. Если бы файл
+   умер, фон исчез бы молча. Видео, тинт над ним и сканирующая полоса удалены
+   вместе с их кодом: страница стоит на собственном поле --bg, и ни один её
+   пиксель больше не живёт на чужом сервере.
+
+   Остались два слоя: .wallpaper (три радиальных свечения — в тёмной теме они
+   прозрачны и ничего не стоят, в светлой несут её тепло) и .grain поверх
+   текста страницы, под окнами и хромом. */
+.backdrop{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+
+.backdrop .wallpaper{
+  position:absolute;inset:-6%;
+  background:
+    radial-gradient(circle at 20% 25%,var(--radial1),transparent 45%),
+    radial-gradient(920px 660px at 82% 12%,var(--radial2),transparent 62%),
+    radial-gradient(340px 260px at 82% 12%,var(--radial-core),transparent 70%),
+    radial-gradient(circle at 50% 80%,var(--radial3),transparent 55%),
+    linear-gradient(180deg,transparent 0%,transparent 66%,var(--floor) 100%);
+  transition:background .6s ease;
+  /* Дыхание комнаты: один transform-слой, 80 секунд туда-обратно.
+     Не анимация ради анимации — свет в настоящей комнате тоже не мёртв.
+     Композитный transform не стоит ни кадра; при reduced-motion и на
+     паузе — неподвижен, и это полноценное состояние, а не деградация. */
+  animation:wallpaperBreath 80s ease-in-out infinite alternate;
+}
+@keyframes wallpaperBreath{
+  from{transform:translate3d(-.6%,-.4%,0) scale(1)}
+  to{transform:translate3d(.6%,.5%,0) scale(1.045)}
+}
+@media (prefers-reduced-motion:reduce){.backdrop .wallpaper{animation:none}}
+html[data-anim="paused"] .backdrop .wallpaper{animation:none}
+
+/* film grain. Sits above the hero (z 10) and below windows (200), dock (300)
+   and the top bar (400) — the same place it holds in the original, where it
+   is z 5 against windows at 20 and a top bar at 800. */
+.grain{
+  position:fixed;inset:0;z-index:11;pointer-events:none;
+  filter:url(#grainFilter);
+  opacity:.35;
+  mix-blend-mode:overlay;
+  transition:opacity .4s ease;
+}
+
+/* --- boot screen ------------------------------------------------------- */
+/* Экрана загрузки больше нет — среда собирается за один кадр. Узел #boot и
+   класс is-done сохранены как контракт для проверок; всё театральное убрано
+   вместе со стилями. Плёнка гасится в тот же тик, поэтому ей достаточно
+   одного правила. */
+.boot{position:fixed;inset:0;z-index:900;background:var(--bg);pointer-events:none}
+
+/* --- top bar ----------------------------------------------------------- */
+.topbar{
+  position:fixed;top:0;left:0;right:0;height:44px;z-index:400;
+  padding:0 14px;padding-top:env(safe-area-inset-top,0);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--glass);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);
+  opacity:0;transform:translateY(-100%);
+  transition:opacity .5s var(--ease),transform .5s var(--ease),background .6s var(--ease);
+}
+.topbar.is-in{opacity:1;transform:none}
+.tb-left,.tb-right{display:flex;align-items:center;gap:10px;min-width:0}
+.tb-mark{
+  font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:1.4px;white-space:nowrap;
+  /* Имя среды не мерцает. Авторитет — это неподвижность, а не блеск. */
+  color:var(--ink);
+}
+.tb-sep{color:var(--muted);opacity:.5}
+.tb-app{font-size:12px;letter-spacing:.4px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:32vw}
+.tb-btn{
+  display:inline-flex;align-items:center;gap:7px;height:26px;padding:0 9px;
+  background:transparent;border:1px solid var(--border);border-radius:999px;
+  font-size:11px;color:var(--muted);cursor:pointer;white-space:nowrap;
+  transition:color .25s,border-color .25s,background .25s;
+}
+.tb-btn:hover{color:var(--text);border-color:var(--accent-soft)}
+.tb-btn svg{width:13px;height:13px;flex:none}
+.keycap{font-family:var(--mono);font-size:9px;padding:1px 5px;border:1px solid var(--border);border-radius:5px;letter-spacing:.5px}
+/* Часы, статус Wi-Fi/батареи и переключатель темы убраны с витрины —
+   их стили ушли вместе с ними. */
+.flags{display:flex;align-items:center;gap:2px}
+.flag{background:transparent;border:0;cursor:pointer;font-size:14px;line-height:1;padding:3px 4px;border-radius:6px;opacity:.38;transition:opacity .2s,transform .2s}
+.flag:hover{opacity:.85}
+.flag.is-active{opacity:1}
+
+/* --- hero -------------------------------------------------------------- */
+.hero{
+  position:fixed;inset:0;z-index:10;display:flex;justify-content:center;
+  /* `safe center` is the whole fix for the clipped first line. A centred flex
+     item taller than its container overflows in BOTH directions, and the top
+     overflow of a fixed box is unreachable — which is how "BUILDING" went
+     missing on short viewports. `safe` falls back to start alignment the
+     moment the content stops fitting, and overflow-y makes the rest
+     reachable. Nothing shrinks; nothing is redesigned. */
+  align-items:safe center;
+  overflow-y:auto;overscroll-behavior:contain;
+  padding:74px 4vw 190px;pointer-events:none;
+}
+.hero-inner{width:min(1200px,92%);pointer-events:auto}
+/* The headline is set to its own longest word.
+
+   Russian and Estonian carry words this design was not drawn around —
+   АВТОМАТИЗИРОВАННЫЙ is eighteen characters, AUTOMATISEERITUD sixteen — and
+   at the English size they run off the edge of a phone. Shrinking the whole
+   headline until the worst case fits would punish every other language for
+   one word, so instead the type is sized by the word itself: --hero-chars is
+   the character count of the longest word in the current language, written
+   by renderHero, and --hero-fit is the largest size at which that word still
+   spans the line without touching either edge. The headline takes whichever
+   is smaller, its designed size or that fit.
+
+   0.58em is the measured average advance of this face at weight 900 in caps.
+   The tracking tightens as the word grows — a long word reads as deliberately
+   condensed rather than accidentally small — and stops at -.055em, past which
+   the letters start to touch. */
+/* Строка-имя над заголовком: голос машины, регистр меток дока. Инициалы
+   на тон ярче — не тусклее: гасить непроявленные буквы ниже порога чтения
+   нельзя, поднимать проявленные — можно. */
+.hero-name-line{font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+.hero-name-line b{font-weight:inherit;color:var(--text);transition:color .55s ease}
+/* Пульс инициала: буква на мгновение возвращается в неразрешённое состояние —
+   глиф в цвете глины, — затем оседает обратно и остывает в белый. Тот же
+   закон, что у занавеса ОС и посадки подсказки дока: неразрешённое — глина,
+   разрешённое — текст. В глину — мгновенно (без transition), обратно —
+   остыванием через transition цвета выше. */
+.hero-name-line b.is-unresolved{color:var(--accent);transition:none}
+@media (max-width:380px){.hero-name-line{font-size:9.5px;letter-spacing:.18em}}
+/* Заголовок больше не кричит капслоком в 900-м весе. Три причины из линии
+   v17, и все три пережили трибунал: (1) 900-го веса здесь физически нет —
+   системные гарнитуры дают его синтетически, а синтетический жир ломает
+   форму знака, особенно кириллицы; (2) капслок этого размера — язык
+   рекламного щита, он проваливает тест «подставь другое имя»; (3) контраст
+   голосов структурный: машина говорит моноширинными метками в капсе,
+   человек — предложениями в обычном регистре. Заголовок — голос человека. */
+.hero h1{
+  --hero-chars:10;
+  --hero-fit:76px;
+  font-size:min(clamp(34px,4.6vw,68px), var(--hero-fit));
+  font-weight:var(--w-strong,600);line-height:1.04;
+  letter-spacing:clamp(-.035em,calc(-.018em - (var(--hero-chars) - 10) * .002em),-.012em);
+  margin:0 0 22px;text-wrap:balance;max-width:44rem;
+}
+/* When even the fit would take the headline below reading size — eighteen
+   Cyrillic capitals on a 320px phone cannot be large and whole at once — the
+   word is allowed to break instead. A hyphenated АВТОМАТИЗИ- / РОВАННЫЙ at
+   full size is a better headline than one unbroken line at twenty pixels, and
+   it reads as a decision rather than as a shrink. */
+.hero h1.is-tight{
+  font-size:clamp(30px,8.5vw,54px);
+  -webkit-hyphens:auto;hyphens:auto;overflow-wrap:break-word;
+}
+/* Строка цен: моноширинная метаинформация, не кнопка и не баннер. Вся
+   лестница из SB_PRICING, единственного источника. */
+.hero-price{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;color:var(--muted);margin:0 0 14px;font-variant-numeric:tabular-nums}
+.hero p.hero-text{font-size:19px;line-height:1.55;color:var(--muted);max-width:720px;margin:0 0 30px}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:999px;padding:15px 26px;font-size:14px;font-weight:600;
+  border:1px solid var(--border);text-decoration:none;cursor:pointer;
+  background:var(--glass);color:var(--text);
+  transition:transform .3s var(--ease),background .3s,border-color .3s,box-shadow .3s;
+}
+.btn:hover{transform:translateY(-2px);border-color:var(--accent-soft);box-shadow:0 10px 30px rgba(0,0,0,.28)}
+.btn-primary{background:var(--btn-bg);color:var(--btn-fg);border-color:transparent}
+.hero .explore-note,.hero .hero-note{font-size:12.5px;color:var(--muted);max-width:640px;line-height:1.6;margin:0 0 12px}
+.hero .hero-note{display:flex;align-items:flex-start;gap:7px;margin-top:14px}
+.hero .hero-note svg{width:13px;height:13px;flex:none;margin-top:2px;color:var(--accent)}
+.hero-proof{display:none;border-left:2px solid var(--accent);padding:2px 0 2px 12px;margin:18px 0 0;max-width:620px}
+.hero-proof.is-shown{display:block}
+.hero-proof .p-main{font-size:13.5px;line-height:1.55}
+.hero-proof .p-src{font-size:11.5px;color:var(--muted);margin-top:4px}
+/* staggered reveal after boot */
+.reveal{opacity:0;transform:translateY(16px);filter:blur(6px)}
+.is-revealed .reveal{opacity:1;transform:none;filter:none;transition:opacity .7s var(--ease),transform .7s var(--ease),filter .7s var(--ease)}
+.is-revealed .reveal:nth-child(2){transition-delay:.09s}
+.is-revealed .reveal:nth-child(3){transition-delay:.18s}
+.is-revealed .reveal:nth-child(4){transition-delay:.27s}
+.is-revealed .reveal:nth-child(5){transition-delay:.34s}
+.is-revealed .reveal:nth-child(6){transition-delay:.4s}
+
+/* --- dock -------------------------------------------------------------- */
+.dock{
+  position:fixed;left:50%;bottom:22px;z-index:300;
+  transform:translateX(-50%) translateY(140%);
+  display:flex;align-items:flex-end;gap:10px;padding:10px 14px;
+  background:var(--glass);border:1px solid var(--border);border-radius:24px;
+  backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);
+  box-shadow:var(--shadow);
+  transition:transform .55s var(--ease),opacity .4s var(--ease);
+}
+.dock.is-in{transform:translateX(-50%)}
+.dock.is-hidden{transform:translateX(-50%) translateY(150%)}
+.dock-item{
+  position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;
+  background:transparent;border:0;cursor:pointer;padding:0;
+  transition:transform .22s var(--ease);
+}
+.dock-item .tile{
+  width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(150deg,rgba(255,255,255,.10),rgba(255,255,255,.02));
+  border:1px solid var(--border);color:var(--text);
+  transition:border-color .3s,box-shadow .3s,background .3s;
+}
+.dock-item .tile svg{width:22px;height:22px}
+.dock-item.is-active .tile{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft),0 0 26px var(--accent-soft)}
+.dock-item .dot{width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0;transition:opacity .25s}
+.dock-item.is-running .dot{opacity:1}
+.dock-item .lbl{font-size:9px;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.dock-item .badge{
+  position:absolute;top:-4px;right:2px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;
+  background:var(--err);color:#fff;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;
+}
+.dock-item.has-badge .badge{display:flex}
+.dock-item[data-app="order"] .tile{animation:orderPulse 3.4s ease-in-out infinite}
+@keyframes orderPulse{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 24px 0 var(--accent-soft)}}
+.dock-item.bounce{animation:dockBounce .62s var(--ease)}
+@keyframes dockBounce{0%,100%{transform:translateY(0)}25%{transform:translateY(-16px)}50%{transform:translateY(0)}72%{transform:translateY(-7px)}}
+/* The dock hides itself, so the only thing left at the bottom edge is a pill.
+   A pill on its own is decoration — the visitor has no reason to read it as a
+   handle. So the first time the dock retracts, the pill names what it is
+   covering, once, and then gets out of the way for good. Hovering it brings
+   the word back, which keeps the hint available without it ever nagging. */
+/* Свет под дверью, калибровка по живому OLED. Первая версия была выверена
+   по скриншотам с десктопа и на настоящем телефоне давилась в чёрный —
+   стеклянная таблетка на чёрном не видна при дневном свете. Теперь это
+   уголёк: тёплая линия света и ореол над ней, на явных глиняных значениях,
+   а не на полупрозрачных производных. Свет — состояние живого; он честнее
+   любого текста говорит: за кромкой что-то есть, дом не выключен. Слово
+   «applications» по-прежнему произносится трижды и умолкает — свет
+   остаётся, потому что свет не ноет. bottom уважает жестовую зону. */
+.dock-hint{
+  position:fixed;left:50%;bottom:calc(6px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:299;
+  width:148px;height:3px;border-radius:999px;border:0;cursor:pointer;padding:0;
+  background:linear-gradient(90deg,transparent,var(--seam-line) 28%,var(--seam-line) 72%,transparent);
+  opacity:0;pointer-events:none;
+  transition:opacity .3s,width .34s var(--ease);
+}
+.dock-hint.is-shown{opacity:1;pointer-events:auto}
+.dock-hint::after{
+  content:"";position:absolute;inset:-20px -48px;border-radius:999px;pointer-events:none;
+  background:radial-gradient(64% 110% at 50% 100%,var(--seam-glow),transparent 74%);
+  opacity:0;transition:opacity .5s ease;
+}
+.dock-hint.is-shown::after{opacity:.8;animation:seamBreath 6s ease-in-out infinite alternate}
+@keyframes seamBreath{from{opacity:.55}to{opacity:.95}}
+/* Пальцу нужна дверная ручка крупнее, чем курсору: на грубом указателе сама
+   линия шире, а невидимая зона нажатия — с дверную щель. */
+@media (pointer:coarse){
+  .dock-hint{width:168px;height:3.5px}
+  .dock-hint::before{content:"";position:absolute;inset:-26px -40px}
+}
+@media (prefers-reduced-motion:reduce){.dock-hint.is-shown::after{animation:none;opacity:.7}}
+html[data-anim="paused"] .dock-hint.is-shown::after{animation:none;opacity:.7}
+
+/* Сборка дока из точки касания. Иконки не выезжают строем — они разлетаются
+   из-под пальца и оседают по своим местам: тот же закон, что у глифов
+   подсказки и занавеса ОС — хаос, оседающий в порядок. Порядок посадки
+   перетасован, траектории случайны в узких рамках, и оба набора параметров
+   рождаются заново при каждом открытии — двух одинаковых открытий не
+   существует. Полёт 460 мс, вся посадка < 700 мс: удовольствие, которое
+   не успевает стать ожиданием. */
+.dock.is-assembling .dock-item{animation:dockLand .46s var(--ease) both;animation-delay:var(--fly-delay,0s)}
+@keyframes dockLand{
+  0%{opacity:0;transform:translate(var(--fly-x,0px),var(--fly-y,44px)) rotate(var(--fly-r,0deg)) scale(.82)}
+  62%{opacity:1}
+  100%{opacity:1;transform:none}
+}
+/* Становление на месте посадки. В полёте плитка несёт не иконку, а один
+   глиняный глиф системного словаря; иконкой она становится ровно в момент,
+   когда занимает своё место. Одно превращение на предмет — не churn и не
+   морфинг: закон занавеса (неразрешённое — глина, разрешённое — своё),
+   применённый к предметам. Кастомное свойство --fly-delay наследуется
+   внутрь плитки, так что глиф, иконка и полёт живут в одном такте. */
+.dock-item .tile{position:relative}
+.dock-item .mat{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:15px;color:var(--accent);
+  opacity:0;pointer-events:none;user-select:none;
+}
+.dock.is-materializing .dock-item .tile svg{animation:iconResolve .46s var(--ease) both;animation-delay:var(--fly-delay,0s)}
+.dock.is-materializing .dock-item .mat{animation:glyphCarry .46s var(--ease) both;animation-delay:var(--fly-delay,0s)}
+@keyframes iconResolve{0%{opacity:0}64%{opacity:0}100%{opacity:1}}
+@keyframes glyphCarry{0%{opacity:.92}58%{opacity:.92}88%{opacity:0}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){
+  .dock.is-assembling .dock-item{animation:none}
+  .dock.is-materializing .dock-item .tile svg,.dock.is-materializing .dock-item .mat{animation:none}
+}
+html[data-anim="paused"] .dock.is-assembling .dock-item{animation:none}
+html[data-anim="paused"] .dock.is-materializing .dock-item .tile svg,
+html[data-anim="paused"] .dock.is-materializing .dock-item .mat{animation:none}
+
+/* ============================== MOTION IDENTITY v21 =====================
+   Вопрос, поставленный основателем: что должно ЧУВСТВОВАТЬСЯ, когда sys.baby
+   раскрывает свою систему? Три радикально разных ответа построены как живые
+   прототипы (не описания) и судимы рендером. Переключатель ?dockmat= —
+   light | develop | wave | both(прежний полёт) — оснастка сравнения.
+
+   Общее для трёх новых ответов: ДОК НЕ ПРИЕЗЖАЕТ. Полка не выезжает снизу —
+   транспорт исключён из грамматики; система уже стоит на своём месте, меняется
+   только её видимость. Поэтому у режимов отключён transform-переход раскрытия:
+   полка оказывается на месте мгновенно и дальше работает свет / проявка /
+   перекличка. */
+.dock.m-light,.dock.m-develop,.dock.m-wave{transition:opacity .3s var(--ease)}
+
+/* — ОТВЕТ A · «Свет строит» ------------------------------------------------
+   Чувство: в тёмной комнате нажали выключатель. Ты касаешься света под
+   дверью — и свет разливается от точки касания вдоль кромки; чего он
+   коснулся, то оказывается существующим. Ни один предмет не движется:
+   двигается только свет. Дом был здесь всегда. */
+.dock.m-light{animation:dockBarLit .4s ease-out both}
+@keyframes dockBarLit{0%{opacity:0}35%{opacity:.7}100%{opacity:1}}
+.dock.m-light .dock-item{animation:dockLit .5s ease-out both;animation-delay:var(--lit-delay,0s)}
+@keyframes dockLit{
+  0%{opacity:.1;filter:brightness(.35) saturate(.15)}
+  55%{opacity:1;filter:brightness(1.42) saturate(1.12)}
+  100%{opacity:1;filter:none}
+}
+/* Привой от «Переклички» (вердикт: интегрируются только победившие органы):
+   свет греет то, чего коснулся — метка вспыхивает глиной и остывает до
+   служебного серого. Тот же --lit-delay: свет и тепло идут одним фронтом. */
+.dock.m-light .dock-item .lbl{animation:lblWarm .6s ease-out both;animation-delay:var(--lit-delay,0s)}
+@keyframes lblWarm{
+  0%{color:var(--muted);opacity:.25}
+  40%{color:var(--accent);opacity:1}
+  100%{color:var(--muted)}
+}
+.dock-flare{
+  position:fixed;bottom:16px;transform:translateX(-50%) scaleX(.35);
+  width:230px;height:64px;pointer-events:none;z-index:301;
+  background:radial-gradient(50% 100% at 50% 100%,rgba(255,150,96,.6),rgba(224,102,60,.26) 42%,transparent 72%);
+  filter:blur(7px);opacity:0;
+  animation:flareSweep .6s ease-out forwards;
+}
+@keyframes flareSweep{
+  0%{opacity:0;transform:translateX(-50%) scaleX(.35)}
+  22%{opacity:.95}
+  100%{opacity:0;transform:translateX(-50%) scaleX(6.2)}
+}
+
+/* — ОТВЕТ B · «Проявка» ----------------------------------------------------
+   Чувство: фотография в кювете проявителя. Все плитки присутствуют сразу —
+   как смутные глиняные силуэты — и каждая проявляется в своём темпе:
+   резкость, затем собственный цвет. Закон занавеса (неразрешённое — глина,
+   разрешённое — своё), применённый не к полёту, а к веществу. Порядок не
+   приезжает и не включается. Порядок проявляется. */
+.dock.m-develop .dock-item{
+  animation:dockDevelop var(--dev-dur,.6s) cubic-bezier(.3,.05,.25,1) both;
+  animation-delay:var(--dev-delay,0s);
+}
+@keyframes dockDevelop{
+  0%{opacity:.16;filter:blur(7px) grayscale(1) sepia(.85) hue-rotate(-14deg) saturate(2.1) brightness(.7)}
+  55%{opacity:.85;filter:blur(1.6px) grayscale(.45) sepia(.4) hue-rotate(-9deg) saturate(1.4) brightness(.92)}
+  100%{opacity:1;filter:none}
+}
+
+/* — ОТВЕТ C · «Перекличка» -------------------------------------------------
+   Чувство: машина отвечает на вызов. От точки касания по строю бежит волна
+   включения — каждая плитка коротко «щёлкает» (лёгкий перелёт масштаба,
+   кольцо акцента, метка вспыхивает глиной и остывает до служебного серого),
+   строго по порядку удаления. Не случайность — причинность: ты позвал,
+   и каждый ответил «здесь». */
+.dock.m-wave .dock-item{animation:dockWave .3s var(--ease) both;animation-delay:var(--wave-delay,0s)}
+@keyframes dockWave{
+  0%{opacity:0;transform:scale(.86)}
+  55%{opacity:1;transform:scale(1.07)}
+  100%{opacity:1;transform:none}
+}
+.dock.m-wave .dock-item .tile{animation:dockWaveRing .34s ease-out both;animation-delay:var(--wave-delay,0s)}
+@keyframes dockWaveRing{
+  0%{box-shadow:0 0 0 0 rgba(224,102,60,0)}
+  45%{box-shadow:0 0 0 5px rgba(224,102,60,.3),0 0 18px rgba(224,102,60,.22)}
+  100%{box-shadow:0 0 0 0 rgba(224,102,60,0)}
+}
+.dock.m-wave .dock-item .lbl{animation:lblStamp .42s ease-out both;animation-delay:var(--wave-delay,0s)}
+@keyframes lblStamp{
+  0%{color:var(--accent);opacity:.2}
+  45%{color:var(--accent);opacity:1}
+  100%{color:var(--muted)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .dock.m-light,.dock.m-light .dock-item,.dock.m-light .dock-item .lbl,
+  .dock.m-develop .dock-item,
+  .dock.m-wave .dock-item,.dock.m-wave .dock-item .tile,.dock.m-wave .dock-item .lbl{animation:none}
+  .dock-flare{display:none}
+}
+html[data-anim="paused"] .dock.m-light,html[data-anim="paused"] .dock.m-light .dock-item,
+html[data-anim="paused"] .dock.m-light .dock-item .lbl,
+html[data-anim="paused"] .dock.m-develop .dock-item,
+html[data-anim="paused"] .dock.m-wave .dock-item,
+html[data-anim="paused"] .dock.m-wave .dock-item .tile,
+html[data-anim="paused"] .dock.m-wave .dock-item .lbl{animation:none}
+html[data-anim="paused"] .dock-flare{display:none}
+
+/* Метка «applications» удалена в v20.8: слово было лишним —
+   свет под дверью говорит сам. */
+
+/* --- windows ----------------------------------------------------------- */
+.window-layer{position:fixed;inset:0;z-index:200;pointer-events:none}
+/* The title bar and the resize corner are drag handles, so the browser must
+   not claim the gesture as a pan — without this the first millimetre of a
+   finger movement ends the drag before it starts. */
+.win-bar,.win-resize{touch-action:none}
+::selection{background:var(--accent-soft);color:var(--text)}
+.win{
+  position:absolute;pointer-events:auto;display:flex;flex-direction:column;
+  background:var(--win);border:1px solid var(--border);border-radius:16px;overflow:hidden;
+  backdrop-filter:blur(58px) saturate(190%);-webkit-backdrop-filter:blur(58px) saturate(190%);
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.08);
+}
+.win.is-focused{border-color:var(--accent-soft);box-shadow:var(--shadow),0 0 0 1px var(--accent-soft),0 0 40px var(--seam-haze)}
+.win.is-animating{transition:transform .48s var(--ease),opacity .4s var(--ease),width .4s var(--ease),height .4s var(--ease),left .4s var(--ease),top .4s var(--ease)}
+.win-bar{
+  display:flex;align-items:center;gap:10px;height:38px;padding:0 12px;flex:none;cursor:default;
+  background:var(--win-strong);border-bottom:1px solid var(--border);user-select:none;
+}
+/* Window controls. Three coloured dots belong to somebody else's operating
+   system; this is one graphite cluster of glyph keys, legible without hover —
+   which matters, because on a phone there is no hover at all. Close is the
+   only one that takes colour, and only under the pointer. */
+.lights{display:flex;align-items:center;gap:2px;padding:2px;border-radius:10px;background:rgba(255,255,255,.045);border:1px solid var(--border)}
+.light{width:22px;height:18px;border-radius:7px;border:0;cursor:pointer;padding:0;display:grid;place-items:center;background:transparent;color:var(--muted);font-size:11px;line-height:1;transition:background .14s,color .14s}
+.light span{opacity:1}
+.light:hover,.light:focus-visible{background:var(--glass);color:var(--text)}
+.light-close:hover,.light-close:focus-visible{background:rgba(255,69,58,.18);color:#ff6a60}
+.win.is-focused .lights{background:rgba(255,255,255,.07)}
+.win-title{font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted)}
+.win-body{flex:1;overflow:auto;padding:22px 24px 26px;font-size:13.5px;line-height:1.6;color:var(--muted);-webkit-overflow-scrolling:touch}
+.win-resize{position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize}
+.win-resize::after{content:"";position:absolute;right:4px;bottom:4px;width:7px;height:7px;border-right:1.5px solid var(--border);border-bottom:1.5px solid var(--border)}
+.snap-preview{position:fixed;z-index:199;border:1.5px dashed var(--accent-soft);border-radius:14px;background:var(--seam-haze);pointer-events:none;display:none}
+.snap-preview.is-shown{display:block}
+
+/* --- panel content ----------------------------------------------------- */
+.win-body h3{margin:0 0 12px;font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.win-body p{margin:0 0 14px}
+.panel-list{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:12px}
+.panel-list li{position:relative;padding-left:16px}
+.panel-list li::before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:.7}
+.panel-list li.plain::before{display:none}
+.panel-list li.plain{padding-left:0}
+.case-goal{color:var(--text);font-weight:600}
+.case-meta{font-size:12px}
+.case-result{color:var(--text);margin-top:6px;display:block}
+.case-note{font-size:11.5px;opacity:.72}
+/* work in approval (§16) — a rule and a numeral, not another case entry: the
+   list above it is things that exist and can be opened, and this is not one */
+.case-pipeline{border-top:1px solid var(--border);padding-top:14px;margin-top:6px}
+.case-pipe-count{
+  font-family:var(--mono);font-size:22px;font-weight:300;line-height:1;
+  color:var(--text);margin-right:10px;font-variant-numeric:tabular-nums;
+}
+.case-pipe-label{
+  font-family:var(--mono);font-size:10px;letter-spacing:.17em;text-transform:uppercase;color:var(--muted);
+}
+.case-pipeline .case-note{display:inline-block;margin-top:6px}
+
+/* introductions (§3) — the quiet layer.
+   No card, no bordered box, no accent fill: a rule and a paragraph, the same
+   way work-in-approval is drawn above. If this ever starts to look like a
+   banner, the design has stopped saying what the copy says. */
+.attn{margin-top:26px;padding-top:18px;border-top:1px solid var(--border)}
+.attn-head{margin:0 0 8px;font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--text)}
+.attn-body{margin:0;font-size:13px;line-height:1.65;color:var(--muted);max-width:62ch}
+/* A link, not a button. Wanting to pass work on is not a conversion. */
+.attn-act{
+  margin-top:12px;padding:0;border:0;background:none;cursor:pointer;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--accent);
+  border-bottom:1px solid transparent;transition:border-color .2s ease;
+}
+.attn-act:hover,.attn-act:focus-visible{border-bottom-color:var(--accent)}
+.attn-tool{margin-top:14px}
+.attn-label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:6px}
+.attn-row{display:flex;gap:8px;flex-wrap:wrap}
+.attn-input{
+  flex:1 1 200px;min-width:0;padding:9px 11px;border-radius:10px;
+  border:1px solid var(--border);background:var(--glass);color:var(--text);
+  font-size:13px;font-family:inherit;
+}
+.attn-input:focus{outline:none;border-color:var(--accent-soft)}
+/* iOS zooms the page for any field under 16px, which throws the window off
+   screen mid-typing. The size is the fix; there is no other one. */
+@media (max-width:820px){ .attn-input{font-size:16px} }
+.attn-copy{
+  flex:none;padding:9px 13px;border-radius:10px;cursor:pointer;
+  border:1px solid var(--border);background:var(--glass);color:var(--text);font-size:12.5px;
+}
+.attn-copy:hover{border-color:var(--accent-soft)}
+.attn-link{
+  margin:10px 0 0;font-family:var(--mono);font-size:11.5px;line-height:1.5;
+  color:var(--muted);word-break:break-all;
+}
+.attn-fine{margin:10px 0 0;font-size:11.5px;line-height:1.6;color:var(--muted);opacity:.78;max-width:58ch}
+/* phone: the copy button owns its own line rather than squeezing the field */
+@media (max-width:520px){ .attn-copy{flex:1 1 100%} }
+
+/* SYS CARE — the continuation, not a price list.
+   No grid, no columns, no "most popular". Two levels stated plainly, the same
+   restraint the portfolio uses for its own states. If this ever needs a table
+   to be understood, the copy is wrong, not the layout. */
+.care{margin-top:26px;padding-top:18px;border-top:1px solid var(--border)}
+.care-title{margin:0 0 8px;font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--text)}
+.care-lead{margin:0 0 16px;font-size:13px;line-height:1.65;color:var(--muted);max-width:62ch}
+.care-level{margin-bottom:14px}
+.care-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.care-name{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text)}
+.care-from{font-family:var(--mono);font-size:11.5px;color:var(--accent);white-space:nowrap}
+.care-body{margin:5px 0 0;font-size:12.5px;line-height:1.6;color:var(--muted);max-width:62ch}
+.care-foot{margin:16px 0 0;font-size:11.5px;line-height:1.6;color:var(--muted);opacity:.78;max-width:58ch}
+
+.link-row{margin-top:18px}
+.link-row a{color:var(--accent);font-weight:600;text-decoration:none}
+.note-block{display:flex;gap:10px;align-items:flex-start;margin:18px 0;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--glass)}
+.note-block svg{width:16px;height:16px;flex:none;margin-top:2px;color:var(--accent)}
+.note-block .note-text{font-size:12.5px;line-height:1.6}
+.note-block .note-text strong{color:var(--text)}
+.steps{margin:20px 0 4px}
+.steps h4{margin:0 0 12px;font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--text)}
+.steps ol{margin:0;padding:0;list-style:none;counter-reset:step;display:flex;flex-direction:column;gap:11px}
+.steps li{counter-increment:step;position:relative;padding-left:30px;font-size:12.5px}
+.steps li::before{
+  content:counter(step);position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10px;color:var(--accent);
+}
+.steps .after{margin-top:14px;font-size:12px}
+
+/* --- order: packages + form -------------------------------------------- */
+.pkg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:18px 0}
+.pkg{
+  position:relative;text-align:left;cursor:pointer;padding:16px 14px 18px;
+  background:var(--glass);border:1px solid var(--border);border-radius:16px;color:inherit;
+  transition:border-color .3s,box-shadow .3s,transform .3s var(--ease);
+}
+.pkg:hover{transform:translateY(-2px)}
+.pkg.is-selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft),0 0 30px var(--seam-haze)}
+.pkg .badge-line{font-size:9.5px;letter-spacing:.9px;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.pkg .pkg-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px}
+.pkg .pkg-price{font-family:var(--mono);font-size:15px;color:var(--text)}
+.pkg .pkg-period{font-size:11px;color:var(--muted);margin-left:6px}
+.pkg ul{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:7px}
+.pkg li{font-size:11.5px;line-height:1.45;padding-left:13px;position:relative}
+.pkg li::before{content:"";position:absolute;left:0;top:7px;width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:.6}
+.order-form{margin-top:22px;display:flex;flex-direction:column;gap:13px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.field input,.field textarea{
+  width:100%;padding:11px 13px;font-size:13.5px;border-radius:12px;
+  background:rgba(127,127,140,.10);border:1px solid var(--border);color:var(--text);
+  transition:border-color .25s,box-shadow .25s;
+}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--accent-soft);box-shadow:0 0 0 3px var(--seam-haze)}
+.field input[readonly]{color:var(--muted);cursor:default}
+.field textarea{resize:vertical;min-height:76px;line-height:1.5}
+.field .help{font-size:11px;color:var(--muted);line-height:1.5}
+.submit-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:2px}
+.submit-row .hint{font-size:11px;color:var(--muted);line-height:1.5;flex:1;min-width:180px}
+.btn-submit{border-radius:999px;padding:13px 24px;font-size:13.5px;font-weight:600;border:0;cursor:pointer;background:var(--btn-bg);color:var(--btn-fg)}
+.btn-submit[disabled]{opacity:.55;cursor:progress}
+.form-status{font-size:12.5px;line-height:1.6;min-height:18px}
+.form-status .ok-title{color:var(--ok);font-weight:700;display:block;margin-bottom:6px}
+.form-status .err-title{color:var(--err-bold);font-weight:700;display:block;margin-bottom:6px}
+.form-status .line{display:block;margin-bottom:6px}
+.form-status .dim{color:var(--muted)}
+.form-status .txt{color:var(--text)}
+.form-status .rescue{display:flex;flex-wrap:wrap;gap:9px;margin:10px 0}
+.form-status .rescue a,.form-status .rescue button{
+  border-radius:999px;padding:9px 16px;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:none;
+  border:1px solid var(--border);background:var(--glass);color:var(--text);
+}
+.form-status .rescue a{background:var(--btn-bg);color:var(--btn-fg);border-color:transparent}
+
+/* --- roi --------------------------------------------------------------- */
+.roi-anchor{border-left:2px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 18px;font-size:12.5px;line-height:1.6}
+.slider{margin:16px 0}
+.slider .s-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:7px}
+.slider .s-label{font-size:12.5px;color:var(--text)}
+.slider .s-hint{font-size:11px;color:var(--muted);display:block}
+.slider .s-out{font-family:var(--mono);font-size:14px;color:var(--accent);white-space:nowrap}
+.slider input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:3px;border-radius:3px;background:rgba(127,127,140,.28);outline:none}
+.slider input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:17px;height:17px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 14px var(--accent-soft)}
+.slider input[type=range]::-moz-range-thumb{width:17px;height:17px;border:0;border-radius:50%;background:var(--accent);cursor:pointer}
+.roi-results{margin-top:22px;display:flex;flex-direction:column;gap:16px;transition:opacity .3s}
+.roi-results.is-dimmed{opacity:.62}
+.roi-fig .f-label{font-size:10.5px;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted)}
+.roi-fig .f-value{font-family:var(--mono);font-size:29px;font-weight:600;color:var(--text);line-height:1.2;margin-top:3px}
+.roi-fig .f-unit{font-size:15px;color:var(--muted)}
+.roi-fig .f-sub{font-size:11.5px;line-height:1.55;margin-top:5px}
+.roi-fig .f-sub.is-warn{color:var(--text)}
+.roi-cta{margin-top:22px;width:100%}
+
+/* --- chat -------------------------------------------------------------- */
+.chat{display:flex;flex-direction:column;height:100%}
+.chat-head{display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--border);flex:none}
+.chat-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-family:var(--mono);color:var(--accent);background:var(--glass);border:1px solid var(--accent-soft)}
+.chat-head .who{font-size:13px;font-weight:600;color:var(--text)}
+.chat-head .st{font-size:10.5px;color:var(--muted)}
+.chat-msgs{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:14px 2px}
+.bubble{max-width:86%;padding:10px 12px;border-radius:14px;font-size:12.5px;line-height:1.5;word-wrap:break-word}
+.bubble .time{display:block;margin-top:5px;font-family:var(--mono);font-size:9.5px;opacity:.6}
+.from-agent{align-self:flex-start;background:var(--glass);border:1px solid var(--border);color:var(--text);border-bottom-left-radius:5px}
+.from-user{align-self:flex-end;background:var(--accent);color:var(--void);border-bottom-right-radius:5px}
+[data-theme="light"] .from-user{color:#fff}
+.typing{align-self:flex-start;display:flex;gap:4px;padding:11px 13px;background:var(--glass);border:1px solid var(--border);border-radius:14px}
+.typing i{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:typeDot 1.1s infinite}
+.typing i:nth-child(2){animation-delay:.16s}
+.typing i:nth-child(3){animation-delay:.32s}
+@keyframes typeDot{0%,60%,100%{opacity:.28;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.chat-input{flex:none;display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid var(--border)}
+.chat-input input.mail{background:transparent;border:0;border-bottom:1px solid var(--border);border-radius:0;padding:7px 2px;font-size:12.5px}
+.chat-input input.mail:focus{outline:none;border-bottom-color:var(--accent)}
+.chat-send-row{display:flex;align-items:flex-end;gap:8px}
+.chat-send-row textarea{
+  flex:1;resize:none;max-height:80px;min-height:34px;padding:9px 12px;font-size:12.5px;line-height:1.4;
+  background:rgba(127,127,140,.10);border:1px solid var(--border);border-radius:12px;color:var(--text);
+}
+.chat-send-row textarea:focus{outline:none;border-color:var(--accent-soft)}
+.chat-send{width:34px;height:34px;flex:none;border-radius:50%;border:0;cursor:pointer;background:var(--accent);color:var(--void);display:flex;align-items:center;justify-content:center}
+.chat-send svg{width:15px;height:15px}
+
+/* --- toasts ------------------------------------------------------------ */
+.toasts{position:fixed;top:56px;right:16px;z-index:600;display:flex;flex-direction:column;gap:10px;width:300px;pointer-events:none}
+.toast{
+  pointer-events:auto;cursor:pointer;display:flex;gap:11px;padding:13px;border-radius:14px;
+  background:var(--win-strong);border:1px solid var(--border);box-shadow:var(--shadow);
+  backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);
+  transform:translateX(120%);opacity:0;transition:transform .45s var(--ease),opacity .45s var(--ease);
+}
+.toast.is-in{transform:none;opacity:1}
+/* На телефоне тосты уходят вниз, к доку: правый верхний угол — это первая
+   строка заголовка, и приветствие чата закрывало собой самый дорогой текст
+   страницы ровно на 6.2 секунды первого впечатления. Наблюдалось на
+   скриншотах трибунала, а не предположено. */
+@media (max-width:560px){
+  .toasts{top:auto;bottom:calc(var(--dock-h,90px) + 14px);left:12px;right:12px;width:auto}
+}
+.toast .ic{width:30px;height:30px;flex:none;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--glass);border:1px solid var(--border);color:var(--accent)}
+.toast .ic svg{width:15px;height:15px}
+.toast .t-title{font-size:12px;font-weight:700;color:var(--text)}
+.toast .t-body{font-size:11.5px;color:var(--muted);line-height:1.45;margin-top:2px}
+
+/* --- control center ---------------------------------------------------- */
+.cc{
+  position:fixed;top:52px;right:20px;z-index:500;width:262px;padding:14px;
+  background:var(--win-strong);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);
+  backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);
+  display:none;
+}
+.cc.is-open{display:block}
+.cc .cc-title{font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.cc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cc-toggle{
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:11px 10px;cursor:pointer;
+  background:var(--glass);border:1px solid var(--border);border-radius:13px;color:var(--muted);text-align:left;font-size:10.5px;line-height:1.3;
+  transition:background .25s,color .25s,border-color .25s;
+}
+.cc-toggle .knob{width:22px;height:22px;border-radius:7px;background:rgba(127,127,140,.24);display:flex;align-items:center;justify-content:center}
+.cc-toggle .knob svg{width:12px;height:12px}
+.cc-toggle[aria-pressed="true"]{color:var(--text)}
+.cc-toggle[data-key="sound"][aria-pressed="true"] .knob{background:var(--cc-sound);color:#fff}
+.cc-toggle[data-key="motion"][aria-pressed="true"] .knob{background:var(--cc-motion);color:#fff}
+.cc-toggle[data-key="autohide"][aria-pressed="true"] .knob{background:var(--cc-autohide);color:#fff}
+.cc-toggle[data-key="dnd"][aria-pressed="true"] .knob{background:var(--cc-dnd);color:#fff}
+.cc-slider{margin-top:12px}
+.cc-slider .cap{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block}
+.cc-slider input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:3px;border-radius:3px;background:rgba(127,127,140,.3)}
+.cc-slider input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--text);cursor:pointer}
+.cc-slider input[type=range]::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:var(--text);cursor:pointer}
+[data-dnd="on"] .cc-slider.vol input[type=range]::-webkit-slider-thumb{background:var(--muted);opacity:.55}
+[data-dnd="on"] .cc-slider.vol input[type=range]::-moz-range-thumb{background:var(--muted);opacity:.55}
+
+/* --- command palette --------------------------------------------------- */
+.palette{position:fixed;inset:0;z-index:700;display:none}
+.palette.is-open{display:block}
+.palette .pal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(3px)}
+.palette .pal-box{
+  position:absolute;top:16vh;left:50%;transform:translateX(-50%);width:min(560px,92vw);
+  background:var(--win-strong);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);
+  backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);
+}
+.pal-top{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.pal-top svg{width:15px;height:15px;color:var(--muted);flex:none}
+.pal-top input{flex:1;background:transparent;border:0;font-size:15px;color:var(--text)}
+.pal-top input:focus{outline:none}
+.pal-list{max-height:46vh;overflow:auto;padding:6px}
+.pal-item{display:flex;align-items:center;gap:11px;width:100%;padding:10px 12px;border-radius:11px;border:0;background:transparent;color:inherit;cursor:pointer;text-align:left}
+.pal-item.is-cur{background:var(--glass)}
+.pal-item .p-ic{width:26px;height:26px;flex:none;border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);color:var(--accent)}
+.pal-item .p-ic svg{width:13px;height:13px}
+.pal-item .p-title{font-size:13px;color:var(--text)}
+.pal-item .p-sub{font-size:11px;color:var(--muted)}
+.pal-empty{padding:20px 14px;font-size:12.5px;color:var(--muted);text-align:center}
+.pal-hints{display:flex;gap:14px;padding:9px 16px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);letter-spacing:.4px}
+.tag{font-family:var(--mono);font-size:9px;border:1px solid var(--border);border-radius:5px;padding:2px 5px;color:var(--muted)}
+
+/* --- os handoff veil --------------------------------------------------- */
+.veil{
+  position:fixed;inset:0;z-index:1000;pointer-events:none;opacity:0;
+  background:radial-gradient(circle at 50% 50%,#0b0c11 0%,#020203 100%);
+  transition:opacity .42s ease;
+}
+.veil.is-up{opacity:1;pointer-events:auto}
+
+/* --- reduced motion (in-page toggle + OS preference) -------------------- */
+[data-reduced="on"] .dock-item[data-app="order"] .tile{animation:none}
+[data-reduced="on"] .grain{opacity:0}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+}
+
+/* --- responsive -------------------------------------------------------- */
+@media (max-width:760px){ .tb-btn .tb-btn-label{display:none} }
+@media (max-width:680px){
+  .field input,.field textarea,.chat-send-row textarea,.chat-input input.mail,.pal-top input{font-size:16px}
+}
+@media (max-width:620px){
+  .dock{gap:5px;padding:7px 8px;bottom:14px;border-radius:20px}
+  .dock-item .tile{width:40px;height:40px;border-radius:12px}
+  .dock-item .tile svg{width:19px;height:19px}
+  .dock-item .lbl{display:none}
+  .dock-item{transform:none !important}
+  .hero{padding:60px 5vw 128px}
+  .hero p.hero-text{font-size:16.5px}
+  .toasts{width:calc(100vw - 32px)}
+}
+@media (max-width:560px){
+  .tb-sep,.tb-app{display:none}
+  .tb-btn .keycap{display:none}
+}
+@media (max-height:460px){
+  .dock{bottom:0;border-radius:18px 18px 0 0;padding:5px 8px}
+  .dock-item .tile{width:34px;height:34px;border-radius:10px}
+  .hero{padding:54px 5vw 92px}
+}
+</style>
+</head>
+<body>
+
+<!-- the film-grain filter, defined once and consumed by .grain below -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="grainFilter" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="noise"/>
+    <feColorMatrix in="noise" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.05 0"/>
+  </filter>
+</svg>
+
+<!-- backdrop: собственное поле страницы. Видео с чужого CDN, тинт и
+     сканирующая полоса удалены — фон не зависит ни от одного внешнего хоста. -->
+<div class="backdrop" aria-hidden="true">
+  <div class="wallpaper"></div>
+</div>
+
+<!-- film grain: above the page's own text, below its windows and chrome -->
+<div class="grain" aria-hidden="true"></div>
+
+<!-- boot screen: static markup, so it is also what a JS-disabled visitor sees -->
+<!-- The entrance. Not a loading screen: the system assembling the sentence
+     the page is about to say out loud. Thirty-five monospace cells, the same
+     thirty-five the OS uses on the other side of the door — there they resolve
+     into the answer, here into the promise. The log behind them is the
+     material the sentence is made of; the network behind that is the thing
+     doing the making. There is no percentage anywhere, because a percentage
+     says "wait", and this is not waiting, it is being built. -->
+<!-- Узел сохранён ради контракта с проверками (#boot.is-done), но он больше
+     ничего не показывает: ни поддельного журнала, ни холста с сетью. -->
+<div class="boot" id="boot" aria-hidden="true"></div>
+
+<!-- Без JavaScript страница обязана остаться страницей, а не чёрным
+     прямоугольником: содержимое собирается скриптом, поэтому статический
+     фолбэк — единственный свидетель для человека с упавшим или выключенным
+     скриптом. Ценовая строка ниже — ручное зеркало SB_PRICING
+     (shared/pricing.data.js); меняются вместе. -->
+<noscript>
+  <style>.boot{display:none}</style>
+  <div style="position:fixed;inset:0;z-index:950;overflow:auto;background:#0d0c0b;color:#ece9e4;font:16px/1.6 system-ui,-apple-system,'Segoe UI',sans-serif;padding:9vh 6vw">
+    <p style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#9a938a;margin:0 0 18px">sys . baby</p>
+    <h1 style="font-size:clamp(30px,5vw,54px);font-weight:600;line-height:1.06;margin:0 0 16px;max-width:22ch">Business software you own</h1>
+    <p style="max-width:52ch;color:#c9c4bc;margin:0 0 12px">We build the system your business runs on &mdash; quotes, records, invoices, the daily routine &mdash; automated, documented and handed over. No subscription, no vendor you can't leave.</p>
+    <p style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:#9a938a;margin:0 0 26px">&euro;1,400 &mdash; &euro;9,500 &middot; fixed price, fixed date &middot; the source is yours</p>
+    <p style="margin:0 0 6px"><a href="mailto:build@sys.baby" style="color:#e0764a">build@sys.baby</a></p>
+    <p style="font-size:13px;color:#8d867d;max-width:56ch;margin:18px 0 0">Полная версия работает со включённым JavaScript &middot; T&auml;isversioon t&ouml;&ouml;tab, kui JavaScript on lubatud.</p>
+  </div>
+</noscript>
+
+<!-- top bar -->
+<header class="topbar" id="topbar">
+  <div class="tb-left">
+    <span class="tb-mark">sys&#8202;.&#8202;baby</span>
+    <span class="tb-sep" id="tbSep">|</span>
+    <span class="tb-app" id="tbApp">Desktop</span>
+  </div>
+  <div class="tb-right">
+    <button class="tb-btn" id="cmdkTrigger" aria-label="Open command palette">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <span class="tb-btn-label" id="cmdkTriggerLabel">Quick actions</span>
+      <span class="keycap">&#8984;K</span>
+    </button>
+    <div class="flags" id="flags">
+      <button class="flag" data-lang="ee" aria-label="Eesti">&#127466;&#127466;</button>
+      <button class="flag is-active" data-lang="en" aria-label="English">&#127468;&#127463;</button>
+      <button class="flag" data-lang="ru" aria-label="Русский">&#127479;&#127482;</button>
+    </div>
+  </div>
+</header>
+
+
+<!-- hero -->
+<main class="hero" id="hero">
+  <div class="hero-inner">
+    <!-- Строка-имя. Машинный голос произносит расшифровку имени — B·A·B·Y
+         проявляется яркостью инициалов, без «BABY =» и без пояснений:
+         секрет предъявлен, но не разжёван. Правило иерархии: эта строка
+         НИКОГДА не становится заголовком — заголовок продаёт, имя отвечает.
+         Строка намеренно не переводится: буквы работают только в английском,
+         перевод разрушил бы соответствие имени. Для скринридера — цельный
+         текст в aria-label, размеченный побуквенный вариант скрыт. -->
+    <p class="hero-name-line reveal" aria-label="Building Automated Business for You"><span aria-hidden="true"><b>B</b>uilding <b>A</b>utomated <b>B</b>usiness for <b>Y</b>ou</span></p>
+    <h1 class="reveal" id="heroTitle"></h1>
+    <p class="hero-text reveal" id="heroText"></p>
+    <div class="cta-row reveal">
+      <a class="btn btn-primary" href="#" id="ctaRequest"></a>
+      <a class="btn" href="os/" id="ctaExplore"></a>
+    </div>
+    <p class="hero-price reveal" id="heroPrice"></p>
+    <p class="explore-note reveal" id="exploreNote"></p>
+    <div class="hero-proof reveal" id="heroProof">
+      <div class="p-main" id="heroProofMain"></div>
+      <div class="p-src" id="heroProofSrc"></div>
+    </div>
+    <p class="hero-note reveal" id="heroNote">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 12 5 5L20 6"/></svg>
+      <span id="heroNoteText"></span>
+    </p>
+  </div>
+</main>
+
+<!-- window layer -->
+<div class="window-layer" id="windowLayer"></div>
+<div class="snap-preview" id="snapPreview"></div>
+
+<!-- dock -->
+<nav class="dock" id="dock" aria-label="Applications"></nav>
+<!-- Слово над линией удалено: свет под дверью — единственная и достаточная
+     подсказка. Кнопка несёт aria-label. -->
+<button class="dock-hint" id="dockHint" aria-label="Show dock"></button>
+
+<!-- toasts -->
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<!-- command palette -->
+<div class="palette" id="palette" role="dialog" aria-label="Command palette">
+  <div class="pal-backdrop" id="palBackdrop"></div>
+  <div class="pal-box">
+    <div class="pal-top">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="palInput" type="text" placeholder="Type a command or search&#8230;" autocomplete="off" spellcheck="false">
+      <span class="tag">ESC</span>
+    </div>
+    <div class="pal-list" id="palList"></div>
+    <div class="pal-hints"><span>&#8593;&#8595; navigate</span><span>&#8629; select</span><span>esc close</span></div>
+  </div>
+</div>
+
+<!-- OS handoff veil -->
+<div class="veil" id="veil" aria-hidden="true"></div>
+
+<script>
+/* ==========================================================================
+   sys.baby landing — one script.
+   Structure: content -> state -> helpers -> boot -> chrome (topbar, dock,
+   control center, palette) -> window manager -> panels -> protocols
+   (order form, chat, payback calculator) -> portfolio -> wiring.
+
+   ESCAPING DISCIPLINE
+   Authored copy from SB_CONTENT and the portfolio data files is trusted and
+   may contain intentional inline HTML (links, <strong>, <br>) — it is written
+   with setHtml(). ANYTHING that came from the visitor (form values, chat
+   messages, clipboard text) goes through esc() before it touches innerHTML.
+   ========================================================================== */
+(function () {
+"use strict";
+
+/* SB_CONTENT:BEGIN — generated by tools/landing-build-data.js from
+   /root/work/spec/data/landing-content.json. Do not edit by hand. */
+  var SB_CONTENT = {
+    "translations": {
+      "en": {
+        "hero_title": "BUILDING AUTOMATED BUSINESS FOR YOU",
+        "hero_text": "We design automation systems that quietly take repetitive work off your team's plate — scoped from a written brief, delivered without long contracts.",
+        "cta_request": "Get a Free Quote",
+        "cta_explore": "Open sys.baby OS",
+        "explore_note": "Not screenshots — a working desktop, with a real client system in it, open and usable. Anything you type there stays in your browser.",
+        "hero_note": "No cost, no obligation — tell us what's slowing you down and we'll reply with honest options."
+      },
+      "ru": {
+        "hero_title": "СТРОИМ АВТОМАТИЗИРОВАННЫЙ БИЗНЕС ДЛЯ ВАС",
+        "hero_text": "Мы создаём системы автоматизации, которые забирают рутину у вашей команды — оценка по письменному брифу, без долгосрочных контрактов.",
+        "cta_request": "Бесплатная оценка проекта",
+        "cta_explore": "Открыть sys.baby OS",
+        "explore_note": "Не скриншоты — работающая среда, и настоящая клиентская система внутри открывается и работает. Всё, что вы там напишете, остаётся в вашем браузере.",
+        "hero_note": "Без оплаты и обязательств — расскажите, что тормозит вашу команду, и мы ответим честными вариантами."
+      },
+      "ee": {
+        "hero_title": "EHITAME TEILE AUTOMATISEERITUD ÄRI",
+        "hero_text": "Ehitame automatiseerimissüsteeme, mis võtavad korduva töö teie meeskonna käest — hindame lähteülesande põhjal, tarnime ilma pikaajalise lepinguta.",
+        "cta_request": "Tasuta hinnapakkumine",
+        "cta_explore": "Ava sys.baby OS",
+        "explore_note": "Mitte ekraanipildid — töötav töölaud, kus päris kliendisüsteem avaneb ja töötab. Kõik, mida sa seal kirjutad, jääb sinu brauserisse.",
+        "hero_note": "Tasuta ja siduma kohustusteta — kirjuta, mis teie tööd aeglustab, ja vastame ausate valikutega."
+      }
+    },
+    "desktopLabel": {
+      "en": "Desktop",
+      "ru": "Рабочий стол",
+      "ee": "Töölaud"
+    },
+    "localeMap": {
+      "en": "en-GB",
+      "ru": "ru-RU",
+      "ee": "et-EE"
+    },
+    "appData": {
+      "services": {
+        "en": {
+          "label": "Services",
+          "title": "What we build",
+          "intro": "Most of what we build starts as one of these.",
+          "items": [
+            "The quote a client asked for on Monday still isn't out on Wednesday, because it gets rebuilt by hand every time.",
+            "Appointments live in a notebook, two messaging apps and someone's memory — and one person is the only one who can find anything.",
+            "The same numbers get typed into three places, and the third one is always the wrong one.",
+            "Friday evening goes on reconciling delivery notes that arrived as photos, PDFs and messages.",
+            "If one of those is your week, that is the size of thing we start with: one process, documented, yours to keep when it is done. The most honest answer still isn't a list, though — it's the work itself.",
+            "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Open it and use it — it is running →<\/a>",
+            "We build on deliberately unexciting foundations: what a system is written in matters far less than whether it still runs in five years, and whether an ordinary developer can fix it when something upstream changes without warning."
+          ]
+        },
+        "ru": {
+          "label": "Услуги",
+          "title": "Что мы строим",
+          "intro": "Почти всё, что мы делаем, начинается с чего-то такого.",
+          "items": [
+            "Смету, которую клиент попросил в понедельник, отправляют в среду — потому что каждый раз её собирают заново вручную.",
+            "Запись клиентов живёт в тетради, двух мессенджерах и в чьей-то голове — и разобраться в этом может только один человек.",
+            "Одни и те же цифры вбивают в три места, и в третьем всегда ошибка.",
+            "Вечер пятницы уходит на сверку накладных, которые пришли фотографиями, PDF и сообщениями.",
+            "Если это про вашу неделю — с такого размера мы и начинаем: один процесс, с документацией, остаётся у вас. Хотя самый честный ответ по-прежнему не список, а сама работа.",
+            "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Откройте и поработайте — система живая →<\/a>",
+            "Мы намеренно строим на скучных основаниях: важно не то, на чём написана система, а то, будет ли она работать через пять лет и сможет ли обычный разработчик починить её, когда что-то вокруг изменится без предупреждения."
+          ]
+        },
+        "ee": {
+          "label": "Teenused",
+          "title": "Mida me ehitame",
+          "intro": "Enamik sellest, mida ehitame, algab ühest neist.",
+          "items": [
+            "Esmaspäeval küsitud pakkumine läheb välja kolmapäeval, sest see pannakse iga kord käsitsi uuesti kokku.",
+            "Broneeringud elavad vihikus, kahes sõnumirakenduses ja kellegi peas — ja neis orienteerub ainult üks inimene.",
+            "Samad numbrid tipitakse kolme kohta ja kolmandas on alati viga.",
+            "Reede õhtu kulub saatelehtede võrdlemisele, mis saabusid fotode, PDF-ide ja sõnumitena.",
+            "Kui see on sinu nädal, siis just sellest suurusest me alustamegi: üks protsess, dokumenteeritud, jääb sinu kätte. Kõige ausam vastus pole siiski nimekiri, vaid töö ise.",
+            "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Ava ja kasuta — see töötab →<\/a>",
+            "Ehitame teadlikult igavatele alustele: palju olulisem kui see, millega süsteem on kirjutatud, on see, kas ta töötab ka viie aasta pärast ja kas tavaline arendaja saab selle korda teha, kui midagi ümberringi ilma hoiatuseta muutub."
+          ]
+        }
+      },
+      "cases": {
+        "en": {
+          "label": "Cases",
+          "title": "Selected Work",
+          "intro": "We're a hands-on studio and client work stays confidential by default. Below is what we've built, shared at the level each client permits.",
+          "items": []
+        },
+        "ru": {
+          "label": "Кейсы",
+          "title": "Избранные проекты",
+          "intro": "Мы работаем с полным вовлечением, и работа клиентов конфиденциальна по умолчанию. Ниже то, что мы построили, на уровне, который разрешает клиент.",
+          "items": []
+        },
+        "ee": {
+          "label": "Juhtumid",
+          "title": "Valitud tööd",
+          "intro": "Oleme pühendunud stuudio ja klienditöö on vaikimisi konfidentsiaalne. Allpool on see, mille oleme ehitanud, iga kliendi lubatud ulatuses.",
+          "items": []
+        }
+      },
+      "about": {
+        "en": {
+          "label": "About",
+          "title": "About sys.baby",
+          "intro": "sys.baby is a founder-led systems studio. One person owns your result from the first conversation to the last deployment: you never coordinate a team, never manage subcontractors, never explain yourself twice to an account manager. Behind that person is a production system that brings in the right specialists for what the project actually needs — the accountability and speed of a boutique, with the execution capacity of a much larger firm.<\/p><p>We work mostly with small and mid-sized companies who feel the drag of manual, repetitive work but have never had it scoped or priced honestly before. That's the gap we try to close: real engineering, explained in plain language, at a starting price that doesn't require a boardroom decision.<\/p><p>Real engineering, to us, includes the part most quotes leave out: whether the system still makes sense to whoever opens it in three years. Documentation, plain architecture and a clean handover are not line items we add — they are the difference between owning an asset and owning a dependency.<\/p><p>Every relationship starts with a conversation, not a contract — we scope the actual problem from your brief before we promise anything. Based in Tallinn, working with clients across Europe.",
+          "items": null
+        },
+        "ru": {
+          "label": "О нас",
+          "title": "О sys.baby",
+          "intro": "sys.baby — студия систем под руководством основателя. За результат отвечает один человек, от первого разговора до последнего развёртывания: вам не нужно координировать команду, вести субподрядчиков или объяснять одно и то же аккаунт-менеджеру. За этим человеком стоит производственная система, подключающая тех специалистов, которых требует конкретный проект, — ответственность и скорость бутиковой студии при возможностях значительно более крупной компании.<\/p><p>Мы работаем в основном с небольшими и средними компаниями, которые чувствуют, как рутинная ручная работа тормозит бизнес, но никогда не получали честной оценки объёма и цены. Именно этот разрыв мы стараемся закрыть: реальная инженерная работа, объяснённая простым языком, по стартовой цене, для которой не нужно собирать совет директоров.<\/p><p>Настоящая инженерия для нас включает и то, что обычно остаётся за рамками сметы: будет ли система понятна тому, кто откроет её через три года. Документация, простая архитектура и аккуратная передача — не отдельные строки в счёте, а разница между активом и зависимостью.<\/p><p>Любое сотрудничество начинается с разговора, а не с контракта — мы оцениваем реальную задачу по вашему письменному брифу, прежде чем что-либо обещать. Базируемся в Таллинне, работаем с клиентами по всей Европе.",
+          "items": null
+        },
+        "ee": {
+          "label": "Meist",
+          "title": "sys.baby'st",
+          "intro": "sys.baby on asutaja juhitud süsteemistuudio. Tulemuse eest vastutab üks inimene, esimesest vestlusest viimase juurutuseni: sa ei pea koordineerima meeskonda, haldama alltöövõtjaid ega selgitama sama asja kliendihaldurile. Tema taga on tootmissüsteem, mis kaasab just need spetsialistid, keda projekt vajab — butiikstuudio vastutus ja kiirus koos oluliselt suurema ettevõtte teostusvõimekusega.<\/p><p>Töötame peamiselt väikeste ja keskmise suurusega ettevõtetega, kes tunnetavad korduva käsitsitöö koormust, kuid pole seda kunagi ausalt hinnatud või hinnastatud saanud. Just seda lõhet püüame katta: päris inseneritöö, seletatud lihtsas keeles, algushinnaga, mis ei nõua juhatuse otsust.<\/p><p>Päris inseneritöö tähendab meie jaoks ka seda, mis enamikust pakkumistest välja jääb: kas süsteem on arusaadav sellele, kes selle kolme aasta pärast avab. Dokumentatsioon, lihtne arhitektuur ja korralik üleandmine ei ole eraldi read arvel — need on vahe vara ja sõltuvuse vahel.<\/p><p>Igasugune koostöö algab vestlusest, mitte lepingust — hindame tegelikku probleemi lähteülesande põhjal, enne kui midagi tõotame. Asume Tallinnas, töötame klientidega üle Euroopa.",
+          "items": null
+        }
+      },
+      "contact": {
+        "en": {
+          "label": "Contact",
+          "title": "Get in Touch",
+          "intro": "Tell us about your business and the process you want to automate. First reply is a human, not a form confirmation — and it costs nothing to ask. Whichever way you reach out, expect a straight answer about whether we're a fit, not a sales script.",
+          "items": [
+            "Email — build@sys.baby",
+            "Message — the Chat app in the dock goes straight to the founder, written",
+            "Location — Tallinn, Estonia, working with clients across Europe",
+            "Response time — typically within one business day, often faster",
+            "Project brief — written, no obligation, no card required"
+          ]
+        },
+        "ru": {
+          "label": "Контакты",
+          "title": "Связаться с нами",
+          "intro": "Расскажите нам о вашем бизнесе и процессе, который нужно автоматизировать. Первым ответит человек, а не автоответчик — и это ничего не стоит. Каким бы способом вы ни написали, мы честно скажем, подходит ли ваша задача под наш формат, без продающего сценария.",
+          "items": [
+            "Email — build@sys.baby",
+            "Написать — панель Chat уходит напрямую основателю, письменно",
+            "Локация — Таллинн, Эстония, работаем с клиентами по всей Европе",
+            "Скорость ответа — обычно в течение 1 рабочего дня, часто быстрее",
+            "Проектный бриф — письменно, ни к чему не обязывает, без банковской карты"
+          ]
+        },
+        "ee": {
+          "label": "Kontakt",
+          "title": "Võta ühendust",
+          "intro": "Räägi meile oma ettevõttest ja protsessist, mida soovid automatiseerida. Esimesena vastab inimene, mitte automaatvastus — ja küsimine ei maksa midagi. Ükskõik millist kanalit kasutad, saad ausa vastuse, kas sinu ülesanne meile sobib, mitte müügijuttu.",
+          "items": [
+            "E-post — build@sys.baby",
+            "Kirjuta — doki Chat rakendus läheb otse asutajale, kirjalikult",
+            "Asukoht — Tallinn, Eesti, töötame klientidega üle Euroopa",
+            "Vastamisaeg — tavaliselt 1 tööpäeva jooksul, sageli kiiremini",
+            "Projekti lähteülesanne — kirjalik, ei kohusta millekski, pangakaarti pole vaja"
+          ]
+        }
+      },
+      "roi": {
+        "en": {
+          "anchor": "In one delivered system, preparing a customer quote went from about an hour to 15 minutes. We know because we worked in that trade before building it. The sliders below are a model; that is not.",
+          "label": "Payback",
+          "title": "Automation payback estimate",
+          "intro": "A deliberately cautious estimate — cautious enough that it will tell you when automating is not worth it yet. Move the sliders to match your team. Everything below is a range, because an honest estimate always is; we confirm real figures against your actual process before quoting.",
+          "hoursLabel": "Hours a week on repetitive work",
+          "hoursHint": "per person",
+          "peopleLabel": "People doing that work",
+          "peopleHint": "",
+          "rateLabel": "Loaded hourly cost",
+          "rateHint": "salary + taxes + overhead",
+          "resultLabel": "Time back, per month",
+          "resultSub": "Assuming a focused automation removes 30–50% of that specific task — not all of it, and not on day one.",
+          "valueLabel": "What that time is worth, per year",
+          "valueSub": "This is freed capacity, not cash in the bank. It only turns into money if those hours go to work you would otherwise pay for.",
+          "paybackLabel": "Typical payback",
+          "paybackSub": "Against a {BAND} project of this size.",
+          "tooSmall": "At this volume, automation probably is not worth it yet. Write to us anyway — we would rather say that plainly than sell you something.",
+          "hoursUnit": "h",
+          "monthsUnit": "months",
+          "monthUnit": "month",
+          "briefTeam": "Our team: {people} people, about {hours} h a week each on repetitive work (loaded cost around €{rate}/h).",
+          "briefPay": "From the payback estimate on your site: about {back} back per month, paying for itself in roughly {pay}.",
+          "briefSmall": "The payback estimate on your site suggests automation may not be worth it yet at our volume — telling you anyway, as invited.",
+          "briefAsk": "What we would want automated: ",
+          "cta": "Get a tailored proposal"
+        },
+        "ru": {
+          "anchor": "В одной сданной системе подготовка сметы сократилась примерно с часа до 15 минут. Мы знаем это, потому что работали в этом деле до того, как её построили. Ползунки ниже — модель; это не модель.",
+          "label": "Окупаемость",
+          "title": "Оценка окупаемости автоматизации",
+          "intro": "Намеренно осторожная оценка — настолько, что вполне может отговорить. Подвиньте ползунки под свою команду. Ниже везде диапазоны, потому что честная оценка всегда диапазон; точные цифры считаем по вашему реальному процессу до коммерческого предложения.",
+          "hoursLabel": "Часов в неделю на рутину",
+          "hoursHint": "на одного человека",
+          "peopleLabel": "Сколько человек этим занято",
+          "peopleHint": "",
+          "rateLabel": "Стоимость часа",
+          "rateHint": "зарплата + налоги + накладные",
+          "resultLabel": "Времени высвобождается в месяц",
+          "resultSub": "При условии, что точечная автоматизация снимает 30–50% именно этой задачи — не всю работу и не с первого дня.",
+          "valueLabel": "Сколько это время стоит в год",
+          "valueSub": "Это высвобожденная ёмкость, а не деньги в кассе. Деньгами она станет только если эти часы уйдут на работу, за которую вы иначе платите.",
+          "paybackLabel": "Обычная окупаемость",
+          "paybackSub": "При проекте такого размера — {BAND}.",
+          "tooSmall": "При таких объёмах автоматизация, скорее всего, пока не окупается. Напишите всё равно — мы прямо так и скажем, а не будем продавать.",
+          "hoursUnit": "ч",
+          "monthsUnit": "мес.",
+          "monthUnit": "мес.",
+          "briefTeam": "Наша команда: {people} чел., примерно {hours} ч в неделю каждый на рутине (полная стоимость часа около €{rate}).",
+          "briefPay": "По оценке окупаемости на вашем сайте: около {back} возвращается в месяц, окупаемость примерно {pay}.",
+          "briefSmall": "Оценка окупаемости на вашем сайте говорит, что при нашем объёме автоматизация пока может не окупиться — пишу всё равно, как вы и предложили.",
+          "briefAsk": "Что хотелось бы автоматизировать: ",
+          "cta": "Запросить предложение"
+        },
+        "ee": {
+          "anchor": "Ühes üleantud süsteemis lühenes hinnapakkumise koostamine umbes tunnist 15 minutini. Teame seda, sest töötasime selles valdkonnas enne selle ehitamist. Allolevad liugurid on mudel; see ei ole.",
+          "label": "Tasuvus",
+          "title": "Automatiseerimise tasuvuse hinnang",
+          "intro": "Teadlikult ettevaatlik hinnang — nii ettevaatlik, et see ütleb ka siis, kui automatiseerimine veel ei tasu ära. Liiguta liugureid oma meeskonna järgi. Kõik allpool on vahemikud, sest aus hinnang ongi alati vahemik; täpsed numbrid arvutame sinu tegeliku protsessi pealt enne pakkumist.",
+          "hoursLabel": "Tunde nädalas korduval tööl",
+          "hoursHint": "inimese kohta",
+          "peopleLabel": "Mitu inimest seda teeb",
+          "peopleHint": "",
+          "rateLabel": "Tunni kogukulu",
+          "rateHint": "palk + maksud + üldkulud",
+          "resultLabel": "Vabanev aeg kuus",
+          "resultSub": "Eeldusel, et fokuseeritud automatiseerimine võtab ära 30–50% just sellest ülesandest — mitte kogu tööd ja mitte esimesest päevast.",
+          "valueLabel": "Selle aja väärtus aastas",
+          "valueSub": "See on vabanenud võimekus, mitte raha kassas. Rahaks saab see siis, kui need tunnid lähevad tööle, mille eest muidu maksaksid.",
+          "paybackLabel": "Tavaline tasuvusaeg",
+          "paybackSub": "Selle suurusega {BAND} projekti kohta.",
+          "tooSmall": "Sellises mahus ilmselt veel ei tasu automatiseerida. Kirjuta ikkagi — ütleme seda otse, mitte ei müü sulle midagi.",
+          "hoursUnit": "h",
+          "monthsUnit": "kuud",
+          "monthUnit": "kuu",
+          "briefTeam": "Meie tiim: {people} inimest, igaüks umbes {hours} h nädalas korduval tööl (koormatud tunnihind umbes €{rate}).",
+          "briefPay": "Teie lehe tasuvushinnangu järgi: umbes {back} kuus tagasi, tasub end ära umbes {pay} jooksul.",
+          "briefSmall": "Teie lehe tasuvushinnang viitab, et meie mahu juures ei pruugi automatiseerimine veel end ära tasuda — kirjutan siiski, nagu soovitasite.",
+          "briefAsk": "Mida sooviksime automatiseerida: ",
+          "cta": "Küsi pakkumist"
+        }
+      },
+      "chat": {
+        "en": {
+          "label": "Chat",
+          "title": "Message us",
+          "agent": "sys.baby",
+          "status": "Written · replies by email",
+          "note": "We reply within 1 business day",
+          "placeholder": "Type a message…",
+          "send": "Send",
+          "typing": "sending…",
+          "welcome": "Tell us what's eating up your team's time. This goes straight to the founder — we reply by email, usually within a business day. No pitch, no bot.",
+          "askEmail": "One thing first — what email should the reply go to? Add it above and send again.",
+          "failMsg": "Couldn't send automatically — please email build@sys.baby directly and it will reach the founder.",
+          "emailPh": "Your email — so the founder can reply",
+          "replies": [
+            "Thanks — this went straight to the founder. You'll get a written reply by email within 1 business day, with honest options rather than a sales script."
+          ]
+        },
+        "ru": {
+          "label": "Чат",
+          "title": "Написать нам",
+          "agent": "sys.baby",
+          "status": "Письменно · ответ на почту",
+          "note": "Отвечаем в течение 1 рабочего дня",
+          "placeholder": "Введите сообщение…",
+          "send": "Отправить",
+          "typing": "отправка…",
+          "welcome": "Расскажите, что отнимает время у вашей команды. Это уходит напрямую основателю — ответим на почту, обычно в течение рабочего дня. Без продаж и ботов.",
+          "askEmail": "Один момент — на какую почту прислать ответ? Укажите её выше и отправьте ещё раз.",
+          "failMsg": "Не удалось отправить автоматически — напишите на build@sys.baby, письмо дойдёт до основателя.",
+          "emailPh": "Ваша почта — чтобы основатель мог ответить",
+          "replies": [
+            "Спасибо — сообщение ушло напрямую основателю. Ответ придёт на почту в течение 1 рабочего дня, с честными вариантами, а не скриптом продаж."
+          ]
+        },
+        "ee": {
+          "label": "Vestlus",
+          "title": "Kirjuta meile",
+          "agent": "sys.baby",
+          "status": "Kirjalikult · vastame e-postiga",
+          "note": "Vastame 1 tööpäeva jooksul",
+          "placeholder": "Kirjuta sõnum…",
+          "send": "Saada",
+          "typing": "saadan…",
+          "welcome": "Kirjelda, mis võtab su meeskonna aega. See läheb otse asutajale — vastame e-postiga, tavaliselt tööpäeva jooksul. Ilma müügijutu ja botita.",
+          "askEmail": "Üks asi enne — millisele e-postile vastus saata? Lisa see ülal ja saada uuesti.",
+          "failMsg": "Automaatne saatmine ebaõnnestus — kirjuta palun build@sys.baby, kiri jõuab asutajani.",
+          "emailPh": "Sinu e-post — et asutaja saaks vastata",
+          "replies": [
+            "Aitäh — sõnum läks otse asutajale. Vastus tuleb e-postiga 1 tööpäeva jooksul, ausate valikutega, mitte müügiskriptiga."
+          ]
+        }
+      },
+      "order": {
+        "en": {
+          "label": "Order",
+          "title": "Start Your Build",
+          "intro": "Pick a starting point.",
+          "packages": [
+            {
+              "id": "starter",
+              "name": "Configured system",
+              "priceId": "starter",
+              "period": "one week, fixed date",
+              "badge": "Fastest way to have something real",
+              "features": [
+                "A working system for your trade, configured from one we have already built",
+                "Quotes or estimates, priced documents, signature, payment request, archive",
+                "Delivered in one week on a fixed date, for a fixed price",
+                "You own the source. No subscription, no external service to depend on",
+                "You can see it running for another business before you decide"
+              ]
+            },
+            {
+              "id": "growth",
+              "name": "Extended system",
+              "priceId": "growth",
+              "period": "2–4 weeks",
+              "badge": null,
+              "features": [
+                "Everything in the configured system, plus your own process",
+                "A second document type, an integration, or a workflow that is specific to you",
+                "Your branding on every document a customer receives",
+                "Written handover so another developer can take it over",
+                "30 days of support after launch"
+              ]
+            },
+            {
+              "id": "enterprise",
+              "name": "Business system",
+              "priceId": "enterprise",
+              "period": "scoped, staged",
+              "badge": null,
+              "features": [
+                "Multiple entities, roles, and documents that carry legal weight",
+                "Tax treatment implemented for your jurisdiction, not approximated",
+                "Records that stay correct years later — documents frozen as issued",
+                "Backup, restore, and an accountant export that reconciles",
+                "The engineer who builds it stays with the project through every phase"
+              ]
+            }
+          ],
+          "guarantee": "<strong>How pricing works:<\/strong> these are starting points, not invoices — most projects land at or near the number shown. We confirm the exact scope and final price together in a written proposal, favoring the smallest build that solves the actual problem, and never pad a quote to look more impressive. No card, no obligation, no pressure.",
+          "steps": [
+            "You describe what takes the time. A reply comes within one working day, from the founder.",
+            "A written scope: what would be built, a fixed price, a fixed date. Or an honest answer that it is not worth building yet.",
+            "You decide with that in hand. Nothing is owed for the scope, and nothing starts until you say so.",
+            "One week for a configured system, staged for a larger one. The code and the accounts are yours from the first week."
+          ],
+          "stepsTitle": "What happens after you write",
+          "after": "After that: the system is yours and keeps running. No subscription to lapse, nothing of yours inside our systems, and a written handover so any engineer can take it further — us, yours, or somebody else's.",
+          "ownership": "<strong>What you own:<\/strong> the code, accounts and access are yours from the first week — nothing is held inside our systems.<br>The work is documented as it is built, so another engineer could pick it up without archaeology.<br>Bring in another developer — yours or anyone's — and we hand over and answer their questions. That is part of the job, not a favour, and it does not depend on why you are leaving.<br>One person stays accountable for your result; behind that person is a production system assembled for the job, not a single pair of hands.<br>The first project pays for the foundation, and whatever is built on top of it later costs less, because nobody starts from zero twice.",
+          "form": {
+            "name": "Full name",
+            "email": "Email",
+            "phone": "Phone",
+            "task": "Describe your business & task",
+            "namePh": "Jane Smith",
+            "emailPh": "you@company.com",
+            "phonePh": "+372 5xx xxxx",
+            "taskHelp": "Most useful: what happens today, how often, where it lives now (notebook, spreadsheet, email) — and what should come out the other end.",
+            "taskPh": "e.g. every quote gets rebuilt by hand and takes two days to go out",
+            "selected": "Starting point",
+            "submit": "Request a proposal",
+            "sending": "Sending…",
+            "successTitle": "Received — it is with the founder, not a queue.",
+            "successMeta": "Reply goes to {email} · starting point noted: {package}",
+            "successNext": "Your brief gets scoped against your actual process before any number is quoted. If the honest answer is a smaller build — or that it is not worth doing yet — that is the answer you will get. Usually within one business day.",
+            "successFix": "Wrong address, or forgot something? Write to build@sys.baby — it reaches the same person.",
+            "success": "Request sent — we'll reach out within 1 business day with your tailored proposal.",
+            "error": "Couldn't send automatically — please email build@sys.baby directly.",
+            "errTitle": "That didn't send — but nothing is lost.",
+            "errBody": "Automatic sending failed on our side, not yours. Your brief is still in the form below. One tap opens it in your mail app, already written.",
+            "errMail": "Send it by email",
+            "errCopy": "Copy the brief",
+            "errCopied": "Copied",
+            "errKept": "Your text stays here either way — nothing you wrote has been cleared.",
+            "mailSubject": "Project brief",
+            "hint": "This sends a project brief, no obligation. Nothing is charged today. Your details reach the founder by email, are never sold or used for marketing, and are deleted on request — just ask."
+          }
+        },
+        "ru": {
+          "label": "Заказ",
+          "title": "Начать проект",
+          "intro": "Выберите отправную точку.",
+          "packages": [
+            {
+              "id": "starter",
+              "name": "Настроенная система",
+              "priceId": "starter",
+              "period": "неделя, фиксированная дата",
+              "badge": "Быстрее всего получить работающее",
+              "features": [
+                "Рабочая система для вашего дела, настроенная из уже построенной",
+                "Сметы или предложения, документы с ценами, подпись, запрос оплаты, архив",
+                "Неделя, фиксированная дата, фиксированная цена",
+                "Исходный код у вас. Ни подписки, ни внешнего сервиса, от которого зависите",
+                "До решения можно посмотреть, как она работает у другого бизнеса"
+              ]
+            },
+            {
+              "id": "growth",
+              "name": "Расширенная система",
+              "priceId": "growth",
+              "period": "2–4 недели",
+              "badge": null,
+              "features": [
+                "Всё из настроенной системы плюс ваш собственный процесс",
+                "Второй тип документа, интеграция или сценарий, специфичный для вас",
+                "Ваш фирменный стиль на каждом документе, который получает клиент",
+                "Письменная передача, чтобы систему мог подхватить другой разработчик",
+                "30 дней поддержки после запуска"
+              ]
+            },
+            {
+              "id": "enterprise",
+              "name": "Система бизнеса",
+              "priceId": "enterprise",
+              "period": "по объёму, поэтапно",
+              "badge": null,
+              "features": [
+                "Несколько сущностей, роли и документы, имеющие юридический вес",
+                "Налоговый режим реализован для вашей юрисдикции, а не приблизительно",
+                "Записи, остающиеся верными годы спустя — документы заморожены как выданы",
+                "Резервная копия, восстановление и выгрузка бухгалтеру, которая сходится",
+                "Инженер, который строит систему, ведёт проект на всех этапах"
+              ]
+            }
+          ],
+          "guarantee": "<strong>Как формируется цена:<\/strong> это отправная точка, а не счёт — большинство проектов укладываются в указанную сумму или близко к ней. Точный объём и итоговую цену мы согласуем вместе в письменном предложении, выбираем минимально достаточное решение задачи и никогда не раздуваем смету для солидности. Без карты, без обязательств, без давления.",
+          "steps": [
+            "Вы описываете, что отнимает время. Ответ приходит в течение рабочего дня, от основателя.",
+            "Письменный объём работ: что будет построено, фиксированная цена, фиксированная дата. Или честный ответ, что делать пока не стоит.",
+            "Вы решаете, имея это на руках. За объём работ ничего не должны, и ничего не начинается, пока вы не скажете.",
+            "Неделя для настроенной системы, поэтапно для крупной. Код и аккаунты ваши с первой недели."
+          ],
+          "stepsTitle": "Что происходит после того, как вы напишете",
+          "after": "Дальше: система ваша и продолжает работать. Нет подписки, которая закончится, ничего вашего не лежит в наших системах, а передача написана так, чтобы любой инженер мог продолжить — мы, ваш или чей-то ещё.",
+          "ownership": "<strong>Что принадлежит вам:<\/strong> код, аккаунты и доступы — ваши с первой недели, ничего не остаётся запертым в наших системах.<br>Работа документируется по ходу, чтобы её мог подхватить другой инженер без раскопок.<br>Приводите другого разработчика — своего или любого — мы передаём работу и отвечаем на его вопросы. Это часть работы, а не одолжение, и не зависит от того, почему вы уходите.<br>За результат отвечает один человек; за этим человеком — производственная система, собранная под задачу, а не одна пара рук.<br>Первый проект оплачивает основание, а всё, что достраивается сверху позже, стоит меньше, потому что с нуля дважды никто не начинает.",
+          "form": {
+            "name": "Имя и фамилия",
+            "email": "Email",
+            "phone": "Телефон",
+            "task": "Опишите бизнес и задачу",
+            "namePh": "Иван Иванов",
+            "emailPh": "you@company.com",
+            "phonePh": "+372 5xx xxxx",
+            "taskHelp": "Полезнее всего: что происходит сейчас, как часто, где это живёт сегодня (тетрадь, таблица, почта) — и что должно получаться на выходе.",
+            "taskPh": "например: каждую смету собираем вручную, и она уходит только через два дня",
+            "selected": "Отправная точка",
+            "submit": "Запросить предложение",
+            "sending": "Отправка…",
+            "successTitle": "Получено — письмо у основателя, а не в очереди.",
+            "successMeta": "Ответ придёт на {email} · отправная точка: {package}",
+            "successNext": "Бриф разбирается по вашему реальному процессу до того, как называется цифра. Если честный ответ — что объём меньше или что делать пока не стоит, вы получите именно его. Обычно в течение рабочего дня.",
+            "successFix": "Ошиблись адресом или что-то забыли? Напишите на build@sys.baby — попадёт к тому же человеку.",
+            "success": "Заявка отправлена — свяжемся в течение 1 рабочего дня с предложением.",
+            "error": "Не удалось отправить автоматически — напишите на build@sys.baby.",
+            "errTitle": "Не отправилось — но ничего не потеряно.",
+            "errBody": "Автоматическая отправка не сработала на нашей стороне, не на вашей. Ваш бриф остался в форме ниже. Одно нажатие откроет его в почте — уже написанным.",
+            "errMail": "Отправить письмом",
+            "errCopy": "Скопировать бриф",
+            "errCopied": "Скопировано",
+            "errKept": "Текст остаётся здесь в любом случае — ничего из написанного не стёрлось.",
+            "mailSubject": "Проектный бриф",
+            "hint": "Это отправляет проектный бриф, ни к чему не обязывает. Сегодня оплата не требуется. Ваши данные приходят по почте основателю, не продаются и не используются для рассылок, удаляются по запросу — просто напишите."
+          }
+        },
+        "ee": {
+          "label": "Tellimus",
+          "title": "Alusta projekti",
+          "intro": "Vali lähtepunkt.",
+          "packages": [
+            {
+              "id": "starter",
+              "name": "Seadistatud süsteem",
+              "priceId": "starter",
+              "period": "üks nädal, kindel kuupäev",
+              "badge": "Kiireim viis saada midagi päris",
+              "features": [
+                "Töötav süsteem teie valdkonnale, seadistatud juba ehitatud süsteemist",
+                "Hinnapakkumised, hinnastatud dokumendid, allkiri, maksenõue, arhiiv",
+                "Üks nädal, kindel kuupäev, kindel hind",
+                "Lähtekood kuulub teile. Ei tellimust ega välist teenust, millest sõltuda",
+                "Enne otsustamist näete, kuidas see teise ettevõtte juures töötab"
+              ]
+            },
+            {
+              "id": "growth",
+              "name": "Laiendatud süsteem",
+              "priceId": "growth",
+              "period": "2–4 nädalat",
+              "badge": null,
+              "features": [
+                "Kõik seadistatud süsteemist ja lisaks teie enda protsess",
+                "Teine dokumenditüüp, integratsioon või just teile omane töövoog",
+                "Teie kaubamärk igal dokumendil, mille klient saab",
+                "Kirjalik üleandmine, et teine arendaja saaks selle üle võtta",
+                "30 päeva tuge pärast käivitamist"
+              ]
+            },
+            {
+              "id": "enterprise",
+              "name": "Ärisüsteem",
+              "priceId": "enterprise",
+              "period": "mahu järgi, etapiviisiline",
+              "badge": null,
+              "features": [
+                "Mitu olemit, rollid ja juriidilise kaaluga dokumendid",
+                "Maksukäsitlus teie jurisdiktsiooni jaoks, mitte ligikaudselt",
+                "Kirjed, mis on õiged ka aastate pärast — dokumendid külmutatud väljastamisel",
+                "Varukoopia, taastamine ja raamatupidajale eksport, mis klapib",
+                "Insener, kes süsteemi ehitab, veab projekti kõigis etappides"
+              ]
+            }
+          ],
+          "guarantee": "<strong>Kuidas hind kujuneb:<\/strong> need on lähtepunktid, mitte arved — enamik projekte jääb näidatud summa lähedale. Täpse mahu ja lõpphinna lepime kokku kirjalikus pakkumises, eelistame väikseimat lahendust, mis probleemi päriselt lahendab, ega paisuta kunagi pakkumist muljetavaldavamaks. Ilma kaardita, ilma kohustuseta, ilma survestamiseta.",
+          "steps": [
+            "Kirjeldate, mis aega võtab. Vastus tuleb ühe tööpäeva jooksul, asutajalt.",
+            "Kirjalik maht: mis ehitatakse, kindel hind, kindel kuupäev. Või aus vastus, et praegu pole mõtet.",
+            "Otsustate see käes. Mahu eest ei võlgne midagi ja miski ei alga enne, kui ütlete.",
+            "Nädal seadistatud süsteemi jaoks, etapiti suurema puhul. Kood ja kontod on teie omad esimesest nädalast."
+          ],
+          "stepsTitle": "Mis juhtub pärast seda, kui kirjutate",
+          "after": "Edasi: süsteem on teie oma ja töötab edasi. Pole tellimust, mis lõpeb, meie süsteemides pole midagi teie omast, ja üleandmine on kirjas nii, et iga insener saab jätkata — meie, teie oma või keegi kolmas.",
+          "ownership": "<strong>Mis kuulub sulle:<\/strong> kood, kontod ja ligipääsud on sinu omad esimesest nädalast — miski ei jää meie süsteemidesse lukku.<br>Töö dokumenteeritakse käigu pealt, nii et teine insener saaks selle üle võtta ilma arheoloogiata.<br>Toote sisse teise arendaja — oma või kellegi teise — anname töö üle ja vastame ta küsimustele. See on osa tööst, mitte teene, ega sõltu sellest, miks lahkute.<br>Tulemuse eest vastutab üks inimene; tema taga on ülesande jaoks kokku pandud tootmissüsteem, mitte üks paar käsi.<br>Esimene projekt maksab kinni vundamendi ja kõik, mis hiljem sellele peale ehitatakse, maksab vähem, sest nullist ei alusta keegi kaks korda.",
+          "form": {
+            "name": "Nimi",
+            "email": "E-post",
+            "phone": "Telefon",
+            "task": "Kirjelda oma äri ja ülesannet",
+            "namePh": "Jaan Tamm",
+            "emailPh": "you@company.com",
+            "phonePh": "+372 5xx xxxx",
+            "taskHelp": "Kõige kasulikum: mis praegu toimub, kui tihti, kus see täna elab (vihik, tabel, e-post) — ja mis peaks teisest otsast välja tulema.",
+            "taskPh": "nt iga pakkumine pannakse käsitsi uuesti kokku ja läheb välja alles kahe päeva pärast",
+            "selected": "Lähtepunkt",
+            "submit": "Küsi pakkumist",
+            "sending": "Saadan…",
+            "successTitle": "Saadud — kiri on asutaja käes, mitte järjekorras.",
+            "successMeta": "Vastus tuleb aadressile {email} · lähtepunkt: {package}",
+            "successNext": "Lähteülesanne vaadatakse läbi teie tegeliku protsessi põhjal, enne kui ühtegi numbrit nimetatakse. Kui aus vastus on väiksem maht — või et praegu veel ei tasu — saate just selle. Tavaliselt ühe tööpäeva jooksul.",
+            "successFix": "Vale aadress või jäi midagi ütlemata? Kirjuta build@sys.baby — jõuab sama inimeseni.",
+            "success": "Päring saadetud — võtame ühendust 1 tööpäeva jooksul koos pakkumisega.",
+            "error": "Automaatne saatmine ebaõnnestus — kirjuta build@sys.baby.",
+            "errTitle": "Ei saatnud — aga midagi pole kadunud.",
+            "errBody": "Automaatne saatmine ebaõnnestus meie, mitte teie poolel. Teie kirjeldus on endiselt allolevas vormis. Üks puudutus avab selle e-posti rakenduses, juba valmis kirjutatuna.",
+            "errMail": "Saada e-postiga",
+            "errCopy": "Kopeeri kirjeldus",
+            "errCopied": "Kopeeritud",
+            "errKept": "Tekst jääb siia igal juhul — midagi kirjutatust pole kustutatud.",
+            "mailSubject": "Projekti kirjeldus",
+            "hint": "See saadab projekti lähteülesande, ei kohusta millekski. Täna makset ei toimu. Sinu andmed jõuavad e-postiga asutajani, neid ei müüda ega kasutata turunduseks ning need kustutatakse soovi korral — kirjuta lihtsalt."
+          }
+        }
+      }
+    },
+    "ccLabels": {
+      "en": {
+        "panelLabel": "Preferences",
+        "sound": "Sound",
+        "motion": "Reduce Motion",
+        "autohide": "Auto-hide Dock",
+        "dnd": "Do Not Disturb",
+        "volumeCaption": "Notification volume",
+        "brightnessCaption": "Brightness"
+      },
+      "ru": {
+        "panelLabel": "Настройки",
+        "sound": "Звук",
+        "motion": "Меньше анимации",
+        "autohide": "Скрывать панель",
+        "dnd": "Не беспокоить",
+        "volumeCaption": "Громкость уведомлений",
+        "brightnessCaption": "Яркость"
+      },
+      "ee": {
+        "panelLabel": "Eelistused",
+        "sound": "Heli",
+        "motion": "Vähem animatsiooni",
+        "autohide": "Peida dokk",
+        "dnd": "Mind ei tohi segada",
+        "volumeCaption": "Teavituse helitugevus",
+        "brightnessCaption": "Heledus"
+      }
+    },
+    "cmdkLabels": {
+      "en": {
+        "triggerLabel": "Quick actions"
+      },
+      "ru": {
+        "triggerLabel": "Быстрые команды"
+      },
+      "ee": {
+        "triggerLabel": "Kiirkäsklused"
+      }
+    },
+    "bootStatusStops": [
+      {
+        "at": 0,
+        "msg": "Initializing kernel"
+      },
+      {
+        "at": 14,
+        "msg": "Mounting encrypted filesystem"
+      },
+      {
+        "at": 30,
+        "msg": "Verifying system integrity"
+      },
+      {
+        "at": 46,
+        "msg": "Allocating memory"
+      },
+      {
+        "at": 60,
+        "msg": "Establishing secure connection"
+      },
+      {
+        "at": 76,
+        "msg": "Authenticating session"
+      },
+      {
+        "at": 90,
+        "msg": "Finalizing interface"
+      },
+      {
+        "at": 98,
+        "msg": "Ready"
+      }
+    ],
+    "portfolioCaseLabels": {
+      "en": {
+        "reported": "First-hand — we worked in this trade before building the system.",
+        "built": "Built",
+        "withheld": "Client name withheld at their request.",
+        "notasked": "Named on publication — permission not yet requested."
+      },
+      "ru": {
+        "reported": "Из первых рук — мы работали в этом деле до того, как построили систему.",
+        "built": "Сделано",
+        "withheld": "Имя клиента не раскрывается по его просьбе.",
+        "notasked": "Имя будет названо после согласия — разрешение пока не запрашивалось."
+      },
+      "ee": {
+        "reported": "Otsesest kogemusest — töötasime selles valdkonnas enne süsteemi ehitamist.",
+        "built": "Tehtud",
+        "withheld": "Kliendi nimi on tema soovil avaldamata.",
+        "notasked": "Nimi avaldatakse loal — luba pole veel küsitud."
+      }
+    },
+    "portfolioCaseLink": {
+      "en": "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>See a real system we've shipped &rarr;<\/a>",
+      "ru": "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Посмотреть реальную систему, которую мы сделали &rarr;<\/a>",
+      "ee": "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Vaata reaalset süsteemi, mille ehitasime &rarr;<\/a>"
+    },
+    "heroProofSourceLine": {
+      "en": "First-hand — we worked in this trade before building the system.",
+      "ru": "Из первых рук — мы работали в этом деле до того, как построили систему.",
+      "ee": "Otsesest kogemusest — töötasime selles valdkonnas enne süsteemi ehitamist."
+    },
+    "casesOpenPlatformLabel": {
+      "en": "Open the live platform →",
+      "ru": "Открыть живую платформу →",
+      "ee": "Ava elav platvorm →"
+    },
+    "attention": {
+      "_note": "Принцип знакомств (MASTER PROMPT 2 §3). Тихий слой, не CTA. Никогда не называть это referral/affiliate/партнёрской программой/комиссией. Конкретный процент не публикуется намеренно.",
+      "en": {
+        "heading": "We don’t buy attention.",
+        "body": "Nothing here was advertised. Work arrives because someone who used it said so. If a project begins because you made the introduction, there is a reward for it — agreed between us before the work starts, never afterwards.",
+        "action": "Someone this would fit?",
+        "who": "Who should we thank?",
+        "whoPlaceholder": "Your name or email",
+        "copy": "Copy link",
+        "copied": "Copied",
+        "fine": "The link carries only what you typed above. There is no account and nothing is stored on our side until someone actually writes to us."
+      },
+      "ru": {
+        "heading": "Мы не покупаем внимание.",
+        "body": "Здесь ничего не рекламировалось. Работа приходит потому, что о ней сказал тот, кто ею пользовался. Если проект начинается по вашему знакомству, за него предусмотрено вознаграждение — условия обсуждаются до начала работы, а не после.",
+        "action": "Знаете, кому это подошло бы?",
+        "who": "Кого благодарить?",
+        "whoPlaceholder": "Ваше имя или почта",
+        "copy": "Скопировать ссылку",
+        "copied": "Скопировано",
+        "fine": "Ссылка несёт только то, что вы вписали выше. Никакого аккаунта, и на нашей стороне ничего не хранится, пока кто-нибудь действительно не напишет."
+      },
+      "ee": {
+        "heading": "Me ei osta tähelepanu.",
+        "body": "Siin pole midagi reklaamitud. Töö tuleb sellepärast, et keegi, kes seda kasutas, sellest rääkis. Kui projekt algab teie tutvustusest, on selle eest tasu — tingimused lepitakse kokku enne töö algust, mitte pärast.",
+        "action": "Tead kedagi, kellele see sobiks?",
+        "who": "Keda tänada?",
+        "whoPlaceholder": "Sinu nimi või e-post",
+        "copy": "Kopeeri link",
+        "copied": "Kopeeritud",
+        "fine": "Link kannab ainult seda, mille sa ülal kirjutasid. Kontot pole ja meie poolel ei salvestata midagi enne, kui keegi tegelikult kirjutab."
+      }
+    },
+    "care": {
+      "_note": "SYS CARE. Не хостинг и не подписка: система работает независимо от участия. Никаких гарантий времени ответа и процентов доступности — их не существует. Цены «от», без таблицы сравнения.",
+      "en": {
+        "title": "Staying involved",
+        "lead": "Optional, and it changes nothing about ownership. The system runs whether we are involved or not — this is about keeping it running well.",
+        "careName": "SYS CARE",
+        "careFrom": "from €49 / month",
+        "careBody": "Availability watched, backups kept, updates applied, and small changes done as they come up. The people who built the system are the people looking after it.",
+        "proName": "SYS CARE PRO",
+        "proFrom": "from €129 / month",
+        "proBody": "The same, with room for real ongoing work: measuring what the system actually does, tuning it, and adding automation as the business changes.",
+        "foot": "Start or stop whenever. Nothing here is a condition of owning what we built."
+      },
+      "ru": {
+        "title": "Если мы остаёмся рядом",
+        "lead": "По желанию, и на владение это не влияет никак. Система работает независимо от того, участвуем мы или нет, — речь о том, чтобы она работала хорошо.",
+        "careName": "SYS CARE",
+        "careFrom": "от €49 / месяц",
+        "careBody": "Следим за доступностью, держим резервные копии, ставим обновления и делаем небольшие правки по мере появления. За системой присматривают те же люди, что её построили.",
+        "proName": "SYS CARE PRO",
+        "proFrom": "от €129 / месяц",
+        "proBody": "То же самое плюс место для настоящей работы: измеряем, что система реально делает, донастраиваем её и добавляем автоматизацию по мере изменений в бизнесе.",
+        "foot": "Начать и прекратить можно в любой момент. Ничто из этого не является условием владения тем, что мы построили."
+      },
+      "ee": {
+        "title": "Kui jätkame koos",
+        "lead": "Vabatahtlik ja omandit see kuidagi ei muuda. Süsteem töötab olenemata sellest, kas oleme kaasatud — jutt on sellest, et see töötaks hästi.",
+        "careName": "SYS CARE",
+        "careFrom": "alates €49 / kuus",
+        "careBody": "Jälgime kättesaadavust, hoiame varukoopiaid, paigaldame uuendusi ja teeme väikeseid muudatusi siis, kui neid vaja läheb. Süsteemi eest hoolitsevad samad inimesed, kes selle ehitasid.",
+        "proName": "SYS CARE PRO",
+        "proFrom": "alates €129 / kuus",
+        "proBody": "Sama, lisaks ruumi päris tööks: mõõdame, mida süsteem tegelikult teeb, häälestame seda ja lisame automatiseerimist, kui äri muutub.",
+        "foot": "Alusta ja lõpeta millal tahes. Miski siin pole tingimuseks sellele, et ehitatu kuulub sulle."
+      }
+    },
+    "dockHintLabel": {
+      "en": "applications",
+      "ru": "приложения",
+      "ee": "rakendused"
+    },
+    "cmdkEmptyLabel": {
+      "en": "No matching commands",
+      "ru": "Совпадений не найдено",
+      "ee": "Vasteid ei leitud"
+    },
+    "cmdkLangSwitchLabel": {
+      "en": "Switch language",
+      "ru": "Сменить язык",
+      "ee": "Vaheta keelt"
+    },
+    "seenSystemsLineTemplates": {
+      "_comment": "Built by concatenation in source; {names} = portfolio view names joined with ', '.",
+      "en": "I looked at: {names}.",
+      "ru": "Смотрел: {names}.",
+      "ee": "Vaatasin: {names}."
+    },
+    "staticStrings": {
+      "documentTitle": "sys.baby — Building Automated Business for You",
+      "wordmark": "sys\u200A.\u200Ababy",
+      "wordmarkNote": "'sys' + U+200A HAIR SPACE + '.' + U+200A HAIR SPACE + 'baby' (source: sys&#8202;.&#8202;baby). Same string in boot screen and topbar. Never translated.",
+      "boot": {
+        "barLabel": "STARTING SYSTEM",
+        "footLeft": "KERNEL 4.2.1",
+        "footRight": "SECURE BOOT",
+        "pctInitial": "0%"
+      },
+      "topbar": {
+        "appNameDefault": "Desktop",
+        "clockPlaceholder": "00:00",
+        "themeDark": "Dark",
+        "themeLight": "Light",
+        "themeButtonsNote": "'Dark'/'Light' labels are never translated.",
+        "flags": {
+          "ee": "🇪🇪",
+          "en": "🇬🇧",
+          "ru": "🇷🇺"
+        }
+      },
+      "cmdk": {
+        "inputPlaceholder": "Type a command or search…",
+        "esc": "ESC",
+        "hints": [
+          "↑↓ navigate",
+          "↵ select",
+          "esc close"
+        ],
+        "hintsNote": "Hint bar strings are never translated.",
+        "themeToDark": "Switch to Dark mode",
+        "themeToLight": "Switch to Light mode",
+        "themeSub": "Toggle appearance",
+        "langSub": "EN · RU · EE",
+        "groupNote": "Theme/language action titles+subs except the language title are never translated."
+      },
+      "chat": {
+        "avatarLetter": "A"
+      },
+      "form": {
+        "orderSubjectTemplate": "New project brief — sys.baby ({packageLabel})",
+        "chatSubject": "sys.baby chat message"
+      },
+      "contactEmail": "build@sys.baby",
+      "formEndpoint": "https://formsubmit.co/ajax/build@sys.baby",
+      "ariaLabels": {
+        "_comment": "Static English aria/title attributes in the HTML shell; never translated.",
+        "cmdkTrigger": "Open command palette",
+        "controlCenter": "Control Center",
+        "dockNav": "Applications",
+        "dockApps": {
+          "services": "Services",
+          "cases": "Cases",
+          "about": "About",
+          "contact": "Contact",
+          "roi": "ROI Calculator",
+          "chat": "Message us",
+          "order": "Order"
+        },
+        "dockHint": "Show dock"
+      },
+      "ccToggleTitles": {
+        "sound": "Play a sound when a new chat reply arrives",
+        "motion": "Calm down animations and background motion",
+        "autohide": "Automatically hide the dock when not in use",
+        "dnd": "Silence chat notifications for this visit"
+      }
+    },
+    "pricing": {
+      "_comment": "SB_PRICING single source. tiers[].display are the verbatim per-locale price strings shown on package cards ('priceOf'). roiLo = tiers[0].amount, roiHi = tiers[1].top; band(locale) = fmt(roiLo)+U+2013+fmt(roiHi) with fmt: ru = '€'+digits grouped by U+00A0 NBSP; ee = digits+' €'; en = '€'+en-US grouping (comma).",
+      "tiers": [
+        {
+          "id": "starter",
+          "amount": 1400,
+          "display": {
+            "en": "€1,400",
+            "ru": "€1 400",
+            "ee": "1400 €"
+          }
+        },
+        {
+          "id": "growth",
+          "amount": 3200,
+          "top": 4800,
+          "display": {
+            "en": "€3,200 – €4,800",
+            "ru": "€3 200 – €4 800",
+            "ee": "3200 – 4800 €"
+          }
+        },
+        {
+          "id": "enterprise",
+          "amount": 6500,
+          "top": 9500,
+          "display": {
+            "en": "€6,500 – €9,500",
+            "ru": "€6 500 – €9 500",
+            "ee": "6500 – 9500 €"
+          }
+        }
+      ],
+      "roiLo": 1400,
+      "roiHi": 4800,
+      "bandByLocale": {
+        "en": "€1,400–€4,800",
+        "ru": "€1\u00A0400–€4\u00A0800",
+        "ee": "1400 €–4800 €"
+      }
+    },
+    "heroPriceLine": {
+      "_note": "Радикальная прозрачность: вся ценовая лестница на первом экране, из SB_PRICING (единственный источник). {BAND} подставляется при отрисовке; без SB_PRICING строка не рисуется вовсе — выдуманного числа здесь быть не может.",
+      "en": "{BAND} · fixed price, fixed date · the source is yours",
+      "ru": "{BAND} · фиксированные цена и срок · исходный код ваш",
+      "ee": "{BAND} · kindel hind, kindel kuupäev · lähtekood on teie oma"
+    }
+  };
+  /* SB_CONTENT:END */
+
+/* ---------------------------------------------------------------- config */
+
+var C = SB_CONTENT;
+var S = C.staticStrings;
+var LANGS = ["en", "ru", "ee"];
+var APPS = ["services", "cases", "about", "contact", "roi", "chat", "order"];
+var DOC_LANG = { en: "en", ru: "ru", ee: "et" };
+var OS_LINK = "os/";
+var SEEN_KEY = "sysbaby.seen.systems";
+var ENDPOINT = S.formEndpoint;
+var CONTACT_EMAIL = S.contactEmail;
+/* Toast title for the order confirmation (spec 12.4) is the plain brand name.
+   Derived from the wordmark by dropping its typographic U+200A hair spaces so
+   the brand still has exactly one source. */
+var BRAND = S.wordmark.replace(/\u200A/g, "");
+var PRICING = window.SB_PRICING || null;
+
+/* Rebuild-only strings: not user copy, shown only when a data file failed to
+   load. Architecture rule 5 — a failure must never be silent. */
+var SYS_ERRORS = {
+  pricing: "Pricing data failed to load. Reload the page, or write to " + CONTACT_EMAIL + "."
+};
+
+/* Authored window sizes. Windows no longer OPEN at these sizes — they open
+   filling the screen (see createWindow) — but this pair is still the size a
+   window returns to when the visitor un-maximises it, so it stays live data. */
+var WIN_SIZE = {
+  services: [640, 520], cases: [640, 520], about: [560, 400],
+  contact: [560, 440], order: [760, 700], chat: [380, 560], roi: [560, 640]
+};
+
+/* Height of the fixed top bar, in CSS pixels. Matches .topbar{height:44px} in
+   the stylesheet above, and TOPBAR_H in the OS shell, which opens its own
+   windows at exactly this offset. */
+var TOPBAR_H = 44;
+
+var ICONS = {
+  services: '<path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M3 14h7v7H3z"/><path d="M14 14h7v7h-7z"/>',
+  cases: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  about: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>',
+  contact: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/>',
+  roi: '<path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-6"/><path d="M2 20h20"/>',
+  chat: '<path d="M21 14.5a2.5 2.5 0 0 1-2.5 2.5H8l-5 4V5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5z"/>',
+  order: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/>',
+  shield: '<path d="M12 3l7 3v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6z"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="m11.5 11.5 8.5-8.5"/><path d="m17 6 2 2"/>',
+  send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
+  check: '<path d="m4 12 5 5L20 6"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18-2.6-2.7-2.6-15.3 0-18z"/>'
+};
+
+function svg(name, cls) {
+  return '<svg class="' + (cls || "") + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || "") + "</svg>";
+}
+
+/* ----------------------------------------------------------------- state */
+
+var state = {
+  lang: "en",                       /* every load starts in English; never persisted */
+  booted: false,
+  focused: null,                    /* app id of the focused window */
+  zTop: 20,
+  openCount: 0,                     /* windows opened this session (cascade) */
+  prefs: { sound: true, motion: false, autohide: true, dnd: false, volume: 60, brightness: 100 },
+  order: { pkg: "growth" },         /* selection lives outside the window */
+  chat: { history: [], unread: false, everOpened: false, replyIndex: 0 },
+  palette: { open: false, cur: 0, items: [] },
+  roiBrief: ""
+};
+
+var wins = {};                      /* app id -> window record */
+var dockItems = {};                 /* app id -> dock button */
+
+/* --------------------------------------------------------------- helpers */
+
+function $(sel, root) { return (root || document).querySelector(sel); }
+function el(id) { return document.getElementById(id); }
+
+function esc(value) {
+  return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
+    return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch];
+  });
+}
+
+/* Authored copy only (SB_CONTENT / portfolio data) — see escaping note. */
+function setHtml(node, html) { node.innerHTML = html; }
+
+function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+
+function osReducedMotion() {
+  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+function motionOff() { return state.prefs.motion || osReducedMotion(); }
+
+function appCopy(app, lang) { return C.appData[app][lang || state.lang]; }
+function locale() { return C.localeMap[state.lang] || "en-GB"; }
+
+function makeEl(tag, cls, html) {
+  var node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (html != null) node.innerHTML = html;
+  return node;
+}
+
+/* ------------------------------------------------------------ boot screen */
+
+/* ЭКРАН ЗАГРУЗКИ УДАЛЁН.
+   -------------------------------------------------------------------------
+   Здесь проигрывался журнал из восьми строк: «Verifying system integrity»,
+   «Allocating memory», «Establishing secure connection», «Authenticating
+   session» и далее. Ни одна из них не происходила. Это был вымысел о работе
+   системы — ровно то, что проект запрещает себе в отношении клиентов.
+
+   Но дело даже не в правиле. Ожидание, пока чужая система «аутентифицирует
+   сессию», — это эстетика арендованного софта: ты стоишь у двери, пока тебя
+   впускают. Система, которая тебе принадлежит, просто есть. Поэтому первое
+   доказательство философии — не текст на странице, а то, что здесь нечего
+   ждать.
+
+   Узел #boot и метка is-done сохранены: на этот контракт опираются
+   наборы проверок. Сохранён контракт, удалено переживание — вместе со всей
+   машинерией ячеек, журнала и сети, которая больше никогда не вызывалась. */
+var boot = { overlay: el("boot"), done: false, stopNet: null };
+
+function finishBoot() {
+  if (boot.done) return;
+  boot.done = true;
+  if (boot.stopNet) boot.stopNet();
+  boot.overlay.classList.add("is-done");
+  /* Задержки ниже были рассчитаны на девятисекундную увертюру, которой больше
+     нет. Оставить их — значит заменить поддельную загрузку поддельной паузой.
+     Среда собирается за один кадр; лестница сохранена только там, где она
+     объясняет, откуда взялся элемент, и укорочена до порога заметности. */
+  boot.overlay.style.display = "none";
+  el("topbar").classList.add("is-in");
+  el("dock").classList.add("is-in");
+  Array.prototype.forEach.call(el("dock").children, function (item, i) {
+    item.style.opacity = "0";
+    item.style.transform = "translateY(6px)";
+    setTimeout(function () {
+      item.style.transition = "opacity var(--d-base) var(--enter), transform var(--d-base) var(--enter)";
+      item.style.opacity = "1";
+      item.style.transform = "none";
+    }, 40 + i * 26);
+  });
+  el("hero").classList.add("is-revealed");
+  setTimeout(function () { state.booted = true; armAutoHide(); }, 600);
+  setTimeout(chatWelcomePush, 3400);
+}
+
+/* ЭКРАН ЗАГРУЗКИ УДАЛЁН.
+   -------------------------------------------------------------------------
+   Здесь проигрывался журнал из восьми строк: «Verifying system integrity»,
+   «Allocating memory», «Establishing secure connection», «Authenticating
+   session» и далее. Ни одна из них не происходила. Это был вымысел о работе
+   системы — ровно то, что проект запрещает себе в отношении клиентов.
+
+   Но дело даже не в правиле. Ожидание, пока чужая система «аутентифицирует
+   сессию», — это эстетика арендованного софта: ты стоишь у двери, пока тебя
+   впускают. Система, которая тебе принадлежит, просто есть. Поэтому первое
+   доказательство философии — не текст на странице, а то, что здесь нечего
+   ждать.
+
+   Узел #boot и метка is-done сохранены: на этот контракт опираются
+   тринадцать наборов проверок. Сохранён контракт, удалено переживание. */
+function startBoot() {
+  finishBoot();
+  if (/(^|[?&])contact=1(&|$)/.test(location.search)) {
+    setTimeout(function () { openApp("order"); }, 240);
+  }
+}
+
+/* --------------------------------------------------------------- top bar */
+
+function updateAppName() {
+  var name = C.desktopLabel[state.lang] || C.desktopLabel.en;
+  if (state.focused && wins[state.focused]) name = appCopy(state.focused).label;
+  el("tbApp").textContent = name;
+}
+
+/* Тема одна — тёмная. Архитектура токенов на месте ([data-theme="light"]
+   в CSS сохранён), но ни одного пути включить её из интерфейса нет, поэтому
+   и функции переключения нет. Вернуть тему — значит вернуть разметку и одну
+   функцию, а не раскопки. */
+
+/* ------------------------------------------------------------- languages */
+
+function setLang(lang) {
+  if (LANGS.indexOf(lang) === -1) return;
+  state.lang = lang;
+  document.documentElement.setAttribute("lang", DOC_LANG[lang]);
+  /* The OS reads this key on boot, so whichever language is chosen here is
+     the language it opens in. Same key, same storage — one localisation
+     system, not two. */
+  try { window.localStorage.setItem("sysbaby.i18n.lang", lang); } catch (err) { /* storage blocked */ }
+  renderHero();
+  renderHeroProof();          /* the proof line is portfolio prose: it translates too */
+  renderDockLabels();
+  el("cmdkTriggerLabel").textContent = C.cmdkLabels[lang].triggerLabel;
+  APPS.forEach(function (app) { if (wins[app]) renderWindow(app); });
+  APPS.forEach(function (app) { if (wins[app]) wins[app].titleEl.textContent = appCopy(app).title; });
+  updateAppName();
+  Array.prototype.forEach.call(el("flags").children, function (btn) {
+    btn.classList.toggle("is-active", btn.getAttribute("data-lang") === lang);
+  });
+  if (state.palette.open) renderPalette();
+}
+
+function cycleLang() {
+  var order = ["en", "ru", "ee"];
+  setLang(order[(order.indexOf(state.lang) + 1) % order.length]);
+}
+
+/* ------------------------------------------------------------------ hero */
+
+function heroTitleHtml(lang) {
+  /* Раньше здесь по буквам собиралось слово BABY со своим градиентом. Градиент
+     был удалён задолго до этого прохода — устройство осталось невидимым кодом.
+     Заголовок говорит одним голосом на всех языках. */
+  return esc(C.translations[lang].hero_title);
+}
+
+/* The longest word decides the size of the headline — see .hero h1.
+   The word is measured rather than estimated: character counts lie across
+   scripts, and Cyrillic at weight 900 is wider per character than Latin. A
+   probe is laid out at 100px in the headline's own face, its width gives an
+   exact advance ratio, and the fit is the size at which the word spans the
+   line and no more. Re-measured on every language change and every resize. */
+var heroLongestWord = "";
+
+function applyHeroMeasure(title) {
+  var host = el("heroTitle");
+  if (!host) return;
+  var longest = "";
+  String(title).split(/\s+/).forEach(function (word) {
+    var plain = word.replace(/<[^>]*>/g, "");
+    if (plain.length > longest.length) longest = plain;
+  });
+  heroLongestWord = longest;
+  host.style.setProperty("--hero-chars", String(Math.max(8, longest.length)));
+  measureHeroFit();
+}
+
+function measureHeroFit() {
+  var host = el("heroTitle");
+  if (!host || !heroLongestWord) return;
+  var style = window.getComputedStyle(host);
+  var probe = makeEl("span");
+  probe.textContent = heroLongestWord;
+  probe.style.cssText =
+    "position:absolute;visibility:hidden;white-space:pre;left:-9999px;top:0;" +
+    "font-family:" + style.fontFamily + ";font-weight:" + style.fontWeight +
+    ";letter-spacing:" + style.letterSpacing + ";font-size:100px";
+  document.body.appendChild(probe);
+  var ratio = probe.getBoundingClientRect().width / 100;
+  document.body.removeChild(probe);
+  if (!ratio) return;
+  /* The line the word has to live inside, minus a hair so a heavy glyph's
+     right side-bearing never kisses the edge. */
+  var room = host.getBoundingClientRect().width - 2;
+  if (room <= 0) return;
+  var fit = Math.floor(room / ratio);
+  /* Below this the headline stops being a headline. Past that point the word
+     breaks rather than shrinks — see .hero h1.is-tight. */
+  host.classList.toggle("is-tight", fit < 38);
+  host.style.setProperty("--hero-fit", fit + "px");
+}
+
+function renderHero() {
+  var t = C.translations[state.lang];
+  setHtml(el("heroTitle"), heroTitleHtml(state.lang));
+  applyHeroMeasure(C.translations[state.lang].hero_title);
+  setHtml(el("heroText"), t.hero_text);
+  el("ctaRequest").textContent = t.cta_request;
+  el("ctaExplore").textContent = t.cta_explore;
+  renderHeroPrice();
+  setHtml(el("exploreNote"), t.explore_note);
+  setHtml(el("heroNoteText"), t.hero_note);
+}
+
+/* Вся ценовая лестница — на первом экране. Числа приходят из SB_PRICING и
+   только из него: нет источника — нет строки, выдуманного числа здесь быть
+   не может. Агентства прячут цены до созвона; система, которую продают как
+   собственность, называет цену как собственник — сразу. */
+function renderHeroPrice() {
+  var node = el("heroPrice");
+  if (!node) return;
+  var tpl = C.heroPriceLine[state.lang] || C.heroPriceLine.en;
+  if (!PRICING || typeof PRICING.fullBand !== "function") {
+    node.textContent = "";
+    node.style.display = "none";
+    return;
+  }
+  node.style.display = "";
+  node.textContent = tpl.replace("{BAND}", PRICING.fullBand(state.lang));
+}
+
+/* Hero proof: rendered once, at load, in the load-time language (spec §7). */
+function renderHeroProof() {
+  if (!window.sbPortfolio || !window.sbPortfolioView) return;
+  var lang = state.lang;
+  for (var i = 0; i < window.sbPortfolio.length; i++) {
+    var entry = window.sbPortfolio[i];
+    if (entry && entry.visibility === "private") continue;
+    var view = window.sbPortfolioView(entry, lang);
+    if (view.resultsState !== "measured" || !view.results) continue;
+    el("heroProofMain").textContent = view.results;
+    if (view.resultsSource === "first-hand") {
+      el("heroProofSrc").textContent = C.heroProofSourceLine[lang] || C.heroProofSourceLine.en;
+    } else {
+      el("heroProofSrc").textContent = "";
+    }
+    el("heroProof").classList.add("is-shown");
+    return;
+  }
+  /* No qualifying entry: the block stays hidden. Never substitute copy. */
+}
+
+/* ------------------------------------------------------------------ dock */
+
+function buildDock() {
+  var dock = el("dock");
+  dock.innerHTML = "";
+  APPS.forEach(function (app) {
+    var btn = makeEl("button", "dock-item");
+    btn.setAttribute("data-app", app);
+    btn.setAttribute("aria-label", S.ariaLabels.dockApps[app]);
+    setHtml(btn,
+      '<span class="badge">1</span>' +
+      '<span class="tile">' + svg(app) + "</span>" +
+      '<span class="dot"></span>' +
+      '<span class="lbl"></span>');
+    btn.addEventListener("click", function () {
+      bounce(btn);
+      showDock();
+      if (app === "chat") clearChatBadge();
+      openApp(app);
+    });
+    dock.appendChild(btn);
+    dockItems[app] = btn;
+  });
+  renderDockLabels();
+}
+
+function renderDockLabels() {
+  APPS.forEach(function (app) {
+    $(".lbl", dockItems[app]).textContent = appCopy(app).label;
+  });
+}
+
+function bounce(btn) {
+  btn.classList.remove("bounce");
+  void btn.offsetWidth;
+  btn.classList.add("bounce");
+  setTimeout(function () { btn.classList.remove("bounce"); }, 640);
+}
+
+function refreshDockState() {
+  APPS.forEach(function (app) {
+    var btn = dockItems[app];
+    btn.classList.toggle("is-running", !!wins[app]);
+    btn.classList.toggle("is-active", state.focused === app && !!wins[app]);
+  });
+}
+
+/* dock magnification — pointer devices, motion on */
+function dockMagnify(ev) {
+  if (motionOff() || window.innerWidth <= 620) return;
+  APPS.forEach(function (app) {
+    var btn = dockItems[app];
+    var rect = btn.getBoundingClientRect();
+    var dist = Math.abs(ev.clientX - (rect.left + rect.width / 2));
+    var scale = dist < 110 ? 1 + 0.5 * (1 - dist / 110) : 1;
+    btn.style.transform = "translateY(" + (-14 * (scale - 1)) + "px) scale(" + scale + ")";
+  });
+}
+function dockMagnifyReset() {
+  APPS.forEach(function (app) { dockItems[app].style.transform = ""; });
+}
+
+/* Машинерия слова «applications» удалена в v20.8 — свет под дверью
+   оказался достаточной подсказкой, а слово рядом с ним стало лишним.
+   Удалено, не спрятано: счётчик трёх произнесений, сборка метки из
+   глифов и её стили ушли вместе с разметкой. Словарь HINT_GLYPHS живёт —
+   им пишут пульс строки-имени и становление плиток дока. */
+var HINT_GLYPHS = "0123456789abcdef/<>{}[]()=+-_:.|";
+
+/* ------------------------------------------------ пульс строки-имени */
+/* Инициалы B·A·B·Y изредка ведут себя так, будто система под страницей
+   жива: один инициал на полсекунды расседается в глифы того же словаря,
+   которым пишет подсказка дока, и оседает обратно, остывая из глины.
+
+   Правила хаоса-в-системе:
+   — один инициал за раз, никогда два; подряд один и тот же — никогда;
+   — интервалы нерегулярны (9–22 c), первый пульс не раньше 14 c: строка
+     обязана сначала быть прочитана как текст и только потом ожить;
+   — 5–8 кадров по 72 мс — «подождите, буква только что менялась?»
+     длится меньше секунды и не успевает стать зрелищем;
+   — между пульсами не работает ничего: один setTimeout, ни одного rAF;
+   — скрытая вкладка молчит; reduced-motion и пауза анимаций проверяются
+     при каждом пульсе через motionOff(), а не один раз на старте;
+   — моноширинный шрифт делает подмену безразмерной: ни сдвига строки,
+     ни CLS — глиф занимает ровно клетку буквы;
+   — для скринридера пульса не существует: разметка живёт под
+     aria-hidden, полный текст — в aria-label родителя. */
+var namePulse = { timer: null, last: -1, busy: false };
+function scheduleNamePulse(first) {
+  clearTimeout(namePulse.timer);
+  /* Темп поднят втрое по полевому наблюдению основателя: на прежних
+     9–22 c большинство посетителей не успевало застать ни одного пульса.
+     Теперь 2.8–6.8 c, и в ~15% случаев пауза удлиняется вдвое — периоды
+     полной тишины сохранены и на быстром темпе, чтобы ритм не стал
+     метрономом. Первый пульс — на 5-й секунде: заголовок к этому моменту
+     прочитан, строка-имя ещё в поле зрения. */
+  /* Второе полевое ускорение: и 2.8–6.8 c на живом экране читались как
+     «почти никогда». Теперь 0.9–2.4 c — строка ощутимо жива, но пульс
+     по-прежнему один инициал и полсекунды. Тихие растяжки сохранены. */
+  var delay = first ? 3500 : 900 + Math.random() * 1500;
+  if (!first && Math.random() < 0.15) delay *= 2.2;
+  namePulse.timer = setTimeout(runNamePulse, delay);
+}
+function runNamePulse() {
+  if (document.hidden || motionOff() || namePulse.busy) { scheduleNamePulse(false); return; }
+  var letters = document.querySelectorAll(".hero-name-line b");
+  if (!letters.length) return;
+  var i;
+  do { i = (Math.random() * letters.length) | 0; } while (letters.length > 1 && i === namePulse.last);
+  namePulse.last = i;
+  var node = letters[i], original = node.textContent;
+  var frames = 5 + ((Math.random() * 4) | 0), n = 0;
+  namePulse.busy = true;
+  node.classList.add("is-unresolved");
+  var tick = setInterval(function () {
+    n++;
+    if (n < frames) {
+      node.textContent = HINT_GLYPHS[(Math.random() * HINT_GLYPHS.length) | 0];
+    } else {
+      clearInterval(tick);
+      node.textContent = original;
+      node.classList.remove("is-unresolved");
+      namePulse.busy = false;
+      scheduleNamePulse(false);
+    }
+  }, 72);
+}
+document.addEventListener("visibilitychange", function () {
+  if (document.hidden) { clearTimeout(namePulse.timer); namePulse.timer = null; }
+  else if (!namePulse.timer && !namePulse.busy) scheduleNamePulse(false);
+});
+scheduleNamePulse(true);
+/* Ручка для проверок: наборы и живая демонстрация вызывают пульс сами,
+   не дожидаясь случайного интервала. Поведение — то же, путь — тот же. */
+window.sbNamePulse = runNamePulse;
+
+/* dock auto-hide */
+var hideTimer = null;
+function revealDock() {
+  el("dock").classList.remove("is-hidden");
+  el("dockHint").classList.remove("is-shown");
+}
+/* (Re)start the 2.8s hide countdown. With the toggle off the dock just stays
+   visible — this must never call showDock(), which arms the timer again. */
+function armAutoHide() {
+  clearTimeout(hideTimer);
+  if (!state.booted) return;
+  if (!state.prefs.autohide) { revealDock(); return; }
+  hideTimer = setTimeout(function () {
+    el("dock").classList.add("is-hidden");
+    el("dockHint").classList.add("is-shown");
+  }, 2800);
+}
+/* Разлёт иконок при открытии двери. Точка происхождения — место касания:
+   иконки собираются к слотам из-под пальца, а не из абстрактного ниоткуда.
+   Хаос управляем: смещение к точке касания 22–36% дистанции, подъём снизу
+   30–64px, поворот до ±13°, порядок посадки перетасован Фишером–Йетсом,
+   шаг задержки 26 мс. Всё пересоздаётся на каждом открытии. */
+function assembleDock(originX) {
+  if (motionOff()) return;
+  var dock = el("dock");
+  var items = dock.querySelectorAll(".dock-item");
+  if (!items.length) return;
+  var rect = dock.getBoundingClientRect();
+  var ox = (typeof originX === "number") ? originX : rect.left + rect.width / 2;
+
+  /* Режимы раскрытия. Канон v21 — «свет строит» (light): вердикт совета по
+     моушн-идентичности, MOTION-IDENTITY-VERDICT.md. Остальные — оснастка
+     сравнения вживую, не для посетителей:
+       light   — свет разливается от точки касания; ничто не движется (канон)
+       develop — проявка: глиняные силуэты обретают резкость и свой цвет
+       wave    — перекличка: волна включения от точки касания, по порядку
+       both    — прежний полёт с глифами (канон v20.6), flight/glyph — его части */
+  var MODES = { light: 1, develop: 1, wave: 1, both: 1, flight: 1, glyph: 1 };
+  var mode = assembleDock._mode;
+  if (!mode) {
+    try { mode = new URLSearchParams(location.search).get("dockmat") || "light"; }
+    catch (e) { mode = "light"; }
+    if (!MODES[mode]) mode = "light";
+    assembleDock._mode = mode;
+  }
+
+  clearTimeout(assembleDock._t);
+  var cleanupMs = 750;
+
+  if (mode === "light") {
+    /* Свет: задержка каждой плитки — её расстояние от точки касания. Скорость
+       разлива ~2100 px/с вдоль кромки; дальний край широкого экрана загорается
+       через ~0.3 с. Вспышка-блик бежит по шву отдельным слоем. */
+    items.forEach(function (n) {
+      var r = n.getBoundingClientRect();
+      var dist = Math.abs((r.left + r.width / 2) - ox);
+      n.style.setProperty("--lit-delay", (dist / 2100).toFixed(3) + "s");
+    });
+    var flare = document.createElement("i");
+    flare.className = "dock-flare";
+    flare.setAttribute("aria-hidden", "true");
+    flare.style.left = Math.round(ox) + "px";
+    document.body.appendChild(flare);
+    flare.addEventListener("animationend", function () { flare.remove(); });
+    setTimeout(function () { flare.remove(); }, 900);           /* страховка */
+    dock.classList.add("m-light");
+    cleanupMs = 950;
+  } else if (mode === "develop") {
+    /* Проявка: у каждой плитки свой темп (0.42–0.87 с) и лёгкий сдвиг старта —
+       кювета не метроном. Порядок непредсказуем, результат неизбежен. */
+    items.forEach(function (n) {
+      n.style.setProperty("--dev-dur", (0.42 + Math.random() * 0.45).toFixed(3) + "s");
+      n.style.setProperty("--dev-delay", (Math.random() * 0.12).toFixed(3) + "s");
+    });
+    dock.classList.add("m-develop");
+    cleanupMs = 1150;
+  } else if (mode === "wave") {
+    /* Перекличка: строгий порядок удаления от точки касания, шаг 42 мс.
+       Единственный режим без случайности — причинность и есть его характер. */
+    var ranked = [];
+    items.forEach(function (n, i) {
+      var r = n.getBoundingClientRect();
+      ranked.push({ i: i, d: Math.abs((r.left + r.width / 2) - ox) });
+    });
+    ranked.sort(function (a, b) { return a.d - b.d; });
+    ranked.forEach(function (entry, rank) {
+      items[entry.i].style.setProperty("--wave-delay", (rank * 0.042).toFixed(3) + "s");
+    });
+    dock.classList.add("m-wave");
+    cleanupMs = 850;
+  } else {
+    /* Канон v20.6: разлёт из-под пальца + становление глиф→иконка. */
+    var order = [];
+    items.forEach(function (n, i) { order.push(i); });
+    for (var i = order.length - 1; i > 0; i--) {
+      var j = (Math.random() * (i + 1)) | 0;
+      var t = order[i]; order[i] = order[j]; order[j] = t;
+    }
+    items.forEach(function (n, i) {
+      var r = n.getBoundingClientRect();
+      var toward = (ox - (r.left + r.width / 2)) * (0.22 + Math.random() * 0.14);
+      n.style.setProperty("--fly-x", toward.toFixed(1) + "px");
+      n.style.setProperty("--fly-y", (30 + Math.random() * 34).toFixed(1) + "px");
+      n.style.setProperty("--fly-r", ((Math.random() - 0.5) * 26).toFixed(1) + "deg");
+      n.style.setProperty("--fly-delay", (order.indexOf(i) * 0.026).toFixed(3) + "s");
+      if (mode !== "flight") {
+        var tile = n.querySelector(".tile");
+        var g = tile.querySelector(".mat");
+        if (!g) { g = document.createElement("i"); g.className = "mat"; g.setAttribute("aria-hidden", "true"); tile.appendChild(g); }
+        g.textContent = HINT_GLYPHS[(Math.random() * HINT_GLYPHS.length) | 0];
+      }
+    });
+    if (mode !== "glyph") dock.classList.add("is-assembling");
+    if (mode !== "flight") dock.classList.add("is-materializing");
+  }
+
+  assembleDock._t = setTimeout(function () {
+    dock.classList.remove("is-assembling");
+    dock.classList.remove("is-materializing");
+    dock.classList.remove("m-light");
+    dock.classList.remove("m-develop");
+    dock.classList.remove("m-wave");
+  }, cleanupMs);
+}
+/* Первое касание — только дверь. Обнаружено оснасткой: тап, открывающий
+   док, доносился до плитки, взлетевшей под палец, и случайно открывал её
+   приложение. Для касаний ставится краткий щит: клики по доку в первые
+   380 мс после открытия из скрытого состояния гасятся. Мышь не трогаем —
+   у неё наведение открывает док задолго до клика. */
+var dockRevealGuard = 0;
+function showDock(ev) {
+  if (el("dock").classList.contains("is-hidden")) {
+    var x;
+    var touched = false;
+    if (ev && ev.touches && ev.touches[0]) { x = ev.touches[0].clientX; touched = true; }
+    else if (ev && typeof ev.clientX === "number") { x = ev.clientX; touched = (ev.pointerType === "touch"); }
+    if (touched) dockRevealGuard = performance.now();
+    assembleDock(x);
+  }
+  revealDock();
+  armAutoHide();
+}
+
+function clearChatBadge() {
+  state.chat.unread = false;
+  dockItems.chat.classList.remove("has-badge");
+}
+function setChatBadge() {
+  state.chat.unread = true;
+  dockItems.chat.classList.add("has-badge");
+}
+
+/* -------------------------------------------------------- window manager */
+
+function openApp(app) {
+  var win = wins[app];
+  if (win) {
+    if (win.minimized) restoreWindow(app); else focusWindow(app);
+    return;
+  }
+  createWindow(app);
+}
+
+function createWindow(app) {
+  var vw = window.innerWidth, vh = window.innerHeight;
+
+  /* A window opens at the size its own content wants — WIN_SIZE is authored
+     per app, not one number for all of them — clamped to what the viewport
+     can actually hold, and cascaded so a second window does not land exactly
+     on the first. Full screen is a thing the visitor asks for with the
+     maximise key, not a thing that happens to them on open.
+
+     Below the compact threshold there is no room for a floating window, so it
+     opens as a full-bleed sheet under the top bar. The bar is left clear on
+     purpose: the window layer is z-index 200 and the top bar 400, so a sheet
+     drawn to y:0 would bury its own controls. */
+  var authored = WIN_SIZE[app];
+  var n = state.openCount++;
+  var w, h, x, y, bornMax = false;
+
+  if (vw <= 620) {
+    /* A phone window is still a window: a margin on all four sides, the
+       backdrop visible around it, and a genuinely normal state — not a
+       full-screen sheet wearing smaller numbers. Full screen is the green
+       key, not the default. */
+    var m = vw <= 400 ? 10 : 16;
+    var top = TOPBAR_H + m;
+    w = vw - m * 2;
+    h = Math.max(240, Math.min(authored[1], vh - top - 104));
+    x = m;
+    y = top;
+  } else {
+    w = Math.min(authored[0], vw - 32);
+    h = Math.min(authored[1], vh - 170);
+    x = clamp(Math.round((vw - w) / 2 + ((n % 5) * 26 - 52)), 16, Math.max(16, vw - w - 16));
+    y = clamp(Math.round((vh - h) / 2 + ((n % 5) * 20 - 40)), 54, Math.max(54, vh - h - 116));
+  }
+
+  var node = makeEl("div", "win");
+  /* The window knows which application it is. Nothing depended on this before,
+     which is why it was never recorded — but a surface that cannot say what it
+     is showing cannot be checked, and cannot be styled per app later. */
+  node.setAttribute("data-app", app);
+  setHtml(node,
+    '<div class="win-bar">' +
+      '<div class="lights">' +
+        '<button class="light light-close" aria-label="Close"><span>&times;</span></button>' +
+        '<button class="light light-min" aria-label="Minimize"><span>&ndash;</span></button>' +
+        '<button class="light light-max" aria-label="Maximize"><span>+</span></button>' +
+      "</div>" +
+      '<div class="win-title"></div>' +
+    "</div>" +
+    '<div class="win-body"></div>' +
+    '<div class="win-resize"></div>');
+  node.style.left = x + "px";
+  node.style.top = y + "px";
+  node.style.width = w + "px";
+  node.style.height = h + "px";
+  el("windowLayer").appendChild(node);
+
+  var record = {
+    app: app, node: node, body: $(".win-body", node), bar: $(".win-bar", node),
+    titleEl: $(".win-title", node), rect: { x: x, y: y, w: w, h: h },
+    minimized: false, maximized: bornMax, prevRect: null
+  };
+  wins[app] = record;
+  record.titleEl.textContent = appCopy(app).title;
+  renderWindow(app);
+  wireWindow(record);
+  focusWindow(app);
+  genieIn(record);
+  refreshDockState();
+}
+
+function dockCenter(app) {
+  var rect = dockItems[app].getBoundingClientRect();
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+}
+
+function genieIn(record) {
+  if (osReducedMotion()) return;
+  var target = dockCenter(record.app);
+  var cx = record.rect.x + record.rect.w / 2, cy = record.rect.y + record.rect.h / 2;
+  record.node.style.transformOrigin = "center center";
+  record.node.style.transform = "translate(" + (target.x - cx) + "px," + (target.y - cy) + "px) scale(.12)";
+  record.node.style.opacity = "0";
+  requestAnimationFrame(function () {
+    record.node.classList.add("is-animating");
+    record.node.style.transform = "none";
+    record.node.style.opacity = "1";
+    setTimeout(function () { record.node.classList.remove("is-animating"); }, 500);
+  });
+}
+
+function genieOut(record, done) {
+  if (osReducedMotion()) { done(); return; }
+  var target = dockCenter(record.app);
+  var cx = record.rect.x + record.rect.w / 2, cy = record.rect.y + record.rect.h / 2;
+  record.node.classList.add("is-animating");
+  record.node.style.transform = "translate(" + (target.x - cx) + "px," + (target.y - cy) + "px) scale(.12)";
+  record.node.style.opacity = "0";
+  setTimeout(done, 400);
+}
+
+function focusWindow(app) {
+  var record = wins[app];
+  if (!record) return;
+  state.focused = app;
+  record.node.style.zIndex = String(++state.zTop);
+  Object.keys(wins).forEach(function (id) {
+    wins[id].node.classList.toggle("is-focused", id === app);
+  });
+  refreshDockState();
+  updateAppName();
+}
+
+function blurWindows() {
+  state.focused = null;
+  Object.keys(wins).forEach(function (id) { wins[id].node.classList.remove("is-focused"); });
+  refreshDockState();
+  updateAppName();
+}
+
+function focusTopmost() {
+  var best = null, bestZ = -1;
+  Object.keys(wins).forEach(function (id) {
+    if (wins[id].minimized) return;
+    var z = parseInt(wins[id].node.style.zIndex || "0", 10);
+    if (z > bestZ) { bestZ = z; best = id; }
+  });
+  if (best) focusWindow(best); else blurWindows();
+}
+
+function closeWindow(app) {
+  var record = wins[app];
+  if (!record) return;
+  genieOut(record, function () {
+    record.node.remove();
+    delete wins[app];
+    if (state.focused === app) state.focused = null;
+    focusTopmost();
+    refreshDockState();
+  });
+}
+
+function minimizeWindow(app) {
+  var record = wins[app];
+  if (!record || record.minimized) return;
+  genieOut(record, function () {
+    record.minimized = true;
+    record.node.style.display = "none";
+    if (state.focused === app) state.focused = null;
+    focusTopmost();
+    refreshDockState();
+  });
+}
+
+function restoreWindow(app) {
+  var record = wins[app];
+  if (!record) return;
+  record.minimized = false;
+  record.node.style.display = "";
+  record.node.style.transform = "none";
+  record.node.style.opacity = "1";
+  genieIn(record);
+  focusWindow(app);
+  refreshDockState();
+}
+
+function applyRect(record, rect, animate) {
+  record.rect = rect;
+  if (animate && !osReducedMotion()) {
+    record.node.classList.add("is-animating");
+    setTimeout(function () { record.node.classList.remove("is-animating"); }, 420);
+  }
+  record.node.style.left = rect.x + "px";
+  record.node.style.top = rect.y + "px";
+  record.node.style.width = rect.w + "px";
+  record.node.style.height = rect.h + "px";
+}
+
+function toggleMaximize(app) {
+  var record = wins[app];
+  if (!record) return;
+  if (record.maximized) {
+    applyRect(record, record.prevRect, true);
+    record.maximized = false;
+  } else {
+    record.prevRect = { x: record.rect.x, y: record.rect.y, w: record.rect.w, h: record.rect.h };
+    /* Раньше максимизация резервировала 150px под док — но док прячется
+       через 2.8 c, и внизу зияла пустота. Теперь окно занимает экран; док,
+       возвращаясь, плывёт поверх (z 300 > z окна) и сам же прячется. */
+    applyRect(record, { x: 12, y: 52, w: window.innerWidth - 24, h: window.innerHeight - 64 }, true);
+    record.maximized = true;
+  }
+}
+
+function wireWindow(record) {
+  var app = record.app;
+  record.node.addEventListener("pointerdown", function () { focusWindow(app); });
+  $(".light-close", record.node).addEventListener("click", function (e) { e.stopPropagation(); closeWindow(app); });
+  $(".light-min", record.node).addEventListener("click", function (e) { e.stopPropagation(); minimizeWindow(app); });
+  $(".light-max", record.node).addEventListener("click", function (e) { e.stopPropagation(); toggleMaximize(app); });
+  record.bar.addEventListener("dblclick", function () { toggleMaximize(app); });
+
+  /* drag with edge-snap preview */
+  record.bar.addEventListener("pointerdown", function (ev) {
+    if (ev.target.closest(".lights")) return;
+    if (record.maximized) return;
+    var startX = ev.clientX, startY = ev.clientY;
+    var originX = record.rect.x, originY = record.rect.y;
+    var snapSide = null;
+    var preview = el("snapPreview");
+    record.bar.setPointerCapture(ev.pointerId);
+
+    function move(e) {
+      var vw = window.innerWidth, vh = window.innerHeight;
+      var nx = clamp(originX + (e.clientX - startX), -(record.rect.w - 160), vw - 160);
+      var ny = clamp(originY + (e.clientY - startY), 50, vh - 40);
+      applyRect(record, { x: nx, y: ny, w: record.rect.w, h: record.rect.h }, false);
+      snapSide = e.clientX <= 24 ? "left" : (e.clientX >= vw - 24 ? "right" : null);
+      if (snapSide) {
+        var r = snapRect(snapSide);
+        preview.style.left = r.x + "px";
+        preview.style.top = r.y + "px";
+        preview.style.width = r.w + "px";
+        preview.style.height = r.h + "px";
+        preview.classList.add("is-shown");
+      } else {
+        preview.classList.remove("is-shown");
+      }
+    }
+    function up() {
+      record.bar.removeEventListener("pointermove", move);
+      record.bar.removeEventListener("pointerup", up);
+      preview.classList.remove("is-shown");
+      if (snapSide) {
+        record.prevRect = { x: originX, y: originY, w: record.rect.w, h: record.rect.h };
+        applyRect(record, snapRect(snapSide), true);
+        record.maximized = true;     /* a snap restores like a maximize */
+      }
+    }
+    record.bar.addEventListener("pointermove", move);
+    record.bar.addEventListener("pointerup", up);
+  });
+
+  /* resize */
+  $(".win-resize", record.node).addEventListener("pointerdown", function (ev) {
+    if (record.maximized) return;
+    ev.stopPropagation();
+    var handle = ev.currentTarget;
+    var startX = ev.clientX, startY = ev.clientY;
+    var w0 = record.rect.w, h0 = record.rect.h;
+    handle.setPointerCapture(ev.pointerId);
+    function move(e) {
+      var w = clamp(w0 + (e.clientX - startX), 380, window.innerWidth - 40);
+      var h = clamp(h0 + (e.clientY - startY), 320, window.innerHeight - 90);
+      applyRect(record, { x: record.rect.x, y: record.rect.y, w: w, h: h }, false);
+    }
+    function up() {
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+    }
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+  });
+}
+
+function snapRect(side) {
+  var vw = window.innerWidth, vh = window.innerHeight;
+  var w = Math.round((vw - 32) / 2) - 6;
+  return { x: side === "left" ? 16 : vw - 16 - w, y: 52, w: w, h: vh - 150 };
+}
+
+/* ---------------------------------------------------------------- panels */
+
+function renderWindow(app) {
+  var record = wins[app];
+  if (!record) return;
+  record.body.scrollTop = 0;
+  if (app === "order") { renderOrder(record); return; }
+  if (app === "roi") { renderRoi(record); return; }
+  if (app === "chat") { renderChat(record); return; }
+  if (app === "cases") { renderCases(record); return; }
+  renderSimple(record, app);
+}
+
+/* ------------------------------------------------------- introductions §3
+   WHY THIS IS QUIET AND WHY IT IS HERE
+
+   This is the one part of the site that could most easily turn into the thing
+   the project is against. A scheme of that kind announces itself: a banner, a
+   percentage, a call to action, a promise sized to be shared. So this does the
+   opposite of all four. It has no banner, states no percentage, is not a call
+   to action, and lives at the bottom of the page about who we are — where
+   someone who already read that far will find it, and nobody else will be
+   interrupted by it.
+
+   The sentence that carries it is not a pitch, it is a fact about how the
+   studio works: no attention here was bought. Everything after that follows
+   from it, which is why the reward is real but unpriced — a number on a public
+   page would be a promise made to a stranger, and the honest version is a
+   conversation held before the work starts. */
+function introCode() {
+  try { return window.localStorage.getItem("sysbaby.intro") || ""; }
+  catch (err) { return ""; }
+}
+function setIntroCode(v) {
+  try { window.localStorage.setItem("sysbaby.intro", v); } catch (err) { }
+}
+
+/* The link a person can actually send. It carries whatever they call
+   themselves — no account, no generated token, nothing to look up — because a
+   code only sys.baby can read would mean sys.baby is keeping a register of
+   people who have not agreed to be in one. */
+function introLink(who) {
+  var base = location.origin + location.pathname.replace(/index\.php$/, "");
+  return base + "?i=" + encodeURIComponent(String(who || "").trim().slice(0, 80));
+}
+
+function attentionHtml() {
+  var a = C.attention[state.lang] || C.attention.en;
+  return '<section class="attn">' +
+    '<h4 class="attn-head">' + esc(a.heading) + "</h4>" +
+    '<p class="attn-body">' + esc(a.body) + "</p>" +
+    '<button type="button" class="attn-act" id="attnAct">' + esc(a.action) + "</button>" +
+    '<div class="attn-tool" id="attnTool" hidden>' +
+      '<label class="attn-label" for="attnWho">' + esc(a.who) + "</label>" +
+      '<div class="attn-row">' +
+        '<input id="attnWho" class="attn-input" type="text" maxlength="80" autocomplete="name" ' +
+          'placeholder="' + esc(a.whoPlaceholder) + '">' +
+        '<button type="button" class="attn-copy" id="attnCopy">' + esc(a.copy) + "</button>" +
+      "</div>" +
+      '<p class="attn-link" id="attnOut" aria-live="polite"></p>' +
+      '<p class="attn-fine">' + esc(a.fine) + "</p>" +
+    "</div>" +
+  "</section>";
+}
+
+function wireAttention(root) {
+  var act = $("#attnAct", root), tool = $("#attnTool", root);
+  if (!act || !tool) return;
+  /* NOT named `copy`: that identifier is reserved by convention in this file
+     for a localized copy object, and the content checker reads it as one. */
+  var who = $("#attnWho", tool), out = $("#attnOut", tool), copyBtn = $("#attnCopy", tool);
+  var a = C.attention[state.lang] || C.attention.en;
+
+  act.addEventListener("click", function () {
+    var open = !tool.hasAttribute("hidden");
+    if (open) { tool.setAttribute("hidden", ""); return; }
+    tool.removeAttribute("hidden");
+    try { who.focus(); } catch (err) { }
+  });
+
+  function render() {
+    var v = who.value.trim();
+    out.textContent = v ? introLink(v) : "";
+  }
+  who.addEventListener("input", render);
+
+  copyBtn.addEventListener("click", function () {
+    var v = who.value.trim();
+    if (!v) { try { who.focus(); } catch (err) { } return; }
+    var url = introLink(v);
+    out.textContent = url;
+    var done = function () { copyBtn.textContent = a.copied; setTimeout(function () { copyBtn.textContent = a.copy; }, 2200); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, function () { done(); });
+    } else { done(); }
+  });
+}
+
+/* ------------------------------------------------------------- SYS CARE
+   WHAT THIS IS AND WHAT IT MUST NOT BECOME
+
+   It answers one question and only that one: what happens after the system is
+   built. It sits at the very END of the order window, after the ownership
+   note and after the steps, because it is the last thing that matters — not
+   the first. If it ever moves higher, or grows a comparison grid, the page
+   stops being a systems studio and starts being a hosting company.
+
+   The paragraph directly above it says "no subscription to lapse", and that
+   sentence must survive this one. So the framing is deliberate: the system
+   runs whether we are involved or not, and this is about keeping it running
+   WELL. Care is not what keeps it alive; ownership already did that.
+
+   Prices are "from", with no table and no comparison, because the real number
+   depends on the system and inventing a fixed one would be the first
+   unsupported promise on the page. There are no response times and no uptime
+   percentages anywhere in this copy — we have not established any, so we do
+   not print any. */
+function careHtml() {
+  var c = C.care[state.lang] || C.care.en;
+  function level(name, from, body) {
+    return '<div class="care-level">' +
+      '<div class="care-head">' +
+        '<span class="care-name">' + esc(name) + "</span>" +
+        '<span class="care-from">' + esc(from) + "</span>" +
+      "</div>" +
+      '<p class="care-body">' + esc(body) + "</p>" +
+    "</div>";
+  }
+  return '<section class="care">' +
+    '<h4 class="care-title">' + esc(c.title) + "</h4>" +
+    '<p class="care-lead">' + esc(c.lead) + "</p>" +
+    level(c.careName, c.careFrom, c.careBody) +
+    level(c.proName, c.proFrom, c.proBody) +
+    '<p class="care-foot">' + esc(c.foot) + "</p>" +
+  "</section>";
+}
+
+function renderSimple(record, app) {
+  var copy = appCopy(app);
+  var html = "<h3>" + copy.title + "</h3><p>" + copy.intro + "</p>";
+  if (copy.items && copy.items.length) {
+    html += '<ul class="panel-list">' + copy.items.map(function (item) {
+      return "<li>" + item + "</li>";
+    }).join("") + "</ul>";
+  }
+  /* Only under About: it is a statement about how the studio works, so it
+     belongs with the rest of that, not floating on its own. */
+  if (app === "about") html += attentionHtml();
+  setHtml(record.body, html);
+  if (app === "about") wireAttention(record.body);
+}
+
+/* Cases: generated from the portfolio safe views (spec §11). */
+function caseItemHtml(view, lang) {
+  var labels = C.portfolioCaseLabels[lang] || C.portfolioCaseLabels.en;
+  var parts = [];
+  parts.push('<span class="case-goal">' + esc(view.goal) + "</span>");
+  var meta = [view.industry, view.projectType].filter(Boolean).map(esc).join(" &middot; ");
+  if (meta) parts.push('<span class="case-meta">' + meta + "</span>");
+  if (view.features && view.features.length) {
+    parts.push('<span class="case-meta">' + esc(labels.built) + ": " +
+      view.features.map(esc).join(" &middot; ") + "</span>");
+  }
+  if (view.scale) parts.push('<span class="case-meta">' + esc(view.scale) + "</span>");
+  if (view.resultsState === "measured" && view.results) {
+    parts.push('<span class="case-result">' + esc(view.results) + "</span>" +
+      '<span class="case-note">' + esc(labels.reported) + "</span>");
+  }
+  if (view.origin) parts.push('<span class="case-note">' + esc(view.origin.label) + "</span>");
+  if (view.nameState === "withheld") parts.push('<span class="case-note">' + esc(labels.withheld) + "</span>");
+  else if (view.nameState === "not-yet-asked") parts.push('<span class="case-note">' + esc(labels.notasked) + "</span>");
+  return "<li>" + parts.join("<br>") + "</li>";
+}
+
+function renderCases(record) {
+  var lang = state.lang;
+  var copy = appCopy("cases", lang);
+  var items = [];
+  if (window.sbPortfolio && window.sbPortfolioView) {
+    window.sbPortfolio.forEach(function (entry) {
+      if (!entry || entry.visibility === "private") return;   /* never surfaced */
+      items.push(caseItemHtml(window.sbPortfolioView(entry, lang), lang));
+    });
+  }
+  /* Work that is real but has nothing to open yet. Reads the same object the
+     OS Portfolio does, so the count cannot be current in one place and stale
+     in the other — and it keeps the register of the entries above it: a
+     number and a state, no client and no promise of a date. */
+  if (typeof window.sbPipelineView === "function") {
+    var pipe = window.sbPipelineView(lang);
+    if (pipe) {
+      (pipe.rows || [pipe]).forEach(function (r) {
+        items.push('<li class="plain case-pipeline">' +
+          '<span class="case-pipe-count">' + esc(r.count) + "</span>" +
+          '<span class="case-pipe-label">' + esc(r.label) + "</span><br>" +
+          '<span class="case-note">' + esc(r.note) + "</span></li>");
+      });
+    }
+  }
+  items.push('<li class="plain">' + (C.portfolioCaseLink[lang] || C.portfolioCaseLink.en) + "</li>");
+  var platform = C.casesOpenPlatformLabel[lang] || C.casesOpenPlatformLabel.en;
+  setHtml(record.body,
+    "<h3>" + copy.title + "</h3><p>" + copy.intro + "</p>" +
+    '<ul class="panel-list">' + items.join("") + "</ul>" +
+    '<p class="link-row"><a href="' + esc(OS_LINK) + '">' + esc(platform) + "</a></p>");
+}
+
+/* ----------------------------------------------------------- order panel */
+
+function packageById(lang, id) {
+  var packages = appCopy("order", lang).packages;
+  for (var i = 0; i < packages.length; i++) if (packages[i].id === id) return packages[i];
+  return packages[0];
+}
+
+function packageLabel(lang, id) {
+  var pkg = packageById(lang, id);
+  if (!PRICING) return pkg.name;
+  return pkg.name + " — " + PRICING.priceOf(pkg.priceId, lang);
+}
+
+/* localStorage read (the landing writes nothing) — spec §17. */
+function seenSystemsPrefill(lang) {
+  if (!window.sbPortfolio || !window.sbPortfolioView) return "";
+  var raw;
+  /* Both catches are deliberate no-prefill paths, not swallowed failures: this
+     is optional context written by another surface. Storage blocked (private
+     mode / disabled cookies) or a corrupt value must leave the visitor with a
+     working, empty textarea and nothing to read (spec 17). */
+  try { raw = window.localStorage.getItem(SEEN_KEY); } catch (err) { return ""; }
+  if (!raw) return "";
+  var ids;
+  try { ids = JSON.parse(raw); } catch (err) { return ""; }
+  if (!Array.isArray(ids)) return "";
+  var names = [];
+  ids.forEach(function (id) {
+    for (var i = 0; i < window.sbPortfolio.length; i++) {
+      if (window.sbPortfolio[i].id === id) {
+        var view = window.sbPortfolioView(window.sbPortfolio[i], state.lang);
+        if (view.name) names.push(view.name);
+        return;
+      }
+    }
+  });
+  if (!names.length) return "";
+  var template = C.seenSystemsLineTemplates[lang] || C.seenSystemsLineTemplates.en;
+  return template.replace("{names}", names.join(", ")) + "\n\n";
+}
+
+function renderOrder(record) {
+  var lang = state.lang;
+  var copy = appCopy("order", lang);
+  var form = copy.form;
+  var cards = copy.packages.map(function (pkg) {
+    var price = PRICING ? PRICING.priceOf(pkg.priceId, lang) : "";
+    return '<button type="button" class="pkg' + (pkg.id === state.order.pkg ? " is-selected" : "") +
+      '" data-pkg="' + esc(pkg.id) + '">' +
+      (pkg.badge ? '<div class="badge-line">' + pkg.badge + "</div>" : "") +
+      '<div class="pkg-name">' + pkg.name + "</div>" +
+      '<div><span class="pkg-price">' + (price ? esc(price) : esc(SYS_ERRORS.pricing)) + "</span>" +
+      '<span class="pkg-period">/ ' + pkg.period + "</span></div>" +
+      "<ul>" + pkg.features.map(function (f) { return "<li>" + f + "</li>"; }).join("") + "</ul>" +
+      "</button>";
+  }).join("");
+
+  setHtml(record.body,
+    "<h3>" + copy.title + "</h3><p>" + copy.intro + "</p>" +
+    '<div class="pkg-grid">' + cards + "</div>" +
+    '<div class="note-block">' + svg("shield") + '<div class="note-text">' + copy.guarantee + "</div></div>" +
+    '<div class="note-block">' + svg("key") + '<div class="note-text">' + copy.ownership + "</div></div>" +
+    '<div class="steps"><h4>' + copy.stepsTitle + "</h4><ol>" +
+      copy.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") +
+    '</ol><p class="after">' + copy.after + "</p>" + careHtml() + "</div>" +
+    /* No novalidate: name/email are enforced by the browser before the submit
+       event fires (spec 12.2 / 19). submitOrder re-checks as a belt and braces. */
+    '<form class="order-form" id="orderForm" autocomplete="off">' +
+      '<div class="field"><label for="of-name">' + form.name + '</label>' +
+        '<input id="of-name" name="name" type="text" required placeholder="' + esc(form.namePh) + '"></div>' +
+      '<div class="field"><label for="of-email">' + form.email + '</label>' +
+        '<input id="of-email" name="email" type="email" required placeholder="' + esc(form.emailPh) + '"></div>' +
+      '<div class="field"><label for="of-phone">' + form.phone + '</label>' +
+        '<input id="of-phone" name="phone" type="tel" placeholder="' + esc(form.phonePh) + '"></div>' +
+      '<div class="field"><label for="of-package">' + form.selected + '</label>' +
+        '<input id="of-package" name="package" type="text" readonly value="' + esc(packageLabel(lang, state.order.pkg)) + '"></div>' +
+      '<div class="field"><label for="of-message">' + form.task + '</label>' +
+        '<textarea id="of-message" name="message" rows="3" placeholder="' + esc(form.taskPh) + '"></textarea>' +
+        '<span class="help">' + form.taskHelp + "</span></div>" +
+      '<div class="submit-row">' +
+        '<button class="btn-submit" type="submit">' + form.submit + "</button>" +
+        '<span class="hint">' + form.hint + "</span>" +
+      "</div>" +
+      '<div class="form-status" id="orderStatus" role="status" aria-live="polite"></div>' +
+    "</form>");
+
+  Array.prototype.forEach.call(record.body.querySelectorAll(".pkg"), function (card) {
+    card.addEventListener("click", function () {
+      state.order.pkg = card.getAttribute("data-pkg");
+      Array.prototype.forEach.call(record.body.querySelectorAll(".pkg"), function (other) {
+        other.classList.toggle("is-selected", other === card);
+      });
+      $("#of-package", record.body).value = packageLabel(state.lang, state.order.pkg);
+    });
+  });
+
+  var messageField = $("#of-message", record.body);
+  if (!messageField.value) messageField.value = seenSystemsPrefill(lang);
+  $("#orderForm", record.body).addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    submitOrder(record);
+  });
+}
+
+/* Shared acceptance rule for both formsubmit.co calls (spec §12.3):
+   delivered only if the response is OK and the body does not say success:false. */
+function acceptResponse(response, bodyText) {
+  if (!response.ok) return false;
+  if (!bodyText) return true;
+  var data;
+  try { data = JSON.parse(bodyText); } catch (err) { return true; }
+  if (data && (data.success === false || data.success === "false")) return false;
+  return true;
+}
+
+function fieldValue(form, name) {
+  var node = form.elements.namedItem(name);
+  return node ? node.value : "";
+}
+
+/* The rescue mail body. The blank separator line is itself removed by the
+   empty-filter (spec 12.5) — reproduce the filter, not an imagined layout. */
+function briefBody(form, lang) {
+  var f = appCopy("order", lang).form;
+  return [
+    f.task + ":",
+    fieldValue(form, "message"),
+    "",
+    "—",
+    fieldValue(form, "name"),
+    fieldValue(form, "email"),
+    fieldValue(form, "phone"),
+    fieldValue(form, "package")
+  ].filter(Boolean).join("\n");
+}
+
+function submitOrder(record) {
+  var lang = state.lang;
+  var f = appCopy("order", lang).form;
+  var form = $("#orderForm", record.body);
+  var status = $("#orderStatus", record.body);
+  var button = $(".btn-submit", record.body);
+  if (!form.checkValidity()) { form.reportValidity(); return; }
+
+  var submittedEmail = fieldValue(form, "email");
+  var submittedPackage = fieldValue(form, "package");
+
+  status.className = "form-status";
+  setHtml(status, '<span class="line dim">' + f.sending + "</span>");
+  button.disabled = true;
+
+  var payload = new FormData(form);
+  payload.append("_subject", S.form.orderSubjectTemplate.replace("{packageLabel}", submittedPackage));
+  payload.append("_template", "table");
+  payload.append("_captcha", "false");
+  /* If this visitor arrived through someone's introduction, it rides along
+     here and nowhere else. This is the only moment the introduction leaves
+     the browser — a person has chosen to write to us, so there is finally
+     something to attribute. Until then it sits in local storage doing
+     nothing, which is the whole point. */
+  var introducedBy = introCode();
+  if (introducedBy) payload.append("Introduced by", introducedBy);
+
+  fetch(ENDPOINT, { method: "POST", body: payload, headers: { Accept: "application/json" } })
+    .then(function (response) {
+      return response.text().then(function (text) { return acceptResponse(response, text); });
+    })
+    .catch(function () { return false; })
+    .then(function (delivered) {
+      button.disabled = false;
+      if (delivered) orderSuccess(record, f, submittedEmail, submittedPackage);
+      else orderFailure(record, f, lang);
+    });
+}
+
+function orderSuccess(record, f, email, pkg) {
+  var status = $("#orderStatus", record.body);
+  var form = $("#orderForm", record.body);
+  setHtml(status,
+    '<span class="ok-title">' + f.successTitle + "</span>" +
+    '<span class="line dim">' + f.successMeta.replace("{email}", esc(email)).replace("{package}", esc(pkg)) + "</span>" +
+    '<span class="line txt">' + f.successNext + "</span>" +
+    '<span class="line dim">' + f.successFix + "</span>");
+  toast(BRAND, f.success, "order", true);       /* forced: shown even in DND */
+  chirp();
+  form.reset();
+  state.order.pkg = "growth";
+  Array.prototype.forEach.call(record.body.querySelectorAll(".pkg"), function (card) {
+    card.classList.toggle("is-selected", card.getAttribute("data-pkg") === "growth");
+  });
+  $("#of-package", record.body).value = packageLabel(state.lang, "growth");
+}
+
+function orderFailure(record, f, lang) {
+  var status = $("#orderStatus", record.body);
+  var form = $("#orderForm", record.body);
+  var body = briefBody(form, lang);
+  var mailto = "mailto:" + CONTACT_EMAIL + "?subject=" + encodeURIComponent(f.mailSubject) +
+    "&body=" + encodeURIComponent(body);
+  setHtml(status,
+    '<span class="err-title">' + f.errTitle + "</span>" +
+    '<span class="line txt">' + f.errBody + "</span>" +
+    '<div class="rescue"><a href="' + esc(mailto) + '">' + f.errMail + "</a>" +
+    '<button type="button" class="copy-brief">' + f.errCopy + "</button></div>" +
+    '<span class="line dim">' + f.errKept + "</span>");
+  $(".copy-brief", status).addEventListener("click", function (ev) {
+    var button = ev.currentTarget;
+    var copied = function () { button.textContent = f.errCopied; };
+    var fallback = function () {
+      var field = $("#of-message", record.body);
+      field.focus();
+      field.select();
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(body).then(copied, fallback);
+      } else { fallback(); }
+    } catch (err) { fallback(); }
+  });
+}
+
+/* --------------------------------------------------------- roi / payback */
+
+/* SB_ROI:BEGIN — pure payback math + string composition.
+   Extracted verbatim and executed by tools/landing-verify-roi.js against the
+   acceptance vectors in landing.md §12.7. Depends only on C and PRICING. */
+function intFmt(v) {
+  return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+function monthsFmt(v) {
+  if (v < 1) return "<1";
+  if (v < 2) return String(Math.round(v * 10) / 10);
+  return String(Math.round(v));
+}
+
+function rangeFmt(lo, hi, f) {
+  var a = f(lo), b = f(hi);
+  return a === b ? a : a + "–" + b;
+}
+
+function euroRound100(v) { return Math.round(v / 100) * 100; }
+function euroFmt(v) { return "€" + intFmt(v); }
+
+function roiCompute(hours, people, rate) {
+  var teamWeekly = hours * people;
+  var monthLo = teamWeekly * PRICING.SHARE_LO * PRICING.WEEKS / 12;
+  var monthHi = teamWeekly * PRICING.SHARE_HI * PRICING.WEEKS / 12;
+  var yearLo = teamWeekly * PRICING.SHARE_LO * PRICING.WEEKS * rate;
+  var yearHi = teamWeekly * PRICING.SHARE_HI * PRICING.WEEKS * rate;
+  var payLo = PRICING.PRICE_LO / (yearHi / 12);
+  var payHi = PRICING.PRICE_HI / (yearLo / 12);
+  return {
+    teamWeekly: teamWeekly, monthLo: monthLo, monthHi: monthHi,
+    yearLo: yearLo, yearHi: yearHi, payLo: payLo, payHi: payHi,
+    tooSmall: !isFinite(payHi) || payHi > PRICING.MAX_PAYBACK
+  };
+}
+
+function roiStrings(hours, people, rate, lang) {
+  var t = C.appData.roi[lang];
+  var c = roiCompute(hours, people, rate);
+  var monthUnit = c.payHi < 2 ? t.monthUnit : t.monthsUnit;
+  var backText = rangeFmt(c.monthLo, c.monthHi, intFmt) + " " + t.hoursUnit;
+  var payText = rangeFmt(c.payLo, c.payHi, monthsFmt) + " " + monthUnit;
+  var line1 = t.briefTeam
+    .replace("{people}", String(people))
+    .replace("{hours}", String(hours))
+    .replace("{rate}", String(rate));
+  var line2 = c.tooSmall ? t.briefSmall
+    : t.briefPay.replace("{back}", backText).replace("{pay}", payText);
+  return {
+    raw: c,
+    tooSmall: c.tooSmall,
+    hoursOut: String(hours) + t.hoursUnit,
+    peopleOut: String(people),
+    rateOut: "€" + String(rate),
+    timeFigure: rangeFmt(c.monthLo, c.monthHi, intFmt),
+    timeUnit: " " + t.hoursUnit,
+    valueFigure: rangeFmt(euroRound100(c.yearLo), euroRound100(c.yearHi), euroFmt),
+    paybackFigure: c.tooSmall ? "—" : rangeFmt(c.payLo, c.payHi, monthsFmt),
+    paybackUnit: c.tooSmall ? "" : " " + monthUnit,
+    paybackNote: c.tooSmall ? t.tooSmall : t.paybackSub.replace("{BAND}", PRICING.band(lang)),
+    brief: line1 + "\n" + line2 + "\n\n" + t.briefAsk
+  };
+}
+/* SB_ROI:END */
+
+function renderRoi(record) {
+  var lang = state.lang;
+  var t = appCopy("roi", lang);
+  if (!PRICING) {
+    setHtml(record.body, "<h3>" + t.title + '</h3><p class="txt">' + esc(SYS_ERRORS.pricing) + "</p>");
+    return;
+  }
+  setHtml(record.body,
+    "<h3>" + t.title + "</h3>" +
+    "<p>" + t.intro + "</p>" +
+    '<div class="roi-anchor">' + t.anchor + "</div>" +      /* checkable real result */
+    roiSliderHtml("roiHours", t.hoursLabel, t.hoursHint, 1, 30, 8) +
+    roiSliderHtml("roiPeople", t.peopleLabel, t.peopleHint, 1, 15, 3) +
+    roiSliderHtml("roiRate", t.rateLabel, t.rateHint, 12, 60, 22) +
+    '<div class="roi-results" id="roiResults">' +
+      roiFigureHtml("time", t.resultLabel, t.resultSub) +
+      roiFigureHtml("value", t.valueLabel, t.valueSub) +
+      roiFigureHtml("pay", t.paybackLabel, "") +
+    "</div>" +
+    '<button class="btn btn-primary roi-cta" type="button" id="roiCta">' + t.cta + "</button>");
+
+  record.roiPrev = null;
+  ["roiHours", "roiPeople", "roiRate"].forEach(function (id) {
+    $("#" + id, record.body).addEventListener("input", function () { roiUpdate(record, true); });
+  });
+  $("#roiCta", record.body).addEventListener("click", function () { roiHandoff(); });
+  roiUpdate(record, false);
+}
+
+function roiSliderHtml(id, label, hint, min, max, value) {
+  return '<div class="slider"><div class="s-top"><label for="' + id + '"><span class="s-label">' + label + "</span>" +
+    (hint ? '<span class="s-hint">' + hint + "</span>" : "") + '</label><span class="s-out" id="' + id + 'Out"></span></div>' +
+    '<input type="range" id="' + id + '" min="' + min + '" max="' + max + '" step="1" value="' + value + '"></div>';
+}
+
+function roiFigureHtml(key, label, sub) {
+  return '<div class="roi-fig"><div class="f-label">' + label + "</div>" +
+    '<div class="f-value"><span id="roi' + key + 'Fig"></span><span class="f-unit" id="roi' + key + 'Unit"></span></div>' +
+    '<div class="f-sub" id="roi' + key + 'Sub">' + sub + "</div></div>";
+}
+
+/* 500ms linear count-up between figure endpoints; snaps under OS reduced
+   motion. The at-rest string is always written exactly at the end. */
+function animateFigure(node, from, to, format, finalText) {
+  if (!from || osReducedMotion()) { node.textContent = finalText; return; }
+  var start = performance.now();
+  function frame(now) {
+    var k = Math.min(1, (now - start) / 500);
+    node.textContent = format(from[0] + (to[0] - from[0]) * k, from[1] + (to[1] - from[1]) * k);
+    if (k < 1) requestAnimationFrame(frame); else node.textContent = finalText;
+  }
+  requestAnimationFrame(frame);
+}
+
+function roiUpdate(record, animate) {
+  var lang = state.lang;
+  var t = appCopy("roi", lang);
+  var hours = parseInt($("#roiHours", record.body).value, 10);
+  var people = parseInt($("#roiPeople", record.body).value, 10);
+  var rate = parseInt($("#roiRate", record.body).value, 10);
+  var out = roiStrings(hours, people, rate, lang);
+
+  $("#roiHoursOut", record.body).textContent = out.hoursOut;
+  $("#roiPeopleOut", record.body).textContent = out.peopleOut;
+  $("#roiRateOut", record.body).textContent = out.rateOut;
+
+  var prev = animate ? record.roiPrev : null;
+  animateFigure($("#roitimeFig", record.body),
+    prev && [prev.monthLo, prev.monthHi], [out.raw.monthLo, out.raw.monthHi],
+    function (lo, hi) { return rangeFmt(lo, hi, intFmt); }, out.timeFigure);
+  $("#roitimeUnit", record.body).textContent = out.timeUnit;
+
+  animateFigure($("#roivalueFig", record.body),
+    prev && [euroRound100(prev.yearLo), euroRound100(prev.yearHi)],
+    [euroRound100(out.raw.yearLo), euroRound100(out.raw.yearHi)],
+    function (lo, hi) { return rangeFmt(lo, hi, euroFmt); }, out.valueFigure);
+  $("#roivalueUnit", record.body).textContent = "";
+
+  var payNode = $("#roipayFig", record.body);
+  if (out.tooSmall || !prev || prev.tooSmall) payNode.textContent = out.paybackFigure;
+  else animateFigure(payNode, [prev.payLo, prev.payHi], [out.raw.payLo, out.raw.payHi],
+    function (lo, hi) { return rangeFmt(lo, hi, monthsFmt); }, out.paybackFigure);
+  $("#roipayUnit", record.body).textContent = out.paybackUnit;
+
+  var noteNode = $("#roipaySub", record.body);
+  noteNode.textContent = out.paybackNote;
+  noteNode.classList.toggle("is-warn", out.tooSmall);
+  $("#roiResults", record.body).classList.toggle("is-dimmed", out.tooSmall);
+
+  record.roiPrev = out.raw;
+  state.roiBrief = out.brief;
+}
+
+function roiHandoff() {
+  closeWindow("roi");
+  openApp("order");
+  setTimeout(function () {
+    var order = wins.order;
+    if (!order) return;
+    var field = $("#of-message", order.body);
+    if (field && !field.value) field.value = state.roiBrief;
+  }, 60);
+}
+
+/* ------------------------------------------------------------------ chat */
+
+function chatCopy(lang) { return appCopy("chat", lang || state.lang); }
+
+function pushChat(from, text) {
+  state.chat.history.push({
+    from: from,
+    text: text,
+    time: new Date().toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" })
+  });
+}
+
+function renderChat(record) {
+  var t = chatCopy();
+  state.chat.everOpened = true;
+  if (!state.chat.history.length) pushChat("agent", t.welcome);
+  setHtml(record.body,
+    '<div class="chat">' +
+      '<div class="chat-head">' +
+        '<div class="chat-avatar">' + esc(S.chat.avatarLetter) + "</div>" +
+        "<div><div class='who'>" + esc(t.agent) + "</div>" +
+        "<div class='st'>" + esc(t.status) + " · " + esc(t.note) + "</div></div>" +
+      "</div>" +
+      '<div class="chat-msgs" id="chatMsgs"></div>' +
+      '<div class="chat-input">' +
+        '<input class="mail" id="chatEmail" type="email" autocomplete="email" placeholder="' + esc(t.emailPh) + '">' +
+        '<div class="chat-send-row">' +
+          '<textarea id="chatText" rows="1" placeholder="' + esc(t.placeholder) + '"></textarea>' +
+          '<button class="chat-send" id="chatSend" type="button" aria-label="' + esc(t.send) + '">' + svg("send") + "</button>" +
+        "</div>" +
+      "</div>" +
+    "</div>");
+  record.body.style.padding = "16px 16px 14px";
+  renderChatMessages(record);
+
+  var text = $("#chatText", record.body);
+  text.addEventListener("input", function () {
+    text.style.height = "auto";
+    text.style.height = Math.min(80, text.scrollHeight) + "px";
+  });
+  text.addEventListener("keydown", function (ev) {
+    if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); chatSend(record); }
+  });
+  $("#chatSend", record.body).addEventListener("click", function () { chatSend(record); });
+}
+
+function renderChatMessages(record) {
+  var list = $("#chatMsgs", record.body);
+  if (!list) return;
+  setHtml(list, state.chat.history.map(function (message) {
+    return '<div class="bubble from-' + message.from + '">' + esc(message.text) +
+      '<span class="time">' + esc(message.time) + "</span></div>";
+  }).join(""));
+  list.scrollTop = list.scrollHeight;
+}
+
+function chatSend(record) {
+  var t = chatCopy();
+  var textField = $("#chatText", record.body);
+  var emailField = $("#chatEmail", record.body);
+  var message = textField.value.trim();
+  if (!message) return;
+
+  var email = emailField.value.trim();
+  var valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  pushChat("user", message);
+  textField.value = "";
+  textField.style.height = "auto";
+
+  if (!valid) {
+    pushChat("agent", t.askEmail);
+    renderChatMessages(record);
+    emailField.focus();
+    return;                                   /* no network request */
+  }
+
+  renderChatMessages(record);
+  var list = $("#chatMsgs", record.body);
+  var indicator = makeEl("div", "typing", "<i></i><i></i><i></i>");
+  indicator.setAttribute("role", "status");
+  indicator.setAttribute("aria-label", t.typing);   /* dots carry no text */
+  list.appendChild(indicator);
+  list.scrollTop = list.scrollHeight;
+
+  var payload = new FormData();
+  payload.append("email", email);
+  payload.append("_subject", S.form.chatSubject);
+  payload.append("message", message);
+  var chatIntro = introCode();
+  if (chatIntro) payload.append("Introduced by", chatIntro);
+
+  var started = Date.now();
+  fetch(ENDPOINT, { method: "POST", body: payload, headers: { Accept: "application/json" } })
+    .then(function (response) {
+      return response.text().then(function (text) { return acceptResponse(response, text); });
+    })
+    .catch(function () { return false; })
+    .then(function (delivered) {
+      var wait = Math.max(0, 900 - (Date.now() - started));   /* typing floor */
+      setTimeout(function () {
+        if (indicator.parentNode) indicator.remove();
+        var replies = t.replies;
+        var reply = delivered ? replies[state.chat.replyIndex++ % replies.length] : t.failMsg;
+        pushChat("agent", reply);
+        deliverChatReply(reply);
+      }, wait);
+    });
+}
+
+function deliverChatReply(reply) {
+  var record = wins.chat;
+  var visible = record && !record.minimized && state.focused === "chat";
+  if (visible) {
+    renderChatMessages(record);
+    chirp();
+  } else {
+    if (record) renderChatMessages(record);
+    setChatBadge();
+    toast(chatCopy().agent, reply, "chat", false);
+    chirp();
+  }
+}
+
+function chatWelcomePush() {
+  if (state.chat.everOpened || wins.chat) return;
+  var t = chatCopy();
+  pushChat("agent", t.welcome);
+  setChatBadge();
+  toast(t.agent, t.welcome, "chat", false);
+  chirp();
+}
+
+/* --------------------------------------------------- toasts + soundcheck */
+
+function toast(title, body, icon, forced) {
+  if (state.prefs.dnd && !forced) return;
+  var node = makeEl("div", "toast",
+    '<div class="ic">' + svg(icon) + "</div>" +
+    '<div><div class="t-title">' + esc(title) + '</div><div class="t-body">' + esc(body) + "</div></div>");
+  el("toasts").appendChild(node);
+  requestAnimationFrame(function () { node.classList.add("is-in"); });
+  var timer = setTimeout(remove, 6200);
+  node.addEventListener("click", remove);
+  function remove() {
+    clearTimeout(timer);
+    node.classList.remove("is-in");
+    setTimeout(function () { if (node.parentNode) node.remove(); }, 450);
+  }
+}
+
+/* Notification chirp. DND deliberately does NOT silence it (faithful quirk). */
+var audioCtx = null;
+function chirp() {
+  if (!state.prefs.sound || state.prefs.volume <= 0) return;
+  try {
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    audioCtx = audioCtx || new Ctx();
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    var now = audioCtx.currentTime;
+    var peak = 0.22 * state.prefs.volume / 100;
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.linearRampToValueAtTime(1180, now + 0.28);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(peak, now + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.34);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.35);
+  } catch (err) {
+    /* Audio unavailable (no device, blocked autoplay policy): silent by design,
+       the visible toast already carries the notification. */
+  }
+}
+
+/* -------------------------------------------------------- control center */
+/* Панель Preferences снята с витрины вместе с часами и статусом — код ушёл
+   за разметкой. Остались только сами предпочтения (applyPrefs) — их читают
+   анимации и звук. */
+
+function applyPrefs() {
+  document.documentElement.setAttribute("data-reduced", state.prefs.motion ? "on" : "off");
+  document.documentElement.setAttribute("data-dnd", state.prefs.dnd ? "on" : "off");
+  if (state.prefs.motion) dockMagnifyReset();
+  armAutoHide();
+}
+
+/* -------------------------------------------------------- command palette */
+
+function paletteItems() {
+  var lang = state.lang;
+  var items = APPS.map(function (app) {
+    var copy = appCopy(app, lang);
+    return {
+      icon: app, title: copy.label, sub: copy.title,
+      run: function () { openApp(app); }
+    };
+  });
+  /* Действие «Switch to Light mode» удалено: светлая тема снята с витрины,
+     и палитра не имеет права быть последней дверью в неё. */
+  items.push({
+    icon: "globe",
+    title: C.cmdkLangSwitchLabel[lang] || C.cmdkLangSwitchLabel.en,
+    sub: S.cmdk.langSub,
+    run: cycleLang
+  });
+  return items;
+}
+
+function renderPalette() {
+  var query = el("palInput").value.trim().toLowerCase();
+  var all = paletteItems();
+  var matches = all.filter(function (item) {
+    return !query || (item.title + " " + item.sub).toLowerCase().indexOf(query) !== -1;
+  });
+  state.palette.items = matches;
+  if (state.palette.cur >= matches.length) state.palette.cur = 0;
+  var list = el("palList");
+  if (!matches.length) {
+    setHtml(list, '<div class="pal-empty">' + esc(C.cmdkEmptyLabel[state.lang] || C.cmdkEmptyLabel.en) + "</div>");
+    return;
+  }
+  setHtml(list, matches.map(function (item, i) {
+    return '<button class="pal-item' + (i === state.palette.cur ? " is-cur" : "") + '" data-i="' + i + '">' +
+      '<span class="p-ic">' + svg(item.icon) + "</span>" +
+      "<span><span class='p-title'>" + esc(item.title) + "</span><br>" +
+      "<span class='p-sub'>" + esc(item.sub) + "</span></span></button>";
+  }).join(""));
+  Array.prototype.forEach.call(list.children, function (node) {
+    node.addEventListener("mouseenter", function () {
+      state.palette.cur = parseInt(node.getAttribute("data-i"), 10);
+      highlightPalette();
+    });
+    node.addEventListener("click", function () {
+      state.palette.cur = parseInt(node.getAttribute("data-i"), 10);
+      runPaletteItem();
+    });
+  });
+}
+
+function highlightPalette() {
+  Array.prototype.forEach.call(el("palList").children, function (node, i) {
+    if (node.classList) node.classList.toggle("is-cur", i === state.palette.cur);
+  });
+}
+
+function runPaletteItem() {
+  var item = state.palette.items[state.palette.cur];
+  if (!item) return;
+  closePalette();
+  setTimeout(item.run, 160);
+}
+
+function openPalette() {
+  state.palette.open = true;
+  state.palette.cur = 0;
+  el("palInput").value = "";
+  el("palette").classList.add("is-open");
+  renderPalette();
+  setTimeout(function () { el("palInput").focus(); }, 50);
+}
+
+function closePalette() {
+  state.palette.open = false;
+  el("palette").classList.remove("is-open");
+}
+
+function togglePalette() { state.palette.open ? closePalette() : openPalette(); }
+
+/* ------------------------------------------------------- OS handoff veil */
+
+function isOsLink(anchor) {
+  var href = anchor.getAttribute("href") || "";
+  /* The canonical link is the directory, "os/". The explicit index.html form
+     is still recognised so an older bookmark or a hand-written link behaves
+     the same way. */
+  return /(^|\/)os\/(index\.html)?(\?|#|$)/.test(href);
+}
+
+function wireHandoff() {
+  document.addEventListener("click", function (ev) {
+    var anchor = ev.target.closest ? ev.target.closest("a[href]") : null;
+    if (!anchor || ev.defaultPrevented) return;
+    if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+    if (anchor.target && anchor.target !== "_self") return;
+    if (!isOsLink(anchor)) return;
+    ev.preventDefault();
+    /* "I came in through the front door" — the one bit of state the OS needs
+       from the landing. It used to travel as ?enter=1 in the address bar;
+       it travels in session storage now, so the URL stays /os/. */
+    try { window.sessionStorage.setItem("sysbaby.enter", "1"); } catch (err) { /* storage blocked */ }
+    var href = anchor.getAttribute("href");
+    if (osReducedMotion()) { location.href = href; return; }
+    var veil = el("veil");
+    var navigated = false;
+    function go() { if (!navigated) { navigated = true; location.href = href; } }
+    veil.addEventListener("transitionend", go, { once: true });
+    setTimeout(go, 580);                       /* fallback: never strand the user */
+    requestAnimationFrame(function () { veil.classList.add("is-up"); });
+  });
+  window.addEventListener("pageshow", function () { el("veil").classList.remove("is-up"); });
+}
+
+/* ---------------------------------------------------------------- wiring */
+
+function wireChrome() {
+  el("cmdkTrigger").addEventListener("click", openPalette);
+  el("palBackdrop").addEventListener("click", closePalette);
+  el("palInput").addEventListener("input", function () { state.palette.cur = 0; renderPalette(); });
+  el("palInput").addEventListener("keydown", function (ev) {
+    var count = state.palette.items.length;
+    if (!count && (ev.key === "ArrowDown" || ev.key === "ArrowUp" || ev.key === "Enter")) {
+      ev.preventDefault();                     /* nothing to move through */
+      return;
+    }
+    if (ev.key === "ArrowDown") { ev.preventDefault(); state.palette.cur = (state.palette.cur + 1) % count; highlightPalette(); }
+    else if (ev.key === "ArrowUp") { ev.preventDefault(); state.palette.cur = (state.palette.cur - 1 + count) % count; highlightPalette(); }
+    else if (ev.key === "Enter") { ev.preventDefault(); runPaletteItem(); }
+  });
+
+  Array.prototype.forEach.call(el("flags").children, function (button) {
+    button.addEventListener("click", function () { setLang(button.getAttribute("data-lang")); });
+  });
+
+  el("ctaRequest").addEventListener("click", function (ev) { ev.preventDefault(); openApp("order"); });
+
+  document.addEventListener("keydown", function (ev) {
+    if ((ev.metaKey || ev.ctrlKey) && (ev.key === "k" || ev.key === "K")) { ev.preventDefault(); togglePalette(); return; }
+    if (ev.key === "Escape") {
+      if (state.palette.open) { closePalette(); return; }
+      if (state.focused) closeWindow(state.focused);
+    }
+  });
+
+  /* click on empty desktop unfocuses every window */
+  document.addEventListener("pointerdown", function (ev) {
+    if (ev.target.closest(".win, .dock, .topbar, .palette, .cc, .toasts, .dock-hint")) return;
+    blurWindows();
+  });
+
+  /* dock behaviours */
+  var dock = el("dock");
+  dock.addEventListener("click", function (e) {
+    if (performance.now() - dockRevealGuard < 380) { e.stopPropagation(); e.preventDefault(); }
+  }, true);
+  dock.addEventListener("pointermove", function (ev) { dockMagnify(ev); armAutoHide(); });
+  dock.addEventListener("pointerleave", dockMagnifyReset);
+  dock.addEventListener("pointerdown", function () { armAutoHide(); });
+  el("dockHint").addEventListener("mouseenter", showDock);
+  el("dockHint").addEventListener("click", showDock);
+  el("dockHint").addEventListener("touchstart", showDock, { passive: true });
+  window.addEventListener("pointermove", function (ev) {
+    if (ev.clientY >= window.innerHeight - 130) showDock(ev);
+  });
+  window.addEventListener("touchstart", function (ev) {
+    var touch = ev.touches && ev.touches[0];
+    if (touch && touch.clientY >= window.innerHeight - 130) showDock(ev);
+  }, { passive: true });
+
+  /* pause looping cosmetics while the tab is hidden */
+  document.addEventListener("visibilitychange", function () {
+    document.documentElement.setAttribute("data-anim", document.hidden ? "paused" : "running");
+  });
+}
+
+/* -------------------------------------------------------------- backdrop */
+
+/* Поле частиц и видеофон удалены вместе с их кодом: холст #bg исчез из
+   разметки задолго до этого прохода, и startField() выходил на первой же
+   строке — девяносто строк, которые никогда не рисовали. Видео жило на CDN
+   GoDaddy и было единственной внешней зависимостью страницы. Фон теперь —
+   собственное поле --bg, и единственное, что осталось от этого раздела, —
+   пересчёт заголовка при изменении окна. */
+function wireResize() {
+  window.addEventListener("resize", measureHeroFit);
+}
+
+/* ------------------------------------------------------------------ init */
+
+function init() {
+  document.title = S.documentTitle;
+  el("cmdkTriggerLabel").textContent = C.cmdkLabels[state.lang].triggerLabel;
+  el("tbApp").textContent = C.desktopLabel[state.lang];
+  renderHero();
+  buildDock();
+  applyPrefs();
+  renderHeroProof();
+  wireChrome();
+  wireHandoff();
+  wireResize();
+  startBoot();
+}
+
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+else init();
+
+})();
+</script>
+</body>
+</html>

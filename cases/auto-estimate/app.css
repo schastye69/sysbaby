@@ -1,0 +1,256 @@
+/* =============================================================================
+   SECTION 6 -- STYLESHEET
+   Dark premium by default: near-black blue paper, colour arrives as light
+   (gradients and glows), never as fills. Light theme swaps the same variables.
+   ============================================================================= */
+:root{
+  --bg:#05070f; --bg2:#0a0f1c; --text:#f2f5ff; --dim:#8b93ad; --line:rgba(255,255,255,.08);
+  --accent:#00f7ff; --accent-rgb:0,247,255; --gold:#e6c667; --gold-rgb:230,198,103;
+  --card1:rgba(255,255,255,.045); --card2:rgba(255,255,255,.015);
+  --variant:rgba(255,255,255,.03); --input-bg:rgba(0,0,0,.35); --input-line:rgba(255,255,255,.12);
+  --radius:18px;
+}
+[data-theme="light"]{
+  --bg:#eef1f7; --bg2:#e3e8f2; --text:#12141c; --dim:#5a627a; --line:rgba(0,0,0,.1);
+  --accent:#0072e0; --accent-rgb:0,114,224; --gold:#a97a12; --gold-rgb:169,122,18;
+  --card1:rgba(255,255,255,.75); --card2:rgba(255,255,255,.45);
+  --variant:rgba(0,0,0,.03); --input-bg:rgba(255,255,255,.8); --input-line:rgba(0,0,0,.14);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text); min-height:100vh; display:flex; align-items:flex-start;
+  font:15px/1.5 Inter,"Segoe UI",Arial,sans-serif; -webkit-font-smoothing:antialiased;
+}
+h2,h3{margin:0 0 12px; font-weight:600; letter-spacing:.2px}
+h2{font-size:17px} h3{font-size:15px}
+p{margin:0 0 10px}
+a{color:var(--accent)}
+
+/* --- aurora: four blurred blobs + one slow conic film, behind everything --- */
+.aurora{position:fixed; inset:0; overflow:hidden; z-index:0; pointer-events:none}
+.aurora i{position:absolute; display:block; width:52vw; height:52vw; border-radius:50%; filter:blur(90px); opacity:.35}
+.aurora i:nth-child(1){background:radial-gradient(circle,rgba(var(--accent-rgb),.55),transparent 65%); top:-14vw; left:-10vw; animation:float1 54s ease-in-out infinite}
+.aurora i:nth-child(2){background:radial-gradient(circle,rgba(var(--gold-rgb),.42),transparent 65%); bottom:-18vw; left:22vw; animation:float2 74s ease-in-out infinite}
+.aurora i:nth-child(3){background:radial-gradient(circle,rgba(var(--accent-rgb),.34),transparent 65%); top:18vh; right:-16vw; animation:float3 46s ease-in-out infinite}
+.aurora i:nth-child(4){background:radial-gradient(circle,rgba(var(--gold-rgb),.28),transparent 65%); bottom:6vh; right:6vw; animation:float1 62s ease-in-out infinite reverse}
+.aurora b{position:absolute; inset:-40%; background:conic-gradient(from 0deg,transparent,rgba(var(--accent-rgb),.06),transparent 40%,rgba(var(--gold-rgb),.05),transparent 70%); animation:spin 140s linear infinite}
+@keyframes float1{50%{transform:translate3d(6vw,7vh,0) scale(1.12)}}
+@keyframes float2{50%{transform:translate3d(-7vw,-5vh,0) scale(1.08)}}
+@keyframes float3{50%{transform:translate3d(-5vw,8vh,0) scale(1.15)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+body.paused .aurora *{animation-play-state:paused}
+
+/* --- chrome pills --- */
+.pill{
+  border:1px solid var(--line); background:var(--card1); color:var(--text);
+  border-radius:999px; padding:7px 14px; font-size:12.5px; backdrop-filter:blur(9px);
+}
+.theme-toggle{position:fixed; top:18px; right:calc(30% + 22px); z-index:6; cursor:pointer}
+.hotkey-hint{position:fixed; left:18px; bottom:18px; z-index:6; color:var(--dim)}
+/* Явное скрытое состояние — см. комментарий у .modal[hidden]. Ни одно правило
+   автора не задаёт .hotkey-hint display, так что браузерное [hidden] сработало
+   бы и без этой строки; она стоит здесь, чтобы следующая правка «дать пилюле
+   display:flex» не воскресила тот же дефект молча. */
+.hotkey-hint[hidden]{display:none}
+
+/* Итог, который видно с телефона.
+   На широком экране сумма всегда на глазах — панель стоит справа и не
+   уезжает. На телефоне панель уходит вниз, под форму в шесть тысяч пикселей,
+   и человек считает вслепую. Эта таблетка — то же самое число, что и в
+   .big-total, и она же ссылка на панель. На десктопе её нет вовсе. */
+.total-chip{
+  position:fixed; left:12px; right:12px; bottom:12px; z-index:7; display:none;
+  align-items:center; justify-content:space-between; gap:12px; cursor:pointer;
+  padding:11px 16px; font-size:13px; text-align:left;
+  border-color:rgba(var(--gold-rgb),.4); box-shadow:0 10px 30px -14px rgba(0,0,0,.9);
+  background:linear-gradient(180deg,rgba(10,15,28,.92),rgba(5,7,15,.96));
+}
+[data-theme="light"] .total-chip{background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(238,241,247,.97))}
+.total-chip .k{color:var(--dim); letter-spacing:1.4px; text-transform:uppercase; font-size:10.5px}
+.total-chip .v{font-size:17px; font-weight:700; color:var(--gold); white-space:nowrap}
+.total-chip[hidden]{display:none}
+
+/* --- left column --- */
+.container{position:relative; z-index:1; width:70%; padding:34px 30px 90px; }
+.logo-block{margin-bottom:22px}
+.logo{
+  font-size:28px; font-weight:700; letter-spacing:.4px;
+  background:linear-gradient(92deg,var(--accent),var(--gold)); -webkit-background-clip:text;
+  background-clip:text; color:transparent;
+}
+.tagline{color:var(--dim); font-size:13px; margin-top:4px}
+.section-title{margin:30px 0 14px; font-size:12.5px; letter-spacing:2px; text-transform:uppercase; color:var(--gold)}
+
+.card{
+  position:relative; overflow:hidden; border:1px solid var(--line); border-radius:var(--radius);
+  background:linear-gradient(160deg,var(--card1),var(--card2)); padding:18px 20px; margin-bottom:14px;
+  opacity:0; transform:translateY(10px); animation:rise .5s ease forwards;
+}
+@keyframes rise{to{opacity:1; transform:none}}
+.card:hover{border-color:rgba(var(--accent-rgb),.35); box-shadow:0 12px 40px -24px rgba(var(--accent-rgb),.75)}
+.card::after{
+  content:""; position:absolute; top:0; left:-60%; width:40%; height:100%;
+  background:linear-gradient(90deg,transparent,rgba(var(--accent-rgb),.09),transparent);
+  transition:left .8s ease; pointer-events:none;
+}
+.card:hover::after{left:120%}
+
+label{display:block; font-size:12.5px; color:var(--dim)}
+input[type=text],input[type=email],input[type=number],select,textarea{
+  width:100%; margin-top:5px; padding:9px 11px; color:var(--text);
+  background:var(--input-bg); border:1px solid var(--input-line); border-radius:11px; font:inherit;
+}
+input:focus,select:focus,textarea:focus{outline:none; border-color:rgba(var(--accent-rgb),.6); box-shadow:0 0 0 3px rgba(var(--accent-rgb),.12)}
+input[type=file]{margin-top:6px; color:var(--dim); font-size:12.5px}
+.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px}
+.grid-custom{grid-template-columns:2fr .7fr .9fr auto; align-items:end}
+.hint{color:var(--dim); font-size:12px}
+
+.search-wrap{margin:6px 0 18px}
+.search-wrap input{margin:0}
+.search-hint{display:inline-block; margin-top:6px; font-size:12px; color:var(--gold)}
+
+.paint-list{display:flex; flex-wrap:wrap; gap:10px}
+.paint-option{display:flex; align-items:center; gap:9px; padding:9px 14px; border:1px solid var(--line); border-radius:999px; background:var(--variant); cursor:pointer; color:var(--text); font-size:13px}
+.paint-option .dot{width:11px; height:11px; border-radius:50%; background:var(--dot,var(--accent)); box-shadow:0 0 10px var(--dot,var(--accent))}
+.paint-option input{width:auto; margin:0}
+.paint-option.on{border-color:rgba(var(--gold-rgb),.65); box-shadow:0 0 0 3px rgba(var(--gold-rgb),.12)}
+
+.check{display:flex; align-items:center; gap:9px; color:var(--text); font-size:13.5px; cursor:pointer}
+.check input{width:auto; margin:0}
+.service-row{display:flex; gap:14px; align-items:center; flex-wrap:wrap}
+.service-row .num{max-width:210px; margin:0}
+.variant-list{display:flex; flex-direction:column; gap:8px}
+.variant-row{display:flex; align-items:center; gap:12px; padding:8px 11px; background:var(--variant); border-radius:12px}
+.variant-row .num{max-width:150px; margin:0}
+.variant-row .check{flex:1}
+.card-dense summary{cursor:pointer; display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600; list-style:none}
+.card-dense summary::-webkit-details-marker{display:none}
+.card-dense summary::before{content:"+"; color:var(--accent); font-weight:700; width:14px}
+.card-dense details[open] summary::before{content:"−"}
+.card-dense details[open] summary{margin-bottom:12px}
+.count-badge{font-size:11px; color:var(--gold); border:1px solid rgba(var(--gold-rgb),.4); border-radius:999px; padding:1px 8px}
+
+.custom-list{list-style:none; margin:12px 0 0; padding:0; display:flex; flex-direction:column; gap:6px}
+.custom-list li{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 11px; background:var(--variant); border-radius:11px; font-size:13px}
+.icon-x{background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:14px; padding:2px 6px}
+.photo-gallery{display:flex; flex-wrap:wrap; gap:10px; margin-top:12px}
+.photo-thumb{position:relative; width:92px; height:92px; border-radius:12px; overflow:hidden; border:1px solid var(--line)}
+.photo-thumb img{width:100%; height:100%; object-fit:cover; display:block}
+.photo-thumb button{position:absolute; top:2px; right:2px; background:rgba(0,0,0,.55); border:none; color:#fff; border-radius:50%; width:20px; height:20px; cursor:pointer; line-height:1}
+#sigPad{width:100%; height:150px; background:var(--input-bg); border:1px solid var(--input-line); border-radius:12px; cursor:crosshair; touch-action:none; display:block}
+.sig-row{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:8px}
+.sig-row .hint.signed{color:var(--gold)}
+
+/* --- right panel --- */
+.panel{
+  position:sticky; top:0; z-index:2; width:30%; height:100vh; overflow-y:auto; padding:22px 22px 60px;
+  border-left:1px solid var(--line); background:linear-gradient(180deg,rgba(10,15,28,.72),rgba(5,7,15,.86));
+  backdrop-filter:blur(16px);
+}
+[data-theme="light"] .panel{background:linear-gradient(180deg,rgba(255,255,255,.8),rgba(238,241,247,.9))}
+.panel-meta{display:flex; justify-content:space-between; gap:12px; align-items:flex-start}
+.doc-name{font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--gold)}
+.doc-no{font-size:14px; color:var(--dim); margin-top:2px}
+.panel-badges{display:flex; flex-direction:column; align-items:flex-end; gap:6px}
+.badge-btn{cursor:pointer; font-size:11.5px; padding:5px 11px}
+.doc-date{font-size:12px; color:var(--dim)}
+.linkish{background:none; border:none; color:var(--accent); cursor:pointer; font-size:12.5px; padding:0}
+.panel-row{display:flex; justify-content:space-between; gap:10px; font-size:12.5px; color:var(--dim); margin-top:10px}
+.big-total{
+  margin:18px 0 0; font-size:34px; font-weight:700; letter-spacing:.5px;
+  background:linear-gradient(92deg,var(--accent),var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.items-list{margin-top:6px}
+.group-head{font-size:11px; letter-spacing:1.6px; text-transform:uppercase; color:var(--gold); margin:16px 0 6px}
+.line{display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid var(--line); font-size:13px}
+.line small{color:var(--dim); margin-left:5px}
+.line .split{color:var(--dim); font-size:11.5px; white-space:nowrap}
+.group-sub{display:flex; justify-content:space-between; font-size:12px; color:var(--dim); padding:6px 0 2px}
+.empty-state{color:var(--dim); font-size:13px; padding:14px 0}
+
+.totals{margin-top:22px; border-top:1px solid var(--line); padding-top:16px}
+.totals-head{display:flex; gap:8px; margin-bottom:12px}
+.pill.premium{border-color:rgba(var(--gold-rgb),.45); color:var(--gold); font-size:11px}
+.pill.count{font-size:11px}
+.tot-row{display:flex; justify-content:space-between; gap:10px; font-size:13.5px; padding:4px 0}
+.tot-grand{font-size:17px; font-weight:700}
+.tot-row.flash span:last-child{color:var(--gold); transition:color .2s}
+.totals hr{border:none; border-top:1px solid var(--line); margin:10px 0}
+.tot-input{margin-top:12px}
+.instalments{margin-top:10px; padding:10px 12px; border:1px dashed var(--line); border-radius:12px; font-size:12.5px; color:var(--dim)}
+.instalments div{display:flex; justify-content:space-between; padding:2px 0}
+.btn{display:block; width:100%; margin-top:10px; padding:11px 14px; border-radius:13px; font:inherit; font-size:13.5px; cursor:pointer; border:1px solid var(--line); background:var(--card1); color:var(--text)}
+.btn-primary{border:none; color:#04121a; font-weight:600; background:linear-gradient(92deg,var(--accent),var(--gold))}
+.btn-ghost:hover,.btn-primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45; cursor:not-allowed; filter:none}
+.btn-small{width:auto; margin:0; padding:7px 12px; font-size:12.5px}
+
+/* --- modals --- */
+.modal{position:fixed; inset:0; z-index:20; background:rgba(2,4,10,.66); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:24px}
+/* Скрытое состояние модального окна. Без этой строки атрибут hidden не
+   действует вовсе: правило автора `display:flex` перебивает `[hidden]{display:none}`
+   из таблицы браузера, и оба окна — история и аналитика — стоят открытыми
+   поверх приложения с первой секунды, а крестик, выставляющий hidden, ничего
+   не меняет. Дефект приехал из исходной PHP-версии (проверено сравнением
+   v21 и пересборки: computed display=flex в обеих) и жил в сданной работе.
+   Одна строка — и hidden снова означает «скрыто». */
+.modal[hidden]{display:none}
+.modal-card{position:relative; width:min(720px,100%); max-height:84vh; overflow-y:auto; padding:26px; border:1px solid var(--line); border-radius:var(--radius); background:linear-gradient(160deg,var(--bg2),var(--bg))}
+.modal-close{position:absolute; top:14px; right:14px; background:none; border:none; color:var(--dim); font-size:16px; cursor:pointer}
+.modal-stats{display:flex; gap:26px; margin-bottom:16px}
+.stat-label{display:block; font-size:11.5px; color:var(--dim); letter-spacing:1px; text-transform:uppercase}
+.stat-value{font-size:20px; font-weight:700; color:var(--gold)}
+.history-list{display:flex; flex-direction:column; gap:8px}
+.history-row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; background:var(--variant); border-radius:12px; font-size:13px}
+.history-row .who{color:var(--dim); font-size:12px}
+.history-row .sum{color:var(--gold); font-weight:600; white-space:nowrap}
+.analytics-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:18px}
+.analytics-cards div{padding:14px; border:1px solid var(--line); border-radius:14px; background:var(--variant)}
+.analytics-top{display:flex; flex-direction:column; gap:7px}
+.bar-row{display:flex; align-items:center; gap:10px; font-size:12.5px}
+.bar-row .key{width:38%; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.bar-row .bar{height:8px; border-radius:999px; background:linear-gradient(92deg,var(--accent),var(--gold))}
+
+@media print{ .panel,.aurora,.pill,.modal{display:none !important} .container{width:100%} }
+@media (prefers-reduced-motion: reduce){ .aurora *{animation:none !important} .card{animation:none; opacity:1; transform:none} }
+
+/* --- телефон ---------------------------------------------------------------
+   Разметка страницы — две колонки на флексе: body{display:flex}, слева
+   .container 70%, справа .panel 30%. Прежний мобильный блок менял ширину
+   колонки на 100% и на этом заканчивался — но body оставался флекс-СТРОКОЙ, и
+   колонка «во всю ширину» вместе с панелью 30% делили одни и те же 390 px:
+   форму сдавливало, а панель схлопывалась в ленту 79 px, где итоговая сумма
+   обрезалась пополам. Так эта работа и была сдана заказчику.
+   Ширины мало — на узком экране нужно менять направление. Ниже колонка и
+   панель встают друг под друга, каждая во всю ширину.                        */
+@media (max-width:680px){
+  body{overflow-x:hidden; flex-direction:column}
+  .container{width:100%; padding:22px 16px 24px}
+  .logo{font-size:22px}
+  .theme-toggle{right:16px; top:14px}
+  #sigPad,.photo-thumb img{max-width:100%}
+  .grid-custom{grid-template-columns:1fr 1fr}
+  /* Панель перестаёт быть боковой: на десктопе это колонка высотой в экран,
+     которая не уезжает; в одну колонку sticky height:100vh прикнопил бы к
+     верху экрана пустое место. Здесь это итог документа — в потоке, во всю
+     ширину, своей высоты. Нижний отступ — под таблетку с суммой. */
+  .panel{
+    position:static; width:100%; height:auto; padding:22px 16px 104px;
+    border-left:none; border-top:1px solid var(--line);
+  }
+  /* Переключатель темы висит фиксированно в правом верхнем углу экрана, и в
+     одну колонку под него уезжает первая кнопка панели — «История» просто
+     оказывалась накрытой. Поэтому на телефоне шапка панели раскладывается
+     сверху вниз, а кнопки идут строкой слева: под фиксированной таблеткой
+     справа больше нет ничего, что можно нажать. */
+  .panel-meta{flex-direction:column; align-items:stretch; gap:12px}
+  .panel-badges{flex-direction:row; align-items:center; flex-wrap:wrap; gap:8px}
+  .big-total{font-size:30px}
+  .total-chip{display:flex}
+  /* Легенда горячих клавиш на телефоне — неправда: клавиши Ctrl там нет.
+     Пилюля остаётся, но выполняет вторую свою работу — уведомление, и висит
+     на экране, только пока ей есть что сказать (app.js, TOUCH). */
+  .hotkey-hint{left:12px; right:12px; bottom:74px; text-align:center}
+}

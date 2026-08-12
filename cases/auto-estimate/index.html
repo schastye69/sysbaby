@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Estimate Calculator</title>
+<!--
+  A live client system. It runs entirely on the device that opened it: the
+  prices, the document, the PDF and the payment QR are all computed here.
+  There is no back end behind this page, and no request leaves it.
+
+  Until v22 this was index.php: a PHP program that priced the estimate on a
+  server and needed a PHP host to exist at all. The money model was ported to
+  engine.js and is held to the server's arithmetic by replay — the same golden
+  vectors, matched as raw doubles, in tools/engine-parity.mjs.
+
+  Load order matters and is the whole architecture:
+    config.js   the trade — every price, name and label (data only)
+    engine.js   the money model (no vocabulary, no DOM)
+    render.js   builds the screen from the trade
+    app.js      the application: state, history, document, PDF, QR
+-->
+<link rel="stylesheet" href="app.css?b=v25.1">
+<!-- An empty icon: without it every browser asks the host for /favicon.ico and
+     logs a 404 in a console a client might open. A page with nothing behind it
+     should not produce a single failed request. -->
+<link rel="icon" href="data:,">
+</head>
+<body>
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></div>
+
+<button type="button" id="themeToggle" class="pill theme-toggle" title="Тема оформления">🌙 <span>Тёмная</span></button>
+<div class="pill hotkey-hint" id="hotkeyHint">⌨ Ctrl+S сохранить · Ctrl+P PDF · Ctrl+F поиск</div>
+
+<div id="app"></div>
+
+<noscript>
+  <div style="max-width:640px;margin:80px auto;padding:0 24px;font:15px/1.7 system-ui,sans-serif;color:#e7e7ea">
+    <h1 style="font-size:20px;margin:0 0 12px">Смета считается в вашем браузере</h1>
+    <p>Эта программа целиком работает на вашем устройстве — поэтому ей нужен включённый JavaScript.
+       Никакие данные никуда не отправляются: считать попросту некому, кроме самой страницы.</p>
+  </div>
+</noscript>
+
+<!-- Three third-party libraries used to load here, from a CDN — which made an
+     offline promise depend on someone else's uptime. Two of them (html2canvas,
+     jsPDF) existed only to rasterise a copy of the document for a server
+     folder, and left with the server. The third drew the payment QR; that one
+     we wrote ourselves. Nothing on this page is rented. -->
+<script src="config.js?b=v25.1"></script>
+<script src="engine.js?b=v25.1"></script>
+<script src="qr.js?b=v25.1"></script>
+<script src="render.js?b=v25.1"></script>
+<script src="app.js?b=v25.1"></script>
+</body>
+</html>
