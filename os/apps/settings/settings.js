@@ -160,17 +160,33 @@
 
     var brightness = typeof window.sbGetBrightness === "function" ? window.sbGetBrightness() : 100;
 
+    /* Светлая тема снята с интерфейса — снова.
+       -----------------------------------------------------------------------
+       Она уже была снята однажды: «Light mode is withdrawn from the interface
+       for this release» — записано в apps-harness. Потом переключатель вернулся
+       в настройки, а приложения так и остались написанными под тёмное поле.
+
+       12.08 замер: **313 зашитых светлых цветов** в десяти таблицах стилей
+       приложений, и только две из них вообще знают про data-theme="light".
+       На снимке основателя это выглядело так: белый текст на белой панели.
+       Ни одной строки не прочесть.
+
+       Это не настройка оттенков. Светлой темы **нет** — есть токены ядра и
+       ни одного переведённого приложения. Выбор между «выкатить половину» и
+       «сказать правду» в этом проекте решён давно.
+
+       Возврат — отдельной работой: перевод всех приложений на токены плюс
+       закон, меряющий контраст в обеих темах на каждом экране. До тех пор
+       строка ниже говорит, как есть. */
     return '<h2 class="st-title">Appearance</h2>' +
-      rowMarkup("Theme", "",
-        '<span class="st-segment" data-theme-state="' + theme + '">' +
-          '<button type="button" class="st-seg' + (theme === "dark" ? " active" : "") + '" data-theme="dark">DARK</button>' +
-          '<button type="button" class="st-seg' + (theme === "light" ? " active" : "") + '" data-theme="light">LIGHT</button>' +
+      rowMarkup("Theme", "Dark is the only theme this release ships. A light theme that half the apps do not honour would look broken, and shipping it broken is worse than not having it.",
+        '<span class="st-segment" data-theme-state="dark">' +
+          '<button type="button" class="st-seg active" data-theme="dark">DARK</button>' +
         "</span>") +
       rowMarkup("Accent color",
         "Recolors the dock highlight, toggles, focus rings and more, everywhere at once",
-        '<span class="st-swatches">' + swatches +
-          '<input type="color" class="st-color" id="stAccentPicker" value="' + esc(accent || "#e0663c") + '" title="Custom accent" aria-label="Custom accent">' +
-        "</span>") +
+        /* см. примечание о нативном выборе цвета в core/topbar.js */
+        '<span class="st-swatches">' + swatches + "</span>") +
       rowMarkup("Wallpaper mood",
         "Recolors the background scenery — everything else stays the same",
         '<span class="st-chips">' + (moodChips || '<span class="st-muted">No moods available</span>') + "</span>") +
@@ -478,14 +494,6 @@
       });
     });
 
-    var picker = host.querySelector("#stAccentPicker");
-    if (picker) {
-      picker.addEventListener("input", function () {
-        if (typeof window.sbSetAccent !== "function") return;
-        try { window.sbSetAccent(picker.value); } catch (err) { console.error("[settings] setAccent failed", err); }
-      });
-      picker.addEventListener("change", function () { render(win); });
-    }
 
     host.querySelectorAll("[data-mood]").forEach(function (btn) {
       btn.addEventListener("click", function () {

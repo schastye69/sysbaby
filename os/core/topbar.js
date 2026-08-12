@@ -887,18 +887,23 @@
       b.addEventListener("click", function () { if (window.setTheme) window.setTheme(b.getAttribute("data-theme-chip")); paintCc(); });
     });
 
+/* Нативный выбор цвета убран.
+   ---------------------------------------------------------------------------
+   <input type="color"> открывает СИСТЕМНОЕ окно Android или macOS — чужой
+   диалог поверх собственной системы, со своим языком, своей палитрой из восьми
+   базовых цветов и кнопкой «Set». Это ровно то, чего sys.baby не делает: чужая
+   поверхность, выданная за свою. Плюс на телефоне он занимает пол-экрана ради
+   выбора оттенка, который всё равно должен лежать в палитре проекта.
+   Остаются готовые оттенки — свои, названные, в языке системы. */
     var swHost = $("#sbCcAccents");
     if (swHost && window.sbGetAccentSwatches) {
       swHost.innerHTML = window.sbGetAccentSwatches().map(function (a) {
         return '<button class="accent-sw" type="button" data-accent="' + esc(a.a1) + '" title="' + esc(a.name) + '" ' +
           'style="background:linear-gradient(135deg,' + esc(a.a1) + "," + esc(a.a2) + ')"></button>';
-      }).join("") + '<input type="color" id="sbCcAccentCustom" class="accent-custom" aria-label="Custom accent colour" value="' +
-        esc(window.sbGetCurrentAccent().a1) + '" />';
+      }).join("");
       $$("[data-accent]", swHost).forEach(function (b) {
         b.addEventListener("click", function () { window.sbSetAccent(b.getAttribute("data-accent")); paintCc(); });
       });
-      var custom = $("#sbCcAccentCustom", swHost);
-      if (custom) custom.addEventListener("input", function () { window.sbSetAccent(custom.value); paintCc(); });
     }
 
     var incogBtn = $("#sbCcIncog");

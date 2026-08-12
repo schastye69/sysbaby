@@ -65,8 +65,15 @@ html[data-theme="light"] {
   --ink-3: rgba(12, 14, 20, .38);
   --line: rgba(12, 14, 20, .10);
   --line-2: rgba(12, 14, 20, .16);
-  --glass: rgba(255, 255, 255, .62);
-  --glass-2: rgba(255, 255, 255, .78);
+  /* Прозрачность — приём для тёмного поля, и только для него.
+     На тёмном фоне сквозь стекло проходит темнота, и панель остаётся
+     читаемой. На светлом сквозь те же 62% проходит цветная подложка: окно
+     Seek на снимке основателя залито розово-бежевым, читать нечем. Свет
+     нельзя приглушить прозрачностью — его можно только закрыть.
+     Поэтому в светлой теме панели почти непрозрачны; размытие остаётся ради
+     мягкости краёв, но работу по читаемости делает не оно. */
+  --glass: rgba(255, 255, 255, .93);
+  --glass-2: rgba(255, 255, 255, .975);
   --shadow: 0 20px 50px rgba(20, 24, 40, .18), 0 3px 10px rgba(20, 24, 40, .12);
   --shadow-soft: 0 10px 26px rgba(20, 24, 40, .12);
 }
@@ -111,10 +118,18 @@ html[data-transparency="reduced"] #sbCtxMenu {
    reason: dragging an icon should not smear a highlight across its label.
    Anything the visitor is meant to be able to select opts back in below. */
 * { -webkit-tap-highlight-color: transparent; }
-#topbar, .dock-shelf, #sbIconLayer, .titlebar, .wp-layer, #sbDock,
-.desk-icon, .sticky-note, .sb-widget, #sbExpose, #sbCurtain, .cur-cells {
-  -webkit-user-select: none; user-select: none;
-}
+/* 12.08, поле: касание рабочего стола оставляло выделение, а мультитач —
+   очень большое. Правило ниже уже существовало и уже чинилось — но было
+   написано СПИСКОМ ЗАПРЕЩЁННОГО: перечислением мест, где выделять нельзя.
+   Такой список не может быть полным. Рабочий стол в нём был, его дети — нет,
+   и палец, попавший мимо перечисленного, снова тянул выделение.
+
+   Та же ошибка формы, что и с публикацией файлов, и лечится так же —
+   переворотом. Запрещено везде, разрешено точечно там, где текст
+   действительно выделяют: тело окна, поля ввода, редактируемое. Забыть
+   разрешить — заметно сразу и изнутри; забыть запретить — заметно снаружи и
+   через неделю. */
+html, body { -webkit-user-select: none; user-select: none; }
 /* A pointerdown on a draggable thing has to belong to the drag, not to the
    browser's own pan-and-zoom gesture. Without this the first millimetre of a
    finger movement is claimed as a scroll, the pointer events stop arriving,
@@ -123,8 +138,17 @@ html[data-transparency="reduced"] #sbCtxMenu {
 .desk-icon, .titlebar, .resize-handle, .sticky-note, .sticky-note-head {
   touch-action: none;
 }
-.window-body, input, textarea, [contenteditable] {
+/* Разрешение — точечное и полное: всё, что человек читает и копирует.
+   Список растёт по мере надобности, и это правильно: он ошибается в сторону
+   «нельзя выделить то, что хотелось», а не в сторону «мазня по столу». */
+.window-body, .window-body *, input, textarea, [contenteditable],
+.sticky-note-text, .note-text, code, pre, .mono-select {
   -webkit-user-select: text; user-select: text;
+}
+/* А ручки перетаскивания — обратно под запрет: они внутри окна, но их
+   таскают, а не читают. */
+.titlebar, .titlebar *, .resize-handle, .win-tabs, .win-tabs * {
+  -webkit-user-select: none; user-select: none;
 }
 /* The default selection colour is the accent at full strength, which flashes
    as a bright block on a dark desktop. This is the same colour at a weight
@@ -260,11 +284,30 @@ html[data-wp-mood="mono"] #sbMoodTint {
   background: radial-gradient(920px 660px at 74% 18%, rgba(206, 212, 226, .26), transparent 64%);
 }
 
-/* film grain: a seamless 180px tile of greyscale turbulence */
+/* Плёночное зерно: бесшовная плитка 180px серой турбулентности.
+   -------------------------------------------------------------------------
+   12.08, поле: на телефоне вместо зерна была видна регулярная СЕТКА, на
+   планшете — просто зернистость. Один и тот же файл, разный экран.
+
+   Причина: размер крупинки задан в user-единицах фильтра, то есть в CSS-
+   пикселях. baseFrequency .82 даёт период около 1,2 CSS-px. При плотности 1
+   это 1,2 физического пикселя — зерно. При 2,75 та же крупинка занимает
+   3,3 физических пикселя и становится видимым квадратом; квадраты выстраиваются
+   в сетку. Воспроизведено съёмкой при 1 / 2 / 2.75 / 3.
+
+   Правило, которого не хватало: **зерно измеряется в физических пикселях,
+   а не в CSS.** Плитка сжимается обратно пропорционально плотности, и
+   крупинка остаётся размером примерно в один физический пиксель на любом
+   экране. Хорошее зерно не видно нигде — его работа в том, чтобы не было
+   полос на градиентах, а не в том, чтобы его заметили. */
 #sbGrain {
   opacity: .028;
+  background-size: 180px 180px;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='180' height='180' filter='url(%23n)' opacity='.55'/></svg>");
 }
+@media (min-resolution: 1.5dppx) { #sbGrain { background-size: 120px 120px; } }
+@media (min-resolution: 2.5dppx) { #sbGrain { background-size: 66px 66px; } }
+@media (min-resolution: 3.5dppx) { #sbGrain { background-size: 50px 50px; } }
 /* the vault: a top-anchored vignette, darkening the bottom corners hardest */
 #sbStone { background: radial-gradient(140% 115% at 50% 4%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, .55) 100%); }
 /* the breath: shown only while the field is NOT running — see field.js */
@@ -773,6 +816,9 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
 .window::before {
   content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: rgba(255, 255, 255, .16); pointer-events: none;
 }
+/* Белый блик по верхней кромке невидим на белой панели и только размывает
+   край. В светлой теме кромка обязана быть темнее панели, а не светлее. */
+html[data-theme="light"] .window::before { background: rgba(12, 14, 20, .08); }
 .window.focused { border-color: rgba(var(--accent-rgb), .45); box-shadow: 0 0 0 1px var(--accent-soft), var(--shadow); }
 .window.focused::before { background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .5), transparent); }
 .window.minimized { display: none; }
