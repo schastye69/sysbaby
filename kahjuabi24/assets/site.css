@@ -780,3 +780,74 @@ body:has(.callbar){--callbar-h:60px}
 .shot figcaption{position:absolute;left:0;bottom:0;padding:var(--s-2) var(--s-4);
   background:var(--c-asphalt);color:var(--c-amber);
   clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)}
+
+/* ── места, которых ещё нет ──────────────────────────────────────────────────
+   Пустое место обязано выглядеть намеренно пустым, а не сломанным. Разница —
+   в трёх вещах: у него есть подпись, есть объяснение, чего не хватает, и есть
+   рамка. Серый прямоугольник без подписи читается как «не загрузилось»;
+   рамка с номером и строчкой текста — как «сюда встанет кадр».
+
+   Появляется только на площадке разработки. PUBLIC=1 убирает эти блоки со
+   страниц и останавливает сборку, пока они есть (build.mjs).                 */
+.pending{
+  border:1px dashed color-mix(in srgb, currentColor 34%, transparent);
+  border-radius:var(--r-2,14px);
+  padding:var(--s-4,16px) var(--s-4,16px) var(--s-5,20px);
+  margin-top:var(--s-4,16px);
+  max-width:var(--measure,68ch);
+}
+.pending__tag{
+  margin:0 0 6px;
+  font-size:.72rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  opacity:.62;
+}
+.pending__note{
+  margin:0;
+  font-size:.95rem;
+  line-height:1.55;
+  opacity:.78;
+}
+.pending--shots{ max-width:none; margin-top:var(--s-6,32px); }
+.frames{
+  list-style:none; margin:0 0 var(--s-4,16px); padding:0;
+  display:grid; gap:var(--s-3,12px);
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+}
+.frame{
+  aspect-ratio:4/3;
+  display:flex; align-items:flex-end; justify-content:flex-start;
+  padding:10px 12px;
+  border:1px dashed color-mix(in srgb, currentColor 30%, transparent);
+  border-radius:var(--r-2,14px);
+  background:color-mix(in srgb, currentColor 5%, transparent);
+}
+.frame .mono{ font-size:.72rem; opacity:.5; }
+@media (max-width:560px){
+  .frames{ grid-template-columns:repeat(2,1fr); }
+}
+
+/* Полоса, в которой десктопное меню включается, но ещё не помещается.
+   Замерено развёрткой по всем ширинам 360…1600 с шагом 20: страница
+   «Kahjukäsitlus» переполнялась на 20 px при 1180. Прежняя проверка стояла на
+   трёх точках — 390 / 834 / 1440 — и полосу между ними не видела вовсе.
+   Три точки это не диапазон.                                                */
+@media (min-width:1180px) and (max-width:1439px){
+  .nav{gap:var(--s-4)}
+  .nav a{font-size:.875rem}
+}
+.nav{min-width:0}
+.svc__more{margin-top:var(--s-5)}
+
+/* Заметка о переводе — на английских страницах. Спокойная, не тревожная: это
+   не предупреждение об ошибке, а честное указание, какая версия главная. */
+.xlnote{
+  margin:var(--s-4,16px) 0 0;
+  padding:10px 0 0;
+  border-top:1px solid color-mix(in srgb, currentColor 16%, transparent);
+  font-size:.8125rem;
+  line-height:1.55;
+  opacity:.62;
+  max-width:var(--measure,68ch);
+}

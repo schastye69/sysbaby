@@ -73,11 +73,11 @@
   (function hours() {
     var chips = d.querySelectorAll('[data-fx="hours"]');
     if (!chips.length) return;
-    var lang = d.documentElement.lang === 'ru' ? 'ru' : 'et';
-    var T = {
-      et: { open: 'Avatud', closed: 'Suletud', weekend: 'Nädalavahetus — helista' },
-      ru: { open: 'Открыто', closed: 'Закрыто', weekend: 'Выходные — звоните' }
-    }[lang];
+    /* Подписи приходят из разметки, а не живут здесь.
+       Раньше они были вписаны в этот файл, и языков было ровно два: английская
+       страница показывала «Avatud». Строка, существующая в двух местах, рано
+       или поздно расходится — и расходится молча. Источник один: ui.json →
+       build.mjs → data-атрибуты. */
 
     var now;
     try {
@@ -98,7 +98,7 @@
       c.hidden = false;
       c.setAttribute('data-state', state);
       var t = c.querySelector('.chip__t');
-      if (t) t.textContent = T[state];
+      if (t) t.textContent = c.getAttribute('data-' + state) || '';
     });
   })();
 
