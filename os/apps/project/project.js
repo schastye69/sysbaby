@@ -138,21 +138,33 @@
           '<span class="pj-tag">Real client project · Confidential</span>' +
           '<span class="pj-actions">' +
             '<button type="button" class="pj-btn" id="pjBack">← Portfolio</button>' +
-            (url ? '<a class="pj-btn" id="pjNewTab" href="' + esc(url) + '" target="_blank" rel="noopener">Open in a new tab ↗</a>' : "") +
+            (url ? '<a class="pj-btn open" id="pjNewTab" href="' + esc(url) + '" target="_blank" rel="noopener">Open full screen ↗</a>' : "") +
             '<a class="pj-btn accent" href="../?contact=1">' + esc(startLabel(view)) + "</a>" +
           "</span>" +
         "</div>" +
-        '<div class="pj-context">' +
-          '<p class="pj-line">' + esc(context) + (context ? " · " : "") +
-            "<em>the interface as delivered, in the client’s own language</em></p>" +
-          (view.goal ? '<p class="pj-goal">Built to achieve ' + esc(view.goal) + "</p>" : "") +
-          ((view.features || []).length
-            ? '<div class="pj-chips"><span class="pj-chips-label">Delivered</span>' +
-                view.features.map(function (f) { return '<span class="pj-chip">' + esc(f) + "</span>"; }).join("") +
-              "</div>"
-            : "") +
-          languageNote(view) +
-        "</div>" +
+        /* Описание проекта складывается на телефоне.
+           12.08, наблюдение основателя: «если потенциальный клиент не
+           догадается нажать Open in a new tab, ему будет крайне сложно
+           нормально поуправлять системой». Измерено на 390×844: шапка 114 px
+           плюс описание 248 px против 288 px у работающей программы — ей
+           доставалось 42% окна, и это в лучшем случае.
+           Текст никуда не делся, он в одном касании. Но первым на телефоне
+           человек видит то, ради чего пришёл: работающую вещь. На широком
+           экране блок раскрыт всегда и сводки не показывает вовсе. */
+        '<details class="pj-more" id="pjMore">' +
+          '<summary class="pj-more-sum">About this project</summary>' +
+          '<div class="pj-context">' +
+            '<p class="pj-line">' + esc(context) + (context ? " · " : "") +
+              "<em>the interface as delivered, in the client’s own language</em></p>" +
+            (view.goal ? '<p class="pj-goal">Built to achieve ' + esc(view.goal) + "</p>" : "") +
+            ((view.features || []).length
+              ? '<div class="pj-chips"><span class="pj-chips-label">Delivered</span>' +
+                  view.features.map(function (f) { return '<span class="pj-chip">' + esc(f) + "</span>"; }).join("") +
+                "</div>"
+              : "") +
+            languageNote(view) +
+          "</div>" +
+        "</details>" +
         '<div class="pj-stage">' +
           (url ? '<iframe class="pj-frame" id="pjFrame" src="' + esc(url) + '" title="' + esc(view.name) + '"></iframe>' : "") +
           '<div class="pj-placeholder" id="pjPlaceholder">' +
@@ -173,6 +185,21 @@
         if (typeof window.toggleApp !== "function") return;
         try { window.toggleApp("portfolio"); } catch (err) { console.error("[project] toggleApp failed", err); }
       });
+    }
+
+    /* Раскрыто или свёрнуто описание — решает ширина, а не вкус. CSS этого
+       сделать не может: `open` — атрибут, а не свойство. Слушаем медиазапрос,
+       чтобы поворот телефона и изменение окна не оставляли состояние от
+       прошлой ширины. */
+    var more = host.querySelector("#pjMore");
+    if (more && window.matchMedia) {
+      var narrow = window.matchMedia("(max-width: 760px)");
+      var sync = function (mq) { more.open = !mq.matches; };
+      sync(narrow);
+      if (narrow.addEventListener) narrow.addEventListener("change", sync);
+      else if (narrow.addListener) narrow.addListener(sync);
+    } else if (more) {
+      more.open = true;
     }
 
     var frame = host.querySelector("#pjFrame");
