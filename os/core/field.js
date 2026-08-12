@@ -88,7 +88,7 @@
        after load would read as "someone is writing" and the field would open
        dimmed. Nothing calls pulse() by default, so it stays that way. */
     charge: 0, calm: 0, typing: -1e9, tiltX: 0, tiltY: 0, head: 0,
-    pal: null, palTo: null, blobs: [], waves: [],
+    pal: null, palTo: null, blobs: [], waves: [], seed: 22222219,
     SIN: null,
     init: function () {
       if (this.cv) return;
@@ -141,13 +141,33 @@
       this.W = window.innerWidth; this.H = window.innerHeight;
       var small = this.W <= 760;
       this.step = small ? 42 : 34;
-      var k = small ? .46 : .5;
-      this.cw = Math.max(2, Math.round(this.W * k));
-      this.ch = Math.max(2, Math.round(this.H * k));
-      this.cv.width = this.cw; this.cv.height = this.ch;
-      this.pw = small ? 118 : 248;
+
+      /* Одно увеличение вместо двух.
+         ---------------------------------------------------------------------
+         12.08, поле: на телефоне обои показывали регулярные КЛЕТКИ, на планшете
+         — просто зернистость. Разгадка в цепочке масштабирований.
+
+         Картина считается в буфере 118 px шириной (pw), потом рисовалась на
+         канвас шириной W*0.46 ≈ 179 CSS-px, а канвас растягивался стилями до
+         390 CSS-px и до 1072 физических при плотности 2,75. Итого 118 → 1072,
+         девятикратное увеличение, и оно шло В ДВА ЭТАПА. Первый квантовал
+         картину в сетку 179, второй растягивал эту сетку ещё в шесть раз — и
+         решётка становилась видимой. На планшете буфер вдвое крупнее (248), а
+         плотность ниже, поэтому там та же решётка читается как зерно.
+
+         Здесь канвас перестаёт быть промежуточной ступенью: его собственный
+         размер равен размеру буфера, и увеличение остаётся ровно одно —
+         плавное, браузерное, от источника сразу к экрану. Это ещё и дешевле:
+         заливать и композитить приходится меньше пикселей. */
+      /* Разрешение источника поднято на телефоне: 118 было выбрано под
+         процессор, но при девятикратном увеличении оно давало слишком крупную
+         ячейку. 168 стоит примерно вдвое дороже за кадр и остаётся дешёвым,
+         а видимая ячейка уменьшается почти в полтора раза. */
+      this.pw = small ? 168 : 248;
       this.ph = Math.max(2, Math.round(this.pw * this.H / this.W));
       this.off.width = this.pw; this.off.height = this.ph;
+      this.cw = this.pw; this.ch = this.ph;
+      this.cv.width = this.cw; this.cv.height = this.ch;
       this.img = this.ocx.createImageData(this.pw, this.ph);
       this.buf = new Uint32Array(this.img.data.buffer);
       this.cx.imageSmoothingEnabled = true;
@@ -254,8 +274,57 @@
         var e0 = w0.t / 2.4;
         wa[q0] = (1 - e0) * (1 - e0) * 26;      /* bend strength, fading quadratically */
       }
+      /* ── тела света и читающая головка: считаются ЗДЕСЬ, а не рисуются
+         градиентами поверх канваса.
+         ---------------------------------------------------------------------
+         12.08, поле. Клетки на телефоне давал не шум и не плазма, а именно
+         градиенты. Chrome (Skia) дизерит любой градиент упорядоченной матрицей,
+         чтобы на плавном переходе не было полос. На канвасе шириной 168 px
+         матрица — это ±0,5 уровня с шагом в два пикселя; канвас растягивается
+         стилями в 6,4 раза, и шаг превращается в 12,7 физического пикселя.
+         Ровно такая клетка и была видна. Доказано вычитанием: если убрать
+         пятна и головку, оставив голую плазму, период падает с 12,69 до
+         шумового пола, а амплитуда — с 0,489 до 0,428 без периодичности.
+
+         Здесь они складываются в тот же буфер, в котором считается плазма,
+         во float, и квантуются один раз вместе с ней. Дизерить нечего, потому
+         что градиента как объекта Skia больше нет. Это ещё и дешевле: было
+         четыре заливки всего канваса за кадр, стало ноль.
+
+         Спад пятна: исходные стопы 1 / 0,3 / 0 при u = 0 / 0,5 / 1. Функция
+         (1−q)^4, где q = d²/r², даёт 1 / 0,316 / 0 — совпадает в пределах
+         сотой и не требует квадратного корня. */
+      var glow = (quiet ? .022 : .052) * gain + warm * .045 * gain;
+      var nb = this.blobs.length;
+      var bX = new Float32Array(nb), bY = new Float32Array(nb),
+          bR2 = new Float32Array(nb), bA = new Float32Array(nb),
+          bCr = new Float32Array(nb), bCg = new Float32Array(nb), bCb = new Float32Array(nb);
+      for (var bi = 0; bi < nb; bi++) {
+        var bb = this.blobs[bi], cc = this.pal[bi % this.pal.length];
+        bX[bi] = (bb.px + s(t / bb.sx + bb.ph) * bb.ax + this.tiltX * .05) * pw;
+        bY[bi] = (bb.py + s(t / bb.sy + bb.ph * 1.7) * bb.ay + this.tiltY * .05) * ph;
+        var brr = Math.max(pw, ph) * bb.r * (1 + s(t / 31 + bb.ph) * .12);
+        bR2[bi] = brr * brr;
+        bA[bi] = glow * (.7 + s(t / 23 + bb.ph * 2) * .3);
+        bCr[bi] = cc[0]; bCg[bi] = cc[1]; bCb[bi] = cc[2];
+      }
+      var headN = ((t / 46) % 1.34 - .17);
+      this.head = headN;
+      var hy = headN * ph, hBand = ph * .24;
+      var hA = (0.055 + warm * .05) * gain;
+
+      /* Мелкий случайный дизер вместо упорядоченного: без него плавный
+         градиент, посчитанный во float и обрезанный до 8 бит, даёт полосы.
+         Случайный шум их разбивает и, в отличие от матрицы Skia, не имеет
+         периода — растягивать в шесть раз можно безнаказанно. */
+      var seed = this.seed | 0;
+
       var idx = 0;
       for (var y = 0; y < ph; y++) {
+        /* головка зависит только от строки — считается один раз на строку */
+        var hd = y - hy, hAbs = hd < 0 ? -hd : hd, hw = 0;
+        if (hAbs < hBand) hw = hA * (1 - hAbs / hBand);
+        var hR = 143 * hw, hG = 168 * hw, hB = 242 * hw;
         for (var x = 0; x < pw; x++) {
           /* refraction phase from taps — bend the coordinates, draw no lines */
           var bend = 0, comp = 0;
@@ -294,6 +363,24 @@
           var r = (c0[0] * (1 - w2) + c2[0] * w2) * qq + 190 * n * warm * amp * 0.7;
           var g = (c0[1] * (1 - w2) + c2[1] * w2) * qq + 140 * n * warm * amp * 0.5;
           var b = (c0[2] * (1 - w2) + c2[2] * w2) * qq + 95 * n * warm * amp * 0.3;
+
+          /* тела света — тот же аддитивный вклад, что давал lighter-градиент */
+          for (var bj = 0; bj < nb; bj++) {
+            var pdx = x - bX[bj], pdy = y - bY[bj];
+            var q2 = (pdx * pdx + pdy * pdy) / bR2[bj];
+            if (q2 < 1) {
+              var fv = 1 - q2; fv = fv * fv; fv = fv * fv * bA[bj];
+              r += bCr[bj] * fv; g += bCg[bj] * fv; b += bCb[bj] * fv;
+            }
+          }
+          /* читающая головка — вклад строки, посчитан выше */
+          if (hw > 0) { r += hR; g += hG; b += hB; }
+
+          /* дизер: ±0,5 уровня, без периода */
+          seed = (seed * 1664525 + 1013904223) | 0;
+          var dz = ((seed >>> 16) & 1023) * 0.0009766 - 0.5;
+          r += dz; g += dz; b += dz;
+
           r = r < 0 ? 0 : r > 255 ? 255 : r; g = g < 0 ? 0 : g > 255 ? 255 : g; b = b < 0 ? 0 : b > 255 ? 255 : b;
           buf[idx++] = (255 << 24) | (b << 16) | (g << 8) | r;
         }
@@ -305,35 +392,10 @@
       cx.fillRect(0, 0, W, H);
       cx.globalCompositeOperation = "lighter";
       cx.drawImage(this.off, 0, 0, pw, ph, 0, 0, W, H);
-
-      /* ── bodies of light ── */
-      var glow = (quiet ? .022 : .052) * gain + warm * .045 * gain;
-      for (var bi = 0; bi < this.blobs.length; bi++) {
-        var bb = this.blobs[bi], cc = this.pal[bi % this.pal.length];
-        var bx = (bb.px + s(t / bb.sx + bb.ph) * bb.ax + this.tiltX * .05) * W;
-        var by = (bb.py + s(t / bb.sy + bb.ph * 1.7) * bb.ay + this.tiltY * .05) * H;
-        var br = Math.max(W, H) * bb.r * (1 + s(t / 31 + bb.ph) * .12);
-        var ba = glow * (.7 + s(t / 23 + bb.ph * 2) * .3);
-        var bg = cx.createRadialGradient(bx, by, 0, bx, by, br);
-        bg.addColorStop(0, "rgba(" + (cc[0] | 0) + "," + (cc[1] | 0) + "," + (cc[2] | 0) + "," + ba.toFixed(4) + ")");
-        bg.addColorStop(.5, "rgba(" + (cc[0] | 0) + "," + (cc[1] | 0) + "," + (cc[2] | 0) + "," + (ba * .3).toFixed(4) + ")");
-        bg.addColorStop(1, "rgba(0,0,0,0)");
-        cx.fillStyle = bg;
-        cx.fillRect(0, 0, W, H);
-      }
-
-      /* ── the read head ── */
-      var headN = ((t / 46) % 1.34 - .17);
-      this.head = headN;
-      var sy = headN * H, band = H * .24;
-      var sg = cx.createLinearGradient(0, sy - band, 0, sy + band);
-      var sa = (0.055 + warm * .05) * gain;
-      sg.addColorStop(0, "rgba(143,168,242,0)");
-      sg.addColorStop(.5, "rgba(143,168,242," + sa.toFixed(4) + ")");
-      sg.addColorStop(1, "rgba(143,168,242,0)");
-      cx.fillStyle = sg;
-      cx.fillRect(0, Math.max(0, sy - band), W, band * 2);
       cx.globalCompositeOperation = "source-over";
+      this.seed = seed;
+      /* Ни одного градиента после этой строки. Тела света и читающая головка
+         уже в буфере — см. длинный комментарий перед пиксельным циклом. */
     }
   };
 
