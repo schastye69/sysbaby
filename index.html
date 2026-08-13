@@ -33,13 +33,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v31">
+<meta name="sysbaby-build" content="v32">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v31">
+<link rel="stylesheet" href="shared/system.css?b=v32">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -58,8 +58,8 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v31"></script>
-<script src="shared/pricing.data.js?b=v31"></script>
+<script src="shared/portfolio.data.js?b=v32"></script>
+<script src="shared/pricing.data.js?b=v32"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -1873,7 +1873,7 @@ html[data-anim="paused"] .dock-flare{display:none}
     "staticStrings": {
       "documentTitle": "sys.baby — Building Automated Business for You",
       "wordmark": "sys\u200A.\u200Ababy",
-      "wordmarkNote": "'sys' + U+200A HAIR SPACE + '.' + U+200A HAIR SPACE + 'baby' (source: sys&#8202;.&#8202;baby). Same string in boot screen and topbar. Never translated.",
+      "wordmarkNote": "Единственный ТЕКСТОВЫЙ источник имени (тосты, заголовки). Визуальный словесный знак в шапке строится иначе: sys + ЗНАК вместо точки + baby (.sb-wm в разметке), с невидимой настоящей точкой для копирования. Никогда не переводится.",
       "boot": {
         "barLabel": "STARTING SYSTEM",
         "footLeft": "KERNEL 4.2.1",

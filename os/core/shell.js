@@ -2178,7 +2178,11 @@
   window.sbSignOut = function () {
     var curtain = doc.createElement("div");
     curtain.id = "sbFarewell";
-    curtain.innerHTML = '<div class="farewell-mark"></div><p class="farewell-line"></p>';
+    /* Прощание показывает тот же знак, что вход и занавес, — не пустую плитку.
+       Система, которая называет себя при встрече, называет себя и прощаясь. */
+    curtain.innerHTML = '<div class="farewell-mark">' +
+      '<svg viewBox="0 0 100 100"><path fill="currentColor" fill-rule="evenodd" d="M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z"/></svg>' +
+      '</div><p class="farewell-line"></p>';
     doc.body.appendChild(curtain);
     requestAnimationFrame(function () { curtain.classList.add("on"); });
     var line = "The system sleeps when you do, baby.";
