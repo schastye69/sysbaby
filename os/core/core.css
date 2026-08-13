@@ -536,32 +536,20 @@ html.topbar-hidden.topbar-peek #topbar { transform: none; }
 
    Движение однократное. Логотип, пульсирующий вечно, — ровно тот дефект,
    который сегодня убран из шапки лендинга: он стоит кадра каждый кадр. */
-/* СЛОВЕСНЫЙ ЗНАК 2.0 — «ДВЕ РЕЧИ». Знак — точка ВНУТРИ слова, как на
-   лендинге: одна фигура, один раз, один смысл. Правило то же, что в
-   index.php (решение 018): sys — голос машины (mono, трекинг .12em),
-   baby — голос человека (display, 700), знак — мост цветом акцента у
-   базовой линии. РАЗМЕР ОБЕИХ РЕЧЕЙ ОДИН (15.5/15.5): разница в кегле
-   означала бы, что baby важнее sys, а они равны. Здесь только повтор
-   правила, чтобы поверхности не разошлись; полный диагноз, прибор
-   измерения строчных и лаборатория — в index.php. */
-.sb-wm { display: inline-flex; align-items: baseline; white-space: nowrap; }
-.sb-sys { font-family: var(--mono); font-size: 15.5px; font-weight: 500; letter-spacing: .12em; color: var(--ink-2); line-height: 1; }
-/* Слева 1px, справа 3px: трекинг .12em уже добавил ~1,9px после последней «s». */
-.sb-dot {
-  display: inline-flex; line-height: 0; position: relative;
-  margin: 0 3px 0 1px; color: var(--accent); transform: translateY(-1px);
-}
-.sb-dot svg { width: 10px; height: 10px; display: block; animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both; }
-.sb-baby { font-size: 15.5px; font-weight: 700; letter-spacing: .005em; color: var(--ink); line-height: 1; }
+/* ЛОГОТИП ОСНОВАТЕЛЯ. Та же геометрия, что на лендинге (решение 021):
+   буквы — обведённые контуры, знак — построенная фигура из двух крюков.
+   В узкой полосе слово уступает: остаётся только знак — тот же объект,
+   последний оставшийся масштаб. */
+.sb-wm { display: inline-flex; align-items: center; white-space: nowrap; }
+.sb-lock { height: 16px; width: auto; display: block; animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both; }
+.sb-min { display: none; }
+.sb-ls, .sb-hs { fill: var(--ink); }
+.sb-lb, .sb-hb { fill: var(--accent); }
 .sb-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @keyframes markIn { from { opacity: 0; transform: translate3d(-8%, -8%, 0) scale(.82) } to { opacity: 1; transform: none } }
-@media (prefers-reduced-motion: reduce) { .sb-dot svg { animation: none } }
-html[data-motion="reduced"] .sb-dot svg { animation: none }
-.mark-word {
-  /* Кегль и трекинг живут внутри знака (.sb-sys / .sb-baby): у «двух речей»
-     они разные по построению. Обёртка держит только неподвижность. */
-  color: var(--ink); white-space: nowrap;
-}
+@media (prefers-reduced-motion: reduce) { .sb-lock { animation: none } }
+html[data-motion="reduced"] .sb-lock { animation: none }
+.mark-word { color: var(--ink); white-space: nowrap; }
 
 .tb-identity { display: inline-flex; align-items: baseline; gap: 1px; padding: 5px 9px; border-radius: 999px; font-size: 13px; }
 .tb-identity:hover { background: var(--glass); }
@@ -1246,9 +1234,8 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
      Правило системы: словесный знак сжимается ДО СВОЕЙ ТОЧКИ, а не исчезает.
      Литеры уходят, фигура остаётся и вырастает до размера, который читается
      сама по себе. Это тот же объект, просто последний оставшийся масштаб. */
-  .sb-sys, .sb-baby { display: none; }
-  .sb-dot { margin: 0; transform: none; }
-  .sb-dot svg { width: 17px; height: 17px; }
+  .sb-lock { display: none; }
+  .sb-min { display: block; width: 17px; height: 17px; }
 }
 @media (max-width: 620px) {
   #toastLayer { top: calc(var(--topbar-h) + 52px); }
