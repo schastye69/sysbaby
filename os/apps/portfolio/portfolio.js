@@ -28,7 +28,20 @@
   };
   function offline() { return OFFLINE[osLang()] || OFFLINE.en; }
 
-  var INTRO = "The workspace behind our real client work — and itself an example of it. This desktop, its applications and its storage are our own build, running in your browser with no install and no account. Below is the work itself — and one of the systems is running right here: open it and use it.";
+  /* Строки живут в STRINGS ядра (core/topbar.js). Здесь только ключи —
+     иначе смена языка их не увидит. */
+  function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
+
+  /* Ярлыки стека приходят из shared/portfolio.data.js, а он ГЕНЕРИРУЕТСЯ и
+     руками не правится, поэтому перевода в самих данных нет. Список закрытый
+     (десять ярлыков), и переводится он по ключу pf.tech.<слаг>. Неизвестный
+     ярлык показывается как есть — лучше английское слово, чем дыра. */
+  function techLabel(term) {
+    var slug = String(term || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    var key = "pf.tech." + slug;
+    var out = t(key);
+    return out === key ? String(term || "") : out;
+  }
 
   /* -------------------------------------------------------------- helpers */
 
@@ -108,19 +121,19 @@
   function resultsMarkup(view) {
     if (view.resultsState === "measured") {
       var source;
-      if (view.resultsSource === "first-hand") source = "First-hand: we worked in this trade before building the system.";
-      else if (view.resultsSource === "client-reported") source = "Reported by the client.";
-      else source = "Source not recorded — ask us where this figure came from.";
+      if (view.resultsSource === "first-hand") source = t("pf.results.firstHand");
+      else if (view.resultsSource === "client-reported") source = t("pf.results.clientReported");
+      else source = t("pf.results.sourceUnknown");
       return '<p class="pf-results">' + esc(view.results) + "</p>" +
         '<p class="pf-results-source">' + esc(source) + "</p>";
     }
     if (view.resultsState === "withheld") {
-      return '<p class="pf-results">Withheld at the client’s request — the same discretion covers your project.</p>';
+      return '<p class="pf-results">' + esc(t("pf.results.withheld")) + "</p>";
     }
     if (view.resultsPendingReason === "not-yet-delivered") {
-      return '<p class="pf-results">Built and not yet handed over. We agree the measurement at handover and publish the figure the client gives us, whatever it says.</p>';
+      return '<p class="pf-results">' + esc(t("pf.results.notDelivered")) + "</p>";
     }
-    return '<p class="pf-results">Outcome measurement is agreed with the client and scheduled. We publish the figure they give us, whatever it says.</p>';
+    return '<p class="pf-results">' + esc(t("pf.results.pending")) + "</p>";
   }
 
   /* -------------------------------------------------------------- markup */
@@ -134,50 +147,52 @@
     var preview = src
       ? '<div class="pf-preview" data-src="' + esc(src) + '">' +
           '<iframe class="pf-frame" src="' + esc(src) + '" loading="lazy" tabindex="-1" title="" aria-hidden="true"></iframe>' +
-          '<span class="pf-live"><i></i>live</span>' +
+          '<span class="pf-live"><i></i>' + esc(t("pf.live")) + "</span>" +
           '<span class="pf-unreachable">' + esc(offline().badge) + "</span>" +
         "</div>"
       : "";
 
     var explore;
     if (view.nameState === "named") {
-      explore = '<button type="button" class="pf-btn" data-search="' + index + '">Everything about this client</button>';
+      explore = '<button type="button" class="pf-btn" data-search="' + index + '">' + esc(t("pf.everything")) + "</button>";
     } else if (view.nameState === "withheld") {
-      explore = '<span class="pf-note" title="Client identity withheld at their request">Communication · Confidential</span>';
+      explore = '<span class="pf-note" title="' + esc(t("pf.name.withheldTitle")) + '">' + esc(t("pf.name.withheld")) + "</span>";
     } else {
-      explore = '<span class="pf-note" title="Permission to name this client has not been requested yet">Name · Pending permission</span>';
+      explore = '<span class="pf-note" title="' + esc(t("pf.name.pendingTitle")) + '">' + esc(t("pf.name.pending")) + "</span>";
     }
 
     return '<article class="pf-card">' +
       preview +
       '<header class="pf-card-head">' +
+        /* Имя клиента и его отраслевые строки приходят из данных портфолио
+           и переведены там же (sbPortfolioView(entry, lang)). */
         '<h3 class="pf-name">' + esc(view.name) + "</h3>" +
-        '<span class="pf-badge' + (view.confidential ? " conf" : "") + '">' + (view.confidential ? "Confidential · Anonymous" : "Public") + "</span>" +
+        '<span class="pf-badge' + (view.confidential ? " conf" : "") + '">' + esc(view.confidential ? t("pf.badge.conf") : t("pf.badge.public")) + "</span>" +
       "</header>" +
       '<p class="pf-meta">' + esc([view.industry, view.projectType].filter(Boolean).join(" · ")) + "</p>" +
       (view.scale ? '<p class="pf-scale">' + esc(view.scale) + "</p>" : "") +
       ((view.tech || []).length
-        ? '<div class="pf-chips">' + view.tech.map(function (t) { return '<span class="pf-chip">' + esc(t) + "</span>"; }).join("") + "</div>"
+        ? '<div class="pf-chips">' + view.tech.map(function (term) { return '<span class="pf-chip">' + esc(techLabel(term)) + "</span>"; }).join("") + "</div>"
         : "") +
       ((view.features || []).length
-        ? '<h4 class="pf-sub">Delivered</h4><ul class="pf-list">' +
+        ? '<h4 class="pf-sub">' + esc(t("pf.sub.delivered")) + '</h4><ul class="pf-list">' +
             view.features.map(function (f) { return "<li>" + esc(f) + "</li>"; }).join("") + "</ul>"
         : "") +
-      (view.goal ? '<h4 class="pf-sub">Goal</h4><p class="pf-goal">' + esc(view.goal) + "</p>" : "") +
+      (view.goal ? '<h4 class="pf-sub">' + esc(t("pf.sub.goal")) + '</h4><p class="pf-goal">' + esc(view.goal) + "</p>" : "") +
       /* How the relationship began. Rendered only when recorded: a portfolio
          that can say this proves more than a page of testimonials, and one
          that guesses at it proves less than nothing. */
       (view.origin ? '<p class="pf-origin">' + esc(view.origin.label) + "</p>" : "") +
-      '<h4 class="pf-sub">Results</h4>' + resultsMarkup(view) +
+      '<h4 class="pf-sub">' + esc(t("pf.sub.results")) + "</h4>" + resultsMarkup(view) +
       '<div class="pf-primary">' +
         (view.explorePath
-          ? '<button type="button" class="pf-btn primary" data-open="' + index + '">Open and use this system →</button>' +
+          ? '<button type="button" class="pf-btn primary" data-open="' + index + '">' + esc(t("pf.open")) + "</button>" +
             '<p class="pf-offline-note">' + esc(offline().note) + "</p>"
-          : '<span class="pf-note">Running at the client’s premises, not as a hosted demonstration.</span>') +
+          : '<span class="pf-note">' + esc(t("pf.onPremises")) + "</span>") +
       "</div>" +
       '<footer class="pf-footer">' +
-        '<span class="pf-footer-label">Explore</span>' +
-        '<button type="button" class="pf-btn" data-brief="' + index + '">Project brief</button>' +
+        '<span class="pf-footer-label">' + esc(t("pf.explore")) + "</span>" +
+        '<button type="button" class="pf-btn" data-brief="' + index + '">' + esc(t("pf.brief")) + "</button>" +
         explore +
       "</footer>" +
     "</article>";
@@ -194,7 +209,7 @@
     var cards = "";
     if (!list.length || views.every(function (v) { return !v; })) {
       cards = '<div class="pf-empty"><div class="pf-empty-glyph">' + ICON + "</div>" +
-        "<p>Real completed client work will appear here.</p></div>";
+        "<p>" + esc(t("pf.empty")) + "</p></div>";
     } else {
       cards = list.map(function (entry, idx) {
         var view = views[idx];
@@ -204,18 +219,18 @@
 
     host.innerHTML =
       '<div class="app-portfolio">' +
-        '<p class="pf-intro">' + esc(INTRO) + "</p>" +
+        '<p class="pf-intro">' + esc(t("pf.intro")) + "</p>" +
         (hasReplay
           ? '<button type="button" class="pf-replay" id="pfReplay">' +
-              '<span class="pf-replay-title">Replay a working day in this desktop</span>' +
-              '<span class="pf-replay-sub">A demonstration, not a recording — two minutes</span>' +
+              '<span class="pf-replay-title">' + esc(t("pf.replay")) + "</span>" +
+              '<span class="pf-replay-sub">' + esc(t("pf.replaySub")) + "</span>" +
             "</button>"
           : "") +
         cards +
         pipelineMarkup() +
         '<div class="pf-cta">' +
-          "<p>Want a system like this built for your business?</p>" +
-          '<a class="pf-cta-link" href="../?contact=1">Start your project →</a>' +
+          "<p>" + esc(t("pf.cta")) + "</p>" +
+          '<a class="pf-cta-link" href="../?contact=1">' + esc(t("pf.ctaLink")) + "</a>" +
         "</div>" +
       "</div>";
 

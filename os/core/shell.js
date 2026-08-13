@@ -498,14 +498,13 @@
     var w = size.w, h = size.h, x, y, born = { maximized: false };
 
     if (compact()) {
-      var m = window.innerWidth <= 400 ? 10 : 16;
-      var topGap = 44 + m;
-      var botGap = isTouch() ? 96 : 76;          /* room for the dock to breathe */
-      w = window.innerWidth - m * 2;
-      h = Math.min(size.h, window.innerHeight - topGap - botGap);
-      h = Math.max(240, h);
-      x = m;
-      y = topGap;
+      /* Во весь экран, как на лендинге (решение 022). Прежние поля отдавали
+         фону 32px ширины на 390px и зажимали содержимое; док прячется сам,
+         поэтому нижний зазор больше не нужен. Одно правило на две поверхности. */
+      w = window.innerWidth;
+      h = window.innerHeight - 44;
+      x = 0;
+      y = 44;
     } else {
       var off = (cascade % 5);
       cascade++;

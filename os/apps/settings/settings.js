@@ -16,14 +16,18 @@
   var EXPORT_APP = "sysbaby-os";
   var EXPORT_VERSION = 1;
 
+  /* Строки этого приложения живут в STRINGS ядра (core/topbar.js), а здесь
+     стоят только ключи. Причина ровно одна: applyLang() и смена языка на
+     лету видят ключ и не видят литерал. Ярлык раздела — labelKey, а не
+     label, чтобы «Appearance» физически негде было написать. */
   var SECTIONS = [
-    { id: "general", label: "General", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8.4" r="3.2"/><path d="M5.2 19.4a6.8 6.8 0 0 1 13.6 0"/></svg>' },
-    { id: "appearance", label: "Appearance", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="7.8"/><path d="M12 4.2v15.6"/></svg>' },
-    { id: "sound", label: "Sound & Focus", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 9.5h3l4-3.2v11.4l-4-3.2h-3Z"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6"/></svg>' },
-    { id: "desktop", label: "Dock & Desktop", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.4" y="5" width="17.2" height="11.4" rx="2"/><path d="M8 19.6h8"/></svg>' },
-    { id: "privacy", label: "Privacy", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.8 5.4 6.4v5c0 4.2 2.8 7.6 6.6 8.8 3.8-1.2 6.6-4.6 6.6-8.8v-5L12 3.8Z"/></svg>' },
-    { id: "advanced", label: "Advanced", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 7.5h14M5 12h14M5 16.5h14"/><circle cx="9" cy="7.5" r="1.6"/><circle cx="15" cy="16.5" r="1.6"/></svg>' },
-    { id: "about", label: "About", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="7.8"/><path d="M12 11v5.2M12 8.1v.1"/></svg>' }
+    { id: "general", labelKey: "set.tab.general", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8.4" r="3.2"/><path d="M5.2 19.4a6.8 6.8 0 0 1 13.6 0"/></svg>' },
+    { id: "appearance", labelKey: "set.tab.appearance", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="7.8"/><path d="M12 4.2v15.6"/></svg>' },
+    { id: "sound", labelKey: "set.tab.sound", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 9.5h3l4-3.2v11.4l-4-3.2h-3Z"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6"/></svg>' },
+    { id: "desktop", labelKey: "set.tab.desktop", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.4" y="5" width="17.2" height="11.4" rx="2"/><path d="M8 19.6h8"/></svg>' },
+    { id: "privacy", labelKey: "set.tab.privacy", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.8 5.4 6.4v5c0 4.2 2.8 7.6 6.6 8.8 3.8-1.2 6.6-4.6 6.6-8.8v-5L12 3.8Z"/></svg>' },
+    { id: "advanced", labelKey: "set.tab.advanced", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 7.5h14M5 12h14M5 16.5h14"/><circle cx="9" cy="7.5" r="1.6"/><circle cx="15" cy="16.5" r="1.6"/></svg>' },
+    { id: "about", labelKey: "set.tab.about", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="7.8"/><path d="M12 11v5.2M12 8.1v.1"/></svg>' }
   ];
 
   /* -------------------------------------------------------------- helpers */
@@ -36,6 +40,13 @@
   }
 
   function bodyOf(win) { return win && win.el ? win.el.querySelector(".window-body") : null; }
+
+  /* Единственная дверь к строкам. Если ядро ещё не загрузилось, вернётся
+     сам ключ — это видно глазом и чинится, а не молча пустеет. */
+  function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
+  /* Имя другого приложения берётся у оболочки: подстановка «{mail}» обязана
+     совпасть с тем, что написано под иконкой в доке. */
+  function appName(id) { return typeof window.sbAppTitle === "function" ? window.sbAppTitle(id) : id; }
 
   function dbGet(key) {
     try {
@@ -51,7 +62,7 @@
       return true;
     } catch (err) {
       console.error("[settings] write failed", err);
-      toast("Couldn't save", "Storage may be full or restricted in this browser.");
+      toast(t("set.save.failTitle"), t("set.save.failBody"));
       return false;
     }
   }
@@ -108,14 +119,14 @@
     var options = langs.map(function (l) {
       return '<option value="' + esc(l.code) + '"' + (l.code === langNow ? " selected" : "") + ">" + esc(l.label) + "</option>";
     }).join("");
-    return '<h2 class="st-title">General</h2>' +
-      rowMarkup("Your identity",
-        "This is the name the whole system addresses you by — the topbar, Letters, Whisper, everywhere.",
+    return '<h2 class="st-title">' + esc(t("set.tab.general")) + "</h2>" +
+      rowMarkup(esc(t("set.general.identity")),
+        esc(t("set.general.identitySub", { mail: appName("mail"), messenger: appName("messenger") })),
         '<span class="st-username"><input type="text" id="stUsername" maxlength="18" spellcheck="false" autocomplete="off" value="' + esc(name) + '">' +
-          '<span class="st-suffix">.sys.baby</span><span class="st-saved" id="stUsernameSaved">Saved</span></span>') +
-      rowMarkup("Language", "The desktop speaks English, Russian and Estonian",
+          '<span class="st-suffix">.sys.baby</span><span class="st-saved" id="stUsernameSaved">' + esc(t("set.general.saved")) + "</span></span>") +
+      rowMarkup(esc(t("set.general.language")), esc(t("set.general.languageSub")),
         '<select class="st-select" id="stLang">' + options + "</select>") +
-      '<div class="st-note"><p>Launch anything with ⌘K, switch windows with W, see every shortcut with ? — or use the dock along the bottom edge.</p></div>';
+      '<div class="st-note"><p>' + esc(t("set.general.note")) + "</p></div>";
   }
 
   function accentSwatches() {
@@ -155,7 +166,13 @@
     var moods = wallpaperMoods();
     var mood = currentMood();
     var moodChips = moods.map(function (m) {
-      return '<button type="button" class="st-chip' + (m.id === mood ? " active" : "") + '" data-mood="' + esc(m.id) + '">' + esc(m.name || m.label || m.id) + "</button>";
+      /* Имена настроений обоев уже переведены в ядре (ключи mood.*) — тот же
+         список показывает Центр управления. Приложение берёт их оттуда, а не
+         печатает английское m.name, иначе два места назвали бы одно разными
+         словами. */
+      var moodName = t("mood." + m.id);
+      if (moodName === "mood." + m.id) moodName = m.name || m.label || m.id;
+      return '<button type="button" class="st-chip' + (m.id === mood ? " active" : "") + '" data-mood="' + esc(m.id) + '">' + esc(moodName) + "</button>";
     }).join("");
 
     var brightness = typeof window.sbGetBrightness === "function" ? window.sbGetBrightness() : 100;
@@ -178,40 +195,40 @@
        Возврат — отдельной работой: перевод всех приложений на токены плюс
        закон, меряющий контраст в обеих темах на каждом экране. До тех пор
        строка ниже говорит, как есть. */
-    return '<h2 class="st-title">Appearance</h2>' +
-      rowMarkup("Theme", "Dark is the only theme this release ships. A light theme that half the apps do not honour would look broken, and shipping it broken is worse than not having it.",
+    return '<h2 class="st-title">' + esc(t("set.tab.appearance")) + "</h2>" +
+      rowMarkup(esc(t("set.appearance.theme")), esc(t("set.appearance.themeSub")),
         '<span class="st-segment" data-theme-state="dark">' +
-          '<button type="button" class="st-seg active" data-theme="dark">DARK</button>' +
+          '<button type="button" class="st-seg active" data-theme="dark">' + esc(t("set.appearance.themeDark")) + "</button>" +
         "</span>") +
-      rowMarkup("Accent color",
-        "Recolors the dock highlight, toggles, focus rings and more, everywhere at once",
+      rowMarkup(esc(t("set.appearance.accent")),
+        esc(t("set.appearance.accentSub")),
         /* см. примечание о нативном выборе цвета в core/topbar.js */
         '<span class="st-swatches">' + swatches + "</span>") +
-      rowMarkup("Wallpaper mood",
-        "Recolors the background scenery — everything else stays the same",
-        '<span class="st-chips">' + (moodChips || '<span class="st-muted">No moods available</span>') + "</span>") +
-      rowMarkup("Brightness", "Dims the whole desktop — the same slider as the Control Center",
-        '<input type="range" class="st-range" id="stBrightness" min="0" max="100" value="' + brightness + '" aria-label="Brightness">') +
-      rowMarkup("Turbo", "Skips the long animations — everything happens instantly", switchMarkup("motion")) +
-      rowMarkup("Reduce transparency", "Solid panels instead of glass", switchMarkup("transparency"));
+      rowMarkup(esc(t("set.appearance.mood")),
+        esc(t("set.appearance.moodSub")),
+        '<span class="st-chips">' + (moodChips || '<span class="st-muted">' + esc(t("set.appearance.moodNone")) + "</span>") + "</span>") +
+      rowMarkup(esc(t("set.appearance.brightness")), esc(t("set.appearance.brightnessSub")),
+        '<input type="range" class="st-range" id="stBrightness" min="0" max="100" value="' + brightness + '" aria-label="' + esc(t("set.appearance.brightness")) + '">') +
+      rowMarkup(esc(t("set.appearance.turbo")), esc(t("set.appearance.turboSub")), switchMarkup("motion")) +
+      rowMarkup(esc(t("set.appearance.transparency")), esc(t("set.appearance.transparencySub")), switchMarkup("transparency"));
   }
 
   function soundMarkup() {
     var volume = typeof window.sbGetNotifVolume === "function"
       ? Math.round(window.sbGetNotifVolume() * 100)
       : 60;
-    return '<h2 class="st-title">Sound &amp; Focus</h2>' +
-      rowMarkup("System sound", "Notification chimes and other short sound effects", switchMarkup("sound")) +
-      rowMarkup("Volume", "How loud the chime is — release the slider to hear it",
-        '<input type="range" class="st-range" id="stVolume" min="0" max="100" value="' + volume + '" aria-label="Volume">') +
-      rowMarkup("Do Not Disturb", "Silences toasts and notifications until you turn it back off", switchMarkup("dnd"));
+    return '<h2 class="st-title">' + esc(t("set.tab.sound")) + "</h2>" +
+      rowMarkup(esc(t("set.sound.system")), esc(t("set.sound.systemSub")), switchMarkup("sound")) +
+      rowMarkup(esc(t("set.sound.volume")), esc(t("set.sound.volumeSub")),
+        '<input type="range" class="st-range" id="stVolume" min="0" max="100" value="' + volume + '" aria-label="' + esc(t("set.sound.volume")) + '">') +
+      rowMarkup(esc(t("set.sound.dnd")), esc(t("set.sound.dndSub")), switchMarkup("dnd"));
   }
 
   function desktopMarkup() {
-    return '<h2 class="st-title">Dock &amp; Desktop</h2>' +
-      rowMarkup("Auto-Hide", "Tuck the dock away until you move the pointer to the bottom edge", switchMarkup("autohide")) +
-      rowMarkup("Tidy widgets", "Puts the desktop widgets back on their default grid",
-        '<button type="button" class="st-btn" id="stTidy">Tidy</button>');
+    return '<h2 class="st-title">' + esc(t("set.tab.desktop")) + "</h2>" +
+      rowMarkup(esc(t("set.desktop.autohide")), esc(t("set.desktop.autohideSub")), switchMarkup("autohide")) +
+      rowMarkup(esc(t("set.desktop.tidy")), esc(t("set.desktop.tidySub")),
+        '<button type="button" class="st-btn" id="stTidy">' + esc(t("set.desktop.tidyBtn")) + "</button>");
   }
 
   function profilesApi() { return window.sbProfiles || null; }
@@ -226,51 +243,51 @@
         currentProfileId = typeof api.current === "function" ? api.current() : "local";
       } catch (err) { console.error("[settings] profiles read failed", err); }
     }
-    var signedIn = record && record.email ? record.email : "Guest — this computer's local profile";
+    var signedIn = record && record.email ? record.email : t("set.privacy.guest");
 
     var chips = list.map(function (p) {
       var isCurrent = p.id === currentProfileId;
       var canDelete = !isCurrent && p.id !== "local";
       return '<span class="st-profile' + (isCurrent ? " active" : "") + '">' +
         '<button type="button" class="st-profile-btn" data-profile="' + esc(p.id) + '" title="' + esc(p.email || p.name || p.id) + '">' + esc(p.name || p.id) + "</button>" +
-        (canDelete ? '<button type="button" class="st-profile-x" data-profile-del="' + esc(p.id) + '" title="Delete this account" aria-label="Delete this account">✕</button>' : "") +
+        (canDelete ? '<button type="button" class="st-profile-x" data-profile-del="' + esc(p.id) + '" title="' + esc(t("set.privacy.profileDelete")) + '" aria-label="' + esc(t("set.privacy.profileDelete")) + '">✕</button>' : "") +
       "</span>";
     }).join("");
 
-    return '<h2 class="st-title">Privacy</h2>' +
-      rowMarkup("Signed in as", esc(signedIn),
-        '<button type="button" class="st-btn danger" id="stSignOut">Sign out</button>') +
-      rowMarkup("Local profiles",
-        "Every account on this browser has its own completely separate notes, mail, files and messages",
-        '<span class="st-profiles">' + chips +
-          '<button type="button" class="st-chip" id="stAddAccount">+ Add account</button></span>') +
-      rowMarkup("Local storage used", "", '<span class="st-value" id="stStorage">measuring…</span>') +
-      rowMarkup("Clear all local data", "Removes everything this browser holds for sys.baby",
-        '<button type="button" class="st-btn danger" id="stClearAll">Clear</button>') +
+    /* Почта аккаунта — данные посетителя: data-sb-userdata говорит закону
+       покрытия, что эту строку переводить нечем и не нужно. */
+    return '<h2 class="st-title">' + esc(t("set.tab.privacy")) + "</h2>" +
+      rowMarkup(esc(t("set.privacy.signedIn")), '<span data-sb-userdata>' + esc(signedIn) + "</span>",
+        '<button type="button" class="st-btn danger" id="stSignOut">' + esc(t("set.privacy.signOut")) + "</button>") +
+      rowMarkup(esc(t("set.privacy.profiles")),
+        esc(t("set.privacy.profilesSub")),
+        '<span class="st-profiles" data-sb-userdata>' + chips +
+          '<button type="button" class="st-chip" id="stAddAccount">' + esc(t("set.privacy.addAccount")) + "</button></span>") +
+      rowMarkup(esc(t("set.privacy.storage")), "", '<span class="st-value" id="stStorage">' + esc(t("set.storage.measuring")) + "</span>") +
+      rowMarkup(esc(t("set.privacy.clear")), esc(t("set.privacy.clearSub")),
+        '<button type="button" class="st-btn danger" id="stClearAll">' + esc(t("set.privacy.clearBtn")) + "</button>") +
       '<div class="st-card">' +
-        "<h3>What leaves this device</h3>" +
-        "<p>Nothing. There is no account on a server, no sync and no request to anyone: " +
-        "everything you write stays in this browser. The only way data leaves this " +
-        "device is the export below, which you start yourself.</p>" +
+        "<h3>" + esc(t("set.privacy.leavesTitle")) + "</h3>" +
+        "<p>" + esc(t("set.privacy.leavesBody")) + "</p>" +
       "</div>" +
       '<div class="st-card">' +
-        "<h3>Backup</h3>" +
-        "<p>Export writes this account's data to a JSON file you keep. Import replaces this account's data with a file you choose. Nothing is uploaded.</p>" +
+        "<h3>" + esc(t("set.privacy.backupTitle")) + "</h3>" +
+        "<p>" + esc(t("set.privacy.backupBody")) + "</p>" +
         '<div class="st-actions">' +
-          '<button type="button" class="st-btn" id="stExport">Export this account\'s data</button>' +
-          '<button type="button" class="st-btn" id="stImport">Import a backup file</button>' +
+          '<button type="button" class="st-btn" id="stExport">' + esc(t("set.privacy.export")) + "</button>" +
+          '<button type="button" class="st-btn" id="stImport">' + esc(t("set.privacy.import")) + "</button>" +
           '<input type="file" id="stImportFile" accept="application/json,.json" hidden>' +
         "</div>" +
       "</div>" +
-      '<div class="st-note"><p>Everything is stored locally, per account, in this browser. Clearing your browser data deletes it for good.</p></div>';
+      '<div class="st-note"><p>' + esc(t("set.privacy.note")) + "</p></div>";
   }
 
   function advancedMarkup() {
-    return '<h2 class="st-title">Advanced</h2>' +
-      rowMarkup("Diagnostics — System Health", "Live FPS, memory, storage and session errors",
-        '<button type="button" class="st-btn" id="stDiag">Open</button>') +
-      rowMarkup("Reset appearance", "Accent color and wallpaper mood only — nothing else is touched",
-        '<button type="button" class="st-btn" id="stResetAppearance">Reset</button>');
+    return '<h2 class="st-title">' + esc(t("set.tab.advanced")) + "</h2>" +
+      rowMarkup(esc(t("set.advanced.diag")), esc(t("set.advanced.diagSub")),
+        '<button type="button" class="st-btn" id="stDiag">' + esc(t("set.advanced.diagBtn")) + "</button>") +
+      rowMarkup(esc(t("set.advanced.reset")), esc(t("set.advanced.resetSub")),
+        '<button type="button" class="st-btn" id="stResetAppearance">' + esc(t("set.advanced.resetBtn")) + "</button>");
   }
 
   /* About tells the truth. It used to wear invented hardware — "Automation
@@ -296,35 +313,33 @@
     } catch (err) { /* storage blocked — shown as 0 */ }
 
     var rows = [
-      ["Build", build],
-      ["Applications", registered != null ? (registered + " registered · " + launchable + " in the dock") : "registry unavailable"],
-      ["Made of", "HTML, CSS and plain JavaScript — no framework, no build step"],
-      ["Runs on", "this browser alone — no server side, nothing installed"],
-      ["Your data", keyCount + " local keys · <span id='stAboutStorage'>measuring…</span>"],
-      ["Network", "none — no analytics, no tracking, no calls home"],
-      ["Languages", "English · Русский · Eesti"]
+      [t("set.about.build"), esc(build)],
+      [t("set.about.apps"), registered != null
+        ? esc(t("set.about.appsValue", { registered: registered, launchable: launchable }))
+        : esc(t("set.about.appsNA"))],
+      [t("set.about.madeOf"), esc(t("set.about.madeOfValue"))],
+      [t("set.about.runsOn"), esc(t("set.about.runsOnValue"))],
+      [t("set.about.data"), esc(t("set.about.dataValue", { count: keyCount })) + " · <span id='stAboutStorage'>" + esc(t("set.storage.measuring")) + "</span>"],
+      [t("set.about.network"), esc(t("set.about.networkValue"))],
+      /* Языки называют себя на себе — это не перевод, а имена собственные. */
+      [t("set.about.languages"), "English · Русский · Eesti"]
     ].map(function (pair) {
       return '<div class="st-spec"><span>' + esc(pair[0]) + "</span><span>" + pair[1] + "</span></div>";
     }).join("");
 
-    return '<h2 class="st-title">About</h2>' +
+    return '<h2 class="st-title">' + esc(t("set.tab.about")) + "</h2>" +
       '<div class="st-hero"><div class="st-hero-logo">' + ICON + "</div>" +
         '<div class="st-hero-name">sys.baby</div><div class="st-hero-version">' + esc(build) + "</div></div>" +
       '<div class="st-specs">' + rows + "</div>" +
       '<div class="st-card">' +
-        "<h3>What this desktop is</h3>" +
-        "<p>A working answer to one question: what does it feel like when your business " +
-        "software belongs to you? Every app here is real — the notes keep, the files move, " +
-        "the terminal answers — and every word of it runs on your device. The client " +
-        "systems in Selected Work are the same idea, built for real companies.</p>" +
+        "<h3>" + esc(t("set.about.whatTitle")) + "</h3>" +
+        "<p>" + esc(t("set.about.whatBody", { portfolio: appName("portfolio") })) + "</p>" +
       "</div>" +
       '<div class="st-card">' +
-        "<h3>Who builds it</h3>" +
-        "<p>A systems studio in Tallinn. The desktop you are looking at is written by the " +
-        "same hands that build the client systems — it is our proof of work, not a template. " +
-        "Press the clay tile in the dock to start a project of your own.</p>" +
+        "<h3>" + esc(t("set.about.whoTitle")) + "</h3>" +
+        "<p>" + esc(t("set.about.whoBody")) + "</p>" +
       "</div>" +
-      '<div class="st-note"><p>Accounts here are local profiles in this browser, not a server. Every account keeps its own data on this device, and nothing leaves it unless you export it yourself.</p></div>';
+      '<div class="st-note"><p>' + esc(t("set.about.note")) + "</p></div>";
   }
 
   var RENDERERS = {
@@ -350,7 +365,7 @@
         '<aside class="st-side">' +
           SECTIONS.map(function (s) {
             return '<button type="button" class="st-side-item' + (s.id === section ? " active" : "") + '" data-section="' + esc(s.id) + '">' +
-              '<span class="st-side-icon">' + s.icon + "</span><span>" + esc(s.label) + "</span></button>";
+              '<span class="st-side-icon">' + s.icon + "</span><span>" + esc(t(s.labelKey)) + "</span></button>";
           }).join("") +
         "</aside>" +
         '<section class="st-pane">' + RENDERERS[section]() + "</section>" +
@@ -535,7 +550,7 @@
     tidy.addEventListener("click", function () {
       if (typeof window.sbTidyWidgets !== "function") return;
       try { window.sbTidyWidgets(); } catch (err) { console.error("[settings] tidy failed", err); }
-      toast("Widgets tidied", "Back to the default grid.");
+      toast(t("set.desktop.tidyDoneTitle"), t("set.desktop.tidyDoneBody"));
     });
   }
 
@@ -559,7 +574,7 @@
         if (typeof window.sbSetWallpaperMood === "function") {
           try { window.sbSetWallpaperMood("studio"); } catch (err) { console.error("[settings] mood reset failed", err); }
         }
-        toast("Appearance reset", "Accent color and wallpaper mood are back to default.");
+        toast(t("set.advanced.resetDoneTitle"), t("set.advanced.resetDoneBody"));
         render(win);
       });
     }
@@ -571,7 +586,7 @@
     var signOut = host.querySelector("#stSignOut");
     if (signOut) {
       signOut.addEventListener("click", function () {
-        if (!window.confirm("Sign out of sys.baby? You'll need to sign back in to reach this account's data.")) return;
+        if (!window.confirm(t("set.privacy.signOutConfirm"))) return;
         dbFlush();
         try { localStorage.removeItem(AUTHED_KEY); }
         catch (err) { console.error("[settings] sign-out failed", err); }
@@ -595,7 +610,7 @@
         var id = btn.getAttribute("data-profile-del");
         var name = btn.parentNode && btn.parentNode.querySelector("[data-profile]");
         var label = name ? name.textContent : id;
-        if (!window.confirm('Delete the account "' + label + '"? Its notes, mail, files, messages and settings are permanently removed from this browser.')) return;
+        if (!window.confirm(t("set.privacy.profileDeleteConfirm", { name: label }))) return;
         try { api.remove(id); } catch (err) { console.error("[settings] profile delete failed", err); return; }
         render(win);
       });
@@ -606,10 +621,10 @@
       add.addEventListener("click", function () {
         var api = profilesApi();
         if (!api || typeof api.findOrCreateByEmail !== "function") return;
-        var email = window.prompt("Sign in with an email to create or switch to that account:");
+        var email = window.prompt(t("set.privacy.addPrompt"));
         if (email == null) return;
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
-          toast("Invalid email", "Enter a full email address.");
+          toast(t("set.privacy.emailBadTitle"), t("set.privacy.emailBadBody"));
           return;
         }
         var profile;
@@ -624,10 +639,10 @@
     var clearAll = host.querySelector("#stClearAll");
     if (clearAll) {
       clearAll.addEventListener("click", function () {
-        if (!window.confirm("Clear all local sys.baby data? Notes, mail, messages, files, saved layouts, clipboard history and preferences will be permanently removed from this browser.")) return;
+        if (!window.confirm(t("set.privacy.clearConfirm"))) return;
         clearNamespace(localStorage);
         clearNamespace(typeof sessionStorage !== "undefined" ? sessionStorage : null);
-        toast("Local data cleared", "Reload to see the system reset to defaults.");
+        toast(t("set.privacy.clearedTitle"), t("set.privacy.clearedBody"));
       });
     }
 
@@ -658,7 +673,7 @@
       doomed.forEach(function (key) { storage.removeItem(key); });
     } catch (err) {
       console.error("[settings] clear failed", err);
-      toast("Couldn't clear", "Storage may be restricted in this browser.");
+      toast(t("set.privacy.clearFailTitle"), t("set.privacy.clearFailBody"));
     }
   }
 
@@ -668,26 +683,26 @@
     var el = host && host.querySelector(sel);
     if (!el) return;
     if (!navigator.storage || typeof navigator.storage.estimate !== "function") {
-      el.textContent = "not exposed by this browser";
+      el.textContent = t("set.storage.notExposed");
       return;
     }
     navigator.storage.estimate().then(function (estimate) {
       var live = bodyOf(win) && bodyOf(win).querySelector(sel);
       if (!live) return;
       var used = formatBytes(estimate && estimate.usage);
-      if (estimate && estimate.quota) live.textContent = used + " of " + formatBytes(estimate.quota);
+      if (estimate && estimate.quota) live.textContent = t("set.storage.of", { used: used, total: formatBytes(estimate.quota) });
       else live.textContent = used;
     }).catch(function (err) {
       console.error("[settings] storage estimate failed", err);
       var live = bodyOf(win) && bodyOf(win).querySelector(sel);
-      if (live) live.textContent = "unavailable";
+      if (live) live.textContent = t("set.storage.unavailable");
     });
   }
 
   function formatBytes(value) {
     var n = Number(value) || 0;
-    if (n >= 1048576) return Math.round(n / 1048576) + " MB";
-    return Math.round(n / 1024) + " KB";
+    if (n >= 1048576) return Math.round(n / 1048576) + " " + t("set.unit.mb");
+    return Math.round(n / 1024) + " " + t("set.unit.kb");
   }
 
   /* ------------------------------------------------------- export/import */
@@ -749,11 +764,11 @@
       try { res = window.sbDownloadExport(); }
       catch (err) { console.error("[settings] shell export failed — using local envelope", err); }
       if (res && res.ok) {
-        toast("Export ready", res.count + " keys written to a file on this device.");
+        toast(t("set.export.readyTitle"), t("set.export.readyBody", { count: res.count }));
         return;
       }
       if (res && res.error) {
-        toast("Export failed", res.error);
+        toast(t("set.export.failTitle"), res.error);
         return;
       }
     }
@@ -774,6 +789,8 @@
       app: EXPORT_APP,
       version: EXPORT_VERSION,
       createdAt: new Date().toISOString(),
+      /* Имя внутри файла экспорта — это данные, а не интерфейс: файл
+         переживёт смену языка, поэтому здесь всегда одна форма. */
       profile: { id: id, name: (record && record.name) || "This computer", email: (record && record.email) || null },
       keys: keys
     };
@@ -789,10 +806,10 @@
       link.click();
       document.body.removeChild(link);
       setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-      toast("Export ready", Object.keys(keys).length + " keys written to a file on this device.");
+      toast(t("set.export.readyTitle"), t("set.export.readyBody", { count: Object.keys(keys).length }));
     } catch (err) {
       console.error("[settings] export failed", err);
-      toast("Export failed", "The file could not be created in this browser.");
+      toast(t("set.export.failTitle"), t("set.export.failBody"));
     }
   }
 
@@ -800,25 +817,25 @@
     var reader = new FileReader();
     reader.onerror = function () {
       console.error("[settings] import read failed", reader.error);
-      toast("Import failed", "That file could not be read.");
+      toast(t("set.import.failTitle"), t("set.import.unreadable"));
     };
     reader.onload = function () {
       var envelope;
       try { envelope = JSON.parse(String(reader.result)); }
       catch (err) {
         console.error("[settings] import parse failed", err);
-        toast("Import failed", "That file is not a sys.baby backup.");
+        toast(t("set.import.failTitle"), t("set.import.notBackup"));
         return;
       }
       if (!envelope || envelope.app !== EXPORT_APP || !envelope.keys || typeof envelope.keys !== "object") {
-        toast("Import failed", "That file is not a sys.baby backup.");
+        toast(t("set.import.failTitle"), t("set.import.notBackup"));
         return;
       }
       if (Number(envelope.version) > EXPORT_VERSION) {
-        toast("Import failed", "That backup was written by a newer version.");
+        toast(t("set.import.failTitle"), t("set.import.newer"));
         return;
       }
-      if (!window.confirm("Import this backup? Everything currently in this account — notes, mail, messages, files and settings — is replaced by the contents of the file.")) return;
+      if (!window.confirm(t("set.import.confirm"))) return;
 
       /* Shell signature is sbImportProfile(textOrObject, {mode, profileId?, reload?})
        * — an options object, not a bare mode string (os-shell.md §1.5). */
@@ -827,7 +844,7 @@
         try { res = window.sbImportProfile(envelope, { mode: "replace" }); }
         catch (err) { console.error("[settings] shell import failed — using local writer", err); }
         if (res && res.ok) return;                    /* the shell reloads for us */
-        if (res && res.error) { toast("Import failed", res.error); return; }
+        if (res && res.error) { toast(t("set.import.failTitle"), res.error); return; }
       }
 
       var id = activeProfileId();
@@ -840,7 +857,7 @@
         });
       } catch (err) {
         console.error("[settings] import write failed", err);
-        toast("Import failed", "Storage may be full or restricted in this browser.");
+        toast(t("set.import.failTitle"), t("set.save.failBody"));
         return;
       }
       location.reload();
@@ -862,6 +879,10 @@
       icon: ICON,
       size: { w: 620, h: 520 },
       deskPos: { x: 240, y: 40 },
+      /* Окно перерисовывается при смене языка. Единственное поле ввода —
+         имя пользователя — читается из хранилища, так что перерисовка
+         ничего не теряет: то, что не сохранено, тут и не существует. */
+      retranslate: true,
       render: render
     });
   }

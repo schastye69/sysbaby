@@ -5,13 +5,19 @@
 (function () {
   "use strict";
 
+  /* Строки этого файла видны в блоке «Связано» внутри Писем, поэтому у
+     каждого ярлыка есть ключ, а английский текст остаётся запасным
+     значением на случай, если ядро i18n почему-то не поднялось. */
+  function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
+  function appName(id) { return window.sbAppTitle ? window.sbAppTitle(id) : id; }
+
   window.sbLinkKinds = {
-    project: { label: "Project" },
-    document: { label: "Document" },
-    app: { label: "Opens in" },
-    note: { label: "Note" },
-    pricing: { label: "Pricing" },
-    system: { label: "System" }
+    project: { label: "Project", labelKey: "link.kind.project" },
+    document: { label: "Document", labelKey: "link.kind.document" },
+    app: { label: "Opens in", labelKey: "link.kind.app" },
+    note: { label: "Note", labelKey: "link.kind.note" },
+    pricing: { label: "Pricing", labelKey: "link.kind.pricing" },
+    system: { label: "System", labelKey: "link.kind.system" }
   };
 
   function apps() { return (window.SysBaby && window.SysBaby.apps) || {}; }
@@ -59,7 +65,7 @@
     return {
       kind: "project",
       title: v.title || entry.title || entry.id,
-      sub: v.industry || v.client || "In the portfolio",
+      sub: v.industry || v.client || t("link.project.sub"),
       live: function () { return isOpen("portfolio"); },
       open: function () { if (window.toggleApp) window.toggleApp("portfolio"); }
     };
@@ -73,7 +79,7 @@
     if (!apps().project && !path) return null;
     return {
       kind: "system",
-      title: "Open the system itself",
+      title: t("link.system.title"),
       sub: v.title || entry.id,
       live: function () { return isOpen("project"); },
       open: function () {
@@ -94,7 +100,7 @@
     return {
       kind: "document",
       title: name,
-      sub: "The project brief, in Vault",
+      sub: t("link.document.sub", { files: appName("files") }),
       live: function () { return isOpen("files"); },
       open: function () {
         if (!window.toggleApp) return;
@@ -115,7 +121,7 @@
     return {
       kind: "app",
       title: window.sbAppTitle ? window.sbAppTitle(id) : (def.title || id),
-      sub: sub || (def.brand || "An app in this system"),
+      sub: sub || (def.brand || t("link.app.sub")),
       live: function () { return isOpen(id); },
       open: function () { if (window.toggleApp) window.toggleApp(id); }
     };
@@ -127,12 +133,12 @@
     return {
       kind: "pricing",
       title: band,
-      sub: "Published pricing — no quotes behind glass",
+      sub: t("link.pricing.sub"),
       open: function () {
         var url = "../index.php#pricing";
         var w = null;
         try { w = window.open(url, "_blank", "noopener"); } catch (e) { w = null; }
-        if (!w && window.showToast) window.showToast("Pricing", "Published on the site: " + band, "");
+        if (!w && window.showToast) window.showToast(t("link.pricing.toastTitle"), t("link.pricing.toastBody", { band: band }), "");
       }
     };
   }
@@ -141,12 +147,12 @@
     if (typeof window.sbAddQuickNote !== "function") return null;
     return {
       kind: "note",
-      title: "Keep this as a note",
-      sub: "Saved to Notes",
+      title: t("link.note.title"),
+      sub: t("link.note.sub", { notes: appName("notes") }),
       open: function () {
         window.sbAddQuickNote(text);
         /* copy matches behaviour: it is a plain note, not a desktop sticky */
-        if (window.showToast) window.showToast("Kept", "Saved to Notes.", "");
+        if (window.showToast) window.showToast(t("link.note.toastTitle"), t("link.note.toastBody", { notes: appName("notes") }), "");
       }
     };
   }
@@ -158,7 +164,7 @@
         projectLink("auto-estimate"),
         systemLink("auto-estimate"),
         documentLink("auto-estimate"),
-        appLink("portfolio", "Every system we have shipped"),
+        appLink("portfolio", t("link.sub.allShipped")),
         noteLink("Body-shop estimate system — worth a closer look.")
       ];
     },
@@ -170,20 +176,20 @@
     2: function () {
       return [
         pricingLink(),
-        appLink("portfolio", "The system we have handed over"),
-        appLink("files", "Where the brief is kept")
+        appLink("portfolio", t("link.sub.handedOver")),
+        appLink("files", t("link.sub.briefKept"))
       ];
     },
     3: function () {
       return [
         pricingLink(),
-        appLink("portfolio", "Every system we have shipped"),
+        appLink("portfolio", t("link.sub.allShipped")),
         noteLink("Ask about the payback period before the next invoice run.")
       ];
     },
     4: function () {
       return [
-        appLink("portfolio", "Every system we have shipped"),
+        appLink("portfolio", t("link.sub.allShipped")),
         pricingLink()
       ];
     },
@@ -193,7 +199,7 @@
     5: function () {
       return [
         pricingLink(),
-        appLink("portfolio", "The system we have handed over"),
+        appLink("portfolio", t("link.sub.handedOver")),
         noteLink("Letters → To the studio really delivers. Reply channel is mine to choose.")
       ];
     }

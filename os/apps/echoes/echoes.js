@@ -24,12 +24,15 @@
    * Seeded once per profile (guard key below); restore or silence them like
    * anything else, and they never come back on their own. */
   var TRACE_GUARD = "sysbaby.traces.seeded";
+  /* Тексты засеянных эх живут в STRINGS ядра (ключи ec.seed.*): это голос
+     студии, и он должен звучать на языке того, кто открыл систему. После
+     засева это обычные данные профиля — перевод к ним больше не возвращается. */
   var TRACE_NOTES = [
-    { id: "trace-echo-0", text: "Nothing you delete here is destroyed. It waits, gets quieter, and stays restorable. That was a decision, not an accident — most systems ask you to be certain at the worst possible moment.", ageDays: 9 },
-    { id: "trace-echo-1", text: "If you are reading this, you deleted something and then went looking for it. That instinct is the reason this app exists.", ageDays: 4 },
-    { id: "trace-echo-2", text: "Every app on this desktop was built by the same two hands that build the systems we sell. Nothing here is a template. You can check: open the portfolio and use the real one.", ageDays: 21 },
-    { id: "trace-echo-3", text: "aug 2026 — the word 'applications' was removed from the landing page. It rested a while in a place much like this one, then we understood: the light under the door says it better with no letters at all.", ageDays: 2 },
-    { id: "trace-echo-4", text: "10 aug 2026 — the first letter truly left this system and reached the studio's inbox. The chain behind the form had been broken in three places, and everything had LOOKED fine. Since that day: a thing exists when it is observed working.", ageDays: 1 }
+    { id: "trace-echo-0", key: "ec.seed.0", ageDays: 9 },
+    { id: "trace-echo-1", key: "ec.seed.1", ageDays: 4 },
+    { id: "trace-echo-2", key: "ec.seed.2", ageDays: 21 },
+    { id: "trace-echo-3", key: "ec.seed.3", ageDays: 2 },
+    { id: "trace-echo-4", key: "ec.seed.4", ageDays: 1 }
   ];
   /* (The former TRACE_DOCUMENTS file moved to the Vault's Journal folder in
    * v21 — documents belong with documents; echoes hold what was let go.) */
@@ -37,7 +40,13 @@
   /* One living note rides along into Scribble: the door to the journal.
    * Pinned so it is seen once, deletable so it is never in the way — and when
    * deleted it arrives here, which is its own small lesson. */
-  var JOURNAL_NOTE = "This desktop keeps a journal of its own building — open Terminal and type `log`. The longer entries live in Vault → Journal.\n\nEvery entry is true.\n\n(This note is yours now: edit it, unpin it, or delete it — it will wait in Echoes, like everything here.)";
+  function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
+  function appName(id) { return window.sbAppTitle ? window.sbAppTitle(id) : id; }
+  function journalNote() {
+    return t("nt.journalNote", {
+      terminal: appName("terminal"), files: appName("files"), echoes: appName("echoes")
+    });
+  }
 
   function seedTraces() {
     var s = store();
@@ -52,20 +61,23 @@
       live.concat(deleted).forEach(function (n) { if (n && n.id) have[n.id] = true; });
 
       var batch = live.slice();
-      TRACE_NOTES.forEach(function (t) {
-        if (have[t.id]) return;
+      /* Имя параметра НЕ t: так зовут функцию перевода в этом файле, и
+         затенение её здесь молча превратило бы t("ec.seed.0") в обращение к
+         объекту следа. */
+      TRACE_NOTES.forEach(function (trace) {
+        if (have[trace.id]) return;
         batch.push({
-          id: t.id,
-          text: t.text,
+          id: trace.id,
+          text: t(trace.key),
           pinned: false,
-          updatedAt: now - Math.round(t.ageDays * 86400000),
-          deletedAt: now - Math.round(t.ageDays * 86400000)
+          updatedAt: now - Math.round(trace.ageDays * 86400000),
+          deletedAt: now - Math.round(trace.ageDays * 86400000)
         });
       });
       if (!have["trace-scribble-journal"]) {
         batch.unshift({
           id: "trace-scribble-journal",
-          text: JOURNAL_NOTE,
+          text: journalNote(),
           pinned: true,
           updatedAt: now - 3 * 86400000
         });
@@ -98,14 +110,14 @@
 
   function timeAgo(ts) {
     var diff = Date.now() - (Number(ts) || 0);
-    if (diff < 60000) return "Just now";
+    if (diff < 60000) return t("time.now");
     var m = Math.floor(diff / 60000);
-    if (m < 60) return m + "m ago";
+    if (m < 60) return t("time.m", { n: m });
     var h = Math.floor(m / 60);
-    if (h < 24) return h + "h ago";
+    if (h < 24) return t("time.h", { n: h });
     var d = Math.floor(h / 24);
-    if (d < 14) return d + "d ago";
-    return Math.floor(d / 7) + "w ago";
+    if (d < 14) return t("time.d", { n: d });
+    return t("time.w", { n: Math.floor(d / 7) });
   }
 
   function hash(text) {
@@ -174,12 +186,13 @@
     return '<div class="ec-row" style="opacity:' + (1 - fade * 0.5).toFixed(3) + '" data-id="' + esc(note.id) + '">' +
       waveMarkup(note, fade) +
       '<span class="ec-row-text">' +
-        '<span class="ec-snippet">' + esc(snippetOf(note.text)) + "</span>" +
+        /* Текст эха — то, что посетитель когда-то написал или получил. */
+        '<span class="ec-snippet" data-sb-userdata>' + esc(snippetOf(note.text)) + "</span>" +
         '<span class="ec-time">' + esc(timeAgo(note.deletedAt)) + "</span>" +
       "</span>" +
       '<span class="ec-actions">' +
-        '<button type="button" class="ec-btn" data-restore="' + esc(note.id) + '">Restore</button>' +
-        '<button type="button" class="ec-btn x" data-silence="' + esc(note.id) + '" title="Delete forever — cannot be undone" aria-label="Delete forever">✕</button>' +
+        '<button type="button" class="ec-btn" data-restore="' + esc(note.id) + '">' + esc(t("ec.restore")) + "</button>" +
+        '<button type="button" class="ec-btn x" data-silence="' + esc(note.id) + '" title="' + esc(t("ec.silenceTitle")) + '" aria-label="' + esc(t("ec.silenceAria")) + '">✕</button>' +
       "</span>" +
     "</div>";
   }
@@ -189,10 +202,10 @@
       '<span class="ec-app-tile" style="background:' + esc(app.color) + '">' + app.icon + "</span>" +
       '<span class="ec-row-text">' +
         '<span class="ec-snippet">' + esc(app.title) + "</span>" +
-        '<span class="ec-time">Removed from desktop — never deleted</span>' +
+        '<span class="ec-time">' + esc(t("ec.appRemoved")) + "</span>" +
       "</span>" +
       '<span class="ec-actions">' +
-        '<button type="button" class="ec-btn" data-restore-app="' + esc(app.id) + '">Restore</button>' +
+        '<button type="button" class="ec-btn" data-restore-app="' + esc(app.id) + '">' + esc(t("ec.restore")) + "</button>" +
       "</span>" +
     "</div>";
   }
@@ -207,19 +220,19 @@
     if (!echoes.length && !apps.length) {
       markup = '<div class="ec-empty">' +
         '<div class="ec-empty-glyph">' + ICON + "</div>" +
-        '<p class="ec-empty-title">Nothing echoes here yet</p>' +
-        '<p class="ec-empty-sub">Deleted notes and apps you’ve removed from the desktop settle here first — nothing disappears without a second chance. Drag anything onto Echoes to send it here.</p>' +
+        '<p class="ec-empty-title">' + esc(t("ec.empty.title")) + "</p>" +
+        '<p class="ec-empty-sub">' + esc(t("ec.empty.sub", { echoes: appName("echoes") })) + "</p>" +
       "</div>";
     } else {
       markup = "";
       if (echoes.length) {
         markup += '<div class="ec-head">' +
-          "<span>" + echoes.length + " echo" + (echoes.length === 1 ? "" : "es") + "</span>" +
-          '<button type="button" class="ec-btn quiet" id="ecSilenceAll">Silence all</button>' +
+          "<span>" + esc(t(echoes.length === 1 ? "ec.count.one" : "ec.count.many", { n: echoes.length })) + "</span>" +
+          '<button type="button" class="ec-btn quiet" id="ecSilenceAll">' + esc(t("ec.silenceAll")) + "</button>" +
         "</div>" + echoes.map(echoRowMarkup).join("");
       }
       if (apps.length) {
-        markup += '<div class="ec-head second"><span>' + apps.length + " hidden app" + (apps.length === 1 ? "" : "s") + "</span></div>" +
+        markup += '<div class="ec-head second"><span>' + esc(t(apps.length === 1 ? "ec.apps.one" : "ec.apps.many", { n: apps.length })) + "</span></div>" +
           apps.map(appRowMarkup).join("");
       }
     }
@@ -235,7 +248,7 @@
         if (!s) return;
         try { s.restore(btn.getAttribute("data-restore")); }
         catch (err) { console.error("[echoes] restore failed", err); return; }
-        toast("Note restored", "It's back where it was.");
+        toast(t("ec.toast.restoredTitle"), t("ec.toast.restoredBody"));
         render(win);
       });
     });
@@ -244,7 +257,7 @@
       btn.addEventListener("click", function () {
         var s = store();
         if (!s) return;
-        if (!window.confirm("Silence this echo forever? This cannot be undone.")) return;
+        if (!window.confirm(t("ec.confirm.one"))) return;
         try { s.purge(btn.getAttribute("data-silence")); }
         catch (err) { console.error("[echoes] purge failed", err); return; }
         render(win);
@@ -256,7 +269,7 @@
       all.addEventListener("click", function () {
         var s = store();
         if (!s) return;
-        if (!window.confirm("Silence all " + echoCount + " echoes forever? This cannot be undone.")) return;
+        if (!window.confirm(t("ec.confirm.all", { n: echoCount }))) return;
         /* Touches the notes store only — hidden apps live in shell storage this
          * button cannot reach. There must be no way for it to remove an app. */
         try { s.purgeAllDeleted(); }
@@ -311,7 +324,7 @@
       TRACE_NOTES.forEach(function (trace) {
         if (existing[trace.id]) return;
         var stamp = now - trace.ageDays * 86400000;
-        list.push({ id: trace.id, text: trace.text, pinned: false, updatedAt: stamp, deletedAt: stamp, x: 0, y: 0 });
+        list.push({ id: trace.id, text: t(trace.key), pinned: false, updatedAt: stamp, deletedAt: stamp, x: 0, y: 0 });
       });
       s.save(list);
       s.notify();

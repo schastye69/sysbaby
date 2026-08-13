@@ -33,13 +33,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v39">
+<meta name="sysbaby-build" content="v41">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v39">
+<link rel="stylesheet" href="shared/system.css?b=v41">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -58,8 +58,8 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v39"></script>
-<script src="shared/pricing.data.js?b=v39"></script>
+<script src="shared/portfolio.data.js?b=v41"></script>
+<script src="shared/pricing.data.js?b=v41"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -2631,16 +2631,19 @@ function createWindow(app) {
   var w, h, x, y, bornMax = false;
 
   if (vw <= 620) {
-    /* A phone window is still a window: a margin on all four sides, the
-       backdrop visible around it, and a genuinely normal state — not a
-       full-screen sheet wearing smaller numbers. Full screen is the green
-       key, not the default. */
-    var m = vw <= 400 ? 10 : 16;
-    var top = TOPBAR_H + m;
-    w = vw - m * 2;
-    h = Math.max(240, Math.min(authored[1], vh - top - 104));
-    x = m;
-    y = top;
+    /* НА ТЕЛЕФОНЕ ОКНО РАСКРЫВАЕТСЯ ВО ВЕСЬ ЭКРАН (13.08.2026, решение 022).
+       Здесь стояло обратное правило — поля со всех четырёх сторон, «окно
+       остаётся окном на любом экране, полный экран просит посетитель». Оно
+       красиво звучит и проигрывает на измерении: на 390px поля съедали 32px
+       ширины (8%) и отдавали их фону, а содержимое — ползунки, сметы, таблицы —
+       и без того упирается в край. Основатель увидел это первым и был прав.
+       Правило теперь одно: под 620px окно = лист во весь экран под полосой,
+       ровно как в ОС. Полоса остаётся видимой намеренно: слой окон z-index 200,
+       полоса 400, и лист, доведённый до y:0, похоронил бы собственные кнопки. */
+    w = vw;
+    h = vh - TOPBAR_H;
+    x = 0;
+    y = TOPBAR_H;
   } else {
     w = Math.min(authored[0], vw - 32);
     h = Math.min(authored[1], vh - 170);

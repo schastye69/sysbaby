@@ -143,34 +143,37 @@
   var previewIndex = -1;     // index of the previewed file, -1 = hidden
   var editing = false;       // preview strip in edit mode
 
+  /* Строки живут в STRINGS ядра (core/topbar.js); здесь только ключи. */
+  function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
+
   function persist() {
     try {
       dbSet(KEY, JSON.stringify(tree));
       return true;
     } catch (err) {
       console.error("[files] save failed", err);
-      toast("Couldn't save", "Storage may be full or restricted in this browser.");
+      toast(t("fv.save.failTitle"), t("fv.save.failBody"));
       return false;
     }
   }
 
   function briefBody(view) {
-    var visibility = view.confidential ? "Anonymous (client identity withheld by request)" : "Public";
+    var visibility = view.confidential ? t("fv.brief.anonymous") : t("fv.brief.public");
     var results;
     if (view.resultsState === "measured") results = view.results;
-    else if (view.resultsState === "withheld") results = "Withheld at the client's request — the same discretion covers your project.";
-    else if (view.resultsPendingReason === "not-yet-delivered") results = "Built and not yet handed over. Measurement is agreed at handover.";
-    else results = "Outcome measurement is agreed with the client and scheduled.";
+    else if (view.resultsState === "withheld") results = t("fv.brief.withheld");
+    else if (view.resultsPendingReason === "not-yet-delivered") results = t("fv.brief.notDelivered");
+    else results = t("fv.brief.pending");
 
     var features = (view.features || []).map(function (f) { return "- " + f; }).join("\n");
-    return "# Portfolio Case — " + view.name + "\n\n" +
-      "Visibility: " + visibility + "\n" +
-      "Status: Real — completed client project\n\n" +
-      "Industry: " + view.industry + "\n" +
-      "Project: " + view.projectType + "\n\n" +
-      "Delivered:\n" + features + "\n\n" +
-      "Goal: " + view.goal + "\n" +
-      "Results: " + results + "\n";
+    return "# " + t("fv.brief.head") + " — " + view.name + "\n\n" +
+      t("fv.brief.visibility") + ": " + visibility + "\n" +
+      t("fv.brief.status") + ": " + t("fv.brief.statusValue") + "\n\n" +
+      t("fv.brief.industry") + ": " + view.industry + "\n" +
+      t("fv.brief.project") + ": " + view.projectType + "\n\n" +
+      t("fv.brief.delivered") + ":\n" + features + "\n\n" +
+      t("fv.brief.goal") + ": " + view.goal + "\n" +
+      t("fv.brief.results") + ": " + results + "\n";
   }
 
   function portfolioEntries() {
@@ -181,7 +184,10 @@
 
   function viewOf(entry) {
     if (typeof window.sbPortfolioView !== "function") return null;
-    try { return window.sbPortfolioView(entry); } catch (err) { console.error("[files] portfolio view failed", err); return null; }
+    /* Язык передаётся явно. Без него досье собиралось по-английски даже в
+       русском окне: данные портфолио переведены, а спрашивали их не на том языке. */
+    try { return window.sbPortfolioView(entry, window.sbLang ? window.sbLang() : "en"); }
+    catch (err) { console.error("[files] portfolio view failed", err); return null; }
   }
 
   function derivePortfolioFolder() {
@@ -192,7 +198,11 @@
       children.push({ name: view.name + ".md", type: "file", content: briefBody(view), docId: entry.id });
     });
     if (!children.length) children = [clone(ABOUT_PORTFOLIO)];
-    return { name: "Portfolio", type: "folder", children: children };
+    /* derived: "portfolio" — опознавательный знак папки. Раньше её узнавали
+       по имени "Portfolio"; переведённое имя такой поиск ломает, поэтому имя
+       стало видимым, а тождество — отдельным полем. Старое имя тоже
+       принимается: деревья, сохранённые до перевода, должны найтись. */
+    return { name: t("fv.portfolio"), type: "folder", derived: "portfolio", children: children };
   }
 
   function load() {
@@ -212,7 +222,8 @@
     var derived = derivePortfolioFolder();
     var at = -1;
     for (var i = 0; i < tree.children.length; i++) {
-      if (tree.children[i] && tree.children[i].name === "Portfolio" && tree.children[i].type === "folder") { at = i; break; }
+      var child = tree.children[i];
+      if (child && child.type === "folder" && (child.derived === "portfolio" || child.name === "Portfolio")) { at = i; break; }
     }
     if (at >= 0) tree.children[at] = derived;
     else tree.children.unshift(derived);
@@ -271,7 +282,7 @@
 
   function breadcrumbMarkup() {
     return pathStack.map(function (node, idx) {
-      var label = idx === 0 ? "Home" : node.name;
+      var label = idx === 0 ? t("fv.home") : node.name;
       var last = idx === pathStack.length - 1;
       return '<button type="button" class="fv-crumb' + (last ? " current" : "") + '" data-crumb="' + idx + '">' + esc(label) + "</button>" +
         (last ? "" : '<span class="fv-crumb-sep">›</span>');
@@ -282,12 +293,12 @@
     var isFolder = node.type === "folder";
     return '<div class="fv-item' + (idx === selectedIndex ? " selected" : "") + '" data-index="' + idx + '" tabindex="0">' +
       '<div class="fv-tile ' + (isFolder ? "folder" : "file") + '">' + (isFolder ? FOLDER_SVG : FILE_SVG) + "</div>" +
-      '<div class="fv-name" data-name-for="' + idx + '">' + esc(node.name) + "</div>" +
+      '<div class="fv-name" data-sb-userdata data-name-for="' + idx + '">' + esc(node.name) + "</div>" +
       '<div class="fv-mini">' +
-        '<button type="button" class="fv-mini-btn" data-rename="' + idx + '" title="Rename" aria-label="Rename">' +
+        '<button type="button" class="fv-mini-btn" data-rename="' + idx + '" title="' + esc(t("fv.rename")) + '" aria-label="' + esc(t("fv.rename")) + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 19.5h4l10-10a1.6 1.6 0 0 0 0-2.3l-1.7-1.7a1.6 1.6 0 0 0-2.3 0l-10 10v4Z"/></svg>' +
         "</button>" +
-        '<button type="button" class="fv-mini-btn danger" data-delete="' + idx + '" title="Delete" aria-label="Delete">' +
+        '<button type="button" class="fv-mini-btn danger" data-delete="' + idx + '" title="' + esc(t("fv.delete")) + '" aria-label="' + esc(t("fv.delete")) + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l1 12.2a1 1 0 0 0 1 .9h7a1 1 0 0 0 1-.9L17.5 7"/></svg>' +
         "</button>" +
       "</div>" +
@@ -310,10 +321,10 @@
     var entry = realEntryForFile(node);
     return '<div class="fv-preview">' +
       '<div class="fv-preview-head">' +
-        '<span class="fv-preview-name">' + esc(node.name) + "</span>" +
+        '<span class="fv-preview-name" data-sb-userdata>' + esc(node.name) + "</span>" +
         '<span class="fv-preview-actions">' +
-          (entry ? '<button type="button" class="fv-open-real" data-entry="' + esc(entry.id) + '">Open the real project →</button>' : "") +
-          '<button type="button" class="fv-edit" id="fvEdit" title="Edit" aria-label="Edit">' +
+          (entry ? '<button type="button" class="fv-open-real" data-entry="' + esc(entry.id) + '">' + esc(t("fv.openReal")) + "</button>" : "") +
+          '<button type="button" class="fv-edit" id="fvEdit" title="' + esc(t("fv.edit")) + '" aria-label="' + esc(t("fv.edit")) + '">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 19.5h4l10-10a1.6 1.6 0 0 0 0-2.3l-1.7-1.7a1.6 1.6 0 0 0-2.3 0l-10 10v4Z"/></svg>' +
           "</button>" +
         "</span>" +
@@ -323,7 +334,8 @@
          * after <textarea>: without it a file starting with a blank line
          * would lose it the first time the preview is edited. */
         ? '<textarea class="fv-preview-edit" id="fvEditArea" spellcheck="false">\n' + esc(node.content || "") + "</textarea>"
-        : '<pre class="fv-preview-body">' + esc(node.content || "") + "</pre>") +
+        /* Содержимое файла — данные посетителя. */
+        : '<pre class="fv-preview-body" data-sb-userdata>' + esc(node.content || "") + "</pre>") +
     "</div>";
   }
 
@@ -341,18 +353,18 @@
         '<div class="fv-bar">' +
           '<div class="fv-crumbs">' + breadcrumbMarkup() + "</div>" +
           '<div class="fv-tools">' +
-            '<button type="button" class="fv-tool" id="fvNewFolder" title="New Folder">' +
+            '<button type="button" class="fv-tool" id="fvNewFolder" title="' + esc(t("fv.newFolder")) + '">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.2a1.2 1.2 0 0 1 1.2-1.2h4l1.8 2h8.3a1.2 1.2 0 0 1 1.2 1.2v8.6a1.2 1.2 0 0 1-1.2 1.2H4.7a1.2 1.2 0 0 1-1.2-1.2V7.2Z"/><path d="M12 11.6v5M9.5 14.1h5"/></svg>' +
-              "<span>New Folder</span></button>" +
-            '<button type="button" class="fv-tool" id="fvNewFile" title="New File">' +
+              "<span>" + esc(t("fv.newFolder")) + "</span></button>" +
+            '<button type="button" class="fv-tool" id="fvNewFile" title="' + esc(t("fv.newFile")) + '">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/><path d="M11.5 12v5M9 14.5h5"/></svg>' +
-              "<span>New File</span></button>" +
+              "<span>" + esc(t("fv.newFile")) + "</span></button>" +
           "</div>" +
         "</div>" +
         '<div class="fv-grid" id="fvGrid">' +
           (children.length
             ? children.map(itemMarkup).join("")
-            : '<div class="fv-empty">This folder is empty. Anything you add stays in this browser.</div>') +
+            : '<div class="fv-empty">' + esc(t("fv.empty")) + "</div>") +
         "</div>" +
         (previewNode ? previewMarkup(previewNode) : "") +
       "</div>";
@@ -474,7 +486,9 @@
   function createNode(win, isFolder) {
     var folder = currentFolder();
     if (!Array.isArray(folder.children)) folder.children = [];
-    var name = uniqueName(folder, isFolder ? "New Folder" : "Untitled.txt", isFolder, null);
+    /* Имя нового файла — на языке того, кто его создал. Дальше это его
+       данные: смена языка задним числом чужие имена не трогает. */
+    var name = uniqueName(folder, isFolder ? t("fv.newFolder.name") : t("fv.newFile.name"), isFolder, null);
     var node = isFolder ? { name: name, type: "folder", children: [] } : { name: name, type: "file", content: "" };
     folder.children.push(node);
     persist();
@@ -529,16 +543,18 @@
     var folder = currentFolder();
     var node = (folder.children || [])[idx];
     if (!node) return;
-    var kind = node.type === "folder" ? "folder" : "file";
-    var extra = (node.type === "folder" && (node.children || []).length) ? " Everything inside it will be deleted too." : "";
-    if (!window.confirm('Delete the ' + kind + ' "' + node.name + '"?' + extra)) return;
+    var question = node.type === "folder"
+      ? t("fv.confirm.folder", { name: node.name })
+      : t("fv.confirm.file", { name: node.name });
+    var extra = (node.type === "folder" && (node.children || []).length) ? t("fv.confirm.nested") : "";
+    if (!window.confirm(question + extra)) return;
     folder.children.splice(idx, 1);
     persist();
     selectedIndex = -1;
     previewIndex = -1;
     editing = false;
     render(win);
-    toast("Files", '"' + node.name + '" deleted');
+    toast(t("fv.toast.title"), t("fv.toast.deleted", { name: node.name }));
   }
 
   /* ------------------------------------------------------------ providers */
@@ -640,6 +656,19 @@
   };
 
   /* ------------------------------------------------------- registration */
+
+  /* Перерисовка при смене языка — но не поверх набранного текста: пока
+     открыт редактор файла или переименование, окно оставляют в покое.
+     Незаписанное принадлежит посетителю, а не переводу. */
+  if (window.sbBus && typeof window.sbBus.on === "function") {
+    window.sbBus.on("translate:done", function () {
+      var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("files") : null;
+      var host = win ? bodyOf(win) : null;
+      if (!host) return;
+      if (editing || host.querySelector(".fv-rename")) return;
+      try { render(win); } catch (err) { console.error("[files] retranslate failed", err); }
+    });
+  }
 
   if (typeof window.registerApp === "function") {
     window.registerApp("files", {

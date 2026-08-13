@@ -20,7 +20,9 @@
   };
 
   var TYPE_APP = { note: "notes", mail: "mail", file: "files", message: "messenger" };
-  var TYPE_KICKER = { app: "App", note: "Note", mail: "Mail", file: "File", message: "Message" };
+  /* Строки живут в STRINGS ядра (core/topbar.js); здесь только ключи. */
+  function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
+  var TYPE_KICKER = { app: "sk.kicker.app", note: "sk.kicker.note", mail: "sk.kicker.mail", file: "sk.kicker.file", message: "sk.kicker.message" };
 
   /* -------------------------------------------------------------- helpers */
 
@@ -79,7 +81,7 @@
   function noteTitle(text) {
     var lines = String(text == null ? "" : text).split("\n");
     for (var i = 0; i < lines.length; i++) if (lines[i].trim() !== "") return lines[i].slice(0, 80);
-    return "Untitled note";
+    return t("nt.untitled");
   }
 
   function noteSub(text) {
@@ -97,12 +99,12 @@
   }
 
   function mailRow(m) {
-    return { type: "mail", id: m.id, title: m.subject || "(no subject)", sub: [m.from, m.snippet].filter(Boolean).join(" — "), payload: m };
+    return { type: "mail", id: m.id, title: m.subject || t("ml.noSubject"), sub: [m.from, m.snippet].filter(Boolean).join(" — "), payload: m };
   }
 
   function fileRow(f) {
     var parents = (f.path || []).slice(0, -1);
-    return { type: "file", title: f.name, sub: parents.length ? parents.join(" / ") : "Home", payload: { name: f.name, path: (f.path || []).slice(), content: f.content } };
+    return { type: "file", title: f.name, sub: parents.length ? parents.join(" / ") : t("fv.home"), payload: { name: f.name, path: (f.path || []).slice(), content: f.content } };
   }
 
   function messageRow(c) {
@@ -110,7 +112,7 @@
   }
 
   function appRow(app) {
-    return { type: "app", id: app.id, title: app.title, sub: "Open " + app.title };
+    return { type: "app", id: app.id, title: app.title, sub: t("menu.open", { app: app.title }) };
   }
 
   function collect(query) {
@@ -118,7 +120,7 @@
     var rows = [];
 
     registry().forEach(function (app) {
-      var haystack = (app.title + " Open " + app.title).toLowerCase();
+      var haystack = (app.title + " " + t("menu.open", { app: app.title })).toLowerCase();
       if (haystack.indexOf(needle) !== -1) rows.push(appRow(app));
     });
 
@@ -153,11 +155,13 @@
     var color = row.type === "app" ? appColor(row.id, "app") : appColor(appId, row.type);
     return '<button type="button" class="sk-row" data-row="' + index + '">' +
       '<span class="sk-tile" style="background:' + esc(color) + '">' + appIcon(appId) + "</span>" +
-      '<span class="sk-row-text">' +
+      /* Название и подпись найденного — это чужие данные: имя файла, тема
+         письма, первая строка заметки. Переводится только вид записи. */
+      '<span class="sk-row-text"' + (row.type === "app" ? "" : " data-sb-userdata") + ">" +
         '<span class="sk-row-title">' + esc(row.title) + "</span>" +
         '<span class="sk-row-sub">' + esc(row.sub || "") + "</span>" +
       "</span>" +
-      '<span class="sk-kicker">' + esc(TYPE_KICKER[row.type] || "") + "</span>" +
+      '<span class="sk-kicker">' + esc(TYPE_KICKER[row.type] ? t(TYPE_KICKER[row.type]) : "") + "</span>" +
     "</button>";
   }
 
@@ -172,23 +176,23 @@
     if (!trimmed) {
       rows = recentRows();
       sections =
-        '<div class="sk-section-title">Suggested</div>' +
+        '<div class="sk-section-title">' + esc(t("sk.suggested")) + "</div>" +
         '<div class="sk-chips">' +
           registry().map(function (app) {
             return '<button type="button" class="sk-chip" data-app="' + esc(app.id) + '">' + esc(app.title) + "</button>";
           }).join("") +
         "</div>" +
-        (rows.length ? '<div class="sk-section-title">Recent</div><div class="sk-rows">' + rows.map(rowMarkup).join("") + "</div>" : "");
+        (rows.length ? '<div class="sk-section-title">' + esc(t("sk.recent")) + '</div><div class="sk-rows">' + rows.map(rowMarkup).join("") + "</div>" : "");
     } else {
       rows = collect(trimmed);
       if (rows.length) {
-        sections = '<div class="sk-count">' + rows.length + " result" + (rows.length === 1 ? "" : "s") + "</div>" +
+        sections = '<div class="sk-count">' + esc(t(rows.length === 1 ? "sk.count.one" : "sk.count.many", { n: rows.length })) + "</div>" +
           '<div class="sk-rows">' + rows.map(rowMarkup).join("") + "</div>";
       } else {
         sections = '<div class="sk-none">' +
           '<div class="sk-none-glyph">' + ICON + "</div>" +
-          "<p class=\"sk-none-title\">Nothing matches “" + esc(trimmed) + "”</p>" +
-          '<p class="sk-none-sub">Searched apps, notes, mail, files and messages.</p>' +
+          '<p class="sk-none-title">' + esc(t("sk.none", { q: trimmed })) + "</p>" +
+          '<p class="sk-none-sub">' + esc(t("sk.noneSub")) + "</p>" +
         "</div>";
       }
     }
@@ -197,7 +201,7 @@
       '<div class="app-search">' +
         '<div class="sk-field">' +
           '<span class="sk-field-icon">' + ICON + "</span>" +
-          '<input type="text" id="skInput" class="sk-input" placeholder="Search everything" autocomplete="off" spellcheck="false" value="' + esc(query) + '">' +
+          '<input type="text" id="skInput" class="sk-input" placeholder="' + esc(t("sk.ph")) + '" autocomplete="off" spellcheck="false" value="' + esc(query) + '">' +
           '<kbd class="sk-kbd">⌘K</kbd>' +
         "</div>" +
         '<div class="sk-results">' + sections + "</div>" +
@@ -269,6 +273,17 @@
   };
 
   /* ------------------------------------------------------- registration */
+
+  /* Перерисовка при смене языка — если в строке поиска ничего не набрано.
+     Набранный запрос принадлежит посетителю, а не переводу. */
+  if (window.sbBus && typeof window.sbBus.on === "function") {
+    window.sbBus.on("translate:done", function () {
+      var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("search") : null;
+      if (!win || !bodyOf(win)) return;
+      if (String(win._searchQuery || "").trim()) return;
+      try { render(win); } catch (err) { console.error("[search] retranslate failed", err); }
+    });
+  }
 
   if (typeof window.registerApp === "function") {
     window.registerApp("search", {

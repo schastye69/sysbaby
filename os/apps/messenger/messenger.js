@@ -24,8 +24,9 @@
 
   var PALETTE = ["#0a84ff", "#ff9500", "#30d158", "#ff375f", "#5e5ce6", "#ffd60a", "#64d2ff", "#bf5af2"];
   var REACTIONS = ["👍", "❤️", "😂", "😮", "😢"];
-  var SAMPLE_NOTICE = "This is a sample conversation — nothing was sent anywhere. What you write stays in this browser.";
-  var NO_MESSAGES = "No messages yet. Anything written here stays on this device.";
+  /* Строки живут в STRINGS ядра (core/topbar.js); здесь только ключи. */
+  function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
+  function appName(id) { return window.sbAppTitle ? window.sbAppTitle(id) : id; }
 
   var SEED = [
     { id: 1, name: "Sample Client · Logistics", initials: "SL", color: "#0a84ff", unread: true, muted: false, isGroup: false, members: [], online: true,
@@ -102,15 +103,18 @@
 
   function colorFor(name) { return PALETTE[hash(name) % PALETTE.length]; }
 
+  var DATE_LOCALE = { en: "en-GB", ru: "ru-RU", ee: "et-EE" };
+
   function dayLabel(ts) {
     var d = new Date(Number(ts) || 0), now = new Date();
     function startOf(x) { return new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(); }
     var days = Math.round((startOf(now) - startOf(d)) / 86400000);
-    if (days === 0) return "Today";
-    if (days === 1) return "Yesterday";
+    if (days === 0) return t("mg.day.today");
+    if (days === 1) return t("mg.day.yesterday");
     var opts = { day: "numeric", month: "short" };
     if (d.getFullYear() !== now.getFullYear()) opts.year = "numeric";
-    return d.toLocaleDateString("en-GB", opts);
+    /* Дата пишется по правилам языка окна, а не по британским. */
+    return d.toLocaleDateString(DATE_LOCALE[window.sbLang ? window.sbLang() : "en"] || "en-GB", opts);
   }
 
   function clockOf(ts) {
@@ -172,7 +176,7 @@
       return true;
     } catch (err) {
       console.error("[messenger] save failed", err);
-      toast("Couldn't save", "Storage may be full or restricted in this browser.");
+      toast(t("mg.save.failTitle"), t("mg.save.failBody"));
       return false;
     }
   }
@@ -227,7 +231,7 @@
 
   function lastLine(c) {
     var messages = c.messages || [];
-    if (!messages.length) return NO_MESSAGES;
+    if (!messages.length) return t("mg.noMessages");
     var last = messages[messages.length - 1];
     if (last.type === "file") return "📎 " + (last.fileName || "");
     return last.text || "";
@@ -243,16 +247,17 @@
   function convoRowMarkup(c) {
     return '<div class="mg-convo' + (String(c.id) === String(activeId) ? " active" : "") + (c.muted ? " muted" : "") + '" data-convo="' + esc(c.id) + '">' +
       '<span class="mg-avatar-wrap">' + avatarMarkup(c) + "</span>" +
-      '<span class="mg-convo-text"><span class="mg-convo-name">' + esc(c.name) + "</span>" +
+      /* Имя собеседника и последняя реплика — данные посетителя. */
+      '<span class="mg-convo-text" data-sb-userdata><span class="mg-convo-name">' + esc(c.name) + "</span>" +
         '<span class="mg-convo-last">' + esc(lastLine(c)) + "</span></span>" +
       (c.unread && !c.muted ? '<i class="mg-unread"></i>' : "") +
       '<span class="mg-convo-actions">' +
-        '<button type="button" class="mg-mini" data-mute="' + esc(c.id) + '" title="' + (c.muted ? "Unmute" : "Mute") + '" aria-label="' + (c.muted ? "Unmute" : "Mute") + '">' +
+        '<button type="button" class="mg-mini" data-mute="' + esc(c.id) + '" title="' + esc(c.muted ? t("mg.unmute") : t("mg.mute")) + '" aria-label="' + esc(c.muted ? t("mg.unmute") : t("mg.mute")) + '">' +
           (c.muted
             ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 9.5h3l4-3.2v11.4l-4-3.2h-3Z"/><path d="m15 9.5 4.5 5M19.5 9.5 15 14.5"/></svg>'
             : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 9.5h3l4-3.2v11.4l-4-3.2h-3Z"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6"/></svg>') +
         "</button>" +
-        '<button type="button" class="mg-mini danger" data-del-convo="' + esc(c.id) + '" title="Delete" aria-label="Delete conversation">' +
+        '<button type="button" class="mg-mini danger" data-del-convo="' + esc(c.id) + '" title="' + esc(t("mg.delete")) + '" aria-label="' + esc(t("mg.deleteConvo")) + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l1 12.2a1 1 0 0 0 1 .9h7a1 1 0 0 0 1-.9L17.5 7"/></svg>' +
         "</button>" +
       "</span>" +
@@ -264,40 +269,40 @@
     var tab = win._msgrNewTab === "group" ? "group" : "direct";
     return '<div class="mg-newform">' +
       '<div class="mg-tabs">' +
-        '<button type="button" class="mg-tab' + (tab === "direct" ? " active" : "") + '" data-tab="direct">Direct</button>' +
-        '<button type="button" class="mg-tab' + (tab === "group" ? " active" : "") + '" data-tab="group">Group</button>' +
+        '<button type="button" class="mg-tab' + (tab === "direct" ? " active" : "") + '" data-tab="direct">' + esc(t("mg.tab.direct")) + "</button>" +
+        '<button type="button" class="mg-tab' + (tab === "group" ? " active" : "") + '" data-tab="group">' + esc(t("mg.tab.group")) + "</button>" +
       "</div>" +
       (tab === "direct"
-        ? '<input type="text" id="mgNewName" class="mg-input" maxlength="30" placeholder="Name" autocomplete="off">'
-        : '<input type="text" id="mgNewGroup" class="mg-input" maxlength="40" placeholder="Group name" autocomplete="off">' +
-          '<input type="text" id="mgNewMembers" class="mg-input" maxlength="120" placeholder="Members, comma-separated" autocomplete="off">') +
-      '<button type="button" class="mg-start" id="mgStart">Start</button>' +
+        ? '<input type="text" id="mgNewName" class="mg-input" maxlength="30" placeholder="' + esc(t("mg.ph.name")) + '" autocomplete="off">'
+        : '<input type="text" id="mgNewGroup" class="mg-input" maxlength="40" placeholder="' + esc(t("mg.ph.groupName")) + '" autocomplete="off">' +
+          '<input type="text" id="mgNewMembers" class="mg-input" maxlength="120" placeholder="' + esc(t("mg.ph.members")) + '" autocomplete="off">') +
+      '<button type="button" class="mg-start" id="mgStart">' + esc(t("mg.start")) + "</button>" +
     "</div>";
   }
 
   function bubbleMarkup(c, m, isLastOwn) {
     if (m.from === "system") {
-      return '<div class="mg-system"><span>' + esc(m.text || "") + "</span></div>";
+      return '<div class="mg-system" data-sb-userdata><span>' + esc(m.text || "") + "</span></div>";
     }
     var mine = m.from === "me";
     var inner;
     if (m.type === "file") {
       inner = '<button type="button" class="mg-file-chip" data-file="' + esc(m.id) + '">' + FILE_GLYPH +
-        "<span>" + esc(m.fileName || "") + "</span></button>";
+        '<span data-sb-userdata>' + esc(m.fileName || "") + "</span></button>";
     } else {
-      inner = '<div class="mg-text">' + esc(m.text || "") + "</div>";
+      inner = '<div class="mg-text" data-sb-userdata>' + esc(m.text || "") + "</div>";
     }
     var seen = mine && isLastOwn && m.seen === true;
     return '<div class="mg-msg' + (mine ? " mine" : " theirs") + '" data-msg="' + esc(m.id) + '">' +
-      (!mine && c.isGroup && m.senderName ? '<div class="mg-sender">' + esc(m.senderName) + "</div>" : "") +
+      (!mine && c.isGroup && m.senderName ? '<div class="mg-sender" data-sb-userdata>' + esc(m.senderName) + "</div>" : "") +
       '<div class="mg-bubble' + (m.type === "file" ? " file" : "") + '">' + inner +
         (m.reaction ? '<span class="mg-reaction">' + esc(m.reaction) + "</span>" : "") +
       "</div>" +
       '<div class="mg-meta">' +
-        "<span>" + esc(clockOf(m.ts)) + (m.edited ? " · edited" : "") + "</span>" +
-        (seen ? "<span>· Seen</span>" : "") +
-        '<button type="button" class="mg-meta-btn" data-react="' + esc(m.id) + '" title="React" aria-label="React">🙂</button>' +
-        '<button type="button" class="mg-meta-btn" data-del-msg="' + esc(m.id) + '" title="Delete message" aria-label="Delete message">' +
+        "<span>" + esc(clockOf(m.ts)) + (m.edited ? " · " + esc(t("mg.edited")) : "") + "</span>" +
+        (seen ? "<span>· " + esc(t("mg.seen")) + "</span>" : "") +
+        '<button type="button" class="mg-meta-btn" data-react="' + esc(m.id) + '" title="' + esc(t("mg.react")) + '" aria-label="' + esc(t("mg.react")) + '">🙂</button>' +
+        '<button type="button" class="mg-meta-btn" data-del-msg="' + esc(m.id) + '" title="' + esc(t("mg.delMsg")) + '" aria-label="' + esc(t("mg.delMsg")) + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l1 12.2a1 1 0 0 0 1 .9h7a1 1 0 0 0 1-.9L17.5 7"/></svg>' +
         "</button>" +
       "</div>" +
@@ -306,7 +311,7 @@
 
   function threadMarkup(win, c) {
     if (!c) {
-      return '<div class="mg-thread-empty"><div class="mg-glyph">' + ICON + "</div><p>Select or start a conversation</p></div>";
+      return '<div class="mg-thread-empty"><div class="mg-glyph">' + ICON + "</div><p>" + esc(t("mg.selectConvo")) + "</p></div>";
     }
     var messages = c.messages || [];
     var lastOwnId = null;
@@ -324,21 +329,21 @@
     return '<header class="mg-head">' +
         '<span class="mg-avatar-wrap">' + avatarMarkup(c, "big") + "</span>" +
         '<span class="mg-head-text">' +
-          '<button type="button" class="mg-head-name" id="mgContact" title="See everything about this contact">' + esc(c.name) + "</button>" +
+          '<button type="button" class="mg-head-name" id="mgContact" data-sb-userdata title="' + esc(t("mg.contactTitle")) + '">' + esc(c.name) + "</button>" +
           (c.isGroup && c.members.length
-            ? '<span class="mg-head-members">' + esc(c.members.join(", ")) + "</span>"
-            : '<span class="mg-head-members">local · stays in this browser</span>') +
+            ? '<span class="mg-head-members" data-sb-userdata>' + esc(c.members.join(", ")) + "</span>"
+            : '<span class="mg-head-members">' + esc(t("mg.localNote")) + "</span>") +
         "</span>" +
         /* The one honest way out of a local room: turn the thread into a real
            letter. Whisper thinks, Letters speaks — that is the difference. */
-        '<button type="button" class="mg-to-letter" id="mgToLetter" title="Turn this conversation into a real letter to the studio">→ studio letter</button>' +
+        '<button type="button" class="mg-to-letter" id="mgToLetter" title="' + esc(t("mg.toLetterTitle")) + '">' + esc(t("mg.toLetter")) + "</button>" +
       "</header>" +
-      '<div class="mg-messages" id="mgMessages">' + (out.length ? out.join("") : '<div class="mg-thread-empty"><p>' + esc(NO_MESSAGES) + "</p></div>") + "</div>" +
+      '<div class="mg-messages" id="mgMessages">' + (out.length ? out.join("") : '<div class="mg-thread-empty"><p>' + esc(t("mg.noMessages")) + "</p></div>") + "</div>" +
       attachMarkup(win) +
       '<div class="mg-inputrow">' +
-        '<button type="button" class="mg-attach-btn" id="mgAttach" title="Attach from Vault" aria-label="Attach from Vault">' + PAPERCLIP + "</button>" +
-        '<input type="text" id="msgrInput" class="mg-input flat" placeholder="Message ' + esc(firstWord) + '…" autocomplete="off">' +
-        '<button type="button" class="mg-send" id="mgSend" title="Send" aria-label="Send">' +
+        '<button type="button" class="mg-attach-btn" id="mgAttach" title="' + esc(t("mg.attach", { files: appName("files") })) + '" aria-label="' + esc(t("mg.attach", { files: appName("files") })) + '">' + PAPERCLIP + "</button>" +
+        '<input type="text" id="msgrInput" class="mg-input flat" placeholder="' + esc(t("mg.ph.message", { name: firstWord })) + '" autocomplete="off">' +
+        '<button type="button" class="mg-send" id="mgSend" title="' + esc(t("mg.send")) + '" aria-label="' + esc(t("mg.send")) + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4 4 10.4l6.3 2.4L20 4Z"/><path d="M20 4 13.4 20l-3.1-7.2L20 4Z"/></svg>' +
         "</button>" +
       "</div>";
@@ -356,15 +361,15 @@
     files = files.slice(0, 30);
 
     return '<div class="mg-attach">' +
-      '<input type="search" id="mgAttachSearch" class="mg-input" placeholder="Search Vault files" autocomplete="off" value="' + esc(query) + '">' +
+      '<input type="search" id="mgAttachSearch" class="mg-input" placeholder="' + esc(t("mg.attachSearch", { files: appName("files") })) + '" autocomplete="off" value="' + esc(query) + '">' +
       '<div class="mg-attach-list">' +
         (files.length
           ? files.map(function (f, idx) {
               return '<button type="button" class="mg-attach-item" data-attach="' + idx + '">' + FILE_GLYPH +
                 '<span class="mg-attach-name">' + esc(f.name) + "</span>" +
-                '<span class="mg-attach-path">' + esc((f.path || []).slice(0, -1).join(" / ") || "Home") + "</span></button>";
+                '<span class="mg-attach-path" data-sb-userdata>' + esc((f.path || []).slice(0, -1).join(" / ") || t("fv.home")) + "</span></button>";
             }).join("")
-          : '<div class="mg-attach-empty">No files found</div>') +
+          : '<div class="mg-attach-empty">' + esc(t("mg.attachEmpty")) + "</div>") +
       "</div>" +
     "</div>";
   }
@@ -383,15 +388,15 @@
       '<div class="app-msgr">' +
         '<aside class="mg-side">' +
           '<div class="mg-side-top">' +
-            '<input type="search" id="mgSearch" class="mg-input" placeholder="Search conversations" autocomplete="off" value="' + esc(win._msgrFilter) + '">' +
-            '<button type="button" class="mg-newbtn" id="mgNew" title="New conversation" aria-label="New conversation">' +
+            '<input type="search" id="mgSearch" class="mg-input" placeholder="' + esc(t("mg.search")) + '" autocomplete="off" value="' + esc(win._msgrFilter) + '">' +
+            '<button type="button" class="mg-newbtn" id="mgNew" title="' + esc(t("mg.new")) + '" aria-label="' + esc(t("mg.new")) + '">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5.5v13M5.5 12h13"/></svg></button>' +
           "</div>" +
           newFormMarkup(win) +
           '<div class="mg-list">' +
             (list.length
               ? list.map(convoRowMarkup).join("")
-              : '<div class="mg-list-empty">' + (needle ? 'No conversations match "' + esc(win._msgrFilter.trim()) + '"' : "No conversations yet") + "</div>") +
+              : '<div class="mg-list-empty">' + esc(needle ? t("mg.listEmptySearch", { q: win._msgrFilter.trim() }) : t("mg.listEmpty")) + "</div>") +
           "</div>" +
         "</aside>" +
         '<section class="mg-thread">' + threadMarkup(win, active) + "</section>" +
@@ -466,7 +471,7 @@
         ev.stopPropagation();
         var c = byId(btn.getAttribute("data-del-convo"));
         if (!c) return;
-        if (!window.confirm('Delete the conversation with "' + c.name + "\"? This can't be undone.")) return;
+        if (!window.confirm(t("mg.confirm.delConvo", { name: c.name }))) return;
         var wasActive = String(c.id) === String(activeId);
         convos = convos.filter(function (x) { return String(x.id) !== String(c.id); });
         if (wasActive) activeId = convos.length ? convos[0].id : null;
@@ -503,10 +508,12 @@
         var lines = (c.messages || [])
           .filter(function (m) { return m.from !== "system" && m.type !== "file" && m.text; })
           .slice(-12)
-          .map(function (m) { return (m.from === "me" ? "me:  " : "them: ") + m.text; });
-        var body = "From a Whisper conversation — " + c.name + ":\n\n" + lines.join("\n") + "\n\n---\n\n";
+          .map(function (m) { return (m.from === "me" ? t("mg.letter.me") : t("mg.letter.them")) + m.text; });
+        /* Черновик письма пишется на языке окна: его будет читать и править
+           сам посетитель, прежде чем нажать «отправить». */
+        var body = t("mg.letter.head", { messenger: appName("messenger"), name: c.name }) + "\n\n" + lines.join("\n") + "\n\n---\n\n";
         try {
-          window.sbMailComposeStudio({ subject: "About: " + c.name, body: body });
+          window.sbMailComposeStudio({ subject: t("mg.letter.subject", { name: c.name }), body: body });
         } catch (err) { console.error("[messenger] letter bridge failed", err); }
       });
     }
@@ -625,7 +632,9 @@
       if (!target) return;
       if (!target.noticeShown) {
         target.noticeShown = true;
-        target.messages.push({ id: uid(), from: "system", text: SAMPLE_NOTICE, ts: Date.now(), edited: false, reaction: null });
+        /* Заметка о том, что переписка — образец, пишется на языке того, кто
+           её увидел первым, и дальше живёт как обычное сообщение. */
+        target.messages.push({ id: uid(), from: "system", text: t("mg.sampleNotice"), ts: Date.now(), edited: false, reaction: null });
         write();
         var openWin = typeof window.getOpenWindow === "function" ? window.getOpenWindow("messenger") : null;
         if (openWin && String(activeId) === String(convoId)) render(openWin);
@@ -784,6 +793,19 @@
   };
 
   /* ------------------------------------------------------- registration */
+
+  /* Перерисовка при смене языка — кроме случая, когда посетитель что-то
+     набрал в строке сообщения или открыл форму новой переписки. */
+  if (window.sbBus && typeof window.sbBus.on === "function") {
+    window.sbBus.on("translate:done", function () {
+      var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("messenger") : null;
+      var host = win ? bodyOf(win) : null;
+      if (!host) return;
+      var input = host.querySelector("#msgrInput");
+      if (win._msgrNewOpen || (input && input.value)) return;
+      try { render(win); } catch (err) { console.error("[messenger] retranslate failed", err); }
+    });
+  }
 
   if (typeof window.registerApp === "function") {
     window.registerApp("messenger", {

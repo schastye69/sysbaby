@@ -18,7 +18,9 @@
   var SEEN_KEY = "sysbaby.seen.systems";   // raw localStorage on purpose (landing reads it)
   var SEEN_CAP = 4;
 
-  var LANG_NAMES = { et: "Estonian", ru: "Russian", en: "English" };
+  /* Строки живут в STRINGS ядра (core/topbar.js); здесь только ключи. */
+  function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
+  function appName(id) { return window.sbAppTitle ? window.sbAppTitle(id) : id; }
 
   var pendingId = null;    // module scope: set before any window exists
   var currentId = null;    // what is actually on screen
@@ -83,7 +85,7 @@
   function startLabel(view) {
     var labels = view.startLabel || null;
     var lang = osLang();
-    var text = (labels && (labels[lang] || labels.en)) || "Start your project";
+    var text = (labels && (labels[lang] || labels.en)) || t("pj.start");
     return text + " →";
   }
 
@@ -91,10 +93,12 @@
     var languages = view.systemLanguages || [];
     if (!languages.length) return "";
     if (languages.indexOf(systemLang()) !== -1) return "";
-    var names = languages.map(function (code) { return LANG_NAMES[code] || code; });
-    var joined = names.join(" and ");
-    return '<p class="pj-langnote">Shown in ' + esc(joined) + " — the languages this client works in. " +
-      "Systems are built in the language of the people using them, not of the people building them.</p>";
+    var names = languages.map(function (code) {
+      var key = "pj.lang." + code, out = t(key);
+      return out === key ? code : out;
+    });
+    var joined = names.join(t("pj.langJoin"));
+    return '<p class="pj-langnote">' + esc(t("pj.langNote", { langs: joined })) + "</p>";
   }
 
   function recordSeen(id) {
@@ -125,7 +129,7 @@
     currentId = entry ? entry.id : null;
 
     if (!entry || !view) {
-      host.innerHTML = '<div class="app-project"><div class="pj-empty"><p>No project is available to open yet.</p></div></div>';
+      host.innerHTML = '<div class="app-project"><div class="pj-empty"><p>' + esc(t("pj.empty")) + "</p></div></div>";
       return;
     }
 
@@ -135,10 +139,10 @@
     host.innerHTML =
       '<div class="app-project">' +
         '<div class="pj-top">' +
-          '<span class="pj-tag">Real client project · Confidential</span>' +
+          '<span class="pj-tag">' + esc(t("pj.tag")) + "</span>" +
           '<span class="pj-actions">' +
-            '<button type="button" class="pj-btn" id="pjBack">← Portfolio</button>' +
-            (url ? '<a class="pj-btn open" id="pjNewTab" href="' + esc(url) + '" target="_blank" rel="noopener">Open full screen ↗</a>' : "") +
+            '<button type="button" class="pj-btn" id="pjBack">' + esc(t("pj.back", { portfolio: appName("portfolio") })) + "</button>" +
+            (url ? '<a class="pj-btn open" id="pjNewTab" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(t("pj.fullscreen")) + "</a>" : "") +
             '<a class="pj-btn accent" href="../?contact=1">' + esc(startLabel(view)) + "</a>" +
           "</span>" +
         "</div>" +
@@ -152,13 +156,13 @@
            человек видит то, ради чего пришёл: работающую вещь. На широком
            экране блок раскрыт всегда и сводки не показывает вовсе. */
         '<details class="pj-more" id="pjMore">' +
-          '<summary class="pj-more-sum">About this project</summary>' +
+          '<summary class="pj-more-sum">' + esc(t("pj.more")) + "</summary>" +
           '<div class="pj-context">' +
             '<p class="pj-line">' + esc(context) + (context ? " · " : "") +
-              "<em>the interface as delivered, in the client’s own language</em></p>" +
-            (view.goal ? '<p class="pj-goal">Built to achieve ' + esc(view.goal) + "</p>" : "") +
+              "<em>" + esc(t("pj.asDelivered")) + "</em></p>" +
+            (view.goal ? '<p class="pj-goal">' + esc(t("pj.goal", { goal: view.goal })) + "</p>" : "") +
             ((view.features || []).length
-              ? '<div class="pj-chips"><span class="pj-chips-label">Delivered</span>' +
+              ? '<div class="pj-chips"><span class="pj-chips-label">' + esc(t("pj.delivered")) + "</span>" +
                   view.features.map(function (f) { return '<span class="pj-chip">' + esc(f) + "</span>"; }).join("") +
                 "</div>"
               : "") +
@@ -229,9 +233,14 @@
 
   /* ------------------------------------------------------- registration */
 
+  /* Перерисовка при смене языка включена (retranslate ниже). Цена честная:
+     встроенная система клиента перезагрузится. Она и должна — в её адресе
+     стоит тот же язык, и оставить кадр на прежнем значило бы показать
+     русскую рамку вокруг эстонской программы. */
   if (typeof window.registerApp === "function") {
     window.registerApp("project", {
       title: "Real Project",
+      retranslate: true,
       i18n: {
         ru: { title: "Живая система", label: "Живая система" },
         ee: { title: "Elav süsteem", label: "Elav süsteem" },

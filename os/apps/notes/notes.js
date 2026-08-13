@@ -77,7 +77,7 @@
         dbSet(KEY, JSON.stringify(list));
       } catch (err) {
         console.error("[notes] save failed", err);
-        storeToast("Couldn't save note", "Storage may be full or restricted in this browser.");
+        storeToast(t("nt.save.failTitle"), t("nt.save.failBody"));
         return false;
       }
       dbFlush();
@@ -91,7 +91,7 @@
         return true;
       } catch (err) {
         console.error("[notes] save failed", err);
-        storeToast("Couldn't save note", "Storage may be full or restricted in this browser.");
+        storeToast(t("nt.save.failTitle"), t("nt.save.failBody"));
         return false;
       }
     }
@@ -196,14 +196,17 @@
     return win && win.el ? win.el.querySelector(".window-body") : null;
   }
 
+  /* Строки живут в STRINGS ядра (core/topbar.js); здесь только ключи. */
+  function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
+
   function timeAgo(ts) {
     var diff = Date.now() - (Number(ts) || 0);
-    if (diff < 60000) return "Just now";
+    if (diff < 60000) return t("time.now");
     var m = Math.floor(diff / 60000);
-    if (m < 60) return m + "m ago";
+    if (m < 60) return t("time.m", { n: m });
     var h = Math.floor(m / 60);
-    if (h < 24) return h + "h ago";
-    return Math.floor(h / 24) + "d ago";
+    if (h < 24) return t("time.h", { n: h });
+    return t("time.d", { n: Math.floor(h / 24) });
   }
 
   function titleOf(text) {
@@ -211,7 +214,7 @@
     for (var i = 0; i < lines.length; i++) {
       if (lines[i].trim() !== "") return lines[i].slice(0, 80);
     }
-    return "Untitled note";
+    return t("nt.untitled");
   }
 
   function previewOf(text) {
@@ -230,7 +233,7 @@
       ok = false;
     }
     if (!ok && typeof window.showToast === "function") {
-      try { window.showToast("Couldn't save", "Storage may be full or restricted in this browser.", ICON); }
+      try { window.showToast(t("nt.save.failTitleShort"), t("nt.save.failBody"), ICON); }
       catch (err2) { console.error("[notes] toast failed", err2); }
     }
     try { s.notify(); } catch (err3) { console.error("[notes] notify failed", err3); }
@@ -263,12 +266,13 @@
   /* -------------------------------------------------------------- render */
 
   function listMarkup(rows) {
-    if (!rows.length) return '<div class="notes-empty-list">Nothing found</div>';
+    if (!rows.length) return '<div class="notes-empty-list">' + esc(t("nt.emptyList")) + "</div>";
     return rows.map(function (n) {
       var preview = previewOf(n.text);
       return '<div class="notes-row' + (n.id === activeId ? " active" : "") + '" data-id="' + esc(n.id) + '">' +
-        '<div class="notes-row-title">' + esc(titleOf(n.text)) + "</div>" +
-        (preview ? '<div class="notes-row-prev">' + esc(preview) + "</div>" : "") +
+        /* Название и начало заметки — то, что написал сам посетитель. */
+        '<div class="notes-row-title" data-sb-userdata>' + esc(titleOf(n.text)) + "</div>" +
+        (preview ? '<div class="notes-row-prev" data-sb-userdata>' + esc(preview) + "</div>" : "") +
         '<div class="notes-row-time">' + esc(timeAgo(n.updatedAt)) + "</div>" +
         "</div>";
     }).join("");
@@ -278,21 +282,21 @@
     if (!note) {
       return '<div class="notes-editor-empty">' +
         '<div class="notes-glyph">' + ICON + "</div>" +
-        "<p>No notes yet. Anything you write is kept in this browser.</p>" +
+        "<p>" + esc(t("nt.empty")) + "</p>" +
         "</div>";
     }
     var lines = String(note.text == null ? "" : note.text).split("\n");
     var title = lines[0] || "";
     var body = lines.slice(1).join("\n");
     return '<div class="notes-editor-head">' +
-      '<button type="button" class="notes-del" id="notesDelete" title="Delete note" aria-label="Delete note">' +
+      '<button type="button" class="notes-del" id="notesDelete" title="' + esc(t("nt.delete")) + '" aria-label="' + esc(t("nt.delete")) + '">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l1 12.2a1 1 0 0 0 1 .9h7a1 1 0 0 0 1-.9L17.5 7"/></svg></button>' +
       "</div>" +
-      '<input type="text" class="notes-title" id="noteTitleInput" placeholder="Title" spellcheck="false" value="' + esc(title) + '">' +
+      '<input type="text" class="notes-title" id="noteTitleInput" placeholder="' + esc(t("nt.ph.title")) + '" spellcheck="false" value="' + esc(title) + '">' +
       /* The leading newline compensates for the one HTML parsing eats right
        * after <textarea>. Without it a note written as "Title\n\nbody" would
        * silently lose its blank line the next time it was edited. */
-      '<textarea class="notes-body" id="noteBodyInput" placeholder="Start typing&hellip;">\n' + esc(body) + "</textarea>";
+      '<textarea class="notes-body" id="noteBodyInput" placeholder="' + esc(t("nt.ph.body")) + '">\n' + esc(body) + "</textarea>";
   }
 
   function render(win) {
@@ -311,8 +315,8 @@
       '<div class="app-notes">' +
         '<aside class="notes-side">' +
           '<div class="notes-side-top">' +
-            '<input type="search" class="notes-search" id="notesSearch" placeholder="Search notes" autocomplete="off" spellcheck="false" value="' + esc(win._notesFilter) + '">' +
-            '<button type="button" class="notes-add" id="notesAdd" title="New note" aria-label="New note">' +
+            '<input type="search" class="notes-search" id="notesSearch" placeholder="' + esc(t("nt.ph.search")) + '" autocomplete="off" spellcheck="false" value="' + esc(win._notesFilter) + '">' +
+            '<button type="button" class="notes-add" id="notesAdd" title="' + esc(t("nt.new")) + '" aria-label="' + esc(t("nt.new")) + '">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5.5v13M5.5 12h13"/></svg>' +
             "</button>" +
           "</div>" +
@@ -384,7 +388,9 @@
     var s = store();
     if (!s) return;
     var list = liveNotes();
-    var note = { id: s.uid(), text: "New note\n", pinned: false, updatedAt: Date.now() };
+    /* Заголовок новой заметки — на языке того, кто её создал; дальше это
+       его текст, и смена языка его не трогает. */
+    var note = { id: s.uid(), text: t("nt.newNote") + "\n", pinned: false, updatedAt: Date.now() };
     list.unshift(note);
     activeId = note.id;
     saveNotes(list);
@@ -499,6 +505,19 @@
   /* ------------------------------------------------------- registration */
 
   if (!window.sbNotesStore) installFallbackStore();
+
+  /* Перерисовка при смене языка — только когда посетитель не пишет: поле
+     заметки хранит несохранённые правки ровно между двумя нажатиями клавиш. */
+  if (window.sbBus && typeof window.sbBus.on === "function") {
+    window.sbBus.on("translate:done", function () {
+      var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("notes") : null;
+      var host = win ? bodyOf(win) : null;
+      if (!host) return;
+      var active = document.activeElement;
+      if (active && host.contains(active)) return;
+      try { render(win); } catch (err) { console.error("[notes] retranslate failed", err); }
+    });
+  }
 
   if (typeof window.registerApp === "function") {
     window.registerApp("notes", {
