@@ -344,6 +344,17 @@
     var openCount = Object.keys(window.openWindows || {}).length;
     var rows = [
       ["Frame rate", '<span id="sbDiagFps">sampling…</span>'],
+      /* Обои умеют сами понижать себе качество на слабом устройстве. Система,
+         тихо меняющая себя и не говорящая об этом, — ровно то, что доктрина
+         §5 запрещает. Строка ниже и есть это признание: она показывает
+         ступень и настоящий размер буфера, а не слово «оптимизировано». */
+      ["Wallpaper quality", (function () {
+        if (!window.sbField || !window.sbField.tier) return "—";
+        var t = window.sbField.tier();
+        var name = t.tier === 0 ? "full" : t.tier === 1 ? "half rate" : "reduced";
+        return esc(name + " · buffer " + t.buffer + "px · " + Math.round(1000 / t.step) + " draws/s" +
+                   (t.forced > 0 ? " · lowered by this device" : ""));
+      })()],
       ["JS heap", mem ? (bytes(mem.usedJSHeapSize) + " / " + bytes(mem.jsHeapSizeLimit)) : "not exposed by this browser"],
       ["Storage", '<span id="sbDiagStore">measuring…</span>'],
       ["Open windows", String(openCount)],

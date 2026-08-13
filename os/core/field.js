@@ -126,9 +126,14 @@
 
     setLevel: function (lv) {
       if (!this.cv) return;
+      var was = this.level;
       this.level = lv;
       this.on = lv !== "off" && !reduced() && !suppressed();
       this.cv.classList.toggle("off", !this.on);
+      /* «Тихо» теперь меняет размер буфера и такт, а не только яркость —
+         значит смена уровня обязана пересобрать буферы. Раньше resize здесь
+         не звался, потому что менять было нечего. */
+      if (was !== lv) { this.costI = 0; this.resize(); }
       var breath = q("#sbBreath");
       if (breath) breath.classList.toggle("off", this.on);
       cancelAnimationFrame(this.raf);
@@ -140,7 +145,24 @@
       if (!this.cv) return;
       this.W = window.innerWidth; this.H = window.innerHeight;
       var small = this.W <= 760;
-      this.step = small ? 42 : 34;
+
+      /* Ступень качества. Одно число управляет и разрешением, и частотой.
+         ---------------------------------------------------------------------
+         12.08, замер. «Тихо» раньше умножало только яркость: 82,9 % занятости
+         главного потока против 83,9 % у «живо» — то есть настройка убавляла
+         картинку и не убавляла работу. Это неверное обещание в интерфейсе, а
+         не оптимизация.
+
+           ступень 0 — полное: буфер 168/248, свой такт
+           ступень 1 — вдвое реже: та же картинка, кадр через один
+           ступень 2 — грубее и реже: буфер 120/176 плюс половинный такт
+
+         Ступень 2 — это то, чем «тихо» обязано быть, и то, куда система
+         уходит сама, если устройство не тянет. Картинка на ней остаётся той
+         же картиной: плазма низкочастотная, и её мягкости лишний раз не
+         повредит — ломается не облик, а стоимость. */
+      var tier = this.tierNow();
+      this.step = (small ? 42 : 34) * (tier >= 1 ? 2 : 1);
 
       /* Одно увеличение вместо двух.
          ---------------------------------------------------------------------
@@ -163,13 +185,19 @@
          процессор, но при девятикратном увеличении оно давало слишком крупную
          ячейку. 168 стоит примерно вдвое дороже за кадр и остаётся дешёвым,
          а видимая ячейка уменьшается почти в полтора раза. */
-      this.pw = small ? 168 : 248;
+      this.pw = Math.round((small ? 168 : 248) * (tier >= 2 ? 0.715 : 1));
       this.ph = Math.max(2, Math.round(this.pw * this.H / this.W));
       this.off.width = this.pw; this.off.height = this.ph;
       this.cw = this.pw; this.ch = this.ph;
       this.cv.width = this.cw; this.cv.height = this.ch;
       this.img = this.ocx.createImageData(this.pw, this.ph);
       this.buf = new Uint32Array(this.img.data.buffer);
+
+      /* Строчные черновики для тел света. Выделяются здесь и живут до
+         следующего изменения размера — в кадре не создаётся ни одного
+         объекта. Длина по числу пятен: в строке активных всегда не больше. */
+      var nb0 = this.blobs.length;
+      this.rIR = new Float32Array(nb0); this.rQ0 = new Float32Array(nb0);
       this.cx.imageSmoothingEnabled = true;
       this.cx.imageSmoothingQuality = "high";
     },
@@ -205,6 +233,45 @@
 
     pulse: function () { this.charge = Math.min(1, this.charge + .13); this.typing = now(); },
 
+    /* ------------------------------------------------------- ступень качества */
+    /* Ступень — это максимум из двух: того, что попросил человек («тихо»), и
+       того, что вынудило железо. Просьба никогда не отменяется автоматикой,
+       а автоматика никогда не поднимает качество выше просьбы. */
+    tier: 0,                    /* что вынудило железо */
+    tierAt: 0,                  /* когда в последний раз меняли */
+    cost: null,                 /* кольцо последних длительностей отрисовки */
+    costI: 0,
+    tierNow: function () {
+      var t = this.tier;
+      if (this.level === "quiet" && t < 2) t = 2;
+      return t;
+    },
+
+    /* Наблюдение за собственной стоимостью.
+       -------------------------------------------------------------------------
+       Прибор дешёвый: две отметки времени на отрисовку и кольцо на 32 записи.
+       Решение принимается по МЕДИАНЕ, а не по среднему: один длинный кадр от
+       чужой вкладки не должен ронять качество на весь сеанс.
+
+       Пороги разведены нарочно широко — 11 мс вниз, 4,5 мс вверх, — чтобы
+       система не металась между ступенями у самой границы. Вниз можно не чаще
+       раза в 4 секунды, вверх — раза в 20: возвращать качество надо неохотно,
+       потому что ошибка вверх снова уронит частоту кадров, а ошибка вниз
+       стоит человеку только чуть более мягкой картинки. */
+    note: function (ms) {
+      if (!this.cost) { this.cost = new Float32Array(32); this.costI = -32; }
+      this.cost[((this.costI++) % 32 + 32) % 32] = ms;
+      if (this.costI < 32) return;                     /* кольцо ещё не полное */
+      var t = now();
+      if (t - this.tierAt < 4000) return;
+      var s = Array.prototype.slice.call(this.cost).sort(function (a, b) { return a - b; });
+      var med = s[16];
+      if (med > 11 && this.tier < 2) { this.tier++; this.tierAt = t; this.costI = 0; this.resize(); return; }
+      if (med < 4.5 && this.tier > 0 && t - this.tierAt > 20000) {
+        this.tier--; this.tierAt = t; this.costI = 0; this.resize();
+      }
+    },
+
     loop: function () {
       var self = this;
       this.raf = requestAnimationFrame(function (ts) { self.loop(); self.draw(ts); });
@@ -235,7 +302,14 @@
 
     draw: function (ts) {
       if (!this.on || doc.hidden) return;
-      if (ts - this.last < this.step) return;
+      /* Пока по полю идёт волна от касания, такт не режется. Плазма дрейфует
+         так медленно, что двенадцать кадров в секунду читаются как спокойное
+         движение; рябь от пальца живёт 2,4 секунды и на таком такте стала бы
+         ступенчатой. Это единственное быстрое движение в обоях — ему отдаётся
+         полный такт, остальному хватает урезанного. */
+      var stepNow = this.waves.length ? Math.min(this.step, 42) : this.step;
+      if (ts - this.last < stepNow) return;
+      var t_in = now();                       /* прибор адаптации, см. note() */
       var dt = Math.min(120, ts - this.last || this.step);
       this.last = ts;
       var t = (ts - this.t0) / 1000;
@@ -319,12 +393,35 @@
          периода — растягивать в шесть раз можно безнаказанно. */
       var seed = this.seed | 0;
 
+      /* Обратные квадраты радиусов — один раз на кадр вместо деления на пиксель.
+         Деление стоит в десятки раз дороже умножения, а раньше их было три на
+         каждый пиксель: 183 тысячи делений в кадре. */
+      var bIR = this.rIR;
+      for (var bk = 0; bk < nb; bk++) bIR[bk] = 1 / bR2[bk];
+      var rQ0 = this.rQ0;
+
       var idx = 0;
       for (var y = 0; y < ph; y++) {
         /* головка зависит только от строки — считается один раз на строку */
         var hd = y - hy, hAbs = hd < 0 ? -hd : hd, hw = 0;
         if (hAbs < hBand) hw = hA * (1 - hAbs / hBand);
         var hR = 143 * hw, hG = 168 * hw, hB = 242 * hw;
+
+        /* Вертикальная часть q² — одна на строку, а не на каждый пиксель.
+           Пятну, не дотянувшемуся до строки, кладётся заведомо большое q²:
+           тогда общая проверка «q² < 1» отсекает его сама, и лишней ветки
+           в горячем цикле не появляется.
+
+           Отдельно проверено и ОТКАЧЕНО: вариант с горизонтальными границами
+           отрезка оказался ДОРОЖЕ исходного — 304 мс против 209 за шесть
+           секунд. Две проверки на пиксель на пятно и лишние чтения из
+           типизированных массивов стоят больше, чем экономит отсечение,
+           потому что пятна огромны и покрывают почти всю строку. */
+        for (var bi3 = 0; bi3 < nb; bi3++) {
+          var dyb = y - bY[bi3], q0 = dyb * dyb * bIR[bi3];
+          rQ0[bi3] = q0 < 1 ? q0 : 4;
+        }
+
         for (var x = 0; x < pw; x++) {
           /* refraction phase from taps — bend the coordinates, draw no lines */
           var bend = 0, comp = 0;
@@ -364,10 +461,12 @@
           var g = (c0[1] * (1 - w2) + c2[1] * w2) * qq + 140 * n * warm * amp * 0.5;
           var b = (c0[2] * (1 - w2) + c2[2] * w2) * qq + 95 * n * warm * amp * 0.3;
 
-          /* тела света — тот же аддитивный вклад, что давал lighter-градиент */
+          /* тела света — тот же аддитивный вклад, что давал lighter-градиент.
+             Ни одного деления: вертикальная часть q² пришла из строки,
+             горизонтальная умножается на готовый обратный квадрат радиуса. */
           for (var bj = 0; bj < nb; bj++) {
-            var pdx = x - bX[bj], pdy = y - bY[bj];
-            var q2 = (pdx * pdx + pdy * pdy) / bR2[bj];
+            var pdx = x - bX[bj];
+            var q2 = rQ0[bj] + pdx * pdx * bIR[bj];
             if (q2 < 1) {
               var fv = 1 - q2; fv = fv * fv; fv = fv * fv * bA[bj];
               r += bCr[bj] * fv; g += bCg[bj] * fv; b += bCb[bj] * fv;
@@ -396,6 +495,7 @@
       this.seed = seed;
       /* Ни одного градиента после этой строки. Тела света и читающая головка
          уже в буфере — см. длинный комментарий перед пиксельным циклом. */
+      this.note(now() - t_in);
     }
   };
 
@@ -421,6 +521,10 @@
     mood: function (id) { Field.applyMood(id); },
     pulse: function () { Field.pulse(); },
     running: function () { return !!Field.cv && Field.on && !Field.parked; },
+    /* Ступень качества наружу — чтобы её можно было проверить законом и
+       увидеть в диагностике, а не угадывать по виду. 0 полное · 1 вдвое реже
+       · 2 грубее и реже. Второе число — ширина буфера в пикселях. */
+    tier: function () { return { tier: Field.tierNow(), forced: Field.tier, buffer: Field.pw, step: Field.step }; },
     parked: function () { return Field.parked; }
   };
 

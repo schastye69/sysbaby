@@ -516,13 +516,21 @@ html.topbar-hidden.topbar-peek #topbar { transform: none; }
    the landing's, character for character (hair spaces included) — one brand,
    two surfaces, no second drawing of it anywhere. */
 .tb-mark { display: inline-flex; align-items: center; gap: 7px; padding-left: 2px; flex: none; }
-.mark-glyph {
-  width: 21px; height: 21px; border-radius: 7px; flex: none;
-  display: grid; place-items: center; color: #fff;
-  background: linear-gradient(155deg, var(--accent), var(--accent-2));
-  box-shadow: 0 4px 12px -5px rgba(var(--accent-rgb), .78);
+/* Раньше здесь была цветная плитка с галочкой внутри. Теперь внутри — сам
+   знак, и подложка вокруг него стала знаком внутри знака: она отобрана.
+   Обе поверхности показывают одну и ту же фигуру одного цвета и без рамки,
+   потому что бренд один. Это и есть то, что обещает комментарий выше.
+
+   Движение однократное. Логотип, пульсирующий вечно, — ровно тот дефект,
+   который сегодня убран из шапки лендинга: он стоит кадра каждый кадр. */
+.mark-glyph { flex: none; display: grid; place-items: center; color: var(--ink); line-height: 0; }
+.mark-glyph svg {
+  width: 17px; height: 17px; display: block;
+  animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both;
 }
-.mark-glyph svg { width: 13px; height: 13px; }
+@keyframes markIn { from { opacity: 0; transform: translate3d(-6%, -6%, 0) scale(.86) } to { opacity: 1; transform: none } }
+@media (prefers-reduced-motion: reduce) { .mark-glyph svg { animation: none } }
+html[data-motion="reduced"] .mark-glyph svg { animation: none }
 .mark-word {
   font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: .06em;
   color: var(--ink); white-space: nowrap;

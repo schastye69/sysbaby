@@ -4,6 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>sys.baby OS</title>
+<!-- ЗНАК. Один квадрат и он же, сдвинутый на 1,988 — та же величина, на которой
+     построено поле обоев. Пересечение выбито: пустота в середине — это точка из
+     sys . baby, которой в словесном знаке дан воздух волосяными пробелами.
+     Значок сам знает про тёмную тему: правило внутри SVG. Растра нет нигде. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cstyle%3Epath%7Bfill:%23111318%7D@media(prefers-color-scheme:dark)%7Bpath%7Bfill:%23e9e9ec%7D%7D%3C/style%3E%3Cpath fill-rule='evenodd' d='M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z'/%3E%3C/svg%3E">
+<link rel="mask-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cstyle%3Epath%7Bfill:%23111318%7D@media(prefers-color-scheme:dark)%7Bpath%7Bfill:%23e9e9ec%7D%7D%3C/style%3E%3Cpath fill-rule='evenodd' d='M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z'/%3E%3C/svg%3E" color="#e0663c">
+
 <meta name="description" content="sys.baby OS — a desktop that shows what an automated business system feels like." />
 <meta name="color-scheme" content="dark light" />
 
@@ -42,18 +49,18 @@
      метка меняется каждой сборкой, а старый адрес перестаёт существовать.
      Штампы проставляются tools/stamp-build.mjs и охраняются законом
      build-stamp.mjs — ресурс без метки валит сборку. -->
-<script src="core/store.js?b=v28"></script>
+<script src="core/store.js?b=v30"></script>
 
-<link rel="stylesheet" href="core/core.css?b=v28" />
-<link rel="stylesheet" href="apps/files/files.css?b=v28" />
-<link rel="stylesheet" href="apps/notes/notes.css?b=v28" />
-<link rel="stylesheet" href="apps/mail/mail.css?b=v28" />
-<link rel="stylesheet" href="apps/messenger/messenger.css?b=v28" />
-<link rel="stylesheet" href="apps/search/search.css?b=v28" />
-<link rel="stylesheet" href="apps/settings/settings.css?b=v28" />
-<link rel="stylesheet" href="apps/echoes/echoes.css?b=v28" />
-<link rel="stylesheet" href="apps/portfolio/portfolio.css?b=v28" />
-<link rel="stylesheet" href="apps/project/project.css?b=v28" />
+<link rel="stylesheet" href="core/core.css?b=v30" />
+<link rel="stylesheet" href="apps/files/files.css?b=v30" />
+<link rel="stylesheet" href="apps/notes/notes.css?b=v30" />
+<link rel="stylesheet" href="apps/mail/mail.css?b=v30" />
+<link rel="stylesheet" href="apps/messenger/messenger.css?b=v30" />
+<link rel="stylesheet" href="apps/search/search.css?b=v30" />
+<link rel="stylesheet" href="apps/settings/settings.css?b=v30" />
+<link rel="stylesheet" href="apps/echoes/echoes.css?b=v30" />
+<link rel="stylesheet" href="apps/portfolio/portfolio.css?b=v30" />
+<link rel="stylesheet" href="apps/project/project.css?b=v30" />
 </head>
 
 <body>
@@ -139,8 +146,7 @@
          "sys.baby / guest" rather than saying sys.baby twice. -->
     <span class="tb-mark" id="sbTopMark" title="sys.baby OS">
       <span class="mark-glyph" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+        <svg viewBox="0 0 100 100" class="sb-mark-svg"><path fill="currentColor" fill-rule="evenodd" d="M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z"/></svg>
       </span>
       <span class="mark-word">sys&#8202;.&#8202;baby</span>
     </span>
@@ -367,27 +373,27 @@
 
 
 <!-- ================================================================== scripts -->
-<script src="core/shell.js?b=v28"></script>
-<script src="core/panels.js?b=v28"></script>
-<script src="core/palette.js?b=v28"></script>
-<script src="core/desktop.js?b=v28"></script>
-<script src="core/topbar.js?b=v28"></script>
-<script src="core/terminal.js?b=v28"></script>
-<script src="core/links.js?b=v28"></script>
-<script src="core/field.js?b=v28"></script>
+<script src="core/shell.js?b=v30"></script>
+<script src="core/panels.js?b=v30"></script>
+<script src="core/palette.js?b=v30"></script>
+<script src="core/desktop.js?b=v30"></script>
+<script src="core/topbar.js?b=v30"></script>
+<script src="core/terminal.js?b=v30"></script>
+<script src="core/links.js?b=v30"></script>
+<script src="core/field.js?b=v30"></script>
 
-<script src="../shared/portfolio.data.js?b=v28"></script>
-<script src="../shared/pricing.data.js?b=v28"></script>
+<script src="../shared/portfolio.data.js?b=v30"></script>
+<script src="../shared/pricing.data.js?b=v30"></script>
 
-<script src="apps/files/files.js?b=v28"></script>
-<script src="apps/notes/notes.js?b=v28"></script>
-<script src="apps/mail/mail.js?b=v28"></script>
-<script src="apps/messenger/messenger.js?b=v28"></script>
-<script src="apps/search/search.js?b=v28"></script>
-<script src="apps/settings/settings.js?b=v28"></script>
-<script src="apps/echoes/echoes.js?b=v28"></script>
-<script src="apps/portfolio/portfolio.js?b=v28"></script>
-<script src="apps/project/project.js?b=v28"></script>
+<script src="apps/files/files.js?b=v30"></script>
+<script src="apps/notes/notes.js?b=v30"></script>
+<script src="apps/mail/mail.js?b=v30"></script>
+<script src="apps/messenger/messenger.js?b=v30"></script>
+<script src="apps/search/search.js?b=v30"></script>
+<script src="apps/settings/settings.js?b=v30"></script>
+<script src="apps/echoes/echoes.js?b=v30"></script>
+<script src="apps/portfolio/portfolio.js?b=v30"></script>
+<script src="apps/project/project.js?b=v30"></script>
 <!-- Скамейка (Experimental/Phosphor) выведена из клиентской витрины v20.9:
      витрина продаёт сданные системы, а самое интригующее имя на столе
      конкурировало с подсказкой №1 за первое касание. Папка приложения

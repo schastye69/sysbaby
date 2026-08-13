@@ -470,6 +470,12 @@
       "protseduur": "процедура",
       "h": "ч."
     },
+    "label_client": "Клиент / организация",
+    "placeholder_client": "Mari Tamm",
+    "label_client_phone": "Телефон",
+    "placeholder_client_phone": "+372 5xxx xxxx",
+    "label_client_email": "Email",
+    "placeholder_client_email": "mari@example.com",
     "label_subject_primary": "Patsient (nimi)",
     "placeholder_subject_primary": "Mari Tamm",
     "label_subject_secondary": "Isikukood",

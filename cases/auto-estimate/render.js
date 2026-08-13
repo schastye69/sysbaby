@@ -96,9 +96,17 @@
 
     /* --- client card ------------------------------------------------------ */
     var grid = el("div", { cls: "grid" });
-    grid.appendChild(labelled("Клиент/организация)", el("input", { type: "text", id: "clientName", cls: "meta", placeholder: "Prohor Artovich", autocomplete: "off" })));
-    grid.appendChild(labelled("Телефон", el("input", { type: "text", id: "clientPhone", cls: "meta", placeholder: "+372 0000 0000", autocomplete: "off" })));
-    grid.appendChild(labelled("Email", el("input", { type: "email", id: "clientEmail", cls: "meta", placeholder: "client@example.com", autocomplete: "off" })));
+    /* Эти три подсказки когда-то были вписаны прямо сюда, хотя все остальные
+       в этом файле берутся из config.js. Из-за этого пример из кузовного цеха
+       («Prohor Artovich», «+372 0000 0000») показывался и в стоматологии, и
+       поменять его для одного случая было нельзя, не поменяв другому. Теперь
+       источник один — конфигурация случая, как у всех прочих подсказок. */
+    grid.appendChild(labelled(cfgStr("label_client", "Клиент / организация"),
+      el("input", { type: "text", id: "clientName", cls: "meta", placeholder: cfgStr("placeholder_client", ""), autocomplete: "off" })));
+    grid.appendChild(labelled(cfgStr("label_client_phone", "Телефон"),
+      el("input", { type: "text", id: "clientPhone", cls: "meta", placeholder: cfgStr("placeholder_client_phone", ""), autocomplete: "off" })));
+    grid.appendChild(labelled(cfgStr("label_client_email", "Email"),
+      el("input", { type: "email", id: "clientEmail", cls: "meta", placeholder: cfgStr("placeholder_client_email", ""), autocomplete: "off" })));
     grid.appendChild(labelled(cfgStr("label_subject_primary", "Объект"),
       el("input", { type: "text", id: "subjectPrimary", cls: "meta", placeholder: cfgStr("placeholder_subject_primary", ""), autocomplete: "off" })));
     grid.appendChild(labelled(cfgStr("label_subject_secondary", "Идентификатор"),

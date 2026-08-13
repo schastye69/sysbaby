@@ -24,15 +24,22 @@ header('Content-Type: text/html; charset=utf-8');
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#05060a" id="themeColorMeta">
 <title>sys.baby — Business software you own</title>
+<!-- ЗНАК. Один квадрат и он же, сдвинутый на 1,988 — та же величина, на которой
+     построено поле обоев. Пересечение выбито: пустота в середине — это точка из
+     sys . baby, которой в словесном знаке дан воздух волосяными пробелами.
+     Значок сам знает про тёмную тему: правило внутри SVG. Растра нет нигде. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cstyle%3Epath%7Bfill:%23111318%7D@media(prefers-color-scheme:dark)%7Bpath%7Bfill:%23e9e9ec%7D%7D%3C/style%3E%3Cpath fill-rule='evenodd' d='M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z'/%3E%3C/svg%3E">
+<link rel="mask-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cstyle%3Epath%7Bfill:%23111318%7D@media(prefers-color-scheme:dark)%7Bpath%7Bfill:%23e9e9ec%7D%7D%3C/style%3E%3Cpath fill-rule='evenodd' d='M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z'/%3E%3C/svg%3E" color="#e0663c">
+
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v28">
+<meta name="sysbaby-build" content="v30">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v28">
+<link rel="stylesheet" href="shared/system.css?b=v30">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -51,8 +58,8 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v28"></script>
-<script src="shared/pricing.data.js?b=v28"></script>
+<script src="shared/portfolio.data.js?b=v30"></script>
+<script src="shared/pricing.data.js?b=v30"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -218,6 +225,20 @@ html[data-anim="paused"] .backdrop .wallpaper{animation:none}
 }
 .topbar.is-in{opacity:1;transform:none}
 .tb-left,.tb-right{display:flex;align-items:center;gap:10px;min-width:0}
+/* Знак. Появляется один раз при загрузке и больше не двигается никогда.
+   -----------------------------------------------------------------------------
+   Логотип, который пульсирует вечно, — это ровно тот дефект, который сегодня
+   был убран из этой же шапки: анимация ради присутствия стоит кадра каждый
+   кадр. Здесь движение однократное, на transform и opacity, то есть на
+   композиторе, и после 0,7 секунды слой замирает навсегда. */
+.sb-mark{display:inline-flex;flex:0 0 auto;color:var(--ink);line-height:0}
+.sb-mark svg{width:17px;height:17px;display:block;
+  animation:markIn .68s cubic-bezier(.2,.7,.2,1) both}
+@keyframes markIn{from{opacity:0;transform:translate3d(-6%,-6%,0) scale(.86)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.sb-mark svg{animation:none}}
+html[data-anim="paused"] .sb-mark svg{animation:none}
+@media(max-width:640px){.sb-mark svg{width:15px;height:15px}}
+
 .tb-mark{
   font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:1.4px;white-space:nowrap;
   /* Имя среды не мерцает. Авторитет — это неподвижность, а не блеск. */
@@ -370,8 +391,36 @@ html[data-anim="paused"] .backdrop .wallpaper{animation:none}
   background:var(--err);color:#fff;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;
 }
 .dock-item.has-badge .badge{display:flex}
-.dock-item[data-app="order"] .tile{animation:orderPulse 3.4s ease-in-out infinite}
-@keyframes orderPulse{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 24px 0 var(--accent-soft)}}
+/* Пульс кнопки заказа: та же картинка, но не главным потоком.
+   ---------------------------------------------------------------------------
+   12.08, замер. Раньше здесь анимировался box-shadow — свойство КРАСКИ.
+   Композитор его не умеет, поэтому каждый кадр браузер пересчитывал стиль и
+   заново красил плитку. Навсегда. На шестикратно замедленном телефоне это
+   стоило 22 процентных пункта из 33 — две трети всей работы лендинга в покое
+   уходило на свечение одной кнопки.
+
+   Теперь тень постоянная и лежит на псевдоэлементе, а анимируются только
+   opacity и transform — оба композитные, оба не касаются главного потока.
+   Масштаб от .92 к 1 сохраняет прежнее ощущение «свет растёт наружу»,
+   которое давал рост радиуса размытия: раньше расширялась тень, теперь
+   расширяется слой с тенью. Глазу это одно и то же, процессору — нет.
+
+   Замер: 32,9 % → 10,9 % занятости главного потока при ×6. */
+.dock-item[data-app="order"] .tile::after{
+  /* inset:-1px, а не 0: у плитки есть рамка в пиксель, и старая тень
+     отбрасывалась от внешнего края. Псевдоэлемент по внутреннему давал
+     ореол на пиксель уже — на пике различие достигало 35 уровней яркости.
+     С поправкой пик совпадает попиксельно (средняя разница 0,00). */
+  content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;
+  box-shadow:0 0 24px 0 var(--accent-soft);
+  opacity:0;transform:scale(.92);
+  will-change:opacity,transform;
+  animation:orderPulse 3.4s ease-in-out infinite;
+}
+@keyframes orderPulse{0%,100%{opacity:0;transform:scale(.92)}50%{opacity:1;transform:scale(1)}}
+/* Раньше этого не было вовсе: пульс шёл и при выключенной анимации. */
+@media (prefers-reduced-motion:reduce){.dock-item[data-app="order"] .tile::after{animation:none;opacity:.55;transform:none}}
+html[data-anim="paused"] .dock-item[data-app="order"] .tile::after{animation:none;opacity:.55;transform:none}
 .dock-item.bounce{animation:dockBounce .62s var(--ease)}
 @keyframes dockBounce{0%,100%{transform:translateY(0)}25%{transform:translateY(-16px)}50%{transform:translateY(0)}72%{transform:translateY(-7px)}}
 /* The dock hides itself, so the only thing left at the bottom edge is a pill.
@@ -944,6 +993,7 @@ html[data-anim="paused"] .dock-flare{display:none}
 <!-- top bar -->
 <header class="topbar" id="topbar">
   <div class="tb-left">
+    <span class="sb-mark" aria-hidden="true"><svg viewBox="0 0 100 100"><path fill="currentColor" fill-rule="evenodd" d="M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z"/></svg></span>
     <span class="tb-mark">sys&#8202;.&#8202;baby</span>
     <span class="tb-sep" id="tbSep">|</span>
     <span class="tb-app" id="tbApp">Desktop</span>
@@ -1401,9 +1451,9 @@ html[data-anim="paused"] .dock-flare{display:none}
             "email": "Email",
             "phone": "Phone",
             "task": "Describe your business & task",
-            "namePh": "Jane Smith",
-            "emailPh": "you@company.com",
-            "phonePh": "+372 5xx xxxx",
+            "namePh": "Jaan Tamm",
+            "emailPh": "jaan@example.com",
+            "phonePh": "+372 5xxx xxxx",
             "taskHelp": "Most useful: what happens today, how often, where it lives now (notebook, spreadsheet, email) — and what should come out the other end.",
             "taskPh": "e.g. every quote gets rebuilt by hand and takes two days to go out",
             "selected": "Starting point",
@@ -1488,9 +1538,9 @@ html[data-anim="paused"] .dock-flare{display:none}
             "email": "Email",
             "phone": "Телефон",
             "task": "Опишите бизнес и задачу",
-            "namePh": "Иван Иванов",
-            "emailPh": "you@company.com",
-            "phonePh": "+372 5xx xxxx",
+            "namePh": "Jaan Tamm",
+            "emailPh": "jaan@example.com",
+            "phonePh": "+372 5xxx xxxx",
             "taskHelp": "Полезнее всего: что происходит сейчас, как часто, где это живёт сегодня (тетрадь, таблица, почта) — и что должно получаться на выходе.",
             "taskPh": "например: каждую смету собираем вручную, и она уходит только через два дня",
             "selected": "Отправная точка",
@@ -1576,8 +1626,8 @@ html[data-anim="paused"] .dock-flare{display:none}
             "phone": "Telefon",
             "task": "Kirjelda oma äri ja ülesannet",
             "namePh": "Jaan Tamm",
-            "emailPh": "you@company.com",
-            "phonePh": "+372 5xx xxxx",
+            "emailPh": "jaan@example.com",
+            "phonePh": "+372 5xxx xxxx",
             "taskHelp": "Kõige kasulikum: mis praegu toimub, kui tihti, kus see täna elab (vihik, tabel, e-post) — ja mis peaks teisest otsast välja tulema.",
             "taskPh": "nt iga pakkumine pannakse käsitsi uuesti kokku ja läheb välja alles kahe päeva pärast",
             "selected": "Lähtepunkt",
@@ -3412,18 +3462,46 @@ function roiHandoff() {
 
 function chatCopy(lang) { return appCopy("chat", lang || state.lang); }
 
-function pushChat(from, text) {
+/* Реплики системы хранятся КЛЮЧОМ, а не готовой строкой.
+   ---------------------------------------------------------------------------
+   12.08, дефект с телефона: шапка чата была по-русски, а само приветствие —
+   по-английски. Перевод при этом существовал и был верным. Ломалась не
+   локализация, а хранение: pushChat клал в историю уже собранный текст, и
+   строка замерзала в том языке, который действовал в момент показа. Смена
+   языка перерисовывала шапку (она читает словарь каждый раз) и не трогала
+   пузыри (они читали копию).
+
+   Правило: то, что написали МЫ, хранится ссылкой и переводится при отрисовке.
+   То, что написал ЧЕЛОВЕК, хранится дословно и не переводится никогда — это
+   его слова, а не наши. Отсюда два поля: key для наших, text для его. */
+function pushChat(from, text, key, idx) {
   state.chat.history.push({
     from: from,
     text: text,
+    key: key || null,          /* есть ключ ⇒ строка берётся из словаря при показе */
+    idx: typeof idx === "number" ? idx : null,
     time: new Date().toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" })
   });
+}
+
+/* Единственное место, где ключ превращается в текст. Ключа нет — это слова
+   человека, отдаём как есть. Ключ есть, а строки под ним не нашлось — отдаём
+   то, что было показано в прошлый раз: молчащий пузырь хуже непереведённого. */
+function chatText(message) {
+  if (!message.key) return message.text;
+  var t = chatCopy();
+  if (message.key === "reply") {
+    var list = t.replies || [];
+    if (!list.length) return message.text;
+    return list[message.idx % list.length] || message.text;
+  }
+  return t[message.key] || message.text;
 }
 
 function renderChat(record) {
   var t = chatCopy();
   state.chat.everOpened = true;
-  if (!state.chat.history.length) pushChat("agent", t.welcome);
+  if (!state.chat.history.length) pushChat("agent", t.welcome, "welcome");
   setHtml(record.body,
     '<div class="chat">' +
       '<div class="chat-head">' +
@@ -3458,7 +3536,7 @@ function renderChatMessages(record) {
   var list = $("#chatMsgs", record.body);
   if (!list) return;
   setHtml(list, state.chat.history.map(function (message) {
-    return '<div class="bubble from-' + message.from + '">' + esc(message.text) +
+    return '<div class="bubble from-' + message.from + '">' + esc(chatText(message)) +
       '<span class="time">' + esc(message.time) + "</span></div>";
   }).join(""));
   list.scrollTop = list.scrollHeight;
@@ -3479,7 +3557,7 @@ function chatSend(record) {
   textField.style.height = "auto";
 
   if (!valid) {
-    pushChat("agent", t.askEmail);
+    pushChat("agent", t.askEmail, "askEmail");
     renderChatMessages(record);
     emailField.focus();
     return;                                   /* no network request */
@@ -3511,8 +3589,9 @@ function chatSend(record) {
       setTimeout(function () {
         if (indicator.parentNode) indicator.remove();
         var replies = t.replies;
-        var reply = delivered ? replies[state.chat.replyIndex++ % replies.length] : t.failMsg;
-        pushChat("agent", reply);
+        var slot = delivered ? (state.chat.replyIndex++ % replies.length) : -1;
+        var reply = delivered ? replies[slot] : t.failMsg;
+        pushChat("agent", reply, delivered ? "reply" : "failMsg", delivered ? slot : null);
         deliverChatReply(reply);
       }, wait);
     });
@@ -3535,7 +3614,7 @@ function deliverChatReply(reply) {
 function chatWelcomePush() {
   if (state.chat.everOpened || wins.chat) return;
   var t = chatCopy();
-  pushChat("agent", t.welcome);
+  pushChat("agent", t.welcome, "welcome");
   setChatBadge();
   toast(t.agent, t.welcome, "chat", false);
   chirp();
