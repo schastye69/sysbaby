@@ -33,13 +33,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v30">
+<meta name="sysbaby-build" content="v31">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v30">
+<link rel="stylesheet" href="shared/system.css?b=v31">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -58,8 +58,8 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v30"></script>
-<script src="shared/pricing.data.js?b=v30"></script>
+<script src="shared/portfolio.data.js?b=v31"></script>
+<script src="shared/pricing.data.js?b=v31"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -231,16 +231,37 @@ html[data-anim="paused"] .backdrop .wallpaper{animation:none}
    был убран из этой же шапки: анимация ради присутствия стоит кадра каждый
    кадр. Здесь движение однократное, на transform и opacity, то есть на
    композиторе, и после 0,7 секунды слой замирает навсегда. */
-.sb-mark{display:inline-flex;flex:0 0 auto;color:var(--ink);line-height:0}
-.sb-mark svg{width:17px;height:17px;display:block;
+/* СЛОВЕСНЫЙ ЗНАК. Точка в sys.baby — это сам знак, уменьшенный ровно вдвое
+   от кегля. Одна фигура живёт на трёх масштабах и каждым объявляет уровень:
+   значок вкладки — это бренд, точка внутри слова — это имя, крупная фигура —
+   это печать. Поэтому в шапке знак стоит ОДИН раз: иконка рядом со словом,
+   уже содержащим её, — это одно и то же сказанное дважды.
+
+   Доля 0,50 подобрана съёмкой на 30px против 0,44 / 0,56 / 0,62 / 0,70:
+   меньше — робко, больше — перевешивает литеры. Подъём в 0,06em ставит
+   фигуру на середину строчных, а не на базовую линию, где точка сидела бы
+   как знак препинания.
+
+   Настоящая точка остаётся в разметке невидимой: слово копируется как
+   «sys.baby», а не как «sysbaby». Знак — оформление, а не подмена текста. */
+.sb-wm{display:inline-flex;align-items:center;white-space:nowrap}
+.sb-dot{display:inline-flex;align-items:center;position:relative;line-height:0;
+  margin:0 .24em 0 .06em;transform:translateY(-.06em)}
+.sb-dot svg{width:.5em;height:.5em;display:block;
   animation:markIn .68s cubic-bezier(.2,.7,.2,1) both}
-@keyframes markIn{from{opacity:0;transform:translate3d(-6%,-6%,0) scale(.86)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.sb-mark svg{animation:none}}
-html[data-anim="paused"] .sb-mark svg{animation:none}
-@media(max-width:640px){.sb-mark svg{width:15px;height:15px}}
+.sb-vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@keyframes markIn{from{opacity:0;transform:translate3d(-8%,-8%,0) scale(.82)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.sb-dot svg{animation:none}}
+html[data-anim="paused"] .sb-dot svg{animation:none}
+/* Свёртки до точки здесь НЕТ, и это решение, а не упущение. В ОС полоса
+   переполнена — там слово обязано уступить. В шапке лендинга соседей мало,
+   место есть, и сжимать имя было бы правилом ради симметрии правил.
+   Проверено съёмкой на 360 и 390: слово помещается целиком. */
 
 .tb-mark{
-  font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:1.4px;white-space:nowrap;
+  /* 0,12em — то же правило, что в ОС (core.css). Было 1,4px, то есть 0,117em
+     при 12px: величина совпадала случайно, а не по правилу. Теперь по правилу. */
+  font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.12em;white-space:nowrap;
   /* Имя среды не мерцает. Авторитет — это неподвижность, а не блеск. */
   color:var(--ink);
 }
@@ -993,8 +1014,7 @@ html[data-anim="paused"] .dock-flare{display:none}
 <!-- top bar -->
 <header class="topbar" id="topbar">
   <div class="tb-left">
-    <span class="sb-mark" aria-hidden="true"><svg viewBox="0 0 100 100"><path fill="currentColor" fill-rule="evenodd" d="M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z"/></svg></span>
-    <span class="tb-mark">sys&#8202;.&#8202;baby</span>
+    <span class="tb-mark sb-wm" aria-label="sys.baby">sys<span class="sb-dot"><span class="sb-vh">.</span><svg viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z"/></svg></span>baby</span>
     <span class="tb-sep" id="tbSep">|</span>
     <span class="tb-app" id="tbApp">Desktop</span>
   </div>

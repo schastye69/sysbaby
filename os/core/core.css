@@ -422,16 +422,23 @@ html[data-motion="reduced"] .cur-log { display: none; }
    together, sits on the optical centre — which is also what lets the residue
    land in exactly the place the sentence just left */
 .cur-stage { position: relative; text-align: center; z-index: 1; }
+/* Занавес показывает ТОТ ЖЕ знак, что стоит потом в углу и в значке вкладки.
+   Раньше здесь была цветная плитка с галочкой — предмет, который нигде больше
+   не встречался, то есть обещание, которого система не сдерживала.
+
+   Подложка и тень сняты по той же причине, что и в шапке: фигура внутри
+   плитки — это знак внутри знака. Здесь фигура крупная и стоит одна; цвет
+   ей даёт акцент, а не градиент. Это единственное место, где знак появляется
+   в акцентном цвете, — момент, когда система называет себя. */
 .cur-mark {
   position: absolute; left: 50%; bottom: calc(100% + 26px);
-  width: 64px; height: 64px; border-radius: 20px;
-  background: linear-gradient(155deg, var(--accent), var(--accent-2));
+  width: 64px; height: 64px;
   display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
   opacity: 0; transform: translateX(-50%) scale(.86);
   animation: curMarkIn 1s var(--ease) .15s forwards;
-  box-shadow: 0 24px 56px -12px rgba(var(--accent-rgb), .5);
 }
-.cur-mark svg { width: 28px; height: 28px; stroke: #fff; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.cur-mark svg { width: 56px; height: 56px; display: block; }
 @keyframes curMarkIn { to { opacity: 1; transform: translateX(-50%) scale(1); } }
 html[data-motion="reduced"] .cur-mark { animation-duration: .4s !important; }
 
@@ -523,16 +530,25 @@ html.topbar-hidden.topbar-peek #topbar { transform: none; }
 
    Движение однократное. Логотип, пульсирующий вечно, — ровно тот дефект,
    который сегодня убран из шапки лендинга: он стоит кадра каждый кадр. */
-.mark-glyph { flex: none; display: grid; place-items: center; color: var(--ink); line-height: 0; }
-.mark-glyph svg {
-  width: 17px; height: 17px; display: block;
-  animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both;
+/* Знак больше не стоит рядом со словом отдельной иконкой — он стал точкой
+   ВНУТРИ слова, ровно как на лендинге. Одна фигура, один раз, один смысл.
+   Полное объяснение доли 0,50 и подъёма — в index.php, там же, где решение
+   принималось; здесь только то же правило, чтобы обе поверхности не разошлись. */
+.sb-wm { display: inline-flex; align-items: center; white-space: nowrap; }
+.sb-dot {
+  display: inline-flex; align-items: center; position: relative; line-height: 0;
+  margin: 0 .24em 0 .06em; transform: translateY(-.06em);
 }
-@keyframes markIn { from { opacity: 0; transform: translate3d(-6%, -6%, 0) scale(.86) } to { opacity: 1; transform: none } }
-@media (prefers-reduced-motion: reduce) { .mark-glyph svg { animation: none } }
-html[data-motion="reduced"] .mark-glyph svg { animation: none }
+.sb-dot svg { width: .5em; height: .5em; display: block; animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both; }
+.sb-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@keyframes markIn { from { opacity: 0; transform: translate3d(-8%, -8%, 0) scale(.82) } to { opacity: 1; transform: none } }
+@media (prefers-reduced-motion: reduce) { .sb-dot svg { animation: none } }
+html[data-motion="reduced"] .sb-dot svg { animation: none }
 .mark-word {
-  font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: .06em;
+  /* Трекинг словесного знака — 0,12em в интерфейсе на обеих поверхностях.
+     Одно правило: в мелком кегле шире, чем обычный текст, но вдвое уже, чем
+     в крупном (0,30em) — иначе в шапке слово рассыпается на буквы. */
+  font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: .12em;
   color: var(--ink); white-space: nowrap;
 }
 
@@ -1215,9 +1231,13 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
 }
 @media (max-width: 560px) {
   .tb-seq { display: none; }
-  /* The glyph alone still says whose desktop this is; the word is what the
-     narrow bar cannot afford. */
-  .mark-word { display: none; }
+  /* Узкая полоса не может позволить себе слово — но может позволить точку.
+     Правило системы: словесный знак сжимается ДО СВОЕЙ ТОЧКИ, а не исчезает.
+     Литеры уходят, фигура остаётся и вырастает до размера, который читается
+     сама по себе. Это тот же объект, просто последний оставшийся масштаб. */
+  .sb-wm { font-size: 0; letter-spacing: 0; }
+  .sb-dot { margin: 0; transform: none; }
+  .sb-dot svg { width: 17px; height: 17px; }
 }
 @media (max-width: 620px) {
   #toastLayer { top: calc(var(--topbar-h) + 52px); }

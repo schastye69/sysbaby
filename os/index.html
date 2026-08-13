@@ -49,18 +49,18 @@
      метка меняется каждой сборкой, а старый адрес перестаёт существовать.
      Штампы проставляются tools/stamp-build.mjs и охраняются законом
      build-stamp.mjs — ресурс без метки валит сборку. -->
-<script src="core/store.js?b=v30"></script>
+<script src="core/store.js?b=v31"></script>
 
-<link rel="stylesheet" href="core/core.css?b=v30" />
-<link rel="stylesheet" href="apps/files/files.css?b=v30" />
-<link rel="stylesheet" href="apps/notes/notes.css?b=v30" />
-<link rel="stylesheet" href="apps/mail/mail.css?b=v30" />
-<link rel="stylesheet" href="apps/messenger/messenger.css?b=v30" />
-<link rel="stylesheet" href="apps/search/search.css?b=v30" />
-<link rel="stylesheet" href="apps/settings/settings.css?b=v30" />
-<link rel="stylesheet" href="apps/echoes/echoes.css?b=v30" />
-<link rel="stylesheet" href="apps/portfolio/portfolio.css?b=v30" />
-<link rel="stylesheet" href="apps/project/project.css?b=v30" />
+<link rel="stylesheet" href="core/core.css?b=v31" />
+<link rel="stylesheet" href="apps/files/files.css?b=v31" />
+<link rel="stylesheet" href="apps/notes/notes.css?b=v31" />
+<link rel="stylesheet" href="apps/mail/mail.css?b=v31" />
+<link rel="stylesheet" href="apps/messenger/messenger.css?b=v31" />
+<link rel="stylesheet" href="apps/search/search.css?b=v31" />
+<link rel="stylesheet" href="apps/settings/settings.css?b=v31" />
+<link rel="stylesheet" href="apps/echoes/echoes.css?b=v31" />
+<link rel="stylesheet" href="apps/portfolio/portfolio.css?b=v31" />
+<link rel="stylesheet" href="apps/project/project.css?b=v31" />
 </head>
 
 <body>
@@ -130,7 +130,7 @@
   <div class="cur-log" id="sbCurtainLog"></div>
   <div class="cur-stage">
     <div class="cur-mark" aria-hidden="true">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+      <svg viewBox="0 0 100 100"><path fill="currentColor" fill-rule="evenodd" d="M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z"/></svg>
     </div>
     <div class="cur-cells" id="sbCurtainCells"></div>
   </div>
@@ -145,10 +145,7 @@
          domain, so the identity beside it is just the user — the bar reads
          "sys.baby / guest" rather than saying sys.baby twice. -->
     <span class="tb-mark" id="sbTopMark" title="sys.baby OS">
-      <span class="mark-glyph" aria-hidden="true">
-        <svg viewBox="0 0 100 100" class="sb-mark-svg"><path fill="currentColor" fill-rule="evenodd" d="M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z"/></svg>
-      </span>
-      <span class="mark-word">sys&#8202;.&#8202;baby</span>
+      <span class="mark-word sb-wm" aria-label="sys.baby">sys<span class="sb-dot"><span class="sb-vh">.</span><svg viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z"/></svg></span>baby</span>
     </span>
     <span class="tb-sep" aria-hidden="true"></span>
     <button class="tb-identity" id="sbTopIdentity" type="button" title="Click to set your username" data-i18n-title="aria.identity">
@@ -373,27 +370,27 @@
 
 
 <!-- ================================================================== scripts -->
-<script src="core/shell.js?b=v30"></script>
-<script src="core/panels.js?b=v30"></script>
-<script src="core/palette.js?b=v30"></script>
-<script src="core/desktop.js?b=v30"></script>
-<script src="core/topbar.js?b=v30"></script>
-<script src="core/terminal.js?b=v30"></script>
-<script src="core/links.js?b=v30"></script>
-<script src="core/field.js?b=v30"></script>
+<script src="core/shell.js?b=v31"></script>
+<script src="core/panels.js?b=v31"></script>
+<script src="core/palette.js?b=v31"></script>
+<script src="core/desktop.js?b=v31"></script>
+<script src="core/topbar.js?b=v31"></script>
+<script src="core/terminal.js?b=v31"></script>
+<script src="core/links.js?b=v31"></script>
+<script src="core/field.js?b=v31"></script>
 
-<script src="../shared/portfolio.data.js?b=v30"></script>
-<script src="../shared/pricing.data.js?b=v30"></script>
+<script src="../shared/portfolio.data.js?b=v31"></script>
+<script src="../shared/pricing.data.js?b=v31"></script>
 
-<script src="apps/files/files.js?b=v30"></script>
-<script src="apps/notes/notes.js?b=v30"></script>
-<script src="apps/mail/mail.js?b=v30"></script>
-<script src="apps/messenger/messenger.js?b=v30"></script>
-<script src="apps/search/search.js?b=v30"></script>
-<script src="apps/settings/settings.js?b=v30"></script>
-<script src="apps/echoes/echoes.js?b=v30"></script>
-<script src="apps/portfolio/portfolio.js?b=v30"></script>
-<script src="apps/project/project.js?b=v30"></script>
+<script src="apps/files/files.js?b=v31"></script>
+<script src="apps/notes/notes.js?b=v31"></script>
+<script src="apps/mail/mail.js?b=v31"></script>
+<script src="apps/messenger/messenger.js?b=v31"></script>
+<script src="apps/search/search.js?b=v31"></script>
+<script src="apps/settings/settings.js?b=v31"></script>
+<script src="apps/echoes/echoes.js?b=v31"></script>
+<script src="apps/portfolio/portfolio.js?b=v31"></script>
+<script src="apps/project/project.js?b=v31"></script>
 <!-- Скамейка (Experimental/Phosphor) выведена из клиентской витрины v20.9:
      витрина продаёт сданные системы, а самое интригующее имя на столе
      конкурировало с подсказкой №1 за первое касание. Папка приложения
