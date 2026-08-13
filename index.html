@@ -33,13 +33,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v35">
+<meta name="sysbaby-build" content="v36">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v35">
+<link rel="stylesheet" href="shared/system.css?b=v36">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -58,8 +58,8 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v35"></script>
-<script src="shared/pricing.data.js?b=v35"></script>
+<script src="shared/portfolio.data.js?b=v36"></script>
+<script src="shared/pricing.data.js?b=v36"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -231,24 +231,58 @@ html[data-anim="paused"] .backdrop .wallpaper{animation:none}
    был убран из этой же шапки: анимация ради присутствия стоит кадра каждый
    кадр. Здесь движение однократное, на transform и opacity, то есть на
    композиторе, и после 0,7 секунды слой замирает навсегда. */
-/* СЛОВЕСНЫЙ ЗНАК. Точка в sys.baby — это сам знак, уменьшенный ровно вдвое
-   от кегля. Одна фигура живёт на трёх масштабах и каждым объявляет уровень:
-   значок вкладки — это бренд, точка внутри слова — это имя, крупная фигура —
-   это печать. Поэтому в шапке знак стоит ОДИН раз: иконка рядом со словом,
-   уже содержащим её, — это одно и то же сказанное дважды.
+/* Знак стоит в шапке ОДИН раз — точкой внутри имени. Иконка рядом со словом,
+   уже содержащим её, — это одно и то же сказанное дважды. Одна фигура живёт
+   на трёх масштабах: значок вкладки — бренд, точка внутри слова — имя,
+   крупная фигура (занавес ОС) — печать.
 
-   Доля 0,50 подобрана съёмкой на 30px против 0,44 / 0,56 / 0,62 / 0,70:
-   меньше — робко, больше — перевешивает литеры. Подъём в 0,06em ставит
-   фигуру на середину строчных, а не на базовую линию, где точка сидела бы
-   как знак препинания.
+   Прежние величины (доля 0,50 от кегля, подъём 0,06em, вся строка mono)
+   отменены решением 018 — их диагноз в комментарии ниже. Настоящая точка
+   по-прежнему невидима в разметке: слово копируется как «sys.baby». */
+/* СЛОВЕСНЫЙ ЗНАК 2.0 — «ДВЕ РЕЧИ» (13.08.2026, решение 018).
+   Вердикт основателя: иконка шикарна, знак в шапке «совсем не нравится».
 
-   Настоящая точка остаётся в разметке невидимой: слово копируется как
-   «sys.baby», а не как «sysbaby». Знак — оформление, а не подмена текста. */
-.sb-wm{display:inline-flex;align-items:center;white-space:nowrap}
-.sb-dot{display:inline-flex;align-items:center;position:relative;line-height:0;
-  margin:0 .24em 0 .06em;transform:translateY(-.06em)}
-.sb-dot svg{width:.5em;height:.5em;display:block;
+   Диагноз прежней версии: всё имя говорило голосом машины — mono, разрядка,
+   знак 6px с приподнятой серединой. На телефоне это читалось как
+   «sys ▫ baby»: три предмета вместо одного имени, и сильнейшая фигура
+   бренда работала мусорным квадратиком.
+
+   Решение: имя произносит тезис продукта собственным телом.
+   sys  — голос машины: тот же var(--mono) и тот же трекинг .12em, каким
+          на сайте говорят все машинные подписи (кикер, цены, метки дока);
+   baby — голос человека: гарнитура заголовков, вес 700, плотный набор;
+   знак — мост между ними, на месте точки домена, цветом акцента, у базовой
+          линии. 10px — минимум, на котором геометрия сцепки читается,
+          а не угадывается (6px прежней версии — не читалась).
+
+   РАЗМЕР ОБЕИХ РЕЧЕЙ ОДИН. Первая редакция давала sys 13px против baby
+   15.5px; основатель сказал, что разница «выглядит немножко не аккуратно»,
+   и был прав. Прибор (tools/wm-xh.mjs) померил высоту строчных на канве:
+   7px против 9px — baby выше на 29%. Две гарнитуры при этом имеют почти
+   одинаковое отношение x-height к кеглю, поэтому равный кегль = равная
+   оптическая высота: 15.5/15.5 → 9px против 9px.
+
+   И это не только опрятнее, это вернее по смыслу. Разница в кегле означала
+   бы, что baby важнее sys. Они равны: машина и человек — две половины
+   одного имени, ровно как «WE BUILD IT. YOU OWN IT.» — две равные части
+   одного предложения. Речи различаются гарнитурой, весом, цветом и
+   трекингом — всем, КРОМЕ размера.
+
+   Проверено съёмкой (tools/wm-lab.html) против V1 (вся строка display),
+   V3 (литеры из модуля знака — умерла на 17px: стенсильный разрез,
+   отличающий «a» от «o», меньше пикселя) и V5 (просто типографика);
+   на втором круге — против ужатого трекинга .08em (рвёт правило,
+   общее с кикером) и знака 11px без подъёма (садится тяжело).
+   Отвергнутые варианты и причины — kb/decisions, запись 018. */
+.sb-wm{display:inline-flex;align-items:baseline;white-space:nowrap}
+.sb-sys{font-family:var(--mono);font-size:15.5px;font-weight:500;letter-spacing:.12em;color:#c9c4bc;line-height:1}
+/* Слева 1px, справа 3px — не опечатка. Трекинг .12em добавляет ~1,9px
+   ПОСЛЕ последней «s», и симметричные поля дали бы оптически кривой зазор. */
+.sb-dot{display:inline-flex;line-height:0;position:relative;
+  margin:0 3px 0 1px;color:var(--accent);transform:translateY(-1px)}
+.sb-dot svg{width:10px;height:10px;display:block;
   animation:markIn .68s cubic-bezier(.2,.7,.2,1) both}
+.sb-baby{font-size:15.5px;font-weight:700;letter-spacing:.005em;color:var(--ink);line-height:1}
 .sb-vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @keyframes markIn{from{opacity:0;transform:translate3d(-8%,-8%,0) scale(.82)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.sb-dot svg{animation:none}}
@@ -259,11 +293,10 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
    Проверено съёмкой на 360 и 390: слово помещается целиком. */
 
 .tb-mark{
-  /* 0,12em — то же правило, что в ОС (core.css). Было 1,4px, то есть 0,117em
-     при 12px: величина совпадала случайно, а не по правилу. Теперь по правилу. */
-  font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.12em;white-space:nowrap;
-  /* Имя среды не мерцает. Авторитет — это неподвижность, а не блеск. */
-  color:var(--ink);
+  /* Кегль и трекинг переехали внутрь знака (.sb-sys / .sb-baby): у «двух
+     речей» они разные по построению. Обёртка держит только неподвижность.
+     Имя среды не мерцает. Авторитет — это неподвижность, а не блеск. */
+  white-space:nowrap;color:var(--ink);
 }
 .tb-sep{color:var(--muted);opacity:.5}
 .tb-app{font-size:12px;letter-spacing:.4px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:32vw}
@@ -1014,7 +1047,7 @@ html[data-anim="paused"] .dock-flare{display:none}
 <!-- top bar -->
 <header class="topbar" id="topbar">
   <div class="tb-left">
-    <span class="tb-mark sb-wm" aria-label="sys.baby">sys<span class="sb-dot"><span class="sb-vh">.</span><svg viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z"/></svg></span>baby</span>
+    <span class="tb-mark sb-wm" aria-label="sys.baby"><span class="sb-sys">sys</span><span class="sb-dot"><span class="sb-vh">.</span><svg viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M10.06 26.06a16 16 0 0 1 16-16h44v60h-60zM29.94 29.94h60v44a16 16 0 0 1-16 16h-44z"/></svg></span><span class="sb-baby">baby</span></span>
     <span class="tb-sep" id="tbSep">|</span>
     <span class="tb-app" id="tbApp">Desktop</span>
   </div>
@@ -1876,7 +1909,7 @@ html[data-anim="paused"] .dock-flare{display:none}
     "staticStrings": {
       "documentTitle": "sys.baby — Building Automated Business for You",
       "wordmark": "sys\u200A.\u200Ababy",
-      "wordmarkNote": "Единственный ТЕКСТОВЫЙ источник имени (тосты, заголовки). Визуальный словесный знак в шапке строится иначе: sys + ЗНАК вместо точки + baby (.sb-wm в разметке), с невидимой настоящей точкой для копирования. Никогда не переводится.",
+      "wordmarkNote": "Единственный ТЕКСТОВЫЙ источник имени (тосты, заголовки). Визуальный словесный знак в шапке — «две речи»: sys голосом машины (mono, трекинг .12em), знак-мост цветом акцента на месте точки, baby голосом человека (жирный display). Невидимая настоящая точка сохраняет копирование как «sys.baby». Никогда не переводится.",
       "boot": {
         "barLabel": "STARTING SYSTEM",
         "footLeft": "KERNEL 4.2.1",

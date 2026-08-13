@@ -536,25 +536,30 @@ html.topbar-hidden.topbar-peek #topbar { transform: none; }
 
    Движение однократное. Логотип, пульсирующий вечно, — ровно тот дефект,
    который сегодня убран из шапки лендинга: он стоит кадра каждый кадр. */
-/* Знак больше не стоит рядом со словом отдельной иконкой — он стал точкой
-   ВНУТРИ слова, ровно как на лендинге. Одна фигура, один раз, один смысл.
-   Полное объяснение доли 0,50 и подъёма — в index.php, там же, где решение
-   принималось; здесь только то же правило, чтобы обе поверхности не разошлись. */
-.sb-wm { display: inline-flex; align-items: center; white-space: nowrap; }
+/* СЛОВЕСНЫЙ ЗНАК 2.0 — «ДВЕ РЕЧИ». Знак — точка ВНУТРИ слова, как на
+   лендинге: одна фигура, один раз, один смысл. Правило то же, что в
+   index.php (решение 018): sys — голос машины (mono, трекинг .12em),
+   baby — голос человека (display, 700), знак — мост цветом акцента у
+   базовой линии. РАЗМЕР ОБЕИХ РЕЧЕЙ ОДИН (15.5/15.5): разница в кегле
+   означала бы, что baby важнее sys, а они равны. Здесь только повтор
+   правила, чтобы поверхности не разошлись; полный диагноз, прибор
+   измерения строчных и лаборатория — в index.php. */
+.sb-wm { display: inline-flex; align-items: baseline; white-space: nowrap; }
+.sb-sys { font-family: var(--mono); font-size: 15.5px; font-weight: 500; letter-spacing: .12em; color: var(--ink-2); line-height: 1; }
+/* Слева 1px, справа 3px: трекинг .12em уже добавил ~1,9px после последней «s». */
 .sb-dot {
-  display: inline-flex; align-items: center; position: relative; line-height: 0;
-  margin: 0 .24em 0 .06em; transform: translateY(-.06em);
+  display: inline-flex; line-height: 0; position: relative;
+  margin: 0 3px 0 1px; color: var(--accent); transform: translateY(-1px);
 }
-.sb-dot svg { width: .5em; height: .5em; display: block; animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both; }
+.sb-dot svg { width: 10px; height: 10px; display: block; animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both; }
+.sb-baby { font-size: 15.5px; font-weight: 700; letter-spacing: .005em; color: var(--ink); line-height: 1; }
 .sb-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @keyframes markIn { from { opacity: 0; transform: translate3d(-8%, -8%, 0) scale(.82) } to { opacity: 1; transform: none } }
 @media (prefers-reduced-motion: reduce) { .sb-dot svg { animation: none } }
 html[data-motion="reduced"] .sb-dot svg { animation: none }
 .mark-word {
-  /* Трекинг словесного знака — 0,12em в интерфейсе на обеих поверхностях.
-     Одно правило: в мелком кегле шире, чем обычный текст, но вдвое уже, чем
-     в крупном (0,30em) — иначе в шапке слово рассыпается на буквы. */
-  font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: .12em;
+  /* Кегль и трекинг живут внутри знака (.sb-sys / .sb-baby): у «двух речей»
+     они разные по построению. Обёртка держит только неподвижность. */
   color: var(--ink); white-space: nowrap;
 }
 
@@ -1241,7 +1246,7 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
      Правило системы: словесный знак сжимается ДО СВОЕЙ ТОЧКИ, а не исчезает.
      Литеры уходят, фигура остаётся и вырастает до размера, который читается
      сама по себе. Это тот же объект, просто последний оставшийся масштаб. */
-  .sb-wm { font-size: 0; letter-spacing: 0; }
+  .sb-sys, .sb-baby { display: none; }
   .sb-dot { margin: 0; transform: none; }
   .sb-dot svg { width: 17px; height: 17px; }
 }
