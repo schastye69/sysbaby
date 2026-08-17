@@ -1013,7 +1013,12 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: 
   z-index: 55; display: flex; flex-direction: column; align-items: center; gap: 6px;
   transition: transform .3s var(--ease), opacity .3s ease;
 }
-html.dock-away #dock { transform: translate(-50%, 130%); opacity: 0; }
+/* Док не уходит за кромку — он затихает. То же решение, что на лендинге:
+   единственный вход в продукт не должен исчезать с экрана. Настройка в
+   Центре управления называется теперь «приглушать», и она не врёт. */
+html.dock-away #dock { transform: translate(-50%, 6px) scale(.965); opacity: .5; }
+html.dock-away #dock:hover, html.dock-away #dock:focus-within { transform: translate(-50%, 0); opacity: 1; }
+@media (prefers-reduced-motion: reduce) { html.dock-away #dock { transform: translate(-50%, 0); opacity: .55; } }
 .dock-shelf {
   display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px;
   border-radius: 22px; background: var(--glass); border: 1px solid var(--line);
