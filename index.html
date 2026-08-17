@@ -281,10 +281,20 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
 .keycap{font-family:var(--mono);font-size:9px;padding:1px 5px;border:1px solid var(--border);border-radius:5px;letter-spacing:.5px}
 /* Часы, статус Wi-Fi/батареи и переключатель темы убраны с витрины —
    их стили ушли вместе с ними. */
-.flags{display:flex;align-items:center;gap:2px}
-.flag{background:transparent;border:0;cursor:pointer;font-size:14px;line-height:1;padding:3px 4px;border-radius:6px;opacity:.38;transition:opacity .2s,transform .2s}
-.flag:hover{opacity:.85}
-.flag.is-active{opacity:1}
+.langs{display:flex;align-items:center;gap:2px}
+.lang{position:relative;background:transparent;border:0;cursor:pointer;padding:5px 7px 7px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;line-height:1;
+  color:var(--muted);border-radius:6px;transition:color .25s,background .25s}
+.lang:hover{color:var(--text);background:rgba(242,242,240,.05)}
+/* Свет под текущим языком — тот же уголёк, что раньше жил под доком.
+   Он переехал туда, где действительно что-то означает. */
+.lang::after{content:"";position:absolute;left:7px;right:7px;bottom:2px;height:1px;
+  background:var(--accent);opacity:0;transition:opacity .25s}
+.lang.is-active{color:var(--text)}
+.lang.is-active::after{opacity:1;box-shadow:0 0 8px var(--seam-glow)}
+/* Смена языка: код на мгновение уходит в глину и остывает в текст — тот же
+   закон, что у пульса инициалов и занавеса ОС. Неразрешённое — глина. */
+.lang.is-warm{color:var(--accent);transition:none}
 
 /* --- hero -------------------------------------------------------------- */
 .hero{
@@ -300,13 +310,37 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
   padding:74px 4vw 190px;pointer-events:none;
 }
 .hero-inner{width:min(1200px,92%);pointer-events:auto}
-/* Две колонки: слово слева, объект справа. Правая половина первого экрана
-   до этого была пустой — объект занимает её, а не теснит текст. */
-.hero-copy{min-width:0}
+/* Сетка первого экрана. Объект стоит справа ИМЕННО от блока «имя →
+   заголовок → лид → кнопки»: это одно предложение, и картинка отвечает
+   ему, а не всему столбцу текста. Всё, что ниже кнопок (полоса состояния,
+   заметки, доказательство), уходит под обе колонки во всю ширину —
+   иначе объект центрируется по случайной высоте и висит слишком низко.
+   На телефоне объект встаёт СПРАВА ОТ КНОПОК: решение основателя, и оно
+   верное — так первый экран телефона показывает и действие, и вещь. */
+.hero-inner{display:grid;min-width:0}
+.hero-head{grid-area:head} .hero-text{grid-area:text}
+.cta-row{grid-area:cta}    .hero-object{grid-area:obj}
+.hero-rest{grid-area:rest;min-width:0}
 @media (min-width:981px){
-  .hero-inner{width:min(1560px,94%);display:grid;
+  .hero-inner{width:min(1560px,94%);
     grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr);
-    align-items:center;gap:clamp(18px,3.2vw,54px)}
+    grid-template-areas:"head obj" "text obj" "cta obj" "rest rest";
+    align-items:start;column-gap:clamp(18px,3.2vw,54px)}
+  /* Объект вынут из потока высоты: иначе он, занимая три строки сетки,
+     растягивал их — и между заголовком и лидом появлялась дыра в 60 px.
+     Теперь ячейка не имеет собственной высоты, строки меряются текстом,
+     а картинка висит по центру блока и спокойно выходит за его края. */
+  .hero-object{align-self:stretch;position:relative;min-height:0}
+  /* Воздух под кнопками: объект висит по центру блока и выходит за его
+     нижний край — полоса состояния обязана начинаться ниже, иначе линейка
+     проходит сквозь постамент. Величину держит tools/hero-fit-check.mjs. */
+  .hero-rest{margin-top:34px}
+  .hero-object::before{top:50%;left:50%;translate:-50% -50%;width:min(22vw,320px)}
+}
+@media (max-width:980px){
+  .hero-inner{grid-template-columns:minmax(0,1fr) minmax(92px,37%);
+    grid-template-areas:"head head" "text text" "cta obj" "rest rest";
+    align-items:center;column-gap:12px}
 }
 .hero-object{position:relative;display:grid;place-items:center;pointer-events:none}
 /* Свечение живёт в CSS, а не в пикселях картинки: так оно тянется за фоном
@@ -315,13 +349,24 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
   background:radial-gradient(circle,rgba(255,122,61,.30),rgba(224,102,60,.10) 46%,transparent 72%);
   filter:blur(46px)}
 .hero-object picture{position:relative;display:block;width:min(33vw,460px)}
+/* Правило ниже стоит ПОСЛЕ базового намеренно: при равной специфичности
+   выигрывает последнее, а раньше базовое перебивало медиазапрос и объект
+   снова растягивал строки текста. Комментарий — чтобы это не «починили». */
+@media (min-width:981px){
+  .hero-object picture{position:absolute;top:50%;left:50%;translate:-50% -50%;
+    width:min(26vw,380px)}
+}
 /* Тень идёт по контуру альфы, а не по прямоугольнику: постамент стоит на
    странице, а не висит в пустоте. */
 .hero-object img{width:100%;height:auto;display:block;
   filter:drop-shadow(0 34px 60px rgba(0,0,0,.72)) drop-shadow(0 0 70px rgba(224,102,60,.16))}
 @media (max-width:980px){
-  .hero-object{order:-1;margin:0 0 6px}
-  .hero-object picture{width:min(52vw,230px)}
+  .hero-object{margin:0}
+  .hero-object picture{width:100%;max-width:230px}
+  .hero-object::before{width:96%}
+  /* кнопки в узкой колонке — только в столбик и в одну строку текста */
+  .cta-row{flex-direction:column;align-items:stretch;gap:10px}
+  .cta-row .btn{padding:0 16px;font-size:14.5px;height:50px;white-space:nowrap}
 }
 /* Надстрочник и заголовок — одной ширины. Заголовок переносится по месту,
    поэтому целью служит самая длинная СТРОКА, измеренная в браузере;
@@ -359,6 +404,13 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
 .panel-hours b{display:block;font-size:15px;font-weight:600;color:var(--text);margin:0 0 6px}
 .panel-hours span{display:block;font-family:var(--mono);font-size:11.5px;line-height:1.7;
   letter-spacing:.02em;color:var(--muted)}
+/* Живая строка: точка горит, когда человек на связи, и гаснет, когда нет. */
+.hours-now{display:flex;align-items:center;gap:8px;margin-top:9px;font-style:normal;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.02em;color:var(--muted)}
+.hours-now::before{content:"";width:7px;height:7px;border-radius:50%;flex:none;
+  background:rgba(160,160,168,.5)}
+.hours-now.is-open{color:var(--text)}
+.hours-now.is-open::before{background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),0 0 12px var(--accent)}
 /* The headline is set to its own longest word.
 
    Russian and Estonian carry words this design was not drawn around —
@@ -445,7 +497,9 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
 .dock{
   position:fixed;left:50%;bottom:22px;z-index:300;
   transform:translateX(-50%) translateY(140%);
-  display:flex;align-items:flex-end;gap:10px;padding:10px 14px;
+  /* центр по высоте: подписи под иконками есть не всегда (на узком экране
+     их нет), и выравнивание по нижнему краю оставляло плитки висеть */
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
   background:var(--glass);border:1px solid var(--border);border-radius:24px;
   backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);
   box-shadow:var(--shadow);
@@ -517,42 +571,9 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
 html[data-anim="paused"] .dock-item[data-app="order"] .tile::after{animation:none;opacity:.55;transform:none}
 .dock-item.bounce{animation:dockBounce .62s var(--ease)}
 @keyframes dockBounce{0%,100%{transform:translateY(0)}25%{transform:translateY(-16px)}50%{transform:translateY(0)}72%{transform:translateY(-7px)}}
-/* The dock hides itself, so the only thing left at the bottom edge is a pill.
-   A pill on its own is decoration — the visitor has no reason to read it as a
-   handle. So the first time the dock retracts, the pill names what it is
-   covering, once, and then gets out of the way for good. Hovering it brings
-   the word back, which keeps the hint available without it ever nagging. */
-/* Свет под дверью, калибровка по живому OLED. Первая версия была выверена
-   по скриншотам с десктопа и на настоящем телефоне давилась в чёрный —
-   стеклянная таблетка на чёрном не видна при дневном свете. Теперь это
-   уголёк: тёплая линия света и ореол над ней, на явных глиняных значениях,
-   а не на полупрозрачных производных. Свет — состояние живого; он честнее
-   любого текста говорит: за кромкой что-то есть, дом не выключен. Слово
-   «applications» по-прежнему произносится трижды и умолкает — свет
-   остаётся, потому что свет не ноет. bottom уважает жестовую зону. */
-.dock-hint{
-  position:fixed;left:50%;bottom:calc(6px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:299;
-  width:148px;height:3px;border-radius:999px;border:0;cursor:pointer;padding:0;
-  background:linear-gradient(90deg,transparent,var(--seam-line) 28%,var(--seam-line) 72%,transparent);
-  opacity:0;pointer-events:none;
-  transition:opacity .3s,width .34s var(--ease);
-}
-.dock-hint.is-shown{opacity:1;pointer-events:auto}
-.dock-hint::after{
-  content:"";position:absolute;inset:-20px -48px;border-radius:999px;pointer-events:none;
-  background:radial-gradient(64% 110% at 50% 100%,var(--seam-glow),transparent 74%);
-  opacity:0;transition:opacity .5s ease;
-}
-.dock-hint.is-shown::after{opacity:.8;animation:seamBreath 6s ease-in-out infinite alternate}
-@keyframes seamBreath{from{opacity:.55}to{opacity:.95}}
-/* Пальцу нужна дверная ручка крупнее, чем курсору: на грубом указателе сама
-   линия шире, а невидимая зона нажатия — с дверную щель. */
-@media (pointer:coarse){
-  .dock-hint{width:168px;height:3.5px}
-  .dock-hint::before{content:"";position:absolute;inset:-26px -40px}
-}
-@media (prefers-reduced-motion:reduce){.dock-hint.is-shown::after{animation:none;opacity:.7}}
-html[data-anim="paused"] .dock-hint.is-shown::after{animation:none;opacity:.7}
+/* Свет под дверью снят в v42 вместе с политикой: док больше не прячется,
+   и подсказывать нечего. Полоса у нижней кромки конкурировала с самим доком
+   и на телефоне читалась как индикатор жеста системы. */
 
 /* Сборка дока из точки касания. Иконки не выезжают строем — они разлетаются
    из-под пальца и оседают по своим местам: тот же закон, что у глифов
@@ -1097,10 +1118,15 @@ html[data-anim="paused"] .dock-flare{display:none}
       <span class="tb-btn-label" id="cmdkTriggerLabel">Quick actions</span>
       <span class="keycap">&#8984;K</span>
     </button>
-    <div class="flags" id="flags">
-      <button class="flag" data-lang="ee" aria-label="Eesti">&#127466;&#127466;</button>
-      <button class="flag is-active" data-lang="en" aria-label="English">&#127468;&#127463;</button>
-      <button class="flag" data-lang="ru" aria-label="Русский">&#127479;&#127482;</button>
+    <!-- Выбор языка. Флагов нет намеренно: флаг обозначает страну, а не язык,
+         и «британский флаг = английский» — ровно тот шаблон, которого в этом
+         проекте быть не должно. Здесь машинный голос: код языка моношириной
+         в капсе, а полное имя — на самом языке, в подсказке и для чтеца.
+         Текущий отмечен светом — тем же, что раньше горел под доком. -->
+    <div class="langs" id="langs" role="group" aria-label="Language">
+      <button class="lang" data-lang="ee" lang="et" title="eesti" aria-label="eesti">ET</button>
+      <button class="lang is-active" data-lang="en" lang="en" title="English" aria-label="English">EN</button>
+      <button class="lang" data-lang="ru" lang="ru" title="русский" aria-label="русский">RU</button>
     </div>
   </div>
 </header>
@@ -1109,7 +1135,6 @@ html[data-anim="paused"] .dock-flare{display:none}
 <!-- hero -->
 <main class="hero" id="hero">
   <div class="hero-inner">
-   <div class="hero-copy">
     <!-- Строка-имя. Машинный голос произносит расшифровку имени — B·A·B·Y
          проявляется яркостью инициалов, без «BABY =» и без пояснений:
          секрет предъявлен, но не разжёван. Правило иерархии: эта строка
@@ -1129,6 +1154,7 @@ html[data-anim="paused"] .dock-flare{display:none}
       <a class="btn btn-primary" href="#" id="ctaRequest"></a>
       <a class="btn" href="os/" id="ctaExplore"></a>
     </div>
+    <div class="hero-rest">
     <!-- Строка состояния: срок первого пакета, вся ценовая лестница,
          собственность. Значения приходят из источника, не из вёрстки. -->
     <div class="hero-spec reveal" id="heroSpec"></div>
@@ -1141,7 +1167,7 @@ html[data-anim="paused"] .dock-flare{display:none}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 12 5 5L20 6"/></svg>
       <span id="heroNoteText"></span>
     </p>
-   </div>
+    </div>
    <!-- ОБЪЕКТ. Единственный растр на странице, и он объявлен явно: это
         ИЗОБРАЖЕНИЕ знака, а не сам знак. Знак остаётся геометрией везде,
         где работает как личность: значок вкладки, слово в шапке, занавес
@@ -1165,7 +1191,6 @@ html[data-anim="paused"] .dock-flare{display:none}
 <nav class="dock" id="dock" aria-label="Applications"></nav>
 <!-- Слово над линией удалено: свет под дверью — единственная и достаточная
      подсказка. Кнопка несёт aria-label. -->
-<button class="dock-hint" id="dockHint" aria-label="Show dock"></button>
 
 <!-- toasts -->
 <div class="toasts" id="toasts" aria-live="polite"></div>
@@ -1216,7 +1241,7 @@ html[data-anim="paused"] .dock-flare{display:none}
         "hero_note": "No cost, no obligation — tell us what's slowing you down and we'll reply with honest options."
       },
       "ru": {
-        "hero_title": "СТРОИМ МЫ — ВЛАДЕЕТЕ ВЫ.",
+        "hero_title": "СТРОИМ МЫ. ВЛАДЕЕТЕ ВЫ.",
         "hero_text": "Мы создаём системы автоматизации, которые забирают рутину у вашей команды — оценка по письменному брифу, без долгосрочных контрактов.",
         "cta_request": "Бесплатная оценка проекта",
         "cta_explore": "Открыть sys.baby OS",
@@ -1224,7 +1249,7 @@ html[data-anim="paused"] .dock-flare{display:none}
         "hero_note": "Без оплаты и обязательств — расскажите, что тормозит вашу команду, и мы ответим честными вариантами."
       },
       "ee": {
-        "hero_title": "EHITAME MEIE — OMANIK OLETE TEIE.",
+        "hero_title": "EHITAME MEIE. OMANIK OLETE TEIE.",
         "hero_text": "Ehitame automatiseerimissüsteeme, mis võtavad korduva töö teie meeskonna käest — hindame lähteülesande põhjal, tarnime ilma pikaajalise lepinguta.",
         "cta_request": "Tasuta hinnapakkumine",
         "cta_explore": "Ava sys.baby OS",
@@ -1342,7 +1367,10 @@ html[data-anim="paused"] .dock-flare{display:none}
           ],
           "hours": {
             "line": "The system never closes.",
-            "note": "Human support · Mon–Thu 09:00–23:00 · Fri–Sat 09:00–00:00 · Sun 10:00–22:00 Tallinn time"
+            "note": "Human support · Mon–Thu 09:00–23:00 · Fri–Sat 09:00–00:00 · Sun 10:00–22:00 Tallinn time",
+            "now": "It's {TIME} in Tallinn right now",
+            "open": "support is online",
+            "closed": "outside support hours — write anyway, we answer first thing"
           }
         },
         "ru": {
@@ -1359,7 +1387,10 @@ html[data-anim="paused"] .dock-flare{display:none}
           ],
           "hours": {
             "line": "Система не закрывается никогда.",
-            "note": "Живая поддержка · Пн–Чт 09:00–23:00 · Пт–Сб 09:00–00:00 · Вс 10:00–22:00 по таллиннскому времени"
+            "note": "Живая поддержка · Пн–Чт 09:00–23:00 · Пт–Сб 09:00–00:00 · Вс 10:00–22:00 по таллиннскому времени",
+            "now": "Сейчас в Таллинне {TIME}",
+            "open": "поддержка на связи",
+            "closed": "вне часов поддержки — напишите, ответим с утра"
           }
         },
         "ee": {
@@ -1376,7 +1407,10 @@ html[data-anim="paused"] .dock-flare{display:none}
           ],
           "hours": {
             "line": "Süsteem ei lähe kunagi kinni.",
-            "note": "Inimtugi · E–N 09:00–23:00 · R–L 09:00–00:00 · P 10:00–22:00 Tallinna aja järgi"
+            "note": "Inimtugi · E–N 09:00–23:00 · R–L 09:00–00:00 · P 10:00–22:00 Tallinna aja järgi",
+            "now": "Praegu on Tallinnas kell {TIME}",
+            "open": "tugi on võrgus",
+            "closed": "väljaspool tugiaega — kirjutage, vastame hommikul"
           }
         }
       },
@@ -1958,11 +1992,6 @@ html[data-anim="paused"] .dock-flare{display:none}
         "foot": "Alustage ja lõpetage millal soovite. Miski siin pole tingimuseks sellele, et ehitatu kuulub teile."
       }
     },
-    "dockHintLabel": {
-      "en": "applications",
-      "ru": "приложения",
-      "ee": "rakendused"
-    },
     "cmdkEmptyLabel": {
       "en": "No matching commands",
       "ru": "Совпадений не найдено",
@@ -2038,14 +2067,57 @@ html[data-anim="paused"] .dock-flare{display:none}
           "roi": "ROI Calculator",
           "chat": "Message us",
           "order": "Order"
-        },
-        "dockHint": "Show dock"
+        }
       },
       "ccToggleTitles": {
         "sound": "Play a sound when a new chat reply arrives",
         "motion": "Calm down animations and background motion",
         "autohide": "Dim the dock when not in use — it never leaves the screen",
         "dnd": "Silence chat notifications for this visit"
+      },
+      "supportHours": {
+        "_note": "Часы живой поддержки в минутах от полуночи, время таллиннское. d — дни недели по getDay (0 = воскресенье). Отсюда берётся и подпись, и состояние «на связи»: два источника разошлись бы в первый же день.",
+        "zone": "Europe/Tallinn",
+        "spans": [
+          {
+            "d": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "f": 540,
+            "t": 1380
+          },
+          {
+            "d": [
+              5,
+              6
+            ],
+            "f": 540,
+            "t": 1440
+          },
+          {
+            "d": [
+              0
+            ],
+            "f": 600,
+            "t": 1320
+          }
+        ]
+      },
+      "langSwitch": {
+        "_note": "Флагов больше нет: флаг обозначает страну, а не язык, и в Эстонии этот выбор ещё и не нейтрален. Код языка — машинный голос проекта (моноширинный капс), имя языка — на самом языке: язык называет себя сам. Не переводится ни при каких обстоятельствах.",
+        "codes": {
+          "ee": "ET",
+          "en": "EN",
+          "ru": "RU"
+        },
+        "names": {
+          "ee": "eesti",
+          "en": "English",
+          "ru": "русский"
+        }
       }
     },
     "pricing": {
@@ -2313,8 +2385,13 @@ function setLang(lang) {
   APPS.forEach(function (app) { if (wins[app]) renderWindow(app); });
   APPS.forEach(function (app) { if (wins[app]) wins[app].titleEl.textContent = appCopy(app).title; });
   updateAppName();
-  Array.prototype.forEach.call(el("flags").children, function (btn) {
-    btn.classList.toggle("is-active", btn.getAttribute("data-lang") === lang);
+  Array.prototype.forEach.call(el("langs").children, function (btn) {
+    var on = btn.getAttribute("data-lang") === lang;
+    if (on && !btn.classList.contains("is-active") && !motionOff()) {
+      btn.classList.add("is-warm");
+      setTimeout(function () { btn.classList.remove("is-warm"); }, 60);
+    }
+    btn.classList.toggle("is-active", on);
   });
   if (state.palette.open) renderPalette();
 }
@@ -2625,7 +2702,6 @@ window.sbNamePulse = runNamePulse;
 var hideTimer = null;
 function revealDock() {
   el("dock").classList.remove("is-resting");
-  el("dockHint").classList.remove("is-shown");
 }
 /* (Re)start the 2.8s hide countdown. With the toggle off the dock just stays
    visible — this must never call showDock(), which arms the timer again. */
@@ -2635,7 +2711,6 @@ function armAutoHide() {
   if (!state.prefs.autohide) { revealDock(); return; }
   hideTimer = setTimeout(function () {
     el("dock").classList.add("is-resting");
-    el("dockHint").classList.add("is-shown");
   }, 2800);
 }
 /* Разлёт иконок при открытии двери. Точка происхождения — место касания:
@@ -2745,21 +2820,15 @@ function assembleDock(originX) {
     dock.classList.remove("m-wave");
   }, cleanupMs);
 }
-/* Первое касание — только дверь. Обнаружено оснасткой: тап, открывающий
-   док, доносился до плитки, взлетевшей под палец, и случайно открывал её
-   приложение. Для касаний ставится краткий щит: клики по доку в первые
-   380 мс после открытия из скрытого состояния гасятся. Мышь не трогаем —
-   у неё наведение открывает док задолго до клика. */
-var dockRevealGuard = 0;
+/* v42: щита первого касания больше нет. Он существовал, потому что док
+   выезжал из-за кромки под палец и первый тап случайно попадал в взлетевшую
+   плитку. Док больше не прячется — гасить первый тап теперь означает просто
+   терять клиента, который дотронулся до иконки. */
 function showDock(ev) {
-  if (el("dock").classList.contains("is-resting")) {
-    var x;
-    var touched = false;
-    if (ev && ev.touches && ev.touches[0]) { x = ev.touches[0].clientX; touched = true; }
-    else if (ev && typeof ev.clientX === "number") { x = ev.clientX; touched = (ev.pointerType === "touch"); }
-    if (touched) dockRevealGuard = performance.now();
-    assembleDock(x);
-  }
+  var x;
+  if (ev && ev.touches && ev.touches[0]) x = ev.touches[0].clientX;
+  else if (ev && typeof ev.clientX === "number") x = ev.clientX;
+  if (el("dock").classList.contains("is-resting")) assembleDock(x);
   revealDock();
   armAutoHide();
 }
@@ -3195,6 +3264,56 @@ function careHtml() {
   "</section>";
 }
 
+/* Живые часы Таллинна в контактах.
+   Смысл не в украшении: страница заявляет «система не закрывается никогда»,
+   и тут же честно показывает, работает ли сейчас ЧЕЛОВЕК. Состояние и время
+   считаются из одного источника — staticStrings.supportHours, — потому что
+   два источника разошлись бы в первый же переход на летнее время.
+   Часовой пояс берётся у Intl, а не арифметикой от UTC: DST — не наша забота.
+   Охраняется tools/support-hours-check.mjs. */
+function tallinnNow() {
+  var conf = S.supportHours, zone = (conf && conf.zone) || "Europe/Tallinn";
+  var parts;
+  try {
+    parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: zone, weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false
+    }).formatToParts(new Date());
+  } catch (e) { return null; }          /* нет Intl — строки просто не будет */
+  var got = {};
+  parts.forEach(function (p) { got[p.type] = p.value; });
+  var days = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  var h = parseInt(got.hour, 10), m = parseInt(got.minute, 10);
+  if (h === 24) h = 0;                  /* некоторые движки отдают 24:00 */
+  return { day: days[got.weekday], mins: h * 60 + m,
+           text: (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m };
+}
+function supportIsOpen(now) {
+  var conf = S.supportHours;
+  if (!conf || !conf.spans || !now) return null;
+  for (var i = 0; i < conf.spans.length; i++) {
+    var s = conf.spans[i];
+    if (s.d.indexOf(now.day) !== -1 && now.mins >= s.f && now.mins < s.t) return true;
+  }
+  return false;
+}
+var hoursTimer = null;
+function paintHoursClock() {
+  var node = el("hoursNow");
+  if (!node) { clearInterval(hoursTimer); hoursTimer = null; return; }
+  var copy = appCopy("contact");
+  var now = tallinnNow();
+  if (!now || !copy.hours || !copy.hours.now) { node.textContent = ""; return; }
+  var open = supportIsOpen(now);
+  var tail = open === null ? "" : " · " + (open ? copy.hours.open : copy.hours.closed);
+  node.textContent = copy.hours.now.replace("{TIME}", now.text) + tail;
+  node.className = "hours-now" + (open ? " is-open" : "");
+}
+function startHoursClock() {
+  clearInterval(hoursTimer);
+  paintHoursClock();
+  hoursTimer = setInterval(paintHoursClock, 20000);
+}
+
 function renderSimple(record, app) {
   var copy = appCopy(app);
   var html = "<h3>" + copy.title + "</h3><p>" + copy.intro + "</p>";
@@ -3208,13 +3327,15 @@ function renderSimple(record, app) {
      а не спрятана. Блок рисуется только если он есть в контенте. */
   if (copy.hours && copy.hours.line) {
     html += '<div class="panel-hours"><b>' + esc(copy.hours.line) + "</b>" +
-      "<span>" + esc(copy.hours.note) + "</span></div>";
+      "<span>" + esc(copy.hours.note) + "</span>" +
+      '<i class="hours-now" id="hoursNow"></i></div>';
   }
   /* Only under About: it is a statement about how the studio works, so it
      belongs with the rest of that, not floating on its own. */
   if (app === "about") html += attentionHtml();
   setHtml(record.body, html);
   if (app === "about") wireAttention(record.body);
+  if (copy.hours && copy.hours.line) startHoursClock();
 }
 
 /* Cases: generated from the portfolio safe views (spec §11). */
@@ -4017,7 +4138,7 @@ function wireChrome() {
     else if (ev.key === "Enter") { ev.preventDefault(); runPaletteItem(); }
   });
 
-  Array.prototype.forEach.call(el("flags").children, function (button) {
+  Array.prototype.forEach.call(el("langs").children, function (button) {
     button.addEventListener("click", function () { setLang(button.getAttribute("data-lang")); });
   });
 
@@ -4050,21 +4171,15 @@ function wireChrome() {
 
   /* click on empty desktop unfocuses every window */
   document.addEventListener("pointerdown", function (ev) {
-    if (ev.target.closest(".win, .dock, .topbar, .palette, .cc, .toasts, .dock-hint")) return;
+    if (ev.target.closest(".win, .dock, .topbar, .palette, .cc, .toasts")) return;
     blurWindows();
   });
 
   /* dock behaviours */
   var dock = el("dock");
-  dock.addEventListener("click", function (e) {
-    if (performance.now() - dockRevealGuard < 380) { e.stopPropagation(); e.preventDefault(); }
-  }, true);
   dock.addEventListener("pointermove", function (ev) { dockMagnify(ev); armAutoHide(); });
   dock.addEventListener("pointerleave", dockMagnifyReset);
   dock.addEventListener("pointerdown", function () { armAutoHide(); });
-  el("dockHint").addEventListener("mouseenter", showDock);
-  el("dockHint").addEventListener("click", showDock);
-  el("dockHint").addEventListener("touchstart", showDock, { passive: true });
   window.addEventListener("pointermove", function (ev) {
     if (ev.clientY >= window.innerHeight - 130) showDock(ev);
   });
