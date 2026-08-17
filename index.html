@@ -33,13 +33,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v43">
+<meta name="sysbaby-build" content="v44">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v43">
+<link rel="stylesheet" href="shared/system.css?b=v44">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -58,8 +58,8 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v43"></script>
-<script src="shared/pricing.data.js?b=v43"></script>
+<script src="shared/portfolio.data.js?b=v44"></script>
+<script src="shared/pricing.data.js?b=v44"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -342,6 +342,15 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
     grid-template-areas:"head head" "text text" "cta obj" "rest rest";
     align-items:center;column-gap:12px}
 }
+/* На самых узких экранах объект уступает подписи. Эстонская и финская
+   подписи клавиш — 20–21 знак, и при объекте в 37% их кегль падал к самому
+   полу (11px, tools/cta-check.mjs) с запасом меньше трёх пикселей до
+   красного. Объект остаётся справа от кнопок — решение основателя в силе, —
+   но отдаёт паре четыре процента ширины. Правило стоит ПОСЛЕ блока 980px
+   и потому выигрывает при равной специфичности. */
+@media (max-width:400px){
+  .hero-inner{grid-template-columns:minmax(0,1fr) minmax(88px,33%)}
+}
 .hero-object{position:relative;display:grid;place-items:center;pointer-events:none}
 /* Свечение живёт в CSS, а не в пикселях картинки: так оно тянется за фоном
    комнаты и не темнеет вместе с растром на других экранах. */
@@ -364,9 +373,9 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
   .hero-object{margin:0}
   .hero-object picture{width:100%;max-width:230px}
   .hero-object::before{width:96%}
-  /* кнопки в узкой колонке — только в столбик и в одну строку текста */
-  .cta-row{flex-direction:column;align-items:stretch;gap:10px}
-  .cta-row .btn{padding:0 16px;font-size:14.5px;height:50px;white-space:nowrap}
+  /* Пульт в узкой колонке — в столбик (раскладка задана в базе .cta-row):
+     обе клавиши во всю ширину колонки, равенство даёт сама сетка. */
+  .cta-row .btn{height:50px;padding:0 12px}
 }
 /* Надстрочник и заголовок — одной ширины. Заголовок переносится по месту,
    поэтому целью служит самая длинная СТРОКА, измеренная в браузере;
@@ -467,16 +476,57 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
    лестница из SB_PRICING, единственного источника. */
 .hero-price{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;color:var(--muted);margin:0 0 14px;font-variant-numeric:tabular-nums}
 .hero p.hero-text{font-size:19px;line-height:1.55;color:var(--muted);max-width:720px;margin:0 0 30px}
-.cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px}
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;
-  border-radius:999px;padding:15px 26px;font-size:14px;font-weight:600;
-  border:1px solid var(--border);text-decoration:none;cursor:pointer;
-  background:var(--glass);color:var(--text);
-  transition:transform .3s var(--ease),background .3s,border-color .3s,box-shadow .3s;
+/* ── пара командных клавиш ──────────────────────────────────────────────
+   РЕШЕНИЕ ОСНОВАТЕЛЯ (17.08.2026): кнопки одинакового размера на всех
+   языках, особое внимание — русской подписи, самой длинной из четырёх.
+   ПРИНЦИП: размер клавиши задаёт МАКЕТ, а не подпись. Пока ширину диктовал
+   текст, каждый язык двигал кнопки по-своему — тот же класс дефекта, что
+   надстрочник/заголовок до fitHeroName(). Теперь пара — сетка из двух
+   равных колонок: две команды одного пульта. Подпись, которой тесно,
+   не расталкивает клавишу и не переносится — пара сжимает кегль ОБЕИМИ
+   клавишами сразу, считает fitCtaRow(). Это не две пилюли из веба, а две
+   клавиши системы: радиус 14px — радиус плитки дока, материал — стекло
+   плитки, отклик — свечение кромки, как у активной плитки, и ход клавиши
+   вниз при нажатии. Охраняется tools/cta-check.mjs. */
+/* Каскад: базовое правило — телефонный столбик, десктопные две колонки
+   приходят медиазапросом НИЖЕ. Это правило стоит в файле ПОЗЖЕ мобильного
+   блока (строка ~363), поэтому объявлять раскладку в базе нельзя — при
+   равной специфичности она перебила бы мобильную. Прецедент уже был:
+   .hero-object picture, см. комментарий там. */
+.cta-row{display:grid;grid-template-columns:1fr;gap:10px;
+  max-width:none;margin-bottom:16px;--cta-fs:14px}
+@media (min-width:981px){
+  .cta-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:560px}
 }
-.btn:hover{transform:translateY(-2px);border-color:var(--accent-soft);box-shadow:0 10px 30px rgba(0,0,0,.28)}
+.btn{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  /* min-width:0 обязателен: клавиша — grid-элемент, и его автоматический
+     минимум (min-content) позволял подписи РАСТАЛКИВАТЬ клавишу шире
+     колонки — русская клавиша выходила 249px при дорожке 188px, и подгон
+     кегля мерил раздутую клавишу вместо дорожки. Пойман законом. */
+  min-width:0;
+  border-radius:14px;height:54px;padding:0 18px;
+  font-size:var(--cta-fs,14px);font-weight:600;letter-spacing:.01em;white-space:nowrap;
+  border:1px solid var(--border);text-decoration:none;cursor:pointer;
+  background-color:var(--glass);
+  background-image:linear-gradient(150deg,rgba(255,255,255,.10),rgba(255,255,255,.02));
+  color:var(--text);
+  transition:border-color .3s,background-color .3s,box-shadow .3s,transform .18s var(--ease);
+}
+.btn:hover{border-color:var(--accent-soft);box-shadow:0 0 0 1px var(--accent-soft),0 0 26px var(--accent-soft)}
+.btn:active{transform:scale(.985)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Подпись не сжимается: её измеренная ширина — истина для fitCtaRow() и
+   закона. min-width:0 здесь однажды стоял и ломал измерение: флекс ужимал
+   узел подписи, и подгон мерил сжатую коробку вместо текста. */
+.btn .btn-label{flex:none}
 .btn-primary{background:var(--btn-bg);color:var(--btn-fg);border-color:transparent}
+.btn-primary:hover{box-shadow:0 0 0 1px var(--accent-soft),0 10px 30px rgba(0,0,0,.28)}
+/* Точка на клавише ОС — то же утверждение, что в контактах: система не
+   закрывается никогда. Тот же глиф, что в живой строке часов поддержки:
+   клавиша ведёт не на страницу о продукте, а в работающую ОС. */
+.btn .btn-live{width:7px;height:7px;border-radius:50%;flex:none;background:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-soft),0 0 12px var(--accent)}
 .hero .explore-note,.hero .hero-note{font-size:12.5px;color:var(--muted);max-width:640px;line-height:1.6;margin:0 0 12px}
 .hero .hero-note{display:flex;align-items:flex-start;gap:7px;margin-top:14px}
 .hero .hero-note svg{width:13px;height:13px;flex:none;margin-top:2px;color:var(--accent)}
@@ -1272,7 +1322,7 @@ html[data-anim="paused"] .dock-flare{display:none}
       "ru": {
         "hero_title": "СТРОИМ МЫ. ВЛАДЕЕТЕ ВЫ.",
         "hero_text": "Мы создаём системы автоматизации, которые забирают рутину у вашей команды — оценка по письменному брифу, без долгосрочных контрактов.",
-        "cta_request": "Бесплатная оценка проекта",
+        "cta_request": "Бесплатная оценка",
         "cta_explore": "Открыть sys.baby OS",
         "explore_note": "Не скриншоты — работающая среда, и настоящая клиентская система внутри открывается и работает. Всё, что вы там напишете, остаётся в вашем браузере.",
         "hero_note": "Без оплаты и обязательств — расскажите, что тормозит вашу команду, и мы ответим честными вариантами."
@@ -2734,15 +2784,57 @@ function measureHeroFit() {
   host.style.setProperty("--hero-fit", fit + "px");
 }
 
+/* Пара командных клавиш: ширину держит макет, кегль подбирается измерением —
+   тот же подход, что fitHeroName(). Подписи четырёх языков разной длины,
+   а клавиши обязаны быть одного размера на всех языках: если подписи тесно,
+   пара сжимает кегль ОБЕИМИ клавишами сразу — пульт говорит одним
+   размером, — но не ниже пола в 11px. Русская подпись здесь однажды была
+   «Бесплатная оценка проекта» и не входила в клавишу телефона даже полом
+   кегля — Совет сократил её, а не вёрстку: см. ответ основателю от
+   17.08.2026. Охраняется tools/cta-check.mjs. */
+function fitCtaRow() {
+  var row = document.querySelector(".cta-row");
+  if (!row) return;
+  var keys = [el("ctaRequest"), el("ctaExplore")];
+  if (!keys[0] || !keys[1] || !keys[0].querySelector(".btn-label")) return;
+  var BASE = 14, FLOOR = 11, GUARD = 2;
+  row.style.setProperty("--cta-fs", BASE + "px");
+  var scale = 1;
+  keys.forEach(function (b) {
+    var lb = b.querySelector(".btn-label");
+    var cs = getComputedStyle(b);
+    var room = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - GUARD;
+    /* Соседи подписи в клавише (точка и зазор) место не отдают. */
+    var dot = b.querySelector(".btn-live");
+    if (dot) room -= dot.getBoundingClientRect().width + (parseFloat(cs.columnGap) || 9);
+    /* Ширина берётся у ТЕКСТА (Range), а не у коробки узла: коробку CSS
+       может ужать, и подгон стал бы мерить сжатие вместо подписи —
+       этот дефект уже случался и пойман законом. */
+    var rng = document.createRange();
+    rng.selectNodeContents(lb);
+    var need = 0, rects = rng.getClientRects();
+    for (var i = 0; i < rects.length; i++) need += rects[i].width;
+    if (need > 0 && room > 0) scale = Math.min(scale, room / need);
+  });
+  if (scale < 1) {
+    row.style.setProperty("--cta-fs",
+      Math.max(FLOOR, Math.floor(BASE * scale * 2) / 2) + "px");
+  }
+}
+
 function renderHero() {
   var t = C.translations[state.lang];
   setHtml(el("heroTitle"), heroTitleHtml(state.lang));
   applyHeroMeasure(C.translations[state.lang].hero_title);
   setHtml(el("heroText"), t.hero_text);
-  el("ctaRequest").textContent = t.cta_request;
-  el("ctaExplore").textContent = t.cta_explore;
+  /* Подпись живёт в .btn-label — по ней меряет fitCtaRow() и закон.
+     На клавише ОС перед подписью — живая точка (система не закрывается). */
+  setHtml(el("ctaRequest"), '<span class="btn-label">' + esc(t.cta_request) + "</span>");
+  setHtml(el("ctaExplore"),
+    '<i class="btn-live" aria-hidden="true"></i><span class="btn-label">' + esc(t.cta_explore) + "</span>");
   renderHeroSpec();
   fitHeroName();
+  fitCtaRow();
   setHtml(el("exploreNote"), t.explore_note);
   setHtml(el("heroNoteText"), t.hero_note);
 }
@@ -4502,10 +4594,14 @@ function wireResize() {
   window.addEventListener("resize", function () {
     measureHeroFit();
     fitHeroName();
+    fitCtaRow();
   });
   /* Метрики системного шрифта приходят позже первой отрисовки: без этого
-     строка-имя подгоняется под ещё не тот заголовок. */
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHeroName);
+     строка-имя подгоняется под ещё не тот заголовок, а кегль клавиш —
+     под ещё не те подписи. */
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () { fitHeroName(); fitCtaRow(); });
+  }
 }
 
 /* ------------------------------------------------------------------ init */
