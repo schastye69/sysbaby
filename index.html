@@ -33,13 +33,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v42">
+<meta name="sysbaby-build" content="v43">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v42">
+<link rel="stylesheet" href="shared/system.css?b=v43">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -58,8 +58,8 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v42"></script>
-<script src="shared/pricing.data.js?b=v42"></script>
+<script src="shared/portfolio.data.js?b=v43"></script>
+<script src="shared/pricing.data.js?b=v43"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -513,11 +513,30 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
    оседает и остаётся нажимаемым. Свет под дверью остаётся рядом, но уже как
    спутник, а не как единственный след. Тот же закон, что в контактах:
    система не закрывается никогда. */
-.dock.is-resting{transform:translateX(-50%) translateY(6px) scale(.965);opacity:.5}
-.dock.is-resting .lbl{opacity:.55}
-.dock.is-resting:hover,.dock.is-resting:focus-within{transform:translateX(-50%);opacity:1}
+/* ДИАГНОЗ ОСНОВАТЕЛЯ: в покое док смешивался с текстом под ним.
+   Причина не в цвете, а в приёме: прозрачность ставилась НА ЭЛЕМЕНТ, а
+   opacity гасит и результат backdrop-filter — размытая подложка становится
+   полупрозрачной, и сквозь стекло проступают настоящие буквы страницы.
+   Стекло переставало быть стеклом.
+   РЕШЕНИЕ: поверхность не гаснет никогда. Гаснет только то, что на ней
+   лежит. В покое стекло становится ПЛОТНЕЕ (текст под ним превращается в
+   размытие, а не в читаемую строку), плитки притухают, подписи уходят почти
+   в ноль. Пробуждение возвращает яркость содержимого, а не появление
+   поверхности. Это поведение системной панели, а не всплывающего меню. */
+.dock.is-resting{transform:translateX(-50%) translateY(5px) scale(.975);
+  background:rgba(16,13,12,.74);border-color:rgba(242,242,240,.055);
+  box-shadow:0 14px 40px rgba(0,0,0,.5)}
+/* Гасим ДЕТЕЙ плитки, а не саму плитку: на .dock-item висит inline-opacity
+   от анимации сборки дока, и правило из таблицы стилей её не перебьёт.
+   Прибор это и поймал — закон меряет то, что видно, а не то, что написано. */
+.dock.is-resting .tile{opacity:.5}
+.dock.is-resting .lbl{opacity:.25}
+.dock.is-resting:hover,.dock.is-resting:focus-within{transform:translateX(-50%);
+  background:var(--glass);border-color:var(--border);box-shadow:var(--shadow)}
+.dock.is-resting:hover .tile,.dock.is-resting:focus-within .tile{opacity:1}
 .dock.is-resting:hover .lbl,.dock.is-resting:focus-within .lbl{opacity:1}
-@media (prefers-reduced-motion:reduce){.dock.is-resting{transform:translateX(-50%);opacity:.55}}
+.dock-item .tile,.dock-item .lbl{transition:opacity .3s var(--ease)}
+@media (prefers-reduced-motion:reduce){.dock.is-resting{transform:translateX(-50%)}}
 .dock-item{
   position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;
   background:transparent;border:0;cursor:pointer;padding:0;
@@ -1056,6 +1075,15 @@ html[data-anim="paused"] .dock-flare{display:none}
   .hero{padding:54px 5vw 92px}
 }
 </style>
+<!-- hreflang: четыре языковые версии одного адреса. Google не считает
+     переведённые страницы дублями, а сам атрибут не влияет на ранжирование —
+     он лишь показывает нужную версию нужному человеку. Параметр ?lang=
+     совпадает с тем, что читает скрипт при загрузке. -->
+<link rel="alternate" hreflang="et" href="https://sys.baby/?lang=ee">
+<link rel="alternate" hreflang="en" href="https://sys.baby/?lang=en">
+<link rel="alternate" hreflang="ru" href="https://sys.baby/?lang=ru">
+<link rel="alternate" hreflang="fi" href="https://sys.baby/?lang=fi">
+<link rel="alternate" hreflang="x-default" href="https://sys.baby/">
 </head>
 <body>
 
@@ -1127,6 +1155,7 @@ html[data-anim="paused"] .dock-flare{display:none}
       <button class="lang" data-lang="ee" lang="et" title="eesti" aria-label="eesti">ET</button>
       <button class="lang is-active" data-lang="en" lang="en" title="English" aria-label="English">EN</button>
       <button class="lang" data-lang="ru" lang="ru" title="русский" aria-label="русский">RU</button>
+      <button class="lang" data-lang="fi" lang="fi" title="suomi" aria-label="suomi">FI</button>
     </div>
   </div>
 </header>
@@ -1255,17 +1284,27 @@ html[data-anim="paused"] .dock-flare{display:none}
         "cta_explore": "Ava sys.baby OS",
         "explore_note": "Mitte ekraanipildid — töötav töölaud, kus päris kliendisüsteem avaneb ja töötab. Kõik, mida te seal kirjutate, jääb teie brauserisse.",
         "hero_note": "Tasuta ja siduma kohustusteta — kirjuta, mis teie tööd aeglustab, ja vastame ausate valikutega."
+      },
+      "fi": {
+        "hero_title": "ME RAKENNAMME. TE OMISTATTE.",
+        "hero_text": "Rakennamme automaatiojärjestelmiä, jotka siirtävät toistuvan työn pois tiimin harteilta — laajuus kirjallisen tehtävänannon pohjalta, ilman pitkiä sopimuksia.",
+        "cta_request": "Pyydä maksuton arvio",
+        "cta_explore": "Avaa sys.baby OS",
+        "explore_note": "Ei kuvakaappauksia — toimiva työpöytä, jossa oikea asiakasjärjestelmä on auki ja käytettävissä. Kaikki, mitä siellä kirjoitatte, jää selaimeenne.",
+        "hero_note": "Maksutta ja sitoumuksetta — kertokaa, mikä hidastaa työtänne, niin vastaamme rehellisillä vaihtoehdoilla."
       }
     },
     "desktopLabel": {
       "en": "Desktop",
       "ru": "Рабочий стол",
-      "ee": "Töölaud"
+      "ee": "Töölaud",
+      "fi": "Työpöytä"
     },
     "localeMap": {
       "en": "en-GB",
       "ru": "ru-RU",
-      "ee": "et-EE"
+      "ee": "et-EE",
+      "fi": "fi-FI"
     },
     "appData": {
       "services": {
@@ -1310,6 +1349,20 @@ html[data-anim="paused"] .dock-flare{display:none}
             "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Ava ja kasuta — see töötab →<\/a>",
             "Ehitame teadlikult igavatele alustele: palju olulisem kui see, millega süsteem on kirjutatud, on see, kas ta töötab ka viie aasta pärast ja kas tavaline arendaja saab selle korda teha, kui midagi ümberringi ilma hoiatuseta muutub."
           ]
+        },
+        "fi": {
+          "label": "Palvelut",
+          "title": "Mitä rakennamme",
+          "intro": "Suurin osa työstämme alkaa jostain näistä.",
+          "items": [
+            "Maanantaina pyydetty tarjous ei ole vieläkään lähtenyt keskiviikkona, koska se kootaan joka kerta käsin uudelleen.",
+            "Ajanvaraukset ovat vihkossa, kahdessa viestisovelluksessa ja yhden ihmisen muistissa — ja vain hän löytää mitään.",
+            "Samat luvut naputellaan kolmeen paikkaan, ja kolmas on aina väärin.",
+            "Perjantai-ilta menee täsmäyttäessä lähetteitä, jotka saapuivat valokuvina, PDF-tiedostoina ja viesteinä.",
+            "Jos jokin näistä on teidän viikkonne, sen kokoisesta asiasta aloitamme: yksi prosessi, dokumentoituna, teidän omaksenne kun se on valmis. Rehellisin vastaus ei silti ole lista — se on itse työ.",
+            "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Avaa se ja käytä — se on käynnissä →<\/a>",
+            "Rakennamme tarkoituksella tylsälle perustalle: sillä, millä järjestelmä on kirjoitettu, on paljon vähemmän merkitystä kuin sillä, toimiiko se yhä viiden vuoden päästä ja pystyykö tavallinen kehittäjä korjaamaan sen, kun jokin ympärillä muuttuu varoittamatta."
+          ]
         }
       },
       "cases": {
@@ -1330,6 +1383,12 @@ html[data-anim="paused"] .dock-flare{display:none}
           "title": "Valitud tööd",
           "intro": "Oleme pühendunud stuudio ja klienditöö on vaikimisi konfidentsiaalne. Allpool on see, mille oleme ehitanud, iga kliendi lubatud ulatuses.",
           "items": []
+        },
+        "fi": {
+          "label": "Työt",
+          "title": "Valittuja töitä",
+          "intro": "Olemme käytännön studio, ja asiakastyö pysyy oletuksena luottamuksellisena. Alla on se, mitä olemme rakentaneet — sillä tarkkuudella kuin kukin asiakas sallii.",
+          "items": []
         }
       },
       "about": {
@@ -1349,6 +1408,12 @@ html[data-anim="paused"] .dock-flare{display:none}
           "label": "Meist",
           "title": "sys.baby'st",
           "intro": "sys.baby on süsteemistuudio, mida veab üks inimene: Juri Vinogradski. Tema vastutab tulemuse eest esimesest vestlusest viimase juurutuseni — te ei pea koordineerima meeskonda, haldama alltöövõtjaid ega selgitama sama asja kliendihaldurile. Püsivat koosseisu ei ole ja see on valik, mitte puudujääk: projekt saab need inimesed, keda ta tegelikult vajab, mitte need, kes parasjagu vabad on. Kui töö on suurem kui üks inimene, kaasame partnereid, kellega oleme varem koostööd teinud — nimetame nad teile ette, enne töö algust — ja vastutus tulemuse eest ei jagune.<\/p><p>Töötame peamiselt väikeste ja keskmise suurusega ettevõtetega, kes tunnetavad korduva käsitsitöö koormust, kuid pole seda kunagi ausalt hinnatud või hinnastatud saanud. Just seda lõhet püüame katta: päris inseneritöö, seletatud lihtsas keeles, algushinnaga, mis ei nõua juhatuse otsust.<\/p><p>Päris inseneritöö tähendab meie jaoks ka seda, mis enamikust pakkumistest välja jääb: kas süsteem on arusaadav sellele, kes selle kolme aasta pärast avab. Dokumentatsioon, lihtne arhitektuur ja korralik üleandmine ei ole eraldi read arvel — need on vahe vara ja sõltuvuse vahel.<\/p><p>Igasugune koostöö algab vestlusest, mitte lepingust — hindame tegelikku probleemi lähteülesande põhjal, enne kui midagi tõotame. Asume Tallinnas. Töötame eesti, vene ja inglise keeles.",
+          "items": null
+        },
+        "fi": {
+          "label": "Meistä",
+          "title": "Tietoa sys.babysta",
+          "intro": "sys.baby on järjestelmästudio, jota pyörittää yksi ihminen: Juri Vinogradski. Hän vastaa tuloksestanne ensimmäisestä keskustelusta viimeiseen käyttöönottoon — teidän ei tarvitse koordinoida tiimiä, hallita alihankkijoita eikä selittää asiaanne kahdesti asiakkuuspäällikölle. Vakituista henkilöstöä ei ole, ja se on tarkoituksellista: projekti saa ne ihmiset, joita se oikeasti tarvitsee, eikä niitä, jotka sattuvat olemaan vapaana. Kun työ on yhtä ihmistä suurempi, mukaan tulee aiemmin tuttuja alihankkijoita — nimeltä kerrottuna teille ennen työn alkua — eikä vastuuta tuloksesta koskaan jaeta.<\/p><p>Työskentelemme enimmäkseen pienten ja keskisuurten yritysten kanssa, jotka tuntevat käsityön ja toiston painon mutta joille sitä ei ole koskaan rehellisesti mitattu eikä hinnoiteltu. Sen aukon yritämme sulkea: oikeaa insinöörityötä, selitettynä tavallisin sanoin, aloitushinnalla joka ei vaadi hallituksen päätöstä.<\/p><p>Oikeaan insinöörityöhön kuuluu meillä se osa, jonka useimmat tarjoukset jättävät pois: onko järjestelmä yhä ymmärrettävä sille, joka avaa sen kolmen vuoden päästä. Dokumentaatio, yksinkertainen arkkitehtuuri ja siisti luovutus eivät ole lisärivejä laskulla — ne ovat ero omaisuuden ja riippuvuuden välillä.<\/p><p>Jokainen suhde alkaa keskustelusta, ei sopimuksesta — määrittelemme todellisen ongelman tehtävänannostanne ennen kuin lupaamme mitään. Kotipaikka Tallinna. Palvelemme englanniksi, viroksi ja venäjäksi.",
           "items": null
         }
       },
@@ -1411,6 +1476,26 @@ html[data-anim="paused"] .dock-flare{display:none}
             "now": "Praegu on Tallinnas kell {TIME}",
             "open": "tugi on võrgus",
             "closed": "väljaspool tugiaega — kirjutage, vastame hommikul"
+          }
+        },
+        "fi": {
+          "label": "Yhteystiedot",
+          "title": "Ota yhteyttä",
+          "intro": "Kertokaa yrityksestänne ja prosessista, jonka haluatte automatisoida. Ensimmäiseen viestiin vastaa ihminen, ei lomakevahvistus — eikä kysyminen maksa mitään. Millä tavalla tahansa otatte yhteyttä, saatte suoran vastauksen siitä, sovimmeko työhön, ette myyntikäsikirjoitusta. Palvelemme englanniksi, viroksi ja venäjäksi; suomenkieliseen viestiin vastaamme englanniksi.",
+          "items": [
+            "Sähköposti — build@sys.baby",
+            "Puhelin — +372 58 086 586, perustaja vastaa itse",
+            "Viesti — dokin Chat-sovellus menee suoraan perustajalle, kirjallisesti",
+            "Sijainti — Tallinna, Viro; työkielemme ovat englanti, viro ja venäjä",
+            "Vastausaika — tavallisesti yhden työpäivän kuluessa, usein nopeammin",
+            "Projektin tehtävänanto — kirjallinen, ei sido mihinkään, ei korttitietoja"
+          ],
+          "hours": {
+            "line": "Järjestelmä ei mene koskaan kiinni.",
+            "note": "Ihmistuki · ma–to 09:00–23:00 · pe–la 09:00–00:00 · su 10:00–22:00 Tallinnan aikaa",
+            "now": "Tallinnassa on nyt {TIME}",
+            "open": "tuki on paikalla",
+            "closed": "tukiajan ulkopuolella — kirjoittakaa silti, vastaamme aamulla"
           }
         }
       },
@@ -1495,6 +1580,33 @@ html[data-anim="paused"] .dock-flare{display:none}
           "briefSmall": "Teie lehe tasuvushinnang viitab, et meie mahu juures ei pruugi automatiseerimine veel end ära tasuda — kirjutan siiski, nagu soovitasite.",
           "briefAsk": "Mida sooviksime automatiseerida: ",
           "cta": "Küsi pakkumist"
+        },
+        "fi": {
+          "anchor": "Yhdessä toimitetussa järjestelmässä asiakastarjouksen laatiminen lyheni noin tunnista 15 minuuttiin. Tiedämme sen, koska teimme itse tuota työtä ennen järjestelmän rakentamista. Alla olevat liukusäätimet ovat malli; tuo luku ei ole.",
+          "label": "Takaisinmaksu",
+          "title": "Automaation takaisinmaksuarvio",
+          "intro": "Tarkoituksella varovainen arvio — niin varovainen, että se kertoo myös silloin, kun automatisointi ei vielä kannata. Siirtäkää säätimet vastaamaan tiimiänne. Kaikki alla on vaihteluväli, koska rehellinen arvio on aina sitä; varmistamme todelliset luvut prosessianne vasten ennen tarjousta.",
+          "hoursLabel": "Tunteja viikossa toistuvaan työhön",
+          "hoursHint": "henkilöä kohti",
+          "peopleLabel": "Ihmisiä tekemässä tuota työtä",
+          "peopleHint": "",
+          "rateLabel": "Työtunnin kokonaiskustannus",
+          "rateHint": "palkka + verot + yleiskulut",
+          "resultLabel": "Aikaa takaisin kuukaudessa",
+          "resultSub": "Oletuksena, että kohdennettu automaatio poistaa 30–50 % juuri siitä tehtävästä — ei kaikkea eikä heti ensimmäisenä päivänä.",
+          "valueLabel": "Mitä tuo aika on vuodessa arvoltaan",
+          "valueSub": "Tämä on vapautunutta kapasiteettia, ei rahaa tilillä. Se muuttuu rahaksi vain, jos nuo tunnit menevät työhön, josta muuten maksaisitte.",
+          "paybackLabel": "Tyypillinen takaisinmaksu",
+          "paybackSub": "Tämän kokoista {BAND} projektia vasten.",
+          "tooSmall": "Tällä volyymilla automatisointi ei luultavasti vielä kannata. Kirjoittakaa silti — sanomme sen mieluummin suoraan kuin myymme teille jotain.",
+          "hoursUnit": "h",
+          "monthsUnit": "kuukautta",
+          "monthUnit": "kuukausi",
+          "briefTeam": "Tiimimme: {people} henkilöä, noin {hours} h viikossa kukin toistuvaan työhön (kokonaiskustannus noin {rate} €/h).",
+          "briefPay": "Sivustonne takaisinmaksuarviosta: noin {back} takaisin kuukaudessa, maksaa itsensä takaisin noin ajassa {pay}.",
+          "briefSmall": "Sivustonne takaisinmaksuarvion mukaan automatisointi ei ehkä vielä kannata meidän volyymillamme — kerromme silti, kuten pyysitte.",
+          "briefAsk": "Mitä haluaisimme automatisoida: ",
+          "cta": "Pyydä räätälöity ehdotus"
         }
       },
       "chat": {
@@ -1547,6 +1659,23 @@ html[data-anim="paused"] .dock-flare{display:none}
           "emailPh": "Sinu e-post — et asutaja saaks vastata",
           "replies": [
             "Aitäh — sõnum läks otse asutajale. Vastus tuleb e-postiga 1 tööpäeva jooksul, ausate valikutega, mitte müügiskriptiga."
+          ]
+        },
+        "fi": {
+          "label": "Chat",
+          "title": "Lähetä viesti",
+          "agent": "sys.baby",
+          "status": "Kirjallisesti · vastaus sähköpostiin",
+          "note": "Vastaamme yhden työpäivän kuluessa",
+          "placeholder": "Kirjoita viesti…",
+          "send": "Lähetä",
+          "typing": "lähetetään…",
+          "welcome": "Kertokaa, mikä syö tiiminne aikaa. Tämä menee suoraan perustajalle — vastaamme sähköpostitse, yleensä yhden työpäivän kuluessa. Ei myyntipuhetta, ei bottia.",
+          "askEmail": "Yksi asia ensin — mihin sähköpostiin vastaus lähetetään? Lisätkää se yllä ja lähettäkää uudelleen.",
+          "failMsg": "Automaattinen lähetys ei onnistunut — kirjoittakaa suoraan osoitteeseen build@sys.baby, se tavoittaa perustajan.",
+          "emailPh": "Sähköpostinne — jotta perustaja voi vastata",
+          "replies": [
+            "Kiitos — tämä meni suoraan perustajalle. Saatte kirjallisen vastauksen sähköpostiin yhden työpäivän kuluessa, rehellisin vaihtoehdoin eikä myyntikäsikirjoituksena."
           ]
         }
       },
@@ -1811,6 +1940,93 @@ html[data-anim="paused"] .dock-flare{display:none}
             "mailSubject": "Projekti kirjeldus",
             "hint": "See saadab projekti lähteülesande, ei kohusta millekski. Täna makset ei toimu. Sinu andmed jõuavad e-postiga asutajani, neid ei müüda ega kasutata turunduseks ning need kustutatakse soovi korral — kirjuta lihtsalt."
           }
+        },
+        "fi": {
+          "label": "Tilaus",
+          "title": "Aloita rakentaminen",
+          "intro": "Valitkaa lähtökohta.",
+          "packages": [
+            {
+              "id": "starter",
+              "name": "Konfiguroitu järjestelmä",
+              "priceId": "starter",
+              "period": "yksi viikko, kiinteä päivä",
+              "badge": "Nopein tapa saada jotain oikeaa",
+              "features": [
+                "Toimiva järjestelmä alallenne, konfiguroituna jo rakentamastamme",
+                "Tarjoukset tai arviot, hinnoitellut asiakirjat, allekirjoitus, maksupyyntö, arkisto",
+                "Toimitus yhdessä viikossa kiinteänä päivänä ja kiinteään hintaan",
+                "Omistatte lähdekoodin. Ei tilausmaksua, ei ulkoista palvelua josta riippua",
+                "Voitte nähdä sen toiminnassa toisella yrityksellä ennen päätöstä"
+              ]
+            },
+            {
+              "id": "growth",
+              "name": "Laajennettu järjestelmä",
+              "priceId": "growth",
+              "period": "2–4 viikkoa",
+              "badge": null,
+              "features": [
+                "Kaikki konfiguroidusta järjestelmästä sekä oma prosessinne",
+                "Toinen asiakirjatyyppi, integraatio tai juuri teille ominainen työnkulku",
+                "Teidän ilmeenne jokaisessa asiakirjassa, jonka asiakas saa",
+                "Kirjallinen luovutus, jotta toinen kehittäjä voi ottaa työn haltuun",
+                "30 päivää tukea käyttöönoton jälkeen"
+              ]
+            },
+            {
+              "id": "enterprise",
+              "name": "Liiketoimintajärjestelmä",
+              "priceId": "enterprise",
+              "period": "laajuuden mukaan, vaiheittain",
+              "badge": null,
+              "features": [
+                "Useita yhtiöitä, rooleja ja asiakirjoja, joilla on oikeudellinen merkitys",
+                "Verokohtelu toteutettuna teidän lainkäyttöalueellenne, ei arviolta",
+                "Tiedot pysyvät oikeina vuosienkin päästä — asiakirjat jäädytetään sellaisina kuin ne annettiin",
+                "Varmuuskopiointi, palautus ja kirjanpitäjän vienti, joka täsmää",
+                "Sama insinööri pysyy projektissa kaikkien vaiheiden läpi"
+              ]
+            }
+          ],
+          "guarantee": "<strong>Miten hinnoittelu toimii:<\/strong> nämä ovat lähtökohtia, eivät laskuja — useimmat projektit osuvat näytettyyn lukuun tai lähelle sitä. Vahvistamme tarkan laajuuden ja lopullisen hinnan yhdessä kirjallisessa ehdotuksessa, suosien pienintä toteutusta joka ratkaisee todellisen ongelman, emmekä koskaan paisuta tarjousta näyttääksemme vaikuttavammalta. Ei korttia, ei sitoumusta, ei painostusta.",
+          "steps": [
+            "Kuvailette, mikä vie aikaa. Vastaus tulee yhden työpäivän kuluessa, perustajalta.",
+            "Kirjallinen laajuus: mitä rakennettaisiin, kiinteä hinta, kiinteä päivä. Tai rehellinen vastaus, ettei sitä kannata vielä rakentaa.",
+            "Päätätte se kädessänne. Laajuudesta ei olla velkaa mitään, eikä mikään ala ennen kuin sanotte niin.",
+            "Yksi viikko konfiguroidulle järjestelmälle, vaiheittain suuremmalle. Koodi ja tunnukset ovat teidän ensimmäisestä viikosta lähtien."
+          ],
+          "stepsTitle": "Mitä tapahtuu kun kirjoitatte",
+          "after": "Sen jälkeen: järjestelmä on teidän ja jatkaa toimintaansa. Ei tilausta joka voi katketa, ei mitään teidän tietojanne meidän järjestelmissämme, ja kirjallinen luovutus jotta kuka tahansa insinööri voi jatkaa — me, teidän oma tai jonkun muun.",
+          "ownership": "<strong>Mitä omistatte:<\/strong> koodi, tunnukset ja pääsyt ovat teidän ensimmäisestä viikosta — mitään ei pidetä meidän järjestelmiemme sisällä.<br>Työ dokumentoidaan sitä mukaa kuin se tehdään, joten toinen insinööri voi jatkaa ilman kaivaustöitä.<br>Ottakaa mukaan toinen kehittäjä — oma tai kenen tahansa — ja me luovutamme työn ja vastaamme hänen kysymyksiinsä. Se kuuluu työhön, ei ole palvelus, eikä riipu siitä miksi olette lähdössä.<br>Yksi ihminen pysyy vastuussa tuloksestanne; hänen takanaan on tuotantojärjestelmä, joka on koottu tätä työtä varten, ei yksi käsipari.<br>Ensimmäinen projekti maksaa perustan, ja kaikki mitä sen päälle myöhemmin rakennetaan maksaa vähemmän, koska kukaan ei aloita nollasta kahdesti.",
+          "form": {
+            "name": "Koko nimi",
+            "email": "Sähköposti",
+            "phone": "Puhelin",
+            "task": "Kuvailkaa yrityksenne ja tehtävä",
+            "namePh": "Matti Meikäläinen",
+            "emailPh": "sinä@yritys.fi",
+            "phonePh": "+372 5xx xxxx",
+            "taskHelp": "Hyödyllisintä: mitä tapahtuu tänään, kuinka usein, missä se nyt on (vihko, taulukko, sähköposti) — ja mitä pitäisi tulla ulos.",
+            "taskPh": "esim. jokainen tarjous kootaan käsin ja lähtee vasta kahden päivän päästä",
+            "selected": "Lähtökohta",
+            "submit": "Pyydä ehdotus",
+            "sending": "Lähetetään…",
+            "successTitle": "Vastaanotettu — se on perustajalla, ei jonossa.",
+            "successMeta": "Vastaus osoitteeseen {email} · lähtökohta merkitty: {package}",
+            "successNext": "Tehtävänantonne mitoitetaan todellista prosessianne vasten ennen kuin yhtään lukua luvataan. Jos rehellinen vastaus on pienempi toteutus — tai ettei sitä kannata vielä tehdä — sen vastauksen saatte. Yleensä yhden työpäivän kuluessa.",
+            "successFix": "Väärä osoite tai jäikö jotain kertomatta? Kirjoittakaa osoitteeseen build@sys.baby — se tavoittaa saman ihmisen.",
+            "success": "Pyyntö lähetetty — otamme yhteyttä yhden työpäivän kuluessa räätälöidyn ehdotuksen kanssa.",
+            "error": "Automaattinen lähetys ei onnistunut — kirjoittakaa suoraan osoitteeseen build@sys.baby.",
+            "errTitle": "Lähetys ei mennyt läpi — mutta mitään ei menetetty.",
+            "errBody": "Automaattinen lähetys epäonnistui meidän puolellamme, ei teidän. Tehtävänantonne on yhä alla olevassa lomakkeessa. Yksi napautus avaa sen sähköpostisovelluksessanne valmiiksi kirjoitettuna.",
+            "errMail": "Lähetä sähköpostilla",
+            "errCopy": "Kopioi tehtävänanto",
+            "errCopied": "Kopioitu",
+            "errKept": "Tekstinne pysyy tässä joka tapauksessa — mitään kirjoittamaanne ei ole tyhjennetty.",
+            "mailSubject": "Projektin tehtävänanto",
+            "hint": "Tämä lähettää projektin tehtävänannon, ei sido mihinkään. Tänään ei veloiteta mitään. Tietonne menevät perustajalle sähköpostitse, niitä ei koskaan myydä eikä käytetä markkinointiin, ja ne poistetaan pyynnöstä — pyytäkää vain."
+          }
         }
       }
     },
@@ -1841,6 +2057,15 @@ html[data-anim="paused"] .dock-flare{display:none}
         "dnd": "Mind ei tohi segada",
         "volumeCaption": "Teavituse helitugevus",
         "brightnessCaption": "Heledus"
+      },
+      "fi": {
+        "panelLabel": "Asetukset",
+        "sound": "Ääni",
+        "motion": "Vähennä liikettä",
+        "autohide": "Himmennä dokki",
+        "dnd": "Älä häiritse",
+        "volumeCaption": "Ilmoitusten äänenvoimakkuus",
+        "brightnessCaption": "Kirkkaus"
       }
     },
     "cmdkLabels": {
@@ -1852,6 +2077,9 @@ html[data-anim="paused"] .dock-flare{display:none}
       },
       "ee": {
         "triggerLabel": "Kiirkäsklused"
+      },
+      "fi": {
+        "triggerLabel": "Pikatoiminnot"
       }
     },
     "bootStatusStops": [
@@ -1906,22 +2134,31 @@ html[data-anim="paused"] .dock-flare{display:none}
         "built": "Tehtud",
         "withheld": "Kliendi nimi on tema soovil avaldamata.",
         "notasked": "Nimi avaldatakse loal — luba pole veel küsitud."
+      },
+      "fi": {
+        "reported": "Omakohtaisesti — teimme tätä työtä ennen järjestelmän rakentamista.",
+        "built": "Rakennettu",
+        "withheld": "Asiakkaan nimi jätetty pois hänen pyynnöstään.",
+        "notasked": "Nimi julkaistaan luvalla — lupaa ei ole vielä pyydetty."
       }
     },
     "portfolioCaseLink": {
       "en": "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>See a real system we've shipped &rarr;<\/a>",
       "ru": "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Посмотреть реальную систему, которую мы сделали &rarr;<\/a>",
-      "ee": "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Vaata reaalset süsteemi, mille ehitasime &rarr;<\/a>"
+      "ee": "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Vaata reaalset süsteemi, mille ehitasime &rarr;<\/a>",
+      "fi": "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Katso oikea järjestelmä, jonka olemme toimittaneet &rarr;<\/a>"
     },
     "heroProofSourceLine": {
       "en": "First-hand — we worked in this trade before building the system.",
       "ru": "Из первых рук — мы работали в этом деле до того, как построили систему.",
-      "ee": "Otsesest kogemusest — töötasime selles valdkonnas enne süsteemi ehitamist."
+      "ee": "Otsesest kogemusest — töötasime selles valdkonnas enne süsteemi ehitamist.",
+      "fi": "Omakohtaisesti — teimme tätä työtä ennen järjestelmän rakentamista."
     },
     "casesOpenPlatformLabel": {
       "en": "Open the live platform →",
       "ru": "Открыть живую платформу →",
-      "ee": "Ava elav platvorm →"
+      "ee": "Ava elav platvorm →",
+      "fi": "Avaa toimiva alusta →"
     },
     "attention": {
       "_note": "Принцип знакомств (MASTER PROMPT 2 §3). Тихий слой, не CTA. Никогда не называть это referral/affiliate/партнёрской программой/комиссией. Конкретный процент не публикуется намеренно.",
@@ -1954,6 +2191,16 @@ html[data-anim="paused"] .dock-flare{display:none}
         "copy": "Kopeeri link",
         "copied": "Kopeeritud",
         "fine": "Link kannab ainult seda, mille te ülal kirjutasite. Kontot pole ja meie poolel ei salvestata midagi enne, kui keegi tegelikult kirjutab."
+      },
+      "fi": {
+        "heading": "Emme osta huomiota.",
+        "body": "Mitään tässä ei mainostettu. Työ tulee, koska joku sitä käyttänyt kertoi siitä. Jos projekti alkaa siksi, että te esittelitte meidät, siitä maksetaan palkkio — sovittuna keskenämme ennen työn alkua, ei koskaan jälkikäteen.",
+        "action": "Tunnetteko jonkun, jolle tämä sopisi?",
+        "who": "Ketä kiittäisimme?",
+        "whoPlaceholder": "Nimenne tai sähköpostinne",
+        "copy": "Kopioi linkki",
+        "copied": "Kopioitu",
+        "fine": "Linkki kantaa vain sen, minkä kirjoititte yllä. Tiliä ei ole eikä meidän puolellamme tallenneta mitään ennen kuin joku oikeasti kirjoittaa meille."
       }
     },
     "care": {
@@ -1990,23 +2237,37 @@ html[data-anim="paused"] .dock-flare{display:none}
         "proFrom": "alates €129 / kuus",
         "proBody": "Sama, lisaks ruumi päris tööks: mõõdame, mida süsteem tegelikult teeb, häälestame seda ja lisame automatiseerimist, kui äri muutub.",
         "foot": "Alustage ja lõpetage millal soovite. Miski siin pole tingimuseks sellele, et ehitatu kuulub teile."
+      },
+      "fi": {
+        "title": "Mukana pysyminen",
+        "lead": "Vapaaehtoista, eikä se muuta mitään omistuksessa. Järjestelmä toimii olimmepa mukana tai emme — tässä on kyse siitä, että se toimii hyvin.",
+        "careName": "SYS CARE",
+        "careFrom": "alkaen 49 € / kuukausi",
+        "careBody": "Saatavuutta seurataan, varmuuskopiot otetaan, päivitykset asennetaan ja pienet muutokset tehdään sitä mukaa kuin niitä tulee. Järjestelmän rakentaneet ihmiset myös huolehtivat siitä.",
+        "proName": "SYS CARE PRO",
+        "proFrom": "alkaen 129 € / kuukausi",
+        "proBody": "Sama, mutta tilaa jatkuvalle työlle: mitataan mitä järjestelmä oikeasti tekee, viritetään sitä ja lisätään automaatiota liiketoiminnan muuttuessa.",
+        "foot": "Aloittakaa tai lopettakaa milloin haluatte. Mikään tässä ei ole ehto sille, että omistatte rakentamamme."
       }
     },
     "cmdkEmptyLabel": {
       "en": "No matching commands",
       "ru": "Совпадений не найдено",
-      "ee": "Vasteid ei leitud"
+      "ee": "Vasteid ei leitud",
+      "fi": "Ei osumia"
     },
     "cmdkLangSwitchLabel": {
       "en": "Switch language",
       "ru": "Сменить язык",
-      "ee": "Vaheta keelt"
+      "ee": "Vaheta keelt",
+      "fi": "Vaihda kieli"
     },
     "seenSystemsLineTemplates": {
       "_comment": "Built by concatenation in source; {names} = portfolio view names joined with ', '.",
       "en": "I looked at: {names}.",
       "ru": "Смотрел: {names}.",
-      "ee": "Vaatasin: {names}."
+      "ee": "Vaatasin: {names}.",
+      "fi": "Katsoin: {names}."
     },
     "staticStrings": {
       "documentTitle": "sys.baby — Building Automated Business for You",
@@ -2023,12 +2284,7 @@ html[data-anim="paused"] .dock-flare{display:none}
         "clockPlaceholder": "00:00",
         "themeDark": "Dark",
         "themeLight": "Light",
-        "themeButtonsNote": "'Dark'/'Light' labels are never translated.",
-        "flags": {
-          "ee": "🇪🇪",
-          "en": "🇬🇧",
-          "ru": "🇷🇺"
-        }
+        "themeButtonsNote": "'Dark'/'Light' labels are never translated."
       },
       "cmdk": {
         "inputPlaceholder": "Type a command or search…",
@@ -2111,12 +2367,14 @@ html[data-anim="paused"] .dock-flare{display:none}
         "codes": {
           "ee": "ET",
           "en": "EN",
-          "ru": "RU"
+          "ru": "RU",
+          "fi": "FI"
         },
         "names": {
           "ee": "eesti",
           "en": "English",
-          "ru": "русский"
+          "ru": "русский",
+          "fi": "suomi"
         }
       }
     },
@@ -2129,7 +2387,8 @@ html[data-anim="paused"] .dock-flare{display:none}
           "display": {
             "en": "€1,400",
             "ru": "€1 400",
-            "ee": "1400 €"
+            "ee": "1400 €",
+            "fi": "1\u00A0400 €"
           }
         },
         {
@@ -2139,7 +2398,8 @@ html[data-anim="paused"] .dock-flare{display:none}
           "display": {
             "en": "€3,200 – €4,800",
             "ru": "€3 200 – €4 800",
-            "ee": "3200 – 4800 €"
+            "ee": "3200 – 4800 €",
+            "fi": "3\u00A0200 – 4\u00A0800 €"
           }
         },
         {
@@ -2149,7 +2409,8 @@ html[data-anim="paused"] .dock-flare{display:none}
           "display": {
             "en": "€6,500 – €9,500",
             "ru": "€6 500 – €9 500",
-            "ee": "6500 – 9500 €"
+            "ee": "6500 – 9500 €",
+            "fi": "6\u00A0500 – 9\u00A0500 €"
           }
         }
       ],
@@ -2158,7 +2419,8 @@ html[data-anim="paused"] .dock-flare{display:none}
       "bandByLocale": {
         "en": "€1,400–€4,800",
         "ru": "€1\u00A0400–€4\u00A0800",
-        "ee": "1400 €–4800 €"
+        "ee": "1400 €–4800 €",
+        "fi": "1\u00A0400 €–4\u00A0800 €"
       }
     },
     "heroSpec": {
@@ -2177,6 +2439,11 @@ html[data-anim="paused"] .dock-flare{display:none}
         "priceLabel": "hind · kõik paketid",
         "ownLabel": "omand",
         "ownValue": "lähtekood on teie oma"
+      },
+      "fi": {
+        "priceLabel": "hinta · kaikki paketit",
+        "ownLabel": "omistus",
+        "ownValue": "lähdekoodi on teidän"
       }
     }
   };
@@ -2186,9 +2453,13 @@ html[data-anim="paused"] .dock-flare{display:none}
 
 var C = SB_CONTENT;
 var S = C.staticStrings;
-var LANGS = ["en", "ru", "ee"];
+/* Финский добавлен как ЧЕТВЁРТЫЙ язык лендинга (решение от 17.08.2026).
+   ОС остаётся на трёх: при финском в неё уезжает английский — целиком, без
+   единой финской строки. Смешение внутри окна хуже, чем всё по-английски. */
+var LANGS = ["en", "ru", "ee", "fi"];
+var OS_LANGS = ["en", "ru", "ee"];
 var APPS = ["services", "cases", "about", "contact", "roi", "chat", "order"];
-var DOC_LANG = { en: "en", ru: "ru", ee: "et" };
+var DOC_LANG = { en: "en", ru: "ru", ee: "et", fi: "fi" };
 var OS_LINK = "os/";
 var SEEN_KEY = "sysbaby.seen.systems";
 var ENDPOINT = S.formEndpoint;
@@ -2377,7 +2648,10 @@ function setLang(lang) {
   /* The OS reads this key on boot, so whichever language is chosen here is
      the language it opens in. Same key, same storage — one localisation
      system, not two. */
-  try { window.localStorage.setItem("sysbaby.i18n.lang", lang); } catch (err) { /* storage blocked */ }
+  try {
+    window.localStorage.setItem("sysbaby.i18n.lang",
+      OS_LANGS.indexOf(lang) === -1 ? "en" : lang);
+  } catch (err) { /* storage blocked */ }
   renderHero();
   renderHeroProof();          /* the proof line is portfolio prose: it translates too */
   renderDockLabels();
@@ -2525,9 +2799,11 @@ function fitHeroName() {
   if (!chars || !target) return;
   /* Потолок трекинга поднят до 0.95em: при русском заголовке на 768px
      остаток уходил в межсловные зазоры (53px) и строка выглядела разорванной.
+     v43: финский заголовок длиннее русского, и на 1600–1920 потолок 0.95em
+     снова отдавал остаток пробелам — поднят до 1.25em.
      Равномерная разрядка честнее раздутых пробелов — сначала буквы, и только
      потом пробелы. Порог держит tools/hero-fit-check.mjs. */
-  var LS_MIN = 0.4, LS_MAX = fs * 0.95;
+  var LS_MIN = 0.4, LS_MAX = fs * 1.25;
   var ls = (target - base - gaps) / chars;
   if (ls < LS_MIN) {
     var k = (target - gaps) / (base + LS_MIN * chars);
@@ -2550,11 +2826,19 @@ function renderHeroProof() {
     var view = window.sbPortfolioView(entry, lang);
     if (view.resultsState !== "measured" || !view.results) continue;
     el("heroProofMain").textContent = view.results;
+    /* ОБЛАСТЬ ДЕЙСТВИЯ ЦИФРЫ. Замер сделан в ОДНОЙ отрасли — авторемонтной
+       покраске. Без названия отрасли «час превратился в 15 минут» читается
+       как обещание всем и каждому: два верных факта, стоящих рядом, снова
+       дают обещание, которого никто не давал. Отрасль берётся из вида
+       портфолио, а не вписывается руками, и потому не разойдётся с делом.
+       Тот же приём уже применён в окне окупаемости: «в одной поставленной
+       системе». Охраняется tools/facts-source-check.mjs. */
+    var src = [];
+    if (view.industry) src.push(view.industry);
     if (view.resultsSource === "first-hand") {
-      el("heroProofSrc").textContent = C.heroProofSourceLine[lang] || C.heroProofSourceLine.en;
-    } else {
-      el("heroProofSrc").textContent = "";
+      src.push(C.heroProofSourceLine[lang] || C.heroProofSourceLine.en);
     }
+    el("heroProofSrc").textContent = src.join(" · ");
     el("heroProof").classList.add("is-shown");
     return;
   }
@@ -4152,7 +4436,7 @@ function wireChrome() {
      Адрес чистится сразу: в строке остаётся sys.baby, а не sys.baby/?lang=ee —
      язык это состояние сессии, а не часть адреса страницы. */
   try {
-    var langQ = /[?&]lang=(en|ru|ee)(&|$)/.exec(location.search);
+    var langQ = /[?&]lang=(en|ru|ee|fi)(&|$)/.exec(location.search);
     if (langQ) {
       setLang(langQ[1]);
       history.replaceState(null, "", location.pathname + location.hash);

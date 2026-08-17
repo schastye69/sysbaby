@@ -1016,9 +1016,16 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: 
 /* Док не уходит за кромку — он затихает. То же решение, что на лендинге:
    единственный вход в продукт не должен исчезать с экрана. Настройка в
    Центре управления называется теперь «приглушать», и она не врёт. */
-html.dock-away #dock { transform: translate(-50%, 6px) scale(.965); opacity: .5; }
-html.dock-away #dock:hover, html.dock-away #dock:focus-within { transform: translate(-50%, 0); opacity: 1; }
-@media (prefers-reduced-motion: reduce) { html.dock-away #dock { transform: translate(-50%, 0); opacity: .55; } }
+/* Тот же диагноз, что на лендинге: opacity на элементе гасит и размытие
+   подложки, и сквозь док проступает текст. Поверхность остаётся плотной,
+   притухает только содержимое. */
+html.dock-away #dock { transform: translate(-50%, 5px) scale(.975); }
+html.dock-away .dock-shelf { background: rgba(16, 13, 12, .74); }
+html.dock-away #dock .dock-tile, html.dock-away #dock .dock-label { opacity: .5; }
+html.dock-away #dock:hover, html.dock-away #dock:focus-within { transform: translate(-50%, 0); }
+html.dock-away #dock:hover .dock-tile, html.dock-away #dock:focus-within .dock-tile,
+html.dock-away #dock:hover .dock-label, html.dock-away #dock:focus-within .dock-label { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { html.dock-away #dock { transform: translate(-50%, 0); } }
 .dock-shelf {
   display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px;
   border-radius: 22px; background: var(--glass); border: 1px solid var(--line);

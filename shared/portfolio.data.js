@@ -141,6 +141,24 @@
             "Kontrollitud varundus ja taaste — kogu kliinik on üks fail"
           ],
           "goal": "Üks võrguühenduseta süsteem toolist kassani, mis kuulub täielikult kliinikule — ilma tellimuseta, ilma välise teenuseta, ilma et ükski patsiendiandmete rida majast lahkuks."
+        },
+        "fi": {
+          "title": "Yksityinen hammasklinikka — Tallinna",
+          "industry": "Yksityinen hammasklinikka (Viro)",
+          "lookFor": "Avatkaa potilas ja sitten hammaskaavio. Hampaan merkitseminen rakentaa hoitosuunnitelman ja sen hinnan samalla kertaa.",
+          "scale": "12 taulun kliininen tietokanta · toimii verkotta · klinikan täysin omistama",
+          "projectType": "Klinikan kokonaisjärjestelmä — hoitotuolilta kassaan",
+          "goal": "Yksi verkoton järjestelmä hoitotuolilta kassaan, klinikan täysin omistamana — ei tilausmaksua, ei ulkoista palvelua, eikä potilastieto poistu talosta.",
+          "features": [
+            "Interaktiivinen hammaskaavio FDI-numeroinnilla, pysyvät ja maitohampaat",
+            "Hoitoarviot kaaviosta koottuna, A/B-vaihtoehtojen vertailu",
+            "Laskutus Viron alv-lain mukaan (KMS § 16 — hoito veroton, estetiikka verollinen)",
+            "Jokainen tulostettu asiakirja jäädytetään muuttumattomaksi ja varmennetaan SHA-256-tarkisteella",
+            "Suostumuslomakkeet, joihin hammasnumerot siirtyvät kaaviosta",
+            "Päivän kassan täsmäytys ja vienti kirjanpitäjälle",
+            "Ajanvarauskalenteri hoitotuoleittain, sterilointitauot huomioiden",
+            "Varmuuskopiointi ja palautus testattuna — koko klinikka on yksi tiedosto"
+          ]
         }
       },
       "origin": null,
@@ -217,6 +235,22 @@
           ],
           "goal": "Kiiremad ja ühtlasemad pakkumised, vähem käsitsi samme.",
           "results": "Pakkumise koostamine võttis umbes tunni. Selle süsteemiga 15 minutit."
+        },
+        "fi": {
+          "lookFor": "Merkitkää osa ja työvaihe. Tarjous, alv-erittely ja maksupyyntö rakentuvat samalla.",
+          "title": "Kolarikorjaamo — Viro",
+          "industry": "Autojen korikorjaus (Viro)",
+          "scale": "Asiakkaalle näkyvä tarjous, tulostettavat asiakirjat, maksupyyntö",
+          "projectType": "Asiakkaalle näkyvä arvio- ja tarjoustyökalu",
+          "features": [
+            "Kori- ja maalauskorjauksen laskuri",
+            "Tarjouksen muodostus PDF:ksi",
+            "Maksun QR-koodi (SEPA)",
+            "Asiakkaan allekirjoitus ruudulla",
+            "Kevyt CRM"
+          ],
+          "goal": "Nopeammat ja yhdenmukaisemmat tarjoukset, vähemmän käsityötä.",
+          "results": "Tarjouksen laatiminen vei noin tunnin. Tällä järjestelmällä 15 minuuttia."
         }
       },
       "origin": null
