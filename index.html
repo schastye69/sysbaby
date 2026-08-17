@@ -33,13 +33,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v44">
+<meta name="sysbaby-build" content="v45">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v44">
+<link rel="stylesheet" href="shared/system.css?b=v45">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -58,8 +58,8 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v44"></script>
-<script src="shared/pricing.data.js?b=v44"></script>
+<script src="shared/portfolio.data.js?b=v45"></script>
+<script src="shared/pricing.data.js?b=v45"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -817,7 +817,16 @@ html[data-anim="paused"] .dock-flare{display:none}
 .light-close:hover,.light-close:focus-visible{background:rgba(255,69,58,.18);color:#ff6a60}
 .win.is-focused .lights{background:rgba(255,255,255,.07)}
 .win-title{font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted)}
-.win-body{flex:1;overflow:auto;padding:22px 24px 26px;font-size:13.5px;line-height:1.6;color:var(--muted);-webkit-overflow-scrolling:touch}
+/* ЗАПАС ПОД ДОКОМ. Док плывёт над содержимым — это его материал и его место,
+   и отбирать у него слой было бы неправильно. Значит, обязанность лежит на
+   содержимом: окно, дно которого заходит в зону дока, отдаёт прокрутке ровно
+   столько, сколько док закрывает (--dock-room, считает reserveDockRoom()).
+   Содержимое по-прежнему проходит под стеклом — намеренно, это красиво, —
+   но ни одна кнопка не остаётся под ним недосягаемой.
+   Дефект снят основателем с живого телефона: кнопка «Запросить предложение»
+   в «Окупаемости» была заперта доком. Охраняется tools/dock-clearance-check.mjs. */
+.win-body{flex:1;overflow:auto;padding:22px 24px calc(26px + var(--dock-room,0px));
+  font-size:13.5px;line-height:1.6;color:var(--muted);-webkit-overflow-scrolling:touch}
 .win-resize{position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize}
 .win-resize::after{content:"";position:absolute;right:4px;bottom:4px;width:7px;height:7px;border-right:1.5px solid var(--border);border-bottom:1.5px solid var(--border)}
 .snap-preview{position:fixed;z-index:199;border:1.5px dashed var(--accent-soft);border-radius:14px;background:var(--seam-haze);pointer-events:none;display:none}
@@ -2872,7 +2881,7 @@ function renderHeroSpec() {
    W(ls) = base + N*ls, поэтому нужный трекинг берётся одним уравнением, без
    подбора. Не хватает места даже на минимальном трекинге — уменьшается
    кегль, но только после трекинга. Цель — самая длинная СТРОКА заголовка:
-   заголовок переносится сам и по-разному в трёх языках. */
+   заголовок переносится сам и по-разному в каждом из четырёх языков. */
 function fitHeroName() {
   var eb = el("heroName"), h1 = el("heroTitle");
   if (!eb || !h1 || !h1.firstChild) return;
@@ -3301,6 +3310,7 @@ function createWindow(app) {
   wins[app] = record;
   record.titleEl.textContent = appCopy(app).title;
   renderWindow(app);
+  reserveDockRoom(record);
   wireWindow(record);
   focusWindow(app);
   genieIn(record);
@@ -3407,12 +3417,52 @@ function applyRect(record, rect, animate) {
   if (animate && !osReducedMotion()) {
     record.node.classList.add("is-animating");
     setTimeout(function () { record.node.classList.remove("is-animating"); }, 420);
+    /* Пересчёт ПОСЛЕ переезда. Во время анимации rect окна — промежуточный,
+       и запас, посчитанный тогда, меньше настоящего: максимизация давала
+       окно во весь экран и запас от прежней, маленькой рамки. Красный по
+       «Окупаемости» на десктопе — ровно этот случай. */
+    setTimeout(function () { reserveDockRoom(record); }, 480);
   }
   record.node.style.left = rect.x + "px";
   record.node.style.top = rect.y + "px";
   record.node.style.width = rect.w + "px";
   record.node.style.height = rect.h + "px";
+  reserveDockRoom(record);
 }
+
+/* ЗАПАС ПОД ДОКОМ — измерением, а не памятью.
+   Основатель прислал живой телефон: кнопка внизу окна закрыта доком, и так
+   во всех окнах. Причина — не небрежность вёрстки, а след правильного
+   решения. Пока док уезжал за кромку через 2.8 c, всё закрытое им
+   освобождалось само, и код это учитывал. В v42 док перестал уходить — он
+   затихает, но остаётся, — и перекрытие стало постоянным. Посылка отменена,
+   вывод продолжал работать: классическая мина.
+   Правило теперь одно: окно, дно которого заходит в зону дока, отдаёт
+   прокрутке ровно ту высоту, которую док закрывает. Ни пикселем больше:
+   окно, стоящее сбоку от дока (десктоп) или выше него, не платит ничего.
+   Зона считается от ПРИПАРКОВАННОГО положения — offsetHeight и значение
+   bottom, а не rect: у дока живут покой, уход и подпрыгивание, и мерить
+   его сдвинутым — значит отдавать содержимому то больше, то меньше места
+   на каждой анимации. Ту же величину ОС публикует как --dock-h: одна
+   механика на две поверхности. */
+function reserveDockRoom(record) {
+  if (!record || !record.body) return;
+  var dock = el("dock");
+  if (!dock) return;
+  var cs = getComputedStyle(dock);
+  var parkedH = dock.offsetHeight + (parseFloat(cs.bottom) || 0);
+  var zoneTop = window.innerHeight - parkedH;
+  var wr = record.node.getBoundingClientRect();
+  var dr = dock.getBoundingClientRect();
+  var meets = Math.min(wr.right, dr.right) - Math.max(wr.left, dr.left) > 0;
+  var deep = wr.bottom - zoneTop;
+  record.body.style.setProperty("--dock-room",
+    (meets && deep > 0 ? Math.ceil(deep) + 12 : 0) + "px");
+}
+function reserveDockRoomAll() {
+  for (var app in wins) if (wins[app]) reserveDockRoom(wins[app]);
+}
+window.sbReserveDockRoom = reserveDockRoomAll;   /* ручка для приборов */
 
 function toggleMaximize(app) {
   var record = wins[app];
@@ -3422,9 +3472,11 @@ function toggleMaximize(app) {
     record.maximized = false;
   } else {
     record.prevRect = { x: record.rect.x, y: record.rect.y, w: record.rect.w, h: record.rect.h };
-    /* Раньше максимизация резервировала 150px под док — но док прячется
-       через 2.8 c, и внизу зияла пустота. Теперь окно занимает экран; док,
-       возвращаясь, плывёт поверх (z 300 > z окна) и сам же прячется. */
+    /* Окно занимает экран целиком, док плывёт поверх (z 300 > z окна) — и
+       это правильно: резервировать пустую полосу в 150px под уходящий док
+       было хуже. ОГОВОРКА v44: с тех пор док уходить перестал (он затихает),
+       и место под ним теперь отдаёт не рамка окна, а прокрутка содержимого —
+       ровно на высоту перекрытия, см. reserveDockRoom(). */
     applyRect(record, { x: 12, y: 52, w: window.innerWidth - 24, h: window.innerHeight - 64 }, true);
     record.maximized = true;
   }
@@ -4230,7 +4282,11 @@ function renderChat(record) {
         "</div>" +
       "</div>" +
     "</div>");
-  record.body.style.padding = "16px 16px 14px";
+  /* Чат ставит свои поля инлайном (у него собственная раскладка в высоту).
+     Нижнее поле обязано уважать запас под доком: инлайн-стиль сильнее
+     таблицы стилей, и без calc здесь строка ввода снова уезжала под док —
+     закон dock-clearance-check краснел именно на этом окне. */
+  record.body.style.padding = "16px 16px calc(14px + var(--dock-room,0px))";
   renderChatMessages(record);
 
   var text = $("#chatText", record.body);
@@ -4595,6 +4651,10 @@ function wireResize() {
     measureHeroFit();
     fitHeroName();
     fitCtaRow();
+    /* Зона дока меняется вместе с экраном: на 620px у плиток пропадают
+       подписи, на низком экране док садится на кромку. Запас пересчитывается
+       вместе с ней, иначе он верен только на той ширине, где его считали. */
+    reserveDockRoomAll();
   });
   /* Метрики системного шрифта приходят позже первой отрисовки: без этого
      строка-имя подгоняется под ещё не тот заголовок, а кегль клавиш —

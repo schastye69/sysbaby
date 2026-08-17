@@ -119,8 +119,9 @@
      both read the same stored value AND both listen to the same announcement,
      so a change made on either surface appears on the other in the same
      frame — not on the next open. (Found the honest way: the founder flipped
-     Dock Auto-Hide in the quick panel while Pulse was open and watched the
-     switch not move.) */
+     the dock-dimming switch — then still labelled Auto-Hide, renamed when the
+     dock stopped leaving the screen — in the quick panel while Pulse was open
+     and watched the other switch not move.) */
   function announceSetting(kind, detail) {
     var payload = detail || {};
     payload.kind = kind;
@@ -499,8 +500,13 @@
 
     if (compact()) {
       /* Во весь экран, как на лендинге (решение 022). Прежние поля отдавали
-         фону 32px ширины на 390px и зажимали содержимое; док прячется сам,
-         поэтому нижний зазор больше не нужен. Одно правило на две поверхности. */
+         фону 32px ширины на 390px и зажимали содержимое. Нижний зазор не
+         нужен по другой причине, чем написано было раньше: не потому, что
+         док «прячется» (он давно не прячется — он затихает и остаётся), а
+         потому, что под 620px док ОС не показывается вовсе (core.css §14).
+         Причину пришлось переписать: она была отменена в v42 и продолжала
+         стоять здесь как действующая — нашёл tools/comment-truth-check.mjs.
+         Одно правило на две поверхности. */
       w = window.innerWidth;
       h = window.innerHeight - 44;
       x = 0;
