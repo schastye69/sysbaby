@@ -130,6 +130,12 @@
     if (view.resultsState === "withheld") {
       return '<p class="pf-results">' + esc(t("pf.results.withheld")) + "</p>";
     }
+    /* Собственная разработка: стороннего заказчика нет, значит нет и цифры,
+       которую он мог бы дать. Прежняя ветка обещала измерение при передаче —
+       передачи не будет. */
+    if (view.nameState === "own-build" || view.resultsPendingReason === "own-build") {
+      return '<p class="pf-results">' + esc(t("pf.results.ownBuild")) + "</p>";
+    }
     if (view.resultsPendingReason === "not-yet-delivered") {
       return '<p class="pf-results">' + esc(t("pf.results.notDelivered")) + "</p>";
     }
@@ -155,6 +161,8 @@
     var explore;
     if (view.nameState === "named") {
       explore = '<button type="button" class="pf-btn" data-search="' + index + '">' + esc(t("pf.everything")) + "</button>";
+    } else if (view.nameState === "own-build") {
+      explore = '<span class="pf-note" title="' + esc(t("pf.name.ownBuildTitle")) + '">' + esc(t("pf.name.ownBuild")) + "</span>";
     } else if (view.nameState === "withheld") {
       explore = '<span class="pf-note" title="' + esc(t("pf.name.withheldTitle")) + '">' + esc(t("pf.name.withheld")) + "</span>";
     } else {

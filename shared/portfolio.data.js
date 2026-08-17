@@ -21,7 +21,7 @@
  * View fields (derivations exact per spec/data/portfolio.json -> viewRules):
  *   name                  client only when visibility === "public", else title
  *   confidential          visibility !== "public"
- *   nameState             "named" | "withheld" | "not-yet-asked"
+ *   nameState             "named" | "withheld" | "not-yet-asked" | "own-build"
  *   resultsState          "measured" | "withheld" | "pending"
  *   results               measured sentence, else null
  *   resultsSource         "first-hand" | "client-reported" | null
@@ -82,7 +82,7 @@
       "visibility": "anonymous",
       "title": "Private dental clinic — Tallinn",
       "industry": "Private dental clinic (Estonia)",
-      "scale": "12-table clinical database · offline · owned outright by the clinic",
+      "scale": "12-table clinical database · offline · built end to end",
       "projectType": "Complete clinic management system — chairside to cash drawer",
       "tech": [
         "PHP",
@@ -102,15 +102,15 @@
         "Appointment calendar by chair, with sterilisation buffers",
         "Validated backup and restore — the whole clinic is one file"
       ],
-      "goal": "One offline system from chairside to cash drawer, owned outright by the clinic — no subscription, no external service, no patient data leaving the building.",
+      "goal": "One offline system from chairside to cash drawer — no subscription, no external service, no patient data leaving the building.",
       "results": null,
-      "resultsPendingReason": "not-yet-delivered",
+      "resultsPendingReason": "own-build",
       "i18n": {
         "ru": {
           "lookFor": "Откройте пациента, затем зубную карту. Отметка зуба одновременно строит план лечения и его стоимость.",
           "title": "Частная стоматология — Таллинн",
           "industry": "Частная стоматологическая клиника (Эстония)",
-          "scale": "Клиническая база из 12 таблиц · офлайн · принадлежит клинике целиком",
+          "scale": "12-табличная клиническая база · работает без сети · построена целиком",
           "projectType": "Полная система управления клиникой — от кресла до кассы",
           "features": [
             "Интерактивная одонтограмма в нотации FDI, постоянные и молочные зубы",
@@ -122,13 +122,13 @@
             "Календарь приёмов по креслам, с буфером на стерилизацию",
             "Проверенное резервное копирование и восстановление — вся клиника в одном файле"
           ],
-          "goal": "Одна офлайн-система от кресла до кассы, принадлежащая клинике целиком — без подписки, без внешнего сервиса, без единой записи о пациенте за пределами здания."
+          "goal": "Одна офлайн-система от кресла до кассы — без подписки, без внешнего сервиса, без единой записи о пациенте за пределами здания."
         },
         "ee": {
           "lookFor": "Ava patsient, seejärel hambakaart. Hamba märkimine koostab korraga nii raviplaani kui ka selle hinna.",
           "title": "Erahambaravi — Tallinn",
           "industry": "Erahambaravikliinik (Eesti)",
-          "scale": "12 tabeliga kliiniline andmebaas · võrguühenduseta · kuulub täielikult kliinikule",
+          "scale": "12 tabeliga kliiniline andmebaas · töötab võrguta · ehitatud algusest lõpuni",
           "projectType": "Täielik kliiniku haldussüsteem — toolist kassani",
           "features": [
             "Interaktiivne odontogramm FDI tähistuses, jäävad ja piimahambad",
@@ -140,15 +140,15 @@
             "Vastuvõtukalender toolide kaupa, steriliseerimise puhvriga",
             "Kontrollitud varundus ja taaste — kogu kliinik on üks fail"
           ],
-          "goal": "Üks võrguühenduseta süsteem toolist kassani, mis kuulub täielikult kliinikule — ilma tellimuseta, ilma välise teenuseta, ilma et ükski patsiendiandmete rida majast lahkuks."
+          "goal": "Üks võrguühenduseta süsteem toolist kassani — ilma tellimuseta, ilma välise teenuseta, ilma et ükski patsiendiandmete rida majast lahkuks."
         },
         "fi": {
           "title": "Yksityinen hammasklinikka — Tallinna",
           "industry": "Yksityinen hammasklinikka (Viro)",
           "lookFor": "Avatkaa potilas ja sitten hammaskaavio. Hampaan merkitseminen rakentaa hoitosuunnitelman ja sen hinnan samalla kertaa.",
-          "scale": "12 taulun kliininen tietokanta · toimii verkotta · klinikan täysin omistama",
+          "scale": "12 taulun kliininen tietokanta · toimii verkotta · rakennettu alusta loppuun",
           "projectType": "Klinikan kokonaisjärjestelmä — hoitotuolilta kassaan",
-          "goal": "Yksi verkoton järjestelmä hoitotuolilta kassaan, klinikan täysin omistamana — ei tilausmaksua, ei ulkoista palvelua, eikä potilastieto poistu talosta.",
+          "goal": "Yksi verkoton järjestelmä hoitotuolilta kassaan — ei tilausmaksua, ei ulkoista palvelua, eikä potilastieto poistu talosta.",
           "features": [
             "Interaktiivinen hammaskaavio FDI-numeroinnilla, pysyvät ja maitohampaat",
             "Hoitoarviot kaaviosta koottuna, A/B-vaihtoehtojen vertailu",
@@ -162,7 +162,8 @@
         }
       },
       "origin": null,
-      "nameWithheldByClient": true
+      "nameWithheldByClient": false,
+      "ownBuild": true
     },
     {
       "id": "auto-estimate-01",
@@ -369,7 +370,8 @@
     return {
       name: (p.visibility === "public" && p.client) ? p.client : t("title"),
       confidential: p.visibility !== "public",
-      nameState: p.visibility === "public"
+      ownBuild: p.ownBuild === true,
+      nameState: p.ownBuild === true ? "own-build" : p.visibility === "public"
         ? "named"
         : (p.nameWithheldByClient ? "withheld" : "not-yet-asked"),
       industry: t("industry") || "",
