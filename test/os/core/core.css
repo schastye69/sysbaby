@@ -1,0 +1,1271 @@
+/* sys.baby OS — core/core.css
+ * Shell presentation, in the SYSTEM LAYER's language (shared/system.css):
+ * achromatic graphite environment, warm ink, one colour — the seam — and it
+ * appears only where something is alive or a person can act. The indigo/violet
+ * world this file used to declare made the OS read as a different product from
+ * the landing; remove the logo and you saw two companies. One environment now.
+ * Glass surfaces with a real reduce-transparency mode, restrained motion. */
+
+/* ====================================================== hidden means hidden
+ * The browser's own [hidden] rule is `display: none` at the weakest possible
+ * specificity, so any rule that sets display beats it. #sbExpose set
+ * `display: grid`, which silently defeated its own `hidden` attribute: the
+ * overlay stayed laid out full-screen — invisible in itself, but painting
+ * rgba(4,5,8,.72) and backdrop-filter: blur(14px) across the whole desktop.
+ * The desktop was built and working underneath it the entire time.
+ * This makes the attribute mean what every author assumes it means. Anything
+ * that must stay laid out while hidden has to use a class, not the attribute. */
+[hidden] { display: none !important; }
+
+/* ============================================================== tokens */
+:root {
+  /* Field and ink come from the system layer (shared/system.css). The values
+     are repeated here as fallbacks so the OS still stands alone if that file
+     ever fails to arrive — the shell must boot from its own folder. */
+  --bg: #0a0a0b;
+  --bg-elev: #121214;
+  --ink: #f2f2f0;
+  --ink-2: rgba(242, 242, 240, .62);
+  --ink-3: rgba(242, 242, 240, .36);
+  --line: rgba(242, 242, 240, .09);
+  --line-2: rgba(242, 242, 240, .16);
+  --glass: rgba(242, 242, 240, .055);
+  --glass-2: rgba(242, 242, 240, .10);
+  --glass-blur: 26px;
+  /* The seam. One colour, one meaning: here you can act, or here something is
+     alive. The Control Center still lets a visitor pick another accent — that
+     is their desktop, not our brand — this is only the default. */
+  --accent: #e0663c;
+  --accent-2: #ec8a5f;
+  --accent-rgb: 224, 102, 60;
+  --accent-soft: rgba(224, 102, 60, .18);
+  --accent-ring: rgba(224, 102, 60, .55);
+  --danger: #d05a4e;
+  --warn: #c9a227;
+  --good: #4ea87a;
+  /* Honest corners: a friendly-app 24px radius belongs to somebody else's
+     operating system. Same ladder as the landing's windows. */
+  --r-window: 16px;
+  --r-card: 12px;
+  --r-ctrl: 9px;
+  --shadow: 0 24px 60px rgba(0, 0, 0, .55), 0 4px 14px rgba(0, 0, 0, .4);
+  --shadow-soft: 0 12px 34px rgba(0, 0, 0, .38);
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --font: system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  --topbar-h: 44px;
+}
+
+html[data-theme="light"] {
+  --bg: #eef0f5;
+  --bg-elev: #ffffff;
+  --ink: rgba(12, 14, 20, .92);
+  --ink-2: rgba(12, 14, 20, .62);
+  --ink-3: rgba(12, 14, 20, .38);
+  --line: rgba(12, 14, 20, .10);
+  --line-2: rgba(12, 14, 20, .16);
+  /* Прозрачность — приём для тёмного поля, и только для него.
+     На тёмном фоне сквозь стекло проходит темнота, и панель остаётся
+     читаемой. На светлом сквозь те же 62% проходит цветная подложка: окно
+     Seek на снимке основателя залито розово-бежевым, читать нечем. Свет
+     нельзя приглушить прозрачностью — его можно только закрыть.
+     Поэтому в светлой теме панели почти непрозрачны; размытие остаётся ради
+     мягкости краёв, но работу по читаемости делает не оно. */
+  --glass: rgba(255, 255, 255, .93);
+  --glass-2: rgba(255, 255, 255, .975);
+  --shadow: 0 20px 50px rgba(20, 24, 40, .18), 0 3px 10px rgba(20, 24, 40, .12);
+  --shadow-soft: 0 10px 26px rgba(20, 24, 40, .12);
+}
+
+html.sb-incognito {
+  --bg: #000;
+  --bg-elev: #06060a;
+  --accent: #a06bff;
+  --accent-2: #6b3dff;
+  --accent-rgb: 160, 107, 255;
+  --line: rgba(255, 255, 255, .18);
+  --glass: rgba(255, 255, 255, .05);
+}
+
+/* reduce transparency: a real accessibility mode (spec addition §7) */
+html[data-transparency="reduced"] {
+  --glass: var(--bg-elev);
+  --glass-2: var(--bg-elev);
+  --glass-blur: 0px;
+}
+html[data-transparency="reduced"] .window,
+html[data-transparency="reduced"] .panel,
+html[data-transparency="reduced"] .dock-shelf,
+html[data-transparency="reduced"] #topbar,
+html[data-transparency="reduced"] #sbControlCenter,
+html[data-transparency="reduced"] .cmdk-box,
+html[data-transparency="reduced"] .toast,
+html[data-transparency="reduced"] .sb-widget,
+html[data-transparency="reduced"] .sticky-note,
+html[data-transparency="reduced"] #sbCtxMenu {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: var(--bg-elev) !important;
+  border-color: var(--line-2);
+}
+
+* { box-sizing: border-box; }
+
+/* No tap flash. Android paints a translucent block over whatever element it
+   thinks you touched — on a full-bleed desktop that lands as a coloured sheet
+   across the wallpaper. Selection is disabled on the chrome for the same
+   reason: dragging an icon should not smear a highlight across its label.
+   Anything the visitor is meant to be able to select opts back in below. */
+* { -webkit-tap-highlight-color: transparent; }
+/* 12.08, поле: касание рабочего стола оставляло выделение, а мультитач —
+   очень большое. Правило ниже уже существовало и уже чинилось — но было
+   написано СПИСКОМ ЗАПРЕЩЁННОГО: перечислением мест, где выделять нельзя.
+   Такой список не может быть полным. Рабочий стол в нём был, его дети — нет,
+   и палец, попавший мимо перечисленного, снова тянул выделение.
+
+   Та же ошибка формы, что и с публикацией файлов, и лечится так же —
+   переворотом. Запрещено везде, разрешено точечно там, где текст
+   действительно выделяют: тело окна, поля ввода, редактируемое. Забыть
+   разрешить — заметно сразу и изнутри; забыть запретить — заметно снаружи и
+   через неделю. */
+html, body { -webkit-user-select: none; user-select: none; }
+/* A pointerdown on a draggable thing has to belong to the drag, not to the
+   browser's own pan-and-zoom gesture. Without this the first millimetre of a
+   finger movement is claimed as a scroll, the pointer events stop arriving,
+   and the icon simply never moves — which is exactly what a phone was doing.
+   Declared on the handles only, so ordinary scrolling is untouched. */
+.desk-icon, .titlebar, .resize-handle, .sticky-note, .sticky-note-head {
+  touch-action: none;
+}
+/* Разрешение — точечное и полное: всё, что человек читает и копирует.
+   Список растёт по мере надобности, и это правильно: он ошибается в сторону
+   «нельзя выделить то, что хотелось», а не в сторону «мазня по столу». */
+.window-body, .window-body *, input, textarea, [contenteditable],
+.sticky-note-text, .note-text, code, pre, .mono-select {
+  -webkit-user-select: text; user-select: text;
+}
+/* А ручки перетаскивания — обратно под запрет: они внутри окна, но их
+   таскают, а не читают. */
+.titlebar, .titlebar *, .resize-handle, .win-tabs, .win-tabs * {
+  -webkit-user-select: none; user-select: none;
+}
+/* The default selection colour is the accent at full strength, which flashes
+   as a bright block on a dark desktop. This is the same colour at a weight
+   that reads as a highlight rather than an accident. */
+::selection { background: rgba(var(--accent-rgb), .28); color: var(--ink); }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+kbd { font-family: var(--mono); font-size: 12px; }
+
+/* generic controls */
+.btn {
+  padding: 9px 14px; border-radius: var(--r-ctrl);
+  background: var(--glass); border: 1px solid var(--line);
+  color: var(--ink); transition: background .16s ease, transform .16s var(--ease);
+}
+.btn:hover { background: var(--glass-2); }
+.btn:active { transform: scale(.98); }
+.btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; color: #fff; }
+.btn.wide { width: 100%; }
+.btn.link { background: none; border: 0; color: var(--ink-2); padding: 6px 2px; text-decoration: underline; text-underline-offset: 3px; }
+.btn.ghost { background: transparent; }
+.btn.danger { color: var(--danger); }
+.btn.tiny { padding: 5px 10px; font-size: 12px; border-radius: 9px; }
+
+.field { display: flex; flex-direction: column; gap: 5px; margin: 10px 0; font-size: 13px; color: var(--ink-2); }
+.field input, .field select {
+  padding: 9px 11px; border-radius: var(--r-ctrl);
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink);
+}
+.check { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 13px; color: var(--ink-2); }
+.check.small { font-size: 12px; }
+
+/* ================================================== wallpaper (static §12) */
+/* Default — STUDIO. The environment is achromatic graphite; the only light is
+   a low clay ember, the seam's own colour, sitting where the dock lives. The
+   navy default this replaced was the reference's, not this brand's. Ocean is
+   still one chip away. */
+.wp-layer {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(900px 620px at 78% 18%, rgba(224, 102, 60, .09), transparent 62%),
+    radial-gradient(760px 560px at 14% 82%, rgba(242, 242, 240, .05), transparent 60%),
+    linear-gradient(168deg, #111114 0%, #0b0b0d 52%, #070708 100%);
+}
+html[data-wp-mood="ocean"] .wp-layer {
+  background:
+    radial-gradient(900px 620px at 78% 18%, rgba(58, 92, 226, .16), transparent 62%),
+    radial-gradient(760px 560px at 14% 82%, rgba(96, 120, 255, .12), transparent 60%),
+    linear-gradient(168deg, #0a0d16 0%, #060709 52%, #04050a 100%);
+}
+html[data-theme="light"] .wp-layer {
+  background:
+    radial-gradient(900px 620px at 78% 18%, rgba(var(--accent-rgb), .18), transparent 62%),
+    radial-gradient(760px 560px at 14% 82%, rgba(120, 160, 255, .16), transparent 60%),
+    linear-gradient(168deg, #f2f4fa 0%, #e9ecf4 52%, #eef0f6 100%);
+}
+html[data-wp-mood="aurora"] .wp-layer {
+  background:
+    radial-gradient(820px 600px at 70% 12%, rgba(72, 226, 190, .16), transparent 60%),
+    radial-gradient(720px 560px at 18% 86%, rgba(120, 90, 255, .16), transparent 62%),
+    linear-gradient(168deg, #06120f 0%, #05070c 60%, #04050a 100%);
+}
+html[data-wp-mood="sunset"] .wp-layer {
+  background:
+    radial-gradient(860px 620px at 76% 16%, rgba(255, 140, 80, .18), transparent 62%),
+    radial-gradient(700px 540px at 16% 84%, rgba(255, 80, 140, .14), transparent 60%),
+    linear-gradient(168deg, #150a08 0%, #0a0608 58%, #050406 100%);
+}
+html[data-wp-mood="mono"] .wp-layer {
+  background:
+    radial-gradient(900px 620px at 74% 18%, rgba(255, 255, 255, .07), transparent 62%),
+    linear-gradient(168deg, #0c0d10 0%, #08090c 60%, #050507 100%);
+}
+html.sb-incognito .wp-layer {
+  background: radial-gradient(800px 560px at 72% 14%, rgba(160, 107, 255, .14), transparent 60%), #000;
+}
+
+/* --------------------------------------------------- wallpaper: the field */
+/* Six layers inside .wp-layer, painted in DOM order. #sbField is opaque, so
+   the gradients above are what shows whenever it is not running — under
+   reduced motion, in the light theme, in incognito, or with the level set to
+   off. Everything here is scoped to an id inside .wp-layer and reaches
+   nothing else on the page. */
+.wp-layer > * { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+#sbField { width: 100%; height: 100%; display: block; }
+#sbField.off, #sbBreath.off { display: none !important; }
+
+/* The mood, laid over the field as light.
+
+   The field is opaque and very dark, so swapping its palette moved the picture
+   by only a few values per channel — which is why the four wallpapers read as
+   identical and the control looked broken. This layer is the mood itself: two
+   coloured lights screened over the plasma, so choosing one changes the room's
+   colour and not just a number in a palette. It never animates, so it costs
+   nothing to keep on screen. */
+#sbMoodTint {
+  mix-blend-mode: screen; opacity: .55;
+  /* studio: clay ember low, neutral light high — the room is warm, not painted */
+  background:
+    radial-gradient(900px 640px at 76% 16%, rgba(224, 102, 60, .16), transparent 64%),
+    radial-gradient(760px 580px at 16% 84%, rgba(242, 242, 240, .09), transparent 62%);
+}
+html[data-wp-mood="ocean"] #sbMoodTint {
+  background:
+    radial-gradient(900px 640px at 76% 16%, rgba(58, 92, 226, .30), transparent 64%),
+    radial-gradient(760px 580px at 16% 84%, rgba(96, 120, 255, .20), transparent 62%);
+}
+html[data-wp-mood="aurora"] #sbMoodTint {
+  background:
+    radial-gradient(880px 640px at 70% 12%, rgba(46, 214, 170, .30), transparent 62%),
+    radial-gradient(760px 580px at 18% 86%, rgba(128, 92, 255, .24), transparent 62%);
+}
+html[data-wp-mood="sunset"] #sbMoodTint {
+  background:
+    radial-gradient(900px 640px at 76% 14%, rgba(255, 138, 78, .32), transparent 62%),
+    radial-gradient(740px 560px at 16% 86%, rgba(214, 68, 122, .24), transparent 62%);
+}
+html[data-wp-mood="mono"] #sbMoodTint {
+  opacity: .34;
+  background: radial-gradient(920px 660px at 74% 18%, rgba(206, 212, 226, .26), transparent 64%);
+}
+
+/* Плёночное зерно: бесшовная плитка 180px серой турбулентности.
+   -------------------------------------------------------------------------
+   12.08, поле: на телефоне вместо зерна была видна регулярная СЕТКА, на
+   планшете — просто зернистость. Один и тот же файл, разный экран.
+
+   Причина: размер крупинки задан в user-единицах фильтра, то есть в CSS-
+   пикселях. baseFrequency .82 даёт период около 1,2 CSS-px. При плотности 1
+   это 1,2 физического пикселя — зерно. При 2,75 та же крупинка занимает
+   3,3 физических пикселя и становится видимым квадратом; квадраты выстраиваются
+   в сетку. Воспроизведено съёмкой при 1 / 2 / 2.75 / 3.
+
+   Правило, которого не хватало: **зерно измеряется в физических пикселях,
+   а не в CSS.** Плитка сжимается обратно пропорционально плотности, и
+   крупинка остаётся размером примерно в один физический пиксель на любом
+   экране. Хорошее зерно не видно нигде — его работа в том, чтобы не было
+   полос на градиентах, а не в том, чтобы его заметили. */
+#sbGrain {
+  opacity: .028;
+  background-size: 180px 180px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='180' height='180' filter='url(%23n)' opacity='.55'/></svg>");
+}
+@media (min-resolution: 1.5dppx) { #sbGrain { background-size: 120px 120px; } }
+@media (min-resolution: 2.5dppx) { #sbGrain { background-size: 66px 66px; } }
+@media (min-resolution: 3.5dppx) { #sbGrain { background-size: 50px 50px; } }
+/* the vault: a top-anchored vignette, darkening the bottom corners hardest */
+#sbStone { background: radial-gradient(140% 115% at 50% 4%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, .55) 100%); }
+/* the breath: shown only while the field is NOT running — see field.js */
+#sbBreath {
+  background: radial-gradient(110% 74% at 50% -14%, #18181c 0%, rgba(24, 24, 28, 0) 58%);
+  opacity: .32;
+  animation: sbBreath 8.4s ease-in-out infinite alternate;
+}
+@keyframes sbBreath { from { opacity: .32 } to { opacity: .47 } }
+@media (prefers-reduced-motion: reduce) { #sbBreath { opacity: .38; animation: none } }
+html[data-motion="reduced"] #sbBreath { opacity: .38; animation: none }
+/* Parked: see the note in field.js. An animated opacity on a full-screen
+   layer under a frosted window costs as much as the canvas does, so the
+   breath holds still for the same reason the field does. */
+html.wp-parked #sbBreath { animation-play-state: paused }
+
+/* The field is a dark-navy picture with no light counterpart. In the light
+   theme, and in incognito — whose whole point is looking unlike the normal
+   desktop — the gradient wallpaper above stays in charge, unchanged. */
+html[data-theme="light"] .wp-layer > *,
+html.sb-incognito .wp-layer > * { display: none !important; }
+
+/* ============================================================== login §2.1 */
+#sbLogin {
+  position: fixed; inset: 0; z-index: 300;
+  display: grid; place-items: center;
+  background: radial-gradient(1000px 700px at 50% 20%, rgba(var(--accent-rgb), .12), transparent 60%), var(--bg);
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  transition: opacity .42s ease;
+}
+#sbLogin.out { opacity: 0; pointer-events: none; }
+html.sb-has-session #sbLogin { display: none; }
+.login-card {
+  width: min(420px, 100%); padding: 28px;
+  background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-card);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  box-shadow: var(--shadow);
+}
+/* Третий и последний осиротевший предмет прежней личности. Топбар и занавес
+   уже несут знак; карточка входа — первый экран, который видит гость, — всё
+   ещё показывала безымянную градиентную плитку. Теперь и здесь знак, и по
+   тому же правилу, что на занавесе: акцентный цвет, без подложки и без тени.
+   Вход и занавес — два места, где система называет себя; они обязаны
+   называть себя одинаково. */
+.login-mark { width: 40px; height: 40px; margin-bottom: 18px; color: var(--accent); }
+.login-mark svg { width: 100%; height: 100%; display: block; }
+.login-title { margin: 0 0 6px; font-size: 22px; font-weight: 600; letter-spacing: -.2px; }
+.login-sub { margin: 0 0 20px; color: var(--ink-2); font-size: 14px; }
+.login-field { display: block; margin-bottom: 8px; }
+.login-label { display: block; font-size: 12px; color: var(--ink-3); margin-bottom: 6px; }
+.login-input-wrap {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--line); border-radius: var(--r-ctrl);
+  background: rgba(255, 255, 255, .04); padding: 0 12px;
+}
+.login-input-wrap:focus-within { border-color: var(--accent-ring); }
+.login-input-wrap input { flex: 1; min-width: 0; padding: 11px 0; background: none; border: 0; outline: none; font-size: 16px; }
+.login-suffix { color: var(--ink-3); font-family: var(--mono); font-size: 13px; }
+.login-eye { color: var(--ink-3); padding: 6px; }
+.login-err { min-height: 18px; margin: 4px 0 10px; color: var(--danger); font-size: 12.5px; }
+.login-foot { margin: 14px 0 6px; color: var(--ink-3); font-size: 12px; line-height: 1.5; }
+.login-row { display: flex; justify-content: space-between; margin-top: 8px; }
+.login-chip-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.login-chip { padding: 7px 12px; border-radius: 999px; background: var(--glass-2); font-family: var(--mono); font-size: 13px; }
+
+/* ============================================ boot progress (engine kept) */
+#sbBoot { display: none; }
+
+/* ========================================================== curtain §2.4 */
+/* The startup is the second chapter of the landing page's sentence, not a
+   loading screen with a logo on it. A build log resolves out of noise, the
+   promise assembles from that log, comes apart again, and the system's answer
+   — "built around your business" — is compiled out of the same material.
+   Typography is the only hero; the code is the material, never the subject,
+   which is why it never rises above 30% opacity and steps back to 8% whenever
+   a sentence owns the frame.
+
+   Two rules govern every declaration here. No layout shift: the line is 35
+   fixed monospace cells shared by both sentences, so nothing ever reflows —
+   the sentence changes, its box never does, and every animation below is
+   opacity, transform or colour only. No brightness jump: the background is
+   the same near-black the desktop resolves to, and the handoff is a single
+   opacity transition, never a cut. */
+#sbCurtain {
+  position: fixed; inset: 0; z-index: 200;
+  display: grid; place-items: center;
+  background: radial-gradient(120% 90% at 50% 40%, #0b0c11 0%, #020203 70%);
+  transition: opacity 1s var(--ease);
+}
+#sbCurtain.lifting { opacity: 0; pointer-events: none; }
+
+/* the drifting network, capped well below device resolution: a hairline at
+   1.25x is a hairline, and it costs four fifths less to draw */
+#sbCurtainNet {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0;
+  opacity: 0; transition: opacity 1.1s ease; pointer-events: none;
+}
+#sbCurtainNet.on { opacity: 1; }
+html[data-motion="reduced"] #sbCurtainNet { display: none; }
+
+.cur-log {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; gap: .42em;
+  font-family: var(--mono);
+  font-size: clamp(7.5px, 2.1vw, 12px); line-height: 1.25; letter-spacing: .02em;
+  white-space: pre; text-align: left; color: #e8967a;
+  opacity: .30; transition: opacity .9s var(--ease); pointer-events: none;
+}
+#sbCurtain.said .cur-log { opacity: .08; }
+html[data-motion="reduced"] .cur-log { display: none; }
+.cur-log-line { opacity: 0; transform: translateY(5px); transition: opacity .55s var(--ease), transform .55s var(--ease); }
+.cur-log-line.on { opacity: 1; transform: none; }
+
+/* the mark is lifted out of flow so the SENTENCE, not the logo and sentence
+   together, sits on the optical centre — which is also what lets the residue
+   land in exactly the place the sentence just left */
+.cur-stage { position: relative; text-align: center; z-index: 1; }
+/* Занавес показывает ТОТ ЖЕ знак, что стоит потом в углу и в значке вкладки.
+   Раньше здесь была цветная плитка с галочкой — предмет, который нигде больше
+   не встречался, то есть обещание, которого система не сдерживала.
+
+   Подложка и тень сняты по той же причине, что и в шапке: фигура внутри
+   плитки — это знак внутри знака. Здесь фигура крупная и стоит одна; цвет
+   ей даёт акцент, а не градиент. Это единственное место, где знак появляется
+   в акцентном цвете, — момент, когда система называет себя. */
+.cur-mark {
+  position: absolute; left: 50%; bottom: calc(100% + 26px);
+  width: 64px; height: 64px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
+  opacity: 0; transform: translateX(-50%) scale(.86);
+  animation: curMarkIn 1s var(--ease) .15s forwards;
+}
+.cur-mark svg { width: 56px; height: 56px; display: block; }
+@keyframes curMarkIn { to { opacity: 1; transform: translateX(-50%) scale(1); } }
+html[data-motion="reduced"] .cur-mark { animation-duration: .4s !important; }
+
+.cur-cells {
+  display: flex; justify-content: center;
+  font-family: var(--mono); font-size: clamp(8.5px, 2.85vw, 15px); font-weight: 600;
+  letter-spacing: .03em; white-space: pre; line-height: 1.5;
+  opacity: 0; animation: curRunIn .9s var(--ease) .12s forwards;
+}
+@keyframes curRunIn { to { opacity: 1; } }
+.cur-cell {
+  display: inline-block; width: 1ch; text-align: center;
+  /* unresolved: the material, still cooling */
+  color: #e8967a; opacity: .72;
+  text-shadow: 0 0 9px rgba(224, 102, 60, .5), 0 0 2px rgba(236, 138, 95, .8);
+  transition: color .3s ease, text-shadow .3s ease, opacity .2s ease, transform .2s ease;
+}
+/* resolved: the sentence, clean and unlit — the message is never a neon sign */
+.cur-cell.locked { color: #fff; opacity: 1; text-shadow: none; font-weight: 650; }
+/* coming apart: the character lets go before it drops back into the flow */
+.cur-cell.broken { opacity: .15; transform: translateY(-2px) scale(.9); }
+.cur-cell.settle { animation: curSettle .34s var(--spring); }
+@keyframes curSettle { 0% { transform: scale(1); } 42% { transform: scale(1.18); } 100% { transform: scale(1); } }
+html[data-motion="reduced"] .cur-cell { transition-duration: .12s !important; }
+html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
+
+/* Not a fade-out: the last sentence stays on the desktop, barely there.
+   Nobody is meant to consciously read it — it is meant to still be true when
+   they look away. */
+#sbGhostLine {
+  position: fixed; inset: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: clamp(8.5px, 2.85vw, 15px); font-weight: 600;
+  letter-spacing: .03em; white-space: pre; line-height: 1.5;
+  color: #fff; opacity: .13; pointer-events: none; transition: opacity 1.1s var(--ease);
+}
+#sbGhostLine.out { opacity: 0; }
+
+/* farewell + failure surfaces */
+#sbFarewell {
+  position: fixed; inset: 0; z-index: 400; background: #000; color: rgba(255, 255, 255, .9);
+  display: grid; place-items: center; gap: 20px; grid-auto-flow: row;
+  opacity: 0; transition: opacity .5s ease;
+}
+#sbFarewell.on { opacity: 1; }
+/* Четвёртый — и по обходу всех градиентных плиток последний — предмет прежней
+   личности. То же правило, что у входа и занавеса: знак, акцент, без подложки. */
+.farewell-mark { width: 44px; height: 44px; color: var(--accent); }
+.farewell-mark svg { width: 100%; height: 100%; display: block; }
+.farewell-line { font-family: var(--mono); font-size: 14px; letter-spacing: .02em; }
+#sbBootFail {
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 500;
+  padding: 14px 16px; border-radius: 14px; white-space: pre-wrap;
+  background: rgba(60, 10, 12, .94); border: 1px solid rgba(255, 69, 58, .5);
+  color: #ffd9d6; font-family: var(--mono); font-size: 12px; line-height: 1.6;
+}
+#sbQuotaBanner {
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 480;
+  padding: 12px 14px; border-radius: 12px;
+  background: rgba(70, 40, 0, .94); border: 1px solid rgba(255, 214, 10, .45);
+  color: #ffe9b0; font-family: var(--mono); font-size: 12px;
+}
+
+/* =============================================================== topbar §5 */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h); z-index: 60;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 0 12px; padding-top: env(safe-area-inset-top);
+  background: linear-gradient(180deg, rgba(10, 11, 15, .82), rgba(10, 11, 15, .52));
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+  border-bottom: 1px solid var(--line);
+  opacity: 0; transform: translateY(-8px);
+  transition: opacity .4s ease, transform .4s var(--ease);
+}
+html.rv-topbar #topbar { opacity: 1; transform: none; }
+html.topbar-hidden #topbar { transform: translateY(-100%); }
+html.topbar-hidden.topbar-peek #topbar { transform: none; }
+.tb-left, .tb-right { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.tb-center { flex: 1; min-width: 0; }
+
+/* THE SYSTEM MARK §7
+   The glyph is the curtain's, shrunk to fit a 44px bar: the same rounded
+   square in the same accent gradient, so the thing that greeted you at boot
+   is the thing sitting in the corner afterwards. The wordmark next to it is
+   the landing's, character for character (hair spaces included) — one brand,
+   two surfaces, no second drawing of it anywhere. */
+.tb-mark { display: inline-flex; align-items: center; gap: 7px; padding-left: 2px; flex: none; }
+/* Раньше здесь была цветная плитка с галочкой внутри. Теперь внутри — сам
+   знак, и подложка вокруг него стала знаком внутри знака: она отобрана.
+   Обе поверхности показывают одну и ту же фигуру одного цвета и без рамки,
+   потому что бренд один. Это и есть то, что обещает комментарий выше.
+
+   Движение однократное. Логотип, пульсирующий вечно, — ровно тот дефект,
+   который сегодня убран из шапки лендинга: он стоит кадра каждый кадр. */
+/* ЛОГОТИП ОСНОВАТЕЛЯ. Та же геометрия, что на лендинге (решение 021):
+   буквы — обведённые контуры, знак — построенная фигура из двух крюков.
+   В узкой полосе слово уступает: остаётся только знак — тот же объект,
+   последний оставшийся масштаб. */
+.sb-wm { display: inline-flex; align-items: center; white-space: nowrap; }
+.sb-lock { height: 16px; width: auto; display: block; animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both; }
+.sb-min { display: none; }
+.sb-ls, .sb-hs { fill: var(--ink); }
+.sb-lb, .sb-hb { fill: var(--accent); }
+.sb-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@keyframes markIn { from { opacity: 0; transform: translate3d(-8%, -8%, 0) scale(.82) } to { opacity: 1; transform: none } }
+@media (prefers-reduced-motion: reduce) { .sb-lock { animation: none } }
+html[data-motion="reduced"] .sb-lock { animation: none }
+.mark-word { color: var(--ink); white-space: nowrap; }
+
+.tb-identity { display: inline-flex; align-items: baseline; gap: 1px; padding: 5px 9px; border-radius: 999px; font-size: 13px; }
+.tb-identity:hover { background: var(--glass); }
+.id-name { font-weight: 600; }
+.tb-btn {
+  position: relative; display: inline-grid; place-items: center;
+  width: 30px; height: 28px; border-radius: 9px; color: var(--ink-2);
+}
+.tb-btn svg { width: 17px; height: 17px; }
+.tb-btn:hover { background: var(--glass); color: var(--ink); }
+.tb-btn.on, .tb-btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
+.tb-badge {
+  position: absolute; top: 1px; right: 1px; min-width: 14px; height: 14px; padding: 0 3px;
+  border-radius: 999px; background: var(--danger); color: #fff; font-size: 9.5px;
+  display: grid; place-items: center;
+}
+.tb-sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; }
+.tb-seq { display: flex; align-items: center; gap: 4px; overflow: hidden; }
+.seq-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px; border-radius: 9px; max-width: 170px; }
+.seq-item:hover { background: var(--glass); }
+.seq-item.active { background: var(--glass-2); }
+.seq-item.dim { opacity: .5; }
+.seq-tile {
+  width: 16px; height: 16px; border-radius: 5px; flex: none;
+  display: grid; place-items: center; color: var(--ink-2);
+  background: var(--glass); border: 1px solid var(--line);
+}
+.seq-tile svg { width: 10px; height: 10px; }
+.seq-name { font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* All that survives of the tips in the bar is the switch that asks for one.
+   It goes quiet once there is nothing left to teach. */
+.tip-bulb { color: var(--ink-3); }
+.tip-bulb.retired { display: none; }
+.wx-place { color: var(--ink-3); }
+.tb-clock { display: flex; font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); white-space: pre; }
+.clock-cell { display: inline-block; min-width: .62ch; text-align: center; }
+.clock-cell.roll { animation: cellRoll .32s var(--ease); }
+@keyframes cellRoll { from { transform: translateY(-45%); opacity: .2; } to { transform: none; opacity: 1; } }
+.cc-trigger { width: auto; gap: 5px; padding: 0 7px; display: inline-flex; }
+.net-glyph { width: 13px; height: 13px; border-radius: 50%; border: 2px solid currentColor; opacity: .8; }
+.net-glyph.offline { opacity: .35; background: linear-gradient(45deg, transparent 44%, currentColor 44%, currentColor 56%, transparent 56%); }
+.bat-glyph {
+  position: relative; width: 22px; height: 11px; border: 1px solid currentColor; border-radius: 3px; opacity: .8;
+}
+.bat-glyph::before {
+  content: ""; position: absolute; left: 1px; top: 1px; bottom: 1px; width: var(--fill, 60%);
+  max-width: calc(100% - 2px); background: currentColor; border-radius: 1px;
+}
+.bat-glyph.charging { color: var(--good); }
+.bat-glyph.warn { color: var(--warn); }
+.bat-glyph.danger { color: var(--danger); }
+.bat-glyph.neutral::before { width: 0; }
+.tb-timer-wrap { position: relative; }
+.pop {
+  position: absolute; right: 0; top: calc(100% + 8px); width: 232px; padding: 14px; z-index: 70;
+  background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-card);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow);
+}
+.pop h4 { margin: 0 0 8px; font-size: 13px; }
+
+/* ====================================================== control center §7 */
+#sbControlCenter {
+  position: fixed; top: calc(var(--topbar-h) + 6px); right: 10px; z-index: 95;
+  width: min(340px, calc(100vw - 20px));
+  max-height: min(78vh, 640px); overflow: auto;
+  padding: 14px;
+  background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-card);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.5); box-shadow: var(--shadow);
+  opacity: 0; transform: translateY(-6px) scale(.99);
+  transition: opacity .18s ease, transform .18s var(--ease);
+}
+#sbControlCenter.open { opacity: 1; transform: none; }
+.cc-grid { display: flex; flex-direction: column; gap: 12px; }
+.cc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cc-stat {
+  padding: 10px 12px; border-radius: var(--r-ctrl); background: rgba(255, 255, 255, .04); border: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.cc-k { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+.cc-v { font-size: 17px; font-weight: 600; }
+.cc-line { font-size: 11.5px; color: var(--ink-3); }
+.cc-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cc-toggle {
+  padding: 10px 12px; border-radius: var(--r-ctrl); text-align: left; font-size: 12.5px;
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink-2);
+}
+.cc-toggle.on { background: var(--accent-soft); border-color: var(--accent-ring); color: var(--ink); }
+.cc-slider, .cc-select { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--ink-2); }
+.cc-slider input[type="range"] { width: 100%; accent-color: var(--accent); }
+.cc-select select { padding: 8px 10px; border-radius: var(--r-ctrl); background: rgba(255, 255, 255, .04); border: 1px solid var(--line); }
+.cc-block { display: flex; flex-direction: column; gap: 7px; }
+.cc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  padding: 6px 11px; border-radius: 999px; font-size: 12px; color: var(--ink-2);
+  background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+}
+.chip.on { background: var(--accent-soft); border-color: var(--accent-ring); color: var(--ink); }
+.cc-accents { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.accent-sw { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; }
+.accent-sw.on { border-color: #fff; box-shadow: 0 0 0 2px rgba(0, 0, 0, .35); }
+.accent-custom { width: 30px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: none; }
+.cc-buttons { display: flex; flex-direction: column; gap: 6px; }
+.cc-buttons .btn { text-align: left; }
+
+/* ============================================================== desktop §4 */
+#desktop { position: fixed; inset: 0; z-index: 1; opacity: 0; transition: opacity .5s ease; }
+html.rv-scene #desktop { opacity: 1; }
+#sbIconLayer, #sbWidgetLayer, #sbNoteLayer { position: absolute; inset: var(--topbar-h) 0 0 0; }
+#sbIconLayer { z-index: 2; opacity: 0; transition: opacity .45s ease; }
+html.rv-icons #sbIconLayer { opacity: 1; }
+#sbWidgetLayer { z-index: 3; opacity: 0; transition: opacity .45s ease; pointer-events: none; }
+html.rv-widgets #sbWidgetLayer { opacity: 1; }
+#sbWidgetLayer > * { pointer-events: auto; }
+#sbNoteLayer { z-index: 4; pointer-events: none; }
+#sbNoteLayer > * { pointer-events: auto; }
+
+/* desktop icons */
+.desk-icon {
+  position: absolute; width: 80px; height: 92px; display: flex; flex-direction: column;
+  align-items: center; gap: 6px; padding: 6px 2px; border-radius: 14px;
+  transition: background .16s ease, transform .18s var(--ease);
+}
+.desk-icon:hover { background: rgba(255, 255, 255, .06); }
+.desk-icon.selected { background: var(--accent-soft); outline: 1px solid var(--accent-ring); }
+.desk-icon.dragging { opacity: .85; transition: none; z-index: 9; }
+.desk-icon.settling { transition: left .28s var(--spring), top .28s var(--spring); }
+.desk-icon.hidden-icon { display: none; }
+.desk-icon.drop-target, .desk-icon.armed { outline: 2px solid var(--accent); }
+/* The tile is graphite: the environment is achromatic, and ten simultaneous
+   brand colours were the loudest thing on the desktop while meaning nothing.
+   Colour on this desktop is a state — the running dot, a badge, the seam of
+   the one action tile — never decoration. */
+.icon-tile {
+  width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center;
+  color: var(--ink); box-shadow: var(--shadow-soft);
+  background: linear-gradient(150deg, rgba(242, 242, 240, .12), rgba(242, 242, 240, .03));
+  border: 1px solid var(--line);
+}
+.icon-tile svg { width: 22px; height: 22px; }
+.icon-label {
+  font-size: 11.5px; color: var(--ink-2); text-align: center; line-height: 1.25;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.icon-spark {
+  position: absolute; top: 2px; right: 4px; width: 18px; height: 18px; border-radius: 50%;
+  display: grid; place-items: center; color: var(--ink-3); opacity: 0; transition: opacity .16s ease;
+}
+.desk-icon:hover .icon-spark { opacity: 1; }
+.icon-spark svg { width: 12px; height: 12px; }
+.icon-capsule {
+  position: absolute; top: calc(100% - 4px); left: 50%; transform: translateX(-50%) scaleY(.9);
+  transform-origin: top center; width: 200px; z-index: 12; opacity: 0; pointer-events: none;
+  transition: opacity .18s ease, transform .18s var(--ease);
+}
+.desk-icon.capsule-open .icon-capsule { opacity: 1; pointer-events: auto; transform: translateX(-50%) scaleY(1); }
+.icon-capsule input {
+  width: 100%; padding: 9px 12px; border-radius: 999px; font-size: 13px;
+  background: var(--glass-2); border: 1px solid var(--line-2); color: var(--ink);
+  backdrop-filter: blur(var(--glass-blur)); outline: none;
+}
+
+/* ---------------------------------------------------------- desktop notes
+   A note is not a card laid on top of the desktop. It is a thing standing in
+   the same room as the wallpaper, and it is lit by it.
+
+   --wp-light and --wp-light-2 are published by the field whenever the mood
+   changes: they are literally the colours the wallpaper is painting with.
+   Change the mood and every note on the desktop changes with it, because the
+   light source changed — not because a note has its own theme.
+
+   --nx and --ny are where the note stands, 0..1 across the room. The light
+   falls from the wallpaper's own bright corner (upper right, where the field
+   puts its first body of light), so a note near it catches a brighter edge
+   and a longer shadow than one in the far corner. Both are written once, on
+   placement: a static gradient costs nothing, and the desktop is already
+   paying for a moving wallpaper.
+
+   No glassmorphism stack, no neon rim, no animation for its own sake. One
+   translucent body, one lit edge, one shadow that knows which way is up. */
+.sticky-note {
+  --nx: .5;
+  --ny: .5;
+  /* how much of the wallpaper's light reaches here: full at the bright
+     corner, a third of it at the opposite one */
+  --lit: calc(.34 + (var(--nx) * .42) + ((1 - var(--ny)) * .24));
+
+  position: absolute; width: 196px; padding: 11px 11px 9px;
+  border-radius: var(--r-card);
+  color: var(--ink);
+  background:
+    radial-gradient(140% 120% at calc(var(--nx) * 100%) -30%,
+      rgba(var(--wp-light-rgb, 91, 124, 255), calc(.10 * var(--lit))), transparent 62%),
+    var(--glass);
+  border: 1px solid rgba(var(--wp-light-rgb, 91, 124, 255), calc(.16 + .22 * var(--lit)));
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  box-shadow:
+    /* the lit edge, on the side the light comes from */
+    inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), calc(.10 + .16 * var(--lit))),
+    /* and the shadow it casts, away from it */
+    0 14px 34px -18px rgba(0, 0, 0, .72),
+    0 2px 10px -6px rgba(var(--wp-light-rgb, 91, 124, 255), calc(.10 * var(--lit)));
+  transition: left .3s var(--ease), top .3s var(--ease),
+              border-color .5s ease, box-shadow .5s ease, background .5s ease;
+}
+/* Writing brings the light up, the way leaning toward a lamp does. */
+.sticky-note.focused {
+  border-color: rgba(var(--wp-light-rgb, 91, 124, 255), .52);
+  box-shadow:
+    inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), .26),
+    0 18px 44px -20px rgba(0, 0, 0, .8),
+    0 0 26px -10px rgba(var(--wp-light-rgb, 91, 124, 255), .34);
+}
+/* Lifted: nothing moves under the hand, so the transition comes off, and the
+   shadow lengthens because the note is further from the surface. */
+.sticky-note.dragging {
+  transition: none;
+  box-shadow:
+    inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), .22),
+    0 26px 54px -22px rgba(0, 0, 0, .84);
+}
+.sticky-note.settling { transition: left .3s var(--ease), top .3s var(--ease); }
+.sticky-note.selected { outline: 1px solid rgba(var(--wp-light-rgb, 91, 124, 255), .5); }
+html[data-motion="reduced"] .sticky-note { transition: none; }
+/* the note is the handle; the text inside it is not */
+.sticky-note .note-text { touch-action: auto; }
+.note-text {
+  width: 100%; min-height: 52px; max-height: 260px; resize: none; border: 0; outline: none;
+  background: none; color: var(--ink); font-size: 13px; line-height: 1.45;
+}
+.note-del { position: absolute; top: 4px; right: 6px; color: var(--ink-3); font-size: 12px; padding: 4px; }
+.note-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.note-chip {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px;
+  font-size: 11px; color: var(--ink-2); background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+}
+.note-chip.live { border-color: var(--accent-ring); }
+.chip-tile { width: 10px; height: 10px; border-radius: 4px; }
+.note-invite {
+  position: fixed; z-index: 30; display: flex; align-items: center; gap: 9px;
+  padding: 7px 12px 7px 7px; border-radius: 999px;
+  background: var(--glass-2); border: 1px solid var(--line); backdrop-filter: blur(var(--glass-blur));
+  font-size: 12.5px; color: var(--ink-2); animation: fadeIn .18s ease;
+}
+.invite-plus {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-size: 16px; line-height: 1;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* widgets */
+.sb-widget {
+  position: absolute; display: flex; flex-direction: column; overflow: hidden;
+  border-radius: var(--r-card); background: var(--glass); border: 1px solid var(--line);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.35); box-shadow: var(--shadow-soft);
+}
+.sb-widget.dragging { transition: none; box-shadow: var(--shadow); }
+.sb-widget-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 12px; cursor: grab; border-bottom: 1px solid var(--line);
+}
+.sb-widget-title { font-size: 12px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .07em; }
+.sb-widget-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
+.sb-widget-resize { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+.sb-widget-resize::after { content: ""; position: absolute; right: 4px; bottom: 4px; width: 7px; height: 7px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); }
+.align-guide { position: fixed; z-index: 40; background: var(--accent); opacity: .55; pointer-events: none; }
+.align-guide.v { top: 0; bottom: 0; width: 1px; }
+.align-guide.h { left: 0; right: 0; height: 1px; }
+.cap-form input {
+  width: 100%; padding: 9px 11px; border-radius: var(--r-ctrl); font-size: 13px;
+  background: rgba(255, 255, 255, .05); border: 1px solid var(--line); color: var(--ink); outline: none;
+}
+.cap-recent { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.cap-recent li { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.marquee { position: fixed; z-index: 25; border: 1px solid var(--accent-ring); background: var(--accent-soft); pointer-events: none; border-radius: 4px; }
+
+/* ================================================================ windows §3 */
+#windowLayer { position: fixed; inset: 0; z-index: 20; isolation: isolate; pointer-events: none; }
+.window {
+  position: absolute; pointer-events: auto; display: flex; flex-direction: column; overflow: hidden;
+  min-width: 340px; min-height: 280px;
+  border-radius: var(--r-window); background: var(--glass);
+  border: 1px solid var(--line); box-shadow: var(--shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+}
+.window::before {
+  content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: rgba(255, 255, 255, .16); pointer-events: none;
+}
+/* Белый блик по верхней кромке невидим на белой панели и только размывает
+   край. В светлой теме кромка обязана быть темнее панели, а не светлее. */
+html[data-theme="light"] .window::before { background: rgba(12, 14, 20, .08); }
+.window.focused { border-color: rgba(var(--accent-rgb), .45); box-shadow: 0 0 0 1px var(--accent-soft), var(--shadow); }
+.window.focused::before { background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .5), transparent); }
+.window.minimized { display: none; }
+.window.maximized { border-radius: 0; }
+/* Fullscreen drops the frame, never the chrome. The title bar carries the only
+   way out of the state — hiding it stranded the visitor with no close, no
+   minimise and no restore, and no key that everyone knows. */
+.window.fullscreen { border-radius: 0; border-color: transparent; }
+/* Полный экран обязан быть полным: rect максимизации ставится инлайном с
+   отступом под верхнюю панель, а второй нажим прячет панель — и сверху
+   оставалась её тень пустоты. !important здесь бьёт инлайн-стили осознанно. */
+.window.fullscreen { top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 70; }
+/* Fullscreen is a contract, not a costume (v21, закон window-controls):
+   the window fills the glass to y:0 — so the bar RETREATS instead of
+   parking itself over the window's own close/minimise/maximise keys.
+   Found by hit-test, not by eye: geometry said "top=0 ✓" while the mark-word
+   sat exactly on the close key. */
+html.sb-fullscreen-window #topbar {
+  transform: translateY(-110%); opacity: 0; pointer-events: none;
+  transition: transform .3s ease, opacity .25s ease;
+}
+.window.drop-target { outline: 2px solid var(--accent); }
+html.dragging .window { backdrop-filter: blur(6px); }
+.titlebar {
+  display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 12px; flex: none;
+  border-bottom: 1px solid var(--line); user-select: none; cursor: default;
+}
+ /* Window controls. Three coloured dots are somebody else's operating system;
+    this is a single graphite cluster of glyph keys — always legible, never
+    dependent on hover to tell you what they do, and it reads the same on a
+    phone where there is no hover at all. Close is the only one that takes a
+    colour, and only under the pointer. */
+.lights {
+  display: flex; align-items: center; gap: 2px;
+  padding: 2px; border-radius: 10px;
+  background: rgba(255, 255, 255, .045);
+  border: 1px solid var(--line);
+}
+.light {
+  width: 22px; height: 18px; border-radius: 7px; display: grid; place-items: center;
+  background: transparent; color: var(--ink-3);
+  transition: background .14s ease, color .14s ease;
+}
+.light svg { width: 11px; height: 11px; }
+.light:hover, .light:focus-visible { background: var(--glass-2); color: var(--ink); }
+.light.close:hover, .light.close:focus-visible { background: rgba(255, 69, 58, .18); color: #ff6a60; }
+.window.focused .lights { border-color: var(--line-2); background: rgba(255, 255, 255, .07); }
+.window.focused .light { color: var(--ink-2); }
+.win-title { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
+.win-chip {
+  width: 16px; height: 16px; border-radius: 5px; flex: none;
+  display: grid; place-items: center; color: var(--ink-2);
+  background: var(--glass); border: 1px solid var(--line);
+}
+.win-chip svg { width: 10px; height: 10px; }
+.win-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.win-brand { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+.tb-right .win-kbd, .win-kbd { color: var(--ink-3); font-size: 11px; }
+.window-body { flex: 1; min-height: 0; overflow: auto; }
+.app-fail { padding: 22px; color: var(--ink-2); font-size: 13px; }
+.resize-handle { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize; }
+.resize-handle::after { content: ""; position: absolute; right: 5px; bottom: 5px; width: 7px; height: 7px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); }
+#sbSnapGhost {
+  position: fixed; z-index: 19; border-radius: var(--r-window); pointer-events: none; opacity: 0;
+  background: var(--accent-soft); border: 1px solid var(--accent-ring);
+  backdrop-filter: blur(8px);
+  transition: opacity .16s ease, left .16s var(--ease), top .16s var(--ease), width .16s var(--ease), height .16s var(--ease);
+}
+#sbSnapGhost.on { opacity: 1; }
+
+/* Exposé */
+#sbExpose {
+  position: fixed; inset: 0; z-index: 88; display: grid; place-items: center; padding: 60px 24px;
+  background: rgba(4, 5, 8, .72); backdrop-filter: blur(14px);
+}
+.expose-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+.expose-card {
+  width: 190px; padding: 18px; border-radius: var(--r-card); display: flex; flex-direction: column; align-items: center; gap: 10px;
+  background: var(--glass); border: 1px solid var(--line);
+}
+.expose-tile {
+  width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center;
+  color: var(--ink); background: linear-gradient(150deg, rgba(242, 242, 240, .12), rgba(242, 242, 240, .03));
+  border: 1px solid var(--line);
+}
+.expose-tile svg { width: 20px; height: 20px; }
+.expose-name { font-size: 12.5px; color: var(--ink-2); }
+.expose-empty { color: var(--ink-3); }
+
+/* ========================================================= desktop hint §8
+   The tips used to live in a strip across the top of the screen, which put
+   every sentence about the dock, the icons and the notes as far away from
+   those things as the screen allows. They belong down here instead — low on
+   the desktop, just above the dock, in the half of the screen the tip is
+   usually talking about.
+
+   It is lit the way the notes are: the wallpaper publishes its current mood
+   as --wp-light-rgb, and the hint takes its wash, its edge and its shadow
+   from that. Change the wallpaper and the hint changes with it, because it
+   is sitting on the wallpaper — not floating in a layer of its own that
+   happens to be nearby. */
+#sbDeskHint {
+  /* Absolute, not fixed, and a child of #desktop: the hint is furniture ON the
+     desktop, so it belongs to the desktop's stacking context. That context is
+     z-index 1 and the window layer is 20, which means a window covers the hint
+     because of where it is in the document — not because of a number that has
+     to be kept ahead of the hint's own. The reported bug was the opposite
+     arrangement: a fixed element at z-index 54 painting over every window. */
+  position: absolute; left: 50%; z-index: 5;
+  /* clear of the dock by measurement, not by a number that ages badly:
+     the shell publishes --dock-h from the dock's real height. */
+  bottom: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 90px) + 12px);
+  display: flex; align-items: stretch; gap: 0;
+  max-width: min(560px, calc(100vw - 32px));
+  border-radius: 14px;
+  background:
+    radial-gradient(160% 180% at 12% -40%,
+      rgba(var(--wp-light-rgb, 91, 124, 255), .13), transparent 64%),
+    var(--glass);
+  border: 1px solid rgba(var(--wp-light-rgb, 91, 124, 255), .30);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), .20),
+    0 16px 40px -20px rgba(0, 0, 0, .74),
+    0 2px 12px -7px rgba(var(--wp-light-rgb, 91, 124, 255), .22);
+  /* It arrives from below, out of the dock it is standing on. */
+  opacity: 0; transform: translate(-50%, 14px);
+  transition: opacity .42s var(--ease), transform .42s var(--ease),
+              border-color .6s ease, box-shadow .6s ease, background .6s ease;
+  pointer-events: none;
+}
+#sbDeskHint.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: translate(-50%, 0); }
+
+.dh-body {
+  display: flex; align-items: center; gap: 10px; min-width: 0;
+  padding: 10px 6px 10px 13px; border-radius: 14px 0 0 14px; text-align: left;
+}
+.dh-body:hover { background: rgba(var(--wp-light-rgb, 91, 124, 255), .09); }
+.dh-glyph {
+  flex: none; display: grid; place-items: center; width: 17px; height: 17px;
+  color: rgb(var(--wp-light-2-rgb, 143, 168, 242));
+}
+.dh-glyph svg { width: 17px; height: 17px; }
+.dh-text {
+  font-size: 12.5px; line-height: 1.45; color: var(--ink-2); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dh-close {
+  flex: none; display: grid; place-items: center; width: 32px;
+  border-radius: 0 14px 14px 0; color: var(--ink-3);
+}
+.dh-close svg { width: 13px; height: 13px; }
+.dh-close:hover { background: rgba(var(--wp-light-rgb, 91, 124, 255), .12); color: var(--ink); }
+
+/* On a phone the dock is gone and the sentence needs the room, so it stops
+   pretending to be a single line and simply wraps. */
+@media (max-width: 620px) {
+  /* no dock down here, so the hint takes the space the dock was clearing —
+     but it still has to stay above the quick-actions button. */
+  #sbDeskHint { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 58px); max-width: calc(100vw - 24px); }
+  .dh-text { white-space: normal; }
+}
+
+/* =================================================================== dock §4.1 */
+#dock {
+  position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  z-index: 55; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  transition: transform .3s var(--ease), opacity .3s ease;
+}
+/* Док не уходит за кромку — он затихает. То же решение, что на лендинге:
+   единственный вход в продукт не должен исчезать с экрана. Настройка в
+   Центре управления называется теперь «приглушать», и она не врёт. */
+/* Тот же диагноз, что на лендинге: opacity на элементе гасит и размытие
+   подложки, и сквозь док проступает текст. Поверхность остаётся плотной,
+   притухает только содержимое. */
+html.dock-away #dock { transform: translate(-50%, 5px) scale(.975); }
+html.dock-away .dock-shelf { background: rgba(16, 13, 12, .74); }
+html.dock-away #dock .dock-tile, html.dock-away #dock .dock-label { opacity: .5; }
+html.dock-away #dock:hover, html.dock-away #dock:focus-within { transform: translate(-50%, 0); }
+html.dock-away #dock:hover .dock-tile, html.dock-away #dock:focus-within .dock-tile,
+html.dock-away #dock:hover .dock-label, html.dock-away #dock:focus-within .dock-label { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { html.dock-away #dock { transform: translate(-50%, 0); } }
+.dock-shelf {
+  display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px;
+  border-radius: 22px; background: var(--glass); border: 1px solid var(--line);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.5); box-shadow: var(--shadow-soft);
+}
+#dockInner { display: flex; align-items: flex-end; gap: 8px; }
+.dock-item {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  width: 46px; transform: scale(var(--mag, 1)); transform-origin: bottom center;
+  transition: width .28s var(--ease), opacity .22s ease, margin .28s var(--ease), transform .12s linear;
+}
+/* only running apps are visible — the CTA is exempt (FIX §4.1) */
+#dockInner .dock-item:not(.running) { width: 0; opacity: 0; pointer-events: none; margin-left: -4px; overflow: hidden; }
+.dock-cta { width: auto !important; opacity: 1 !important; pointer-events: auto !important; flex-direction: row; gap: 8px; text-decoration: none; color: var(--ink); padding-left: 4px; }
+.dock-cta-label { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+.dock-tile {
+  width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center;
+  color: var(--ink); box-shadow: var(--shadow-soft); flex: none;
+  background: linear-gradient(150deg, rgba(242, 242, 240, .12), rgba(242, 242, 240, .03));
+  border: 1px solid var(--line);
+}
+/* The one coloured tile in the dock: the call to action. Seam means "here you
+   can act", and this is the act. */
+.dock-cta .dock-tile { background: var(--accent); border-color: transparent; color: #0a0a0b; }
+.dock-tile svg { width: 21px; height: 21px; }
+.dock-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); opacity: 0; }
+.dock-item.running .dock-dot { opacity: 1; }
+.dock-item.active-app .dock-dot { background: var(--accent); }
+.dock-item.bounce .dock-tile { animation: dockBounce .6s var(--spring); }
+.dock-item.catch .dock-tile { transform: scale(.86); }
+.dock-item.release .dock-tile { transform: scale(1.06); }
+@keyframes dockBounce { 0% { transform: translateY(0); } 40% { transform: translateY(-16px); } 100% { transform: translateY(0); } }
+.dock-badge {
+  position: absolute; top: -3px; right: 2px; min-width: 17px; height: 17px; padding: 0 4px;
+  border-radius: 999px; background: var(--danger); color: #fff; font-size: 10.5px;
+  display: grid; place-items: center;
+}
+#dockHint { font-size: 11.5px; color: var(--ink-3); }
+#sbFab {
+  position: fixed; right: 18px; bottom: 96px; z-index: 56; width: 42px; height: 42px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 21px; line-height: 1; color: var(--ink);
+  background: var(--glass-2); border: 1px solid var(--line); backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--shadow-soft);
+}
+
+/* ================================================================== toasts §7 */
+/* On a phone a 320px toast starting 12px from the right edge reaches across
+   most of the screen — including the top-left corner where a maximised
+   window keeps its controls. A notice must never sit on the key that closes
+   the thing it is talking about, so on narrow screens the layer starts below
+   a titlebar's height. */
+#toastLayer {
+  position: fixed; top: calc(var(--topbar-h) + 10px); right: 12px; z-index: 90;
+  display: flex; flex-direction: column; gap: 8px; width: min(320px, calc(100vw - 24px));
+}
+.toast {
+  display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 12px 14px;
+  border-radius: var(--r-card); background: var(--glass-2); border: 1px solid var(--line);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow-soft);
+  opacity: 0; transform: translateX(14px); transition: opacity .22s ease, transform .22s var(--ease);
+}
+.toast.in { opacity: 1; transform: none; }
+.toast-icon { color: var(--ink-2); }
+.toast-icon svg { width: 18px; height: 18px; }
+.toast-title { font-size: 13px; font-weight: 600; }
+.toast-text { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+.toast-action {
+  grid-column: 2; justify-self: start; margin-top: 8px; padding: 5px 11px; border-radius: 9px;
+  font-size: 12px; background: var(--accent-soft); border: 1px solid var(--accent-ring); color: var(--ink);
+}
+.toast-warn { border-color: rgba(255, 214, 10, .45); }
+
+/* ================================================================= panels §6 */
+.panel-overlay {
+  position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 20px;
+  background: rgba(4, 5, 8, .55); backdrop-filter: blur(8px);
+}
+.panel-overlay.open { display: grid; }
+.panel {
+  width: min(520px, 100%); max-height: 84vh; display: flex; flex-direction: column; overflow: hidden;
+  border-radius: var(--r-card); background: var(--glass); border: 1px solid var(--line);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.5); box-shadow: var(--shadow);
+  animation: panelIn .2s var(--ease);
+}
+@keyframes panelIn { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: none; } }
+.panel-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.panel-head h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.panel-close { color: var(--ink-3); padding: 4px 6px; border-radius: 8px; }
+.panel-body { padding: 12px 16px 16px; overflow: hidden; display: flex; flex-direction: column; gap: 8px; }
+/* REQUIRED cap: panel lists always stay reachable (§6.0) */
+.panel-scroll { max-height: min(56vh, 420px); overflow: auto; padding-right: 4px; }
+.panel-sub { margin: 12px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
+.panel-empty { color: var(--ink-3); font-size: 13px; padding: 10px 2px; }
+.panel-copy { font-size: 13px; color: var(--ink-2); line-height: 1.55; margin: 0 0 10px; }
+.panel-copy.dim { color: var(--ink-3); font-size: 12px; }
+.panel-err { color: var(--danger); font-size: 12.5px; min-height: 16px; }
+.panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.foot-note { font-size: 11.5px; color: var(--ink-3); }
+.kv-row { display: flex; align-items: center; gap: 12px; padding: 7px 2px; font-size: 13px; color: var(--ink-2); }
+.kv-row kbd { min-width: 74px; padding: 3px 7px; border-radius: 7px; background: rgba(255, 255, 255, .07); border: 1px solid var(--line); text-align: center; }
+.kv-row.wide { justify-content: space-between; }
+.kv-k { color: var(--ink-3); }
+.kv-v { text-align: right; max-width: 62%; overflow-wrap: anywhere; }
+.diag-err { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); padding: 5px 2px; overflow-wrap: anywhere; }
+.notif-row, .task-row, .clip-row {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--r-ctrl);
+  background: rgba(255, 255, 255, .03); border: 1px solid var(--line); margin-bottom: 6px; cursor: pointer;
+}
+.notif-row:hover, .task-row:hover, .clip-row:hover { background: rgba(255, 255, 255, .06); }
+.notif-main { flex: 1; min-width: 0; }
+.notif-title { font-size: 13px; }
+.notif-text, .task-sub, .notif-time, .clip-time { font-size: 11.5px; color: var(--ink-3); }
+.notif-x, .task-x { color: var(--ink-3); padding: 3px 6px; }
+.task-tile, .lay-tile { width: 16px; height: 16px; border-radius: 6px; flex: none; }
+.widget-tile { background: linear-gradient(160deg, #7f8794, #40454f); }
+.lay-tiles { display: flex; gap: 3px; }
+.task-name { flex: 1; font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clip-text { flex: 1; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clip-row.copied { border-color: var(--accent-ring); background: var(--accent-soft); }
+.fixed-badge {
+  position: fixed; right: 14px; bottom: 150px; z-index: 92; padding: 6px 12px; border-radius: 999px;
+  font-family: var(--mono); font-size: 12px; color: var(--ink-2);
+  background: var(--glass-2); border: 1px solid var(--line); backdrop-filter: blur(var(--glass-blur));
+}
+.fixed-badge.urgent { color: #fff; background: rgba(255, 69, 58, .8); border-color: rgba(255, 69, 58, .9); animation: pulseUrgent 1s infinite; }
+@keyframes pulseUrgent { 50% { opacity: .55; } }
+
+/* ================================================================ palette §8 */
+#sbCmdk {
+  position: fixed; inset: 0; z-index: 110; display: none; justify-content: center; align-items: flex-start;
+  padding: 14vh 20px 20px; background: rgba(4, 5, 8, .5); backdrop-filter: blur(8px);
+}
+#sbCmdk.open { display: flex; }
+.cmdk-box {
+  width: min(560px, 100%); border-radius: var(--r-card); overflow: hidden;
+  background: var(--glass); border: 1px solid var(--line);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.5); box-shadow: var(--shadow);
+  animation: panelIn .18s var(--ease);
+}
+#sbCmdkInput { width: 100%; padding: 16px 18px; font-size: 15px; background: none; border: 0; border-bottom: 1px solid var(--line); outline: none; }
+#sbCmdkList { list-style: none; margin: 0; padding: 6px; max-height: min(52vh, 400px); overflow: auto; }
+.cmdk-item { display: flex; align-items: center; gap: 11px; padding: 9px 11px; border-radius: var(--r-ctrl); cursor: pointer; }
+.cmdk-item.active { background: var(--accent-soft); }
+.cmdk-tile { width: 26px; height: 26px; border-radius: 9px; display: grid; place-items: center; flex: none; color: rgba(255, 255, 255, .92); }
+.cmdk-tile svg { width: 15px; height: 15px; }
+.cmdk-text { display: flex; flex-direction: column; min-width: 0; }
+.cmdk-title { font-size: 13px; }
+.cmdk-sub { font-size: 11.5px; color: var(--ink-3); }
+.cmdk-empty { padding: 16px; color: var(--ink-3); font-size: 13px; }
+
+/* =========================================================== context menu */
+#sbCtxMenu {
+  position: fixed; z-index: 120; min-width: 208px; padding: 6px;
+  border-radius: var(--r-card); background: var(--glass-2); border: 1px solid var(--line);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow);
+}
+#sbCtxMenu:not(.open) { display: none; }
+.ctx-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 8px 11px; border-radius: 10px; font-size: 13px; text-align: left; color: var(--ink); }
+.ctx-item:hover { background: var(--accent-soft); }
+.ctx-check { color: var(--accent); }
+.ctx-sep { height: 1px; margin: 5px 8px; background: var(--line); }
+
+/* ================================================================= terminal */
+.term-host, .sb-terminal { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; }
+.sb-terminal { padding: 12px 14px; font-family: var(--mono); font-size: 12.5px; background: rgba(0, 0, 0, .28); }
+.term-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.term-chip { padding: 3px 9px; border-radius: 999px; font-size: 11px; color: var(--ink-3); background: rgba(255, 255, 255, .05); border: 1px solid var(--line); }
+.term-out { flex: 1; min-height: 0; overflow: auto; line-height: 1.55; }
+.term-row { white-space: pre-wrap; overflow-wrap: anywhere; }
+.term-echo { color: var(--ink-3); }
+.term-dim { color: var(--ink-3); }
+.term-welcome { color: var(--accent); }
+.term-line { display: flex; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.term-prompt { color: var(--accent); }
+.term-input { flex: 1; background: none; border: 0; outline: none; font-family: var(--mono); font-size: 12.5px; }
+
+/* ================================================================= motion */
+html[data-motion="reduced"] *,
+html.tab-hidden * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+html[data-motion="reduced"] .dock-item { transform: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .06s !important; }
+}
+
+/* ============================================================= responsive §14 */
+@media (max-width: 860px) {
+  .window { border-radius: 0; box-shadow: none; }
+  .resize-handle { display: none; }
+}
+/* Icon step-down (§4.2, the "681 px lesson"): the small-icon regime must extend
+   at least to the width where a full row of LARGE icons fits, otherwise the
+   desktop gets WORSE as the window gets WIDER. With the nine shipped launchable
+   icons that width is 10x80 + 9x6 + 2x22 = 898 px, so the step-down sits at 897.
+   It moved from 811 when Experimental brought the count from nine to ten:
+   the number is derived from the icon count, not a magic constant.
+   The JS threshold in core/shell.js must stay in lockstep with this number. */
+@media (max-width: 897px) {
+  .desk-icon { width: 68px; height: 80px; }
+  .icon-tile { width: 40px; height: 40px; border-radius: 12px; }
+  .icon-tile svg { width: 19px; height: 19px; }
+  .icon-label { font-size: 10.5px; }
+}
+@media (max-width: 680px) {
+  #sbWidgetLayer { display: none; }
+  .window { border-radius: 16px; }
+}
+@media (max-width: 640px) {
+}
+@media (max-width: 620px) {
+  #dock, #dockHint { display: none; }
+  .id-name { display: none; }
+  .tb-identity::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: block; }
+  #sbFab { bottom: 22px; }
+}
+@media (max-width: 560px) {
+  .tb-seq { display: none; }
+  /* Узкая полоса не может позволить себе слово — но может позволить точку.
+     Правило системы: словесный знак сжимается ДО СВОЕЙ ТОЧКИ, а не исчезает.
+     Литеры уходят, фигура остаётся и вырастает до размера, который читается
+     сама по себе. Это тот же объект, просто последний оставшийся масштаб. */
+  .sb-lock { display: none; }
+  .sb-min { display: block; width: 17px; height: 17px; }
+}
+@media (max-width: 620px) {
+  #toastLayer { top: calc(var(--topbar-h) + 52px); }
+}
+@media (max-width: 420px) {
+  #sbControlCenter { right: 6px; left: 6px; width: auto; }
+}
+html.is-touch input, html.is-touch textarea, html.is-touch select { font-size: 16px; }
+html.is-touch .icon-spark, html.is-touch .icon-capsule { display: none; }
+html.is-compact .titlebar { cursor: default; }
+
+/* ── расшифровка имени (D-049) ───────────────────────────────────────────
+   «sys.baby — you and your system, baby». Строка стоит НАД заголовком входа,
+   набрана моноширинным и приглушена: она объясняет имя, а не продаёт. Не
+   переводится намеренно — расшифровывается английское имя, ровно как строка
+   BABY на витрине. Место выбрано по факту, а не по вкусу: занавес загрузки
+   (#sbBoot) скрыт стилями, и строка в нём не была бы видна никому. */
+.login-decoding {
+  margin: 0 0 10px; font-family: var(--mono, ui-monospace, Menlo, monospace);
+  font-size: 11.5px; letter-spacing: .04em; color: var(--ink-3); text-align: center;
+}
