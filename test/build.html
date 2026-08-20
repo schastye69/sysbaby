@@ -34,13 +34,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v47">
+<meta name="sysbaby-build" content="v48">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v47">
+<link rel="stylesheet" href="shared/system.css?b=v48">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -73,6 +73,11 @@ header('Content-Type: text/html; charset=utf-8');
       ev.stopPropagation();
       try { parent.postMessage({ sysbaby: "minimize-build" }, "*"); } catch (e) { /* ignore */ }
     }, true);
+    /* Приёмник просьбы «открыть раздел» живёт в ОСНОВНОМ сценарии страницы,
+       рядом с openApp и appCopyExists, — см. wireHandoff. Первая редакция
+       положила его сюда, в первый инлайн-сценарий, где этих функций ещё
+       нет: просьба падала с ReferenceError ровно в самом частом случае —
+       когда окно build уже открыто. Нашёл прогон final-gate. */
     /* Адрес снимается заодно: клавиша внутри окна никуда не ведёт, и это
        должно быть видно даже до нажатия — по отсутствию ссылки в подсказке
        браузера. Ссылка, которая обещает переход и не переходит, лжёт. */
@@ -81,21 +86,43 @@ header('Content-Type: text/html; charset=utf-8');
       if (a) { a.removeAttribute("href"); a.setAttribute("role", "button"); a.setAttribute("tabindex", "0"); }
     });
   }
+  /* ── АДРЕС ЧИСТИТСЯ ПО ИМЕНАМ, А НЕ ЦЕЛИКОМ (v47.3) ────────────────────
+     Здесь стояло history.replaceState(…, location.pathname + location.hash) —
+     то есть «снять ВЕСЬ запрос», хотя сниматься должен был один параметр.
+     Тот же приём стоял и у языка ниже, и он молча съедал соседей: ссылка
+     ?lang=ee&contact=1 теряла contact=1, а ?in=build&open=cases — раздел,
+     ради которого её и открывали. Дефект нашёлся, когда система начала
+     звать витрину адресно после снятия портфолио (D-066).
+     Помощник объявлен ЗДЕСЬ, в самом первом сценарии страницы, и виден
+     дальше всем: чистка адреса — общее правило, а не привычка двух мест. */
+  window.sbDropParams = function (names) {
+    try {
+      var url = new URL(location.href);
+      names.forEach(function (n) { url.searchParams.delete(n); });
+      var q = url.searchParams.toString();
+      history.replaceState(null, "", location.pathname + (q ? "?" + q : "") + location.hash);
+    } catch (e) { /* history заблокирована — параметр просто останется в строке */ }
+  };
+  /* Запрос ЗАПОМИНАЕТСЯ ДО любой чистки: порядок сценариев на странице
+     меняется от правки к правке, и читатель параметра не должен от него
+     зависеть. Тот же приём давно стоит в оболочке (entrySearch). */
+  window.sbEntryQuery = location.search || "";
+
   var m = /[?&]i=([^&]+)/.exec(location.search || "");
   if (m) {
     try {
       var code = decodeURIComponent(m[1]).slice(0, 120);
       if (code) window.localStorage.setItem("sysbaby.intro", code);
     } catch (e) { /* storage blocked: the introduction is simply not recorded */ }
-    try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) { }
+    window.sbDropParams(["i"]);
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v47"></script>
-<script src="shared/portfolio.strings.js?b=v47"></script>
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v47" />
-<script src="shared/portfolio.view.js?b=v47"></script>
-<script src="shared/pricing.data.js?b=v47"></script>
+<script src="shared/portfolio.data.js?b=v48"></script>
+<script src="shared/portfolio.strings.js?b=v48"></script>
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v48" />
+<script src="shared/portfolio.view.js?b=v48"></script>
+<script src="shared/pricing.data.js?b=v48"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -1236,7 +1263,7 @@ html[data-anim="paused"] .dock-flare{display:none}
 </style>
 </head>
 <body>
-<div id="sbTestBadge" role="status" aria-live="polite">ТЕСТ · сборка <b>v47</b> · витрина</div><script id="sb-test-badge-js">(function(){
+<div id="sbTestBadge" role="status" aria-live="polite">ТЕСТ · сборка <b>v48</b> · витрина</div><script id="sb-test-badge-js">(function(){
   /* Заголовок вкладки помечается сразу и остаётся помеченным: страница может
      переписать document.title у себя (лендинг это делает при смене языка),
      поэтому метка ставится не один раз, а держится наблюдателем. */
@@ -2837,11 +2864,33 @@ function finishBoot() {
 
    Узел #boot и метка is-done сохранены: на этот контракт опираются
    тринадцать наборов проверок. Сохранён контракт, удалено переживание. */
+/* ── ВИТРИНА ОТКРЫВАЕТСЯ НА НАЗВАННОМ РАЗДЕЛЕ (v47.3) ─────────────────────
+   contact=1 был первой такой дверью и остаётся ради старых ссылок. Общая
+   дверь — ?open=<раздел>: её зовёт система, когда что-то в ней ведёт к
+   работам. Приложение портфолио снято с рабочего стола (D-066), и всё, что
+   вело в него, ведёт сюда — на «Избранные проекты», а не в корень витрины:
+   человек ждёт увидеть работы, а не начинать поиск заново.
+   Имя раздела ПРОВЕРЯЕТСЯ по списку приложений витрины: неизвестное имя
+   молча игнорируется, а не открывает пустое окно. */
 function startBoot() {
   finishBoot();
-  if (/(^|[?&])contact=1(&|$)/.test(location.search)) {
+  if (/(^|[?&])contact=1(&|$)/.test(window.sbEntryQuery || location.search)) {
     setTimeout(function () { openApp("order"); }, 240);
+    return;
   }
+  var want = null;
+  try { want = new URLSearchParams(window.sbEntryQuery || location.search).get("open"); }
+  catch (e) { want = null; }
+  if (want && appCopyExists(want)) {
+    setTimeout(function () { openApp(want); }, 240);
+  }
+}
+
+/* Есть ли у витрины такой раздел. Спрашивается у САМИХ ДАННЫХ витрины, а не
+   у списка, переписанного здесь второй раз: второй список расходится молча. */
+function appCopyExists(id) {
+  try { return !!(C.appData && C.appData[id]); }
+  catch (e) { return false; }
 }
 
 /* --------------------------------------------------------------- top bar */
@@ -4888,9 +4937,29 @@ function wireChrome() {
     var langQ = /[?&]lang=(en|ru|ee|fi)(&|$)/.exec(location.search);
     if (langQ) {
       setLang(langQ[1]);
-      history.replaceState(null, "", location.pathname + location.hash);
+      /* Снимается ИМЕННО lang — см. sbDropParams в первом сценарии страницы.
+         Прежняя строка снимала весь запрос и уносила с собой соседей. */
+      if (window.sbDropParams) window.sbDropParams(["lang"]);
     }
   } catch (err) { /* history заблокирована — язык уже применён, и этого достаточно */ }
+
+  /* ── СИСТЕМА ПРОСИТ ОТКРЫТЬ РАЗДЕЛ (v47.3) ──────────────────────────────
+     Вторая половина двери sbOpenBuildAt. Когда окно build ЕЩЁ НЕ открыто,
+     раздел приходит адресом (?open=cases — читает startBoot). Когда окно
+     УЖЕ открыто — приходит сюда сообщением: перезагружать живую витрину
+     ради прокрутки было бы грубо и стоило бы всей её загрузки заново.
+     Обработчик обязан жить в ЭТОМ сценарии: appCopyExists и openApp
+     объявлены здесь, и первая редакция, положившая его в первый инлайн-
+     сценарий, падала с ReferenceError — нашёл прогон final-gate.
+     Имя раздела проверяется по данным витрины: чужое сообщение не может
+     открыть то, чего нет. */
+  window.addEventListener("message", function (ev) {
+    var d = ev && ev.data;
+    if (!d || d.sysbaby !== "open-section") return;
+    var id = String(d.section || "");
+    if (!appCopyExists(id)) return;
+    try { openApp(id); } catch (e) { console.error("[handoff] open-section failed", e); }
+  });
 
   el("ctaRequest").addEventListener("click", function (ev) { ev.preventDefault(); openApp("order"); });
 

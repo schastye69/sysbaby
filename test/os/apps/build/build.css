@@ -4,11 +4,6 @@
   flex: 1 1 auto; width: 100%; border: 0; display: block;
   background: var(--surface, #0b0908);
 }
-/* Строка внизу окна говорит вслух то, что доказывает вся конструкция:
-   это окно можно закрыть. Оно не кричит и не мешает — но оно есть. */
-.build-note {
-  flex: 0 0 auto; padding: 8px 14px;
-  font: 500 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: .03em; opacity: .62;
-  border-top: 1px solid var(--line, rgba(255,255,255,.08));
-}
+/* Строка внизу окна снята (v47.3): она говорила по-русски поверх любого
+   языка и была запиской Совета самому себе, а не частью услуги. То, что
+   окно можно закрыть, доказывает поведение и закон os-build-app. */

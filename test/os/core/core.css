@@ -103,6 +103,7 @@ html[data-transparency="reduced"] .cmdk-box,
 html[data-transparency="reduced"] .toast,
 html[data-transparency="reduced"] .sb-widget,
 html[data-transparency="reduced"] .sticky-note,
+html[data-transparency="reduced"] #sbFab,
 html[data-transparency="reduced"] #sbCtxMenu {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -1191,6 +1192,21 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
 }
 .toast-warn { border-color: rgba(255, 214, 10, .45); }
 
+/* ── ТУРБО (v47.3) ────────────────────────────────────────────────────────
+   Кнопка в панели показывает состояние собой: включённая горит акцентом.
+   Класс sb-turbo на документе добирает то, до чего не дотягиваются
+   data-motion и data-transparency: остаточные переходы и тени. Правила
+   намеренно короткие — Турбо не «другая тема», а снятая цена. */
+.turbo-btn svg { width: 15px; height: 15px; }
+.turbo-btn.on { color: var(--accent); }
+.turbo-btn.on svg { fill: var(--accent); stroke: var(--accent); }
+html.sb-turbo * { transition-duration: .06s !important; animation-duration: .001ms !important; }
+html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon-tile { box-shadow: none; }
+/* Правило с ID сильнее классового .retired — отставка объявляется тем же
+   весом, иначе лампочка в ЦУ пережила бы собственную отставку. */
+#sbControlCenter .tip-bulb { display: flex; align-items: center; }
+#sbControlCenter .tip-bulb.retired { display: none; }
+
 /* ================================================================= panels §6 */
 .panel-overlay {
   position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 20px;
@@ -1408,25 +1424,28 @@ html.icons-small .icon-label { font-size: 10.5px; }
   /* Круглая кнопка остаётся у правого края: полка стоит по центру и узкая,
      угол свободен. Спорить им не за что. */
 
-  /* ── ВНУТРИ ОКНА ПОЛКИ НЕТ (v47.1) ────────────────────────────────────
-     На телефоне окно занимает экран целиком, и плавающая полка поверх него
-     — не помощь, а помеха: она закрывает нижний край содержимого (закон
-     dock-clearance-check поймал это на портфолио: призыв «Start your
-     project» оказался под ней) и продолжает стоить проход размытия там,
-     где показывать ей нечего. Полка отвечает на вопрос «что открыто» — а
-     этот вопрос задают со СТОЛА, не изнутри окна.
-     Класс has-windows уже ведёт оболочка: он ставится, когда на экране есть
-     хоть одно НЕсвёрнутое окно. Полка уходит вместе с ним и возвращается,
-     как только стол снова виден — в том числе сразу после «убрать всё».
-     Уходит переносом и прозрачностью (композитор), а не display: none —
-     иначе возврат был бы рывком. */
-  html.has-windows #dock {
-    opacity: 0; transform: translate(-50%, 14px); pointer-events: none;
-  }
-  /* Пустая полка на телефоне не показывается (см. buildDock): единственная
-     кнопка без подписи — загадка. Стол сам зовёт лучше. */
+  /* ── ПОЛКА ОСТАЁТСЯ ВИДНОЙ И ПРИ ОТКРЫТОМ ОКНЕ (v47.3) ────────────────
+     В v47.1 Совет прятал полку, пока на экране есть окно: на телефоне окно
+     занимает экран целиком, и полка казалась помехой. Основатель поправил:
+     «док пропадает при открывании приложения» — и это правильно, потому
+     что полку он просил ровно ради ответа на вопрос «что сейчас открыто».
+     Ответ, исчезающий при первом же открытом приложении, отвечает не тогда,
+     когда спрашивают.
+     Настоящая задача была не «спрятать полку», а «не дать ей закрыть низ
+     окна» — и она решена там, где ей место: содержимое окна на узком экране
+     получает снизу запас ровно в высоту полки (см. .window-body ниже).
+     Полка плывёт над содержимым, но ни одна управляющая деталь под ней не
+     остаётся — это и стережёт dock-clearance-check.
+     Пустая полка по-прежнему не показывается: единственная кнопка без
+     подписи — загадка, а не приглашение. */
   html.dock-empty #dock {
     opacity: 0; transform: translate(-50%, 14px); pointer-events: none;
+  }
+  /* Запас снизу — по настоящей высоте полки, которую публикует shell.js.
+     Правило стоит на .window-body, потому что прокручивается именно она:
+     содержимое проходит под стеклом, но доезжает до конца. */
+  html:not(.dock-empty) .window-body {
+    padding-bottom: calc(var(--dock-h, 62px) + 18px);
   }
 }
 @media (max-width: 420px) {

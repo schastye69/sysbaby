@@ -399,25 +399,31 @@
     return true;
   };
 
-  /* ------------------------------------------------------- registration */
-
-  if (typeof window.registerApp === "function") {
-    window.registerApp("portfolio", {
-      title: "Portfolio",
-      i18n: {
-        ru: { title: "Портфолио", label: "Портфолио" },
-        ee: { title: "Portfoolio", label: "Portfoolio" },
-      },
-      label: "Portfolio",
-      color: "linear-gradient(160deg,#5f8cff 0%,#2f6bff 52%,#1b3fd6 100%)",
-      icon: ICON,
-      size: { w: 540, h: 640 },
-      deskPos: { x: 180, y: 200 },
-      /* Nothing in this window is typed into, so redrawing it on a language
-         change costs the visitor nothing and is the only way the case prose
-         follows the language the rest of the desktop just switched to. */
-      retranslate: true,
-      render: render
-    });
-  }
+  /* ── ПРИЛОЖЕНИЯ БОЛЬШЕ НЕТ. РЕНДЕРЕР ОСТАЛСЯ (v47.3) ────────────────────
+   *
+   * Здесь стоял window.registerApp("portfolio", …) — портфолио было окном
+   * рабочего стола. Основатель: «в раздел selected work на лендинге нужно
+   * уместить информацию из приложения портфолио, так как оно не должно быть
+   * в OS, портфолио должно быть в приложении build», и затем, когда переезд
+   * был готов: «Приложение портфолио необходимо убрать».
+   *
+   * Порядок был объявлен заранее и соблюдён — иначе снятие ломает всё, что
+   * на приложение опиралось (первая попытка 18.08 уронила десять наборов
+   * законов именно потому, что порядок был обратным):
+   *   1. строки       → shared/portfolio.strings.js   (сделано)
+   *   2. рендерер     → этот файл, общий для двух поверхностей (сделано)
+   *   3. снятие окна  → здесь, последним шагом.
+   *
+   * Что осталось и почему. Файл больше не заводит окно, но остаётся
+   * ЕДИНСТВЕННЫМ рендерером портфолио: его зовёт витрина через
+   * window.sbRenderPortfolioInto (раздел «Избранные проекты»). Работы никуда
+   * не делись — у них сменилось место, а не существование. Render(win)
+   * оставлен: он ничего не стоит, пока его никто не зовёт, и он — готовая
+   * дверь, если однажды понадобится показать портфолио окном снова.
+   *
+   * Все дороги, которые вели в это окно, переадресованы в build на раздел
+   * «Избранные проекты» (window.sbOpenBuildAt). Их девять, они перечислены
+   * в законе tools/portfolio-retired-check.mjs, и закон проверяет каждую.
+   */
+  window.sbPortfolioRender = render;
 })();

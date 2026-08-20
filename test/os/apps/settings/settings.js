@@ -333,7 +333,9 @@
       '<div class="st-specs">' + rows + "</div>" +
       '<div class="st-card">' +
         "<h3>" + esc(t("set.about.whatTitle")) + "</h3>" +
-        "<p>" + esc(t("set.about.whatBody", { portfolio: appName("portfolio") })) + "</p>" +
+        /* Текст «о системе» называл приложение портфолио. Оно снято (D-066):
+             называем то, что есть, — build с разделом «Избранные проекты». */
+        "<p>" + esc(t("set.about.whatBody", { portfolio: appName("build") })) + "</p>" +
       "</div>" +
       '<div class="st-card">' +
         "<h3>" + esc(t("set.about.whoTitle")) + "</h3>" +

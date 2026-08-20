@@ -36,11 +36,20 @@
        · в вебе оболочка лежит в КОРНЕ (v47, D-054), витрина рядом — build.html;
        · в исходниках оболочка открывается по /os/, а витрина — уровнем выше.
      Спрашивается не память, а само расположение документа. */
+  /* Раздел, на котором витрину нужно открыть, если её позвали адресно.
+     Живёт снаружи render(), потому что просьба приходит ДО того, как окно
+     существует: sbOpenBuildAt записывает сюда и открывает окно, а render
+     читает при сборке адреса. Одноразовая: следующий обычный запуск витрины
+     открывает её первым экраном, как и раньше. */
+  var wantSection = null;
+
   function shopUrl() {
     var inOs = /\/os\/?$|\/os\/index\.html$/.test(location.pathname);
     var base = inOs ? "../" : "build.html";
     var lang = (window.sbLang ? window.sbLang() : "en");
-    return base + (inOs ? "?" : "?") + "in=build&lang=" + encodeURIComponent(lang);
+    var url = base + "?in=build&lang=" + encodeURIComponent(lang);
+    if (wantSection) url += "&open=" + encodeURIComponent(wantSection);
+    return url;
   }
 
   /* Тот же договор, что у остальных приложений системы: оболочка передаёт
@@ -65,12 +74,52 @@
     frame.src = shopUrl();
     body.appendChild(frame);
 
-    var note = document.createElement("div");
-    note.className = "build-note";
-    note.id = "sbBuildNote";
-    note.textContent = "build — наша услуга. Это единственное окно, которое можно закрыть: система останется вашей.";
-    body.appendChild(note);
+    /* ── ЗАПИСКА СНЯТА (v47.3) ─────────────────────────────────────────
+       Здесь под витриной висела строка «build — наша услуга. Это
+       единственное окно, которое можно закрыть: система останется вашей».
+       Она была написана Советом для Совета — и осталась в продукте: по-русски
+       поверх финского интерфейса, на снимке основателя. Он назвал это своим
+       именем: «там осталась информация от приложения build», мусор.
+       Мысль верна и уже сказана делом: окно закрывается, и система живёт —
+       это проверяет закон os-build-app. Утверждение, доказанное поведением,
+       не нуждается в подписи под собой. */
   }
+
+  /* ── ДВЕРЬ «ОТКРЫТЬ BUILD НА РАЗДЕЛЕ» (v47.3) ──────────────────────────
+   *
+   * Приложение портфолио снято с рабочего стола (D-066): его карточки живут
+   * теперь в разделе «Избранные проекты» витрины, и рисует их тот же общий
+   * модуль (D-062). Но дорог, которые вели в портфолио, было девять — карта
+   * связей, подсказка стола, два слова терминала, кнопка «назад» в окне
+   * проекта, переход из Хранилища. Все они теперь зовут ЭТУ функцию.
+   *
+   * Почему не просто «открыть build»: человек шёл смотреть работы. Витрина,
+   * открытая первым экраном, заставляет его искать раздел заново — это
+   * потеря, а не переезд. Дверь называет раздел, и витрина открывает его.
+   *
+   * Уже открытое окно не пересоздаётся: оно выводится вперёд и получает
+   * просьбу через postMessage — перезагружать живую витрину ради прокрутки
+   * было бы грубо и стоило бы всей её загрузки заново.
+   */
+  window.sbOpenBuildAt = function (section) {
+    wantSection = section || null;
+    var win = (window.openWindows || {}).build;
+    if (win) {
+      var frame = win.el.querySelector("iframe");
+      if (frame && frame.contentWindow && section) {
+        try { frame.contentWindow.postMessage({ sysbaby: "open-section", section: section }, "*"); }
+        catch (err) { console.error("[build] section request failed", err); }
+      }
+      /* Свёрнутое — вернуть; видимое — вывести вперёд. Обе двери публичные
+         и уже существуют; своих копий этих правил здесь нет. */
+      if (win.minimized && window.sbRestoreWindow) window.sbRestoreWindow("build");
+      else if (window.toggleApp && win.minimized) window.toggleApp("build");
+      return true;
+    }
+    if (typeof window.sbOpenApp === "function") { window.sbOpenApp("build"); return true; }
+    if (typeof window.toggleApp === "function") { window.toggleApp("build"); return true; }
+    return false;
+  };
 
   if (window.registerApp) {
     window.registerApp("build", {

@@ -137,7 +137,8 @@
       "aria.identity": "Click to set your username",
       "aria.notifications": "Notifications", "aria.appSeq": "Open windows",
       "aria.minimizeAll": "sys.baby OS — clear the desk: minimise every window",
-      "aria.tip": "Show a tip", "aria.cc": "Control Center",
+      "aria.tip": "Show a tip", "cc.tip": "Show a tip",
+      "aria.turbo": "Turbo — give every frame to the work", "aria.cc": "Control Center",
       "aria.langs": "Language", "lang.partial": "the storefront speaks it; the system does not yet",
       "desk.allMinimized": "Desk cleared", "desk.allMinimizedSub": "Windows are waiting — tap an icon to bring one back",
       "aria.icons": "Desktop icons", "aria.notes": "Desktop notes",
@@ -607,7 +608,8 @@
       "aria.identity": "Нажмите, чтобы задать имя пользователя",
       "aria.notifications": "Уведомления", "aria.appSeq": "Открытые окна",
       "aria.minimizeAll": "sys.baby OS — убрать со стола: свернуть все окна",
-      "aria.tip": "Показать подсказку", "aria.cc": "Центр управления",
+      "aria.tip": "Показать подсказку", "cc.tip": "Показать подсказку",
+      "aria.turbo": "Турбо — отдать все кадры работе", "aria.cc": "Центр управления",
       "aria.langs": "Язык", "lang.partial": "витрина говорит, система пока нет",
       "desk.allMinimized": "Стол очищен", "desk.allMinimizedSub": "Окна ждут — нажмите значок, чтобы вернуть",
       "aria.icons": "Значки рабочего стола", "aria.notes": "Заметки на столе",
@@ -1061,7 +1063,8 @@
       "aria.identity": "Klõpsa, et määrata kasutajanimi",
       "aria.notifications": "Teated", "aria.appSeq": "Avatud aknad",
       "aria.minimizeAll": "sys.baby OS — puhasta laud: ahenda kõik aknad",
-      "aria.tip": "Näita vihjet", "aria.cc": "Juhtimiskeskus",
+      "aria.tip": "Näita vihjet", "cc.tip": "Näita vihjet",
+      "aria.turbo": "Turbo — anna kõik kaadrid tööle", "aria.cc": "Juhtimiskeskus",
       "aria.langs": "Keel", "lang.partial": "vitriin räägib, süsteem veel mitte",
       "desk.allMinimized": "Laud on puhas", "desk.allMinimizedSub": "Aknad ootavad — puuduta ikooni, et tagasi tuua",
       "aria.icons": "Töölaua ikoonid", "aria.notes": "Töölaua märkmed",
@@ -1635,6 +1638,17 @@
    * Дверь ОДНА: window.sbMinimizeAll из desktop.js. Второй копии правила
    * здесь нет и не будет — иначе два места начнут расходиться в мелочах.
    */
+  /* Публичная дверь «покажи подсказку сейчас». Лампочка переехала в Центр
+     управления (v47.3, место в панели занял Турбо), и всем, кто просил
+     подсказку нажатием, нужна дверь без поиска кнопки: законы и сама
+     лампочка зовут одно и то же. */
+  window.sbShowTipNow = function () {
+    var tip = nextTip();
+    if (!tip) return false;
+    showTip(tip);
+    return true;
+  };
+
   function wireMark() {
     var mark = $("#sbTopMark");
     if (!mark) return;
@@ -1801,7 +1815,9 @@
     /* The first thing this desktop says is why it exists: the client work in
        Portfolio is real, and one of the two systems opens right here.
        Everything else it can teach matters less than that. */
-    { id: "portfolio", panel: null },
+    /* Подсказка о работах вела в снятое приложение портфолио (D-066).
+       Ведёт в build — там теперь раздел «Избранные проекты». */
+    { id: "portfolio", panel: null, app: "build", section: "cases" },
     { id: "inlinesearch", panel: null, pointer: true },
     { id: "cmdk", panel: null, pointer: true },
     { id: "stickynotes", panel: null },
@@ -1919,7 +1935,10 @@
         markTip(currentTip.id);
         if (currentTip.panel && window.sbPanels && window.sbPanels[currentTip.panel]) window.sbPanels[currentTip.panel].open();
         else if (currentTip.id === "inlinesearch" && window.sbSeekReveal) window.sbSeekReveal();
-        else if (currentTip.id === "portfolio" && window.toggleApp) window.toggleApp("portfolio");
+        else if (currentTip.id === "portfolio") {
+          if (typeof window.sbOpenBuildAt === "function") window.sbOpenBuildAt("cases");
+          else if (window.toggleApp) window.toggleApp("build");
+        }
         else if (currentTip.id === "echoes" && window.toggleApp) window.toggleApp("echoes");
         else if (currentTip.id === "cmdk" && window.openCmdk) window.openCmdk("");
         hideTip();
@@ -1936,9 +1955,13 @@
     }
     if (bulb) {
       bulb.addEventListener("click", function () {
-        var tip = nextTip();
-        if (tip) showTip(tip);
-        else if (window.showToast) window.showToast(window.sbT("tips.doneTitle"), window.sbT("tips.doneBody"), "");
+        /* Лампочка живёт в Центре управления (v47.3): показав подсказку,
+           ЦУ закрывается — иначе подсказка выйдет под его стеклом и человек
+           её не увидит. */
+        if (window.sbCloseControlCenter) window.sbCloseControlCenter();
+        if (!window.sbShowTipNow()) {
+          if (window.showToast) window.showToast(window.sbT("tips.doneTitle"), window.sbT("tips.doneBody"), "");
+        }
       });
     }
     if (window.sbBus) {

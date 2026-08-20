@@ -159,6 +159,78 @@
   }
   window.sbApplyControl = applyControl;
 
+  /* ── ТУРБО: РУКОЯТКА ЦЕНЫ КАРТИНКИ (v47.3) ─────────────────────────────
+   *
+   * Основатель: «turbo режим должен быть максимально функциональным и
+   * эффективным». По существу это одно движение, снимающее всё, что стоит
+   * кадров: живое поле обоев (постоянный рендер на канвасе), размытие
+   * подложки (самая дорогая деталь композитора) и долгие переходы.
+   *
+   * ГЛАВНОЕ ПРАВИЛО — АРЕНДА, НЕ ПРИСВОЕНИЕ. Турбо запоминает, какими были
+   * настройки человека, и при выключении возвращает ИХ, а не заводские:
+   * человек, державший «меньше движения» сам, получит его обратно. Без
+   * этого правила Турбо становился бы ластиком чужого выбора.
+   *
+   * Класс sb-turbo на документе — для CSS (см. core.css): им снимаются
+   * оставшиеся тени и переходы, до которых не дотягиваются data-атрибуты.
+   */
+  var TURBO_KEY = "sysbaby.turbo";
+  function turboOn() {
+    var v = readJSON(TURBO_KEY, null);
+    return !!(v && v.on);
+  }
+  window.sbTurbo = function (on) {
+    var cur = readJSON(TURBO_KEY, null) || { on: false };
+    if (on === undefined) return cur.on;
+    on = !!on;
+    if (on === cur.on) return on;
+    if (on) {
+      /* арендуем: записываем, что было, и включаем экономию */
+      cur = {
+        on: true,
+        was: {
+          motion: window.sbGetControlToggle("motion"),
+          transparency: window.sbGetControlToggle("transparency"),
+          field: window.sbField ? window.sbField.level() : "live"
+        }
+      };
+      window.sbSetControlToggle("motion", true);
+      window.sbSetControlToggle("transparency", true);
+      if (window.sbField) window.sbField.setLevel("off");
+    } else {
+      var was = cur.was || {};
+      cur = { on: false };
+      window.sbSetControlToggle("motion", !!was.motion);
+      window.sbSetControlToggle("transparency", !!was.transparency);
+      if (window.sbField) window.sbField.setLevel(was.field === "off" || was.field === "quiet" ? was.field : "live");
+    }
+    writeJSON(TURBO_KEY, cur);
+    root.classList.toggle("sb-turbo", on);
+    var btn = $("#sbTurboBtn");
+    if (btn) {
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.classList.toggle("on", on);
+    }
+    sbBus.emit("turbo:change", { on: on });
+    return on;
+  };
+  function wireTurbo() {
+    var btn = $("#sbTurboBtn");
+    if (!btn) return;
+    btn.addEventListener("click", function () { window.sbTurbo(!window.sbTurbo()); });
+    /* Пережить перезагрузку: включённый Турбо восстанавливается ДО первого
+       кадра стола — иначе поле успеет запуститься и тут же остановиться. */
+    if (turboOn()) {
+      root.classList.add("sb-turbo");
+      btn.setAttribute("aria-pressed", "true");
+      btn.classList.add("on");
+      window.sbSetControlToggle("motion", true);
+      window.sbSetControlToggle("transparency", true);
+      if (window.sbField) window.sbField.setLevel("off");
+      else doc.addEventListener("DOMContentLoaded", function () { if (window.sbField) window.sbField.setLevel("off"); });
+    }
+  }
+
   window.setTheme = function (t) {
     var mode = t === "light" ? "light" : "dark";
     if (window.sbIncognitoActive) mode = "dark";            /* incognito forces dark */
@@ -1528,6 +1600,65 @@
     return !!hidden;
   };
 
+  /* ── СТОЛ ПОМНИТ, КУДА ЕГО ПОЛОЖИЛИ (v47.3) ────────────────────────────
+   *
+   * ПОВОД, дословно: «если я переставляю приложение, то оно возвращается
+   * обратно на то место, где стояло, а не переносится туда, куда я его
+   * переносил — баг».
+   *
+   * Перенос был задуман ВРЕМЕННЫМ: значок помечался data-dragged, перекладка
+   * его не трогала — и она же снимала пометку со всех значков, возвращая их
+   * в сетку. На телефоне перекладка случается сама: адресная строка Chrome
+   * прячется при прокрутке, высота окна меняется, приходит resize. Человек
+   * переставил значок, коснулся экрана — значок вернулся. Перезагрузка
+   * теряла перестановку тем более: её нигде не записывали.
+   *
+   * ПОЧЕМУ ДОЛЯМИ, А НЕ ПИКСЕЛЯМИ. Место запоминается долей от размеров
+   * стола. Пиксели верны ровно на том экране, где их записали: поворот
+   * телефона или другое устройство выбросили бы значок за край. Доля
+   * переживает и то и другое, а чтение всё равно зажимается в границы —
+   * страховка стоит одной строки и снимает целый класс дефектов.
+   *
+   * ПОЧЕМУ ЭТО НЕ «ПРОСТО НАСТРОЙКА». Стол — вещь человека. Система не
+   * переставляет на нём предметы без его слова; вернуть всё в сетку можно,
+   * но по команде (sbTidyDesk), а не самой собой. */
+  var iconPlaces = null;
+  function getIconPlaces() {
+    if (!iconPlaces) {
+      var v = readJSON("sysbaby.icons.pos", {});
+      iconPlaces = (v && typeof v === "object" && !Array.isArray(v)) ? v : {};
+    }
+    return iconPlaces;
+  }
+  function rememberIconPlace(id, x, y) {
+    var host = $("#sbIconLayer");
+    if (!host) return;
+    var W = host.clientWidth, H = host.clientHeight;
+    if (!W || !H) return;
+    var places = getIconPlaces();
+    places[id] = { fx: x / W, fy: y / H };
+    iconPlaces = places;
+    writeJSON("sysbaby.icons.pos", places);
+  }
+  function forgetIconPlace(id) {
+    var places = getIconPlaces();
+    if (!(id in places)) return;
+    delete places[id];
+    iconPlaces = places;
+    writeJSON("sysbaby.icons.pos", places);
+  }
+  /* Прибрать стол — вернуть в сетку ВСЁ, что человек двигал. Названная
+     дверь: её зовут терминал (`tidy`) и меню стола. */
+  window.sbTidyDesk = function () {
+    var n = Object.keys(getIconPlaces()).length;
+    iconPlaces = {};
+    writeJSON("sysbaby.icons.pos", {});
+    $$("#sbIconLayer .desk-icon").forEach(function (el) { el.removeAttribute("data-dragged"); });
+    layoutIcons();
+    return n;
+  };
+  window.sbIconPlaces = function () { return JSON.parse(JSON.stringify(getIconPlaces())); };
+
   function desktopIconIds() {
     return launchable().filter(function (id) { return apps[id].desktopIcon !== false; });
   }
@@ -1573,8 +1704,14 @@
     if (!host) return;
     var W = host.clientWidth;
     if (!W) { requestAnimationFrame(layoutIcons); return; }
-    var nodes = $$(".desk-icon", host).filter(function (n) { return !n.classList.contains("hidden-icon"); });
-    var count = nodes.length;
+    var all = $$(".desk-icon", host).filter(function (n) { return !n.classList.contains("hidden-icon"); });
+    /* Значки с ЗАПОМНЕННЫМ местом сетке не принадлежат: они стоят там, куда
+       их поставил человек, а остальные смыкают ряды — как на любом столе,
+       откуда предмет унесли. Поэтому счёт колонок ведётся по оставшимся. */
+    var places = getIconPlaces();
+    var placed = all.filter(function (n) { return !!places[n.getAttribute("data-app")]; });
+    var nodes = all.filter(function (n) { return !places[n.getAttribute("data-app")]; });
+    var count = nodes.length || all.length;
     if (!count) { window.sbDesktopGrid = { originX: 0, originY: 0, cellW: 80, cellH: 92, cols: 0, rows: 0, gapX: 16, gapY: 12, stepX: 96, stepY: 104 }; return; }
 
     /* §4.2, ПЕРЕСЧИТАНО В v47.
@@ -1613,12 +1750,26 @@
     var originY = pad;
 
     nodes.forEach(function (n, i) {
-      if (n.getAttribute("data-dragged") === "1") return;   /* a drag survives until relayout resets it */
+      if (n.getAttribute("data-dragged") === "1") return;   /* палец ещё держит — не вырывать */
       var c = i % cols, r = Math.floor(i / cols);
       n.style.left = (originX + c * (cellW + gapX)) + "px";
       n.style.top = (originY + r * (cellH + gapY)) + "px";
       n.style.width = cellW + "px";
       n.style.height = cellH + "px";
+    });
+
+    /* Запомненные ставятся по своей доле — и зажимаются в границы стола:
+       доля записана на другом экране, и без этой строки значок мог бы
+       оказаться за краем после поворота телефона. */
+    var HH = host.clientHeight || (cellH * 2);
+    placed.forEach(function (n) {
+      var pos = places[n.getAttribute("data-app")];
+      if (!pos) return;
+      n.style.width = cellW + "px";
+      n.style.height = cellH + "px";
+      if (n.getAttribute("data-dragged") === "1") return;
+      n.style.left = Math.round(clamp(pos.fx * W, 2, Math.max(2, W - cellW - 2))) + "px";
+      n.style.top = Math.round(clamp(pos.fy * HH, 2, Math.max(2, HH - cellH - 2))) + "px";
     });
     $$(".desk-icon", host).forEach(function (n) { n.removeAttribute("data-dragged"); });
 
@@ -1757,6 +1908,9 @@
       node.style.transform = "";
       var over = ev && echoesDropTarget(ev.clientX, ev.clientY);
       if (over && id !== "echoes") {
+        /* Унесённый со стола забывает своё место: вернувшись, он должен
+           встать в ряд, а не в точку, из которой его когда-то унесли. */
+        forgetIconPlace(id);
         window.sbSetIconHidden(id, true);
         window.showToast(tr("toast.toEchoes", { app: appTitle("echoes") }), tr("toast.toEchoesIcon"), ICONS.note);
         layoutIcons();
@@ -1766,6 +1920,11 @@
       var snap = freeCellNear(node.offsetLeft, node.offsetTop, node.offsetWidth, node.offsetHeight, node);
       node.classList.add("settling");
       node.style.left = snap.x + "px"; node.style.top = snap.y + "px";
+      /* Место человека записывается ЗДЕСЬ и сразу: следующая перекладка
+         стола (её вызывает даже адресная строка телефона) обязана уже знать
+         о ней, иначе значок вернётся в сетку — ровно тот дефект, о котором
+         написал основатель. */
+      rememberIconPlace(id, snap.x, snap.y);
       setTimeout(function () { node.classList.remove("settling"); }, 320);
     }
     node.addEventListener("pointerup", endIconDrag);
@@ -2670,6 +2829,7 @@
     var mood = window.sbGetWallpaperMood();
     if (mood && mood !== "ocean") root.setAttribute("data-wp-mood", mood);
     ["motion", "dnd", "autohide", "transparency"].forEach(function (k) { applyControl(k, window.sbGetControlToggle(k)); });
+    wireTurbo();
     /* volume and brightness come back exactly as they were left */
     var savedVol = window.sbDB ? window.sbDB.get(VOLUME_KEY) : null;
     if (savedVol != null) window.sbNotifVolume = clamp(num(savedVol, 0.6), 0, 1);
@@ -2701,12 +2861,32 @@
   if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", boot);
   else boot();
 
-  /* ------------------------------------------------------- build info §12 */
+  /* ── ВЕРСИЯ СИСТЕМЫ — НАСТОЯЩАЯ И ЕДИНСТВЕННАЯ (v48, D-071) ────────────
+   *
+   * Основатель: «с сегодняшнего дня наша система должна начинать
+   * превращаться из демонстрации в настоящую живую операционную систему
+   * sys.baby OS 0.0… каждая версия должна меняться на актуальную в
+   * терминале, в настройках с выходом каждого нового обновления…
+   * абсолютно везде в архиве версия должна обновляться».
+   *
+   * Здесь было зашито release: 171 — число с прошлого лета, не связанное
+   * с меткой сборки: терминал говорил «build 171», сайт — v47, и ни одно
+   * обновление не меняло оба. Версий у системы больше не две, а одна, и
+   * она ВЫЧИСЛЯЕТСЯ из метки сборки, которую и так обязана поднимать
+   * каждая выкладка (иначе кэш не отпустит старые файлы — publish-check):
+   * vN → sys.baby OS 0.0.N. Обновляется везде разом, по построению.
+   */
   var bootStamp = now();
+  var buildMeta = (function () {
+    var m = doc.querySelector('meta[name="sysbaby-build"]');
+    var v = /^v(\d+)$/.exec((m && m.content) || "");
+    return v ? v[1] : "0";
+  })();
   window.sbBuild = {
-    release: 171,      /* bumped with landing v21 — the terminal header reads this live */
+    build: "v" + buildMeta,
+    version: "0.0." + buildMeta,
     channel: "core",
-    stamp: function () { return "sys.baby " + this.channel + " · build " + this.release; },
+    stamp: function () { return "sys.baby OS " + this.version + " · " + this.channel + " " + this.build; },
     uptime: function () {
       var s = Math.floor((now() - bootStamp) / 1000);
       var m = Math.floor(s / 60);

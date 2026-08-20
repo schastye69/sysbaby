@@ -8,7 +8,7 @@
      именно его метку читают снаружи: ежедневный наблюдатель, восьмой шаг
      выкладки и закон тестового контура. Ставится не руками, а
      tools/stamp-build.mjs — из единственного объявления версии. -->
-<meta name="sysbaby-build" content="v47">
+<meta name="sysbaby-build" content="v48">
 <title>sys.baby OS</title>
 <!-- ЗНАК. Один квадрат и он же, сдвинутый на 1,988 — та же величина, на которой
      построено поле обоев. Пересечение выбито: пустота в середине — это точка из
@@ -55,19 +55,19 @@
      метка меняется каждой сборкой, а старый адрес перестаёт существовать.
      Штампы проставляются tools/stamp-build.mjs и охраняются законом
      build-stamp.mjs — ресурс без метки валит сборку. -->
-<script src="core/store.js?b=v47"></script>
+<script src="core/store.js?b=v48"></script>
 
-<link rel="stylesheet" href="core/core.css?b=v47" />
-<link rel="stylesheet" href="apps/files/files.css?b=v47" />
-<link rel="stylesheet" href="apps/notes/notes.css?b=v47" />
-<link rel="stylesheet" href="apps/mail/mail.css?b=v47" />
-<link rel="stylesheet" href="apps/messenger/messenger.css?b=v47" />
-<link rel="stylesheet" href="apps/search/search.css?b=v47" />
-<link rel="stylesheet" href="../shared/portfolio.view.css?b=v47" />
-<link rel="stylesheet" href="apps/project/project.css?b=v47" />
-<link rel="stylesheet" href="apps/settings/settings.css?b=v47" />
-<link rel="stylesheet" href="apps/echoes/echoes.css?b=v47" />
-<link rel="stylesheet" href="apps/build/build.css?b=v47" />
+<link rel="stylesheet" href="core/core.css?b=v48" />
+<link rel="stylesheet" href="apps/files/files.css?b=v48" />
+<link rel="stylesheet" href="apps/notes/notes.css?b=v48" />
+<link rel="stylesheet" href="apps/mail/mail.css?b=v48" />
+<link rel="stylesheet" href="apps/messenger/messenger.css?b=v48" />
+<link rel="stylesheet" href="apps/search/search.css?b=v48" />
+<link rel="stylesheet" href="../shared/portfolio.view.css?b=v48" />
+<link rel="stylesheet" href="apps/project/project.css?b=v48" />
+<link rel="stylesheet" href="apps/settings/settings.css?b=v48" />
+<link rel="stylesheet" href="apps/echoes/echoes.css?b=v48" />
+<link rel="stylesheet" href="apps/build/build.css?b=v48" />
 <style id="sb-test-badge-css">
 #sbTestBadge{position:fixed;left:0;right:0;top:0;z-index:9999;display:flex;gap:10px;
   align-items:center;justify-content:center;height:26px;font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -79,7 +79,7 @@
 </head>
 
 <body>
-<div id="sbTestBadge" role="status" aria-live="polite">ТЕСТ · сборка <b>v47</b> · рабочий стол</div><script id="sb-test-badge-js">(function(){
+<div id="sbTestBadge" role="status" aria-live="polite">ТЕСТ · сборка <b>v48</b> · рабочий стол</div><script id="sb-test-badge-js">(function(){
   /* Заголовок вкладки помечается сразу и остаётся помеченным: страница может
      переписать document.title у себя (лендинг это делает при смене языка),
      поэтому метка ставится не один раз, а держится наблюдателем. */
@@ -197,8 +197,15 @@
   <div class="tb-right">
     <!-- All that is left of the tips up here is the switch that asks for one.
          What the desktop has to say, it says down on the desktop. -->
-<button class="tb-btn tip-bulb" id="sbTipBulb" type="button" aria-label="Show a tip" data-i18n-aria="aria.tip">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"/></svg>
+<!-- ── ТУРБО НА МЕСТЕ ЛАМПОЧКИ (v47.3) ──────────────────────────────────
+         Основатель: «нужно вернуть turbo режим и он должен находиться вместо
+         иконки лампочки в верхней панели». Турбо — рукоятка цены картинки:
+         одно нажатие снимает всё, что стоит кадров (поле обоев, размытие,
+         долгие переходы). Нажимают её на слабом телефоне или на последних
+         процентах батареи — поэтому она в панели, а не в глубине настроек.
+         Лампочка подсказок не умерла — переехала в Центр управления ниже. -->
+    <button class="tb-btn turbo-btn" id="sbTurboBtn" type="button" aria-pressed="false" aria-label="Turbo — give every frame to the work" data-i18n-aria="aria.turbo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11L9.8 22 19.5 9.5H13L13 2z"/></svg>
     </button>
     <button class="tb-btn cc-trigger" id="sbCcTrigger" type="button" aria-label="Control Center" data-i18n-aria="aria.cc">
       <span class="net-glyph" id="sbNetGlyph" aria-hidden="true"></span>
@@ -224,6 +231,13 @@
       <div class="cc-stat"><span class="cc-k" data-i18n="cc.battery">Battery</span><span class="cc-v" id="sbCcBattery">—</span>
         <span class="cc-line" id="sbCcBatteryLine">Battery</span></div>
     </div>
+
+    <!-- Лампочка подсказок переехала сюда с панели: место в панели заняла
+         рукоятка Турбо по слову основателя (v47.3). Подсказки живут своим
+         расписанием; эта кнопка показывает одну сейчас. -->
+    <button class="cc-toggle tip-bulb" id="sbTipBulb" type="button" aria-label="Show a tip" data-i18n-aria="aria.tip">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:15px;height:15px;vertical-align:-2px;margin-right:6px"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"/></svg><span data-i18n="cc.tip">Show a tip</span>
+    </button>
 
     <div class="cc-toggles">
       <button class="cc-toggle" type="button" data-cc="sound" aria-pressed="false"><span data-i18n="cc.sound">Sound</span></button>
@@ -411,29 +425,29 @@
 
 
 <!-- ================================================================== scripts -->
-<script src="core/shell.js?b=v47"></script>
-<script src="core/panels.js?b=v47"></script>
-<script src="core/palette.js?b=v47"></script>
-<script src="core/desktop.js?b=v47"></script>
-<script src="core/topbar.js?b=v47"></script>
-<script src="core/terminal.js?b=v47"></script>
-<script src="core/links.js?b=v47"></script>
-<script src="core/field.js?b=v47"></script>
+<script src="core/shell.js?b=v48"></script>
+<script src="core/panels.js?b=v48"></script>
+<script src="core/palette.js?b=v48"></script>
+<script src="core/desktop.js?b=v48"></script>
+<script src="core/topbar.js?b=v48"></script>
+<script src="core/terminal.js?b=v48"></script>
+<script src="core/links.js?b=v48"></script>
+<script src="core/field.js?b=v48"></script>
 
-<script src="../shared/portfolio.data.js?b=v47"></script>
-<script src="../shared/portfolio.strings.js?b=v47"></script>
-<script src="../shared/pricing.data.js?b=v47"></script>
+<script src="../shared/portfolio.data.js?b=v48"></script>
+<script src="../shared/portfolio.strings.js?b=v48"></script>
+<script src="../shared/pricing.data.js?b=v48"></script>
 
-<script src="apps/files/files.js?b=v47"></script>
-<script src="apps/notes/notes.js?b=v47"></script>
-<script src="apps/mail/mail.js?b=v47"></script>
-<script src="apps/messenger/messenger.js?b=v47"></script>
-<script src="apps/search/search.js?b=v47"></script>
-<script src="../shared/portfolio.view.js?b=v47"></script>
-<script src="apps/project/project.js?b=v47"></script>
-<script src="apps/settings/settings.js?b=v47"></script>
-<script src="apps/echoes/echoes.js?b=v47"></script>
-<script src="apps/build/build.js?b=v47"></script>
+<script src="apps/files/files.js?b=v48"></script>
+<script src="apps/notes/notes.js?b=v48"></script>
+<script src="apps/mail/mail.js?b=v48"></script>
+<script src="apps/messenger/messenger.js?b=v48"></script>
+<script src="apps/search/search.js?b=v48"></script>
+<script src="../shared/portfolio.view.js?b=v48"></script>
+<script src="apps/project/project.js?b=v48"></script>
+<script src="apps/settings/settings.js?b=v48"></script>
+<script src="apps/echoes/echoes.js?b=v48"></script>
+<script src="apps/build/build.js?b=v48"></script>
 <!-- Скамейка (Experimental/Phosphor) выведена из клиентской витрины v20.9:
      витрина продаёт сданные системы, а самое интригующее имя на столе
      конкурировало с подсказкой №1 за первое касание. Папка приложения

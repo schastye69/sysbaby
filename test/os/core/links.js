@@ -58,16 +58,24 @@
 
   /* ---- link builders (each returns null when its destination is absent) ---- */
 
+  /* Связь «работа» вела в окно портфолио. Приложение снято с рабочего стола
+     (D-066) — работы живут в разделе «Избранные проекты» витрины, тем же
+     рендерером (D-062). Связь ведёт туда: window.sbOpenBuildAt("cases").
+     Условие существования связи тоже переехало: она есть, пока есть куда
+     вести, — то есть пока в системе есть build. */
   function projectLink(hintId) {
     var entry = portfolioEntry(hintId);
-    if (!entry || !apps().portfolio) return null;
+    if (!entry || !apps().build) return null;
     var v = view(entry) || {};
     return {
       kind: "project",
       title: v.title || entry.title || entry.id,
       sub: v.industry || v.client || t("link.project.sub"),
-      live: function () { return isOpen("portfolio"); },
-      open: function () { if (window.toggleApp) window.toggleApp("portfolio"); }
+      live: function () { return isOpen("build"); },
+      open: function () {
+        if (typeof window.sbOpenBuildAt === "function") { window.sbOpenBuildAt("cases"); return; }
+        if (window.toggleApp) window.toggleApp("build");
+      }
     };
   }
 
@@ -115,7 +123,11 @@
     };
   }
 
-  function appLink(id, sub) {
+  /* Третий довод — РАЗДЕЛ. Связь может вести не просто в приложение, а в
+     определённое его место: после снятия портфолио (D-066) все связи о
+     работах ведут в build на «Избранные проекты», и «открыть витрину первым
+     экраном» здесь было бы потерей — человек шёл смотреть работы. */
+  function appLink(id, sub, section) {
     var def = apps()[id];
     if (!def) return null;
     return {
@@ -123,7 +135,13 @@
       title: window.sbAppTitle ? window.sbAppTitle(id) : (def.title || id),
       sub: sub || (def.brand || t("link.app.sub")),
       live: function () { return isOpen(id); },
-      open: function () { if (window.toggleApp) window.toggleApp(id); }
+      open: function () {
+        if (section && id === "build" && typeof window.sbOpenBuildAt === "function") {
+          window.sbOpenBuildAt(section);
+          return;
+        }
+        if (window.toggleApp) window.toggleApp(id);
+      }
     };
   }
 
@@ -164,7 +182,7 @@
         projectLink("auto-estimate"),
         systemLink("auto-estimate"),
         documentLink("auto-estimate"),
-        appLink("portfolio", t("link.sub.allShipped")),
+        appLink("build", t("link.sub.allShipped"), "cases"),
         noteLink("Body-shop estimate system — worth a closer look.")
       ];
     },
@@ -176,20 +194,20 @@
     2: function () {
       return [
         pricingLink(),
-        appLink("portfolio", t("link.sub.handedOver")),
+        appLink("build", t("link.sub.handedOver"), "cases"),
         appLink("files", t("link.sub.briefKept"))
       ];
     },
     3: function () {
       return [
         pricingLink(),
-        appLink("portfolio", t("link.sub.allShipped")),
+        appLink("build", t("link.sub.allShipped"), "cases"),
         noteLink("Ask about the payback period before the next invoice run.")
       ];
     },
     4: function () {
       return [
-        appLink("portfolio", t("link.sub.allShipped")),
+        appLink("build", t("link.sub.allShipped"), "cases"),
         pricingLink()
       ];
     },
@@ -199,7 +217,7 @@
     5: function () {
       return [
         pricingLink(),
-        appLink("portfolio", t("link.sub.handedOver")),
+        appLink("build", t("link.sub.handedOver"), "cases"),
         noteLink("Letters → To the studio really delivers. Reply channel is mine to choose.")
       ];
     }

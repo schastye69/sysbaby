@@ -137,17 +137,48 @@
   }
   window.sbNotifBadgeRefresh = paintBell;
 
+  /* ── СПИСОК ИЗВЕЩЕНИЙ — О СОБЫТИЯХ, А НЕ О СВОИХ ЖЕ НАЖАТИЯХ (v47.3) ────
+   *
+   * Основатель прислал снимок своего списка: «Echoes closed», «Pulse closed»,
+   * «Pulse closed», «Letters closed», «Mail 4 new messages», «Mail 4 new
+   * messages», «Seek closed» — и написал: «оповещения о закрытии чего-либо
+   * это лишний шум и мусор». Он прав дважды.
+   *
+   * ПЕРВОЕ. Признак у подсказки был всегда: data-kind = "event" (случилось
+   * само) или "confirm" (ответ на нажатие человека). Признак был — решения
+   * по нему не было: наблюдатель записывал обе. Подтверждение живёт ровно те
+   * пять секунд, пока человек на него смотрит и может нажать «Вернуть»; его
+   * место — экран, а не память системы. Событие — то, что он мог пропустить,
+   * и только оно имеет право пережить свои пять секунд.
+   *
+   * ВТОРОЕ. Стоячее обстоятельство («4 непрочитанных письма») записывалось
+   * заново при каждом входе, и список набивался копиями одной правды. То же
+   * событие теперь ОСВЕЖАЕТ свою строку, а не заводит вторую.
+   */
   function recordToast(node) {
     var kind = node.getAttribute("data-kind") || "confirm";
+    if (kind !== "event") return;
+    var title = node.getAttribute("data-title") || "";
+    var text = node.getAttribute("data-text") || "";
     var list = notifList();
-    list.unshift({
-      id: "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
-      title: node.getAttribute("data-title") || "",
-      text: node.getAttribute("data-text") || "",
-      icon: "",
-      ts: Date.now(),
-      seen: kind !== "event"                        /* confirmations arrive already seen */
-    });
+    var same = null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && list[i].title === title && list[i].text === text) { same = i; break; }
+    }
+    if (same !== null) {
+      var kept = list.splice(same, 1)[0];
+      kept.ts = Date.now();
+      list.unshift(kept);
+    } else {
+      list.unshift({
+        id: "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+        title: title,
+        text: text,
+        icon: "",
+        ts: Date.now(),
+        seen: false
+      });
+    }
     notifSave(list);
     paintBell();
     if (notifPanel && notifPanel.isOpen()) paintNotifPanel();

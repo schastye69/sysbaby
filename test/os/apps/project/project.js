@@ -141,7 +141,11 @@
         '<div class="pj-top">' +
           '<span class="pj-tag">' + esc(t("pj.tag")) + "</span>" +
           '<span class="pj-actions">' +
-            '<button type="button" class="pj-btn" id="pjBack">' + esc(t("pj.back", { portfolio: appName("portfolio") })) + "</button>" +
+            /* Кнопка вела в окно портфолио. Приложение снято (D-066), работы живут в
+               разделе «Избранные проекты» витрины — туда и ведёт, и называет
+               именно то место, куда приведёт: подпись собирается из имени
+               приложения build, а не из имени снятого. */
+            '<button type="button" class="pj-btn" id="pjBack">' + esc(t("pj.back", { portfolio: appName("build") })) + "</button>" +
             (url ? '<a class="pj-btn open" id="pjNewTab" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(t("pj.fullscreen")) + "</a>" : "") +
             '<a class="pj-btn accent" href="../?contact=1">' + esc(startLabel(view)) + "</a>" +
           "</span>" +
@@ -186,8 +190,11 @@
     var back = host.querySelector("#pjBack");
     if (back) {
       back.addEventListener("click", function () {
+        if (typeof window.sbOpenBuildAt === "function") {
+          try { window.sbOpenBuildAt("cases"); return; } catch (err) { console.error("[project] open build failed", err); }
+        }
         if (typeof window.toggleApp !== "function") return;
-        try { window.toggleApp("portfolio"); } catch (err) { console.error("[project] toggleApp failed", err); }
+        try { window.toggleApp("build"); } catch (err) { console.error("[project] toggleApp failed", err); }
       });
     }
 
