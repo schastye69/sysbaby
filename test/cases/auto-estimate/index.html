@@ -29,17 +29,24 @@
 <style id="sb-test-badge-css">
 #sbTestBadge{position:fixed;left:0;right:0;top:0;z-index:9999;display:flex;gap:10px;
   align-items:center;justify-content:center;height:26px;font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
-  letter-spacing:.14em;text-transform:uppercase;color:#0b0908;background:#e0663c;pointer-events:none}
+  letter-spacing:.14em;text-transform:uppercase;color:#0b0908;background:#e0663c;pointer-events:none;
+  transition:height .45s ease,font-size .45s ease,opacity .45s ease}
 #sbTestBadge b{font-weight:800}
-/* Полоса не отбирает место у продукта и не накрывает его собой: она сдвигает
-   вниз ВЕРХНЮЮ ПАНЕЛЬ (она fixed, и обычный отступ тела её не двигает) и
-   добавляет ровно свою высоту первому экрану. Док внизу не трогается. */
-.topbar{top:26px !important}
-.hero{padding-top:100px !important}
+#sbTestBadge.is-quiet{height:3px;font-size:0;opacity:.85;gap:0}
 </style>
 </head>
 <body>
-<div id="sbTestBadge" role="status" aria-live="polite">ТЕСТ · сборка <b>v47</b> · клиентская система</div>
+<div id="sbTestBadge" role="status" aria-live="polite">ТЕСТ · сборка <b>v47</b> · клиентская система</div><script id="sb-test-badge-js">(function(){
+  /* Заголовок вкладки помечается сразу и остаётся помеченным: страница может
+     переписать document.title у себя (лендинг это делает при смене языка),
+     поэтому метка ставится не один раз, а держится наблюдателем. */
+  var TAG="[ТЕСТ] ";
+  function tag(){ if(document.title.indexOf(TAG)!==0) document.title=TAG+document.title; }
+  tag();
+  try{ new MutationObserver(tag).observe(document.querySelector("title")||document.head,{subtree:true,characterData:true,childList:true}); }catch(e){}
+  var el=document.getElementById("sbTestBadge");
+  if(el) setTimeout(function(){ el.classList.add("is-quiet"); },5000);
+})();</script>
 <div class="aurora" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></div>
 
 <button type="button" id="themeToggle" class="pill theme-toggle" title="Тема оформления">🌙 <span>Тёмная</span></button>

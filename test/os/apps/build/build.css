@@ -1,0 +1,14 @@
+/* build — окно нашей услуги внутри системы пришедшего. */
+.build-body { padding: 0; display: flex; flex-direction: column; height: 100%; }
+.build-frame {
+  flex: 1 1 auto; width: 100%; border: 0; display: block;
+  background: var(--surface, #0b0908);
+}
+/* Строка внизу окна говорит вслух то, что доказывает вся конструкция:
+   это окно можно закрыть. Оно не кричит и не мешает — но оно есть. */
+.build-note {
+  flex: 0 0 auto; padding: 8px 14px;
+  font: 500 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .03em; opacity: .62;
+  border-top: 1px solid var(--line, rgba(255,255,255,.08));
+}

@@ -1,0 +1,44 @@
+/* Шаблон — повторяемый процесс пришедшего человека. */
+.tpl-body { padding: 16px 18px 20px; overflow-y: auto; }
+.tpl-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.tpl-title { font-size: 14px; font-weight: 600; letter-spacing: .01em; }
+.tpl-title-sub { margin-top: 22px; opacity: .8; }
+.tpl-empty { margin: 8px 0 0; font-size: 13px; line-height: 1.6; opacity: .72; max-width: 46ch; }
+
+.tpl-list { display: flex; flex-direction: column; gap: 8px; }
+.tpl-card, .tpl-run {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 11px 13px; border-radius: 12px;
+  border: 1px solid var(--line, rgba(255,255,255,.09));
+  background: var(--surface-2, rgba(255,255,255,.03));
+}
+.tpl-run.is-done { opacity: .58; }
+.tpl-card-acts { display: flex; gap: 6px; flex: 0 0 auto; }
+.tpl-name { font-size: 13px; font-weight: 600; }
+.tpl-meta { font-size: 11px; opacity: .65; margin-top: 3px; font-variant-numeric: tabular-nums; }
+
+.tpl-field { display: block; margin: 10px 0 14px; }
+.tpl-field span { display: block; font-size: 11px; opacity: .7; margin-bottom: 5px; }
+.tpl-field input, .tpl-step-edit input {
+  width: 100%; padding: 9px 11px; border-radius: 10px;
+  border: 1px solid var(--line, rgba(255,255,255,.12));
+  background: var(--surface-2, rgba(255,255,255,.04));
+  color: inherit; font: inherit; font-size: 13px;
+}
+.tpl-steps { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.tpl-step-edit { display: flex; align-items: center; gap: 6px; }
+.tpl-step-no { flex: 0 0 auto; width: 20px; text-align: right; font-size: 11px; opacity: .55; font-variant-numeric: tabular-nums; }
+
+.tpl-step { display: flex; align-items: flex-start; gap: 9px; padding: 8px 10px; border-radius: 10px; cursor: pointer; }
+.tpl-step:hover { background: var(--surface-2, rgba(255,255,255,.04)); }
+.tpl-step.is-done .tpl-step-text { opacity: .5; text-decoration: line-through; }
+.tpl-step-text { font-size: 13px; line-height: 1.45; }
+
+/* Полоса хода — единственное число в окне, которое считается, а не пишется. */
+.tpl-progress { height: 4px; border-radius: 3px; background: var(--surface-2, rgba(255,255,255,.07)); overflow: hidden; margin: 4px 0 6px; }
+.tpl-progress i { display: block; height: 100%; background: var(--accent, #e0663c); transition: width .3s ease; }
+.tpl-progress-text { margin-bottom: 12px; }
+
+.tpl-foot { display: flex; gap: 8px; margin-top: 16px; }
+.btn.tiny { padding: 4px 8px; font-size: 11px; line-height: 1; }
+.btn.danger { color: #e0663c; }

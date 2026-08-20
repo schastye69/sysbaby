@@ -419,6 +419,9 @@ html[data-motion="reduced"] #sbCurtainNet { display: none; }
 #sbCurtain.said .cur-log { opacity: .08; }
 html[data-motion="reduced"] .cur-log { display: none; }
 .cur-log-line { opacity: 0; transform: translateY(5px); transition: opacity .55s var(--ease), transform .55s var(--ease); }
+/* Неудавшийся шаг загрузки остаётся на экране и назван собой. Скрыть его
+   значило бы вернуться к заставке, которая рассказывает, а не показывает. */
+.cur-log-line.failed { color: #e0663c; opacity: .95; }
 .cur-log-line.on { opacity: 1; transform: none; }
 
 /* the mark is lifted out of flow so the SENTENCE, not the logo and sentence
@@ -1222,12 +1225,15 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
    It moved from 811 when Experimental brought the count from nine to ten:
    the number is derived from the icon count, not a magic constant.
    The JS threshold in core/shell.js must stay in lockstep with this number. */
-@media (max-width: 897px) {
-  .desk-icon { width: 68px; height: 80px; }
-  .icon-tile { width: 40px; height: 40px; border-radius: 12px; }
-  .icon-tile svg { width: 19px; height: 19px; }
-  .icon-label { font-size: 10.5px; }
-}
+/* Мелкие значки включает НЕ ширина экрана, а расчёт: помещается ли целый ряд
+   крупных при нынешнем числе приложений. Класс ставит layoutIcons() в
+   os/core/shell.js — там же и формула. Раньше здесь стояло число 897,
+   посчитанное под тогдашнее число значков, и каждое новое приложение молча
+   расходилось с ним (v47). */
+html.icons-small .desk-icon { width: 68px; height: 80px; }
+html.icons-small .icon-tile { width: 40px; height: 40px; border-radius: 12px; }
+html.icons-small .icon-tile svg { width: 19px; height: 19px; }
+html.icons-small .icon-label { font-size: 10.5px; }
 @media (max-width: 680px) {
   #sbWidgetLayer { display: none; }
   .window { border-radius: 16px; }

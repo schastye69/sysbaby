@@ -994,6 +994,11 @@
     handle.addEventListener("pointercancel", endResize);
   }
 
+  /* Публичный вход для приложений, которым нужно открыть окно самим.
+     Появился ради build (D-054): он открывается автоматически при первом
+     входе, и делать это через внутреннюю функцию оболочки он не может. */
+  window.sbOpenApp = function (id) { return toggleApp(id); };
+
   function toggleApp(id) {
     var def = apps[id];
     if (!def) return;
@@ -1341,10 +1346,20 @@
     var count = nodes.length;
     if (!count) { window.sbDesktopGrid = { originX: 0, originY: 0, cellW: 80, cellH: 92, cols: 0, rows: 0, gapX: 16, gapY: 12, stepX: 96, stepY: 104 }; return; }
 
-    /* §4.2: the step-down must sit at or above the width where a full row of
-       LARGE icons fits (9 icons: 9*80 + 8*6 + 2*22 = 812), or the desktop gets
-       worse as the window gets wider. Lockstep with core.css @media 897px. */
-    var small = window.innerWidth <= 897;         /* lockstep with core.css */
+    /* §4.2, ПЕРЕСЧИТАНО В v47.
+       Правило прежнее: крупные значки включаются НЕ РАНЬШЕ той ширины, где
+       целый ряд крупных помещается, — иначе рабочий стол становится хуже от
+       того, что окно стало шире. Прежде порог был числом (897), посчитанным
+       вручную под тогдашнее число приложений, и жил в двух местах сразу — в
+       этом файле и в @media в core.css. Каждое новое приложение молча ломало
+       обе арифметики: одиннадцатый значок дал провал 11 → 9 колонок на 898px,
+       и нашёл его закон, а не человек.
+       Теперь порог СЧИТАЕТСЯ ОТ ЧИСЛА ЗНАЧКОВ и объявляется классом, а CSS
+       слушает класс. Двенадцатое приложение не потребует ни одной правки. */
+    var WIDE_CELL = 80, MIN_GAP = 6, EDGE = 22;
+    var needWide = count * WIDE_CELL + (count - 1) * MIN_GAP + EDGE * 2;
+    var small = window.innerWidth < needWide;
+    root.classList.toggle("icons-small", small);
     var cellW = small ? 68 : 80, cellH = small ? 80 : 92;
     var narrow = W < 520;
     var pad = narrow ? 14 : 22;
@@ -1753,17 +1768,65 @@
 
   /* ============================================================= boot §2.3/2.4 */
   var bootReady = false;
-  var BOOT_LINES = [
-    "resolve   workspace   ->  sys.baby/os",
-    "mount     /desktop  /widgets  /apps",
-    "link      mail . notes . files . portfolio",
-    "compile   automation.pipeline",
-    "map       business.process -> system.surface",
-    "warm      renderer . storage . index",
-    "verify    integrity                    ok",
-    "bind      you  ->  your.system",
-    "ready     entering environment"
+  /* ЗАГРУЗКА ГОВОРИТ ТО, ЧТО ПРОИСХОДИТ (v47).
+   *
+   * Здесь стоял список из девяти выдуманных строк — «compile
+   * automation.pipeline», «verify integrity ok» — и они печатались по таймеру
+   * независимо от того, что делала система. Рядом жил индикатор, который рос
+   * на случайную величину и останавливался на девяноста процентах, дожидаясь
+   * готовности. Ни строки, ни проценты не измеряли ничего.
+   *
+   * Для этого проекта такая заставка — не мелочь и не украшение. Весь его
+   * смысл в том, чтобы не рассказывать о качестве, а показывать прибор,
+   * которым оно измерено. Экран загрузки был единственным местом, где продукт
+   * говорил о себе неправду, — и это было первое, что видел человек.
+   *
+   * Теперь каждая строка — ЗАВЕРШИВШИЙСЯ ШАГ с настоящим числом: сколько
+   * приложений зарегистрировалось, сколько записей в данных, за сколько
+   * миллисекунд. Шаг, который не удался, остаётся на экране помеченным, а не
+   * исчезает. Индикатор двигают выполненные шаги, а не таймер. Занавес
+   * поднимается по настоящей готовности рабочего стола.
+   *
+   * Требование основателя 19.08.2026: «загрузка ОС должна быть настоящей и
+   * функциональной». Охраняется tools/os-boot-truth.mjs.
+   */
+  var BOOT_STEPS = [
+    { id: "storage", label: "storage", run: function () {
+        var backend = (window.sbDB && typeof window.sbDB.get === "function") ? "sbDB" : "localStorage";
+        var n = 0;
+        try { for (var i = 0; i < localStorage.length; i++) if (String(localStorage.key(i)).indexOf("sysbaby.") === 0) n++; } catch (e) { n = -1; }
+        if (n < 0) throw new Error("хранилище закрыто браузером");
+        return backend + "  ·  " + n + " записей";
+      } },
+    { id: "session", label: "session", run: function () {
+        var name = "";
+        try { name = (window.sbDB && window.sbDB.get("sysbaby.user.name")) || ""; } catch (e) { name = ""; }
+        return (name ? name : "guest") + ".sys.baby";
+      } },
+    { id: "appearance", label: "appearance", run: function () {
+        var th = root.getAttribute("data-theme") || "—";
+        var acc = window.sbGetCurrentAccent ? window.sbGetCurrentAccent() : null;
+        return th + (acc && acc.a1 ? "  ·  " + acc.a1 : "");
+      } },
+    { id: "apps", label: "apps", run: function () {
+        var list = window.sbLaunchableApps ? window.sbLaunchableApps() : [];
+        if (!list.length) throw new Error("ни одно приложение не зарегистрировалось");
+        return list.length + " зарегистрировано";
+      } },
+    { id: "data", label: "data", run: function () {
+        /* Имена глобальных берутся из самих файлов данных, а не из памяти:
+           первая версия этого шага спрашивала SYSBABY_PORTFOLIO, которого в
+           проекте нет, — и честно покраснела на первом же прогоне. Ошибка
+           стоила минуты и доказала, что шаг измеряет, а не рассказывает. */
+        var pf = (window.sbPortfolio && window.sbPortfolio.length) || 0;
+        var pr = (typeof window.sbPricingBand === "function") ? 1 : 0;
+        if (!pf) throw new Error("портфолио не подгрузилось");
+        return pf + " работ" + (pr ? "  ·  прайс на месте" : "  ·  прайса нет");
+      } }
   ];
+
+  /* Наружу — чтобы приборы читали ТО ЖЕ, что видел человек. */
+  window.sbBoot = { steps: [], ok: null, ms: 0, startedAt: 0 };
   var GLYPHS = "0123456789abcdef/<>{}[]()=+-_:.|";
   var CELLS = 35;
   var SENTENCE_1 = "building automated business for you";
@@ -1819,21 +1882,47 @@
     });
   }
 
+  /* Шаги идут по одному, каждый следующий — в отдельном кадре: так строка
+     успевает появиться на экране, а не все разом в конце. */
   function runBootEngine() {
-    var pct = 0, ready = false;
     var bar = $("#bootBar"), status = $("#bootStatus");
-    systemReadyPromise().then(function () { ready = true; });
-    function tick() {
-      var ceiling = ready ? 100 : 90;
-      pct = Math.min(ceiling, pct + 1.6 + Math.random() * 2.2);
-      if (bar) bar.style.width = pct + "%";
-      if (status) {
-        status.textContent = pct >= 96 ? "Ready" : pct >= 70 ? "Almost there" : pct >= 35 ? "Loading apps" : "Preparing your system";
-      }
-      if (pct >= 100) { startReveal(); return; }
-      requestAnimationFrame(tick);
+    var total = BOOT_STEPS.length + 1;          /* +1 — сам рабочий стол */
+    var t0 = now();
+    window.sbBoot = { steps: [], ok: null, ms: 0, startedAt: t0 };
+
+    function record(id, ok, detail, ms) {
+      var step = { id: id, ok: ok, detail: String(detail), ms: Math.round(ms) };
+      window.sbBoot.steps.push(step);
+      doc.dispatchEvent(new CustomEvent("sysbaby:boot-step", { detail: step }));
+      if (bar) bar.style.width = Math.min(100, Math.round((window.sbBoot.steps.length / total) * 100)) + "%";
+      if (status) status.textContent = ok ? id : (id + " — не удалось");
+      return step;
     }
-    requestAnimationFrame(tick);
+
+    var i = 0;
+    function next() {
+      if (i >= BOOT_STEPS.length) { finish(); return; }
+      var st = BOOT_STEPS[i++];
+      var s0 = now();
+      try { record(st.id, true, st.run(), now() - s0); }
+      catch (err) { record(st.id, false, (err && err.message) || "не удалось", now() - s0); }
+      requestAnimationFrame(next);
+    }
+
+    function finish() {
+      /* Рабочий стол — последний шаг, и он ЖДЁТ настоящего события, а не
+         таймера: прежний индикатор доходил до ста и вызывал показ сам. */
+      doc.addEventListener("sysbaby:desktop-ready", function () {
+        record("desktop", true, "готов", now() - t0);
+        window.sbBoot.ms = Math.round(now() - t0);
+        window.sbBoot.ok = window.sbBoot.steps.every(function (x) { return x.ok; });
+        if (status) status.textContent = window.sbBoot.ok ? "готово · " + window.sbBoot.ms + " мс" : "готово, но не всё";
+        doc.dispatchEvent(new CustomEvent("sysbaby:boot-complete", { detail: window.sbBoot }));
+      }, { once: true });
+      startReveal();
+    }
+
+    requestAnimationFrame(next);
   }
 
   /* ---- cinematic curtain ---- */
@@ -1988,16 +2077,24 @@
     }
     var stopNetwork = runNetwork();
 
+    /* Журнал занавеса — та же лента шагов, что читают приборы. Строка
+       появляется, КОГДА шаг закончился, и несёт его настоящее число.
+       Неудавшийся шаг остаётся на экране помеченным: исчезнувшая строка
+       читается как «этого и не было». */
     function paintLog() {
       if (!logHost) return;
       logHost.innerHTML = "";
-      BOOT_LINES.forEach(function (line, n) {
+      function line(step) {
         var d = doc.createElement("div");
-        d.className = "cur-log-line";
-        d.textContent = line;
+        d.className = "cur-log-line" + (step.ok ? "" : " failed");
+        var pad = (step.id + "            ").slice(0, 12);
+        d.textContent = pad + step.detail + (step.ok ? "" : "   ✗");
+        d.setAttribute("data-step", step.id);
         logHost.appendChild(d);
-        timers.push(setTimeout(function () { d.classList.add("on"); }, 220 + n * 70));
-      });
+        requestAnimationFrame(function () { d.classList.add("on"); });
+      }
+      (window.sbBoot && window.sbBoot.steps ? window.sbBoot.steps : []).forEach(line);
+      doc.addEventListener("sysbaby:boot-step", function (e) { line(e.detail); });
     }
 
     function lift() {
@@ -2121,6 +2218,12 @@
       });
       nameInput.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); if (next) next.click(); } });
     }
+    /* Одно поле имени решает, что будет дальше: если такая запись на этом
+       устройстве есть — это ВХОД, если нет — РЕГИСТРАЦИЯ. Второго экрана и
+       второй кнопки не нужно: человек и так знает, заводил он себя здесь или
+       нет, а система это ЗНАЕТ ТОЧНО. */
+    var registering = false;
+
     if (next) {
       next.addEventListener("click", function () {
         var v = sanitizeUser(nameInput ? nameInput.value : "");
@@ -2128,12 +2231,28 @@
           if (nameErr) nameErr.textContent = "Enter at least 2 characters — letters, numbers, . _ or -";
           return;
         }
+        if (window.sbAuth && !window.sbAuth.available()) {
+          if (nameErr) nameErr.textContent = "This page is not on a secure connection, so a password cannot be protected here. Continue as guest.";
+          return;
+        }
+        registering = !(window.sbAuth && window.sbAuth.has(v));
         toStep2(v);
+        var title = $(".login-title", step2), sub = $(".login-sub", step2);
+        if (title) title.textContent = registering ? "Choose your password" : "Enter your password";
+        if (sub) sub.textContent = registering
+          ? "This name is free on this device. The password is stored as a hash — never as itself."
+          : "Welcome back";
+        if (cont) cont.textContent = registering ? "Create account" : "Continue";
       });
     }
     if (edit) edit.addEventListener("click", toStep1);
     if (back) back.addEventListener("click", toStep1);
-    if (forgot) forgot.addEventListener("click", function () { if (forgotMsg) forgotMsg.textContent = "Demo mode — any password works, no reset needed."; });
+    /* Правда вместо «Demo mode» (v47). Сервера нет — восстанавливать пароль
+       некому и нечем. Единственные настоящие выходы названы прямо. */
+    if (forgot) forgot.addEventListener("click", function () {
+      if (forgotMsg) forgotMsg.textContent =
+        "There is no server, so nobody can reset it — not even us. Enter as guest, or claim another name; this account's data stays on this device.";
+    });
     if (eye && pwInput) {
       eye.addEventListener("click", function () {
         var showing = pwInput.type === "text";
@@ -2161,13 +2280,36 @@
     if (cont) {
       cont.addEventListener("click", function () {
         if (!pwInput || !pwInput.value) { if (pwErr) pwErr.textContent = "Enter your password."; return; }
+        if (!window.sbAuth) { if (pwErr) pwErr.textContent = "Sign-in is unavailable here. Continue as guest."; return; }
         if (pwErr) pwErr.textContent = "";
+        var pw = pwInput.value;
+        var was = cont.textContent;
         cont.disabled = true;
-        cont.textContent = "Signing you in…";
-        var email = chosen + "@sys.baby";
-        var prof = null;
-        if (window.sbProfiles) { try { prof = window.sbProfiles.findOrCreateByEmail(email); } catch (e) { prof = null; } }
-        setTimeout(function () { finish(prof ? prof.id : null, chosen); }, 420);
+        cont.textContent = registering ? "Creating…" : "Checking…";
+
+        function refuse(msg) {
+          cont.disabled = false;
+          cont.textContent = was;
+          if (pwErr) pwErr.textContent = msg;
+          if (pwInput) { pwInput.value = ""; pwInput.focus(); }
+        }
+
+        if (registering) {
+          if (pw.length < 4) { refuse("At least 4 characters."); return; }
+          window.sbAuth.register(chosen, pw).then(function (prof) {
+            finish(prof ? prof.id : null, chosen);
+          })["catch"](function (err) {
+            refuse(err && err.message === "exists" ? "That name is taken on this device." : "Could not create the account here.");
+          });
+          return;
+        }
+
+        /* ВХОД. Неверный пароль не пускает — в этом весь смысл двери. */
+        window.sbAuth.verify(chosen, pw).then(function (okPw) {
+          if (!okPw) { refuse("Wrong password."); return; }
+          var prof = window.sbAuth.profileOf(chosen);
+          finish(prof ? prof.id : null, chosen);
+        })["catch"](function () { refuse("Could not check the password here."); });
       });
     }
     if (guest) {

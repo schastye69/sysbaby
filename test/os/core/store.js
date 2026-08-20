@@ -305,6 +305,125 @@
   };
   window.sbProfiles = sbProfiles;
 
+  /* ==================================================== 4.5 вход без сервера
+   *
+   * ТРЕБОВАНИЕ ОСНОВАТЕЛЯ 19.08.2026: «вход и регистрация должны работать, но
+   * пока без сервера, и с возможностью зайти как гость».
+   *
+   * ЧТО ЗДЕСЬ БЫЛО ДО ТОГО. Экран входа принимал ЛЮБОЙ пароль, а на «забыли
+   * пароль?» отвечал «Demo mode — any password works». Учётные записи при этом
+   * были настоящие: sbProfiles умеет заводить профиль, разделять данные по
+   * пространствам имён и переключаться между ними. Не хватало ровно одного —
+   * проверки того, кто пришёл. Дверь была нарисована.
+   *
+   * КАК УСТРОЕНО ТЕПЕРЬ. Пароль не хранится нигде и никогда. Хранится соль и
+   * результат PBKDF2-SHA-256 в сто пятьдесят тысяч проходов — это стандарт
+   * браузера (crypto.subtle), сервер для него не нужен, и подобрать по нему
+   * пароль дороже, чем он стоит.
+   *
+   * ЧЕГО ЗДЕСЬ НЕТ И БЫТЬ НЕ МОЖЕТ, и это сказано вслух:
+   *   · это не шифрование данных. Пароль решает, КТО ВОШЁЛ, а не кто может
+   *     прочитать файлы: они лежат в хранилище браузера, и человек с доступом
+   *     к устройству прочтёт их мимо любой формы входа. Обещать иное значило
+   *     бы продавать ложное чувство безопасности;
+   *   · восстановления пароля нет. Сервера нет — восстанавливать некому.
+   *     Так и написано на экране, вместо «Demo mode».
+   *
+   * Если crypto.subtle недоступен (страница открыта не по https и не с
+   * localhost), пароли НЕ ИЗОБРАЖАЮТСЯ слабым самодельным хешем: available()
+   * возвращает false, и экран честно предлагает войти гостем. Слабая криптo,
+   * выданная за настоящую, — та же нарисованная дверь, только изнутри.
+   *
+   * Охраняется tools/os-auth-check.mjs.
+   */
+  var AUTH_ITER = 150000;
+
+  function subtleOk() {
+    return !!(window.crypto && window.crypto.subtle && window.crypto.getRandomValues);
+  }
+
+  function toHex(buf) {
+    var b = new Uint8Array(buf), out = "", i;
+    for (i = 0; i < b.length; i++) out += (b[i] < 16 ? "0" : "") + b[i].toString(16);
+    return out;
+  }
+
+  function randomSaltHex() {
+    var a = new Uint8Array(16);
+    window.crypto.getRandomValues(a);
+    return toHex(a.buffer);
+  }
+
+  function derive(password, saltHex) {
+    var enc = new TextEncoder();
+    return window.crypto.subtle
+      .importKey("raw", enc.encode(String(password)), { name: "PBKDF2" }, false, ["deriveBits"])
+      .then(function (key) {
+        return window.crypto.subtle.deriveBits({
+          name: "PBKDF2",
+          salt: enc.encode(saltHex),
+          iterations: AUTH_ITER,
+          hash: "SHA-256"
+        }, key, 256);
+      })
+      .then(toHex);
+  }
+
+  /* Сравнение постоянного времени: обычное === выходит раньше на первом
+     несовпавшем символе, и по времени ответа можно подбирать хеш посимвольно.
+     Дёшево сделать правильно — значит нет причины делать иначе. */
+  function sameSecret(a, b) {
+    var x = String(a || ""), y = String(b || "");
+    if (x.length !== y.length) return false;
+    var diff = 0, i;
+    for (i = 0; i < x.length; i++) diff |= x.charCodeAt(i) ^ y.charCodeAt(i);
+    return diff === 0;
+  }
+
+  function emailOf(name) { return String(name || "").toLowerCase() + "@sys.baby"; }
+
+  var sbAuth = {
+    available: subtleOk,
+    iterations: AUTH_ITER,
+
+    /* Заведена ли учётная запись с таким именем на ЭТОМ устройстве. */
+    has: function (name) {
+      var p = sbProfiles.findByEmail(emailOf(name));
+      return !!(p && p.auth && p.auth.hash);
+    },
+
+    register: function (name, password) {
+      if (!subtleOk()) return Promise.reject(new Error("no-subtle"));
+      if (String(password || "").length < 4) return Promise.reject(new Error("short"));
+      if (sbAuth.has(name)) return Promise.reject(new Error("exists"));
+      var salt = randomSaltHex();
+      return derive(password, salt).then(function (hash) {
+        var prof = sbProfiles.findByEmail(emailOf(name)) || sbProfiles.create(name, emailOf(name));
+        var list = readProfiles(), i;
+        for (i = 0; i < list.length; i++) {
+          if (list[i].id === prof.id) {
+            list[i].auth = { algo: "PBKDF2-SHA256", iterations: AUTH_ITER, salt: salt, hash: hash };
+            list[i].name = String(name).slice(0, 30);
+          }
+        }
+        writeProfiles(list);
+        return sbProfiles.findByEmail(emailOf(name));
+      });
+    },
+
+    verify: function (name, password) {
+      var p = sbProfiles.findByEmail(emailOf(name));
+      if (!p || !p.auth || !p.auth.hash) return Promise.resolve(false);
+      if (!subtleOk()) return Promise.resolve(false);
+      return derive(password, p.auth.salt).then(function (hash) {
+        return sameSecret(hash, p.auth.hash);
+      });
+    },
+
+    profileOf: function (name) { return sbProfiles.findByEmail(emailOf(name)); }
+  };
+  window.sbAuth = sbAuth;
+
   /* ------------------------------- 5. profile key enumerator §1.4 (canonical) */
   function enumerateProfileKeys(profileId) {
     var out = {};
