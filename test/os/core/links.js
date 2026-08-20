@@ -100,28 +100,12 @@
     };
   }
 
-  function documentLink(hintId) {
-    var entry = portfolioEntry(hintId);
-    if (!entry || !apps().files) return null;
-    var v = view(entry) || {};
-    var name = (v.title || entry.title || entry.id) + ".md";
-    return {
-      kind: "document",
-      title: name,
-      sub: t("link.document.sub", { files: appName("files") }),
-      live: function () { return isOpen("files"); },
-      open: function () {
-        if (!window.toggleApp) return;
-        window.toggleApp("files");
-        setTimeout(function () {
-          var win = window.getOpenWindow ? window.getOpenWindow("files") : null;
-          if (!win || typeof window.sbFilesOpenResult !== "function") return;
-          /* FIX: pass a real path array + a stable docId (the original sent only a name) */
-          window.sbFilesOpenResult(win, { path: ["Portfolio", name], docId: entry.id, name: name });
-        }, 300);
-      }
-    };
-  }
+  /* documentLink снята (v48, D-066): она открывала бриф работы в Хранилище,
+     а выведенной папки с брифами больше нет — основатель: «прошу всё то, что
+     должно быть в приложении build, больше не оставлять в ОС». Документ о
+     работе живёт карточкой в build/«Избранные проекты», туда ведёт appLink
+     с разделом. Реестр отдаёт на одну связь меньше — и это правда, а не
+     обеднение: связь без назначения хуже отсутствующей. */
 
   /* Третий довод — РАЗДЕЛ. Связь может вести не просто в приложение, а в
      определённое его место: после снятия портфолио (D-066) все связи о
@@ -181,7 +165,6 @@
       return [
         projectLink("auto-estimate"),
         systemLink("auto-estimate"),
-        documentLink("auto-estimate"),
         appLink("build", t("link.sub.allShipped"), "cases"),
         noteLink("Body-shop estimate system — worth a closer look.")
       ];

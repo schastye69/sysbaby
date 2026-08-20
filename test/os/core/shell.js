@@ -589,18 +589,8 @@
     var w = size.w, h = size.h, x, y, born = { maximized: false };
 
     if (compact()) {
-      /* Во весь экран, как на лендинге (решение 022). Прежние поля отдавали
-         фону 32px ширины на 390px и зажимали содержимое. Нижний зазор не
-         нужен по другой причине, чем написано было раньше: не потому, что
-         док «прячется» (он давно не прячется — он затихает и остаётся), а
-         потому, что под 620px док ОС не показывается вовсе (core.css §14).
-         Причину пришлось переписать: она была отменена в v42 и продолжала
-         стоять здесь как действующая — нашёл tools/comment-truth-check.mjs.
-         Одно правило на две поверхности. */
-      w = window.innerWidth;
-      h = window.innerHeight - 44;
-      x = 0;
-      y = 44;
+      var cr = compactRect();
+      w = cr.w; h = cr.h; x = cr.x; y = cr.y;
     } else {
       var off = (cascade % 5);
       cascade++;
@@ -959,6 +949,47 @@
      against the viewport, so it has to be a number this file agrees on. */
   var TOPBAR_H = 44;
 
+  /* ── ПРЯМОУГОЛЬНИК КОМПАКТНОГО ОКНА: МЕЖДУ ПАНЕЛЬЮ И ПОЛКОЙ (v48) ───────
+   *
+   * Две правды основателя, снятые с одного экрана:
+   *   · «Должно быть место под док ОС» — окно на телефоне заканчивается НАД
+   *     полкой, а не под ней: полка отвечает «что открыто» и не смеет ни
+   *     исчезать (D-069), ни лежать поверх содержимого. Высота полки — не
+   *     константа: shell публикует её в --dock-h, отсюда и читаем.
+   *   · «все окна открываются полноценно, но почему-то otsing вот так» —
+   *     окно Seek рождалось при ВЫЕХАВШЕЙ КЛАВИАТУРЕ: поле ввода в фокусе,
+   *     innerHeight на телефоне в этот момент вдвое меньше, и высота
+   *     запекалась навсегда. Клавиатура уезжала — окно оставалось огрызком.
+   *     Лечение не «не открывать при клавиатуре», а честнее: компактные
+   *     окна СЛЕДЯТ за прямоугольником (onCompactResize) и подгоняются под
+   *     каждый его настоящий размер — клавиатура, поворот, адресная строка.
+   */
+  function dockAllowance() {
+    /* ДВА урока в одной константе (v48):
+       · без оглядки на dock-empty — окно, которое сейчас рождается, само и
+         выведет полку; первая редакция смотрела на класс, и первое окно
+         занимало весь низ, а полка выезжала поверх (поймал smoke-shell);
+       · без живого чтения --dock-h — измеренная высота полки дышит на
+         ±12px (значок пришёл, подпись мигнула), и окна ездили за этим
+         дребезгом. На узком экране полка фиксирована правилами §14
+         core.css (плитка 38 + поля 6), итого 62 — берём её как константу
+         той же природы, что TOPBAR_H, плюс 22 воздуха. */
+    return 84;
+  }
+  function compactRect() {
+    return {
+      x: 0, y: TOPBAR_H,
+      w: window.innerWidth,
+      h: Math.max(220, window.innerHeight - TOPBAR_H - dockAllowance())
+    };
+  }
+  /* Отдельного слушателя resize здесь НЕТ намеренно: подгонкой окон под
+     новый экран давно занимается общий обработчик ниже (§ «viewport
+     resize»), и вторая подписка на то же событие дала бы две правды об
+     одном окне. Первая редакция v48 наступила ровно на это — окна после
+     resize отличались на 8px от рождённых. Он же и учит компактные окна
+     compactRect-у. */
+
   function toggleMaximize(id) {
     var win = openWindows[id];
     if (!win) return;
@@ -1291,12 +1322,12 @@
         if (compact() && w.maximized) {
           applyRect(w, { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight }, false);
         } else if (compact()) {
-          var mm = window.innerWidth <= 400 ? 10 : 16;
-          applyRect(w, {
-            x: mm, y: Math.max(44 + mm, Math.min(w.y, window.innerHeight - 160)),
-            w: window.innerWidth - mm * 2,
-            h: Math.min(w.h, window.innerHeight - (44 + mm) - 76)
-          }, false);
+          /* v48: компактное окно живёт в ОДНОМ прямоугольнике — compactRect
+             (между панелью и полкой, D-069). Здесь стояла своя геометрия с
+             полями 10/16 — вторая правда о том же окне: она дралась с
+             прямоугольником рождения, и окно после resize становилось на
+             8px другим. Правды не соревнуются — правда одна. */
+          if (!w.el.classList.contains("fullscreen")) applyRect(w, compactRect(), false);
         } else if (w.maximized) {
           applyRect(w, { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight }, false);
         } else if (w.snapped) {
@@ -1749,11 +1780,37 @@
     var originX = Math.max(pad, Math.round((W - blockW) / 2));
     var originY = pad;
 
-    nodes.forEach(function (n, i) {
+    /* Сетка ОБХОДИТ места, занятые рукой человека. Основатель показал
+       снимок: значок, вернувшийся из Echoes, лёг ПОВЕРХ переставленной им
+       Hoidla — сетка раздавала клетки, не зная, что часть стола уже занята.
+       Теперь клетка, пересекающаяся с поставленным вручную значком,
+       пропускается, и ряд течёт дальше — как вода вокруг камня. */
+    var HH0 = host.clientHeight || (cellH * 2);
+    var stones = placed.map(function (n) {
+      var pos = places[n.getAttribute("data-app")];
+      if (!pos) return null;
+      return { x: clamp(pos.fx * W, 2, Math.max(2, W - cellW - 2)),
+               y: clamp(pos.fy * HH0, 2, Math.max(2, HH0 - cellH - 2)) };
+    }).filter(Boolean);
+    function cellFree(x, y) {
+      for (var k = 0; k < stones.length; k++) {
+        var st = stones[k];
+        if (!(x + cellW <= st.x || st.x + cellW <= x || y + cellH <= st.y || st.y + cellH <= y)) return false;
+      }
+      return true;
+    }
+    var slot = 0;
+    nodes.forEach(function (n) {
       if (n.getAttribute("data-dragged") === "1") return;   /* палец ещё держит — не вырывать */
-      var c = i % cols, r = Math.floor(i / cols);
-      n.style.left = (originX + c * (cellW + gapX)) + "px";
-      n.style.top = (originY + r * (cellH + gapY)) + "px";
+      var x, y;
+      do {
+        var c = slot % cols, r = Math.floor(slot / cols);
+        x = originX + c * (cellW + gapX);
+        y = originY + r * (cellH + gapY);
+        slot++;
+      } while (!cellFree(x, y) && slot < 400);
+      n.style.left = x + "px";
+      n.style.top = y + "px";
       n.style.width = cellW + "px";
       n.style.height = cellH + "px";
     });
@@ -1859,6 +1916,13 @@
       if (!drag.moved) {
         drag.moved = true;
         node.classList.add("dragging");
+        /* Пометка ставится С ПЕРВОГО ДВИЖЕНИЯ, не на отпускании: перекладка
+           стола может прийти ПОСРЕДИ жеста (адресная строка телефона шлёт
+           resize), и без пометки она передвинет базу значка под переносом —
+           отпускание сложит смещение с уже другой базой, и значок «улетит
+           в другую сторону» (дословно основатель). Помеченный значок
+           перекладка не трогает. */
+        node.setAttribute("data-dragged", "1");
         node.style.willChange = "transform";
         if (window.sbEchoesHighlight) window.sbEchoesHighlight(true);
       }
@@ -1901,8 +1965,15 @@
       /* Перенос был показным — теперь он становится координатой. Порядок
          важен: сперва записать left/top, потом снять transform. Наоборот
          значок мигнул бы обратно в исходную точку на один кадр. */
-      var landedX = d.ox + (d.lastX == null ? 0 : d.lastX);
-      var landedY = d.oy + (d.lastY == null ? 0 : d.lastY);
+      /* Посадка считается от НАСТОЯЩЕГО экранного места, а не от базы,
+         снятой на захвате: getBoundingClientRect учитывает и перенос, и
+         всё, что успело случиться с раскладкой за время жеста. Сажаем
+         ровно туда, где значок видит человек, — и зажимаем в слой. */
+      var layerEl = node.parentNode;
+      var lr = layerEl.getBoundingClientRect();
+      var nr = node.getBoundingClientRect();
+      var landedX = clamp(nr.left - lr.left, 2, Math.max(2, layerEl.clientWidth - node.offsetWidth - 2));
+      var landedY = clamp(nr.top - lr.top, 2, Math.max(2, layerEl.clientHeight - node.offsetHeight - 2));
       node.style.left = Math.round(landedX) + "px";
       node.style.top = Math.round(landedY) + "px";
       node.style.transform = "";

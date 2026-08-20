@@ -3,8 +3,9 @@
  * Spec: os-apps.md section 4.
  * Storage: sysbaby.files.v1 (via sbDB) — the whole tree as one JSON document.
  *   folder {name, type:"folder", children:[]}   file {name, type:"file", content, docId?}
- * The "Portfolio" folder at Home root is DERIVED: regenerated from
- * sbPortfolio/sbPortfolioView on every load and re-persisted. Never user content.
+ * v48: выведенной папки «Portfolio» здесь больше нет (D-066) — Хранилище
+ * принадлежит человеку, витринное живёт в build. load() вырезает её и из
+ * старых сохранённых деревьев.
  */
 (function () {
   "use strict";
@@ -60,11 +61,8 @@
     ]
   };
 
-  var ABOUT_PORTFOLIO = {
-    name: "About Portfolio.md",
-    type: "file",
-    content: "# Portfolio\n\nReal completed client work appears here from the canonical portfolio source."
-  };
+  /* ABOUT_PORTFOLIO снят вместе с выведенной папкой (v48, D-066):
+     Хранилище принадлежит человеку, витринное живёт в build. */
 
   /* The Journal: the system's own memory, planted once (guard key below) so
    * the desktop feels like it lived before you arrived — because it did.
@@ -157,53 +155,14 @@
     }
   }
 
-  function briefBody(view) {
-    var visibility = view.confidential ? t("fv.brief.anonymous") : t("fv.brief.public");
-    var results;
-    if (view.resultsState === "measured") results = view.results;
-    else if (view.resultsState === "withheld") results = t("fv.brief.withheld");
-    else if (view.resultsPendingReason === "not-yet-delivered") results = t("fv.brief.notDelivered");
-    else results = t("fv.brief.pending");
-
-    var features = (view.features || []).map(function (f) { return "- " + f; }).join("\n");
-    return "# " + t("fv.brief.head") + " — " + view.name + "\n\n" +
-      t("fv.brief.visibility") + ": " + visibility + "\n" +
-      t("fv.brief.status") + ": " + t("fv.brief.statusValue") + "\n\n" +
-      t("fv.brief.industry") + ": " + view.industry + "\n" +
-      t("fv.brief.project") + ": " + view.projectType + "\n\n" +
-      t("fv.brief.delivered") + ":\n" + features + "\n\n" +
-      t("fv.brief.goal") + ": " + view.goal + "\n" +
-      t("fv.brief.results") + ": " + results + "\n";
-  }
-
-  function portfolioEntries() {
-    var list = Array.isArray(window.sbPortfolio) ? window.sbPortfolio : [];
-    /* private entries are never surfaced (shared portfolio-data contract) */
-    return list.filter(function (e) { return e && e.visibility !== "private"; });
-  }
-
-  function viewOf(entry) {
-    if (typeof window.sbPortfolioView !== "function") return null;
-    /* Язык передаётся явно. Без него досье собиралось по-английски даже в
-       русском окне: данные портфолио переведены, а спрашивали их не на том языке. */
-    try { return window.sbPortfolioView(entry, window.sbLang ? window.sbLang() : "en"); }
-    catch (err) { console.error("[files] portfolio view failed", err); return null; }
-  }
-
-  function derivePortfolioFolder() {
-    var children = [];
-    portfolioEntries().forEach(function (entry) {
-      var view = viewOf(entry);
-      if (!view) return;
-      children.push({ name: view.name + ".md", type: "file", content: briefBody(view), docId: entry.id });
-    });
-    if (!children.length) children = [clone(ABOUT_PORTFOLIO)];
-    /* derived: "portfolio" — опознавательный знак папки. Раньше её узнавали
-       по имени "Portfolio"; переведённое имя такой поиск ломает, поэтому имя
-       стало видимым, а тождество — отдельным полем. Старое имя тоже
-       принимается: деревья, сохранённые до перевода, должны найтись. */
-    return { name: t("fv.portfolio"), type: "folder", derived: "portfolio", children: children };
-  }
+  /* briefBody / portfolioEntries / viewOf сняты (v48): они собирали
+     досье наших кейсов для выведенной папки. Основатель: «Ни слова про
+     build кроме как через приложение build» — Хранилище больше не знает
+     о витрине ничего. */
+  /* Здесь стояла derivePortfolioFolder() — Хранилище подсаживало брифы
+     наших кейсов пользователю. Снята по слову основателя (v48, D-066):
+     витринное живёт в build, Хранилище — человеку. Вырезание старых копий —
+     в load() ниже. */
 
   function load() {
     var parsed = null;
@@ -218,15 +177,24 @@
     }
     tree = parsed || clone(SEED_TREE);
 
-    /* Derived Portfolio folder: replace in place, or append when missing. */
-    var derived = derivePortfolioFolder();
-    var at = -1;
-    for (var i = 0; i < tree.children.length; i++) {
-      var child = tree.children[i];
-      if (child && child.type === "folder" && (child.derived === "portfolio" || child.name === "Portfolio")) { at = i; break; }
-    }
-    if (at >= 0) tree.children[at] = derived;
-    else tree.children.unshift(derived);
+    /* ── ПАПКИ «ПОРТФОЛИО» В ХРАНИЛИЩЕ БОЛЬШЕ НЕТ (v48, D-066) ────────────
+       Основатель, по снимку Хранилища с этой папкой: «прошу всё то, что
+       должно быть в приложении build, больше не оставлять в ОС». Папка была
+       выведенной — Хранилище само подсаживало брифы наших кейсов в стол
+       пользователя. Это витринное содержимое в личном месте: ровно то, что
+       он просил убрать. Брифы никуда не пропали — карточки работ живут в
+       build/«Избранные проекты» (D-062), а Хранилище принадлежит человеку.
+       Миграция: выведенная папка ВЫРЕЗАЕТСЯ и из сохранённых деревьев — по
+       нашему знаку derived, а для деревьев до перевода — по имени Portfolio,
+       и только если все дети несут docId (то есть папка целиком наша).
+       Свою папку с тем же именем человек не теряет. */
+    tree.children = tree.children.filter(function (child) {
+      if (!child || child.type !== "folder") return true;
+      if (child.derived === "portfolio") return false;
+      if (child.name === "Portfolio" && Array.isArray(child.children) && child.children.length &&
+          child.children.every(function (f) { return f && f.docId; })) return false;
+      return true;
+    });
 
     /* The Journal is planted exactly once — including into trees stored
      * before it existed. If the visitor deletes it, the guard key remembers
@@ -305,25 +273,17 @@
     "</div>";
   }
 
-  function realEntryForFile(node) {
-    if (!node || node.type !== "file") return null;
-    var match = null;
-    portfolioEntries().forEach(function (entry) {
-      if (!entry.real) return;
-      var view = viewOf(entry);
-      if (view && view.name + ".md" === node.name) match = entry;
-    });
-    return match;
-  }
+  /* realEntryForFile снята (v48): кнопка «открыть настоящую систему» в
+     предпросмотре работала только для брифов витрины — их в Хранилище
+     больше нет, и файл человека система за витринный не выдаёт. */
 
   function previewMarkup(node) {
     if (!node) return "";
-    var entry = realEntryForFile(node);
     return '<div class="fv-preview">' +
       '<div class="fv-preview-head">' +
         '<span class="fv-preview-name" data-sb-userdata>' + esc(node.name) + "</span>" +
         '<span class="fv-preview-actions">' +
-          (entry ? '<button type="button" class="fv-open-real" data-entry="' + esc(entry.id) + '">' + esc(t("fv.openReal")) + "</button>" : "") +
+
           '<button type="button" class="fv-edit" id="fvEdit" title="' + esc(t("fv.edit")) + '" aria-label="' + esc(t("fv.edit")) + '">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 19.5h4l10-10a1.6 1.6 0 0 0 0-2.3l-1.7-1.7a1.6 1.6 0 0 0-2.3 0l-10 10v4Z"/></svg>' +
           "</button>" +
@@ -449,22 +409,7 @@
       });
     }
 
-    var openReal = host.querySelector(".fv-open-real");
-    if (openReal) {
-      openReal.addEventListener("click", function () {
-        var entryId = openReal.getAttribute("data-entry");
-        if (typeof window.sbProjectSelect === "function") {
-          try { window.sbProjectSelect(entryId); } catch (err) { console.error("[files] project select failed", err); }
-        }
-        if (typeof window.toggleApp === "function") {
-          try { window.toggleApp("project"); } catch (err) { console.error("[files] toggleApp failed", err); }
-        }
-        var projectWin = typeof window.getOpenWindow === "function" ? window.getOpenWindow("project") : null;
-        if (projectWin && typeof window.sbProjectOpen === "function") {
-          try { window.sbProjectOpen(projectWin, entryId); } catch (err) { console.error("[files] project open failed", err); }
-        }
-      });
-    }
+    /* Проводка fv-open-real снята вместе с кнопкой (v48, см. выше). */
   }
 
   function commitEdit(value) {

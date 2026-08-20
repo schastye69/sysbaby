@@ -1061,13 +1061,21 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: 
 .dh-close svg { width: 13px; height: 13px; }
 .dh-close:hover { background: rgba(var(--wp-light-rgb, 91, 124, 255), .12); color: var(--ink); }
 
-/* On a phone the dock is gone and the sentence needs the room, so it stops
-   pretending to be a single line and simply wraps. */
+/* ── ПОДСКАЗКА НА ТЕЛЕФОНЕ: ШИРЕ, А НЕ ВЫШЕ (v48) ────────────────────────
+   Основатель, по снимку: «подсказки пусть будут более широкие, чем такие
+   высокие как сейчас. занимают слишком много экрана в высоту». Блок без
+   заданной ширины сжимался к самому узкому слову и вытягивал фразу в
+   столбик на пять строк. Теперь он берёт ВСЮ ширину, какая есть, — и та же
+   фраза ложится в одну-две строки. Комментарий выше о «доке, которого нет»
+   устарел ещё в D-061: док на телефоне есть, подсказка встаёт над ним по
+   его настоящей высоте, как и на широком экране. */
 @media (max-width: 620px) {
-  /* no dock down here, so the hint takes the space the dock was clearing —
-     but it still has to stay above the quick-actions button. */
-  #sbDeskHint { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 58px); max-width: calc(100vw - 24px); }
-  .dh-text { white-space: normal; }
+  #sbDeskHint {
+    bottom: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 62px) + 12px);
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+  }
+  .dh-text { white-space: normal; font-size: 12px; line-height: 1.4; }
 }
 
 /* =================================================================== dock §4.1 */
@@ -1441,12 +1449,10 @@ html.icons-small .icon-label { font-size: 10.5px; }
   html.dock-empty #dock {
     opacity: 0; transform: translate(-50%, 14px); pointer-events: none;
   }
-  /* Запас снизу — по настоящей высоте полки, которую публикует shell.js.
-     Правило стоит на .window-body, потому что прокручивается именно она:
-     содержимое проходит под стеклом, но доезжает до конца. */
-  html:not(.dock-empty) .window-body {
-    padding-bottom: calc(var(--dock-h, 62px) + 18px);
-  }
+  /* Запаса-подкладки здесь больше нет (v48): он был мёртв — createWindow
+     ставит окну инлайновый padding:0, который бьёт любой класс. Решение
+     переехало в геометрию: компактное окно заканчивается НАД полкой
+     (compactRect в shell.js), и подкладывать нечего. */
 }
 @media (max-width: 420px) {
   #sbControlCenter { right: 6px; left: 6px; width: auto; }

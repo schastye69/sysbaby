@@ -123,7 +123,25 @@
 
   /* =================================================== 2. notifications §6.2 */
   var NOTIF_KEY = "sysbaby.notifications";
-  function notifList() { var v = readJSON(NOTIF_KEY, []); return Array.isArray(v) ? v : []; }
+  /* ── МИГРАЦИЯ: ЗАПИСЬ БЕЗ ПАСПОРТА СОБЫТИЯ НЕ ЧИТАЕТСЯ (v48) ────────────
+     Основатель прислал ВТОРОЙ снимок с «Terminal closed» в журнале — уже
+     после правила «подтверждения не пишутся». Разгадка: записи, сделанные
+     старой сборкой, лежат в localStorage и переживают обновление кода —
+     фильтр на записи не чистит уже записанное. Поэтому фильтр стоит и на
+     ЧТЕНИИ: у настоящей записи есть паспорт kind: "event", всё остальное —
+     довоенный мусор, и журнал его не показывает. Старые события уходят
+     вместе с ним; это осознанная цена одноразовой чистки, о которой
+     основатель просил дословно («прошу совет провести чистку мусора»). */
+  function notifList() {
+    var v = readJSON(NOTIF_KEY, []);
+    if (!Array.isArray(v)) return [];
+    var clean = v.filter(function (n) { return n && n.kind === "event"; });
+    /* Мусор не прячется — он ИСЧЕЗАЕТ: найдя беспаспортные записи, чтение
+       тут же перезаписывает хранилище очищенным списком. Иначе «чистка»
+       была бы декорацией: снимок хранилища показал бы всё тот же хлам. */
+    if (clean.length !== v.length) writeJSON(NOTIF_KEY, clean);
+    return clean;
+  }
   function notifSave(list) { writeJSON(NOTIF_KEY, list.slice(0, 30)); }
 
   function unseenCount() { return notifList().filter(function (n) { return !n.seen; }).length; }
@@ -172,6 +190,7 @@
     } else {
       list.unshift({
         id: "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+        kind: "event",                       /* паспорт: без него запись не читается */
         title: title,
         text: text,
         icon: "",
