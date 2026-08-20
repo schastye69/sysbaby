@@ -813,15 +813,27 @@
          the bar is showing or not, and they no longer depend on hiding a
          different piece of chrome to be reachable. Filling the screen is what
          the second press does, and that state hides the bar outright. */
-      applyRect(win, {
-        x: 0, y: TOPBAR_H,
-        w: window.innerWidth,
-        h: Math.max(160, window.innerHeight - TOPBAR_H)
-      }, true);
+      applyRect(win, maximizedRect(), true);
     }
     updateTopbarAutoHide();
   }
   window.sbToggleMaximize = toggleMaximize;
+  /* Ручка для приборов: даёт закону поставить окно ровно в то состояние, в
+     которое его ставит перетаскивание к кромке, — не воспроизводя жест.
+     Проверяется РЕЗУЛЬТАТ, а не имитация пальца. */
+  window.sbSnapForTest = function (id, zone) {
+    var win = openWindows[id];
+    if (!win) return false;
+    var r = snapRect(zone);
+    if (!r) return false;
+    win.prevRect = { x: win.x, y: win.y, w: win.w, h: win.h };
+    if (zone === "max") { win.maximized = true; win.snapped = null; win.el.classList.add("maximized"); }
+    else { win.snapped = zone; win.maximized = false; win.el.classList.add("snapped"); }
+    applyRect(win, r, false);
+    updateTopbarAutoHide();
+    return true;
+  };
+  window.sbRestoreWindow = function (id) { return restoreWindow2(id); };
 
   /* Out of fullscreen and out of maximised in one press, back to the size and
      place the window had before any of it. */
@@ -855,11 +867,30 @@
   }
 
   /* ---- snap zones + ghost ---- */
+  /* ОДНА ГЕОМЕТРИЯ МАКСИМИЗАЦИИ НА ВСЕ ПУТИ (v47).
+     Дефект нашёл основатель на телефоне: окно, поднесённое к верхней кромке,
+     раскрывалось на весь экран — и теряло собственные клавиши закрыть,
+     свернуть, развернуть. Причина не в вёрстке: к одному состоянию вели ДВА
+     пути, кнопкой и перетаскиванием, и починен был только первый. У кнопки в
+     v21 уже стояло «максимизировано — значит заполняет РАБОЧИЙ СТОЛ, а не
+     экран», с отступом под верхнюю панель и объяснением на двадцать строк;
+     snapRect("max") продолжал возвращать y:0, и панель накрывала клавиши.
+     Расхождение двух путей к одному состоянию — тот же класс ошибки, что
+     когда-то дал два скрипта выкладки. Теперь прямоугольник считает одна
+     функция, и разойтись им негде. */
+  function maximizedRect() {
+    return {
+      x: 0, y: TOPBAR_H,
+      w: window.innerWidth,
+      h: Math.max(160, window.innerHeight - TOPBAR_H)
+    };
+  }
+
   function snapRect(zone) {
     var vw = window.innerWidth, vh = window.innerHeight, m = 14, top = 44;
     var halfW = (vw - 28) / 2 - 5, fullH = vh - top - m, halfH = fullH / 2 - 5;
     switch (zone) {
-      case "max": return { x: 0, y: 0, w: vw, h: vh };
+      case "max": return maximizedRect();
       case "left": return { x: m, y: top, w: halfW, h: fullH };
       case "right": return { x: vw - m - halfW, y: top, w: halfW, h: fullH };
       case "tl": return { x: m, y: top, w: halfW, h: halfH };
@@ -999,6 +1030,44 @@
      входе, и делать это через внутреннюю функцию оболочки он не может. */
   window.sbOpenApp = function (id) { return toggleApp(id); };
 
+  /* ── СЛЕДЫ ВЫДЕЛЕНИЯ НА СЕНСОРНОМ ЭКРАНЕ (v47) ─────────────────────────
+   *
+   * Основатель просил об этом несколько раз, и Совет несколько раз чинил не
+   * то: подсветку нажатия, запрет выделения на значках, прозрачный tap-highlight.
+   * Всё это уже стояло — а оранжевые чёрточки и точки оставались.
+   *
+   * Что происходит на самом деле. Палец на сенсорном экране начинает выделение
+   * там, где оно разрешено (внутри окон текст выделять НУЖНО — его копируют), и
+   * бросает его недоведённым. Браузер оставляет прямоугольники брошенного
+   * выделения, а наше правило ::selection красит их акцентом — отсюда и
+   * оранжевый. Выделения при этом «не работает» ровно в том смысле, в каком
+   * его описал основатель: скопировать нечего, а следы есть.
+   *
+   * Правило: на сенсорном вводе брошенное выделение снимается, как только
+   * палец отпущен, — КРОМЕ случая, когда человек работает в поле ввода или в
+   * тексте, который он правит. Там выделение осмысленно, и трогать его нельзя.
+   * Мышь не затронута вовсе: на ней выделение доводят до конца.
+   */
+  (function clearStrayTouchSelection() {
+    var inEditable = function (n) {
+      return !!(n && n.closest && n.closest('input, textarea, [contenteditable="true"], .note-text'));
+    };
+    doc.addEventListener("touchend", function (ev) {
+      if (inEditable(ev.target)) return;
+      var sel = window.getSelection && window.getSelection();
+      if (!sel || sel.isCollapsed) return;
+      /* Выделение, доведённое до конца, человек оставляет намеренно — но на
+         сенсорном экране его подтверждает системное меню «копировать», а не
+         факт наличия. Через кадр после отпускания брошенное снимается. */
+      requestAnimationFrame(function () {
+        var s2 = window.getSelection && window.getSelection();
+        if (!s2 || s2.isCollapsed) return;
+        if (inEditable(doc.activeElement)) return;
+        try { s2.removeAllRanges(); } catch (e) { /* некоторые движки запрещают */ }
+      });
+    }, { passive: true });
+  }());
+
   function toggleApp(id) {
     var def = apps[id];
     if (!def) return;
@@ -1084,6 +1153,19 @@
 
   /* topbar app sequence (§5) */
   function updateAppSequence() {
+    /* КРУГЛАЯ КНОПКА ПРИНАДЛЕЖИТ РАБОЧЕМУ СТОЛУ, А НЕ ЭКРАНУ (v47).
+       Она висела поверх любого окна: основатель увидел её поверх витрины на
+       телефоне. Быстрое действие над столом, накрывающее содержимое окна, —
+       это не быстрое действие, а помеха. Когда открыто хотя бы одно окно, она
+       уходит; закрылось последнее — возвращается. Класс общий, чтобы то же
+       правило можно было применить к другим деталям стола, не переписывая
+       каждую по отдельности. */
+    var anyOpen = Object.keys(openWindows).some(function (id) {
+      var w = openWindows[id];
+      return w && !w.minimized;
+    });
+    root.classList.toggle("has-windows", anyOpen);
+
     var host = $("#sbAppSeq");
     if (!host) return;
     host.innerHTML = "";
@@ -1466,10 +1548,19 @@
       var dx = ev.clientX - drag.sx, dy = ev.clientY - drag.sy;
       if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 4) return;
       if (!drag.moved) { drag.moved = true; node.classList.add("dragging"); if (window.sbEchoesHighlight) window.sbEchoesHighlight(true); }
+      /* ЗНАЧОК ИДЁТ ЗА РУКОЙ, ВСЕГДА (v47).
+         Здесь стояла проверка столкновений: если следующий кадр перекрывал
+         чужой значок, кадр просто не рисовался. Задумано как мягкий упор,
+         получились СТЕНЫ: на столе из десяти значков свободного места между
+         ними нет, и протащить один мимо другого невозможно. Хуже того,
+         значок в углу оказывался заперт соседями — основатель написал об
+         этом дословно: «приложение echoes сейчас заперто». А echoes — ещё и
+         место, куда значки перетаскивают, чтобы убрать: заперев его, мы
+         заперли и весь этот путь.
+         Место ищется на ОТПУСКАНИИ (freeCellNear ниже) — в тот момент,
+         когда человек действительно назвал позицию. Ровно так же это уже
+         сделано у заметок, и там об этом написано теми же словами. */
       var nx = drag.ox + dx, ny = drag.oy + dy;
-      var cand = { x: nx, y: ny, w: node.offsetWidth, h: node.offsetHeight };
-      var blocked = obstacles(node).some(function (o) { return rectsOverlap(cand, o, 8); });
-      if (blocked) return;                                    /* soft bump: frame doesn't move */
       node.style.left = nx + "px"; node.style.top = ny + "px";
       var over = echoesDropTarget(ev.clientX, ev.clientY);
       node.classList.toggle("armed", !!over && over !== node);

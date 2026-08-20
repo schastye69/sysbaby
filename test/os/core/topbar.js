@@ -137,6 +137,7 @@
       "aria.identity": "Click to set your username",
       "aria.notifications": "Notifications", "aria.appSeq": "Open windows",
       "aria.tip": "Show a tip", "aria.cc": "Control Center",
+      "aria.langs": "Language", "lang.partial": "the storefront speaks it; the system does not yet",
       "aria.icons": "Desktop icons", "aria.notes": "Desktop notes",
       "aria.dock": "Dock", "aria.dockCta": "Start your project",
       "aria.fab": "Quick actions", "aria.cmdk": "Command palette", "aria.close": "Close",
@@ -604,6 +605,7 @@
       "aria.identity": "Нажмите, чтобы задать имя пользователя",
       "aria.notifications": "Уведомления", "aria.appSeq": "Открытые окна",
       "aria.tip": "Показать подсказку", "aria.cc": "Центр управления",
+      "aria.langs": "Язык", "lang.partial": "витрина говорит, система пока нет",
       "aria.icons": "Значки рабочего стола", "aria.notes": "Заметки на столе",
       "aria.dock": "Док", "aria.dockCta": "Начать проект",
       "aria.fab": "Быстрые действия", "aria.cmdk": "Командная палитра", "aria.close": "Закрыть",
@@ -1055,6 +1057,7 @@
       "aria.identity": "Klõpsa, et määrata kasutajanimi",
       "aria.notifications": "Teated", "aria.appSeq": "Avatud aknad",
       "aria.tip": "Näita vihjet", "aria.cc": "Juhtimiskeskus",
+      "aria.langs": "Keel", "lang.partial": "vitriin räägib, süsteem veel mitte",
       "aria.icons": "Töölaua ikoonid", "aria.notes": "Töölaua märkmed",
       "aria.dock": "Dokk", "aria.dockCta": "Alusta oma projekti",
       "aria.fab": "Kiirtoimingud", "aria.cmdk": "Käsupalett", "aria.close": "Sulge",
@@ -1401,11 +1404,27 @@
       "set.unit.mb": "MB", "set.unit.kb": "KB"
     }
   };
-  var LANGS = [{ code: "en", label: "English" }, { code: "ru", label: "Русский" }, { code: "ee", label: "Eesti" }];
+  /* ЯЗЫКИ СИСТЕМЫ. Порядок и вид — те же, что на витрине: моноширинные коды,
+     а не флаги (D-041). Финский пока живёт только в витрине: у оболочки его
+     строк нет, и система об этом ГОВОРИТ, а не притворяется — код помечен, и
+     при выборе она честно остаётся на английском, пока витрина в окне build
+     переходит на финский. Пометка исчезнет сама в тот день, когда появятся
+     строки: она считается из таблицы, а не проставляется рукой. */
+  /* Внутренний код языка и то, что видит человек, — разные вещи. Эстонский
+     внутри проекта исторически «ee», но человеку показывается ET: это его
+     настоящий код (ISO 639-1), и ровно так он написан на витрине. Показывать
+     «EE» значило бы показывать код СТРАНЫ — та же ошибка, что флаг вместо
+     языка, из-за которой и появилось решение D-041. */
+  var LANGS = [
+    { code: "ee", show: "ET", label: "Eesti" },
+    { code: "en", show: "EN", label: "English" },
+    { code: "ru", show: "RU", label: "Русский" },
+    { code: "fi", show: "FI", label: "Suomi" }
+  ];
 
   function lang() {
     var v = rawGet("sysbaby.i18n.lang") || "en";
-    return STRINGS[v] ? v : "en";
+    return LANGS.some(function (l) { return l.code === v; }) ? v : "en";
   }
   window.sbLang = lang;
   /* sbT(key) -> the string; sbT(key, {name: "x"}) -> the string with {name}
@@ -1430,7 +1449,35 @@
      and is not a language tag, so it is mapped rather than copied. */
   var DOC_LANG = { en: "en", ru: "ru", ee: "et" };
 
+  /* Полоса языков: всё состояние видно сразу, переключение — одно нажатие. */
+  function tr(k) { return window.sbT ? window.sbT(k) : k; }
+
+  function paintLangs() {
+    var host = doc.getElementById("sbLangs");
+    if (!host) return;
+    var cur = lang();
+    host.innerHTML = "";
+    LANGS.forEach(function (l) {
+      var b = doc.createElement("button");
+      var partial = !STRINGS[l.code];
+      b.type = "button";
+      b.className = "tb-lang" + (l.code === cur ? " is-active" : "") + (partial ? " is-partial" : "");
+      b.setAttribute("data-lang", l.code);
+      b.setAttribute("lang", l.code === "ee" ? "et" : l.code);
+      b.setAttribute("aria-pressed", l.code === cur ? "true" : "false");
+      /* Пояснение о неполном языке — строка словаря, а не вшитый русский:
+         иначе английский интерфейс говорил бы по-русски (нашёл закон
+         tools/os-i18n-check.mjs в тот же день). */
+      b.title = partial ? l.label + " — " + tr("lang.partial") : l.label;
+      b.textContent = l.show;
+      b.addEventListener("click", function () { window.sbSetLang(l.code); });
+      host.appendChild(b);
+    });
+  }
+  window.sbPaintLangs = paintLangs;
+
   function applyLang() {
+    paintLangs();
     var code = lang();
     root.setAttribute("lang", DOC_LANG[code] || code);
     $$("[data-i18n]").forEach(function (n) {
@@ -1456,7 +1503,8 @@
     if (window.sbBus) window.sbBus.emit("translate:done", { to: code });
   }
   window.sbSetLang = function (code) {
-    var c = STRINGS[code] ? code : "en";
+    var known = LANGS.some(function (l) { return l.code === code; });
+    var c = known ? code : "en";
     rawSet("sysbaby.i18n.lang", c);
     applyLang();
     paintClock(true);
@@ -1532,10 +1580,17 @@
     if (!host) return;
     if (doc.visibilityState === "hidden" && !force) return;
     var d = new Date();
+    /* НА ТЕЛЕФОНЕ ЧАСЫ УСТУПАЮТ (v47). С появлением полосы языков верхняя
+       панель на 390px перестала помещаться: часы уезжали за правую кромку на
+       шестьдесят пикселей. Уступает здесь именно дата и секунды, а не язык, —
+       и это выбор, а не случайность: который час, человек узнаёт у телефона
+       одним взглядом вверх, а на каком он языке — только у нас. */
+    var narrow = window.innerWidth < 480;
     var opts = window.innerWidth < 560 ? { day: "numeric", month: "short" } : { weekday: "short", day: "numeric", month: "short" };
-    var dateStr = d.toLocaleDateString(localeFor(), opts);
-    var timeStr = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + ":" + ("0" + d.getSeconds()).slice(-2);
-    var whole = dateStr + "  " + timeStr;
+    var dateStr = narrow ? "" : d.toLocaleDateString(localeFor(), opts);
+    var timeStr = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) +
+      (narrow ? "" : ":" + ("0" + d.getSeconds()).slice(-2));
+    var whole = narrow ? timeStr : dateStr + "  " + timeStr;
     if (whole === lastClock && !force) return;
 
     if (!clockCells || clockCells.length !== whole.length || force) {

@@ -66,7 +66,6 @@
 <link rel="stylesheet" href="os/apps/settings/settings.css?b=v47" />
 <link rel="stylesheet" href="os/apps/echoes/echoes.css?b=v47" />
 <link rel="stylesheet" href="os/apps/build/build.css?b=v47" />
-<link rel="stylesheet" href="os/apps/template/template.css?b=v47" />
 <link rel="stylesheet" href="os/apps/portfolio/portfolio.css?b=v47" />
 <link rel="stylesheet" href="os/apps/project/project.css?b=v47" />
 <style id="sb-test-badge-css">
@@ -198,6 +197,16 @@
   <div class="tb-right">
     <!-- All that is left of the tips up here is the switch that asks for one.
          What the desktop has to say, it says down on the desktop. -->
+    <!-- ВЫБОР ЯЗЫКА — НЕ МЕНЮ, А СОСТОЯНИЕ, КОТОРОЕ МОЖНО НАЖАТЬ (v47).
+         Быстрее одного нажатия ничего не бывает, и меню это правило нарушает
+         дважды: сначала открыть, потом выбрать. Здесь все языки видны сразу —
+         ноль нажатий, чтобы узнать, на каком ты сейчас, и одно, чтобы стать
+         на другом. Форма взята не с потолка: моноширинные коды вместо флагов
+         — решение D-041 (флаг обозначает страну, а не язык), и ровно так же
+         это выглядит на витрине. Язык принадлежит СИСТЕМЕ: витрина в окне
+         build получает его готовым и своего переключателя не показывает. -->
+    <nav class="tb-langs" id="sbLangs" aria-label="Language" data-i18n-aria="aria.langs"></nav>
+    <span class="tb-sep" aria-hidden="true"></span>
     <button class="tb-btn tip-bulb" id="sbTipBulb" type="button" aria-label="Show a tip" data-i18n-aria="aria.tip">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"/></svg>
     </button>
@@ -424,7 +433,6 @@
 <script src="os/apps/settings/settings.js?b=v47"></script>
 <script src="os/apps/echoes/echoes.js?b=v47"></script>
 <script src="os/apps/build/build.js?b=v47"></script>
-<script src="os/apps/template/template.js?b=v47"></script>
 <script src="os/apps/portfolio/portfolio.js?b=v47"></script>
 <script src="os/apps/project/project.js?b=v47"></script>
 <!-- Скамейка (Experimental/Phosphor) выведена из клиентской витрины v20.9:

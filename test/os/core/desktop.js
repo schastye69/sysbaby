@@ -530,11 +530,31 @@
       removeNote(el, rec.id, true);
     });
 
-    /* drag with collision guard */
+    /* ЗАМЕТКА ПЕРЕТАСКИВАЕТСЯ КАК ЗНАЧОК (v47).
+     *
+     * Прежде перетаскивание начиналось где угодно, КРОМЕ текста, — а текст
+     * занимает почти всю заметку. Ухватить её было не за что, и основатель
+     * написал прямо: заметки не перемещаются.
+     *
+     * Правило теперь такое же, как у значков приложений и как у виджетов на
+     * телефоне: пока заметку НЕ ПРАВЯТ, вся она — ручка. Нажатие без движения
+     * ставит курсор и открывает правку; нажатие с движением двигает. Когда
+     * заметка в правке, она не двигается вовсе: там человек работает с
+     * текстом, и увести из-под него лист было бы худшим из решений.
+     */
     var drag = null;
     el.addEventListener("pointerdown", function (ev) {
-      if (ev.target && ev.target.closest(".note-text, .note-del, .note-chip")) return;
-      drag = { sx: ev.clientX, sy: ev.clientY, ox: el.offsetLeft, oy: el.offsetTop, moved: false };
+      if (ev.target && ev.target.closest(".note-del, .note-chip")) return;
+      if (el.classList.contains("focused")) return;      /* правят — не двигаем */
+      var onText = !!(ev.target && ev.target.closest(".note-text"));
+      drag = {
+        sx: ev.clientX, sy: ev.clientY,
+        ox: el.offsetLeft, oy: el.offsetTop,
+        moved: false, onText: onText
+      };
+      /* Текст не должен перехватить жест: без этого браузер ставит курсор и
+         начинает выделение прежде, чем станет ясно, тащат заметку или нет. */
+      if (onText) { try { ev.preventDefault(); } catch (e) { /* ignore */ } }
       try { el.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
     });
     el.addEventListener("pointermove", function (ev) {
@@ -554,8 +574,14 @@
     function endDrag() {
       if (!drag) return;
       var moved = drag.moved;
+      var wasOnText = drag.onText;
       drag = null;
       el.classList.remove("dragging");
+      if (!moved && wasOnText) {
+        /* Нажали и не повели — значит хотели писать. */
+        try { ta.focus(); } catch (e) { /* ignore */ }
+        return;
+      }
       if (moved) {
         var spot = noteSpotNear(el.offsetLeft, el.offsetTop, el.offsetWidth, el.offsetHeight, el);
         if (spot.x !== el.offsetLeft || spot.y !== el.offsetTop) {
@@ -585,9 +611,41 @@
     });
   }
 
+  /* РАЗМЕР ЗАМЕТКИ ИДЁТ ЗА ТЕКСТОМ С ПЕРВОГО СЛОВА (v47).
+   *
+   * Прежде за текстом шла только высота, а ширина стояла намертво — 196px из
+   * стилей. Слово «Hi» получало лист размером с ладонь, почти пустой, и
+   * основатель сказал об этом так: подстраивается, но не с первого слова.
+   *
+   * Теперь ширина считается по самой длинной строке, измеренной ТЕМ ЖЕ
+   * шрифтом, которым текст нарисован: короткая заметка становится маленькой
+   * сразу, длинная растёт до предела и дальше переносит строки. Измеряется
+   * настоящим замером в холсте, а не оценкой «примерно семь пикселей на
+   * букву»: буквы разной ширины, а кириллица шире латиницы.
+   */
+  var MEASURE = null;
+  function textWidth(ta, line) {
+    if (!MEASURE) MEASURE = doc.createElement("canvas").getContext("2d");
+    var cs = window.getComputedStyle(ta);
+    MEASURE.font = cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + " / " + cs.lineHeight + " " + cs.fontFamily;
+    return MEASURE.measureText(line).width;
+  }
+
+  var NOTE_MIN_W = 118, NOTE_MAX_W = 320;
+
   function autoGrow(ta) {
+    var el = ta.closest ? ta.closest(".sticky-note") : null;
+    if (el) {
+      var lines = String(ta.value || ta.placeholder || "").split("\n");
+      var widest = 0, i;
+      for (i = 0; i < lines.length; i++) widest = Math.max(widest, textWidth(ta, lines[i]));
+      var pad = el.offsetWidth - ta.offsetWidth + 2;           /* поля самой заметки */
+      if (!(pad > 0)) pad = 24;
+      var want = Math.ceil(widest) + pad + 18;                  /* 18 — место под крестик */
+      el.style.width = Math.round(Math.min(NOTE_MAX_W, Math.max(NOTE_MIN_W, want))) + "px";
+    }
     ta.style.height = "auto";
-    ta.style.height = Math.min(260, Math.max(52, ta.scrollHeight)) + "px";
+    ta.style.height = Math.min(260, Math.max(20, ta.scrollHeight)) + "px";
   }
 
   function keyboardClamp(el) {
