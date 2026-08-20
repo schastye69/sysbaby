@@ -1452,27 +1452,107 @@
   /* Полоса языков: всё состояние видно сразу, переключение — одно нажатие. */
   function tr(k) { return window.sbT ? window.sbT(k) : k; }
 
+  /* ── ЯЗЫК: ОДИН КОД, КОТОРЫЙ И ЕСТЬ КНОПКА (v47, вторая редакция) ────────
+   *
+   * Первая редакция показывала все четыре кода разом: ноль нажатий, чтобы
+   * увидеть язык, одно — чтобы сменить. Основатель посмотрел на телефоне и
+   * снял её одной фразой: столько места занимать нельзя, и часы из-за неё не
+   * помещались в экран. Он прав, и вот почему: четыре кода — это состояние
+   * ЧЕТЫРЁХ языков, а человеку нужно состояние ОДНОГО, своего. Остальные три
+   * нужны ему один раз в жизни, при первой встрече.
+   *
+   * Поэтому здесь один код — тот, на котором система говорит сейчас. Он же и
+   * кнопка: нажатие переводит на следующий язык, долгое нажатие раскрывает
+   * все четыре, если нужен конкретный. Место — правый угол верхней панели,
+   * рядом с часами; занимает он ширину двух букв.
+   *
+   * Почему понятно, что это язык, без слова «язык»: код набран моноширинным,
+   * как коды языков на витрине (D-041 — коды, а не флаги, потому что флаг
+   * обозначает страну), подчёркнут пунктиром — общий знак «это меняется», —
+   * и озвучен полностью для тех, кто читает экран голосом.
+   */
+  function nextLang(code) {
+    var i = 0, k;
+    for (k = 0; k < LANGS.length; k++) if (LANGS[k].code === code) i = k;
+    return LANGS[(i + 1) % LANGS.length].code;
+  }
+
+  function closeLangMenu() {
+    var m = doc.getElementById("sbLangMenu");
+    if (m && m.parentNode) m.parentNode.removeChild(m);
+    doc.removeEventListener("pointerdown", onOutsideLang, true);
+  }
+  function onOutsideLang(ev) {
+    if (ev.target && ev.target.closest && ev.target.closest("#sbLangMenu, #sbLangs")) return;
+    closeLangMenu();
+  }
+
+  function openLangMenu() {
+    closeLangMenu();
+    var host = doc.getElementById("sbLangs");
+    if (!host) return;
+    var cur = lang();
+    var m = doc.createElement("div");
+    m.id = "sbLangMenu";
+    m.className = "tb-lang-menu";
+    m.setAttribute("role", "menu");
+    LANGS.forEach(function (l) {
+      var partial = !STRINGS[l.code];
+      var b = doc.createElement("button");
+      b.type = "button";
+      b.className = "tb-lang-item" + (l.code === cur ? " is-active" : "") + (partial ? " is-partial" : "");
+      b.setAttribute("data-lang", l.code);
+      b.setAttribute("lang", l.code === "ee" ? "et" : l.code);
+      b.setAttribute("role", "menuitemradio");
+      b.setAttribute("aria-checked", l.code === cur ? "true" : "false");
+      b.innerHTML = '<span class="tb-lang-code">' + l.show + '</span><span class="tb-lang-name">' + l.label + '</span>';
+      b.title = partial ? l.label + " — " + tr("lang.partial") : l.label;
+      b.addEventListener("click", function () { closeLangMenu(); window.sbSetLang(l.code); });
+      m.appendChild(b);
+    });
+    host.appendChild(m);
+    setTimeout(function () { doc.addEventListener("pointerdown", onOutsideLang, true); }, 0);
+  }
+  window.sbOpenLangMenu = openLangMenu;
+  window.sbCloseLangMenu = closeLangMenu;
+
   function paintLangs() {
     var host = doc.getElementById("sbLangs");
     if (!host) return;
     var cur = lang();
+    var rec = LANGS.filter(function (l) { return l.code === cur; })[0] || LANGS[1];
+    closeLangMenu();
     host.innerHTML = "";
-    LANGS.forEach(function (l) {
-      var b = doc.createElement("button");
-      var partial = !STRINGS[l.code];
-      b.type = "button";
-      b.className = "tb-lang" + (l.code === cur ? " is-active" : "") + (partial ? " is-partial" : "");
-      b.setAttribute("data-lang", l.code);
-      b.setAttribute("lang", l.code === "ee" ? "et" : l.code);
-      b.setAttribute("aria-pressed", l.code === cur ? "true" : "false");
-      /* Пояснение о неполном языке — строка словаря, а не вшитый русский:
-         иначе английский интерфейс говорил бы по-русски (нашёл закон
-         tools/os-i18n-check.mjs в тот же день). */
-      b.title = partial ? l.label + " — " + tr("lang.partial") : l.label;
-      b.textContent = l.show;
-      b.addEventListener("click", function () { window.sbSetLang(l.code); });
-      host.appendChild(b);
+
+    var b = doc.createElement("button");
+    b.type = "button";
+    b.className = "tb-lang-now" + (!STRINGS[cur] ? " is-partial" : "");
+    b.id = "sbLangNow";
+    b.setAttribute("data-lang", cur);
+    b.setAttribute("lang", cur === "ee" ? "et" : cur);
+    b.textContent = rec.show;
+    b.title = tr("aria.langs") + ": " + rec.label;
+    b.setAttribute("aria-label", tr("aria.langs") + ": " + rec.label);
+    b.setAttribute("aria-haspopup", "menu");
+
+    /* Короткое нажатие — следующий язык. Долгое — выбрать любой.
+       Порог 420 мс: короче человек не успевает понять, что держит. */
+    var holdTimer = null, held = false;
+    var startHold = function () {
+      held = false;
+      holdTimer = setTimeout(function () { held = true; openLangMenu(); }, 420);
+    };
+    var endHold = function () { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } };
+    b.addEventListener("pointerdown", startHold);
+    b.addEventListener("pointerup", endHold);
+    b.addEventListener("pointerleave", endHold);
+    b.addEventListener("pointercancel", endHold);
+    b.addEventListener("click", function () {
+      if (held) { held = false; return; }
+      window.sbSetLang(nextLang(lang()));
     });
+    b.addEventListener("contextmenu", function (ev) { ev.preventDefault(); openLangMenu(); });
+    host.appendChild(b);
   }
   window.sbPaintLangs = paintLangs;
 
