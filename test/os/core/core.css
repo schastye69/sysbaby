@@ -702,17 +702,34 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
    brand colours were the loudest thing on the desktop while meaning nothing.
    Colour on this desktop is a state — the running dot, a badge, the seam of
    the one action tile — never decoration. */
+/* ── МАТЕРИАЛ ЗНАЧКА (v47.1) ─────────────────────────────────────────────
+   Плитка была плоским пятном: один градиент и рамка. Добавлена ровно одна
+   деталь — светлая нить по верхней кромке (inset-тень в 1 px). Она не
+   рисуется отдельным слоем и не стоит ни одного лишнего прохода, но даёт
+   плитке грань: свет падает сверху, как и на всём остальном столе. */
 .icon-tile {
-  width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center;
-  color: var(--ink); box-shadow: var(--shadow-soft);
-  background: linear-gradient(150deg, rgba(242, 242, 240, .12), rgba(242, 242, 240, .03));
+  width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center;
+  color: var(--ink);
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, .07);
+  background: linear-gradient(155deg, rgba(242, 242, 240, .13), rgba(242, 242, 240, .028));
   border: 1px solid var(--line);
+  transition: box-shadow .18s var(--ease), background .18s ease;
+}
+.desk-icon:hover .icon-tile,
+.desk-icon.active-app .icon-tile {
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, .12);
+  background: linear-gradient(155deg, rgba(242, 242, 240, .18), rgba(242, 242, 240, .05));
 }
 .icon-tile svg { width: 22px; height: 22px; }
+/* Подпись читается НАД ЛЮБЫМИ обоями. Поле живое и местами очень светлое —
+   в оранжевой полосе подпись пропадала совсем. Тень под текстом дешевле
+   подложки и не добавляет ни слоя, ни прохода композитора. */
 .icon-label {
   font-size: 11.5px; color: var(--ink-2); text-align: center; line-height: 1.25;
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .55);
 }
+.desk-icon.active-app .icon-label { color: var(--ink); }
 .icon-spark {
   position: absolute; top: 2px; right: 4px; width: 18px; height: 18px; border-radius: 50%;
   display: grid; place-items: center; color: var(--ink-3); opacity: 0; transition: opacity .16s ease;
@@ -870,6 +887,23 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
 /* Белый блик по верхней кромке невидим на белой панели и только размывает
    край. В светлой теме кромка обязана быть темнее панели, а не светлее. */
 html[data-theme="light"] .window::before { background: rgba(12, 14, 20, .08); }
+/* ── ПОКА ОКНО ЛЕТИТ, ОНО НЕ РАЗМЫВАЕТ (v47.1 открытие; v47.2 все пути) ──
+   Полёт идёт переносом и прозрачностью — этим двум композитор рад. Но у
+   окна есть backdrop-filter, и он превращает дешёвую анимацию в дорогую:
+   размытие подложки пересчитывается на каждом кадре, потому что подложка
+   под движущимся окном каждый кадр другая. На широком экране это стоило
+   шестнадцати долгих кадров из ста при вчетверо замедленном процессоре.
+   Сначала правило получило только открытие (.opening) — и в v47.2 закон
+   window-motion-check спросил: а чем сворачивание хуже? Ничем. Класс
+   traveling — то же правило для ЛЮБОГО полёта окна: свернуть, вернуть,
+   закрыть, развернуть. Полёт длится 260 мс и заканчивается ровно там, где
+   окно и должно стоять, — разницу увидеть невозможно, а кадры возвращаются. */
+.window.opening,
+.window.traveling {
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  background: var(--bg-elev, #14100f);
+  will-change: transform, opacity;
+}
 .window.focused { border-color: rgba(var(--accent-rgb), .45); box-shadow: 0 0 0 1px var(--accent-soft), var(--shadow); }
 .window.focused::before { background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .5), transparent); }
 .window.minimized { display: none; }
@@ -1055,18 +1089,33 @@ html.dock-away #dock:hover .dock-tile, html.dock-away #dock:focus-within .dock-t
 html.dock-away #dock:hover .dock-label, html.dock-away #dock:focus-within .dock-label { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { html.dock-away #dock { transform: translate(-50%, 0); } }
 .dock-shelf {
-  display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px;
+  --dock-gap: 8px;
+  display: flex; align-items: flex-end; gap: var(--dock-gap); padding: 8px 10px;
   border-radius: 22px; background: var(--glass); border: 1px solid var(--line);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.5); box-shadow: var(--shadow-soft);
 }
-#dockInner { display: flex; align-items: flex-end; gap: 8px; }
+#dockInner { display: flex; align-items: flex-end; gap: var(--dock-gap); }
 .dock-item {
+  /* padding: 0 — не украшение, а условие. Плитка это <button>, и общий сброс
+     кнопок даёт ей поля по 6 px. При box-sizing: border-box закрытое
+     приложение с width: 0 всё равно занимало 12 px: рамка не может стать уже
+     собственных полей. Десять закрытых приложений — 120 px пустой полки. */
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
-  width: 46px; transform: scale(var(--mag, 1)); transform-origin: bottom center;
+  width: 46px; padding: 0; transform: scale(var(--mag, 1)); transform-origin: bottom center;
   transition: width .28s var(--ease), opacity .22s ease, margin .28s var(--ease), transform .12s linear;
 }
-/* only running apps are visible — the CTA is exempt (FIX §4.1) */
-#dockInner .dock-item:not(.running) { width: 0; opacity: 0; pointer-events: none; margin-left: -4px; overflow: hidden; }
+/* ЗАКРЫТОЕ ПРИЛОЖЕНИЕ ЗАНИМАЕТ РОВНО НОЛЬ (v47.1).
+   Ширину ему обнуляли, а ПРОМЕЖУТОК между ним и соседом — нет: отрицательное
+   поле было выставлено «на глаз» в -4px при промежутке в 8px, и каждое
+   закрытое приложение оставляло после себя 4 пустых пикселя. Десять
+   приложений — сорок пикселей пустой полки, а на телефоне, где промежуток
+   меньше, полка раздувалась ещё заметнее: 134 px пустоты при одной плитке.
+   Теперь поле считается ОТ САМОГО ПРОМЕЖУТКА и сходится в ноль при любом
+   его значении — менять промежуток можно, не трогая эту строку. */
+#dockInner .dock-item:not(.running) {
+  width: 0; min-width: 0; padding: 0; opacity: 0; pointer-events: none; overflow: hidden;
+  margin-left: calc(var(--dock-gap) * -1);
+}
 .dock-cta { width: auto !important; opacity: 1 !important; pointer-events: auto !important; flex-direction: row; gap: 8px; text-decoration: none; color: var(--ink); padding-left: 4px; }
 .dock-cta-label { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
 .dock-tile {
@@ -1129,6 +1178,9 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
   opacity: 0; transform: translateX(14px); transition: opacity .22s ease, transform .22s var(--ease);
 }
 .toast.in { opacity: 1; transform: none; }
+/* Извещений на экране не больше трёх: четвёртое не информирует, а заслоняет.
+   Правило стоит в вёрстке, а не в скрипте, — оно про место, а не про смысл. */
+#toastLayer .toast:nth-child(n + 4) { display: none; }
 .toast-icon { color: var(--ink-2); }
 .toast-icon svg { width: 18px; height: 18px; }
 .toast-title { font-size: 13px; font-weight: 600; }
@@ -1252,8 +1304,22 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
 }
 
 /* ============================================================= responsive §14 */
+/* ── ОКНО ВО ВЕСЬ ЭКРАН НЕ РАЗМЫВАЕТ НИЧЕГО (v47.1, цикл скорости №1) ─────
+   До 860 px окно занимает экран целиком: ни скругления, ни тени, ни единого
+   пикселя обоев по краям. Смотреть сквозь него не на что — а backdrop-filter
+   продолжал работать и заставлял композитор пересобирать всю подложку на
+   каждом кадре открытия и переноса. Это самая дорогая деталь на телефоне и
+   единственная здесь, которую НЕ ВИДНО.
+   Подложка становится плотной. Разницы на экране нет ровно никакой —
+   измерено: закон fps-check считает долгие кадры на открытии окна при
+   вчетверо замедленном процессоре. */
 @media (max-width: 860px) {
-  .window { border-radius: 0; box-shadow: none; }
+  .window {
+    border-radius: 0; box-shadow: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    background: var(--bg-elev, #14100f);
+  }
+  .window::before { display: none; }
   .resize-handle { display: none; }
 }
 /* Icon step-down (§4.2, the "681 px lesson"): the small-icon regime must extend
@@ -1279,7 +1345,27 @@ html.icons-small .icon-label { font-size: 10.5px; }
 @media (max-width: 640px) {
 }
 @media (max-width: 620px) {
-  #dock, #dockHint { display: none; }
+  /* ── ДОК НА ТЕЛЕФОНЕ ЕСТЬ. ОН ТОЛЬКО ДРУГОЙ (v47.1) ─────────────────────
+     Здесь стояло `#dock { display: none }`, и из-за этой строки основатель
+     трижды писал одно и то же: свёрнутое окно исчезало без следа. Совет
+     дважды отвечал не тем органом — сперва метка в доке, которого на
+     телефоне нет; потом точка в 4 px на значке стола, которая говорит
+     правду, но её не видно. Основатель назвал орган сам: «я про док панель».
+
+     Док возвращается — но не пусковой полкой. Пусковая полка на телефоне не
+     нужна: ею служит сам стол, значки на нём и так все на виду. Здесь док
+     показывает РОВНО ОДНО — что открыто и что свёрнуто. Поэтому уходят
+     подпись действия и подсказка про ⌘K (клавиш тут нет), а плитки жмутся
+     до размера, который ещё берётся пальцем. Три состояния точки остаются:
+     нет — закрыто, полная — на экране, полая — ждёт. */
+  #dockHint { display: none; }
+  .dock-cta-label { display: none; }
+  #dock { bottom: max(10px, env(safe-area-inset-bottom)); }
+  .dock-shelf { --dock-gap: 6px; padding: 6px 8px; border-radius: 18px; }
+  .dock-item { width: 40px; }
+  .dock-cta { padding-left: 0; }
+  .dock-tile { width: 38px; height: 38px; border-radius: 12px; }
+  .dock-tile svg { width: 18px; height: 18px; }
   .id-name { display: none; }
   .tb-identity::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: block; }
   #sbFab { bottom: 22px; }
@@ -1293,8 +1379,55 @@ html.icons-small .icon-label { font-size: 10.5px; }
   .sb-lock { display: none; }
   .sb-min { display: block; width: 17px; height: 17px; }
 }
+/* ── ИЗВЕЩЕНИЕ НЕ НАКРЫВАЕТ ПОЛЕ ЗНАЧКОВ (v47.1) ─────────────────────────
+   На широком экране извещения живут в правом верхнем углу — там пусто. На
+   телефоне в правом верхнем углу стоят ЗНАЧКИ, и два извещения подряд
+   накрывали всю сетку приложений: сквозь стекло проступали подписи, и
+   нельзя было прочесть ни извещение, ни стол.
+   Здесь они уходят вниз, к доку — туда, где на телефоне и так ничего нет, —
+   и приходят снизу вверх, а не сбоку.
+   Стекло на них заменено плотной поверхностью. Это одновременно и читаемость
+   (текст стола больше не проступает), и скорость: backdrop-filter — самая
+   дорогая деталь на слабом устройстве, а извещение живёт пять секунд и
+   перерисовывается всё это время. Плотная подложка не стоит ничего. */
 @media (max-width: 620px) {
-  #toastLayer { top: calc(var(--topbar-h) + 52px); }
+  /* Высота полки не постоянна — её публикует shell.js в --dock-h. Извещения
+     встают НАД ней по этому числу, а не по угаданному отступу. */
+  #toastLayer {
+    top: auto; bottom: calc(max(10px, env(safe-area-inset-bottom)) + var(--dock-h, 62px) + 10px);
+    left: 10px; right: 10px; width: auto; gap: 6px; flex-direction: column-reverse;
+  }
+  .toast {
+    padding: 10px 12px; gap: 9px; border-radius: 14px;
+    background: rgba(24, 20, 19, .94); backdrop-filter: none;
+    transform: translateY(10px);
+  }
+  .toast-title { font-size: 12.5px; }
+  .toast-text { font-size: 11.5px; }
+  .toast-action { margin-top: 6px; padding: 4px 10px; }
+  /* Круглая кнопка остаётся у правого края: полка стоит по центру и узкая,
+     угол свободен. Спорить им не за что. */
+
+  /* ── ВНУТРИ ОКНА ПОЛКИ НЕТ (v47.1) ────────────────────────────────────
+     На телефоне окно занимает экран целиком, и плавающая полка поверх него
+     — не помощь, а помеха: она закрывает нижний край содержимого (закон
+     dock-clearance-check поймал это на портфолио: призыв «Start your
+     project» оказался под ней) и продолжает стоить проход размытия там,
+     где показывать ей нечего. Полка отвечает на вопрос «что открыто» — а
+     этот вопрос задают со СТОЛА, не изнутри окна.
+     Класс has-windows уже ведёт оболочка: он ставится, когда на экране есть
+     хоть одно НЕсвёрнутое окно. Полка уходит вместе с ним и возвращается,
+     как только стол снова виден — в том числе сразу после «убрать всё».
+     Уходит переносом и прозрачностью (композитор), а не display: none —
+     иначе возврат был бы рывком. */
+  html.has-windows #dock {
+    opacity: 0; transform: translate(-50%, 14px); pointer-events: none;
+  }
+  /* Пустая полка на телефоне не показывается (см. buildDock): единственная
+     кнопка без подписи — загадка. Стол сам зовёт лучше. */
+  html.dock-empty #dock {
+    opacity: 0; transform: translate(-50%, 14px); pointer-events: none;
+  }
 }
 @media (max-width: 420px) {
   #sbControlCenter { right: 6px; left: 6px; width: auto; }
@@ -1346,6 +1479,25 @@ html.is-compact .titlebar { cursor: default; }
 .tb-lang-item.is-active { color: var(--ink); }
 .tb-lang-item.is-active .tb-lang-code { color: var(--accent); }
 .tb-lang-code { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; min-width: 20px; }
+
+/* ── ЗНАЧОК СИСТЕМЫ — ВТОРАЯ РУКА «УБРАТЬ ВСЁ» (v47.1) ────────────────────
+   Голосование выбрало пустое место стола, основатель поправил: выбирать
+   надо было ГИБРИД. Пустое место — жест для того, кто систему уже знает;
+   значок в углу — единственная точка, которую видно всегда, даже когда стол
+   накрыт окном целиком и пустого места на нём физически нет. Одна и та же
+   дверь (sbMinimizeAll), два входа.
+   Раз значок нажимается — он обязан быть кнопкой: не ради вида, а ради
+   клавиатуры и пальца. Поля добираются до 26 px по вертикали, чтобы в него
+   можно было попасть, не целясь. */
+button.tb-mark {
+  border: 0; background: none; padding: 4px 2px; margin: 0; cursor: pointer;
+  display: inline-flex; align-items: center; min-width: 26px; min-height: 26px;
+  border-radius: 8px; color: inherit; font: inherit;
+  transition: background .16s ease, transform .12s var(--ease);
+}
+button.tb-mark:hover { background: var(--glass); }
+button.tb-mark:active { transform: scale(.94); }
+button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tb-lang-item.is-partial .tb-lang-name::after { content: " ·"; opacity: .6; }
 
 
@@ -1353,7 +1505,17 @@ html.is-compact .titlebar { cursor: default; }
    На телефоне дока нет, и значки стола — единственное место, где видно,
    что приложение живо. Три ответа в одной точке: нет её — закрыто, полная —
    окно на экране, полая — свёрнуто и ждёт нажатия. */
-.desk-icon { position: relative; }
+/* ЗДЕСЬ СТОЯЛО `.desk-icon { position: relative }` — И ЭТО БЫЛА ОШИБКА.
+   Правило приписали привычным жестом, чтобы точке ниже было к чему
+   привязаться. Оно легло НИЖЕ объявления `position: absolute` (см. «desktop
+   icons» выше) и с той же силой — то есть отменило его. Значок после этого
+   занимал место в потоке И сдвигался на свои left/top поверх него:
+   координата удваивалась (значки выстраивались лесенкой вниз-вправо),
+   высота потока росла (стол начинал прокручиваться, верхняя панель уезжала
+   за край), а offsetLeft при захвате возвращал уже сдвинутое значение — и
+   первый кадр переноса отбрасывал значок на эту разницу.
+   `absolute` — тоже положение, и якорем для `::after` служит не хуже.
+   Правило не восстановлено намеренно; доказано в desktop-drag-check §4. */
 .desk-icon::after {
   content: ""; position: absolute; left: 50%; bottom: 2px; width: 4px; height: 4px;
   margin-left: -2px; border-radius: 50%; background: var(--ink-3);

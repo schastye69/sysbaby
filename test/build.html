@@ -92,6 +92,9 @@ header('Content-Type: text/html; charset=utf-8');
 })();
 </script>
 <script src="shared/portfolio.data.js?b=v47"></script>
+<script src="shared/portfolio.strings.js?b=v47"></script>
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v47" />
+<script src="shared/portfolio.view.js?b=v47"></script>
 <script src="shared/pricing.data.js?b=v47"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
@@ -330,6 +333,11 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
 .lang.is-warm{color:var(--accent);transition:none}
 
 /* --- hero -------------------------------------------------------------- */
+.hero-built-line{
+  margin:2px 0 0;font-family:var(--mono,monospace);font-size:12px;letter-spacing:.34em;
+  text-transform:lowercase;color:var(--ink-3,#8a8a90);
+}
+@media (max-width:640px){.hero-built-line{font-size:10.5px;letter-spacing:.22em}}
 .hero{
   position:fixed;inset:0;z-index:10;display:flex;justify-content:center;
   /* `safe center` is the whole fix for the clipped first line. A centred flex
@@ -1329,6 +1337,12 @@ html[data-anim="paused"] .dock-flare{display:none}
          считается по измерению — см. fitHeroName(). -->
     <div class="hero-head">
       <p class="hero-name-line reveal" id="heroName" aria-label="Building Automated Business for You"><span class="w" aria-hidden="true"><b>B</b>uilding</span><span class="w" aria-hidden="true"><b>A</b>utomated</span><span class="w" aria-hidden="true"><b>B</b>usiness</span><span class="w" aria-hidden="true">for</span><span class="w" aria-hidden="true"><b>Y</b>ou</span></p>
+      <!-- Фраза переехала СЮДА из занавеса загрузки ОС по слову основателя:
+           «слоган built around your business должен быть только в приложении
+           build» (v47.1). Голос продавца — в витрине; у системы своя фраза.
+           Строка намеренно не переводится, как и hero-name-line над ней:
+           это пара к непереводимой расшифровке имени, не текст раздела. -->
+      <p class="hero-built-line reveal" id="heroBuilt" aria-hidden="false">built around your business</p>
       <h1 class="reveal" id="heroTitle"></h1>
     </div>
     <p class="hero-text reveal" id="heroText"></p>
@@ -4038,9 +4052,40 @@ function renderProduct(record) {
   }
 }
 
+/* ── «ИЗБРАННЫЕ ПРОЕКТЫ» РИСУЕТ ТОТ ЖЕ МОДУЛЬ, ЧТО И ПОРТФОЛИО (v47.1) ────
+ *
+ * Основатель: «в раздел selected work на лендинге нужно уместить информацию
+ * из приложения портфолио, так как оно не должно быть в OS, портфолио должно
+ * быть в приложении build». Совет проголосовал за общий модуль отрисовки:
+ * shared/portfolio.view.js рисует и окно системы, и этот раздел.
+ *
+ * Здесь остаётся ровно то, что принадлежит витрине: заголовок раздела, её
+ * собственное вступление о конфиденциальности и ссылка в систему. Всё
+ * остальное — карточки, живые предпросмотры, очередь работ, призыв — идёт
+ * из общего модуля, и второй копии этой вёрстки на витрине больше нет.
+ *
+ * Список ниже сохранён как ЗАПАСНОЙ ХОД: если общий модуль не загрузился,
+ * раздел показывает работы простым списком, а не пустоту. Молчаливой дыры
+ * на месте главного раздела быть не должно.
+ */
 function renderCases(record) {
   var lang = state.lang;
   var copy = appCopy("cases", lang);
+  var platformLabel = C.casesOpenPlatformLabel[lang] || C.casesOpenPlatformLabel.en;
+
+  if (typeof window.sbRenderPortfolioInto === "function") {
+    setHtml(record.body,
+      "<h3>" + copy.title + "</h3><p>" + copy.intro + "</p>" +
+      '<div class="pf-mount"></div>' +
+      '<p class="link-row"><a href="' + esc(OS_LINK) + '">' + esc(platformLabel) + "</a></p>");
+    var mount = record.body.querySelector(".pf-mount");
+    var drawn = false;
+    try { drawn = window.sbRenderPortfolioInto(mount, "build", lang); }
+    catch (err) { console.error("[cases] shared portfolio failed", err); drawn = false; }
+    if (drawn) return;
+    /* не получилось — падаем в запасной список ниже, а не оставляем дыру */
+  }
+
   var items = [];
   if (window.sbPortfolio && window.sbPortfolioView) {
     window.sbPortfolio.forEach(function (entry) {
@@ -4064,11 +4109,10 @@ function renderCases(record) {
     }
   }
   items.push('<li class="plain">' + (C.portfolioCaseLink[lang] || C.portfolioCaseLink.en) + "</li>");
-  var platform = C.casesOpenPlatformLabel[lang] || C.casesOpenPlatformLabel.en;
   setHtml(record.body,
     "<h3>" + copy.title + "</h3><p>" + copy.intro + "</p>" +
     '<ul class="panel-list">' + items.join("") + "</ul>" +
-    '<p class="link-row"><a href="' + esc(OS_LINK) + '">' + esc(platform) + "</a></p>");
+    '<p class="link-row"><a href="' + esc(OS_LINK) + '">' + esc(platformLabel) + "</a></p>");
 }
 
 /* ----------------------------------------------------------- order panel */

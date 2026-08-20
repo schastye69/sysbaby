@@ -302,6 +302,24 @@
     return mountToast(buildToast(title, text, iconSvg, extraClass, kind), 5800);
   };
 
+  /* ── ЯВНО ЗАПРОШЕННОЕ ВЫТЕСНЯЕТ САМОСЛУЧИВШЕЕСЯ (v47.1) ────────────────
+     На телефоне извещения и подсказка стола живут в одном нижнем углу — и
+     когда человек нажал лампочку, извещение оказывалось поверх того, что
+     он только что попросил. Правило одно и общее: поверхность, которую
+     человек вызвал сам, важнее поверхности, которая пришла сама. Извещения
+     уходят своим обычным путём (та же анимация, что по нажатию) — они и
+     так живут пять секунд, а подсказка не ждёт. */
+  window.sbToastsYield = function () {
+    var host = $("#toastLayer");
+    if (!host) return 0;
+    var list = $$(".toast", host);
+    list.forEach(function (t) {
+      t.classList.remove("in");
+      setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 240);
+    });
+    return list.length;
+  };
+
   function showUndoToast(title, text, onUndo) {
     if (dnd()) return null;
     var t = buildToast(title, text, ICONS.window, "toast-undo", "confirm");
@@ -587,13 +605,22 @@
     else { fromX = window.innerWidth / 2; fromY = window.innerHeight - 40; }
     var cx = win.x + win.w / 2, cy = win.y + win.h / 2;
     el.style.transformOrigin = "center center";
-    el.style.transform = "translate(" + Math.round(fromX - cx) + "px," + Math.round(fromY - cy) + "px) scale(.94)";
+    /* На время полёта окно снимает размытие подложки и объявляет композитору,
+       ЧТО ИМЕННО будет меняться. Причина написана в core.css у .window.opening:
+       размытие превращает дешёвую анимацию переноса в дорогую, потому что
+       подложка под движущимся окном каждый кадр другая. */
+    el.classList.add("opening");
+    el.style.transform = "translate3d(" + Math.round(fromX - cx) + "px," + Math.round(fromY - cy) + "px,0) scale(.94)";
     el.style.opacity = "0";
     requestAnimationFrame(function () {
       el.style.transition = "transform 260ms cubic-bezier(.16,1,.3,1), opacity 240ms ease";
-      el.style.transform = "translate(0,0) scale(1)";
+      el.style.transform = "translate3d(0,0,0) scale(1)";
       el.style.opacity = "1";
-      setTimeout(function () { el.style.transition = ""; }, 300);
+      setTimeout(function () {
+        el.style.transition = "";
+        el.style.transform = "";
+        el.classList.remove("opening");
+      }, 300);
     });
   }
 
@@ -663,7 +690,7 @@
     rememberClosed(id);
 
     var el = win.el;
-    el.classList.add("closing");
+    el.classList.add("closing", "traveling");
     if (!reduced() && !systemReduced()) {
       el.style.transition = "transform 200ms cubic-bezier(.16,1,.3,1), opacity 190ms ease";
       el.style.transform = "scale(.96)";
@@ -713,13 +740,17 @@
     var el = win.el, r = tileRectFor(id);
     if (!reduced() && !systemReduced() && r) {
       var cx = win.x + win.w / 2, cy = win.y + win.h / 2;
+      /* traveling: на время полёта окно не размывает (см. core.css). Правило
+         родилось у открытия и законом window-motion-check распространено на
+         все пути: счёт композитору один и тот же, где бы окно ни летело. */
+      el.classList.add("traveling");
       el.style.transition = "transform 200ms cubic-bezier(.16,1,.3,1), opacity 180ms ease";
       el.style.transformOrigin = "center center";
-      el.style.transform = "translate(" + Math.round(r.left + r.width / 2 - cx) + "px," + Math.round(r.top + r.height / 2 - cy) + "px) scale(.12)";
+      el.style.transform = "translate3d(" + Math.round(r.left + r.width / 2 - cx) + "px," + Math.round(r.top + r.height / 2 - cy) + "px,0) scale(.12)";
       el.style.opacity = "0";
       setTimeout(function () { dockCatch(id); }, 150);
     }
-    setTimeout(function () { el.classList.add("minimized"); el.style.transition = ""; }, 200);
+    setTimeout(function () { el.classList.add("minimized"); el.style.transition = ""; el.classList.remove("traveling"); }, 200);
     if (focusedId === id) {
       var next = highestRemaining();
       focusedId = null;
@@ -735,11 +766,20 @@
     var el = win.el;
     el.classList.remove("minimized");
     if (!reduced() && !systemReduced()) {
+      el.classList.add("traveling");
       requestAnimationFrame(function () {
         el.style.transition = "transform 200ms cubic-bezier(.16,1,.3,1), opacity 180ms ease";
-        el.style.transform = "translate(0,0) scale(1)";
+        el.style.transform = "translate3d(0,0,0) scale(1)";
         el.style.opacity = "1";
-        setTimeout(function () { el.style.transition = ""; }, 220);
+        /* После полёта — ни следа: transition, transform и traveling
+           снимаются все разом. Оставленный identity-transform выглядит
+           безобидно, но создаёт содержащий блок для fixed-потомков и
+           лишний слой композитора — закон ловит это как «не чисто». */
+        setTimeout(function () {
+          el.style.transition = "";
+          el.style.transform = "";
+          el.classList.remove("traveling");
+        }, 220);
       });
     } else { el.style.transform = ""; el.style.opacity = "1"; }
     dockRelease(id);
@@ -747,7 +787,8 @@
     updateTopbarAutoHide();
   }
   window.sbMinimizeWindow = minimizeWindow;
-  window.sbRestoreWindow = restoreWindow;
+  /* Публичная дверь назначается НИЖЕ, одна на оба смысла «вернуть» — см.
+     комментарий у второго restoreWindow2: здесь была коллизия имён. */
 
   /* ── ОДИН ЗАСЛОН НА ВСЕ ПУТИ (v47) ─────────────────────────────────────
    *
@@ -766,12 +807,31 @@
    * Это дороже трёх точечных правок ровно ничем, а закрывает и четвёртый путь,
    * которого мы ещё не встретили.
    */
+  /* ── МОРФ ПРЯМОУГОЛЬНИКА ЖИВЁТ В ЕДИНСТВЕННОЙ ДВЕРИ (v47.2) ────────────
+   *
+   * applyRect и раньше умел анимировать — переходом left/top/width/height за
+   * 130 мс. Движение было, но оплачивалось ПЕРЕСЧЁТОМ РАСКЛАДКИ на каждом
+   * кадре: четыре самых дорогих свойства из существующих, и на каждом кадре
+   * содержимое окна перекладывалось заново. Директива основателя требует
+   * одновременно характера движения и «performance first» — здесь это одно
+   * и то же исправление.
+   *
+   * Приём FLIP: конечный прямоугольник ставится СРАЗУ (правда состояния
+   * мгновенна — законы геометрии видят готовое окно, не полёт), содержимое
+   * перекладывается один раз, а видимый путь рисует transform от старого
+   * прямоугольника к новому — чистый композитор. Класс traveling на время
+   * полёта снимает размытие подложки (core.css, то же правило, что у
+   * открытия и сворачивания).
+   *
+   * Команда посреди прошлого полёта стартует с ТЕКУЩЕГО видимого положения:
+   * getBoundingClientRect учитывает transform, морф продолжается оттуда,
+   * где его видит человек, без рывка. Длительность оставлена прежней —
+   * 130 мс тем же ходом (.16,1,.3,1): тайминг был выбран верно, менялась
+   * только цена. */
   function applyRect(win, rect, animate) {
     var el = win.el;
-    if (animate && !reduced() && !systemReduced()) {
-      el.style.transition = "left 130ms cubic-bezier(.16,1,.3,1), top 130ms cubic-bezier(.16,1,.3,1), width 130ms cubic-bezier(.16,1,.3,1), height 130ms cubic-bezier(.16,1,.3,1)";
-      setTimeout(function () { el.style.transition = ""; }, 160);
-    }
+    var fly = animate && !reduced() && !systemReduced();
+    var r0 = fly ? el.getBoundingClientRect() : null;
     var y = Math.round(rect.y);
     var h = Math.round(rect.h);
     if (!el.classList.contains("fullscreen") && y < TOPBAR_H) {
@@ -782,8 +842,29 @@
     }
     win.x = Math.round(rect.x); win.y = y;
     win.w = Math.round(rect.w); win.h = h;
+    el.style.transition = "";
+    el.style.transform = "";
     el.style.left = win.x + "px"; el.style.top = win.y + "px";
     el.style.width = win.w + "px"; el.style.height = win.h + "px";
+    if (!fly || !r0 || !r0.width) return;
+    var r1 = el.getBoundingClientRect();
+    if (!r1.width || !r1.height) return;
+    var dx = r0.left - r1.left, dy = r0.top - r1.top;
+    var sx = r0.width / r1.width, sy = r0.height / r1.height;
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(sx - 1) < 0.01 && Math.abs(sy - 1) < 0.01) return;
+    el.classList.add("traveling");
+    el.style.transformOrigin = "0 0";
+    el.style.transform = "translate3d(" + dx + "px," + dy + "px,0) scale(" + sx + "," + sy + ")";
+    void el.offsetWidth;                       /* стартовый кадр зафиксирован */
+    el.style.transition = "transform 130ms cubic-bezier(.16,1,.3,1)";
+    el.style.transform = "translate3d(0,0,0) scale(1)";
+    clearTimeout(win.__flyTimer);
+    win.__flyTimer = setTimeout(function () {
+      el.style.transition = "";
+      el.style.transform = "";
+      el.style.transformOrigin = "";
+      el.classList.remove("traveling");
+    }, 170);
   }
   window.sbPlaceWindow = function (id, rect) {
     var win = openWindows[id];
@@ -858,7 +939,20 @@
     updateTopbarAutoHide();
     return true;
   };
-  window.sbRestoreWindow = function (id) { return restoreWindow2(id); };
+  /* ── ОДНА ДВЕРЬ НА ОБА СМЫСЛА «ВЕРНУТЬ» (v47.2) ────────────────────────
+     window.sbRestoreWindow присваивался ДВАЖДЫ: выше — возврат из
+     свёрнутого, здесь — выход из развёрнутого. Второе присваивание молча
+     затирало первое, и публичная дверь никогда не возвращала свёрнутое
+     окно. Нашёл window-motion-check: команда уходила, состояние не
+     менялось. Теперь дверь одна и решает по состоянию: свёрнутое сперва
+     возвращается на стол — и только следующий вызов снимает развёрнутость.
+     Один вызов — один шаг назад, как и жмёт человек. */
+  window.sbRestoreWindow = function (id) {
+    var win = openWindows[id];
+    if (!win) return;
+    if (win.minimized) return restoreWindow(id);
+    return restoreWindow2(id);
+  };
 
   /* Out of fullscreen and out of maximised in one press, back to the size and
      place the window had before any of it. */
@@ -1298,6 +1392,13 @@
     var anyRunning = ids.some(function (id) { return !!openWindows[id]; });
     var hint = $("#dockHint");
     if (hint) hint.hidden = anyRunning;
+    /* Пустая полка на телефоне не показывается вовсе: там док — полка
+       ОТКРЫТОГО (D-061), и пустая полка была бы одинокой оранжевой кнопкой
+       без подписи — загадкой, а не приглашением. Пусковой полкой на
+       телефоне служит сам стол. Класс вешается всегда, прячет его только
+       узкий @media: на широком экране пустой док остаётся приглашением
+       с подписью и подсказкой. */
+    root.classList.toggle("dock-empty", !anyRunning);
     measureDock();
   }
   window.sbBuildDock = buildDock;
@@ -1588,14 +1689,28 @@
     node.addEventListener("pointerdown", function (ev) {
       if (ev.button !== 0) return;
       if (ev.target && ev.target.closest(".icon-spark")) return;
-      drag = { sx: ev.clientX, sy: ev.clientY, ox: node.offsetLeft, oy: node.offsetTop, moved: false };
+      drag = { sx: ev.clientX, sy: ev.clientY, ox: node.offsetLeft, oy: node.offsetTop, moved: false, armed: false };
+      /* ЦЕЛЬ ЗАМЕРЯЕТСЯ ОДИН РАЗ, А НЕ НА КАЖДОМ КАДРЕ (v47.1, цикл скорости №1).
+         echoesDropTarget спрашивал getBoundingClientRect у значка Echoes и у
+         его окна на КАЖДОЕ движение пальца. Каждый такой вопрос заставляет
+         браузер досчитать раскладку немедленно — посреди жеста, шестьдесят
+         раз в секунду. За время одного переноса ни значок Echoes, ни его
+         окно с места не двигаются, поэтому их место запоминается на входе.
+         На отпускании цель ищется заново, по живым числам: там кадр уже не
+         на счету, а ошибиться в точке приземления нельзя. */
+      drag.zones = echoesZones();
       try { node.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
     });
     node.addEventListener("pointermove", function (ev) {
       if (!drag) return;
       var dx = ev.clientX - drag.sx, dy = ev.clientY - drag.sy;
       if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 4) return;
-      if (!drag.moved) { drag.moved = true; node.classList.add("dragging"); if (window.sbEchoesHighlight) window.sbEchoesHighlight(true); }
+      if (!drag.moved) {
+        drag.moved = true;
+        node.classList.add("dragging");
+        node.style.willChange = "transform";
+        if (window.sbEchoesHighlight) window.sbEchoesHighlight(true);
+      }
       /* ЗНАЧОК ИДЁТ ЗА РУКОЙ, ВСЕГДА (v47).
          Здесь стояла проверка столкновений: если следующий кадр перекрывал
          чужой значок, кадр просто не рисовался. Задумано как мягкий упор,
@@ -1608,17 +1723,38 @@
          Место ищется на ОТПУСКАНИИ (freeCellNear ниже) — в тот момент,
          когда человек действительно назвал позицию. Ровно так же это уже
          сделано у заметок, и там об этом написано теми же словами. */
-      var nx = drag.ox + dx, ny = drag.oy + dy;
-      node.style.left = nx + "px"; node.style.top = ny + "px";
-      var over = echoesDropTarget(ev.clientX, ev.clientY);
-      node.classList.toggle("armed", !!over && over !== node);
+      /* ЗНАЧОК ЕДЕТ ПЕРЕНОСОМ, А НЕ КООРДИНАТОЙ (v47.1, цикл скорости №1).
+         Здесь на каждый кадр писались left и top. Это не просто присваивание:
+         каждая такая пара заставляет браузер заново разложить весь слой
+         значков и перерисовать его, пока палец движется. Перенос (transform)
+         композитор делает сам, не трогая раскладку вовсе.
+         Настоящая координата не меняется всё это время — она записывается
+         один раз, на отпускании, там же, где ищется свободное место. Значок
+         при этом ВЫГЛЯДИТ ровно так же: getBoundingClientRect учитывает
+         перенос, и закон desktop-drag-check меряет именно его. */
+      drag.lastX = dx; drag.lastY = dy;
+      node.style.transform = "translate3d(" + Math.round(dx) + "px," + Math.round(dy) + "px,0)";
+      var over = zoneHit(drag.zones, ev.clientX, ev.clientY);
+      var armed = !!over && over !== node;
+      /* Класс переставляется только когда он ДЕЙСТВИТЕЛЬНО меняется: иначе
+         каждый кадр просит пересчитать стили ни за чем. */
+      if (armed !== drag.armed) { drag.armed = armed; node.classList.toggle("armed", armed); }
     });
     function endIconDrag(ev) {
       if (!drag) return;
       var d = drag; drag = null;
       node.classList.remove("dragging", "armed");
+      node.style.willChange = "";
       if (window.sbEchoesHighlight) window.sbEchoesHighlight(false);
-      if (!d.moved) { toggleApp(id); return; }
+      if (!d.moved) { node.style.transform = ""; toggleApp(id); return; }
+      /* Перенос был показным — теперь он становится координатой. Порядок
+         важен: сперва записать left/top, потом снять transform. Наоборот
+         значок мигнул бы обратно в исходную точку на один кадр. */
+      var landedX = d.ox + (d.lastX == null ? 0 : d.lastX);
+      var landedY = d.oy + (d.lastY == null ? 0 : d.lastY);
+      node.style.left = Math.round(landedX) + "px";
+      node.style.top = Math.round(landedY) + "px";
+      node.style.transform = "";
       var over = ev && echoesDropTarget(ev.clientX, ev.clientY);
       if (over && id !== "echoes") {
         window.sbSetIconHidden(id, true);
@@ -1633,9 +1769,38 @@
       setTimeout(function () { node.classList.remove("settling"); }, 320);
     }
     node.addEventListener("pointerup", endIconDrag);
-    node.addEventListener("pointercancel", function () { if (drag) { drag = null; node.classList.remove("dragging", "armed"); if (window.sbEchoesHighlight) window.sbEchoesHighlight(false); } });
+    node.addEventListener("pointercancel", function () {
+      if (!drag) return;
+      /* Прерванный жест обязан убрать за собой ТО ЖЕ, что убирает
+         законченный: иначе значок останется висеть в переносе. */
+      drag = null;
+      node.classList.remove("dragging", "armed");
+      node.style.transform = "";
+      node.style.willChange = "";
+      if (window.sbEchoesHighlight) window.sbEchoesHighlight(false);
+    });
 
     wireIconCapsule(node, id);
+  }
+
+  /* Места, куда значок можно уронить, снятые ОДИН РАЗ. Возвращается список
+     пар «прямоугольник — элемент», чтобы попадание считалось арифметикой, а
+     не новым вопросом к раскладке. */
+  function echoesZones() {
+    var out = [];
+    var icon = $('.desk-icon[data-app="echoes"]');
+    if (icon) out.push({ r: icon.getBoundingClientRect(), el: icon });
+    var win = openWindows.echoes;
+    if (win) out.push({ r: win.el.getBoundingClientRect(), el: win.el });
+    return out;
+  }
+  function zoneHit(zones, x, y) {
+    if (!zones) return null;
+    for (var i = 0; i < zones.length; i++) {
+      var r = zones[i].r;
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return zones[i].el;
+    }
+    return null;
   }
 
   function echoesDropTarget(x, y) {
@@ -1968,8 +2133,19 @@
   window.sbBoot = { steps: [], ok: null, ms: 0, startedAt: 0 };
   var GLYPHS = "0123456789abcdef/<>{}[]()=+-_:.|";
   var CELLS = 35;
-  var SENTENCE_1 = "building automated business for you";
-  var SENTENCE_2 = "built around your business";
+  /* ── ЗАНАВЕС ГОВОРИТ ГОЛОСОМ СИСТЕМЫ, НЕ ВИТРИНЫ (v47.1) ────────────────
+     Основатель: «слоган built around your business должен быть только в
+     приложении build». До этого занавес загрузки собирал из шума две фразы
+     витрины — «building automated business for you» и «built around your
+     business» — и вторая ещё оставалась лежать на столе водяным знаком.
+     Это голос ПРОДАВЦА в комнате, которая принадлежит пользователю: ОС
+     пользовательская (D-054), и её единственная фраза — её собственная,
+     та же, что на входе (D-052). Фразы витрины живут в приложении build —
+     его шапка и так начинается со строки «Building Automated Business for
+     You». Водяной знак на столе снят вовсе, не переписан: столу не нужна
+     подпись, стол и есть система. */
+  var SENTENCE_1 = "only you and your system, baby";
+  var SENTENCE_2 = "only you and your system, baby";
 
   function padCenter(text) {
     var t = String(text).slice(0, CELLS);
@@ -2249,22 +2425,11 @@
       onDone();
     }
 
-    function ghostResidue() {
-      if (isReduced) return;
-      setTimeout(function () {
-        var g = doc.createElement("div");
-        g.id = "sbGhostLine";
-        g.textContent = SENTENCE_2;
-        doc.body.appendChild(g);
-        var kill = function () {
-          g.classList.add("out");
-          setTimeout(function () { if (g.parentNode) g.parentNode.removeChild(g); }, 700);
-          ["mousemove", "pointerdown", "keydown", "wheel"].forEach(function (e) { window.removeEventListener(e, kill); });
-        };
-        ["mousemove", "pointerdown", "keydown", "wheel"].forEach(function (e) { window.addEventListener(e, kill, { once: true }); });
-        setTimeout(kill, 4000);
-      }, 380);
-    }
+    /* Водяного знака после подъёма занавеса больше нет (v47.1): фраза
+       витрины ушла в приложение build по слову основателя, а своей подписи
+       столу не нужно — стол и есть система. Функция оставлена пустой
+       намеренно, чтобы точка вызова в lift() рассказывала историю. */
+    function ghostResidue() { /* снято по слову основателя, v47.1 */ }
 
     var sequenceDone = false, iconsRevealed = root.classList.contains("rv-icons");
     function maybeLift() { if (sequenceDone && iconsRevealed) lift(); }
@@ -2294,11 +2459,11 @@
       }
       noise();
       if (shortPath) { lockSentence(SENTENCE_2, 140, 640, null); timers.push(setTimeout(endSequence, 900)); return; }
+      /* Фраза теперь одна — собирать её из шума дважды значило бы держать
+         человека лишние две секунды ради повтора. Полный путь: шум, сборка,
+         пауза на прочтение, подъём. */
       lockSentence(SENTENCE_1, 1150, 1750, null);
-      if (returning) { timers.push(setTimeout(endSequence, 1400)); return; }
-      fragment(3650);
-      lockSentence(SENTENCE_2, 4420, 5020, null);
-      timers.push(setTimeout(endSequence, 5900));
+      timers.push(setTimeout(endSequence, returning ? 1400 : 3200));
     }
 
     /* absolute caps */

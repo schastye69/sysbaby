@@ -136,6 +136,7 @@
       /* --- chrome labels reached through data-i18n-aria / -ph (§14) --- */
       "aria.identity": "Click to set your username",
       "aria.notifications": "Notifications", "aria.appSeq": "Open windows",
+      "aria.minimizeAll": "sys.baby OS — clear the desk: minimise every window",
       "aria.tip": "Show a tip", "aria.cc": "Control Center",
       "aria.langs": "Language", "lang.partial": "the storefront speaks it; the system does not yet",
       "desk.allMinimized": "Desk cleared", "desk.allMinimizedSub": "Windows are waiting — tap an icon to bring one back",
@@ -605,6 +606,7 @@
       "k.layouts": "Раскладки окон", "k.manageDesktop": "Настроить рабочий стол", "k.health": "Состояние системы",
       "aria.identity": "Нажмите, чтобы задать имя пользователя",
       "aria.notifications": "Уведомления", "aria.appSeq": "Открытые окна",
+      "aria.minimizeAll": "sys.baby OS — убрать со стола: свернуть все окна",
       "aria.tip": "Показать подсказку", "aria.cc": "Центр управления",
       "aria.langs": "Язык", "lang.partial": "витрина говорит, система пока нет",
       "desk.allMinimized": "Стол очищен", "desk.allMinimizedSub": "Окна ждут — нажмите значок, чтобы вернуть",
@@ -1058,6 +1060,7 @@
       "k.layouts": "Akende paigutused", "k.manageDesktop": "Halda töölauda", "k.health": "Süsteemi seisund",
       "aria.identity": "Klõpsa, et määrata kasutajanimi",
       "aria.notifications": "Teated", "aria.appSeq": "Avatud aknad",
+      "aria.minimizeAll": "sys.baby OS — puhasta laud: ahenda kõik aknad",
       "aria.tip": "Näita vihjet", "aria.cc": "Juhtimiskeskus",
       "aria.langs": "Keel", "lang.partial": "vitriin räägib, süsteem veel mitte",
       "desk.allMinimized": "Laud on puhas", "desk.allMinimizedSub": "Aknad ootavad — puuduta ikooni, et tagasi tuua",
@@ -1616,6 +1619,36 @@
     if (el) el.textContent = window.sbGetUsername();
   }
 
+  /* ── ЗНАЧОК СИСТЕМЫ УБИРАЕТ СО СТОЛА (v47.1) ────────────────────────────
+   *
+   * Основатель: «так же при нажатии на иконку логотипа все окна должны
+   * сворачиваться. совет должен был выбрать гибридный вариант во время
+   * голосования». Голосование выбрало пустое место стола и на этом
+   * остановилось — а у победителя был напарник.
+   *
+   * Почему нужны оба, а не один. Пустое место — жест того, кто систему уже
+   * знает, и он недостижим ровно тогда, когда нужнее всего: окно во весь
+   * экран пустого места не оставляет, и чтобы жестом воспользоваться, надо
+   * сперва убрать окно руками — то есть сделать то, ради чего жест и
+   * заводился. Значок в углу виден всегда.
+   *
+   * Дверь ОДНА: window.sbMinimizeAll из desktop.js. Второй копии правила
+   * здесь нет и не будет — иначе два места начнут расходиться в мелочах.
+   */
+  function wireMark() {
+    var mark = $("#sbTopMark");
+    if (!mark) return;
+    mark.addEventListener("click", function () {
+      if (typeof window.sbMinimizeAll !== "function") return;
+      var n = 0;
+      try { n = window.sbMinimizeAll(); } catch (err) { console.error("[topbar] minimise all failed", err); return; }
+      /* Молчать, когда убирать было нечего: подтверждать несделанное — врать. */
+      if (n > 0 && window.showToast) {
+        window.showToast(window.sbT("desk.allMinimized"), window.sbT("desk.allMinimizedSub"), "");
+      }
+    });
+  }
+
   function wireIdentity() {
     var host = $("#sbTopIdentity"), el = $("#sbIdentityName");
     if (!host || !el) return;
@@ -1836,6 +1869,9 @@
     if (!host || !text || !tip) return;
     currentTip = tip;
     text.textContent = tipText(tip.id);
+    /* Человек вызвал подсказку — извещения уступают ей место (см.
+       sbToastsYield в shell.js: явно запрошенное важнее пришедшего само). */
+    if (window.sbToastsYield) window.sbToastsYield();
     host.removeAttribute("hidden");
     /* one frame with the element laid out but not yet `.on`, so the entrance
        transition has a start state to animate from */
@@ -2202,6 +2238,7 @@
        and anything that subscribes afterwards misses that first emission —
        which is exactly how the desktop hint's dismiss button used to stay in
        English until the visitor changed language a second time. */
+    wireMark();
     wireIdentity();
     wireControlCenter();
     wireTips();
