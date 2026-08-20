@@ -740,12 +740,38 @@
   /* ============================================== marquee multi-select §4.2 */
   function clearSelection() { $$(".selected").forEach(function (n) { n.classList.remove("selected"); }); }
 
+  /* ── РАМКИ ВЫДЕЛЕНИЯ НА СЕНСОРНОМ ЭКРАНЕ НЕТ ВОВСЕ (v47) ────────────────
+   *
+   * Основатель поставил диагноз точнее Совета: «если просто нажимаю — точек
+   * не остаётся, но если зажимаю и провожу пальцем — остаются такие же
+   * оранжевые выделения». Это не следы выделения текста, которые Совет
+   * чинил накануне, а РАМКА ГРУППОВОГО ВЫДЕЛЕНИЯ: палец, проведённый по
+   * пустому месту, тянет её, помечает всё, чего коснулся, и метки остаются
+   * до следующего нажатия. На пальце это к тому же неотличимо от попытки
+   * что-то перетащить или прокрутить.
+   *
+   * Его же предложение и принято: на сенсорном вводе рамки нет совсем, и
+   * переносится ровно один предмет за раз. Групповое выделение остаётся
+   * мыши, где протягивание — однозначный жест и где оно действительно
+   * экономит время.
+   *
+   * Проверка идёт по ТИПУ УКАЗАТЕЛЯ конкретного события, а не по типу
+   * устройства: на планшете с мышью рамка работает, тем же пальцем на том
+   * же планшете — нет. Устройство бывает и тем и другим; событие — нет.
+   */
   function wireMarquee() {
     var scene = $("#desktop");
     if (!scene) return;
     var band = null, start = null;
+
+    function dropBand() {
+      if (band && band.parentNode) band.parentNode.removeChild(band);
+      band = null; start = null;
+    }
+
     scene.addEventListener("pointerdown", function (ev) {
       if (ev.button !== 0) return;
+      if (ev.pointerType && ev.pointerType !== "mouse") { clearSelection(); return; }
       var t = ev.target;
       if (t && t.closest && t.closest(window.sbEmptyDesktopSkipSelector || ".window")) return;
       clearSelection();
@@ -754,6 +780,11 @@
       band.className = "marquee";
       doc.body.appendChild(band);
     });
+    /* Прерванный жест обязан убирать за собой так же, как законченный:
+       на телефоне браузер забирает указатель себе чаще, чем отпускает. */
+    doc.addEventListener("pointercancel", dropBand);
+    window.addEventListener("blur", dropBand);
+    doc.addEventListener("touchend", function () { clearSelection(); }, { passive: true });
     doc.addEventListener("pointermove", function (ev) {
       if (!band || !start) return;
       var x = Math.min(start.x, ev.clientX), y = Math.min(start.y, ev.clientY);
@@ -767,15 +798,16 @@
         n.classList.toggle("selected", hit);
       });
     });
-    doc.addEventListener("pointerup", function () {
-      if (band && band.parentNode) band.parentNode.removeChild(band);
-      band = null; start = null;
-    });
+    doc.addEventListener("pointerup", dropBand);
 
     /* group drag: capture-phase so the single-item handlers stay out of it */
     [$("#sbIconLayer"), $("#sbNoteLayer")].forEach(function (layerEl) {
       if (!layerEl) return;
       layerEl.addEventListener("pointerdown", function (ev) {
+        /* Группового переноса на пальце не бывает по построению: выделять
+           нечем. Условие оставлено явным, чтобы это читалось здесь, а не
+           выводилось из отсутствия рамки этажом выше. */
+        if (ev.pointerType && ev.pointerType !== "mouse") return;
         var member = ev.target && ev.target.closest ? ev.target.closest(".desk-icon.selected, .sticky-note.selected") : null;
         var members = $$(".desk-icon.selected, .sticky-note.selected");
         if (!member || members.length < 2) return;

@@ -749,14 +749,39 @@
   window.sbMinimizeWindow = minimizeWindow;
   window.sbRestoreWindow = restoreWindow;
 
+  /* ── ОДИН ЗАСЛОН НА ВСЕ ПУТИ (v47) ─────────────────────────────────────
+   *
+   * Один и тот же дефект основатель нашёл ТРИЖДЫ: окно оказывалось верхним
+   * краем под системной полосой, и его собственные клавиши — закрыть,
+   * свернуть, развернуть — прятались за ней. Каждый раз Совет чинил тот путь,
+   * которым дефект пришёл: сначала кнопку максимизации, потом перетаскивание
+   * к кромке. На третий раз он пришёл через восстановление окна после
+   * перезапуска браузера.
+   *
+   * Значит чинить надо не путь, а МЕСТО, ЧЕРЕЗ КОТОРОЕ ПРОХОДЯТ ВСЕ ПУТИ.
+   * Оно здесь: любое перемещение и любой размер окна проходят через applyRect.
+   * Правило одно и без исключений: верх окна не бывает выше системной полосы —
+   * кроме полного экрана, где полоса убирается сама и уступает место.
+   *
+   * Это дороже трёх точечных правок ровно ничем, а закрывает и четвёртый путь,
+   * которого мы ещё не встретили.
+   */
   function applyRect(win, rect, animate) {
     var el = win.el;
     if (animate && !reduced() && !systemReduced()) {
       el.style.transition = "left 130ms cubic-bezier(.16,1,.3,1), top 130ms cubic-bezier(.16,1,.3,1), width 130ms cubic-bezier(.16,1,.3,1), height 130ms cubic-bezier(.16,1,.3,1)";
       setTimeout(function () { el.style.transition = ""; }, 160);
     }
-    win.x = Math.round(rect.x); win.y = Math.round(rect.y);
-    win.w = Math.round(rect.w); win.h = Math.round(rect.h);
+    var y = Math.round(rect.y);
+    var h = Math.round(rect.h);
+    if (!el.classList.contains("fullscreen") && y < TOPBAR_H) {
+      /* Высоту укорачиваем на то же, на что опустили верх: иначе окно, сдвинутое
+         вниз, вылезет нижним краем за экран — починили бы одно, сломали другое. */
+      h = Math.max(160, h - (TOPBAR_H - y));
+      y = TOPBAR_H;
+    }
+    win.x = Math.round(rect.x); win.y = y;
+    win.w = Math.round(rect.w); win.h = h;
     el.style.left = win.x + "px"; el.style.top = win.y + "px";
     el.style.width = win.w + "px"; el.style.height = win.h + "px";
   }

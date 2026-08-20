@@ -63,11 +63,11 @@
 <link rel="stylesheet" href="apps/mail/mail.css?b=v47" />
 <link rel="stylesheet" href="apps/messenger/messenger.css?b=v47" />
 <link rel="stylesheet" href="apps/search/search.css?b=v47" />
+<link rel="stylesheet" href="apps/portfolio/portfolio.css?b=v47" />
+<link rel="stylesheet" href="apps/project/project.css?b=v47" />
 <link rel="stylesheet" href="apps/settings/settings.css?b=v47" />
 <link rel="stylesheet" href="apps/echoes/echoes.css?b=v47" />
 <link rel="stylesheet" href="apps/build/build.css?b=v47" />
-<link rel="stylesheet" href="apps/portfolio/portfolio.css?b=v47" />
-<link rel="stylesheet" href="apps/project/project.css?b=v47" />
 <style id="sb-test-badge-css">
 #sbTestBadge{position:fixed;left:0;right:0;top:0;z-index:9999;display:flex;gap:10px;
   align-items:center;justify-content:center;height:26px;font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -197,17 +197,7 @@
   <div class="tb-right">
     <!-- All that is left of the tips up here is the switch that asks for one.
          What the desktop has to say, it says down on the desktop. -->
-    <!-- ВЫБОР ЯЗЫКА — НЕ МЕНЮ, А СОСТОЯНИЕ, КОТОРОЕ МОЖНО НАЖАТЬ (v47).
-         Быстрее одного нажатия ничего не бывает, и меню это правило нарушает
-         дважды: сначала открыть, потом выбрать. Здесь все языки видны сразу —
-         ноль нажатий, чтобы узнать, на каком ты сейчас, и одно, чтобы стать
-         на другом. Форма взята не с потолка: моноширинные коды вместо флагов
-         — решение D-041 (флаг обозначает страну, а не язык), и ровно так же
-         это выглядит на витрине. Язык принадлежит СИСТЕМЕ: витрина в окне
-         build получает его готовым и своего переключателя не показывает. -->
-    <nav class="tb-langs" id="sbLangs" aria-label="Language" data-i18n-aria="aria.langs"></nav>
-    <span class="tb-sep" aria-hidden="true"></span>
-    <button class="tb-btn tip-bulb" id="sbTipBulb" type="button" aria-label="Show a tip" data-i18n-aria="aria.tip">
+<button class="tb-btn tip-bulb" id="sbTipBulb" type="button" aria-label="Show a tip" data-i18n-aria="aria.tip">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"/></svg>
     </button>
     <button class="tb-btn cc-trigger" id="sbCcTrigger" type="button" aria-label="Control Center" data-i18n-aria="aria.cc">
@@ -215,6 +205,14 @@
       <span class="bat-glyph" id="sbBatteryGlyph" aria-hidden="true"></span>
     </button>
     <div class="tb-clock" id="sbClock"></div>
+    <!-- ВЫБОР ЯЗЫКА — У САМОГО КРАЯ (v47, третья редакция).
+         Сначала это была полоса из четырёх кодов — она вытеснила часы за
+         экран. Потом один код, но в начале правой группы, то есть посреди
+         панели. Основатель: «должен находиться с краю экрана, а не в центре».
+         Верно и по смыслу: язык выбирают один раз и почти никогда не меняют —
+         место такому предмету на самом краю, а не в потоке того, на что
+         смотрят постоянно. Дальше края идти уже некуда. -->
+    <nav class="tb-langs" id="sbLangs" aria-label="Language" data-i18n-aria="aria.langs"></nav>
   </div>
 </header>
 
@@ -430,11 +428,11 @@
 <script src="apps/mail/mail.js?b=v47"></script>
 <script src="apps/messenger/messenger.js?b=v47"></script>
 <script src="apps/search/search.js?b=v47"></script>
+<script src="apps/portfolio/portfolio.js?b=v47"></script>
+<script src="apps/project/project.js?b=v47"></script>
 <script src="apps/settings/settings.js?b=v47"></script>
 <script src="apps/echoes/echoes.js?b=v47"></script>
 <script src="apps/build/build.js?b=v47"></script>
-<script src="apps/portfolio/portfolio.js?b=v47"></script>
-<script src="apps/project/project.js?b=v47"></script>
 <!-- Скамейка (Experimental/Phosphor) выведена из клиентской витрины v20.9:
      витрина продаёт сданные системы, а самое интригующее имя на столе
      конкурировало с подсказкой №1 за первое касание. Папка приложения
