@@ -59,6 +59,27 @@ header('Content-Type: text/html; charset=utf-8');
      Класс ставится ДО первой отрисовки — иначе чужой док успевает мигнуть. */
   if (/[?&]in=build(&|$)/.test(location.search || "")) {
     document.documentElement.classList.add("in-build");
+    /* КЛАВИША «ОТКРЫТЬ sys.baby OS» ВНУТРИ ОКНА ЗНАЧИТ ДРУГОЕ (v47).
+       Снаружи она ведёт в систему. Внутри окна build человек УЖЕ в системе —
+       вести его туда, где он стоит, бессмысленно. Значит она делает
+       единственное осмысленное: убирает наше окно с дороги и показывает
+       рабочий стол. Просьба основателя, и он прав: «надеялся, что совет сам
+       догадается». Окно сворачивается, а не закрывается: закрытие человек
+       выбирает сам, крестиком. */
+    document.addEventListener("click", function (ev) {
+      var a = ev.target && ev.target.closest ? ev.target.closest("#ctaExplore") : null;
+      if (!a) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      try { parent.postMessage({ sysbaby: "minimize-build" }, "*"); } catch (e) { /* ignore */ }
+    }, true);
+    /* Адрес снимается заодно: клавиша внутри окна никуда не ведёт, и это
+       должно быть видно даже до нажатия — по отсутствию ссылки в подсказке
+       браузера. Ссылка, которая обещает переход и не переходит, лжёт. */
+    document.addEventListener("DOMContentLoaded", function () {
+      var a = document.getElementById("ctaExplore");
+      if (a) { a.removeAttribute("href"); a.setAttribute("role", "button"); a.setAttribute("tabindex", "0"); }
+    });
   }
   var m = /[?&]i=([^&]+)/.exec(location.search || "");
   if (m) {

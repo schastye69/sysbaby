@@ -131,6 +131,15 @@
     if (window.sbOpenApp) window.sbOpenApp("build");
   }, { once: true });
 
+  /* Просьба витрины свернуть окно. Проверяется ПРОИСХОЖДЕНИЕ сообщения: окно
+     показывает наш собственный документ с того же адреса, и слушать чужие
+     страницы система не должна. */
+  window.addEventListener("message", function (ev) {
+    if (ev.origin !== location.origin) return;
+    if (!ev.data || ev.data.sysbaby !== "minimize-build") return;
+    if (window.sbMinimizeWindow) window.sbMinimizeWindow("build");
+  });
+
   if (window.sbBus && typeof window.sbBus.on === "function") {
     window.sbBus.on("window:closed", function (e) {
       if (e && e.id === "build") {

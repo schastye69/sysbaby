@@ -1191,6 +1191,22 @@
     });
     root.classList.toggle("has-windows", anyOpen);
 
+    /* ЗНАЧКИ СТОЛА — ЭТО ДОК ТЕЛЕФОНА (v47).
+       Основатель написал дважды: свёрнутые окна нигде не отображаются. Первый
+       раз Совет поставил метку в док — и она не помогла, потому что НА
+       ТЕЛЕФОНЕ ДОКА НЕТ ВООБЩЕ: ниже 620px он не показывается (core.css §14).
+       Свёрнутое окно исчезало без следа и без пути назад.
+       Значки рабочего стола видны всегда и на всех ширинах, и нажатие на них
+       уже возвращает свёрнутое окно (toggleApp). Не хватало ровно одного —
+       чтобы по значку было видно состояние. Те же три ответа, что и в доке:
+       нет точки — закрыто, точка полная — окно на экране, полая — свёрнуто. */
+    $$("#sbIconLayer .desk-icon[data-app]").forEach(function (n) {
+      var w = openWindows[n.getAttribute("data-app")];
+      n.classList.toggle("running", !!w);
+      n.classList.toggle("is-min", !!(w && w.minimized));
+      n.classList.toggle("active-app", focusedId === n.getAttribute("data-app"));
+    });
+
     var host = $("#sbAppSeq");
     if (!host) return;
     host.innerHTML = "";
@@ -1267,6 +1283,13 @@
       node.setAttribute("aria-label", tr("win.openApp", { app: appTitle(id) }));
       var win = openWindows[id];
       node.classList.toggle("running", !!win);
+      /* ТРИ СОСТОЯНИЯ, А НЕ ДВА (v47). Основатель: «когда сворачиваешь окна —
+         не понятно, какие активные, а какие закрытые». Точка под значком
+         говорила только «открыто», и свёрнутое окно выглядело как закрытое
+         приложение. Теперь: точки нет — закрыто; точка полная — окно на
+         экране; точка полая — окно свёрнуто и ждёт. Одно и то же место,
+         три разных ответа, ни одного лишнего значка. */
+      node.classList.toggle("is-min", !!(win && win.minimized));
       node.classList.toggle("active-app", focusedId === id);
       node.title = appTitle(id) + (win ? " — open" : "");
     });

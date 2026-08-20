@@ -728,14 +728,52 @@
     setTimeout(closeInvite, isTouch() ? 5000 : 4200);
   }
 
+  /* ── ПУСТОЕ МЕСТО СТОЛА = «ПОКАЖИ СТОЛ» (v47) ───────────────────────────
+   *
+   * Основатель попросил кнопку, которая одним нажатием сворачивает все окна.
+   * Совет предложил двадцать мест, куда её поставить, и выбрал единственное,
+   * где её не надо ставить вовсе: САМО ПУСТОЕ МЕСТО. Ноль новых предметов на
+   * экране, ноль объяснений — пустота и означает «убери всё, покажи стол».
+   *
+   * Место занято приглашением завести заметку, и это разрешается порядком
+   * смыслов, а не спором: пока на экране есть хоть одно НЕ свёрнутое окно,
+   * нажатие по пустоте значит «убери их». Когда убирать нечего — та же
+   * пустота предлагает заметку. Второй смысл наступает ровно тогда, когда
+   * первый становится бессмысленным.
+   *
+   * Охраняется tools/desktop-drag-check.mjs.
+   */
+  function visibleWindows() {
+    var open = window.openWindows || {};
+    return Object.keys(open).filter(function (id) {
+      var w = open[id];
+      return w && !w.minimized;
+    });
+  }
+
   function onDesktopClick(ev) {
     if (ev.button !== 0) return;
     var t = ev.target;
     if (!t || !t.closest) return;
     if (t.closest(window.sbEmptyDesktopSkipSelector || ".window")) { closeInvite(); return; }
     if (invite) { closeInvite(); return; }
+
+    var shown = visibleWindows();
+    if (shown.length) {
+      closeInvite();
+      shown.forEach(function (id) { if (window.sbMinimizeWindow) window.sbMinimizeWindow(id); });
+      if (window.showToast) {
+        window.showToast(tr("desk.allMinimized"), tr("desk.allMinimizedSub"), "");
+      }
+      return;
+    }
     showInvite(ev.clientX, ev.clientY);
   }
+  window.sbMinimizeAll = function () {
+    var shown = visibleWindows();
+    shown.forEach(function (id) { if (window.sbMinimizeWindow) window.sbMinimizeWindow(id); });
+    return shown.length;
+  };
 
   /* ============================================== marquee multi-select §4.2 */
   function clearSelection() { $$(".selected").forEach(function (n) { n.classList.remove("selected"); }); }
