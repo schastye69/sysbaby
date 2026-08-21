@@ -671,18 +671,46 @@
        ЧТО ИМЕННО будет меняться. Причина написана в core.css у .window.opening:
        размытие превращает дешёвую анимацию переноса в дорогую, потому что
        подложка под движущимся окном каждый кадр другая. */
+    /* ── ОДНА СКОРОСТЬ НА ВСЮ СИСТЕМУ (v52) ───────────────────────────────
+     * Повод, дословно от основателя 21.08.2026: «окна приложений медленно
+     * открываются и закрываются — так всегда и было, но сейчас всё работает
+     * достаточно быстро, и то, что окна медленно закрываются и открываются,
+     * очень сильно бросается в глаза».
+     *
+     * ИЗМЕРЕНО ДО ПРАВКИ, телефон с замедлением вчетверо, от вызова до «окно
+     * стоит на месте»: открытие 341 мс (медиана из четырёх), закрытие 227 мс.
+     * При этом окно появляется в DOM за 20–60 мс — содержимое готово почти
+     * сразу, и все оставшиеся три сотни миллисекунд человек ждёт НЕ систему,
+     * а анимацию. Ускорять здесь можно ничего не ломая: ждать нечего.
+     *
+     * ПОЧЕМУ ИМЕННО ЭТИ ЧИСЛА, а не «покороче». В системе уже есть самое
+     * быстрое осознанное движение — морф разворота на весь экран, 130 мс, и
+     * на него основатель не жаловался ни разу. Значит мерка своя, а не взятая
+     * из чужих рекомендаций. Остальные движения приведены в ту же семью:
+     *     открыть   260 → 180 мс  (появление + масштаб + перелёт дороже
+     *                              морфа, потому чуть длиннее, но не вдвое)
+     *     закрыть   200 → 140 мс
+     *     свернуть  200 → 150 мс
+     *     вернуть   200 → 150 мс
+     * Закрытие короче открытия НАМЕРЕННО: вещь, которая уходит, не должна
+     * держать внимание дольше, чем вещь, которую позвали.
+     *
+     * Потолки стережёт tools/window-motion-check.mjs. До сегодня он проверял
+     * УСТРОЙСТВО движения — правда состояния мгновенна, в полёте не
+     * размывает, после полёта чисто — и ни слова не говорил о длительности:
+     * окно могло ехать две секунды, и доска была зелена. */
     el.classList.add("opening");
     el.style.transform = "translate3d(" + Math.round(fromX - cx) + "px," + Math.round(fromY - cy) + "px,0) scale(.94)";
     el.style.opacity = "0";
     requestAnimationFrame(function () {
-      el.style.transition = "transform 260ms cubic-bezier(.16,1,.3,1), opacity 240ms ease";
+      el.style.transition = "transform 180ms cubic-bezier(.16,1,.3,1), opacity 150ms ease";
       el.style.transform = "translate3d(0,0,0) scale(1)";
       el.style.opacity = "1";
       setTimeout(function () {
         el.style.transition = "";
         el.style.transform = "";
         el.classList.remove("opening");
-      }, 300);
+      }, 200);
     });
   }
 
@@ -754,11 +782,11 @@
     var el = win.el;
     el.classList.add("closing", "traveling");
     if (!reduced() && !systemReduced()) {
-      el.style.transition = "transform 200ms cubic-bezier(.16,1,.3,1), opacity 190ms ease";
+      el.style.transition = "transform 140ms cubic-bezier(.16,1,.3,1), opacity 120ms ease";
       el.style.transform = "scale(.96)";
       el.style.opacity = "0";
     }
-    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 210);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 150);
 
     if (focusedId === id) {
       var next = highestRemaining();
@@ -806,13 +834,13 @@
          родилось у открытия и законом window-motion-check распространено на
          все пути: счёт композитору один и тот же, где бы окно ни летело. */
       el.classList.add("traveling");
-      el.style.transition = "transform 200ms cubic-bezier(.16,1,.3,1), opacity 180ms ease";
+      el.style.transition = "transform 150ms cubic-bezier(.16,1,.3,1), opacity 130ms ease";
       el.style.transformOrigin = "center center";
       el.style.transform = "translate3d(" + Math.round(r.left + r.width / 2 - cx) + "px," + Math.round(r.top + r.height / 2 - cy) + "px,0) scale(.12)";
       el.style.opacity = "0";
-      setTimeout(function () { dockCatch(id); }, 150);
+      setTimeout(function () { dockCatch(id); }, 110);
     }
-    setTimeout(function () { el.classList.add("minimized"); el.style.transition = ""; el.classList.remove("traveling"); }, 200);
+    setTimeout(function () { el.classList.add("minimized"); el.style.transition = ""; el.classList.remove("traveling"); }, 160);
     if (focusedId === id) {
       var next = highestRemaining();
       focusedId = null;
@@ -830,7 +858,7 @@
     if (!reduced() && !systemReduced()) {
       el.classList.add("traveling");
       requestAnimationFrame(function () {
-        el.style.transition = "transform 200ms cubic-bezier(.16,1,.3,1), opacity 180ms ease";
+        el.style.transition = "transform 150ms cubic-bezier(.16,1,.3,1), opacity 130ms ease";
         el.style.transform = "translate3d(0,0,0) scale(1)";
         el.style.opacity = "1";
         /* После полёта — ни следа: transition, transform и traveling
@@ -841,7 +869,7 @@
           el.style.transition = "";
           el.style.transform = "";
           el.classList.remove("traveling");
-        }, 220);
+        }, 170);
       });
     } else { el.style.transform = ""; el.style.opacity = "1"; }
     dockRelease(id);
