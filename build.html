@@ -33,13 +33,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v50">
+<meta name="sysbaby-build" content="v51">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v50">
+<link rel="stylesheet" href="shared/system.css?b=v51">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -117,11 +117,11 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v50"></script>
-<script src="shared/portfolio.strings.js?b=v50"></script>
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v50" />
-<script src="shared/portfolio.view.js?b=v50"></script>
-<script src="shared/pricing.data.js?b=v50"></script>
+<script src="shared/portfolio.data.js?b=v51"></script>
+<script src="shared/portfolio.strings.js?b=v51"></script>
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v51" />
+<script src="shared/portfolio.view.js?b=v51"></script>
+<script src="shared/pricing.data.js?b=v51"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -2894,10 +2894,26 @@ function setLang(lang) {
   document.documentElement.setAttribute("lang", DOC_LANG[lang]);
   /* The OS reads this key on boot, so whichever language is chosen here is
      the language it opens in. Same key, same storage — one localisation
-     system, not two. */
+     system, not two.
+
+     НО ТОЛЬКО СНАРУЖИ. Внутри окна build витрина — ГОСТЬ в системе
+     пришедшего (D-054), и делить хранилище не значит распоряжаться им.
+     Повод, от основателя сразу после выкладки v50: «Почему работают только
+     русский и финский языки? А не Эстонский, английский, русский, финский».
+     Круг языков в верхней панели схлопывался в две позиции — EN → RU → FI →
+     RU → FI, — и эстонский был недостижим вовсе. Виновата эта строка:
+     витрина в окне приводила язык к своему списку OS_LANGS, который финского
+     не знает, и клала «en» поверх «fi». Система считала следующий язык от
+     «en» и уходила в «ru». С ЗАКРЫТЫМ окном build тот же перебор на том же
+     коде давал правильные четыре шага (EN·RU·FI·ET) — значит дефект был не в
+     переборе. Витрина внутри окна и свой-то переключатель прячет
+     (html.in-build .langs{display:none}) — тем более ей нечего писать за
+     систему. */
   try {
-    window.localStorage.setItem("sysbaby.i18n.lang",
-      OS_LANGS.indexOf(lang) === -1 ? "en" : lang);
+    if (!document.documentElement.classList.contains("in-build")) {
+      window.localStorage.setItem("sysbaby.i18n.lang",
+        OS_LANGS.indexOf(lang) === -1 ? "en" : lang);
+    }
   } catch (err) { /* storage blocked */ }
   renderHero();
   renderHeroProof();          /* the proof line is portfolio prose: it translates too */
