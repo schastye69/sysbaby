@@ -48,7 +48,11 @@
     pulse: "settings", settings: "settings",
     bin: "echoes", trash: "echoes", echoes: "echoes",
     cli: "terminal", terminal: "terminal", shell: "terminal",
-    portfolio: "portfolio", work: "portfolio",
+    /* Портфолио снято с рабочего стола (D-066): слова остались, потому что
+       человек их знает и будет набирать, — но ведут они туда, где работы
+       теперь живут: в build. Терминал не делает вид, что приложение есть,
+       и не отвечает «не знаю такого» на законный вопрос. */
+    portfolio: "build", work: "build", cases: "build", build: "build",
     project: "project"
   };
 
@@ -161,13 +165,26 @@
         case "help":
           writeLines([
             "system     version · status · uptime · storage · contracts · errors · whoami · clear",
-            "desktop    open <app> · apps · theme dark|light · notes · lang",
+            "desktop    open <app> · apps · theme dark|light · notes · lang · tidy",
             "utility    date · time · calendar · calc <expr> · echo <text> · history",
             "journal    log · log all — this system's own build history",
             "voice      seen · who"
           ]);
           write("not everything is listed. terminals keep some doors unlabelled.", "term-dim");
           return;
+        /* ── ПРИБРАТЬ СТОЛ ─────────────────────────────────────────────────
+           Стол помнит, куда человек переставил значки (D-067), и сам их
+           больше не возвращает. Обратная дверь обязана существовать и быть
+           названной: вот она. Отвечает ЧИСЛОМ переставленных — команда,
+           которая молча ничего не сделала, неотличима от сломанной. */
+        case "tidy": {
+          if (typeof window.sbTidyDesk !== "function") { write("the desktop is not listening."); return; }
+          var back = window.sbTidyDesk();
+          if (!back) { write("nothing to tidy — every icon is where the grid put it."); return; }
+          write("tidied: " + back + " icon" + (back === 1 ? "" : "s") + " returned to the grid.");
+          write("their places are forgotten, not hidden — drag them again and the desk will remember.", "term-dim");
+          return;
+        }
         case "version":
           if (window.sbBuild) writeLines(window.sbBuild.report().map(function (r) { return r[0] + ": " + r[1]; }));
           else write("build information is unavailable.");
@@ -301,8 +318,14 @@
             write("no app called '" + want + "'. try 'apps' for the live registry.");
             return;
           }
-          if (window.toggleApp) window.toggleApp(id);
+          /* Слова portfolio/work/cases ведут в build НА РАЗДЕЛ работ, а не на
+             первый экран витрины: человек спросил работы (D-066). Терминал
+             говорит об этом вслух — иначе выглядело бы, будто он не понял. */
+          var section = (want === "portfolio" || want === "work" || want === "cases") ? "cases" : null;
+          if (section && typeof window.sbOpenBuildAt === "function") window.sbOpenBuildAt(section);
+          else if (window.toggleApp) window.toggleApp(id);
           write("opening " + (window.sbAppTitle ? window.sbAppTitle(id) : (apps[id].title || id)) + "…");
+          if (section) write("selected work lives in build since aug 2026 — same cases, same renderer.", "term-dim");
           return;
         }
         case "theme": {

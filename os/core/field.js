@@ -90,6 +90,12 @@
     charge: 0, calm: 0, typing: -1e9, tiltX: 0, tiltY: 0, head: 0,
     pal: null, palTo: null, blobs: [], waves: [], seed: 22222219,
     SIN: null,
+    /* Два счётчика РАБОТЫ, а не событий: растут только тогда, когда поле
+       действительно что-то сделало — записало касание, пересобрало буферы.
+       Наружу их отдаёт sbField, там же, где running/parked/tier: «поле
+       стоит» — это утверждение, и его надо чем-то мерить. Без них
+       единственным прибором был глазомер. */
+    touchCount: 0, resizeCount: 0, pendingResize: false,
     init: function () {
       if (this.cv) return;
       this.cv = q("#sbField");
@@ -108,9 +114,29 @@
         sx: 37 + b * 15, sy: 53 + b * 21, ph: b * 2.3, r: .52 + b * .14
       });
       var self = this;
-      window.addEventListener("resize", function () { self.resize(); });
-      /* a touch bends the light — no new line appears on the screen */
+      /* Пересборка буферов ОТКЛАДЫВАЕТСЯ, пока поле накрыто окном.
+         Повод (21.08.2026): на телефоне resize сыплется пачками — адресная
+         строка уезжает при каждой прокрутке, клавиатура открывается и
+         закрывается. Каждый всплеск заново считал ступень качества и
+         пересобирал буферы поля, которого в этот момент не видно вовсе.
+         Пропущенное не теряется: park() догонит один раз при пробуждении —
+         одна пересборка вместо всей пачки. */
+      window.addEventListener("resize", function () {
+        if (self.parked) { self.pendingResize = true; return; }
+        self.resize();
+      });
+      /* a touch bends the light — no new line appears on the screen.
+         НО ТОЛЬКО ПОКА ПОЛЕ ВИДНО. Повод, дословно от основателя: «он
+         работает на заднем фоне и копит касания». Слушатель висел на window
+         безусловно, и восемь тапов ВНУТРИ окна приложения — по кнопкам, по
+         полям ввода — все восемь записывались как касания стола: волна в
+         очередь и +0.3 к заряду. Очередь обрезана тремя, заряд копился до
+         единицы, и в миг закрытия окна всё накопленное выплёскивалось —
+         человек получал рябь от нажатий, которых столу не адресовал. На
+         телефоне окно во весь экран, там КАЖДОЕ касание чужое. */
       window.addEventListener("pointerdown", function (e) {
+        if (self.parked) return;
+        self.touchCount++;
         self.waves.push({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight, t: 0 });
         if (self.waves.length > 3) self.waves.shift();
         self.charge = Math.min(1, self.charge + .3);
@@ -143,6 +169,7 @@
 
     resize: function () {
       if (!this.cv) return;
+      this.resizeCount++;
       this.W = window.innerWidth; this.H = window.innerHeight;
       var small = this.W <= 760;
 
@@ -289,14 +316,21 @@
       if (yes) {
         this.parkedAt = now();
         cancelAnimationFrame(this.raf);
-      } else if (this.on) {
-        /* give back the time that passed while parked, so the pattern carries
-           on from the frame it stopped at instead of jumping forward */
-        var slept = now() - this.parkedAt;
-        this.t0 += slept;
-        this.typing += slept;
-        this.last = 0;
-        this.loop();
+      } else {
+        /* Размер, изменившийся во сне, догоняется ЗДЕСЬ и один раз — вместо
+           всей пачки resize, которую телефон высыпал, пока поле было
+           накрыто. Пробуждение — единственное место, где пересборка снова
+           имеет смысл: до него её результата никто не видел. */
+        if (this.pendingResize) { this.pendingResize = false; this.resize(); }
+        if (this.on) {
+          /* give back the time that passed while parked, so the pattern carries
+             on from the frame it stopped at instead of jumping forward */
+          var slept = now() - this.parkedAt;
+          this.t0 += slept;
+          this.typing += slept;
+          this.last = 0;
+          this.loop();
+        }
       }
     },
 
@@ -525,7 +559,12 @@
        увидеть в диагностике, а не угадывать по виду. 0 полное · 1 вдвое реже
        · 2 грубее и реже. Второе число — ширина буфера в пикселях. */
     tier: function () { return { tier: Field.tierNow(), forced: Field.tier, buffer: Field.pw, step: Field.step }; },
-    parked: function () { return Field.parked; }
+    parked: function () { return Field.parked; },
+    /* Сколько РАБОТЫ поле проделало: записанных касаний и пересборок буфера.
+       Закон tools/field-idle-check.mjs держит оба числа неподвижными, пока
+       поле накрыто окном. Числа только растут и никогда не сбрасываются —
+       сброс дал бы закону способ не заметить работу между двумя замерами. */
+    work: function () { return { touches: Field.touchCount, resizes: Field.resizeCount }; }
   };
 
   /* Any window on screen — open, not minimised — parks the wallpaper. */

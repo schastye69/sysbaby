@@ -159,6 +159,78 @@
   }
   window.sbApplyControl = applyControl;
 
+  /* ── ТУРБО: РУКОЯТКА ЦЕНЫ КАРТИНКИ (v47.3) ─────────────────────────────
+   *
+   * Основатель: «turbo режим должен быть максимально функциональным и
+   * эффективным». По существу это одно движение, снимающее всё, что стоит
+   * кадров: живое поле обоев (постоянный рендер на канвасе), размытие
+   * подложки (самая дорогая деталь композитора) и долгие переходы.
+   *
+   * ГЛАВНОЕ ПРАВИЛО — АРЕНДА, НЕ ПРИСВОЕНИЕ. Турбо запоминает, какими были
+   * настройки человека, и при выключении возвращает ИХ, а не заводские:
+   * человек, державший «меньше движения» сам, получит его обратно. Без
+   * этого правила Турбо становился бы ластиком чужого выбора.
+   *
+   * Класс sb-turbo на документе — для CSS (см. core.css): им снимаются
+   * оставшиеся тени и переходы, до которых не дотягиваются data-атрибуты.
+   */
+  var TURBO_KEY = "sysbaby.turbo";
+  function turboOn() {
+    var v = readJSON(TURBO_KEY, null);
+    return !!(v && v.on);
+  }
+  window.sbTurbo = function (on) {
+    var cur = readJSON(TURBO_KEY, null) || { on: false };
+    if (on === undefined) return cur.on;
+    on = !!on;
+    if (on === cur.on) return on;
+    if (on) {
+      /* арендуем: записываем, что было, и включаем экономию */
+      cur = {
+        on: true,
+        was: {
+          motion: window.sbGetControlToggle("motion"),
+          transparency: window.sbGetControlToggle("transparency"),
+          field: window.sbField ? window.sbField.level() : "live"
+        }
+      };
+      window.sbSetControlToggle("motion", true);
+      window.sbSetControlToggle("transparency", true);
+      if (window.sbField) window.sbField.setLevel("off");
+    } else {
+      var was = cur.was || {};
+      cur = { on: false };
+      window.sbSetControlToggle("motion", !!was.motion);
+      window.sbSetControlToggle("transparency", !!was.transparency);
+      if (window.sbField) window.sbField.setLevel(was.field === "off" || was.field === "quiet" ? was.field : "live");
+    }
+    writeJSON(TURBO_KEY, cur);
+    root.classList.toggle("sb-turbo", on);
+    var btn = $("#sbTurboBtn");
+    if (btn) {
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.classList.toggle("on", on);
+    }
+    sbBus.emit("turbo:change", { on: on });
+    return on;
+  };
+  function wireTurbo() {
+    var btn = $("#sbTurboBtn");
+    if (!btn) return;
+    btn.addEventListener("click", function () { window.sbTurbo(!window.sbTurbo()); });
+    /* Пережить перезагрузку: включённый Турбо восстанавливается ДО первого
+       кадра стола — иначе поле успеет запуститься и тут же остановиться. */
+    if (turboOn()) {
+      root.classList.add("sb-turbo");
+      btn.setAttribute("aria-pressed", "true");
+      btn.classList.add("on");
+      window.sbSetControlToggle("motion", true);
+      window.sbSetControlToggle("transparency", true);
+      if (window.sbField) window.sbField.setLevel("off");
+      else doc.addEventListener("DOMContentLoaded", function () { if (window.sbField) window.sbField.setLevel("off"); });
+    }
+  }
+
   window.setTheme = function (t) {
     var mode = t === "light" ? "light" : "dark";
     if (window.sbIncognitoActive) mode = "dark";            /* incognito forces dark */
@@ -300,6 +372,24 @@
   window.showToast = function (title, text, iconSvg, force, extraClass, kind) {
     if (dnd() && !force) return null;
     return mountToast(buildToast(title, text, iconSvg, extraClass, kind), 5800);
+  };
+
+  /* ── ЯВНО ЗАПРОШЕННОЕ ВЫТЕСНЯЕТ САМОСЛУЧИВШЕЕСЯ (v47.1) ────────────────
+     На телефоне извещения и подсказка стола живут в одном нижнем углу — и
+     когда человек нажал лампочку, извещение оказывалось поверх того, что
+     он только что попросил. Правило одно и общее: поверхность, которую
+     человек вызвал сам, важнее поверхности, которая пришла сама. Извещения
+     уходят своим обычным путём (та же анимация, что по нажатию) — они и
+     так живут пять секунд, а подсказка не ждёт. */
+  window.sbToastsYield = function () {
+    var host = $("#toastLayer");
+    if (!host) return 0;
+    var list = $$(".toast", host);
+    list.forEach(function (t) {
+      t.classList.remove("in");
+      setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 240);
+    });
+    return list.length;
   };
 
   function showUndoToast(title, text, onUndo) {
@@ -499,18 +589,8 @@
     var w = size.w, h = size.h, x, y, born = { maximized: false };
 
     if (compact()) {
-      /* Во весь экран, как на лендинге (решение 022). Прежние поля отдавали
-         фону 32px ширины на 390px и зажимали содержимое. Нижний зазор не
-         нужен по другой причине, чем написано было раньше: не потому, что
-         док «прячется» (он давно не прячется — он затихает и остаётся), а
-         потому, что под 620px док ОС не показывается вовсе (core.css §14).
-         Причину пришлось переписать: она была отменена в v42 и продолжала
-         стоять здесь как действующая — нашёл tools/comment-truth-check.mjs.
-         Одно правило на две поверхности. */
-      w = window.innerWidth;
-      h = window.innerHeight - 44;
-      x = 0;
-      y = 44;
+      var cr = compactRect();
+      w = cr.w; h = cr.h; x = cr.x; y = cr.y;
     } else {
       var off = (cascade % 5);
       cascade++;
@@ -587,13 +667,22 @@
     else { fromX = window.innerWidth / 2; fromY = window.innerHeight - 40; }
     var cx = win.x + win.w / 2, cy = win.y + win.h / 2;
     el.style.transformOrigin = "center center";
-    el.style.transform = "translate(" + Math.round(fromX - cx) + "px," + Math.round(fromY - cy) + "px) scale(.94)";
+    /* На время полёта окно снимает размытие подложки и объявляет композитору,
+       ЧТО ИМЕННО будет меняться. Причина написана в core.css у .window.opening:
+       размытие превращает дешёвую анимацию переноса в дорогую, потому что
+       подложка под движущимся окном каждый кадр другая. */
+    el.classList.add("opening");
+    el.style.transform = "translate3d(" + Math.round(fromX - cx) + "px," + Math.round(fromY - cy) + "px,0) scale(.94)";
     el.style.opacity = "0";
     requestAnimationFrame(function () {
       el.style.transition = "transform 260ms cubic-bezier(.16,1,.3,1), opacity 240ms ease";
-      el.style.transform = "translate(0,0) scale(1)";
+      el.style.transform = "translate3d(0,0,0) scale(1)";
       el.style.opacity = "1";
-      setTimeout(function () { el.style.transition = ""; }, 300);
+      setTimeout(function () {
+        el.style.transition = "";
+        el.style.transform = "";
+        el.classList.remove("opening");
+      }, 300);
     });
   }
 
@@ -663,7 +752,7 @@
     rememberClosed(id);
 
     var el = win.el;
-    el.classList.add("closing");
+    el.classList.add("closing", "traveling");
     if (!reduced() && !systemReduced()) {
       el.style.transition = "transform 200ms cubic-bezier(.16,1,.3,1), opacity 190ms ease";
       el.style.transform = "scale(.96)";
@@ -713,13 +802,17 @@
     var el = win.el, r = tileRectFor(id);
     if (!reduced() && !systemReduced() && r) {
       var cx = win.x + win.w / 2, cy = win.y + win.h / 2;
+      /* traveling: на время полёта окно не размывает (см. core.css). Правило
+         родилось у открытия и законом window-motion-check распространено на
+         все пути: счёт композитору один и тот же, где бы окно ни летело. */
+      el.classList.add("traveling");
       el.style.transition = "transform 200ms cubic-bezier(.16,1,.3,1), opacity 180ms ease";
       el.style.transformOrigin = "center center";
-      el.style.transform = "translate(" + Math.round(r.left + r.width / 2 - cx) + "px," + Math.round(r.top + r.height / 2 - cy) + "px) scale(.12)";
+      el.style.transform = "translate3d(" + Math.round(r.left + r.width / 2 - cx) + "px," + Math.round(r.top + r.height / 2 - cy) + "px,0) scale(.12)";
       el.style.opacity = "0";
       setTimeout(function () { dockCatch(id); }, 150);
     }
-    setTimeout(function () { el.classList.add("minimized"); el.style.transition = ""; }, 200);
+    setTimeout(function () { el.classList.add("minimized"); el.style.transition = ""; el.classList.remove("traveling"); }, 200);
     if (focusedId === id) {
       var next = highestRemaining();
       focusedId = null;
@@ -735,11 +828,20 @@
     var el = win.el;
     el.classList.remove("minimized");
     if (!reduced() && !systemReduced()) {
+      el.classList.add("traveling");
       requestAnimationFrame(function () {
         el.style.transition = "transform 200ms cubic-bezier(.16,1,.3,1), opacity 180ms ease";
-        el.style.transform = "translate(0,0) scale(1)";
+        el.style.transform = "translate3d(0,0,0) scale(1)";
         el.style.opacity = "1";
-        setTimeout(function () { el.style.transition = ""; }, 220);
+        /* После полёта — ни следа: transition, transform и traveling
+           снимаются все разом. Оставленный identity-transform выглядит
+           безобидно, но создаёт содержащий блок для fixed-потомков и
+           лишний слой композитора — закон ловит это как «не чисто». */
+        setTimeout(function () {
+          el.style.transition = "";
+          el.style.transform = "";
+          el.classList.remove("traveling");
+        }, 220);
       });
     } else { el.style.transform = ""; el.style.opacity = "1"; }
     dockRelease(id);
@@ -747,18 +849,84 @@
     updateTopbarAutoHide();
   }
   window.sbMinimizeWindow = minimizeWindow;
-  window.sbRestoreWindow = restoreWindow;
+  /* Публичная дверь назначается НИЖЕ, одна на оба смысла «вернуть» — см.
+     комментарий у второго restoreWindow2: здесь была коллизия имён. */
 
+  /* ── ОДИН ЗАСЛОН НА ВСЕ ПУТИ (v47) ─────────────────────────────────────
+   *
+   * Один и тот же дефект основатель нашёл ТРИЖДЫ: окно оказывалось верхним
+   * краем под системной полосой, и его собственные клавиши — закрыть,
+   * свернуть, развернуть — прятались за ней. Каждый раз Совет чинил тот путь,
+   * которым дефект пришёл: сначала кнопку максимизации, потом перетаскивание
+   * к кромке. На третий раз он пришёл через восстановление окна после
+   * перезапуска браузера.
+   *
+   * Значит чинить надо не путь, а МЕСТО, ЧЕРЕЗ КОТОРОЕ ПРОХОДЯТ ВСЕ ПУТИ.
+   * Оно здесь: любое перемещение и любой размер окна проходят через applyRect.
+   * Правило одно и без исключений: верх окна не бывает выше системной полосы —
+   * кроме полного экрана, где полоса убирается сама и уступает место.
+   *
+   * Это дороже трёх точечных правок ровно ничем, а закрывает и четвёртый путь,
+   * которого мы ещё не встретили.
+   */
+  /* ── МОРФ ПРЯМОУГОЛЬНИКА ЖИВЁТ В ЕДИНСТВЕННОЙ ДВЕРИ (v47.2) ────────────
+   *
+   * applyRect и раньше умел анимировать — переходом left/top/width/height за
+   * 130 мс. Движение было, но оплачивалось ПЕРЕСЧЁТОМ РАСКЛАДКИ на каждом
+   * кадре: четыре самых дорогих свойства из существующих, и на каждом кадре
+   * содержимое окна перекладывалось заново. Директива основателя требует
+   * одновременно характера движения и «performance first» — здесь это одно
+   * и то же исправление.
+   *
+   * Приём FLIP: конечный прямоугольник ставится СРАЗУ (правда состояния
+   * мгновенна — законы геометрии видят готовое окно, не полёт), содержимое
+   * перекладывается один раз, а видимый путь рисует transform от старого
+   * прямоугольника к новому — чистый композитор. Класс traveling на время
+   * полёта снимает размытие подложки (core.css, то же правило, что у
+   * открытия и сворачивания).
+   *
+   * Команда посреди прошлого полёта стартует с ТЕКУЩЕГО видимого положения:
+   * getBoundingClientRect учитывает transform, морф продолжается оттуда,
+   * где его видит человек, без рывка. Длительность оставлена прежней —
+   * 130 мс тем же ходом (.16,1,.3,1): тайминг был выбран верно, менялась
+   * только цена. */
   function applyRect(win, rect, animate) {
     var el = win.el;
-    if (animate && !reduced() && !systemReduced()) {
-      el.style.transition = "left 130ms cubic-bezier(.16,1,.3,1), top 130ms cubic-bezier(.16,1,.3,1), width 130ms cubic-bezier(.16,1,.3,1), height 130ms cubic-bezier(.16,1,.3,1)";
-      setTimeout(function () { el.style.transition = ""; }, 160);
+    var fly = animate && !reduced() && !systemReduced();
+    var r0 = fly ? el.getBoundingClientRect() : null;
+    var y = Math.round(rect.y);
+    var h = Math.round(rect.h);
+    if (!el.classList.contains("fullscreen") && y < TOPBAR_H) {
+      /* Высоту укорачиваем на то же, на что опустили верх: иначе окно, сдвинутое
+         вниз, вылезет нижним краем за экран — починили бы одно, сломали другое. */
+      h = Math.max(160, h - (TOPBAR_H - y));
+      y = TOPBAR_H;
     }
-    win.x = Math.round(rect.x); win.y = Math.round(rect.y);
-    win.w = Math.round(rect.w); win.h = Math.round(rect.h);
+    win.x = Math.round(rect.x); win.y = y;
+    win.w = Math.round(rect.w); win.h = h;
+    el.style.transition = "";
+    el.style.transform = "";
     el.style.left = win.x + "px"; el.style.top = win.y + "px";
     el.style.width = win.w + "px"; el.style.height = win.h + "px";
+    if (!fly || !r0 || !r0.width) return;
+    var r1 = el.getBoundingClientRect();
+    if (!r1.width || !r1.height) return;
+    var dx = r0.left - r1.left, dy = r0.top - r1.top;
+    var sx = r0.width / r1.width, sy = r0.height / r1.height;
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(sx - 1) < 0.01 && Math.abs(sy - 1) < 0.01) return;
+    el.classList.add("traveling");
+    el.style.transformOrigin = "0 0";
+    el.style.transform = "translate3d(" + dx + "px," + dy + "px,0) scale(" + sx + "," + sy + ")";
+    void el.offsetWidth;                       /* стартовый кадр зафиксирован */
+    el.style.transition = "transform 130ms cubic-bezier(.16,1,.3,1)";
+    el.style.transform = "translate3d(0,0,0) scale(1)";
+    clearTimeout(win.__flyTimer);
+    win.__flyTimer = setTimeout(function () {
+      el.style.transition = "";
+      el.style.transform = "";
+      el.style.transformOrigin = "";
+      el.classList.remove("traveling");
+    }, 170);
   }
   window.sbPlaceWindow = function (id, rect) {
     var win = openWindows[id];
@@ -780,6 +948,47 @@
   /* The system bar's height. Maximize is measured against it rather than
      against the viewport, so it has to be a number this file agrees on. */
   var TOPBAR_H = 44;
+
+  /* ── ПРЯМОУГОЛЬНИК КОМПАКТНОГО ОКНА: МЕЖДУ ПАНЕЛЬЮ И ПОЛКОЙ (v48) ───────
+   *
+   * Две правды основателя, снятые с одного экрана:
+   *   · «Должно быть место под док ОС» — окно на телефоне заканчивается НАД
+   *     полкой, а не под ней: полка отвечает «что открыто» и не смеет ни
+   *     исчезать (D-069), ни лежать поверх содержимого. Высота полки — не
+   *     константа: shell публикует её в --dock-h, отсюда и читаем.
+   *   · «все окна открываются полноценно, но почему-то otsing вот так» —
+   *     окно Seek рождалось при ВЫЕХАВШЕЙ КЛАВИАТУРЕ: поле ввода в фокусе,
+   *     innerHeight на телефоне в этот момент вдвое меньше, и высота
+   *     запекалась навсегда. Клавиатура уезжала — окно оставалось огрызком.
+   *     Лечение не «не открывать при клавиатуре», а честнее: компактные
+   *     окна СЛЕДЯТ за прямоугольником (onCompactResize) и подгоняются под
+   *     каждый его настоящий размер — клавиатура, поворот, адресная строка.
+   */
+  function dockAllowance() {
+    /* ДВА урока в одной константе (v48):
+       · без оглядки на dock-empty — окно, которое сейчас рождается, само и
+         выведет полку; первая редакция смотрела на класс, и первое окно
+         занимало весь низ, а полка выезжала поверх (поймал smoke-shell);
+       · без живого чтения --dock-h — измеренная высота полки дышит на
+         ±12px (значок пришёл, подпись мигнула), и окна ездили за этим
+         дребезгом. На узком экране полка фиксирована правилами §14
+         core.css (плитка 38 + поля 6), итого 62 — берём её как константу
+         той же природы, что TOPBAR_H, плюс 22 воздуха. */
+    return 84;
+  }
+  function compactRect() {
+    return {
+      x: 0, y: TOPBAR_H,
+      w: window.innerWidth,
+      h: Math.max(220, window.innerHeight - TOPBAR_H - dockAllowance())
+    };
+  }
+  /* Отдельного слушателя resize здесь НЕТ намеренно: подгонкой окон под
+     новый экран давно занимается общий обработчик ниже (§ «viewport
+     resize»), и вторая подписка на то же событие дала бы две правды об
+     одном окне. Первая редакция v48 наступила ровно на это — окна после
+     resize отличались на 8px от рождённых. Он же и учит компактные окна
+     compactRect-у. */
 
   function toggleMaximize(id) {
     var win = openWindows[id];
@@ -813,15 +1022,40 @@
          the bar is showing or not, and they no longer depend on hiding a
          different piece of chrome to be reachable. Filling the screen is what
          the second press does, and that state hides the bar outright. */
-      applyRect(win, {
-        x: 0, y: TOPBAR_H,
-        w: window.innerWidth,
-        h: Math.max(160, window.innerHeight - TOPBAR_H)
-      }, true);
+      applyRect(win, maximizedRect(), true);
     }
     updateTopbarAutoHide();
   }
   window.sbToggleMaximize = toggleMaximize;
+  /* Ручка для приборов: даёт закону поставить окно ровно в то состояние, в
+     которое его ставит перетаскивание к кромке, — не воспроизводя жест.
+     Проверяется РЕЗУЛЬТАТ, а не имитация пальца. */
+  window.sbSnapForTest = function (id, zone) {
+    var win = openWindows[id];
+    if (!win) return false;
+    var r = snapRect(zone);
+    if (!r) return false;
+    win.prevRect = { x: win.x, y: win.y, w: win.w, h: win.h };
+    if (zone === "max") { win.maximized = true; win.snapped = null; win.el.classList.add("maximized"); }
+    else { win.snapped = zone; win.maximized = false; win.el.classList.add("snapped"); }
+    applyRect(win, r, false);
+    updateTopbarAutoHide();
+    return true;
+  };
+  /* ── ОДНА ДВЕРЬ НА ОБА СМЫСЛА «ВЕРНУТЬ» (v47.2) ────────────────────────
+     window.sbRestoreWindow присваивался ДВАЖДЫ: выше — возврат из
+     свёрнутого, здесь — выход из развёрнутого. Второе присваивание молча
+     затирало первое, и публичная дверь никогда не возвращала свёрнутое
+     окно. Нашёл window-motion-check: команда уходила, состояние не
+     менялось. Теперь дверь одна и решает по состоянию: свёрнутое сперва
+     возвращается на стол — и только следующий вызов снимает развёрнутость.
+     Один вызов — один шаг назад, как и жмёт человек. */
+  window.sbRestoreWindow = function (id) {
+    var win = openWindows[id];
+    if (!win) return;
+    if (win.minimized) return restoreWindow(id);
+    return restoreWindow2(id);
+  };
 
   /* Out of fullscreen and out of maximised in one press, back to the size and
      place the window had before any of it. */
@@ -855,11 +1089,30 @@
   }
 
   /* ---- snap zones + ghost ---- */
+  /* ОДНА ГЕОМЕТРИЯ МАКСИМИЗАЦИИ НА ВСЕ ПУТИ (v47).
+     Дефект нашёл основатель на телефоне: окно, поднесённое к верхней кромке,
+     раскрывалось на весь экран — и теряло собственные клавиши закрыть,
+     свернуть, развернуть. Причина не в вёрстке: к одному состоянию вели ДВА
+     пути, кнопкой и перетаскиванием, и починен был только первый. У кнопки в
+     v21 уже стояло «максимизировано — значит заполняет РАБОЧИЙ СТОЛ, а не
+     экран», с отступом под верхнюю панель и объяснением на двадцать строк;
+     snapRect("max") продолжал возвращать y:0, и панель накрывала клавиши.
+     Расхождение двух путей к одному состоянию — тот же класс ошибки, что
+     когда-то дал два скрипта выкладки. Теперь прямоугольник считает одна
+     функция, и разойтись им негде. */
+  function maximizedRect() {
+    return {
+      x: 0, y: TOPBAR_H,
+      w: window.innerWidth,
+      h: Math.max(160, window.innerHeight - TOPBAR_H)
+    };
+  }
+
   function snapRect(zone) {
     var vw = window.innerWidth, vh = window.innerHeight, m = 14, top = 44;
     var halfW = (vw - 28) / 2 - 5, fullH = vh - top - m, halfH = fullH / 2 - 5;
     switch (zone) {
-      case "max": return { x: 0, y: 0, w: vw, h: vh };
+      case "max": return maximizedRect();
       case "left": return { x: m, y: top, w: halfW, h: fullH };
       case "right": return { x: vw - m - halfW, y: top, w: halfW, h: fullH };
       case "tl": return { x: m, y: top, w: halfW, h: halfH };
@@ -994,6 +1247,49 @@
     handle.addEventListener("pointercancel", endResize);
   }
 
+  /* Публичный вход для приложений, которым нужно открыть окно самим.
+     Появился ради build (D-054): он открывается автоматически при первом
+     входе, и делать это через внутреннюю функцию оболочки он не может. */
+  window.sbOpenApp = function (id) { return toggleApp(id); };
+
+  /* ── СЛЕДЫ ВЫДЕЛЕНИЯ НА СЕНСОРНОМ ЭКРАНЕ (v47) ─────────────────────────
+   *
+   * Основатель просил об этом несколько раз, и Совет несколько раз чинил не
+   * то: подсветку нажатия, запрет выделения на значках, прозрачный tap-highlight.
+   * Всё это уже стояло — а оранжевые чёрточки и точки оставались.
+   *
+   * Что происходит на самом деле. Палец на сенсорном экране начинает выделение
+   * там, где оно разрешено (внутри окон текст выделять НУЖНО — его копируют), и
+   * бросает его недоведённым. Браузер оставляет прямоугольники брошенного
+   * выделения, а наше правило ::selection красит их акцентом — отсюда и
+   * оранжевый. Выделения при этом «не работает» ровно в том смысле, в каком
+   * его описал основатель: скопировать нечего, а следы есть.
+   *
+   * Правило: на сенсорном вводе брошенное выделение снимается, как только
+   * палец отпущен, — КРОМЕ случая, когда человек работает в поле ввода или в
+   * тексте, который он правит. Там выделение осмысленно, и трогать его нельзя.
+   * Мышь не затронута вовсе: на ней выделение доводят до конца.
+   */
+  (function clearStrayTouchSelection() {
+    var inEditable = function (n) {
+      return !!(n && n.closest && n.closest('input, textarea, [contenteditable="true"], .note-text'));
+    };
+    doc.addEventListener("touchend", function (ev) {
+      if (inEditable(ev.target)) return;
+      var sel = window.getSelection && window.getSelection();
+      if (!sel || sel.isCollapsed) return;
+      /* Выделение, доведённое до конца, человек оставляет намеренно — но на
+         сенсорном экране его подтверждает системное меню «копировать», а не
+         факт наличия. Через кадр после отпускания брошенное снимается. */
+      requestAnimationFrame(function () {
+        var s2 = window.getSelection && window.getSelection();
+        if (!s2 || s2.isCollapsed) return;
+        if (inEditable(doc.activeElement)) return;
+        try { s2.removeAllRanges(); } catch (e) { /* некоторые движки запрещают */ }
+      });
+    }, { passive: true });
+  }());
+
   function toggleApp(id) {
     var def = apps[id];
     if (!def) return;
@@ -1026,12 +1322,12 @@
         if (compact() && w.maximized) {
           applyRect(w, { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight }, false);
         } else if (compact()) {
-          var mm = window.innerWidth <= 400 ? 10 : 16;
-          applyRect(w, {
-            x: mm, y: Math.max(44 + mm, Math.min(w.y, window.innerHeight - 160)),
-            w: window.innerWidth - mm * 2,
-            h: Math.min(w.h, window.innerHeight - (44 + mm) - 76)
-          }, false);
+          /* v48: компактное окно живёт в ОДНОМ прямоугольнике — compactRect
+             (между панелью и полкой, D-069). Здесь стояла своя геометрия с
+             полями 10/16 — вторая правда о том же окне: она дралась с
+             прямоугольником рождения, и окно после resize становилось на
+             8px другим. Правды не соревнуются — правда одна. */
+          if (!w.el.classList.contains("fullscreen")) applyRect(w, compactRect(), false);
         } else if (w.maximized) {
           applyRect(w, { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight }, false);
         } else if (w.snapped) {
@@ -1079,6 +1375,35 @@
 
   /* topbar app sequence (§5) */
   function updateAppSequence() {
+    /* КРУГЛАЯ КНОПКА ПРИНАДЛЕЖИТ РАБОЧЕМУ СТОЛУ, А НЕ ЭКРАНУ (v47).
+       Она висела поверх любого окна: основатель увидел её поверх витрины на
+       телефоне. Быстрое действие над столом, накрывающее содержимое окна, —
+       это не быстрое действие, а помеха. Когда открыто хотя бы одно окно, она
+       уходит; закрылось последнее — возвращается. Класс общий, чтобы то же
+       правило можно было применить к другим деталям стола, не переписывая
+       каждую по отдельности. */
+    var anyOpen = Object.keys(openWindows).some(function (id) {
+      var w = openWindows[id];
+      return w && !w.minimized;
+    });
+    root.classList.toggle("has-windows", anyOpen);
+
+    /* ЗНАЧКИ СТОЛА — ЭТО ДОК ТЕЛЕФОНА (v47).
+       Основатель написал дважды: свёрнутые окна нигде не отображаются. Первый
+       раз Совет поставил метку в док — и она не помогла, потому что НА
+       ТЕЛЕФОНЕ ДОКА НЕТ ВООБЩЕ: ниже 620px он не показывается (core.css §14).
+       Свёрнутое окно исчезало без следа и без пути назад.
+       Значки рабочего стола видны всегда и на всех ширинах, и нажатие на них
+       уже возвращает свёрнутое окно (toggleApp). Не хватало ровно одного —
+       чтобы по значку было видно состояние. Те же три ответа, что и в доке:
+       нет точки — закрыто, точка полная — окно на экране, полая — свёрнуто. */
+    $$("#sbIconLayer .desk-icon[data-app]").forEach(function (n) {
+      var w = openWindows[n.getAttribute("data-app")];
+      n.classList.toggle("running", !!w);
+      n.classList.toggle("is-min", !!(w && w.minimized));
+      n.classList.toggle("active-app", focusedId === n.getAttribute("data-app"));
+    });
+
     var host = $("#sbAppSeq");
     if (!host) return;
     host.innerHTML = "";
@@ -1155,6 +1480,13 @@
       node.setAttribute("aria-label", tr("win.openApp", { app: appTitle(id) }));
       var win = openWindows[id];
       node.classList.toggle("running", !!win);
+      /* ТРИ СОСТОЯНИЯ, А НЕ ДВА (v47). Основатель: «когда сворачиваешь окна —
+         не понятно, какие активные, а какие закрытые». Точка под значком
+         говорила только «открыто», и свёрнутое окно выглядело как закрытое
+         приложение. Теперь: точки нет — закрыто; точка полная — окно на
+         экране; точка полая — окно свёрнуто и ждёт. Одно и то же место,
+         три разных ответа, ни одного лишнего значка. */
+      node.classList.toggle("is-min", !!(win && win.minimized));
       node.classList.toggle("active-app", focusedId === id);
       node.title = appTitle(id) + (win ? " — open" : "");
     });
@@ -1163,6 +1495,13 @@
     var anyRunning = ids.some(function (id) { return !!openWindows[id]; });
     var hint = $("#dockHint");
     if (hint) hint.hidden = anyRunning;
+    /* Пустая полка на телефоне не показывается вовсе: там док — полка
+       ОТКРЫТОГО (D-061), и пустая полка была бы одинокой оранжевой кнопкой
+       без подписи — загадкой, а не приглашением. Пусковой полкой на
+       телефоне служит сам стол. Класс вешается всегда, прячет его только
+       узкий @media: на широком экране пустой док остаётся приглашением
+       с подписью и подсказкой. */
+    root.classList.toggle("dock-empty", !anyRunning);
     measureDock();
   }
   window.sbBuildDock = buildDock;
@@ -1292,6 +1631,65 @@
     return !!hidden;
   };
 
+  /* ── СТОЛ ПОМНИТ, КУДА ЕГО ПОЛОЖИЛИ (v47.3) ────────────────────────────
+   *
+   * ПОВОД, дословно: «если я переставляю приложение, то оно возвращается
+   * обратно на то место, где стояло, а не переносится туда, куда я его
+   * переносил — баг».
+   *
+   * Перенос был задуман ВРЕМЕННЫМ: значок помечался data-dragged, перекладка
+   * его не трогала — и она же снимала пометку со всех значков, возвращая их
+   * в сетку. На телефоне перекладка случается сама: адресная строка Chrome
+   * прячется при прокрутке, высота окна меняется, приходит resize. Человек
+   * переставил значок, коснулся экрана — значок вернулся. Перезагрузка
+   * теряла перестановку тем более: её нигде не записывали.
+   *
+   * ПОЧЕМУ ДОЛЯМИ, А НЕ ПИКСЕЛЯМИ. Место запоминается долей от размеров
+   * стола. Пиксели верны ровно на том экране, где их записали: поворот
+   * телефона или другое устройство выбросили бы значок за край. Доля
+   * переживает и то и другое, а чтение всё равно зажимается в границы —
+   * страховка стоит одной строки и снимает целый класс дефектов.
+   *
+   * ПОЧЕМУ ЭТО НЕ «ПРОСТО НАСТРОЙКА». Стол — вещь человека. Система не
+   * переставляет на нём предметы без его слова; вернуть всё в сетку можно,
+   * но по команде (sbTidyDesk), а не самой собой. */
+  var iconPlaces = null;
+  function getIconPlaces() {
+    if (!iconPlaces) {
+      var v = readJSON("sysbaby.icons.pos", {});
+      iconPlaces = (v && typeof v === "object" && !Array.isArray(v)) ? v : {};
+    }
+    return iconPlaces;
+  }
+  function rememberIconPlace(id, x, y) {
+    var host = $("#sbIconLayer");
+    if (!host) return;
+    var W = host.clientWidth, H = host.clientHeight;
+    if (!W || !H) return;
+    var places = getIconPlaces();
+    places[id] = { fx: x / W, fy: y / H };
+    iconPlaces = places;
+    writeJSON("sysbaby.icons.pos", places);
+  }
+  function forgetIconPlace(id) {
+    var places = getIconPlaces();
+    if (!(id in places)) return;
+    delete places[id];
+    iconPlaces = places;
+    writeJSON("sysbaby.icons.pos", places);
+  }
+  /* Прибрать стол — вернуть в сетку ВСЁ, что человек двигал. Названная
+     дверь: её зовут терминал (`tidy`) и меню стола. */
+  window.sbTidyDesk = function () {
+    var n = Object.keys(getIconPlaces()).length;
+    iconPlaces = {};
+    writeJSON("sysbaby.icons.pos", {});
+    $$("#sbIconLayer .desk-icon").forEach(function (el) { el.removeAttribute("data-dragged"); });
+    layoutIcons();
+    return n;
+  };
+  window.sbIconPlaces = function () { return JSON.parse(JSON.stringify(getIconPlaces())); };
+
   function desktopIconIds() {
     return launchable().filter(function (id) { return apps[id].desktopIcon !== false; });
   }
@@ -1337,14 +1735,30 @@
     if (!host) return;
     var W = host.clientWidth;
     if (!W) { requestAnimationFrame(layoutIcons); return; }
-    var nodes = $$(".desk-icon", host).filter(function (n) { return !n.classList.contains("hidden-icon"); });
-    var count = nodes.length;
+    var all = $$(".desk-icon", host).filter(function (n) { return !n.classList.contains("hidden-icon"); });
+    /* Значки с ЗАПОМНЕННЫМ местом сетке не принадлежат: они стоят там, куда
+       их поставил человек, а остальные смыкают ряды — как на любом столе,
+       откуда предмет унесли. Поэтому счёт колонок ведётся по оставшимся. */
+    var places = getIconPlaces();
+    var placed = all.filter(function (n) { return !!places[n.getAttribute("data-app")]; });
+    var nodes = all.filter(function (n) { return !places[n.getAttribute("data-app")]; });
+    var count = nodes.length || all.length;
     if (!count) { window.sbDesktopGrid = { originX: 0, originY: 0, cellW: 80, cellH: 92, cols: 0, rows: 0, gapX: 16, gapY: 12, stepX: 96, stepY: 104 }; return; }
 
-    /* §4.2: the step-down must sit at or above the width where a full row of
-       LARGE icons fits (9 icons: 9*80 + 8*6 + 2*22 = 812), or the desktop gets
-       worse as the window gets wider. Lockstep with core.css @media 897px. */
-    var small = window.innerWidth <= 897;         /* lockstep with core.css */
+    /* §4.2, ПЕРЕСЧИТАНО В v47.
+       Правило прежнее: крупные значки включаются НЕ РАНЬШЕ той ширины, где
+       целый ряд крупных помещается, — иначе рабочий стол становится хуже от
+       того, что окно стало шире. Прежде порог был числом (897), посчитанным
+       вручную под тогдашнее число приложений, и жил в двух местах сразу — в
+       этом файле и в @media в core.css. Каждое новое приложение молча ломало
+       обе арифметики: одиннадцатый значок дал провал 11 → 9 колонок на 898px,
+       и нашёл его закон, а не человек.
+       Теперь порог СЧИТАЕТСЯ ОТ ЧИСЛА ЗНАЧКОВ и объявляется классом, а CSS
+       слушает класс. Двенадцатое приложение не потребует ни одной правки. */
+    var WIDE_CELL = 80, MIN_GAP = 6, EDGE = 22;
+    var needWide = count * WIDE_CELL + (count - 1) * MIN_GAP + EDGE * 2;
+    var small = window.innerWidth < needWide;
+    root.classList.toggle("icons-small", small);
     var cellW = small ? 68 : 80, cellH = small ? 80 : 92;
     var narrow = W < 520;
     var pad = narrow ? 14 : 22;
@@ -1366,13 +1780,53 @@
     var originX = Math.max(pad, Math.round((W - blockW) / 2));
     var originY = pad;
 
-    nodes.forEach(function (n, i) {
-      if (n.getAttribute("data-dragged") === "1") return;   /* a drag survives until relayout resets it */
-      var c = i % cols, r = Math.floor(i / cols);
-      n.style.left = (originX + c * (cellW + gapX)) + "px";
-      n.style.top = (originY + r * (cellH + gapY)) + "px";
+    /* Сетка ОБХОДИТ места, занятые рукой человека. Основатель показал
+       снимок: значок, вернувшийся из Echoes, лёг ПОВЕРХ переставленной им
+       Hoidla — сетка раздавала клетки, не зная, что часть стола уже занята.
+       Теперь клетка, пересекающаяся с поставленным вручную значком,
+       пропускается, и ряд течёт дальше — как вода вокруг камня. */
+    var HH0 = host.clientHeight || (cellH * 2);
+    var stones = placed.map(function (n) {
+      var pos = places[n.getAttribute("data-app")];
+      if (!pos) return null;
+      return { x: clamp(pos.fx * W, 2, Math.max(2, W - cellW - 2)),
+               y: clamp(pos.fy * HH0, 2, Math.max(2, HH0 - cellH - 2)) };
+    }).filter(Boolean);
+    function cellFree(x, y) {
+      for (var k = 0; k < stones.length; k++) {
+        var st = stones[k];
+        if (!(x + cellW <= st.x || st.x + cellW <= x || y + cellH <= st.y || st.y + cellH <= y)) return false;
+      }
+      return true;
+    }
+    var slot = 0;
+    nodes.forEach(function (n) {
+      if (n.getAttribute("data-dragged") === "1") return;   /* палец ещё держит — не вырывать */
+      var x, y;
+      do {
+        var c = slot % cols, r = Math.floor(slot / cols);
+        x = originX + c * (cellW + gapX);
+        y = originY + r * (cellH + gapY);
+        slot++;
+      } while (!cellFree(x, y) && slot < 400);
+      n.style.left = x + "px";
+      n.style.top = y + "px";
       n.style.width = cellW + "px";
       n.style.height = cellH + "px";
+    });
+
+    /* Запомненные ставятся по своей доле — и зажимаются в границы стола:
+       доля записана на другом экране, и без этой строки значок мог бы
+       оказаться за краем после поворота телефона. */
+    var HH = host.clientHeight || (cellH * 2);
+    placed.forEach(function (n) {
+      var pos = places[n.getAttribute("data-app")];
+      if (!pos) return;
+      n.style.width = cellW + "px";
+      n.style.height = cellH + "px";
+      if (n.getAttribute("data-dragged") === "1") return;
+      n.style.left = Math.round(clamp(pos.fx * W, 2, Math.max(2, W - cellW - 2))) + "px";
+      n.style.top = Math.round(clamp(pos.fy * HH, 2, Math.max(2, HH - cellH - 2))) + "px";
     });
     $$(".desk-icon", host).forEach(function (n) { n.removeAttribute("data-dragged"); });
 
@@ -1443,30 +1897,91 @@
     node.addEventListener("pointerdown", function (ev) {
       if (ev.button !== 0) return;
       if (ev.target && ev.target.closest(".icon-spark")) return;
-      drag = { sx: ev.clientX, sy: ev.clientY, ox: node.offsetLeft, oy: node.offsetTop, moved: false };
+      drag = { sx: ev.clientX, sy: ev.clientY, ox: node.offsetLeft, oy: node.offsetTop, moved: false, armed: false };
+      /* ЦЕЛЬ ЗАМЕРЯЕТСЯ ОДИН РАЗ, А НЕ НА КАЖДОМ КАДРЕ (v47.1, цикл скорости №1).
+         echoesDropTarget спрашивал getBoundingClientRect у значка Echoes и у
+         его окна на КАЖДОЕ движение пальца. Каждый такой вопрос заставляет
+         браузер досчитать раскладку немедленно — посреди жеста, шестьдесят
+         раз в секунду. За время одного переноса ни значок Echoes, ни его
+         окно с места не двигаются, поэтому их место запоминается на входе.
+         На отпускании цель ищется заново, по живым числам: там кадр уже не
+         на счету, а ошибиться в точке приземления нельзя. */
+      drag.zones = echoesZones();
       try { node.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
     });
     node.addEventListener("pointermove", function (ev) {
       if (!drag) return;
       var dx = ev.clientX - drag.sx, dy = ev.clientY - drag.sy;
       if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 4) return;
-      if (!drag.moved) { drag.moved = true; node.classList.add("dragging"); if (window.sbEchoesHighlight) window.sbEchoesHighlight(true); }
-      var nx = drag.ox + dx, ny = drag.oy + dy;
-      var cand = { x: nx, y: ny, w: node.offsetWidth, h: node.offsetHeight };
-      var blocked = obstacles(node).some(function (o) { return rectsOverlap(cand, o, 8); });
-      if (blocked) return;                                    /* soft bump: frame doesn't move */
-      node.style.left = nx + "px"; node.style.top = ny + "px";
-      var over = echoesDropTarget(ev.clientX, ev.clientY);
-      node.classList.toggle("armed", !!over && over !== node);
+      if (!drag.moved) {
+        drag.moved = true;
+        node.classList.add("dragging");
+        /* Пометка ставится С ПЕРВОГО ДВИЖЕНИЯ, не на отпускании: перекладка
+           стола может прийти ПОСРЕДИ жеста (адресная строка телефона шлёт
+           resize), и без пометки она передвинет базу значка под переносом —
+           отпускание сложит смещение с уже другой базой, и значок «улетит
+           в другую сторону» (дословно основатель). Помеченный значок
+           перекладка не трогает. */
+        node.setAttribute("data-dragged", "1");
+        node.style.willChange = "transform";
+        if (window.sbEchoesHighlight) window.sbEchoesHighlight(true);
+      }
+      /* ЗНАЧОК ИДЁТ ЗА РУКОЙ, ВСЕГДА (v47).
+         Здесь стояла проверка столкновений: если следующий кадр перекрывал
+         чужой значок, кадр просто не рисовался. Задумано как мягкий упор,
+         получились СТЕНЫ: на столе из десяти значков свободного места между
+         ними нет, и протащить один мимо другого невозможно. Хуже того,
+         значок в углу оказывался заперт соседями — основатель написал об
+         этом дословно: «приложение echoes сейчас заперто». А echoes — ещё и
+         место, куда значки перетаскивают, чтобы убрать: заперев его, мы
+         заперли и весь этот путь.
+         Место ищется на ОТПУСКАНИИ (freeCellNear ниже) — в тот момент,
+         когда человек действительно назвал позицию. Ровно так же это уже
+         сделано у заметок, и там об этом написано теми же словами. */
+      /* ЗНАЧОК ЕДЕТ ПЕРЕНОСОМ, А НЕ КООРДИНАТОЙ (v47.1, цикл скорости №1).
+         Здесь на каждый кадр писались left и top. Это не просто присваивание:
+         каждая такая пара заставляет браузер заново разложить весь слой
+         значков и перерисовать его, пока палец движется. Перенос (transform)
+         композитор делает сам, не трогая раскладку вовсе.
+         Настоящая координата не меняется всё это время — она записывается
+         один раз, на отпускании, там же, где ищется свободное место. Значок
+         при этом ВЫГЛЯДИТ ровно так же: getBoundingClientRect учитывает
+         перенос, и закон desktop-drag-check меряет именно его. */
+      drag.lastX = dx; drag.lastY = dy;
+      node.style.transform = "translate3d(" + Math.round(dx) + "px," + Math.round(dy) + "px,0)";
+      var over = zoneHit(drag.zones, ev.clientX, ev.clientY);
+      var armed = !!over && over !== node;
+      /* Класс переставляется только когда он ДЕЙСТВИТЕЛЬНО меняется: иначе
+         каждый кадр просит пересчитать стили ни за чем. */
+      if (armed !== drag.armed) { drag.armed = armed; node.classList.toggle("armed", armed); }
     });
     function endIconDrag(ev) {
       if (!drag) return;
       var d = drag; drag = null;
       node.classList.remove("dragging", "armed");
+      node.style.willChange = "";
       if (window.sbEchoesHighlight) window.sbEchoesHighlight(false);
-      if (!d.moved) { toggleApp(id); return; }
+      if (!d.moved) { node.style.transform = ""; toggleApp(id); return; }
+      /* Перенос был показным — теперь он становится координатой. Порядок
+         важен: сперва записать left/top, потом снять transform. Наоборот
+         значок мигнул бы обратно в исходную точку на один кадр. */
+      /* Посадка считается от НАСТОЯЩЕГО экранного места, а не от базы,
+         снятой на захвате: getBoundingClientRect учитывает и перенос, и
+         всё, что успело случиться с раскладкой за время жеста. Сажаем
+         ровно туда, где значок видит человек, — и зажимаем в слой. */
+      var layerEl = node.parentNode;
+      var lr = layerEl.getBoundingClientRect();
+      var nr = node.getBoundingClientRect();
+      var landedX = clamp(nr.left - lr.left, 2, Math.max(2, layerEl.clientWidth - node.offsetWidth - 2));
+      var landedY = clamp(nr.top - lr.top, 2, Math.max(2, layerEl.clientHeight - node.offsetHeight - 2));
+      node.style.left = Math.round(landedX) + "px";
+      node.style.top = Math.round(landedY) + "px";
+      node.style.transform = "";
       var over = ev && echoesDropTarget(ev.clientX, ev.clientY);
       if (over && id !== "echoes") {
+        /* Унесённый со стола забывает своё место: вернувшись, он должен
+           встать в ряд, а не в точку, из которой его когда-то унесли. */
+        forgetIconPlace(id);
         window.sbSetIconHidden(id, true);
         window.showToast(tr("toast.toEchoes", { app: appTitle("echoes") }), tr("toast.toEchoesIcon"), ICONS.note);
         layoutIcons();
@@ -1476,12 +1991,46 @@
       var snap = freeCellNear(node.offsetLeft, node.offsetTop, node.offsetWidth, node.offsetHeight, node);
       node.classList.add("settling");
       node.style.left = snap.x + "px"; node.style.top = snap.y + "px";
+      /* Место человека записывается ЗДЕСЬ и сразу: следующая перекладка
+         стола (её вызывает даже адресная строка телефона) обязана уже знать
+         о ней, иначе значок вернётся в сетку — ровно тот дефект, о котором
+         написал основатель. */
+      rememberIconPlace(id, snap.x, snap.y);
       setTimeout(function () { node.classList.remove("settling"); }, 320);
     }
     node.addEventListener("pointerup", endIconDrag);
-    node.addEventListener("pointercancel", function () { if (drag) { drag = null; node.classList.remove("dragging", "armed"); if (window.sbEchoesHighlight) window.sbEchoesHighlight(false); } });
+    node.addEventListener("pointercancel", function () {
+      if (!drag) return;
+      /* Прерванный жест обязан убрать за собой ТО ЖЕ, что убирает
+         законченный: иначе значок останется висеть в переносе. */
+      drag = null;
+      node.classList.remove("dragging", "armed");
+      node.style.transform = "";
+      node.style.willChange = "";
+      if (window.sbEchoesHighlight) window.sbEchoesHighlight(false);
+    });
 
     wireIconCapsule(node, id);
+  }
+
+  /* Места, куда значок можно уронить, снятые ОДИН РАЗ. Возвращается список
+     пар «прямоугольник — элемент», чтобы попадание считалось арифметикой, а
+     не новым вопросом к раскладке. */
+  function echoesZones() {
+    var out = [];
+    var icon = $('.desk-icon[data-app="echoes"]');
+    if (icon) out.push({ r: icon.getBoundingClientRect(), el: icon });
+    var win = openWindows.echoes;
+    if (win) out.push({ r: win.el.getBoundingClientRect(), el: win.el });
+    return out;
+  }
+  function zoneHit(zones, x, y) {
+    if (!zones) return null;
+    for (var i = 0; i < zones.length; i++) {
+      var r = zones[i].r;
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return zones[i].el;
+    }
+    return null;
   }
 
   function echoesDropTarget(x, y) {
@@ -1753,21 +2302,80 @@
 
   /* ============================================================= boot §2.3/2.4 */
   var bootReady = false;
-  var BOOT_LINES = [
-    "resolve   workspace   ->  sys.baby/os",
-    "mount     /desktop  /widgets  /apps",
-    "link      mail . notes . files . portfolio",
-    "compile   automation.pipeline",
-    "map       business.process -> system.surface",
-    "warm      renderer . storage . index",
-    "verify    integrity                    ok",
-    "bind      you  ->  your.system",
-    "ready     entering environment"
+  /* ЗАГРУЗКА ГОВОРИТ ТО, ЧТО ПРОИСХОДИТ (v47).
+   *
+   * Здесь стоял список из девяти выдуманных строк — «compile
+   * automation.pipeline», «verify integrity ok» — и они печатались по таймеру
+   * независимо от того, что делала система. Рядом жил индикатор, который рос
+   * на случайную величину и останавливался на девяноста процентах, дожидаясь
+   * готовности. Ни строки, ни проценты не измеряли ничего.
+   *
+   * Для этого проекта такая заставка — не мелочь и не украшение. Весь его
+   * смысл в том, чтобы не рассказывать о качестве, а показывать прибор,
+   * которым оно измерено. Экран загрузки был единственным местом, где продукт
+   * говорил о себе неправду, — и это было первое, что видел человек.
+   *
+   * Теперь каждая строка — ЗАВЕРШИВШИЙСЯ ШАГ с настоящим числом: сколько
+   * приложений зарегистрировалось, сколько записей в данных, за сколько
+   * миллисекунд. Шаг, который не удался, остаётся на экране помеченным, а не
+   * исчезает. Индикатор двигают выполненные шаги, а не таймер. Занавес
+   * поднимается по настоящей готовности рабочего стола.
+   *
+   * Требование основателя 19.08.2026: «загрузка ОС должна быть настоящей и
+   * функциональной». Охраняется tools/os-boot-truth.mjs.
+   */
+  var BOOT_STEPS = [
+    { id: "storage", label: "storage", run: function () {
+        var backend = (window.sbDB && typeof window.sbDB.get === "function") ? "sbDB" : "localStorage";
+        var n = 0;
+        try { for (var i = 0; i < localStorage.length; i++) if (String(localStorage.key(i)).indexOf("sysbaby.") === 0) n++; } catch (e) { n = -1; }
+        if (n < 0) throw new Error("хранилище закрыто браузером");
+        return backend + "  ·  " + n + " записей";
+      } },
+    { id: "session", label: "session", run: function () {
+        var name = "";
+        try { name = (window.sbDB && window.sbDB.get("sysbaby.user.name")) || ""; } catch (e) { name = ""; }
+        return (name ? name : "guest") + ".sys.baby";
+      } },
+    { id: "appearance", label: "appearance", run: function () {
+        var th = root.getAttribute("data-theme") || "—";
+        var acc = window.sbGetCurrentAccent ? window.sbGetCurrentAccent() : null;
+        return th + (acc && acc.a1 ? "  ·  " + acc.a1 : "");
+      } },
+    { id: "apps", label: "apps", run: function () {
+        var list = window.sbLaunchableApps ? window.sbLaunchableApps() : [];
+        if (!list.length) throw new Error("ни одно приложение не зарегистрировалось");
+        return list.length + " зарегистрировано";
+      } },
+    { id: "data", label: "data", run: function () {
+        /* Имена глобальных берутся из самих файлов данных, а не из памяти:
+           первая версия этого шага спрашивала SYSBABY_PORTFOLIO, которого в
+           проекте нет, — и честно покраснела на первом же прогоне. Ошибка
+           стоила минуты и доказала, что шаг измеряет, а не рассказывает. */
+        var pf = (window.sbPortfolio && window.sbPortfolio.length) || 0;
+        var pr = (typeof window.sbPricingBand === "function") ? 1 : 0;
+        if (!pf) throw new Error("портфолио не подгрузилось");
+        return pf + " работ" + (pr ? "  ·  прайс на месте" : "  ·  прайса нет");
+      } }
   ];
+
+  /* Наружу — чтобы приборы читали ТО ЖЕ, что видел человек. */
+  window.sbBoot = { steps: [], ok: null, ms: 0, startedAt: 0 };
   var GLYPHS = "0123456789abcdef/<>{}[]()=+-_:.|";
   var CELLS = 35;
-  var SENTENCE_1 = "building automated business for you";
-  var SENTENCE_2 = "built around your business";
+  /* ── ЗАНАВЕС ГОВОРИТ ГОЛОСОМ СИСТЕМЫ, НЕ ВИТРИНЫ (v47.1) ────────────────
+     Основатель: «слоган built around your business должен быть только в
+     приложении build». До этого занавес загрузки собирал из шума две фразы
+     витрины — «building automated business for you» и «built around your
+     business» — и вторая ещё оставалась лежать на столе водяным знаком.
+     Это голос ПРОДАВЦА в комнате, которая принадлежит пользователю: ОС
+     пользовательская (D-054), и её единственная фраза — её собственная,
+     та же, что на входе (D-052). Фразы витрины живут в приложении build —
+     его шапка и так начинается со строки «Building Automated Business for
+     You». Водяной знак на столе снят вовсе, не переписан: столу не нужна
+     подпись, стол и есть система. */
+  var SENTENCE_1 = "only you and your system, baby";
+  var SENTENCE_2 = "only you and your system, baby";
 
   function padCenter(text) {
     var t = String(text).slice(0, CELLS);
@@ -1819,21 +2427,47 @@
     });
   }
 
+  /* Шаги идут по одному, каждый следующий — в отдельном кадре: так строка
+     успевает появиться на экране, а не все разом в конце. */
   function runBootEngine() {
-    var pct = 0, ready = false;
     var bar = $("#bootBar"), status = $("#bootStatus");
-    systemReadyPromise().then(function () { ready = true; });
-    function tick() {
-      var ceiling = ready ? 100 : 90;
-      pct = Math.min(ceiling, pct + 1.6 + Math.random() * 2.2);
-      if (bar) bar.style.width = pct + "%";
-      if (status) {
-        status.textContent = pct >= 96 ? "Ready" : pct >= 70 ? "Almost there" : pct >= 35 ? "Loading apps" : "Preparing your system";
-      }
-      if (pct >= 100) { startReveal(); return; }
-      requestAnimationFrame(tick);
+    var total = BOOT_STEPS.length + 1;          /* +1 — сам рабочий стол */
+    var t0 = now();
+    window.sbBoot = { steps: [], ok: null, ms: 0, startedAt: t0 };
+
+    function record(id, ok, detail, ms) {
+      var step = { id: id, ok: ok, detail: String(detail), ms: Math.round(ms) };
+      window.sbBoot.steps.push(step);
+      doc.dispatchEvent(new CustomEvent("sysbaby:boot-step", { detail: step }));
+      if (bar) bar.style.width = Math.min(100, Math.round((window.sbBoot.steps.length / total) * 100)) + "%";
+      if (status) status.textContent = ok ? id : (id + " — не удалось");
+      return step;
     }
-    requestAnimationFrame(tick);
+
+    var i = 0;
+    function next() {
+      if (i >= BOOT_STEPS.length) { finish(); return; }
+      var st = BOOT_STEPS[i++];
+      var s0 = now();
+      try { record(st.id, true, st.run(), now() - s0); }
+      catch (err) { record(st.id, false, (err && err.message) || "не удалось", now() - s0); }
+      requestAnimationFrame(next);
+    }
+
+    function finish() {
+      /* Рабочий стол — последний шаг, и он ЖДЁТ настоящего события, а не
+         таймера: прежний индикатор доходил до ста и вызывал показ сам. */
+      doc.addEventListener("sysbaby:desktop-ready", function () {
+        record("desktop", true, "готов", now() - t0);
+        window.sbBoot.ms = Math.round(now() - t0);
+        window.sbBoot.ok = window.sbBoot.steps.every(function (x) { return x.ok; });
+        if (status) status.textContent = window.sbBoot.ok ? "готово · " + window.sbBoot.ms + " мс" : "готово, но не всё";
+        doc.dispatchEvent(new CustomEvent("sysbaby:boot-complete", { detail: window.sbBoot }));
+      }, { once: true });
+      startReveal();
+    }
+
+    requestAnimationFrame(next);
   }
 
   /* ---- cinematic curtain ---- */
@@ -1988,16 +2622,24 @@
     }
     var stopNetwork = runNetwork();
 
+    /* Журнал занавеса — та же лента шагов, что читают приборы. Строка
+       появляется, КОГДА шаг закончился, и несёт его настоящее число.
+       Неудавшийся шаг остаётся на экране помеченным: исчезнувшая строка
+       читается как «этого и не было». */
     function paintLog() {
       if (!logHost) return;
       logHost.innerHTML = "";
-      BOOT_LINES.forEach(function (line, n) {
+      function line(step) {
         var d = doc.createElement("div");
-        d.className = "cur-log-line";
-        d.textContent = line;
+        d.className = "cur-log-line" + (step.ok ? "" : " failed");
+        var pad = (step.id + "            ").slice(0, 12);
+        d.textContent = pad + step.detail + (step.ok ? "" : "   ✗");
+        d.setAttribute("data-step", step.id);
         logHost.appendChild(d);
-        timers.push(setTimeout(function () { d.classList.add("on"); }, 220 + n * 70));
-      });
+        requestAnimationFrame(function () { d.classList.add("on"); });
+      }
+      (window.sbBoot && window.sbBoot.steps ? window.sbBoot.steps : []).forEach(line);
+      doc.addEventListener("sysbaby:boot-step", function (e) { line(e.detail); });
     }
 
     function lift() {
@@ -2013,22 +2655,11 @@
       onDone();
     }
 
-    function ghostResidue() {
-      if (isReduced) return;
-      setTimeout(function () {
-        var g = doc.createElement("div");
-        g.id = "sbGhostLine";
-        g.textContent = SENTENCE_2;
-        doc.body.appendChild(g);
-        var kill = function () {
-          g.classList.add("out");
-          setTimeout(function () { if (g.parentNode) g.parentNode.removeChild(g); }, 700);
-          ["mousemove", "pointerdown", "keydown", "wheel"].forEach(function (e) { window.removeEventListener(e, kill); });
-        };
-        ["mousemove", "pointerdown", "keydown", "wheel"].forEach(function (e) { window.addEventListener(e, kill, { once: true }); });
-        setTimeout(kill, 4000);
-      }, 380);
-    }
+    /* Водяного знака после подъёма занавеса больше нет (v47.1): фраза
+       витрины ушла в приложение build по слову основателя, а своей подписи
+       столу не нужно — стол и есть система. Функция оставлена пустой
+       намеренно, чтобы точка вызова в lift() рассказывала историю. */
+    function ghostResidue() { /* снято по слову основателя, v47.1 */ }
 
     var sequenceDone = false, iconsRevealed = root.classList.contains("rv-icons");
     function maybeLift() { if (sequenceDone && iconsRevealed) lift(); }
@@ -2058,11 +2689,11 @@
       }
       noise();
       if (shortPath) { lockSentence(SENTENCE_2, 140, 640, null); timers.push(setTimeout(endSequence, 900)); return; }
+      /* Фраза теперь одна — собирать её из шума дважды значило бы держать
+         человека лишние две секунды ради повтора. Полный путь: шум, сборка,
+         пауза на прочтение, подъём. */
       lockSentence(SENTENCE_1, 1150, 1750, null);
-      if (returning) { timers.push(setTimeout(endSequence, 1400)); return; }
-      fragment(3650);
-      lockSentence(SENTENCE_2, 4420, 5020, null);
-      timers.push(setTimeout(endSequence, 5900));
+      timers.push(setTimeout(endSequence, returning ? 1400 : 3200));
     }
 
     /* absolute caps */
@@ -2121,6 +2752,12 @@
       });
       nameInput.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); if (next) next.click(); } });
     }
+    /* Одно поле имени решает, что будет дальше: если такая запись на этом
+       устройстве есть — это ВХОД, если нет — РЕГИСТРАЦИЯ. Второго экрана и
+       второй кнопки не нужно: человек и так знает, заводил он себя здесь или
+       нет, а система это ЗНАЕТ ТОЧНО. */
+    var registering = false;
+
     if (next) {
       next.addEventListener("click", function () {
         var v = sanitizeUser(nameInput ? nameInput.value : "");
@@ -2128,12 +2765,28 @@
           if (nameErr) nameErr.textContent = "Enter at least 2 characters — letters, numbers, . _ or -";
           return;
         }
+        if (window.sbAuth && !window.sbAuth.available()) {
+          if (nameErr) nameErr.textContent = "This page is not on a secure connection, so a password cannot be protected here. Continue as guest.";
+          return;
+        }
+        registering = !(window.sbAuth && window.sbAuth.has(v));
         toStep2(v);
+        var title = $(".login-title", step2), sub = $(".login-sub", step2);
+        if (title) title.textContent = registering ? "Choose your password" : "Enter your password";
+        if (sub) sub.textContent = registering
+          ? "This name is free on this device. The password is stored as a hash — never as itself."
+          : "Welcome back";
+        if (cont) cont.textContent = registering ? "Create account" : "Continue";
       });
     }
     if (edit) edit.addEventListener("click", toStep1);
     if (back) back.addEventListener("click", toStep1);
-    if (forgot) forgot.addEventListener("click", function () { if (forgotMsg) forgotMsg.textContent = "Demo mode — any password works, no reset needed."; });
+    /* Правда вместо «Demo mode» (v47). Сервера нет — восстанавливать пароль
+       некому и нечем. Единственные настоящие выходы названы прямо. */
+    if (forgot) forgot.addEventListener("click", function () {
+      if (forgotMsg) forgotMsg.textContent =
+        "There is no server, so nobody can reset it — not even us. Enter as guest, or claim another name; this account's data stays on this device.";
+    });
     if (eye && pwInput) {
       eye.addEventListener("click", function () {
         var showing = pwInput.type === "text";
@@ -2161,13 +2814,36 @@
     if (cont) {
       cont.addEventListener("click", function () {
         if (!pwInput || !pwInput.value) { if (pwErr) pwErr.textContent = "Enter your password."; return; }
+        if (!window.sbAuth) { if (pwErr) pwErr.textContent = "Sign-in is unavailable here. Continue as guest."; return; }
         if (pwErr) pwErr.textContent = "";
+        var pw = pwInput.value;
+        var was = cont.textContent;
         cont.disabled = true;
-        cont.textContent = "Signing you in…";
-        var email = chosen + "@sys.baby";
-        var prof = null;
-        if (window.sbProfiles) { try { prof = window.sbProfiles.findOrCreateByEmail(email); } catch (e) { prof = null; } }
-        setTimeout(function () { finish(prof ? prof.id : null, chosen); }, 420);
+        cont.textContent = registering ? "Creating…" : "Checking…";
+
+        function refuse(msg) {
+          cont.disabled = false;
+          cont.textContent = was;
+          if (pwErr) pwErr.textContent = msg;
+          if (pwInput) { pwInput.value = ""; pwInput.focus(); }
+        }
+
+        if (registering) {
+          if (pw.length < 4) { refuse("At least 4 characters."); return; }
+          window.sbAuth.register(chosen, pw).then(function (prof) {
+            finish(prof ? prof.id : null, chosen);
+          })["catch"](function (err) {
+            refuse(err && err.message === "exists" ? "That name is taken on this device." : "Could not create the account here.");
+          });
+          return;
+        }
+
+        /* ВХОД. Неверный пароль не пускает — в этом весь смысл двери. */
+        window.sbAuth.verify(chosen, pw).then(function (okPw) {
+          if (!okPw) { refuse("Wrong password."); return; }
+          var prof = window.sbAuth.profileOf(chosen);
+          finish(prof ? prof.id : null, chosen);
+        })["catch"](function () { refuse("Could not check the password here."); });
       });
     }
     if (guest) {
@@ -2224,6 +2900,7 @@
     var mood = window.sbGetWallpaperMood();
     if (mood && mood !== "ocean") root.setAttribute("data-wp-mood", mood);
     ["motion", "dnd", "autohide", "transparency"].forEach(function (k) { applyControl(k, window.sbGetControlToggle(k)); });
+    wireTurbo();
     /* volume and brightness come back exactly as they were left */
     var savedVol = window.sbDB ? window.sbDB.get(VOLUME_KEY) : null;
     if (savedVol != null) window.sbNotifVolume = clamp(num(savedVol, 0.6), 0, 1);
@@ -2255,12 +2932,32 @@
   if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", boot);
   else boot();
 
-  /* ------------------------------------------------------- build info §12 */
+  /* ── ВЕРСИЯ СИСТЕМЫ — НАСТОЯЩАЯ И ЕДИНСТВЕННАЯ (v48, D-071) ────────────
+   *
+   * Основатель: «с сегодняшнего дня наша система должна начинать
+   * превращаться из демонстрации в настоящую живую операционную систему
+   * sys.baby OS 0.0… каждая версия должна меняться на актуальную в
+   * терминале, в настройках с выходом каждого нового обновления…
+   * абсолютно везде в архиве версия должна обновляться».
+   *
+   * Здесь было зашито release: 171 — число с прошлого лета, не связанное
+   * с меткой сборки: терминал говорил «build 171», сайт — v47, и ни одно
+   * обновление не меняло оба. Версий у системы больше не две, а одна, и
+   * она ВЫЧИСЛЯЕТСЯ из метки сборки, которую и так обязана поднимать
+   * каждая выкладка (иначе кэш не отпустит старые файлы — publish-check):
+   * vN → sys.baby OS 0.0.N. Обновляется везде разом, по построению.
+   */
   var bootStamp = now();
+  var buildMeta = (function () {
+    var m = doc.querySelector('meta[name="sysbaby-build"]');
+    var v = /^v(\d+)$/.exec((m && m.content) || "");
+    return v ? v[1] : "0";
+  })();
   window.sbBuild = {
-    release: 171,      /* bumped with landing v21 — the terminal header reads this live */
+    build: "v" + buildMeta,
+    version: "0.0." + buildMeta,
     channel: "core",
-    stamp: function () { return "sys.baby " + this.channel + " · build " + this.release; },
+    stamp: function () { return "sys.baby OS " + this.version + " · " + this.channel + " " + this.build; },
     uptime: function () {
       var s = Math.floor((now() - bootStamp) / 1000);
       var m = Math.floor(s / 60);

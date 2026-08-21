@@ -1,0 +1,9 @@
+/* build — окно нашей услуги внутри системы пришедшего. */
+.build-body { padding: 0; display: flex; flex-direction: column; height: 100%; }
+.build-frame {
+  flex: 1 1 auto; width: 100%; border: 0; display: block;
+  background: var(--surface, #0b0908);
+}
+/* Строка внизу окна снята (v47.3): она говорила по-русски поверх любого
+   языка и была запиской Совета самому себе, а не частью услуги. То, что
+   окно можно закрыть, доказывает поведение и закон os-build-app. */

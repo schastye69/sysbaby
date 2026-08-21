@@ -103,6 +103,7 @@ html[data-transparency="reduced"] .cmdk-box,
 html[data-transparency="reduced"] .toast,
 html[data-transparency="reduced"] .sb-widget,
 html[data-transparency="reduced"] .sticky-note,
+html[data-transparency="reduced"] #sbFab,
 html[data-transparency="reduced"] #sbCtxMenu {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -154,6 +155,13 @@ html, body { -webkit-user-select: none; user-select: none; }
    as a bright block on a dark desktop. This is the same colour at a weight
    that reads as a highlight rather than an accident. */
 ::selection { background: rgba(var(--accent-rgb), .28); color: var(--ink); }
+/* На сенсорном вводе цвет выделения приглушён вдвое: брошенный палец оставляет
+   прямоугольники, которые браузер не всегда стирает сам, и акцент на них
+   читается как поломка. Снимает их обработчик touchend в os/core/shell.js —
+   это про то, чтобы даже мгновение до снятия не выглядело мазнёй. */
+@media (pointer: coarse) {
+  ::selection { background: rgba(var(--accent-rgb), .14); }
+}
 
 html, body {
   margin: 0;
@@ -341,6 +349,16 @@ html.sb-incognito .wp-layer > * { display: none !important; }
 #sbLogin.out { opacity: 0; pointer-events: none; }
 html.sb-has-session #sbLogin { display: none; }
 .login-card {
+  /* ЭКРАН ВХОДА НЕ ОБЯЗАН ПОМЕЩАТЬСЯ — ОН ОБЯЗАН ПОМЕЩАТЬСЯ ВЕЗДЕ (v47).
+     Дефект нашёл основатель на телефоне: карточка уезжала за правую кромку,
+     и кнопка «Continue» оказывалась наполовину за экраном. Причина не в
+     ширине карточки — она была объявлена правильно, — а в том, что элемент
+     сетки по умолчанию не даёт себя сузить меньше собственного содержимого
+     (min-width: auto), и объявленная ширина молча проигрывала. Пятьдесят
+     строк CSS про «min(420px, 100%)» не значат ничего, пока не снят этот
+     умолчательный минимум. Первый экран, который видит человек, обязан
+     помещаться в самый узкий телефон — иначе всё остальное неважно. */
+  min-width: 0; max-width: 100%;
   width: min(420px, 100%); padding: 28px;
   background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-card);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
@@ -419,6 +437,9 @@ html[data-motion="reduced"] #sbCurtainNet { display: none; }
 #sbCurtain.said .cur-log { opacity: .08; }
 html[data-motion="reduced"] .cur-log { display: none; }
 .cur-log-line { opacity: 0; transform: translateY(5px); transition: opacity .55s var(--ease), transform .55s var(--ease); }
+/* Неудавшийся шаг загрузки остаётся на экране и назван собой. Скрыть его
+   значило бы вернуться к заставке, которая рассказывает, а не показывает. */
+.cur-log-line.failed { color: #e0663c; opacity: .95; }
 .cur-log-line.on { opacity: 1; transform: none; }
 
 /* the mark is lifted out of flow so the SENTENCE, not the logo and sentence
@@ -682,17 +703,34 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
    brand colours were the loudest thing on the desktop while meaning nothing.
    Colour on this desktop is a state — the running dot, a badge, the seam of
    the one action tile — never decoration. */
+/* ── МАТЕРИАЛ ЗНАЧКА (v47.1) ─────────────────────────────────────────────
+   Плитка была плоским пятном: один градиент и рамка. Добавлена ровно одна
+   деталь — светлая нить по верхней кромке (inset-тень в 1 px). Она не
+   рисуется отдельным слоем и не стоит ни одного лишнего прохода, но даёт
+   плитке грань: свет падает сверху, как и на всём остальном столе. */
 .icon-tile {
-  width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center;
-  color: var(--ink); box-shadow: var(--shadow-soft);
-  background: linear-gradient(150deg, rgba(242, 242, 240, .12), rgba(242, 242, 240, .03));
+  width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center;
+  color: var(--ink);
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, .07);
+  background: linear-gradient(155deg, rgba(242, 242, 240, .13), rgba(242, 242, 240, .028));
   border: 1px solid var(--line);
+  transition: box-shadow .18s var(--ease), background .18s ease;
+}
+.desk-icon:hover .icon-tile,
+.desk-icon.active-app .icon-tile {
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, .12);
+  background: linear-gradient(155deg, rgba(242, 242, 240, .18), rgba(242, 242, 240, .05));
 }
 .icon-tile svg { width: 22px; height: 22px; }
+/* Подпись читается НАД ЛЮБЫМИ обоями. Поле живое и местами очень светлое —
+   в оранжевой полосе подпись пропадала совсем. Тень под текстом дешевле
+   подложки и не добавляет ни слоя, ни прохода композитора. */
 .icon-label {
   font-size: 11.5px; color: var(--ink-2); text-align: center; line-height: 1.25;
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .55);
 }
+.desk-icon.active-app .icon-label { color: var(--ink); }
 .icon-spark {
   position: absolute; top: 2px; right: 4px; width: 18px; height: 18px; border-radius: 50%;
   display: grid; place-items: center; color: var(--ink-3); opacity: 0; transition: opacity .16s ease;
@@ -774,8 +812,16 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
 .sticky-note.settling { transition: left .3s var(--ease), top .3s var(--ease); }
 .sticky-note.selected { outline: 1px solid rgba(var(--wp-light-rgb, 91, 124, 255), .5); }
 html[data-motion="reduced"] .sticky-note { transition: none; }
-/* the note is the handle; the text inside it is not */
-.sticky-note .note-text { touch-action: auto; }
+/* ВСЯ ЗАМЕТКА — РУЧКА, ПОКА ЕЁ НЕ ПРАВЯТ (v47). Прежде здесь было обратное, и
+   ухватить заметку было не за что: текст занимает почти всю её площадь. Пока
+   заметка не в правке, жест по тексту принадлежит перетаскиванию; как только
+   в неё пишут — прокрутка и выделение возвращаются тексту. */
+.sticky-note:not(.focused) .note-text { touch-action: none; -webkit-user-select: none; user-select: none; cursor: grab; }
+.sticky-note.focused .note-text { touch-action: auto; -webkit-user-select: text; user-select: text; cursor: text; }
+/* Ширину заметке ставит замер текста (autoGrow в os/core/desktop.js): короткая
+   заметка маленькая с первого слова. Здесь остаётся только предел. */
+.sticky-note { min-width: 118px; max-width: 320px; }
+.sticky-note .note-text { min-height: 20px; }
 .note-text {
   width: 100%; min-height: 52px; max-height: 260px; resize: none; border: 0; outline: none;
   background: none; color: var(--ink); font-size: 13px; line-height: 1.45;
@@ -842,6 +888,23 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
 /* Белый блик по верхней кромке невидим на белой панели и только размывает
    край. В светлой теме кромка обязана быть темнее панели, а не светлее. */
 html[data-theme="light"] .window::before { background: rgba(12, 14, 20, .08); }
+/* ── ПОКА ОКНО ЛЕТИТ, ОНО НЕ РАЗМЫВАЕТ (v47.1 открытие; v47.2 все пути) ──
+   Полёт идёт переносом и прозрачностью — этим двум композитор рад. Но у
+   окна есть backdrop-filter, и он превращает дешёвую анимацию в дорогую:
+   размытие подложки пересчитывается на каждом кадре, потому что подложка
+   под движущимся окном каждый кадр другая. На широком экране это стоило
+   шестнадцати долгих кадров из ста при вчетверо замедленном процессоре.
+   Сначала правило получило только открытие (.opening) — и в v47.2 закон
+   window-motion-check спросил: а чем сворачивание хуже? Ничем. Класс
+   traveling — то же правило для ЛЮБОГО полёта окна: свернуть, вернуть,
+   закрыть, развернуть. Полёт длится 260 мс и заканчивается ровно там, где
+   окно и должно стоять, — разницу увидеть невозможно, а кадры возвращаются. */
+.window.opening,
+.window.traveling {
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  background: var(--bg-elev, #14100f);
+  will-change: transform, opacity;
+}
 .window.focused { border-color: rgba(var(--accent-rgb), .45); box-shadow: 0 0 0 1px var(--accent-soft), var(--shadow); }
 .window.focused::before { background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .5), transparent); }
 .window.minimized { display: none; }
@@ -998,13 +1061,21 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: 
 .dh-close svg { width: 13px; height: 13px; }
 .dh-close:hover { background: rgba(var(--wp-light-rgb, 91, 124, 255), .12); color: var(--ink); }
 
-/* On a phone the dock is gone and the sentence needs the room, so it stops
-   pretending to be a single line and simply wraps. */
+/* ── ПОДСКАЗКА НА ТЕЛЕФОНЕ: ШИРЕ, А НЕ ВЫШЕ (v48) ────────────────────────
+   Основатель, по снимку: «подсказки пусть будут более широкие, чем такие
+   высокие как сейчас. занимают слишком много экрана в высоту». Блок без
+   заданной ширины сжимался к самому узкому слову и вытягивал фразу в
+   столбик на пять строк. Теперь он берёт ВСЮ ширину, какая есть, — и та же
+   фраза ложится в одну-две строки. Комментарий выше о «доке, которого нет»
+   устарел ещё в D-061: док на телефоне есть, подсказка встаёт над ним по
+   его настоящей высоте, как и на широком экране. */
 @media (max-width: 620px) {
-  /* no dock down here, so the hint takes the space the dock was clearing —
-     but it still has to stay above the quick-actions button. */
-  #sbDeskHint { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 58px); max-width: calc(100vw - 24px); }
-  .dh-text { white-space: normal; }
+  #sbDeskHint {
+    bottom: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 62px) + 12px);
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+  }
+  .dh-text { white-space: normal; font-size: 12px; line-height: 1.4; }
 }
 
 /* =================================================================== dock §4.1 */
@@ -1027,18 +1098,33 @@ html.dock-away #dock:hover .dock-tile, html.dock-away #dock:focus-within .dock-t
 html.dock-away #dock:hover .dock-label, html.dock-away #dock:focus-within .dock-label { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { html.dock-away #dock { transform: translate(-50%, 0); } }
 .dock-shelf {
-  display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px;
+  --dock-gap: 8px;
+  display: flex; align-items: flex-end; gap: var(--dock-gap); padding: 8px 10px;
   border-radius: 22px; background: var(--glass); border: 1px solid var(--line);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.5); box-shadow: var(--shadow-soft);
 }
-#dockInner { display: flex; align-items: flex-end; gap: 8px; }
+#dockInner { display: flex; align-items: flex-end; gap: var(--dock-gap); }
 .dock-item {
+  /* padding: 0 — не украшение, а условие. Плитка это <button>, и общий сброс
+     кнопок даёт ей поля по 6 px. При box-sizing: border-box закрытое
+     приложение с width: 0 всё равно занимало 12 px: рамка не может стать уже
+     собственных полей. Десять закрытых приложений — 120 px пустой полки. */
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
-  width: 46px; transform: scale(var(--mag, 1)); transform-origin: bottom center;
+  width: 46px; padding: 0; transform: scale(var(--mag, 1)); transform-origin: bottom center;
   transition: width .28s var(--ease), opacity .22s ease, margin .28s var(--ease), transform .12s linear;
 }
-/* only running apps are visible — the CTA is exempt (FIX §4.1) */
-#dockInner .dock-item:not(.running) { width: 0; opacity: 0; pointer-events: none; margin-left: -4px; overflow: hidden; }
+/* ЗАКРЫТОЕ ПРИЛОЖЕНИЕ ЗАНИМАЕТ РОВНО НОЛЬ (v47.1).
+   Ширину ему обнуляли, а ПРОМЕЖУТОК между ним и соседом — нет: отрицательное
+   поле было выставлено «на глаз» в -4px при промежутке в 8px, и каждое
+   закрытое приложение оставляло после себя 4 пустых пикселя. Десять
+   приложений — сорок пикселей пустой полки, а на телефоне, где промежуток
+   меньше, полка раздувалась ещё заметнее: 134 px пустоты при одной плитке.
+   Теперь поле считается ОТ САМОГО ПРОМЕЖУТКА и сходится в ноль при любом
+   его значении — менять промежуток можно, не трогая эту строку. */
+#dockInner .dock-item:not(.running) {
+  width: 0; min-width: 0; padding: 0; opacity: 0; pointer-events: none; overflow: hidden;
+  margin-left: calc(var(--dock-gap) * -1);
+}
 .dock-cta { width: auto !important; opacity: 1 !important; pointer-events: auto !important; flex-direction: row; gap: 8px; text-decoration: none; color: var(--ink); padding-left: 4px; }
 .dock-cta-label { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
 .dock-tile {
@@ -1054,6 +1140,15 @@ html.dock-away #dock:hover .dock-label, html.dock-away #dock:focus-within .dock-
 .dock-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); opacity: 0; }
 .dock-item.running .dock-dot { opacity: 1; }
 .dock-item.active-app .dock-dot { background: var(--accent); }
+/* Свёрнутое окно — точка полая: приложение живо, но его не видно. Закрытое —
+   точки нет вовсе. Три состояния в одном месте (v47). */
+.dock-item.running.is-min .dock-dot {
+  background: transparent; box-shadow: inset 0 0 0 1px var(--ink-3); opacity: .9;
+}
+.dock-item.active-app.is-min .dock-dot { box-shadow: inset 0 0 0 1px var(--accent); }
+/* То же самое в списке открытых окон наверху: приглушение уже было, но без
+   имени состояния. Теперь у него есть и знак. */
+.seq-item.dim::after { content: "·"; margin-left: 2px; opacity: .8; }
 .dock-item.bounce .dock-tile { animation: dockBounce .6s var(--spring); }
 .dock-item.catch .dock-tile { transform: scale(.86); }
 .dock-item.release .dock-tile { transform: scale(1.06); }
@@ -1064,7 +1159,11 @@ html.dock-away #dock:hover .dock-label, html.dock-away #dock:focus-within .dock-
   display: grid; place-items: center;
 }
 #dockHint { font-size: 11.5px; color: var(--ink-3); }
+/* Круглая кнопка — деталь рабочего стола. Открытое окно её убирает: класс
+   ставит updateAppSequence() в os/core/shell.js. */
+html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translateY(8px); }
 #sbFab {
+  transition: opacity .22s ease, transform .22s ease;
   position: fixed; right: 18px; bottom: 96px; z-index: 56; width: 42px; height: 42px; border-radius: 50%;
   display: grid; place-items: center; font-size: 21px; line-height: 1; color: var(--ink);
   background: var(--glass-2); border: 1px solid var(--line); backdrop-filter: blur(var(--glass-blur));
@@ -1088,6 +1187,9 @@ html.dock-away #dock:hover .dock-label, html.dock-away #dock:focus-within .dock-
   opacity: 0; transform: translateX(14px); transition: opacity .22s ease, transform .22s var(--ease);
 }
 .toast.in { opacity: 1; transform: none; }
+/* Извещений на экране не больше трёх: четвёртое не информирует, а заслоняет.
+   Правило стоит в вёрстке, а не в скрипте, — оно про место, а не про смысл. */
+#toastLayer .toast:nth-child(n + 4) { display: none; }
 .toast-icon { color: var(--ink-2); }
 .toast-icon svg { width: 18px; height: 18px; }
 .toast-title { font-size: 13px; font-weight: 600; }
@@ -1097,6 +1199,21 @@ html.dock-away #dock:hover .dock-label, html.dock-away #dock:focus-within .dock-
   font-size: 12px; background: var(--accent-soft); border: 1px solid var(--accent-ring); color: var(--ink);
 }
 .toast-warn { border-color: rgba(255, 214, 10, .45); }
+
+/* ── ТУРБО (v47.3) ────────────────────────────────────────────────────────
+   Кнопка в панели показывает состояние собой: включённая горит акцентом.
+   Класс sb-turbo на документе добирает то, до чего не дотягиваются
+   data-motion и data-transparency: остаточные переходы и тени. Правила
+   намеренно короткие — Турбо не «другая тема», а снятая цена. */
+.turbo-btn svg { width: 15px; height: 15px; }
+.turbo-btn.on { color: var(--accent); }
+.turbo-btn.on svg { fill: var(--accent); stroke: var(--accent); }
+html.sb-turbo * { transition-duration: .06s !important; animation-duration: .001ms !important; }
+html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon-tile { box-shadow: none; }
+/* Правило с ID сильнее классового .retired — отставка объявляется тем же
+   весом, иначе лампочка в ЦУ пережила бы собственную отставку. */
+#sbControlCenter .tip-bulb { display: flex; align-items: center; }
+#sbControlCenter .tip-bulb.retired { display: none; }
 
 /* ================================================================= panels §6 */
 .panel-overlay {
@@ -1211,8 +1328,22 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
 }
 
 /* ============================================================= responsive §14 */
+/* ── ОКНО ВО ВЕСЬ ЭКРАН НЕ РАЗМЫВАЕТ НИЧЕГО (v47.1, цикл скорости №1) ─────
+   До 860 px окно занимает экран целиком: ни скругления, ни тени, ни единого
+   пикселя обоев по краям. Смотреть сквозь него не на что — а backdrop-filter
+   продолжал работать и заставлял композитор пересобирать всю подложку на
+   каждом кадре открытия и переноса. Это самая дорогая деталь на телефоне и
+   единственная здесь, которую НЕ ВИДНО.
+   Подложка становится плотной. Разницы на экране нет ровно никакой —
+   измерено: закон fps-check считает долгие кадры на открытии окна при
+   вчетверо замедленном процессоре. */
 @media (max-width: 860px) {
-  .window { border-radius: 0; box-shadow: none; }
+  .window {
+    border-radius: 0; box-shadow: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    background: var(--bg-elev, #14100f);
+  }
+  .window::before { display: none; }
   .resize-handle { display: none; }
 }
 /* Icon step-down (§4.2, the "681 px lesson"): the small-icon regime must extend
@@ -1222,12 +1353,15 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
    It moved from 811 when Experimental brought the count from nine to ten:
    the number is derived from the icon count, not a magic constant.
    The JS threshold in core/shell.js must stay in lockstep with this number. */
-@media (max-width: 897px) {
-  .desk-icon { width: 68px; height: 80px; }
-  .icon-tile { width: 40px; height: 40px; border-radius: 12px; }
-  .icon-tile svg { width: 19px; height: 19px; }
-  .icon-label { font-size: 10.5px; }
-}
+/* Мелкие значки включает НЕ ширина экрана, а расчёт: помещается ли целый ряд
+   крупных при нынешнем числе приложений. Класс ставит layoutIcons() в
+   os/core/shell.js — там же и формула. Раньше здесь стояло число 897,
+   посчитанное под тогдашнее число значков, и каждое новое приложение молча
+   расходилось с ним (v47). */
+html.icons-small .desk-icon { width: 68px; height: 80px; }
+html.icons-small .icon-tile { width: 40px; height: 40px; border-radius: 12px; }
+html.icons-small .icon-tile svg { width: 19px; height: 19px; }
+html.icons-small .icon-label { font-size: 10.5px; }
 @media (max-width: 680px) {
   #sbWidgetLayer { display: none; }
   .window { border-radius: 16px; }
@@ -1235,7 +1369,27 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
 @media (max-width: 640px) {
 }
 @media (max-width: 620px) {
-  #dock, #dockHint { display: none; }
+  /* ── ДОК НА ТЕЛЕФОНЕ ЕСТЬ. ОН ТОЛЬКО ДРУГОЙ (v47.1) ─────────────────────
+     Здесь стояло `#dock { display: none }`, и из-за этой строки основатель
+     трижды писал одно и то же: свёрнутое окно исчезало без следа. Совет
+     дважды отвечал не тем органом — сперва метка в доке, которого на
+     телефоне нет; потом точка в 4 px на значке стола, которая говорит
+     правду, но её не видно. Основатель назвал орган сам: «я про док панель».
+
+     Док возвращается — но не пусковой полкой. Пусковая полка на телефоне не
+     нужна: ею служит сам стол, значки на нём и так все на виду. Здесь док
+     показывает РОВНО ОДНО — что открыто и что свёрнуто. Поэтому уходят
+     подпись действия и подсказка про ⌘K (клавиш тут нет), а плитки жмутся
+     до размера, который ещё берётся пальцем. Три состояния точки остаются:
+     нет — закрыто, полная — на экране, полая — ждёт. */
+  #dockHint { display: none; }
+  .dock-cta-label { display: none; }
+  #dock { bottom: max(10px, env(safe-area-inset-bottom)); }
+  .dock-shelf { --dock-gap: 6px; padding: 6px 8px; border-radius: 18px; }
+  .dock-item { width: 40px; }
+  .dock-cta { padding-left: 0; }
+  .dock-tile { width: 38px; height: 38px; border-radius: 12px; }
+  .dock-tile svg { width: 18px; height: 18px; }
   .id-name { display: none; }
   .tb-identity::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: block; }
   #sbFab { bottom: 22px; }
@@ -1249,8 +1403,56 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
   .sb-lock { display: none; }
   .sb-min { display: block; width: 17px; height: 17px; }
 }
+/* ── ИЗВЕЩЕНИЕ НЕ НАКРЫВАЕТ ПОЛЕ ЗНАЧКОВ (v47.1) ─────────────────────────
+   На широком экране извещения живут в правом верхнем углу — там пусто. На
+   телефоне в правом верхнем углу стоят ЗНАЧКИ, и два извещения подряд
+   накрывали всю сетку приложений: сквозь стекло проступали подписи, и
+   нельзя было прочесть ни извещение, ни стол.
+   Здесь они уходят вниз, к доку — туда, где на телефоне и так ничего нет, —
+   и приходят снизу вверх, а не сбоку.
+   Стекло на них заменено плотной поверхностью. Это одновременно и читаемость
+   (текст стола больше не проступает), и скорость: backdrop-filter — самая
+   дорогая деталь на слабом устройстве, а извещение живёт пять секунд и
+   перерисовывается всё это время. Плотная подложка не стоит ничего. */
 @media (max-width: 620px) {
-  #toastLayer { top: calc(var(--topbar-h) + 52px); }
+  /* Высота полки не постоянна — её публикует shell.js в --dock-h. Извещения
+     встают НАД ней по этому числу, а не по угаданному отступу. */
+  #toastLayer {
+    top: auto; bottom: calc(max(10px, env(safe-area-inset-bottom)) + var(--dock-h, 62px) + 10px);
+    left: 10px; right: 10px; width: auto; gap: 6px; flex-direction: column-reverse;
+  }
+  .toast {
+    padding: 10px 12px; gap: 9px; border-radius: 14px;
+    background: rgba(24, 20, 19, .94); backdrop-filter: none;
+    transform: translateY(10px);
+  }
+  .toast-title { font-size: 12.5px; }
+  .toast-text { font-size: 11.5px; }
+  .toast-action { margin-top: 6px; padding: 4px 10px; }
+  /* Круглая кнопка остаётся у правого края: полка стоит по центру и узкая,
+     угол свободен. Спорить им не за что. */
+
+  /* ── ПОЛКА ОСТАЁТСЯ ВИДНОЙ И ПРИ ОТКРЫТОМ ОКНЕ (v47.3) ────────────────
+     В v47.1 Совет прятал полку, пока на экране есть окно: на телефоне окно
+     занимает экран целиком, и полка казалась помехой. Основатель поправил:
+     «док пропадает при открывании приложения» — и это правильно, потому
+     что полку он просил ровно ради ответа на вопрос «что сейчас открыто».
+     Ответ, исчезающий при первом же открытом приложении, отвечает не тогда,
+     когда спрашивают.
+     Настоящая задача была не «спрятать полку», а «не дать ей закрыть низ
+     окна» — и она решена там, где ей место: содержимое окна на узком экране
+     получает снизу запас ровно в высоту полки (см. .window-body ниже).
+     Полка плывёт над содержимым, но ни одна управляющая деталь под ней не
+     остаётся — это и стережёт dock-clearance-check.
+     Пустая полка по-прежнему не показывается: единственная кнопка без
+     подписи — загадка, а не приглашение. */
+  html.dock-empty #dock {
+    opacity: 0; transform: translate(-50%, 14px); pointer-events: none;
+  }
+  /* Запаса-подкладки здесь больше нет (v48): он был мёртв — createWindow
+     ставит окну инлайновый padding:0, который бьёт любой класс. Решение
+     переехало в геометрию: компактное окно заканчивается НАД полкой
+     (compactRect в shell.js), и подкладывать нечего. */
 }
 @media (max-width: 420px) {
   #sbControlCenter { right: 6px; left: 6px; width: auto; }
@@ -1258,3 +1460,94 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
 html.is-touch input, html.is-touch textarea, html.is-touch select { font-size: 16px; }
 html.is-touch .icon-spark, html.is-touch .icon-capsule { display: none; }
 html.is-compact .titlebar { cursor: default; }
+
+/* ── расшифровка имени (D-049) ───────────────────────────────────────────
+   «sys.baby — you and your system, baby». Строка стоит НАД заголовком входа,
+   набрана моноширинным и приглушена: она объясняет имя, а не продаёт. Не
+   переводится намеренно — расшифровывается английское имя, ровно как строка
+   BABY на витрине. Место выбрано по факту, а не по вкусу: занавес загрузки
+   (#sbBoot) скрыт стилями, и строка в нём не была бы видна никому. */
+.login-decoding {
+  margin: 0 0 10px; font-family: var(--mono, ui-monospace, Menlo, monospace);
+  font-size: 11.5px; letter-spacing: .04em; color: var(--ink-3); text-align: center;
+}
+
+/* ── Язык: один код, который и есть кнопка (v47, вторая редакция) ─────────
+   Первая редакция держала в панели все четыре кода и вытеснила часы за край
+   экрана. Здесь один код — тот, на котором система говорит сейчас: ширина в
+   две буквы, правый угол. Пунктир под кодом — общий знак «это меняется»;
+   долгое нажатие раскрывает остальные три. */
+.tb-langs { position: relative; display: flex; align-items: center; }
+.tb-lang-now {
+  padding: 3px 5px; border: 0; background: none; cursor: pointer;
+  font-family: var(--mono); font-size: 11px; letter-spacing: .06em; line-height: 1;
+  color: var(--ink-2, var(--ink)); border-bottom: 1px dotted currentColor;
+  border-radius: 4px 4px 0 0;
+  transition: color .16s ease, background .16s ease;
+}
+.tb-lang-now:hover { color: var(--ink); background: var(--glass-2); }
+.tb-lang-now.is-partial { opacity: .78; }
+
+.tb-lang-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 80;
+  min-width: 132px; padding: 5px; border-radius: 12px;
+  background: var(--glass); border: 1px solid var(--line);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 1px;
+}
+.tb-lang-item {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  padding: 7px 9px; border: 0; border-radius: 8px; background: none; cursor: pointer;
+  color: var(--ink-2, var(--ink)); text-align: left; font-size: 12.5px; line-height: 1;
+}
+.tb-lang-item:hover { background: var(--glass-2); color: var(--ink); }
+.tb-lang-item.is-active { color: var(--ink); }
+.tb-lang-item.is-active .tb-lang-code { color: var(--accent); }
+.tb-lang-code { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; min-width: 20px; }
+
+/* ── ЗНАЧОК СИСТЕМЫ — ВТОРАЯ РУКА «УБРАТЬ ВСЁ» (v47.1) ────────────────────
+   Голосование выбрало пустое место стола, основатель поправил: выбирать
+   надо было ГИБРИД. Пустое место — жест для того, кто систему уже знает;
+   значок в углу — единственная точка, которую видно всегда, даже когда стол
+   накрыт окном целиком и пустого места на нём физически нет. Одна и та же
+   дверь (sbMinimizeAll), два входа.
+   Раз значок нажимается — он обязан быть кнопкой: не ради вида, а ради
+   клавиатуры и пальца. Поля добираются до 26 px по вертикали, чтобы в него
+   можно было попасть, не целясь. */
+button.tb-mark {
+  border: 0; background: none; padding: 4px 2px; margin: 0; cursor: pointer;
+  display: inline-flex; align-items: center; min-width: 26px; min-height: 26px;
+  border-radius: 8px; color: inherit; font: inherit;
+  transition: background .16s ease, transform .12s var(--ease);
+}
+button.tb-mark:hover { background: var(--glass); }
+button.tb-mark:active { transform: scale(.94); }
+button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tb-lang-item.is-partial .tb-lang-name::after { content: " ·"; opacity: .6; }
+
+
+/* ── Состояние приложения на значке стола (v47) ───────────────────────────
+   На телефоне дока нет, и значки стола — единственное место, где видно,
+   что приложение живо. Три ответа в одной точке: нет её — закрыто, полная —
+   окно на экране, полая — свёрнуто и ждёт нажатия. */
+/* ЗДЕСЬ СТОЯЛО `.desk-icon { position: relative }` — И ЭТО БЫЛА ОШИБКА.
+   Правило приписали привычным жестом, чтобы точке ниже было к чему
+   привязаться. Оно легло НИЖЕ объявления `position: absolute` (см. «desktop
+   icons» выше) и с той же силой — то есть отменило его. Значок после этого
+   занимал место в потоке И сдвигался на свои left/top поверх него:
+   координата удваивалась (значки выстраивались лесенкой вниз-вправо),
+   высота потока росла (стол начинал прокручиваться, верхняя панель уезжала
+   за край), а offsetLeft при захвате возвращал уже сдвинутое значение — и
+   первый кадр переноса отбрасывал значок на эту разницу.
+   `absolute` — тоже положение, и якорем для `::after` служит не хуже.
+   Правило не восстановлено намеренно; доказано в desktop-drag-check §4. */
+.desk-icon::after {
+  content: ""; position: absolute; left: 50%; bottom: 2px; width: 4px; height: 4px;
+  margin-left: -2px; border-radius: 50%; background: var(--ink-3);
+  opacity: 0; transition: opacity .18s ease, box-shadow .18s ease;
+  pointer-events: none;
+}
+.desk-icon.running::after { opacity: 1; }
+.desk-icon.running.is-min::after { background: transparent; box-shadow: inset 0 0 0 1px var(--ink-3); }
+.desk-icon.active-app::after { background: var(--accent); }
+.desk-icon.active-app.is-min::after { background: transparent; box-shadow: inset 0 0 0 1px var(--accent); }

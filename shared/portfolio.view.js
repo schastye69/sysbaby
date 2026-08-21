@@ -26,11 +26,20 @@
     ee: { badge: "demonstratsioon peatatud",
           note: "Süsteem ise töötab kliendi juures. Selle avalik demonstratsioon on hetkel peatatud — küsige ja me tutvustame seda teile." }
   };
-  function offline() { return OFFLINE[osLang()] || OFFLINE.en; }
+  function offline() { return OFFLINE[lang()] || OFFLINE.en; }
 
   /* Строки живут в STRINGS ядра (core/topbar.js). Здесь только ключи —
      иначе смена языка их не увидит. */
-  function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
+  /* Строки берутся из ОБЩЕГО словаря (shared/portfolio.strings.js): портфолио
+     показывается и в системе, и на витрине, а витрина словаря оболочки не
+     видит. Порядок поиска — сначала оболочка, потом общий файл: уточнённый
+     перевод в системе должен побеждать. */
+  function t(key, vars) {
+    if (typeof window.sbPortfolioText === "function") {
+      return window.sbPortfolioText(key, lang());
+    }
+    return typeof window.sbT === "function" ? window.sbT(key, vars) : key;
+  }
 
   /* Ярлыки стека приходят из shared/portfolio.data.js, а он ГЕНЕРИРУЕТСЯ и
      руками не правится, поэтому перевода в самих данных нет. Список закрытый
@@ -54,6 +63,44 @@
 
   function bodyOf(win) { return win && win.el ? win.el.querySelector(".window-body") : null; }
 
+  /* ── ОДИН РЕНДЕРЕР, ДВЕ ПОВЕРХНОСТИ (v47.1) ─────────────────────────────
+   *
+   * Основатель: «в раздел selected work на лендинге нужно уместить
+   * информацию из приложения портфолио, так как оно не должно быть в OS,
+   * портфолио должно быть в приложении build». Голосование выбрало общий
+   * модуль отрисовки — не перенос текста, а перенос ТОЧКИ ВЫЗОВА.
+   *
+   * Различий между поверхностями ровно три, и все три — по существу, а не
+   * по вкусу:
+   *   1. АДРЕСА. Пути записаны от корня ОС («../cases/…»), потому что первым
+   *      потребителем было окно внутри os/. Витрина лежит этажом выше —
+   *      ведущие «../» снимаются здесь, у потребителя, источник не трогаем.
+   *   2. ПЕРЕДАЧА В ДРУГИЕ ПРИЛОЖЕНИЯ. «Бриф» открывает Файлы, «всё о
+   *      клиенте» — Поиск. На витрине этих приложений нет; кнопка, которая
+   *      никуда не ведёт, хуже отсутствующей, поэтому её там нет.
+   *   3. ВСТУПЛЕНИЕ. У витрины свой раздел со своим вступлением о
+   *      конфиденциальности; второе вступление подряд — это не полнота.
+   */
+  var SURFACE = "os";
+  /* Язык у поверхностей разный ПО ИСТОЧНИКУ, а не по значению: система
+     объявляет window.sbLang, витрина держит язык в своём state и передаёт
+     его сюда явно при каждом вызове. Модуль сам никуда не подглядывает —
+     иначе витрина по-русски рисовала бы карточки по-английски, потому что
+     window.sbLang там не существует (это и случилось: поймал
+     pipeline-check на ru и ee). */
+  var LANG = null;
+  function lang() {
+    if (LANG) return LANG;
+    if (typeof window.sbLang === "function") return window.sbLang();
+    return osLang();
+  }
+  function onBuild() { return SURFACE === "build"; }
+  function pathFor(value) {
+    if (!value) return value;
+    if (/^https?:\/\//.test(value)) return value;
+    return onBuild() ? String(value).replace(/^(\.\.\/)+/, "") : value;
+  }
+
   /* Raw localStorage on purpose: shared with the landing page, never
    * profile-namespaced. */
   function osLang() {
@@ -64,8 +111,8 @@
   }
 
   function systemLang() {
-    var lang = osLang();
-    return lang === "ee" ? "et" : lang;
+    var l = lang();
+    return l === "ee" ? "et" : l;
   }
 
   function entries() {
@@ -75,7 +122,7 @@
 
   function viewOf(entry) {
     if (typeof window.sbPortfolioView !== "function") return null;
-    try { return window.sbPortfolioView(entry, window.sbLang ? window.sbLang() : "en"); } catch (err) { console.error("[portfolio] view helper failed", err); return null; }
+    try { return window.sbPortfolioView(entry, lang()); } catch (err) { console.error("[portfolio] view helper failed", err); return null; }
   }
 
   /* Work in approval, said the way everything else here is said: the state it
@@ -86,7 +133,7 @@
   function pipelineMarkup() {
     if (typeof window.sbPipelineView !== "function") return "";
     var p;
-    try { p = window.sbPipelineView(window.sbLang ? window.sbLang() : "en"); }
+    try { p = window.sbPipelineView(lang()); }
     catch (err) { console.error("[portfolio] pipeline view failed", err); return ""; }
     if (!p) return "";
     /* One row per state, strongest first. They are deliberately not merged
@@ -108,7 +155,7 @@
 
   function previewSrc(view) {
     if (!view.explorePath) return null;
-    var src = view.explorePath;
+    var src = pathFor(view.explorePath);
     var lang = systemLang();
     if (view.localeParam && (view.systemLanguages || []).indexOf(lang) !== -1) {
       src += (src.indexOf("?") === -1 ? "?" : "&") + view.localeParam + "=" + encodeURIComponent(lang);
@@ -159,8 +206,10 @@
       : "";
 
     var explore;
-    if (view.nameState === "named") {
+    if (view.nameState === "named" && !onBuild()) {
       explore = '<button type="button" class="pf-btn" data-search="' + index + '">' + esc(t("pf.everything")) + "</button>";
+    } else if (view.nameState === "named") {
+      explore = "";
     } else if (view.nameState === "own-build") {
       explore = '<span class="pf-note" title="' + esc(t("pf.name.ownBuildTitle")) + '">' + esc(t("pf.name.ownBuild")) + "</span>";
     } else if (view.nameState === "withheld") {
@@ -194,21 +243,33 @@
       '<h4 class="pf-sub">' + esc(t("pf.sub.results")) + "</h4>" + resultsMarkup(view) +
       '<div class="pf-primary">' +
         (view.explorePath
-          ? '<button type="button" class="pf-btn primary" data-open="' + index + '">' + esc(t("pf.open")) + "</button>" +
+          ? (onBuild()
+              /* На витрине окон нет — открывать нечем, поэтому это ссылка на
+                 саму работающую систему, а не кнопка в приложение. */
+              ? '<a class="pf-btn primary" href="' + esc(pathFor(view.explorePath)) + '" target="_blank" rel="noopener">' + esc(t("pf.open")) + "</a>"
+              : '<button type="button" class="pf-btn primary" data-open="' + index + '">' + esc(t("pf.open")) + "</button>") +
             '<p class="pf-offline-note">' + esc(offline().note) + "</p>"
           : '<span class="pf-note">' + esc(t("pf.onPremises")) + "</span>") +
       "</div>" +
-      '<footer class="pf-footer">' +
-        '<span class="pf-footer-label">' + esc(t("pf.explore")) + "</span>" +
-        '<button type="button" class="pf-btn" data-brief="' + index + '">' + esc(t("pf.brief")) + "</button>" +
-        explore +
-      "</footer>" +
+      (onBuild() && !explore
+        ? ""
+        : '<footer class="pf-footer">' +
+            '<span class="pf-footer-label">' + esc(t("pf.explore")) + "</span>" +
+            (onBuild() ? "" : '<button type="button" class="pf-btn" data-brief="' + index + '">' + esc(t("pf.brief")) + "</button>") +
+            explore +
+          "</footer>") +
     "</article>";
   }
 
   function render(win) {
     var host = bodyOf(win);
     if (!host) return;
+    paint(host, "os");
+  }
+
+  function paint(host, surface, langCode) {
+    SURFACE = surface === "build" ? "build" : "os";
+    LANG = langCode || null;
 
     var list = entries();
     var views = list.map(viewOf);
@@ -227,7 +288,7 @@
 
     host.innerHTML =
       '<div class="app-portfolio">' +
-        '<p class="pf-intro">' + esc(t("pf.intro")) + "</p>" +
+        (onBuild() ? "" : '<p class="pf-intro">' + esc(t("pf.intro")) + "</p>") +
         (hasReplay
           ? '<button type="button" class="pf-replay" id="pfReplay">' +
               '<span class="pf-replay-title">' + esc(t("pf.replay")) + "</span>" +
@@ -238,14 +299,14 @@
         pipelineMarkup() +
         '<div class="pf-cta">' +
           "<p>" + esc(t("pf.cta")) + "</p>" +
-          '<a class="pf-cta-link" href="../?contact=1">' + esc(t("pf.ctaLink")) + "</a>" +
+          '<a class="pf-cta-link" href="' + esc(pathFor("../?contact=1")) + '">' + esc(t("pf.ctaLink")) + "</a>" +
         "</div>" +
       "</div>";
 
-    wire(win, host, list, views);
+    wire(host, list, views);
   }
 
-  function wire(win, host, list, views) {
+  function wire(host, list, views) {
     /* A cross-origin frame will not tell us whether it loaded, so the check is
        a fetch of the same URL rather than a listener on the iframe: if the
        system answers, the card stays live; if it 404s or the host is gone, the
@@ -323,25 +384,46 @@
     });
   }
 
-  /* ------------------------------------------------------- registration */
+  /* ── ОБЩАЯ ТОЧКА ВЫЗОВА (v47) ───────────────────────────────────────────
+   *
+   * Один и тот же рендерер рисует портфолио и в окне системы, и в разделе
+   * «Selected Work» на витрине. Это второй шаг переезда портфолио в build
+   * (D-054): переносится не текст, а точка вызова. Второго рендерера той же
+   * копии в проекте нет и не будет — этим он уже платил дважды.
+   *
+   * Функция принимает ЭЛЕМЕНТ, а не окно: у витрины окон нет.
+   */
+  window.sbRenderPortfolioInto = function (host, surface, langCode) {
+    if (!host) return false;
+    paint(host, surface || "build", langCode || null);
+    return true;
+  };
 
-  if (typeof window.registerApp === "function") {
-    window.registerApp("portfolio", {
-      title: "Portfolio",
-      i18n: {
-        ru: { title: "Портфолио", label: "Портфолио" },
-        ee: { title: "Portfoolio", label: "Portfoolio" },
-      },
-      label: "Portfolio",
-      color: "linear-gradient(160deg,#5f8cff 0%,#2f6bff 52%,#1b3fd6 100%)",
-      icon: ICON,
-      size: { w: 540, h: 640 },
-      deskPos: { x: 180, y: 200 },
-      /* Nothing in this window is typed into, so redrawing it on a language
-         change costs the visitor nothing and is the only way the case prose
-         follows the language the rest of the desktop just switched to. */
-      retranslate: true,
-      render: render
-    });
-  }
+  /* ── ПРИЛОЖЕНИЯ БОЛЬШЕ НЕТ. РЕНДЕРЕР ОСТАЛСЯ (v47.3) ────────────────────
+   *
+   * Здесь стоял window.registerApp("portfolio", …) — портфолио было окном
+   * рабочего стола. Основатель: «в раздел selected work на лендинге нужно
+   * уместить информацию из приложения портфолио, так как оно не должно быть
+   * в OS, портфолио должно быть в приложении build», и затем, когда переезд
+   * был готов: «Приложение портфолио необходимо убрать».
+   *
+   * Порядок был объявлен заранее и соблюдён — иначе снятие ломает всё, что
+   * на приложение опиралось (первая попытка 18.08 уронила десять наборов
+   * законов именно потому, что порядок был обратным):
+   *   1. строки       → shared/portfolio.strings.js   (сделано)
+   *   2. рендерер     → этот файл, общий для двух поверхностей (сделано)
+   *   3. снятие окна  → здесь, последним шагом.
+   *
+   * Что осталось и почему. Файл больше не заводит окно, но остаётся
+   * ЕДИНСТВЕННЫМ рендерером портфолио: его зовёт витрина через
+   * window.sbRenderPortfolioInto (раздел «Избранные проекты»). Работы никуда
+   * не делись — у них сменилось место, а не существование. Render(win)
+   * оставлен: он ничего не стоит, пока его никто не зовёт, и он — готовая
+   * дверь, если однажды понадобится показать портфолио окном снова.
+   *
+   * Все дороги, которые вели в это окно, переадресованы в build на раздел
+   * «Избранные проекты» (window.sbOpenBuildAt). Их девять, они перечислены
+   * в законе tools/portfolio-retired-check.mjs, и закон проверяет каждую.
+   */
+  window.sbPortfolioRender = render;
 })();

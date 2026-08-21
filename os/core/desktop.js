@@ -530,11 +530,31 @@
       removeNote(el, rec.id, true);
     });
 
-    /* drag with collision guard */
+    /* ЗАМЕТКА ПЕРЕТАСКИВАЕТСЯ КАК ЗНАЧОК (v47).
+     *
+     * Прежде перетаскивание начиналось где угодно, КРОМЕ текста, — а текст
+     * занимает почти всю заметку. Ухватить её было не за что, и основатель
+     * написал прямо: заметки не перемещаются.
+     *
+     * Правило теперь такое же, как у значков приложений и как у виджетов на
+     * телефоне: пока заметку НЕ ПРАВЯТ, вся она — ручка. Нажатие без движения
+     * ставит курсор и открывает правку; нажатие с движением двигает. Когда
+     * заметка в правке, она не двигается вовсе: там человек работает с
+     * текстом, и увести из-под него лист было бы худшим из решений.
+     */
     var drag = null;
     el.addEventListener("pointerdown", function (ev) {
-      if (ev.target && ev.target.closest(".note-text, .note-del, .note-chip")) return;
-      drag = { sx: ev.clientX, sy: ev.clientY, ox: el.offsetLeft, oy: el.offsetTop, moved: false };
+      if (ev.target && ev.target.closest(".note-del, .note-chip")) return;
+      if (el.classList.contains("focused")) return;      /* правят — не двигаем */
+      var onText = !!(ev.target && ev.target.closest(".note-text"));
+      drag = {
+        sx: ev.clientX, sy: ev.clientY,
+        ox: el.offsetLeft, oy: el.offsetTop,
+        moved: false, onText: onText
+      };
+      /* Текст не должен перехватить жест: без этого браузер ставит курсор и
+         начинает выделение прежде, чем станет ясно, тащат заметку или нет. */
+      if (onText) { try { ev.preventDefault(); } catch (e) { /* ignore */ } }
       try { el.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
     });
     el.addEventListener("pointermove", function (ev) {
@@ -554,8 +574,14 @@
     function endDrag() {
       if (!drag) return;
       var moved = drag.moved;
+      var wasOnText = drag.onText;
       drag = null;
       el.classList.remove("dragging");
+      if (!moved && wasOnText) {
+        /* Нажали и не повели — значит хотели писать. */
+        try { ta.focus(); } catch (e) { /* ignore */ }
+        return;
+      }
       if (moved) {
         var spot = noteSpotNear(el.offsetLeft, el.offsetTop, el.offsetWidth, el.offsetHeight, el);
         if (spot.x !== el.offsetLeft || spot.y !== el.offsetTop) {
@@ -585,9 +611,41 @@
     });
   }
 
+  /* РАЗМЕР ЗАМЕТКИ ИДЁТ ЗА ТЕКСТОМ С ПЕРВОГО СЛОВА (v47).
+   *
+   * Прежде за текстом шла только высота, а ширина стояла намертво — 196px из
+   * стилей. Слово «Hi» получало лист размером с ладонь, почти пустой, и
+   * основатель сказал об этом так: подстраивается, но не с первого слова.
+   *
+   * Теперь ширина считается по самой длинной строке, измеренной ТЕМ ЖЕ
+   * шрифтом, которым текст нарисован: короткая заметка становится маленькой
+   * сразу, длинная растёт до предела и дальше переносит строки. Измеряется
+   * настоящим замером в холсте, а не оценкой «примерно семь пикселей на
+   * букву»: буквы разной ширины, а кириллица шире латиницы.
+   */
+  var MEASURE = null;
+  function textWidth(ta, line) {
+    if (!MEASURE) MEASURE = doc.createElement("canvas").getContext("2d");
+    var cs = window.getComputedStyle(ta);
+    MEASURE.font = cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + " / " + cs.lineHeight + " " + cs.fontFamily;
+    return MEASURE.measureText(line).width;
+  }
+
+  var NOTE_MIN_W = 118, NOTE_MAX_W = 320;
+
   function autoGrow(ta) {
+    var el = ta.closest ? ta.closest(".sticky-note") : null;
+    if (el) {
+      var lines = String(ta.value || ta.placeholder || "").split("\n");
+      var widest = 0, i;
+      for (i = 0; i < lines.length; i++) widest = Math.max(widest, textWidth(ta, lines[i]));
+      var pad = el.offsetWidth - ta.offsetWidth + 2;           /* поля самой заметки */
+      if (!(pad > 0)) pad = 24;
+      var want = Math.ceil(widest) + pad + 18;                  /* 18 — место под крестик */
+      el.style.width = Math.round(Math.min(NOTE_MAX_W, Math.max(NOTE_MIN_W, want))) + "px";
+    }
     ta.style.height = "auto";
-    ta.style.height = Math.min(260, Math.max(52, ta.scrollHeight)) + "px";
+    ta.style.height = Math.min(260, Math.max(20, ta.scrollHeight)) + "px";
   }
 
   function keyboardClamp(el) {
@@ -670,24 +728,88 @@
     setTimeout(closeInvite, isTouch() ? 5000 : 4200);
   }
 
+  /* ── ПУСТОЕ МЕСТО СТОЛА = «ПОКАЖИ СТОЛ» (v47) ───────────────────────────
+   *
+   * Основатель попросил кнопку, которая одним нажатием сворачивает все окна.
+   * Совет предложил двадцать мест, куда её поставить, и выбрал единственное,
+   * где её не надо ставить вовсе: САМО ПУСТОЕ МЕСТО. Ноль новых предметов на
+   * экране, ноль объяснений — пустота и означает «убери всё, покажи стол».
+   *
+   * Место занято приглашением завести заметку, и это разрешается порядком
+   * смыслов, а не спором: пока на экране есть хоть одно НЕ свёрнутое окно,
+   * нажатие по пустоте значит «убери их». Когда убирать нечего — та же
+   * пустота предлагает заметку. Второй смысл наступает ровно тогда, когда
+   * первый становится бессмысленным.
+   *
+   * Охраняется tools/desktop-drag-check.mjs.
+   */
+  function visibleWindows() {
+    var open = window.openWindows || {};
+    return Object.keys(open).filter(function (id) {
+      var w = open[id];
+      return w && !w.minimized;
+    });
+  }
+
   function onDesktopClick(ev) {
     if (ev.button !== 0) return;
     var t = ev.target;
     if (!t || !t.closest) return;
     if (t.closest(window.sbEmptyDesktopSkipSelector || ".window")) { closeInvite(); return; }
     if (invite) { closeInvite(); return; }
+
+    var shown = visibleWindows();
+    if (shown.length) {
+      closeInvite();
+      shown.forEach(function (id) { if (window.sbMinimizeWindow) window.sbMinimizeWindow(id); });
+      if (window.showToast) {
+        window.showToast(tr("desk.allMinimized"), tr("desk.allMinimizedSub"), "");
+      }
+      return;
+    }
     showInvite(ev.clientX, ev.clientY);
   }
+  window.sbMinimizeAll = function () {
+    var shown = visibleWindows();
+    shown.forEach(function (id) { if (window.sbMinimizeWindow) window.sbMinimizeWindow(id); });
+    return shown.length;
+  };
 
   /* ============================================== marquee multi-select §4.2 */
   function clearSelection() { $$(".selected").forEach(function (n) { n.classList.remove("selected"); }); }
 
+  /* ── РАМКИ ВЫДЕЛЕНИЯ НА СЕНСОРНОМ ЭКРАНЕ НЕТ ВОВСЕ (v47) ────────────────
+   *
+   * Основатель поставил диагноз точнее Совета: «если просто нажимаю — точек
+   * не остаётся, но если зажимаю и провожу пальцем — остаются такие же
+   * оранжевые выделения». Это не следы выделения текста, которые Совет
+   * чинил накануне, а РАМКА ГРУППОВОГО ВЫДЕЛЕНИЯ: палец, проведённый по
+   * пустому месту, тянет её, помечает всё, чего коснулся, и метки остаются
+   * до следующего нажатия. На пальце это к тому же неотличимо от попытки
+   * что-то перетащить или прокрутить.
+   *
+   * Его же предложение и принято: на сенсорном вводе рамки нет совсем, и
+   * переносится ровно один предмет за раз. Групповое выделение остаётся
+   * мыши, где протягивание — однозначный жест и где оно действительно
+   * экономит время.
+   *
+   * Проверка идёт по ТИПУ УКАЗАТЕЛЯ конкретного события, а не по типу
+   * устройства: на планшете с мышью рамка работает, тем же пальцем на том
+   * же планшете — нет. Устройство бывает и тем и другим; событие — нет.
+   */
   function wireMarquee() {
     var scene = $("#desktop");
     if (!scene) return;
     var band = null, start = null;
+
+    function dropBand() {
+      if (band && band.parentNode) band.parentNode.removeChild(band);
+      band = null; start = null;
+    }
+
     scene.addEventListener("pointerdown", function (ev) {
       if (ev.button !== 0) return;
+      if (ev.pointerType && ev.pointerType !== "mouse") { clearSelection(); return; }
       var t = ev.target;
       if (t && t.closest && t.closest(window.sbEmptyDesktopSkipSelector || ".window")) return;
       clearSelection();
@@ -696,6 +818,11 @@
       band.className = "marquee";
       doc.body.appendChild(band);
     });
+    /* Прерванный жест обязан убирать за собой так же, как законченный:
+       на телефоне браузер забирает указатель себе чаще, чем отпускает. */
+    doc.addEventListener("pointercancel", dropBand);
+    window.addEventListener("blur", dropBand);
+    doc.addEventListener("touchend", function () { clearSelection(); }, { passive: true });
     doc.addEventListener("pointermove", function (ev) {
       if (!band || !start) return;
       var x = Math.min(start.x, ev.clientX), y = Math.min(start.y, ev.clientY);
@@ -709,15 +836,16 @@
         n.classList.toggle("selected", hit);
       });
     });
-    doc.addEventListener("pointerup", function () {
-      if (band && band.parentNode) band.parentNode.removeChild(band);
-      band = null; start = null;
-    });
+    doc.addEventListener("pointerup", dropBand);
 
     /* group drag: capture-phase so the single-item handlers stay out of it */
     [$("#sbIconLayer"), $("#sbNoteLayer")].forEach(function (layerEl) {
       if (!layerEl) return;
       layerEl.addEventListener("pointerdown", function (ev) {
+        /* Группового переноса на пальце не бывает по построению: выделять
+           нечем. Условие оставлено явным, чтобы это читалось здесь, а не
+           выводилось из отсутствия рамки этажом выше. */
+        if (ev.pointerType && ev.pointerType !== "mouse") return;
         var member = ev.target && ev.target.closest ? ev.target.closest(".desk-icon.selected, .sticky-note.selected") : null;
         var members = $$(".desk-icon.selected, .sticky-note.selected");
         if (!member || members.length < 2) return;

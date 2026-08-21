@@ -41,7 +41,7 @@
       "timer.windows": "Close open windows", "timer.notes": "Clear notes",
       /* Tips. {files} / {mail} / {echoes} are filled from the live app names,
          so a tip never says "Files" while the icon underneath says "Vault". */
-      "tip.portfolio": "Both client systems in {portfolio} are real — and one of them opens right here.",
+      "tip.portfolio": "Both client systems under Selected Work in {build} are real — and one of them opens right here.",
       "tip.inlinesearch": "Hover any icon, then its little spark — every app has a quick action hiding there.",
       "tip.cmdk": "Press ⌘K anywhere to jump straight to any app.",
       "tip.stickynotes": "Tap empty desktop, then the + — leave a note right there.",
@@ -136,7 +136,11 @@
       /* --- chrome labels reached through data-i18n-aria / -ph (§14) --- */
       "aria.identity": "Click to set your username",
       "aria.notifications": "Notifications", "aria.appSeq": "Open windows",
-      "aria.tip": "Show a tip", "aria.cc": "Control Center",
+      "aria.minimizeAll": "sys.baby OS — clear the desk: minimise every window",
+      "aria.tip": "Show a tip", "cc.tip": "Show a tip",
+      "aria.turbo": "Turbo — give every frame to the work", "aria.cc": "Control Center",
+      "aria.langs": "Language", "lang.partial": "the storefront speaks it; the system does not yet",
+      "desk.allMinimized": "Desk cleared", "desk.allMinimizedSub": "Windows are waiting — tap an icon to bring one back",
       "aria.icons": "Desktop icons", "aria.notes": "Desktop notes",
       "aria.dock": "Dock", "aria.dockCta": "Start your project",
       "aria.fab": "Quick actions", "aria.cmdk": "Command palette", "aria.close": "Close",
@@ -391,9 +395,7 @@
       "link.sub.briefKept": "Where the brief is kept",
       /* ================================================ Vault / Хранилище */
       "fv.home": "Home",
-      "fv.portfolio": "Portfolio",
       "fv.rename": "Rename", "fv.delete": "Delete", "fv.edit": "Edit",
-      "fv.openReal": "Open the real project →",
       "fv.newFolder": "New Folder", "fv.newFile": "New File",
       "fv.newFolder.name": "New Folder", "fv.newFile.name": "Untitled.txt",
       "fv.empty": "This folder is empty. Anything you add stays in this browser.",
@@ -406,15 +408,6 @@
       /* Досье проекта — производный документ: его собирает само приложение,
          поэтому и его подписи переводятся ключами, а не остаются английскими
          внутри русского Хранилища. */
-      "fv.brief.head": "Portfolio Case", "fv.brief.visibility": "Visibility",
-      "fv.brief.anonymous": "Anonymous (client identity withheld by request)",
-      "fv.brief.public": "Public",
-      "fv.brief.status": "Status", "fv.brief.statusValue": "Real — completed client project",
-      "fv.brief.industry": "Industry", "fv.brief.project": "Project",
-      "fv.brief.delivered": "Delivered", "fv.brief.goal": "Goal", "fv.brief.results": "Results",
-      "fv.brief.withheld": "Withheld at the client's request — the same discretion covers your project.",
-      "fv.brief.notDelivered": "Built and not yet handed over. Measurement is agreed at handover.",
-      "fv.brief.pending": "Outcome measurement is agreed with the client and scheduled.",
       /* ============================================== Whisper / Разговор */
       "mg.sampleNotice": "This is a sample conversation — nothing was sent anywhere. What you write stays in this browser.",
       "mg.noMessages": "No messages yet. Anything written here stays on this device.",
@@ -514,7 +507,7 @@
       "panel.desktop": "Рабочий стол",
       "timer.title": "Таймер сессии", "timer.arm": "Включить таймер",
       "timer.windows": "Закрыть окна", "timer.notes": "Очистить заметки",
-      "tip.portfolio": "Обе клиентские системы в {portfolio} настоящие — и одна из них открывается прямо здесь.",
+      "tip.portfolio": "Обе клиентские системы в «Избранных проектах» приложения {build} настоящие — и одна открывается прямо здесь.",
       "tip.inlinesearch": "Наведите на иконку, затем на искру рядом — в каждом приложении спрятано быстрое действие.",
       "tip.cmdk": "Нажмите ⌘K где угодно, чтобы сразу открыть любое приложение.",
       "tip.stickynotes": "Нажмите на пустой рабочий стол, затем на + — заметка останется прямо там.",
@@ -603,7 +596,11 @@
       "k.layouts": "Раскладки окон", "k.manageDesktop": "Настроить рабочий стол", "k.health": "Состояние системы",
       "aria.identity": "Нажмите, чтобы задать имя пользователя",
       "aria.notifications": "Уведомления", "aria.appSeq": "Открытые окна",
-      "aria.tip": "Показать подсказку", "aria.cc": "Центр управления",
+      "aria.minimizeAll": "sys.baby OS — убрать со стола: свернуть все окна",
+      "aria.tip": "Показать подсказку", "cc.tip": "Показать подсказку",
+      "aria.turbo": "Турбо — отдать все кадры работе", "aria.cc": "Центр управления",
+      "aria.langs": "Язык", "lang.partial": "витрина говорит, система пока нет",
+      "desk.allMinimized": "Стол очищен", "desk.allMinimizedSub": "Окна ждут — нажмите значок, чтобы вернуть",
       "aria.icons": "Значки рабочего стола", "aria.notes": "Заметки на столе",
       "aria.dock": "Док", "aria.dockCta": "Начать проект",
       "aria.fab": "Быстрые действия", "aria.cmdk": "Командная палитра", "aria.close": "Закрыть",
@@ -850,9 +847,7 @@
       "link.sub.briefKept": "Где лежит описание",
       /* ============================================================ Хранилище */
       "fv.home": "Начало",
-      "fv.portfolio": "Портфолио",
       "fv.rename": "Переименовать", "fv.delete": "Удалить", "fv.edit": "Править",
-      "fv.openReal": "Открыть настоящий проект →",
       "fv.newFolder": "Новая папка", "fv.newFile": "Новый файл",
       "fv.newFolder.name": "Новая папка", "fv.newFile.name": "Без имени.txt",
       "fv.empty": "Папка пуста. Всё, что вы добавите, остаётся в этом браузере.",
@@ -862,15 +857,6 @@
       "fv.toast.title": "Хранилище", "fv.toast.deleted": "«{name}» удалено",
       "fv.save.failTitle": "Не удалось сохранить",
       "fv.save.failBody": "Хранилище может быть переполнено или ограничено в этом браузере.",
-      "fv.brief.head": "Проект из портфолио", "fv.brief.visibility": "Открытость",
-      "fv.brief.anonymous": "Анонимно (имя клиента не раскрывается по его просьбе)",
-      "fv.brief.public": "Открыто",
-      "fv.brief.status": "Статус", "fv.brief.statusValue": "Настоящий — завершённый клиентский проект",
-      "fv.brief.industry": "Отрасль", "fv.brief.project": "Проект",
-      "fv.brief.delivered": "Сделано", "fv.brief.goal": "Задача", "fv.brief.results": "Результат",
-      "fv.brief.withheld": "Не раскрывается по просьбе клиента — та же сдержанность распространяется и на ваш проект.",
-      "fv.brief.notDelivered": "Построено и ещё не передано. Измерение согласуется при передаче.",
-      "fv.brief.pending": "Измерение результата согласовано с клиентом и назначено.",
       /* ============================================================= Разговор */
       "mg.sampleNotice": "Это образец переписки — ничего никуда не отправлялось. Всё, что вы напишете, остаётся в этом браузере.",
       "mg.noMessages": "Сообщений пока нет. Всё написанное здесь остаётся на этом устройстве.",
@@ -965,7 +951,7 @@
       "panel.desktop": "Töölaua haldus",
       "timer.title": "Sessiooni taimer", "timer.arm": "Käivita taimer",
       "timer.windows": "Sulge aknad", "timer.notes": "Kustuta märkmed",
-      "tip.portfolio": "Mõlemad kliendisüsteemid rakenduses {portfolio} on päris — ja üks neist avaneb siinsamas.",
+      "tip.portfolio": "Mõlemad kliendisüsteemid rakenduse {build} valitud töödes on päris — ja üks neist avaneb siinsamas.",
       "tip.inlinesearch": "Vii kursor ikoonile ja siis selle sädemele — igas rakenduses peitub kiirtoiming.",
       "tip.cmdk": "Vajuta kõikjal ⌘K, et hüpata otse mis tahes rakendusse.",
       "tip.stickynotes": "Puuduta tühja töölauda, siis + — märge jääb täpselt sinna.",
@@ -1054,7 +1040,11 @@
       "k.layouts": "Akende paigutused", "k.manageDesktop": "Halda töölauda", "k.health": "Süsteemi seisund",
       "aria.identity": "Klõpsa, et määrata kasutajanimi",
       "aria.notifications": "Teated", "aria.appSeq": "Avatud aknad",
-      "aria.tip": "Näita vihjet", "aria.cc": "Juhtimiskeskus",
+      "aria.minimizeAll": "sys.baby OS — puhasta laud: ahenda kõik aknad",
+      "aria.tip": "Näita vihjet", "cc.tip": "Näita vihjet",
+      "aria.turbo": "Turbo — anna kõik kaadrid tööle", "aria.cc": "Juhtimiskeskus",
+      "aria.langs": "Keel", "lang.partial": "vitriin räägib, süsteem veel mitte",
+      "desk.allMinimized": "Laud on puhas", "desk.allMinimizedSub": "Aknad ootavad — puuduta ikooni, et tagasi tuua",
       "aria.icons": "Töölaua ikoonid", "aria.notes": "Töölaua märkmed",
       "aria.dock": "Dokk", "aria.dockCta": "Alusta oma projekti",
       "aria.fab": "Kiirtoimingud", "aria.cmdk": "Käsupalett", "aria.close": "Sulge",
@@ -1302,9 +1292,7 @@
       "link.sub.briefKept": "Kus kirjeldust hoitakse",
       /* =============================================================== Hoidla */
       "fv.home": "Algus",
-      "fv.portfolio": "Portfoolio",
       "fv.rename": "Nimeta ümber", "fv.delete": "Kustuta", "fv.edit": "Muuda",
-      "fv.openReal": "Ava päris projekt →",
       "fv.newFolder": "Uus kaust", "fv.newFile": "Uus fail",
       "fv.newFolder.name": "Uus kaust", "fv.newFile.name": "Nimetu.txt",
       "fv.empty": "Kaust on tühi. Kõik, mille lisate, jääb sellesse brauserisse.",
@@ -1314,15 +1302,6 @@
       "fv.toast.title": "Hoidla", "fv.toast.deleted": "„{name}“ kustutatud",
       "fv.save.failTitle": "Salvestamine ebaõnnestus",
       "fv.save.failBody": "Salvestusruum võib olla täis või selles brauseris piiratud.",
-      "fv.brief.head": "Portfoolio juhtum", "fv.brief.visibility": "Avalikkus",
-      "fv.brief.anonymous": "Anonüümne (kliendi nimi jääb tema soovil avaldamata)",
-      "fv.brief.public": "Avalik",
-      "fv.brief.status": "Seisund", "fv.brief.statusValue": "Päris — lõpetatud kliendiprojekt",
-      "fv.brief.industry": "Valdkond", "fv.brief.project": "Projekt",
-      "fv.brief.delivered": "Tehtud", "fv.brief.goal": "Eesmärk", "fv.brief.results": "Tulemus",
-      "fv.brief.withheld": "Kliendi soovil avaldamata — sama hoolikus katab ka teie projekti.",
-      "fv.brief.notDelivered": "Ehitatud ja veel üle andmata. Mõõtmine lepitakse kokku üleandmisel.",
-      "fv.brief.pending": "Tulemuse mõõtmine on kliendiga kokku lepitud ja plaanis.",
       /* =============================================================== Sosin */
       "mg.sampleNotice": "See on näidisvestlus — midagi pole kuhugi saadetud. Kõik, mida kirjutate, jääb sellesse brauserisse.",
       "mg.noMessages": "Sõnumeid veel pole. Kõik siia kirjutatu jääb sellesse seadmesse.",
@@ -1401,11 +1380,27 @@
       "set.unit.mb": "MB", "set.unit.kb": "KB"
     }
   };
-  var LANGS = [{ code: "en", label: "English" }, { code: "ru", label: "Русский" }, { code: "ee", label: "Eesti" }];
+  /* ЯЗЫКИ СИСТЕМЫ. Порядок и вид — те же, что на витрине: моноширинные коды,
+     а не флаги (D-041). Финский пока живёт только в витрине: у оболочки его
+     строк нет, и система об этом ГОВОРИТ, а не притворяется — код помечен, и
+     при выборе она честно остаётся на английском, пока витрина в окне build
+     переходит на финский. Пометка исчезнет сама в тот день, когда появятся
+     строки: она считается из таблицы, а не проставляется рукой. */
+  /* Внутренний код языка и то, что видит человек, — разные вещи. Эстонский
+     внутри проекта исторически «ee», но человеку показывается ET: это его
+     настоящий код (ISO 639-1), и ровно так он написан на витрине. Показывать
+     «EE» значило бы показывать код СТРАНЫ — та же ошибка, что флаг вместо
+     языка, из-за которой и появилось решение D-041. */
+  var LANGS = [
+    { code: "ee", show: "ET", label: "Eesti" },
+    { code: "en", show: "EN", label: "English" },
+    { code: "ru", show: "RU", label: "Русский" },
+    { code: "fi", show: "FI", label: "Suomi" }
+  ];
 
   function lang() {
     var v = rawGet("sysbaby.i18n.lang") || "en";
-    return STRINGS[v] ? v : "en";
+    return LANGS.some(function (l) { return l.code === v; }) ? v : "en";
   }
   window.sbLang = lang;
   /* sbT(key) -> the string; sbT(key, {name: "x"}) -> the string with {name}
@@ -1430,7 +1425,115 @@
      and is not a language tag, so it is mapped rather than copied. */
   var DOC_LANG = { en: "en", ru: "ru", ee: "et" };
 
+  /* Полоса языков: всё состояние видно сразу, переключение — одно нажатие. */
+  function tr(k) { return window.sbT ? window.sbT(k) : k; }
+
+  /* ── ЯЗЫК: ОДИН КОД, КОТОРЫЙ И ЕСТЬ КНОПКА (v47, вторая редакция) ────────
+   *
+   * Первая редакция показывала все четыре кода разом: ноль нажатий, чтобы
+   * увидеть язык, одно — чтобы сменить. Основатель посмотрел на телефоне и
+   * снял её одной фразой: столько места занимать нельзя, и часы из-за неё не
+   * помещались в экран. Он прав, и вот почему: четыре кода — это состояние
+   * ЧЕТЫРЁХ языков, а человеку нужно состояние ОДНОГО, своего. Остальные три
+   * нужны ему один раз в жизни, при первой встрече.
+   *
+   * Поэтому здесь один код — тот, на котором система говорит сейчас. Он же и
+   * кнопка: нажатие переводит на следующий язык, долгое нажатие раскрывает
+   * все четыре, если нужен конкретный. Место — правый угол верхней панели,
+   * рядом с часами; занимает он ширину двух букв.
+   *
+   * Почему понятно, что это язык, без слова «язык»: код набран моноширинным,
+   * как коды языков на витрине (D-041 — коды, а не флаги, потому что флаг
+   * обозначает страну), подчёркнут пунктиром — общий знак «это меняется», —
+   * и озвучен полностью для тех, кто читает экран голосом.
+   */
+  function nextLang(code) {
+    var i = 0, k;
+    for (k = 0; k < LANGS.length; k++) if (LANGS[k].code === code) i = k;
+    return LANGS[(i + 1) % LANGS.length].code;
+  }
+
+  function closeLangMenu() {
+    var m = doc.getElementById("sbLangMenu");
+    if (m && m.parentNode) m.parentNode.removeChild(m);
+    doc.removeEventListener("pointerdown", onOutsideLang, true);
+  }
+  function onOutsideLang(ev) {
+    if (ev.target && ev.target.closest && ev.target.closest("#sbLangMenu, #sbLangs")) return;
+    closeLangMenu();
+  }
+
+  function openLangMenu() {
+    closeLangMenu();
+    var host = doc.getElementById("sbLangs");
+    if (!host) return;
+    var cur = lang();
+    var m = doc.createElement("div");
+    m.id = "sbLangMenu";
+    m.className = "tb-lang-menu";
+    m.setAttribute("role", "menu");
+    LANGS.forEach(function (l) {
+      var partial = !STRINGS[l.code];
+      var b = doc.createElement("button");
+      b.type = "button";
+      b.className = "tb-lang-item" + (l.code === cur ? " is-active" : "") + (partial ? " is-partial" : "");
+      b.setAttribute("data-lang", l.code);
+      b.setAttribute("lang", l.code === "ee" ? "et" : l.code);
+      b.setAttribute("role", "menuitemradio");
+      b.setAttribute("aria-checked", l.code === cur ? "true" : "false");
+      b.innerHTML = '<span class="tb-lang-code">' + l.show + '</span><span class="tb-lang-name">' + l.label + '</span>';
+      b.title = partial ? l.label + " — " + tr("lang.partial") : l.label;
+      b.addEventListener("click", function () { closeLangMenu(); window.sbSetLang(l.code); });
+      m.appendChild(b);
+    });
+    host.appendChild(m);
+    setTimeout(function () { doc.addEventListener("pointerdown", onOutsideLang, true); }, 0);
+  }
+  window.sbOpenLangMenu = openLangMenu;
+  window.sbCloseLangMenu = closeLangMenu;
+
+  function paintLangs() {
+    var host = doc.getElementById("sbLangs");
+    if (!host) return;
+    var cur = lang();
+    var rec = LANGS.filter(function (l) { return l.code === cur; })[0] || LANGS[1];
+    closeLangMenu();
+    host.innerHTML = "";
+
+    var b = doc.createElement("button");
+    b.type = "button";
+    b.className = "tb-lang-now" + (!STRINGS[cur] ? " is-partial" : "");
+    b.id = "sbLangNow";
+    b.setAttribute("data-lang", cur);
+    b.setAttribute("lang", cur === "ee" ? "et" : cur);
+    b.textContent = rec.show;
+    b.title = tr("aria.langs") + ": " + rec.label;
+    b.setAttribute("aria-label", tr("aria.langs") + ": " + rec.label);
+    b.setAttribute("aria-haspopup", "menu");
+
+    /* Короткое нажатие — следующий язык. Долгое — выбрать любой.
+       Порог 420 мс: короче человек не успевает понять, что держит. */
+    var holdTimer = null, held = false;
+    var startHold = function () {
+      held = false;
+      holdTimer = setTimeout(function () { held = true; openLangMenu(); }, 420);
+    };
+    var endHold = function () { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } };
+    b.addEventListener("pointerdown", startHold);
+    b.addEventListener("pointerup", endHold);
+    b.addEventListener("pointerleave", endHold);
+    b.addEventListener("pointercancel", endHold);
+    b.addEventListener("click", function () {
+      if (held) { held = false; return; }
+      window.sbSetLang(nextLang(lang()));
+    });
+    b.addEventListener("contextmenu", function (ev) { ev.preventDefault(); openLangMenu(); });
+    host.appendChild(b);
+  }
+  window.sbPaintLangs = paintLangs;
+
   function applyLang() {
+    paintLangs();
     var code = lang();
     root.setAttribute("lang", DOC_LANG[code] || code);
     $$("[data-i18n]").forEach(function (n) {
@@ -1456,7 +1559,8 @@
     if (window.sbBus) window.sbBus.emit("translate:done", { to: code });
   }
   window.sbSetLang = function (code) {
-    var c = STRINGS[code] ? code : "en";
+    var known = LANGS.some(function (l) { return l.code === code; });
+    var c = known ? code : "en";
     rawSet("sysbaby.i18n.lang", c);
     applyLang();
     paintClock(true);
@@ -1483,6 +1587,47 @@
   function paintIdentity() {
     var el = $("#sbIdentityName");
     if (el) el.textContent = window.sbGetUsername();
+  }
+
+  /* ── ЗНАЧОК СИСТЕМЫ УБИРАЕТ СО СТОЛА (v47.1) ────────────────────────────
+   *
+   * Основатель: «так же при нажатии на иконку логотипа все окна должны
+   * сворачиваться. совет должен был выбрать гибридный вариант во время
+   * голосования». Голосование выбрало пустое место стола и на этом
+   * остановилось — а у победителя был напарник.
+   *
+   * Почему нужны оба, а не один. Пустое место — жест того, кто систему уже
+   * знает, и он недостижим ровно тогда, когда нужнее всего: окно во весь
+   * экран пустого места не оставляет, и чтобы жестом воспользоваться, надо
+   * сперва убрать окно руками — то есть сделать то, ради чего жест и
+   * заводился. Значок в углу виден всегда.
+   *
+   * Дверь ОДНА: window.sbMinimizeAll из desktop.js. Второй копии правила
+   * здесь нет и не будет — иначе два места начнут расходиться в мелочах.
+   */
+  /* Публичная дверь «покажи подсказку сейчас». Лампочка переехала в Центр
+     управления (v47.3, место в панели занял Турбо), и всем, кто просил
+     подсказку нажатием, нужна дверь без поиска кнопки: законы и сама
+     лампочка зовут одно и то же. */
+  window.sbShowTipNow = function () {
+    var tip = nextTip();
+    if (!tip) return false;
+    showTip(tip);
+    return true;
+  };
+
+  function wireMark() {
+    var mark = $("#sbTopMark");
+    if (!mark) return;
+    mark.addEventListener("click", function () {
+      if (typeof window.sbMinimizeAll !== "function") return;
+      var n = 0;
+      try { n = window.sbMinimizeAll(); } catch (err) { console.error("[topbar] minimise all failed", err); return; }
+      /* Молчать, когда убирать было нечего: подтверждать несделанное — врать. */
+      if (n > 0 && window.showToast) {
+        window.showToast(window.sbT("desk.allMinimized"), window.sbT("desk.allMinimizedSub"), "");
+      }
+    });
   }
 
   function wireIdentity() {
@@ -1532,10 +1677,17 @@
     if (!host) return;
     if (doc.visibilityState === "hidden" && !force) return;
     var d = new Date();
+    /* НА ТЕЛЕФОНЕ ЧАСЫ УСТУПАЮТ (v47). С появлением полосы языков верхняя
+       панель на 390px перестала помещаться: часы уезжали за правую кромку на
+       шестьдесят пикселей. Уступает здесь именно дата и секунды, а не язык, —
+       и это выбор, а не случайность: который час, человек узнаёт у телефона
+       одним взглядом вверх, а на каком он языке — только у нас. */
+    var narrow = window.innerWidth < 480;
     var opts = window.innerWidth < 560 ? { day: "numeric", month: "short" } : { weekday: "short", day: "numeric", month: "short" };
-    var dateStr = d.toLocaleDateString(localeFor(), opts);
-    var timeStr = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + ":" + ("0" + d.getSeconds()).slice(-2);
-    var whole = dateStr + "  " + timeStr;
+    var dateStr = narrow ? "" : d.toLocaleDateString(localeFor(), opts);
+    var timeStr = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) +
+      (narrow ? "" : ":" + ("0" + d.getSeconds()).slice(-2));
+    var whole = narrow ? timeStr : dateStr + "  " + timeStr;
     if (whole === lastClock && !force) return;
 
     if (!clockCells || clockCells.length !== whole.length || force) {
@@ -1630,7 +1782,9 @@
     /* The first thing this desktop says is why it exists: the client work in
        Portfolio is real, and one of the two systems opens right here.
        Everything else it can teach matters less than that. */
-    { id: "portfolio", panel: null },
+    /* Подсказка о работах вела в снятое приложение портфолио (D-066).
+       Ведёт в build — там теперь раздел «Избранные проекты». */
+    { id: "portfolio", panel: null, app: "build", section: "cases" },
     { id: "inlinesearch", panel: null, pointer: true },
     { id: "cmdk", panel: null, pointer: true },
     { id: "stickynotes", panel: null },
@@ -1698,6 +1852,9 @@
     if (!host || !text || !tip) return;
     currentTip = tip;
     text.textContent = tipText(tip.id);
+    /* Человек вызвал подсказку — извещения уступают ей место (см.
+       sbToastsYield в shell.js: явно запрошенное важнее пришедшего само). */
+    if (window.sbToastsYield) window.sbToastsYield();
     host.removeAttribute("hidden");
     /* one frame with the element laid out but not yet `.on`, so the entrance
        transition has a start state to animate from */
@@ -1745,7 +1902,10 @@
         markTip(currentTip.id);
         if (currentTip.panel && window.sbPanels && window.sbPanels[currentTip.panel]) window.sbPanels[currentTip.panel].open();
         else if (currentTip.id === "inlinesearch" && window.sbSeekReveal) window.sbSeekReveal();
-        else if (currentTip.id === "portfolio" && window.toggleApp) window.toggleApp("portfolio");
+        else if (currentTip.id === "portfolio") {
+          if (typeof window.sbOpenBuildAt === "function") window.sbOpenBuildAt("cases");
+          else if (window.toggleApp) window.toggleApp("build");
+        }
         else if (currentTip.id === "echoes" && window.toggleApp) window.toggleApp("echoes");
         else if (currentTip.id === "cmdk" && window.openCmdk) window.openCmdk("");
         hideTip();
@@ -1762,9 +1922,13 @@
     }
     if (bulb) {
       bulb.addEventListener("click", function () {
-        var tip = nextTip();
-        if (tip) showTip(tip);
-        else if (window.showToast) window.showToast(window.sbT("tips.doneTitle"), window.sbT("tips.doneBody"), "");
+        /* Лампочка живёт в Центре управления (v47.3): показав подсказку,
+           ЦУ закрывается — иначе подсказка выйдет под его стеклом и человек
+           её не увидит. */
+        if (window.sbCloseControlCenter) window.sbCloseControlCenter();
+        if (!window.sbShowTipNow()) {
+          if (window.showToast) window.showToast(window.sbT("tips.doneTitle"), window.sbT("tips.doneBody"), "");
+        }
       });
     }
     if (window.sbBus) {
@@ -2064,6 +2228,7 @@
        and anything that subscribes afterwards misses that first emission —
        which is exactly how the desktop hint's dismiss button used to stay in
        English until the visitor changed language a second time. */
+    wireMark();
     wireIdentity();
     wireControlCenter();
     wireTips();
