@@ -165,7 +165,15 @@ html[data-motion="reduced"] .xp-status i { animation: none; opacity: .8; }
   transition: opacity .2s ease, background .2s ease;
 }
 
-.xp-back:hover, .xp-back:focus-visible { opacity: 1; background: rgba(8, 9, 12, .9); }
+.xp-back:focus-visible { opacity: 1; background: rgba(8, 9, 12, .9); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .xp-back:hover { opacity: 1; background: rgba(8, 9, 12, .9); }
+}
 html.is-touch .xp-back { opacity: .85; }
 
 @media (max-width: 620px) {

@@ -36,7 +36,14 @@
   text-align: left;
 }
 
-.ml-folder:hover { background: rgba(255, 255, 255, .06); color: inherit; }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .ml-folder:hover { background: rgba(255, 255, 255, .06); color: inherit; }
+}
 .ml-folder.active { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .12); color: inherit; font-weight: 600; }
 .ml-folder-icon { display: grid; place-items: center; }
 .ml-folder-icon svg { width: 16px; height: 16px; }
@@ -96,11 +103,32 @@
   white-space: nowrap;
 }
 
-.ml-btn:hover { background: rgba(255, 255, 255, .12); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .ml-btn:hover { background: rgba(255, 255, 255, .12); }
+}
 .ml-btn.primary { background: var(--accent, #e0663c); border-color: transparent; color: #fff; font-weight: 600; }
-.ml-btn.primary:hover { filter: brightness(1.1); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .ml-btn.primary:hover { filter: brightness(1.1); }
+}
 .ml-btn.danger { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .4); }
-.ml-btn.danger:hover { background: rgba(255, 69, 58, .16); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .ml-btn.danger:hover { background: rgba(255, 69, 58, .16); }
+}
 
 .ml-list { flex: 1; min-height: 0; overflow: auto; padding: 5px; }
 
@@ -113,7 +141,14 @@
   border: 1px solid transparent;
 }
 
-.ml-row:hover { background: rgba(255, 255, 255, .05); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .ml-row:hover { background: rgba(255, 255, 255, .05); }
+}
 .ml-row.active { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .12); }
 .ml-row-main { flex: 1; min-width: 0; }
 
@@ -160,7 +195,14 @@
   padding: 0;
 }
 
-.ml-star:hover { color: rgba(255, 255, 255, .7); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .ml-star:hover { color: rgba(255, 255, 255, .7); }
+}
 .ml-star.on { color: var(--warn, #ffd60a); }
 .ml-star svg { width: 15px; height: 15px; }
 
@@ -235,7 +277,14 @@
   cursor: pointer;
 }
 
-.ml-link:hover { background: rgba(255, 255, 255, .09); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .ml-link:hover { background: rgba(255, 255, 255, .09); }
+}
 .ml-link.live { border-color: rgba(48, 209, 88, .4); background: rgba(48, 209, 88, .1); }
 
 .ml-link-kind {
@@ -297,7 +346,14 @@
   cursor: pointer;
 }
 
-.ml-compose-x:hover { background: rgba(255, 255, 255, .12); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .ml-compose-x:hover { background: rgba(255, 255, 255, .12); }
+}
 
 .ml-field {
   padding: 8px 10px;

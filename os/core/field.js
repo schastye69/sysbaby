@@ -43,6 +43,35 @@
   /* The CSS hides the field in the light theme and in incognito, where the
      gradient wallpaper takes over. Knowing that here too means the loop stops
      rather than painting a canvas nobody can see. */
+  /* ── КАСАНИЕ ПО МЕБЕЛИ — НЕ КАСАНИЕ ПО СТОЛУ (v64) ───────────────────────
+     ПОВОД, дословно от основателя 25.08.2026: «при нажатии, закрыть,
+     свернуть или развернуть в окнах, срабатывает касание по фону рабочего
+     стола, хотя я нажимаю по этим кнопкам в окнах».
+
+     Поле слушает pointerdown на окне браузера — то есть все нажатия подряд.
+     Куда именно ткнули, оно не спрашивало никогда: сторож стоял один и о
+     другом — «живо ли поле». Поэтому огонь окна, док, полоса и панель
+     записывались столу как его собственное касание.
+
+     Это третий дефект одного рода (D-079, D-089 — и вот этот), и первые два
+     чинились добавлением ещё одного условия «когда НЕ считать». Третий раз
+     подряд означает, что ошибкой был сам список. Признак взят
+     ПОЛОЖИТЕЛЬНЫЙ: касание принадлежит полю тогда и только тогда, когда
+     палец опустился на сам стол — на обои или на пустое место слоёв,
+     лежащих поверх них. Всё прочее — мебель.
+
+     Такой признак не нужно дополнять. Предмет, который система заведёт
+     завтра, по умолчанию окажется мебелью, а не столом; новый предмет, о
+     котором забыли, лучше пусть молчит, чем говорит от чужого имени.
+
+     Охраняется tools/tap-belongs-check.mjs. */
+  var DESK_IDS = { desktop: 1, sbIconLayer: 1, sbNoteLayer: 1, sbWidgetLayer: 1 };
+  function ownTap(t) {
+    if (!t || t.nodeType !== 1 || !t.closest) return false;
+    if (DESK_IDS[t.id]) return true;
+    return !!t.closest(".wp-layer");
+  }
+
   function suppressed() {
     var root = doc.documentElement;
     return root.getAttribute("data-theme") === "light" || root.classList.contains("sb-incognito");
@@ -155,6 +184,7 @@
            ВООБЩЕ. Один сторож на оба пути: он же закрывает и те два, о
            которых основатель не говорил. */
         if (self.parked || !self.on) return;
+        if (!ownTap(e.target)) return;
         self.touchCount++;
         self.waves.push({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight, t: 0 });
         if (self.waves.length > 3) self.waves.shift();

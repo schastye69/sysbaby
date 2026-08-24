@@ -207,7 +207,14 @@ kbd { font-family: var(--mono); font-size: 12px; }
   background: var(--glass); border: 1px solid var(--line);
   color: var(--ink); transition: background .16s ease, transform .16s var(--ease);
 }
-.btn:hover { background: var(--glass-2); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .btn:hover { background: var(--glass-2); }
+}
 .btn:active { transform: scale(.98); }
 .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; color: #fff; }
 .btn.wide { width: 100%; }
@@ -610,14 +617,28 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 .mark-word { color: var(--ink); white-space: nowrap; }
 
 .tb-identity { display: inline-flex; align-items: baseline; gap: 1px; padding: 5px 9px; border-radius: 999px; font-size: 13px; }
-.tb-identity:hover { background: var(--glass); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .tb-identity:hover { background: var(--glass); }
+}
 .id-name { font-weight: 600; }
 .tb-btn {
   position: relative; display: inline-grid; place-items: center;
   width: 30px; height: 28px; border-radius: 9px; color: var(--ink-2);
 }
 .tb-btn svg { width: 17px; height: 17px; }
-.tb-btn:hover { background: var(--glass); color: var(--ink); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .tb-btn:hover { background: var(--glass); color: var(--ink); }
+}
 .tb-btn.on, .tb-btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
 .tb-badge {
   position: absolute; top: 1px; right: 1px; min-width: 14px; height: 14px; padding: 0 3px;
@@ -627,7 +648,14 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 .tb-sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; }
 .tb-seq { display: flex; align-items: center; gap: 4px; overflow: hidden; }
 .seq-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px; border-radius: 9px; max-width: 170px; }
-.seq-item:hover { background: var(--glass); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .seq-item:hover { background: var(--glass); }
+}
 .seq-item.active { background: var(--glass-2); }
 .seq-item.dim { opacity: .5; }
 .seq-tile {
@@ -730,7 +758,14 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
   align-items: center; gap: 6px; padding: 6px 2px; border-radius: 14px;
   transition: background .16s ease, transform .18s var(--ease);
 }
-.desk-icon:hover { background: rgba(255, 255, 255, .06); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .desk-icon:hover { background: rgba(255, 255, 255, .06); }
+}
 .desk-icon.selected { background: var(--accent-soft); outline: 1px solid var(--accent-ring); }
 .desk-icon.dragging { opacity: .85; transition: none; z-index: 9; }
 .desk-icon.settling { transition: left .28s var(--spring), top .28s var(--spring); }
@@ -753,10 +788,20 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
   border: 1px solid var(--line);
   transition: box-shadow .18s var(--ease), background .18s ease;
 }
-.desk-icon:hover .icon-tile,
 .desk-icon.active-app .icon-tile {
   box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, .12);
   background: linear-gradient(155deg, rgba(242, 242, 240, .18), rgba(242, 242, 240, .05));
+}
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .desk-icon:hover .icon-tile {
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, .12);
+  background: linear-gradient(155deg, rgba(242, 242, 240, .18), rgba(242, 242, 240, .05));
+}
 }
 .icon-tile svg { width: 22px; height: 22px; }
 /* Подпись читается НАД ЛЮБЫМИ обоями. Поле живое и местами очень светлое —
@@ -772,7 +817,14 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
   position: absolute; top: 2px; right: 4px; width: 18px; height: 18px; border-radius: 50%;
   display: grid; place-items: center; color: var(--ink-3); opacity: 0; transition: opacity .16s ease;
 }
-.desk-icon:hover .icon-spark { opacity: 1; }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .desk-icon:hover .icon-spark { opacity: 1; }
+}
 .icon-spark svg { width: 12px; height: 12px; }
 .icon-capsule {
   position: absolute; top: calc(100% - 4px); left: 50%; transform: translateX(-50%) scaleY(.9);
@@ -871,17 +923,174 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
 }
 .note-chip.live { border-color: var(--accent-ring); }
 .chip-tile { width: 10px; height: 10px; border-radius: 4px; }
+/* ── ПРИГЛАШЕНИЕ — ЭТО ЗАМЕТКА ДО ПЕРВОГО СЛОВА (v64) ──────────────────────
+   ПОВОД, дословно от основателя: «всплывающее "окно оставить заметку здесь?"
+   должно быть более концептуальным по дизайну - блок должен иметь такой же
+   дизайн как у заметок на рабочем столе».
+
+   ЧТО БЫЛО: таблетка со скруглением 999px, кружок с градиентом, стекло
+   второго сорта. Предмет из другой системы, случайно оказавшийся на этом
+   столе, — рядом с заметкой, которая берёт свет у обоев, зажигает кромку с
+   той стороны, откуда светит, и отбрасывает тень в другую.
+
+   ЧТО СТАЛО: то же вещество, тот же радиус, тот же счёт света (--nx/--ny
+   проводит lightNote в desktop.js — то же, что и заметке). Разница ровно
+   одна и она смысловая: кромка пунктирная. Это не кнопка, которая создаёт
+   заметку. Это сама заметка, у которой ещё нет ни одного слова.
+
+   Охраняется tools/note-window-check.mjs. */
 .note-invite {
+  --nx: .5;
+  --ny: .5;
+  --lit: calc(.34 + (var(--nx) * .42) + ((1 - var(--ny)) * .24));
+
   position: fixed; z-index: 30; display: flex; align-items: center; gap: 9px;
-  padding: 7px 12px 7px 7px; border-radius: 999px;
-  background: var(--glass-2); border: 1px solid var(--line); backdrop-filter: blur(var(--glass-blur));
-  font-size: 12.5px; color: var(--ink-2); animation: fadeIn .18s ease;
+  width: 196px; padding: 11px 11px 9px;
+  border-radius: var(--r-card);
+  font-size: 13px; line-height: 1.45; color: var(--ink-2);
+  background:
+    radial-gradient(140% 120% at calc(var(--nx) * 100%) -30%,
+      rgba(var(--wp-light-rgb, 91, 124, 255), calc(.10 * var(--lit))), transparent 62%),
+    var(--glass);
+  border: 1px dashed rgba(var(--wp-light-rgb, 91, 124, 255), calc(.20 + .26 * var(--lit)));
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), calc(.10 + .16 * var(--lit))),
+    0 14px 34px -18px rgba(0, 0, 0, .72),
+    0 2px 10px -6px rgba(var(--wp-light-rgb, 91, 124, 255), calc(.10 * var(--lit)));
+  animation: fadeIn .18s ease;
+  cursor: pointer;
+}
+.note-invite:focus-visible {
+  border-style: solid;
+  border-color: rgba(var(--wp-light-rgb, 91, 124, 255), .52);
+  outline: none;
+}
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .note-invite:hover {
+  border-style: solid;
+  border-color: rgba(var(--wp-light-rgb, 91, 124, 255), .52);
+  outline: none;
+}
 }
 .invite-plus {
-  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-size: 16px; line-height: 1;
+  width: 20px; height: 20px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  color: var(--accent); font-size: 15px; line-height: 1;
+  border: 1px dashed rgba(var(--wp-light-rgb, 91, 124, 255), .42);
 }
+.invite-word { min-width: 0; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── ОГНИ ЗАМЕТКИ — ТЕ ЖЕ, ЧТО У ОКНА (v64) ───────────────────────────────
+   ПОВОД: «если начинаешь печатать заметку или переносишь её по рабочему
+   столу, в блоке у заметки должны появиться такие же пункты управления, как
+   и у окон - закрыть, свернуть, развернуть».
+
+   Молчат, пока заметку не трогают: стол обязан оставаться тихим. Появляются
+   ровно в те две минуты, которые назвал основатель, — когда пишут и когда
+   несут, — и ещё под курсором на большом экране, где наведение существует. */
+/* ОГНИ СТОЯТ НАД ЗАМЕТКОЙ, А НЕ НА НЕЙ. У окна для них есть свой ряд —
+   полоса заголовка; у заметки такого ряда нет, и класть их поверх слов
+   значит закрывать слова: измерено — на короткой заметке три огня
+   перекрывают всю строку целиком, до неё не дотянуться даже пальцем.
+   Поэтому они висят над верхней кромкой, как маленькая полоса самой
+   заметки. Место резервировать не нужно, ничего не прыгает при появлении.
+   У заметки, прижатой к верху экрана, ряд переворачивается вниз — иначе он
+   ушёл бы под полосу (класс ставит lightNote в desktop.js). */
+.note-lights {
+  position: absolute; bottom: calc(100% + 5px); right: 0; z-index: 2;
+  display: flex; gap: 4px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .18s var(--ease);
+}
+.sticky-note.lights-below .note-lights { bottom: auto; top: calc(100% + 5px); }
+.sticky-note.focused .note-lights,
+.sticky-note.dragging .note-lights,
+.sticky-note.full .note-lights { opacity: 1; pointer-events: auto; }
+@media (hover: hover) and (pointer: fine) {
+  .sticky-note:hover .note-lights { opacity: 1; pointer-events: auto; }
+}
+html[data-motion="reduced"] .note-lights { transition: none; }
+.note-light {
+  width: 20px; height: 20px; flex: none; border-radius: 50%;
+  display: grid; place-items: center;
+  color: var(--ink-3); background: rgba(255, 255, 255, .05);
+  border: 1px solid var(--line);
+}
+.note-light svg { width: 10px; height: 10px; display: block; }
+.note-light:focus-visible { background: var(--glass-2); color: var(--ink); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .note-light:hover { background: var(--glass-2); color: var(--ink); }
+}
+.note-light.close:focus-visible { background: rgba(255, 69, 58, .18); color: #ff6a60; }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .note-light.close:hover { background: rgba(255, 69, 58, .18); color: #ff6a60; }
+}
+
+/* ── ЗАГОЛОВОК НА СТОЛЕ, ТЕЛО — НА ВЕСЬ ЭКРАН (v64) ───────────────────────
+   ПОВОД: «в режиме развернуть показываетсяя не только заголов заметки, но
+   ещё и тело заметки, тело можно изменять и дополнять только в
+   полноэкранном режиме».
+
+   На столе стоит первая строка. Тело за ней — и о том, что оно есть,
+   говорит не значок и не подпись, а вторая кромка, выглядывающая снизу:
+   под этим листом лежит ещё один. */
+.note-body { display: none; }
+.sticky-note.has-body::after {
+  content: ""; position: absolute; left: 9px; right: 9px; bottom: -3px; height: 4px;
+  border-radius: 0 0 var(--r-card) var(--r-card);
+  background: var(--glass);
+  border: 1px solid rgba(var(--wp-light-rgb, 91, 124, 255), calc(.10 + .16 * var(--lit)));
+  border-top: 0;
+  pointer-events: none;
+}
+.sticky-note.full.has-body::after { display: none; }
+.sticky-note .note-text { overflow: hidden; }
+
+.sticky-note.full {
+  position: fixed;
+  left: 12px; right: 12px;
+  top: calc(var(--topbar-h) + 12px);
+  bottom: calc(12px + var(--kb-inset, 0px) + max(0px, env(safe-area-inset-bottom)));
+  width: auto; max-width: none; min-width: 0;
+  z-index: 120;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 16px 18px 14px;
+  transition: none;
+}
+.sticky-note.full .note-text {
+  font-size: 20px; font-weight: 600; letter-spacing: -.2px; line-height: 1.3;
+  min-height: 0; max-height: none; padding-right: 78px;
+}
+.sticky-note.full .note-body {
+  display: block; flex: 1; min-height: 0;
+  width: 100%; resize: none; border: 0; outline: none; background: none;
+  color: var(--ink-2); font-size: 14.5px; line-height: 1.55;
+  overflow: auto;
+}
+.sticky-note.full .note-lights { bottom: auto; top: 14px; right: 14px; }
+/* Пока заметка на весь экран, стол за ней притушен — но не спрятан: это
+   по-прежнему тот же стол, просто сейчас говорят не с ним. */
+html.sb-note-full #sbNoteLayer { z-index: 120; }
+html.sb-note-full #sbIconLayer,
+html.sb-note-full #sbDeskHint { opacity: .28; transition: opacity .2s var(--ease); }
+html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
 
 /* widgets */
 .sb-widget {
@@ -986,8 +1195,24 @@ html.dragging .window { backdrop-filter: blur(6px); }
   transition: background .14s ease, color .14s ease;
 }
 .light svg { width: 11px; height: 11px; }
-.light:hover, .light:focus-visible { background: var(--glass-2); color: var(--ink); }
-.light.close:hover, .light.close:focus-visible { background: rgba(255, 69, 58, .18); color: #ff6a60; }
+.light:focus-visible { background: var(--glass-2); color: var(--ink); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .light:hover { background: var(--glass-2); color: var(--ink); }
+}
+.light.close:focus-visible { background: rgba(255, 69, 58, .18); color: #ff6a60; }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .light.close:hover { background: rgba(255, 69, 58, .18); color: #ff6a60; }
+}
 .window.focused .lights { border-color: var(--line-2); background: rgba(255, 255, 255, .07); }
 .window.focused .light { color: var(--ink-2); }
 .win-title { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
@@ -1083,7 +1308,14 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: 
   display: flex; align-items: center; gap: 10px; min-width: 0;
   padding: 10px 6px 10px 13px; border-radius: 14px 0 0 14px; text-align: left;
 }
-.dh-body:hover { background: rgba(var(--wp-light-rgb, 91, 124, 255), .09); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .dh-body:hover { background: rgba(var(--wp-light-rgb, 91, 124, 255), .09); }
+}
 .dh-glyph {
   flex: none; display: grid; place-items: center; width: 17px; height: 17px;
   color: rgb(var(--wp-light-2-rgb, 143, 168, 242));
@@ -1098,7 +1330,14 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: 
   border-radius: 0 14px 14px 0; color: var(--ink-3);
 }
 .dh-close svg { width: 13px; height: 13px; }
-.dh-close:hover { background: rgba(var(--wp-light-rgb, 91, 124, 255), .12); color: var(--ink); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .dh-close:hover { background: rgba(var(--wp-light-rgb, 91, 124, 255), .12); color: var(--ink); }
+}
 
 /* ── ПОДСКАЗКА НА ТЕЛЕФОНЕ: ШИРЕ, А НЕ ВЫШЕ (v48) ────────────────────────
    Основатель, по снимку: «подсказки пусть будут более широкие, чем такие
@@ -1178,9 +1417,24 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: 
 html.dock-away #dock { transform: translate(-50%, 5px) scale(.975); }
 html.dock-away .dock-shelf { background: rgba(16, 13, 12, .74); }
 html.dock-away #dock .dock-tile, html.dock-away #dock .dock-label { opacity: .5; }
-html.dock-away #dock:hover, html.dock-away #dock:focus-within { transform: translate(-50%, 0); }
-html.dock-away #dock:hover .dock-tile, html.dock-away #dock:focus-within .dock-tile,
-html.dock-away #dock:hover .dock-label, html.dock-away #dock:focus-within .dock-label { opacity: 1; }
+html.dock-away #dock:focus-within { transform: translate(-50%, 0); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  html.dock-away #dock:hover { transform: translate(-50%, 0); }
+}
+html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within .dock-label { opacity: 1; }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  html.dock-away #dock:hover .dock-tile, html.dock-away #dock:hover .dock-label { opacity: 1; }
+}
 @media (prefers-reduced-motion: reduce) { html.dock-away #dock { transform: translate(-50%, 0); } }
 .dock-shelf {
   --dock-gap: 8px;
@@ -1396,7 +1650,14 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
   display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--r-ctrl);
   background: rgba(255, 255, 255, .03); border: 1px solid var(--line); margin-bottom: 6px; cursor: pointer;
 }
-.notif-row:hover, .task-row:hover, .clip-row:hover { background: rgba(255, 255, 255, .06); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .notif-row:hover, .task-row:hover, .clip-row:hover { background: rgba(255, 255, 255, .06); }
+}
 .notif-main { flex: 1; min-width: 0; }
 .notif-title { font-size: 13px; }
 .notif-text, .task-sub, .notif-time, .clip-time { font-size: 11.5px; color: var(--ink-3); }
@@ -1446,7 +1707,14 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 }
 #sbCtxMenu:not(.open) { display: none; }
 .ctx-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 8px 11px; border-radius: 10px; font-size: 13px; text-align: left; color: var(--ink); }
-.ctx-item:hover { background: var(--accent-soft); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .ctx-item:hover { background: var(--accent-soft); }
+}
 .ctx-check { color: var(--accent); }
 .ctx-sep { height: 1px; margin: 5px 8px; background: var(--line); }
 
@@ -1649,7 +1917,14 @@ html.is-compact .titlebar { cursor: default; }
   background: var(--glass); border: 1px solid var(--line); border-radius: 7px;
   transition: color .16s ease, background .16s ease, border-color .16s ease, transform .12s var(--ease);
 }
-.tb-lang-now:hover { color: var(--ink); background: var(--glass-2); border-color: var(--line-2); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .tb-lang-now:hover { color: var(--ink); background: var(--glass-2); border-color: var(--line-2); }
+}
 .tb-lang-now:active { transform: scale(.94); }
 .tb-lang-now:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Язык, у которого своих строк нет (финский показывает английские), назван
@@ -1669,7 +1944,14 @@ html.is-compact .titlebar { cursor: default; }
   padding: 7px 9px; border: 0; border-radius: 8px; background: none; cursor: pointer;
   color: var(--ink-2, var(--ink)); text-align: left; font-size: 12.5px; line-height: 1;
 }
-.tb-lang-item:hover { background: var(--glass-2); color: var(--ink); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .tb-lang-item:hover { background: var(--glass-2); color: var(--ink); }
+}
 .tb-lang-item.is-active { color: var(--ink); }
 .tb-lang-item.is-active .tb-lang-code { color: var(--accent); }
 .tb-lang-code { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; min-width: 20px; }
@@ -1689,7 +1971,14 @@ button.tb-mark {
   border-radius: 8px; color: inherit; font: inherit;
   transition: background .16s ease, transform .12s var(--ease);
 }
-button.tb-mark:hover { background: var(--glass); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  button.tb-mark:hover { background: var(--glass); }
+}
 button.tb-mark:active { transform: scale(.94); }
 button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tb-lang-item.is-partial .tb-lang-name::after { content: " ·"; opacity: .6; }
