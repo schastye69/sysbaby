@@ -85,6 +85,9 @@
     var t = T();
     var running = win._xpRunning === true;
 
+    /* Прокрутка человека переживает перерисовку — средство оболочки,
+       общее для всех приложений (D-099). */
+    var _sbKeep = window.sbKeepScroll ? window.sbKeepScroll(host) : null;
     host.innerHTML =
       '<div class="xp-root' + (running ? " running" : "") + '">' +
         '<header class="xp-head">' +
@@ -112,6 +115,7 @@
           '<button type="button" class="xp-back" id="xpBack">' + esc(t.close) + "</button>" +
         "</div>" +
       "</div>";
+    if (_sbKeep) _sbKeep();
 
     var run = host.querySelector("#xpRun");
     if (run) {

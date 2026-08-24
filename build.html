@@ -33,13 +33,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v59">
+<meta name="sysbaby-build" content="v60">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v59">
+<link rel="stylesheet" href="shared/system.css?b=v60">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -117,11 +117,11 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v59"></script>
-<script src="shared/portfolio.strings.js?b=v59"></script>
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v59" />
-<script src="shared/portfolio.view.js?b=v59"></script>
-<script src="shared/pricing.data.js?b=v59"></script>
+<script src="shared/portfolio.data.js?b=v60"></script>
+<script src="shared/portfolio.strings.js?b=v60"></script>
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v60" />
+<script src="shared/portfolio.view.js?b=v60"></script>
+<script src="shared/pricing.data.js?b=v60"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -359,11 +359,18 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
 .lang.is-warm{color:var(--accent);transition:none}
 
 /* --- hero -------------------------------------------------------------- */
+/* Подпись под витриной (v60): последняя строка колонки текста, а не
+   отдельно стоящая надпись. Сверху — отступ от заметки над ней. Снизу —
+   запас на плавающий док, взятый у самого дока (--lp-dock-h, публикует
+   publishDockHeight): без него подпись уходит доку под стекло. */
 .hero-built-line{
-  margin:2px 0 0;font-family:var(--mono,monospace);font-size:12px;letter-spacing:.34em;
+  margin:18px 0 calc(var(--lp-dock-h,96px) + 16px);
+  font-family:var(--mono,monospace);font-size:11.5px;letter-spacing:.34em;
   text-transform:lowercase;color:var(--ink-3,#8a8a90);
 }
-@media (max-width:640px){.hero-built-line{font-size:10.5px;letter-spacing:.22em}}
+@media (max-width:640px){
+  .hero-built-line{font-size:10px;letter-spacing:.2em;margin-top:14px}
+}
 .hero{
   position:fixed;inset:0;z-index:10;display:flex;justify-content:center;
   /* `safe center` is the whole fix for the clipped first line. A centred flex
@@ -1378,12 +1385,6 @@ html[data-anim="paused"] .dock-flare{display:none}
          считается по измерению — см. fitHeroName(). -->
     <div class="hero-head">
       <p class="hero-name-line reveal" id="heroName" aria-label="Building Automated Business for You"><span class="w" aria-hidden="true"><b>B</b>uilding</span><span class="w" aria-hidden="true"><b>A</b>utomated</span><span class="w" aria-hidden="true"><b>B</b>usiness</span><span class="w" aria-hidden="true">for</span><span class="w" aria-hidden="true"><b>Y</b>ou</span></p>
-      <!-- Фраза переехала СЮДА из занавеса загрузки ОС по слову основателя:
-           «слоган built around your business должен быть только в приложении
-           build» (v47.1). Голос продавца — в витрине; у системы своя фраза.
-           Строка намеренно не переводится, как и hero-name-line над ней:
-           это пара к непереводимой расшифровке имени, не текст раздела. -->
-      <p class="hero-built-line reveal" id="heroBuilt" aria-hidden="false">built around your business</p>
       <h1 class="reveal" id="heroTitle"></h1>
     </div>
     <p class="hero-text reveal" id="heroText"></p>
@@ -1404,6 +1405,31 @@ html[data-anim="paused"] .dock-flare{display:none}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 12 5 5L20 6"/></svg>
       <span id="heroNoteText"></span>
     </p>
+    <!-- ── ФРАЗА ВНИЗУ, А НЕ НАД ЗАГОЛОВКОМ (v60) ────────────────────────
+         Повод от основателя 24.08.2026: «build around your business прошу
+         перенести в низ лендинга приложения build».
+
+         Она стояла третьей строкой сверху — между расшифровкой имени и
+         заголовком — и спорила с ними за одно место: верх экрана, где
+         человек ищет, о чём тут вообще. Три строки подряд, и каждая
+         претендует быть первой.
+
+         Внизу у неё другая работа и никакого спора: не заявление, а подпись
+         под всем, что выше.
+
+         ПОСТАВЛЕНА В ПОТОК, А НЕ ПРИБИТА К НИЗУ ЭКРАНА. Первая редакция
+         сделала её absolute с отступом снизу — и её тут же измерили: на
+         телефоне она легла на полосу доказательства, на столе ушла под док.
+         Числа отступа пришлось бы подгонять под каждую ширину, а они и есть
+         то, что стареет. В потоке подгонять нечего: строка стоит последней
+         после всего, что есть, и низом её делает порядок, а не координата.
+
+         Раньше (v47.1) фраза уже переезжала — из занавеса загрузки ОС сюда,
+         по слову «слоган built around your business должен быть только в
+         приложении build». Приложение то же, место в нём другое.
+
+         Не переводится: она пара к непереводимой расшифровке имени. -->
+    <p class="hero-built-line reveal" id="heroBuilt" aria-hidden="false">built around your business</p>
     </div>
    <!-- ОБЪЕКТ. Единственный растр на странице, и он объявлен явно: это
         ИЗОБРАЖЕНИЕ знака, а не сам знак. Знак остаётся геометрией везде,
@@ -3679,6 +3705,35 @@ function applyRect(record, rect, animate) {
    его сдвинутым — значит отдавать содержимому то больше, то меньше места
    на каждой анимации. Ту же величину ОС публикует как --dock-h: одна
    механика на две поверхности. */
+/* Высота припаркованного дока витрины наружу, в --lp-dock-h. Считается той
+   же меркой, что и зона в reserveDockRoom ниже: offsetHeight плюс отступ
+   снизу, а не rect, — у дока живут покой, уход и подпрыгивание, и мерить его
+   сдвинутым значит получать разное число на каждой анимации.
+
+   Зачем понадобилась: подпись «built around your business» стоит последней
+   строкой витрины, а док плавает над содержимым. Без запаса подпись уходит
+   ему под стекло — измерено на столе 1280: низ строки 751 при верхе дока
+   684. Запас берётся у самого дока, поэтому не устареет ни при какой правке
+   его размера.
+
+   Пишем ТОЛЬКО при изменении: свойство на корне объявляет устаревшим стиль
+   всего документа, и писать его на каждый resize было бы той же ошибкой,
+   что Совет чинил в доке ОС. */
+var lpDockH = null;
+function publishDockHeight() {
+  var dock = el("dock");
+  if (!dock) return;
+  var cs = getComputedStyle(dock);
+  var h = Math.round(dock.offsetHeight + (parseFloat(cs.bottom) || 0));
+  if (!(h > 0) || h === lpDockH) return;
+  lpDockH = h;
+  document.documentElement.style.setProperty("--lp-dock-h", h + "px");
+}
+window.addEventListener("resize", publishDockHeight);
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", publishDockHeight);
+else publishDockHeight();
+setTimeout(publishDockHeight, 900);
+
 function reserveDockRoom(record) {
   if (!record || !record.body) return;
   var dock = el("dock");

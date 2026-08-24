@@ -61,7 +61,13 @@
   function render(win) {
     var body = bodyOf(win);
     if (!body) return;
+    /* Обёртка стоит и здесь, хотя корпус очищается в пустоту и его тут же
+       занимает рамка витрины: восстанавливать будет нечего, ключи просто не
+       найдутся. Так сделано нарочно — исключение в законе стало бы дырой,
+       а единообразие стоит ноль (D-099). */
+    var _sbKeep = window.sbKeepScroll ? window.sbKeepScroll(body) : null;
     body.innerHTML = "";
+    if (_sbKeep) _sbKeep();
     body.classList.add("build-body");
 
     var frame = document.createElement("iframe");

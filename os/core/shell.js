@@ -35,6 +35,70 @@
   window.sbReadJSON = readJSON;
   window.sbWriteJSON = writeJSON;
 
+  /* ── ПЕРЕРИСОВКА НЕ ДВИГАЕТ ТО, ЧТО ПРОКРУТИЛ ЧЕЛОВЕК (v60) ──────────────
+     ПОВОД: основатель, дважды и с разных экранов. Сначала «Настройки»:
+     «я нажимаю на кнопку about и меню улетает в начало». Потом «Письма»:
+     «здесь снова телепорт. больше нигде не должно быть телепортов!».
+
+     В v58 это чинилось внутри одного приложения, и правило было записано
+     словами в шапке закона, а не в коде. Слова не исполняются: следующее
+     приложение с прокручиваемой полосой получило тот же дефект, не нарушив
+     ни строчки. Теперь это не приём, а СРЕДСТВО ОБОЛОЧКИ — одно на всех.
+
+     ПОЧЕМУ ЭТО ВООБЩЕ СЛУЧАЕТСЯ. Приложения перерисовывают корпус целиком
+     через innerHTML: так проще и так они устроены с самого начала. Но
+     innerHTML УНИЧТОЖАЕТ узлы, а вместе с ними и прокрутку — своё положение
+     в списке, свою полосу разделов, своё место в длинной ленте. Человек
+     этого не просил: перерисовка — дело системы, прокрутка — дело человека.
+
+     КАК УЗНАЁТСЯ ТОТ ЖЕ УЗЕЛ ПОСЛЕ ЗАМЕНЫ. Ссылку хранить нельзя — узел
+     будет другим. Ключом служит место в разметке: имя тега, полный список
+     классов и порядковый номер среди таких же внутри корпуса. Для полос и
+     лент этого достаточно, а если разметка сменилась целиком — ключ просто
+     не найдётся, и восстанавливать будет нечего. Это правильный исход:
+     лучше ничего не восстановить, чем восстановить не туда.
+
+     ВОЗВРАТ ИДЁТ СРАЗУ, в той же задаче, до отрисовки, — поэтому кадра с
+     полосой в начале не бывает вовсе.
+
+     Чего средство НЕ делает: не подводит полосу к активному разделу. Это
+     был бы второй телепорт вместо первого. Требование самое скромное — где
+     стояло, там и осталось. */
+  window.sbKeepScroll = function (host) {
+    if (!host || !host.querySelectorAll) return function () { };
+    var keyOf = function (el) {
+      return el.tagName + "." + (el.className && el.className.baseVal !== undefined
+        ? el.className.baseVal : String(el.className || ""));
+    };
+    var seen = Object.create(null), kept = [];
+    var all = [host].concat(Array.prototype.slice.call(host.querySelectorAll("*")));
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      var l = el.scrollLeft || 0, t = el.scrollTop || 0;
+      var k = keyOf(el);
+      var n = seen[k] = (seen[k] === undefined ? 0 : seen[k] + 1);
+      if (l > 0 || t > 0) kept.push({ k: k, n: n, l: l, t: t });
+    }
+    if (!kept.length) return function () { };
+    return function restore() {
+      var seen2 = Object.create(null);
+      var all2 = [host].concat(Array.prototype.slice.call(host.querySelectorAll("*")));
+      for (var j = 0; j < all2.length; j++) {
+        var el2 = all2[j];
+        var k2 = keyOf(el2);
+        var n2 = seen2[k2] = (seen2[k2] === undefined ? 0 : seen2[k2] + 1);
+        for (var m = 0; m < kept.length; m++) {
+          if (kept[m].k !== k2 || kept[m].n !== n2) continue;
+          var maxL = el2.scrollWidth - el2.clientWidth;
+          var maxT = el2.scrollHeight - el2.clientHeight;
+          if (maxL > 0) el2.scrollLeft = kept[m].l > maxL ? maxL : kept[m].l;
+          if (maxT > 0) el2.scrollTop = kept[m].t > maxT ? maxT : kept[m].t;
+          break;
+        }
+      }
+    };
+  };
+
   function rawGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function rawSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* §10 amnesiac */ } }
 

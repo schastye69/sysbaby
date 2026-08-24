@@ -373,18 +373,20 @@
      человек не просил везти его куда-либо, он просил ничего не трогать.
      Правильное поведение самое скромное: где стояло, там и осталось.
 
-     Восстановление идёт СРАЗУ после innerHTML, в той же задаче, до отрисовки,
-     — поэтому промежуточного кадра с полосой в начале не бывает. И оно
-     ограничено настоящей длиной новой полосы: разделы могут смениться, и
-     старое число тогда просто некуда приложить. */
+     ── ПЕРЕЕХАЛО В ОБОЛОЧКУ (v60) ────────────────────────────────────────
+     Здесь это чинилось для одного приложения, и правило было записано
+     словами в шапке закона. Слова не исполняются: «Письма» получили тот же
+     телепорт, не нарушив ни строчки, и основатель прислал снимок со словами
+     «больше нигде не должно быть телепортов». Теперь восстановление —
+     средство оболочки sbKeepScroll (см. os/core/shell.js), одно на все
+     приложения; здесь остался только его вызов. */
   function render(win) {
     var host = bodyOf(win);
     if (!host) return;
     if (!win._settingsSection || !RENDERERS[win._settingsSection]) win._settingsSection = "general";
     var section = win._settingsSection;
 
-    var keptSide = host.querySelector(".st-side");
-    var keptScroll = keptSide ? { l: keptSide.scrollLeft, t: keptSide.scrollTop } : null;
+    var _sbKeep = window.sbKeepScroll ? window.sbKeepScroll(host) : null;
 
     host.innerHTML =
       '<div class="app-settings">' +
@@ -397,13 +399,7 @@
         '<section class="st-pane">' + RENDERERS[section]() + "</section>" +
       "</div>";
 
-    if (keptScroll) {
-      var side = host.querySelector(".st-side");
-      if (side) {
-        side.scrollLeft = Math.min(keptScroll.l, Math.max(0, side.scrollWidth - side.clientWidth));
-        side.scrollTop = Math.min(keptScroll.t, Math.max(0, side.scrollHeight - side.clientHeight));
-      }
-    }
+    if (_sbKeep) _sbKeep();
 
     wire(win, host);
     if (section === "privacy") measureStorage(win, "#stStorage");

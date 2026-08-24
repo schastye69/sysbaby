@@ -308,6 +308,9 @@
     var previewNode = previewIndex >= 0 && children[previewIndex] && children[previewIndex].type === "file"
       ? children[previewIndex] : null;
 
+    /* Прокрутка человека переживает перерисовку — средство оболочки,
+     общее для всех приложений (D-099). */
+    var _sbKeep = window.sbKeepScroll ? window.sbKeepScroll(host) : null;
     host.innerHTML =
       '<div class="app-files">' +
         '<div class="fv-bar">' +
@@ -328,6 +331,7 @@
         "</div>" +
         (previewNode ? previewMarkup(previewNode) : "") +
       "</div>";
+    if (_sbKeep) _sbKeep();
 
     wire(win, host);
   }
