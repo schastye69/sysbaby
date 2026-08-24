@@ -979,7 +979,11 @@
     }
     doc.addEventListener("pointerdown", function (ev) {
       if (!window.sbContextMenuOpen()) return;
-      if (ev.target && ev.target.closest && ev.target.closest("#sbCtxMenu")) return;
+      /* #sbFab исключён намеренно: общий сторож ловит pointerdown в фазе
+         перехвата, то есть ДО обработчика самой кнопки. Закрой он меню
+         здесь — кнопка увидела бы уже закрытое меню и открыла его снова,
+         и повторное нажатие никогда бы не закрывало. Пусть решает кнопка. */
+      if (ev.target && ev.target.closest && ev.target.closest("#sbCtxMenu, #sbFab")) return;
       window.sbCloseContextMenu();
     }, true);
     window.addEventListener("scroll", function () { window.sbCloseContextMenu(); }, true);
@@ -987,41 +991,40 @@
   }
 
   /* ================================================ quick actions orb §4.5 */
+  /* ── КНОПКА ДЕЙСТВИЯ НЕ ХОДИТ ПО ЭКРАНУ (v54) ───────────────────────────
+     ПОВОД, дословно от основателя 21.08.2026, со снимком: «бывший плюсик не
+     должен иметь возможность перемещения по экрану - он должен быть
+     зафиксирован как подсказки и зафиксирован относительно подсказок очень
+     красиво и гениально».
+
+     ЧТО БЫЛО. Кнопку можно было утащить пальцем куда угодно, и место
+     запоминалось в sysbaby.fab.pos. На снимке она висела посреди экрана —
+     сама по себе, ни к чему не привязанная. Перетаскивание задумывалось как
+     свобода, а вышло как поломка: единственный способ вернуть кнопку домой
+     был поворот экрана (orientationchange стирал ключ). На настольной машине
+     повернуть экран нельзя — значит, обратной дороги не было вовсе.
+
+     ЧТО СТАЛО. Перетаскивания нет. Кнопка стоит там же, где подсказка, и
+     их общая линия задана ОДНИМ значением --desk-row-b (см. core.css §8):
+     не «96 тут и 22 там», а одно число на двоих. Место больше не хранится —
+     хранить нечего.
+
+     ЧИСТКА ПРИ ЧТЕНИИ. Ключ прошлой версии стирается на входе, а не ждёт,
+     пока человек догадается почистить хранилище: у кого кнопка уже утащена,
+     тот получает её на месте сразу после обновления. Тот же приём, что у
+     извещений в notifList().
+
+     И ПОБОЧНО — КЛАВИАТУРА. Раньше открытие висело на pointerup: кнопка,
+     объявленная <button>, не отзывалась на Enter и Tab вообще. Теперь это
+     click, и она открывается с клавиатуры, как всякая кнопка. */
   function wireFab() {
     var fab = $("#sbFab");
     if (!fab) return;
-    var saved = readJSON("sysbaby.fab.pos", null);
-    if (saved && isFinite(saved.x) && isFinite(saved.y) &&
-        saved.x > 0 && saved.x < window.innerWidth - 40 && saved.y > 40 && saved.y < window.innerHeight - 40) {
-      fab.style.left = saved.x + "px";
-      fab.style.top = saved.y + "px";
-      fab.style.right = "auto";
-      fab.style.bottom = "auto";
-    }
-    window.addEventListener("orientationchange", function () {
-      fab.style.left = ""; fab.style.top = ""; fab.style.right = ""; fab.style.bottom = "";
-      if (window.sbDB) window.sbDB.remove("sysbaby.fab.pos");
-    });
+    /* след прошлой версии: место утащенной кнопки. Стираем при чтении. */
+    if (window.sbDB) { try { window.sbDB.remove("sysbaby.fab.pos"); } catch (e) { /* ignore */ } }
+    fab.style.left = ""; fab.style.top = ""; fab.style.right = ""; fab.style.bottom = "";
 
-    var drag = null;
-    fab.addEventListener("pointerdown", function (ev) {
-      drag = { sx: ev.clientX, sy: ev.clientY, ox: fab.offsetLeft, oy: fab.offsetTop, moved: false };
-      try { fab.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
-    });
-    fab.addEventListener("pointermove", function (ev) {
-      if (!drag) return;
-      var dx = ev.clientX - drag.sx, dy = ev.clientY - drag.sy;
-      if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
-      drag.moved = true;
-      fab.style.right = "auto"; fab.style.bottom = "auto";
-      fab.style.left = clamp(drag.ox + dx, 6, window.innerWidth - fab.offsetWidth - 6) + "px";
-      fab.style.top = clamp(drag.oy + dy, 50, window.innerHeight - fab.offsetHeight - 6) + "px";
-    });
-    fab.addEventListener("pointerup", function () {
-      if (!drag) return;
-      var moved = drag.moved;
-      drag = null;
-      if (moved) { writeJSON("sysbaby.fab.pos", { x: fab.offsetLeft, y: fab.offsetTop }); return; }
+    fab.addEventListener("click", function () {
       if (window.sbContextMenuOpen()) { window.sbCloseContextMenu(); return; }
       var r = fab.getBoundingClientRect();
       buildMenu(desktopMenuItems(r.left, r.top - 12), r.left - 150, Math.max(60, r.top - 320));

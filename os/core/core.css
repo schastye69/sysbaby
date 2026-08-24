@@ -55,6 +55,28 @@
   --font: system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo, monospace;
   --topbar-h: 44px;
+
+  /* ── НИЖНИЙ РЯД СТОЛА: ОДНО ЧИСЛО НА ДВОИХ (v54) ────────────────────────
+     Повод от основателя 21.08.2026: «бывший плюсик ... должен быть
+     зафиксирован как подсказки и зафиксирован относительно подсказок очень
+     красиво и гениально».
+
+     Внизу стола живут двое: подсказка и кнопка действия. До этой версии их
+     согласие держалось на трёх переписанных от руки числах — кнопка знала
+     свой отступ (18) и свой размер (42), а подсказка знала их ЖЕ, набранные
+     заново в calc(18px + 42px + 10px). Такое согласие держится ровно до
+     первой правки одного из чисел; и линия у них была разная: 96 на широком
+     экране и 22 на телефоне — против высоты дока у подсказки.
+
+     Теперь чисел нет — есть эти четыре имени, и оба берут своё отсюда.
+     --desk-row-b — линия, на которой они стоят, считается от НАСТОЯЩЕЙ
+     высоты дока (её публикует shell.js в --dock-h), а не от догадки. Сдвинь
+     линию — поднимутся оба. Смени размер кнопки — подсказка отступит ровно
+     на столько. Разойтись они больше не могут: расходиться нечему. */
+  --fab-size: 42px;
+  --fab-inset: 18px;
+  --desk-row-gap: 10px;
+  --desk-row-b: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 90px) + 12px);
 }
 
 html[data-theme="light"] {
@@ -1015,8 +1037,10 @@ html.dragging .window { backdrop-filter: blur(6px); }
      arrangement: a fixed element at z-index 54 painting over every window. */
   position: absolute; left: 50%; z-index: 5;
   /* clear of the dock by measurement, not by a number that ages badly:
-     the shell publishes --dock-h from the dock's real height. */
-  bottom: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 90px) + 12px);
+     the shell publishes --dock-h from the dock's real height. Само
+     выражение переехало в --desk-row-b (§1): на этой линии стоит не одна
+     подсказка, а нижний ряд целиком. */
+  bottom: var(--desk-row-b);
   display: flex; align-items: stretch; gap: 0;
   max-width: min(560px, calc(100vw - 32px));
   border-radius: 14px;
@@ -1070,8 +1094,9 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: 
    устарел ещё в D-061: док на телефоне есть, подсказка встаёт над ним по
    его настоящей высоте, как и на широком экране. */
 @media (max-width: 620px) {
+  /* на телефоне полка ниже — запас до первой публикации --dock-h тоже */
+  :root { --desk-row-b: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 62px) + 12px); }
   #sbDeskHint {
-    bottom: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 62px) + 12px);
     width: calc(100vw - 20px);
     max-width: calc(100vw - 20px);
   }
@@ -1093,12 +1118,22 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: 
      а место рядом с ним пустует. Плюс скрывается сам, когда открыто окно
      (html.has-windows), — то есть оба живут и прячутся вместе.
 
-     Ширина считается от плюса, а не на глаз: 18 отступ + 42 сам плюс + 10
-     зазор. Так подсказка не наезжает на него ни при каком размере экрана. */
+     Ширина считается ОТ САМОЙ КНОПКИ, а не на глаз и не от руки: те же
+     --fab-inset, --fab-size и --desk-row-gap, которыми кнопка задана в §6.
+     Так подсказка не наезжает на неё ни при каком размере экрана и ни при
+     какой будущей правке кнопки (v54, §1).
+
+     И опускается тут ВЕСЬ РЯД, а не одна подсказка: --desk-row-b — общее
+     свойство, кнопка стоит на нём же. Раньше здесь было 22 у подсказки и
+     ещё одно 22 у кнопки в другом месте файла; два числа, которые обязаны
+     совпадать, рано или поздно перестают. */
+  html.dock-empty {
+    --desk-row-b: 22px;
+  }
   html.dock-empty #sbDeskHint {
-    left: 10px; right: calc(18px + 42px + 10px);
+    left: 10px;
+    right: calc(var(--fab-inset) + var(--fab-size) + var(--desk-row-gap));
     width: auto; max-width: none;
-    bottom: 22px;
     transform: translate(0, 8px);
   }
   html.dock-empty #sbDeskHint.on { transform: translate(0, 0); }
@@ -1218,8 +1253,13 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
    что у подсказки, и именно оно делает их родственниками. */
 #sbFab {
   transition: opacity .22s ease, transform .22s ease, border-color .6s ease, background .6s ease;
-  position: fixed; right: 18px; bottom: 96px; z-index: 56; width: 42px; height: 42px;
-  border-radius: 14px;
+  position: fixed; z-index: 56; border-radius: 14px;
+  /* ── КНОПКА СТОИТ В РЯДУ, А НЕ ГДЕ ПРИДЁТСЯ (v54) ────────────────────
+     Все четыре числа — из §1, оттуда же их читает подсказка. Своих чисел
+     у кнопки больше нет: 96px и 22px убраны, потому что были ВТОРЫМ
+     мнением о линии, на которой она стоит. Мнение теперь одно. */
+  right: var(--fab-inset); bottom: var(--desk-row-b);
+  width: var(--fab-size); height: var(--fab-size);
   display: grid; place-items: center; line-height: 1; color: var(--ink);
   background:
     radial-gradient(160% 180% at 12% -40%,
@@ -1459,7 +1499,6 @@ html.icons-small .icon-label { font-size: 10.5px; }
   .dock-tile svg { width: 18px; height: 18px; }
   .id-name { display: none; }
   .tb-identity::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: block; }
-  #sbFab { bottom: 22px; }
 }
 @media (max-width: 560px) {
   .tb-seq { display: none; }

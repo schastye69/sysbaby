@@ -62,6 +62,9 @@
      picture never jumps. In between you see a still wallpaper in the margins
      around a window — which is what you would have seen anyway. */
   var PARKED_CLASS = "wp-parked";
+  /* Такт покоя: 80 мс, то есть 12.5 кадра в секунду. Число не выбрано, а
+     измерено — обоснование целиком в draw(), где оно применяется. */
+  var IDLE_STEP = 80;
 
   var LEVEL_KEY = "field.level";
 
@@ -95,7 +98,7 @@
        Наружу их отдаёт sbField, там же, где running/parked/tier: «поле
        стоит» — это утверждение, и его надо чем-то мерить. Без них
        единственным прибором был глазомер. */
-    touchCount: 0, resizeCount: 0, pendingResize: false,
+    touchCount: 0, resizeCount: 0, drawCount: 0, pendingResize: false,
     init: function () {
       if (this.cv) return;
       this.cv = q("#sbField");
@@ -156,6 +159,10 @@
         self.waves.push({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight, t: 0 });
         if (self.waves.length > 3) self.waves.shift();
         self.charge = Math.min(1, self.charge + .3);
+        /* Такт покоя растянут до 80 мс; без этой строки палец ждал бы
+           следующего тика до восьмидесяти миллисекунд, и рябь запаздывала
+           бы за касанием. Ноль здесь значит «рисуй на ближайшем кадре». */
+        self.last = 0;
       }, { passive: true });
       /* No deviceorientation listener. The reference parallaxes the field
          from the phone's tilt; here the wallpaper holds still whichever way
@@ -274,7 +281,10 @@
       }
     },
 
-    pulse: function () { this.charge = Math.min(1, this.charge + .13); this.typing = now(); },
+    /* last = 0 по той же причине, что и в pointerdown: пульс приходит от
+       набора текста, и поле обязано отозваться на ближайшем кадре, а не
+       через такт покоя. */
+    pulse: function () { this.charge = Math.min(1, this.charge + .13); this.typing = now(); this.last = 0; },
 
     /* ------------------------------------------------------- ступень качества */
     /* Ступень — это максимум из двух: того, что попросил человек («тихо»), и
@@ -357,8 +367,47 @@
          движение; рябь от пальца живёт 2,4 секунды и на таком такте стала бы
          ступенчатой. Это единственное быстрое движение в обоях — ему отдаётся
          полный такт, остальному хватает урезанного. */
-      var stepNow = this.waves.length ? Math.min(this.step, 42) : this.step;
+      /* ── ТАКТ ПОКОЯ (v55) ─────────────────────────────────────────────
+         ПОВОД: директива основателя о производительности. Обсерватория
+         показала вычитанием, что на ПУСТОМ столе поле — 94 из каждых 95
+         миллисекунд всей работы системы: 239.97 мс скрипта за три секунды
+         против 2.55 мс с погашенным полем. Профиль назвал виновника точно:
+         draw 233 мс + s 60 мс + обёртка rAF 27 мс за пять секунд, то есть
+         6.3% главного потока в состоянии, где не происходит ничего.
+
+         ЧТО ЗДЕСЬ НЕ СДЕЛАНО. Поле не погашено, не упрощено и не лишено ни
+         одного эффекта. Изменён только ТАКТ — и только когда на столе
+         ничего не происходит.
+
+         ПОЧЕМУ ИМЕННО 80 мс, А НЕ «на глаз». Рисунок — функция времени,
+         значит разница между двумя кадрами зависит только от промежутка.
+         Измерено на живом поле, 46 снимков канваса, все пары до 220 мс:
+
+             промежуток   средняя разница на пиксель (из 255)
+                20 мс     0.578      ← пол случайного дизера
+                40 мс     0.582
+                60 мс     0.588
+                80 мс     0.591      ← всё ещё пол
+               100 мс     0.905
+               120 мс     1.214      ← вдвое выше пола, шаг становится виден
+
+         До 80 мс картинка не меняется НИЧЕМ, кроме собственного дизера поля.
+         Дрейф начинает читаться после сотни. Отсюда и порог: 80 мс — это
+         12.5 кадра в секунду, и ровно столько же названо в комментарии
+         выше, написанном задолго до этой мерки и с другой стороны: «плазма
+         дрейфует так медленно, что двенадцать кадров в секунду читаются как
+         спокойное движение». Два независимых пути к одному числу.
+
+         ЧТО СЧИТАЕТСЯ ПОКОЕМ. Ни одной живой волны от касания, заряд угас,
+         и последние четыре секунды никто не печатал. Любое из трёх —
+         и такт мгновенно полный: за это отвечает last = 0 в pointerdown и
+         в pulse(), иначе первое касание ждало бы до 80 мс и палец это
+         почувствовал бы. */
+      var idleNow = !this.waves.length && this.charge < .02 && (ts - this.typing) >= 4000;
+      var stepNow = this.waves.length ? Math.min(this.step, 42)
+        : (idleNow ? (this.step > IDLE_STEP ? this.step : IDLE_STEP) : this.step);
       if (ts - this.last < stepNow) return;
+      this.drawCount++;               /* наружу через work(): по нему закон считает такт */
       var t_in = now();                       /* прибор адаптации, см. note() */
       var dt = Math.min(120, ts - this.last || this.step);
       this.last = ts;
@@ -580,7 +629,7 @@
        Закон tools/field-idle-check.mjs держит оба числа неподвижными, пока
        поле накрыто окном. Числа только растут и никогда не сбрасываются —
        сброс дал бы закону способ не заметить работу между двумя замерами. */
-    work: function () { return { touches: Field.touchCount, resizes: Field.resizeCount }; }
+    work: function () { return { touches: Field.touchCount, resizes: Field.resizeCount, draws: Field.drawCount }; }
   };
 
   /* Any window on screen — open, not minimised — parks the wallpaper. */
