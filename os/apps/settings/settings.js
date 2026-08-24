@@ -356,11 +356,35 @@
 
   /* --------------------------------------------------------------- render */
 
+  /* ── ПОЛОСА РАЗДЕЛОВ НЕ ТЕЛЕПОРТИРУЕТСЯ В НАЧАЛО (v58) ────────────────────
+     ПОВОД, дословно от основателя 24.08.2026, со снимками: «в системе не
+     должно быть таких "телепортов" - я нажимаю на кнопку about и меню улетает
+     в начало».
+
+     ЧТО ПРОИСХОДИЛО. На узком экране полоса разделов лежит горизонтально и
+     прокручивается (.st-side, overflow-x: auto). Чтобы дотянуться до «About»,
+     человек прокручивает её вправо до конца. Нажатие перерисовывает ВЕСЬ
+     корпус окна через innerHTML — вместе с полосой. Новая полоса рождается
+     непрокрученной, и она прыгает в начало прямо под пальцем: раздел открылся
+     правильный, а кнопка, которую только что нажали, уехала за край.
+
+     ПОЧЕМУ ПРОКРУТКА ЗАПОМИНАЕТСЯ, А НЕ ВЫЧИСЛЯЕТСЯ. Соблазн был «подвести
+     полосу к активному разделу» — но это второй телепорт вместо первого:
+     человек не просил везти его куда-либо, он просил ничего не трогать.
+     Правильное поведение самое скромное: где стояло, там и осталось.
+
+     Восстановление идёт СРАЗУ после innerHTML, в той же задаче, до отрисовки,
+     — поэтому промежуточного кадра с полосой в начале не бывает. И оно
+     ограничено настоящей длиной новой полосы: разделы могут смениться, и
+     старое число тогда просто некуда приложить. */
   function render(win) {
     var host = bodyOf(win);
     if (!host) return;
     if (!win._settingsSection || !RENDERERS[win._settingsSection]) win._settingsSection = "general";
     var section = win._settingsSection;
+
+    var keptSide = host.querySelector(".st-side");
+    var keptScroll = keptSide ? { l: keptSide.scrollLeft, t: keptSide.scrollTop } : null;
 
     host.innerHTML =
       '<div class="app-settings">' +
@@ -372,6 +396,14 @@
         "</aside>" +
         '<section class="st-pane">' + RENDERERS[section]() + "</section>" +
       "</div>";
+
+    if (keptScroll) {
+      var side = host.querySelector(".st-side");
+      if (side) {
+        side.scrollLeft = Math.min(keptScroll.l, Math.max(0, side.scrollWidth - side.clientWidth));
+        side.scrollTop = Math.min(keptScroll.t, Math.max(0, side.scrollHeight - side.clientHeight));
+      }
+    }
 
     wire(win, host);
     if (section === "privacy") measureStorage(win, "#stStorage");

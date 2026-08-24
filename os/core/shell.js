@@ -2765,9 +2765,48 @@
        намеренно, чтобы точка вызова в lift() рассказывала историю. */
     function ghostResidue() { /* снято по слову основателя, v47.1 */ }
 
+    /* ── ЗАНАВЕС ЖДЁТ НЕ СИГНАЛА, А ГОТОВОГО СТОЛА (v59) ──────────────────
+       ПОВОД, дословно от основателя 24.08.2026: «рабочий стол ни в коем
+       случае вначале после загрузки не должен моргать. Startup должен
+       грузиться до тех пор, пока полностью не прогрузится рабочий стол».
+
+       ЧТО ИЗМЕРЕНО. Занавес начинал уходить на 1518-й миллисекунде — в тот
+       миг стол был проявлен на 80%, а ЗНАЧКИ на ШЕСТЬ ПРОЦЕНТОВ. Дальше
+       занавес таял целую секунду, а под ним одновременно проявлялись значки:
+       две встречные анимации с разными кривыми, и яркость на их сумме
+       сначала проваливается, потом возвращается. Это и есть моргание.
+
+       ОТКУДА ВЗЯЛОСЬ. Условие подъёма было «значки ОБЪЯВЛЕНЫ» — событие
+       sysbaby:desktop-ready, которое приходит в тот миг, когда классу
+       rv-icons только поставили класс. Между «начали проявляться» и
+       «проявились» лежит целый переход, и занавес уходил внутри него.
+
+       ЧТО СТАЛО. Ждём не объявления, а СОСТОЯНИЯ: прозрачность стола и слоя
+       значков должна дойти до единицы. Это спрашивается у самого экрана, а
+       не отсчитывается таймером, — значит, изменится длительность перехода в
+       стилях, и условие изменится вместе с ней само.
+
+       ПРЕДОХРАНИТЕЛЬ ОБЯЗАТЕЛЕН. Если слой не появится или переход застрянет,
+       ждать вечно нельзя: занавес — это то, что стоит между человеком и его
+       системой. Через LIFT_WAIT_CAP поднимаем в любом случае. Моргание —
+       беда, запертый вход — беда несравнимо большая. */
+    var LIFT_WAIT_CAP = 4000;
     var sequenceDone = false, iconsRevealed = root.classList.contains("rv-icons");
     function maybeLift() { if (sequenceDone && iconsRevealed) lift(); }
-    doc.addEventListener("sysbaby:desktop-ready", function () { iconsRevealed = true; maybeLift(); });
+
+    function layerSettled(id) {
+      var el = doc.getElementById(id);
+      if (!el) return true;                       /* слоя нет — ждать нечего */
+      var o = parseFloat(window.getComputedStyle(el).opacity);
+      return !(o >= 0) || o > 0.99;
+    }
+    function waitForDesktop(startedAt) {
+      if (finished) return;
+      if (layerSettled("desktop") && layerSettled("sbIconLayer")) { iconsRevealed = true; maybeLift(); return; }
+      if (now() - startedAt > LIFT_WAIT_CAP) { iconsRevealed = true; maybeLift(); return; }
+      requestAnimationFrame(function () { waitForDesktop(startedAt); });
+    }
+    doc.addEventListener("sysbaby:desktop-ready", function () { waitForDesktop(now()); });
 
     function endSequence() { sequenceDone = true; maybeLift(); }
 
