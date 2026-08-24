@@ -142,8 +142,7 @@
       "aria.langs": "Language", "lang.partial": "the storefront speaks it; the system does not yet",
       "desk.allMinimized": "Desk cleared", "desk.allMinimizedSub": "Windows are waiting — tap an icon to bring one back",
       "aria.icons": "Desktop icons", "aria.notes": "Desktop notes",
-      "aria.dock": "Dock", "aria.dockCta": "Start your project",
-      "aria.fab": "Quick actions", "aria.cmdk": "Command palette", "aria.close": "Close",
+      "aria.dock": "Dock", "aria.fab": "Quick actions", "aria.cmdk": "Command palette", "aria.close": "Close",
       "cmdk.placeholder": "Search apps and actions…",
       "cc.connection": "Connection", "cc.online": "Online", "cc.offline": "Offline",
       "cc.offlineLong": "Offline — no network connection",
@@ -152,8 +151,6 @@
       "cc.merge": "Merge instead of replace",
       "theme.dark": "Dark", "theme.light": "Light",
       "mood.studio": "Studio", "mood.aurora": "Aurora", "mood.sunset": "Sunset", "mood.ocean": "Ocean", "mood.mono": "Mono",
-      "dock.cta": "Start your project",
-
       /* ================================================== Pulse / Настройки
          Приложения больше не пишут строки литералами. Ключ живёт здесь,
          рядом с остальными двумя языками, чтобы перевод нельзя было забыть:
@@ -602,8 +599,7 @@
       "aria.langs": "Язык", "lang.partial": "витрина говорит, система пока нет",
       "desk.allMinimized": "Стол очищен", "desk.allMinimizedSub": "Окна ждут — нажмите значок, чтобы вернуть",
       "aria.icons": "Значки рабочего стола", "aria.notes": "Заметки на столе",
-      "aria.dock": "Док", "aria.dockCta": "Начать проект",
-      "aria.fab": "Быстрые действия", "aria.cmdk": "Командная палитра", "aria.close": "Закрыть",
+      "aria.dock": "Док", "aria.fab": "Быстрые действия", "aria.cmdk": "Командная палитра", "aria.close": "Закрыть",
       "cmdk.placeholder": "Поиск приложений и действий…",
       "cc.connection": "Соединение", "cc.online": "В сети", "cc.offline": "Не в сети",
       "cc.offlineLong": "Не в сети — нет подключения",
@@ -612,8 +608,6 @@
       "cc.merge": "Объединить, а не заменить",
       "theme.dark": "Тёмное", "theme.light": "Светлое",
       "mood.studio": "Студия", "mood.aurora": "Аврора", "mood.sunset": "Закат", "mood.ocean": "Океан", "mood.mono": "Моно",
-      "dock.cta": "Начать проект",
-
       /* ============================================================ Настройки */
       "set.tab.general": "Общее", "set.tab.appearance": "Оформление",
       "set.tab.sound": "Звук и фокус", "set.tab.desktop": "Док и рабочий стол",
@@ -1046,8 +1040,7 @@
       "aria.langs": "Keel", "lang.partial": "vitriin räägib, süsteem veel mitte",
       "desk.allMinimized": "Laud on puhas", "desk.allMinimizedSub": "Aknad ootavad — puuduta ikooni, et tagasi tuua",
       "aria.icons": "Töölaua ikoonid", "aria.notes": "Töölaua märkmed",
-      "aria.dock": "Dokk", "aria.dockCta": "Alusta oma projekti",
-      "aria.fab": "Kiirtoimingud", "aria.cmdk": "Käsupalett", "aria.close": "Sulge",
+      "aria.dock": "Dokk", "aria.fab": "Kiirtoimingud", "aria.cmdk": "Käsupalett", "aria.close": "Sulge",
       "cmdk.placeholder": "Otsi rakendusi ja toiminguid…",
       "cc.connection": "Ühendus", "cc.online": "Võrgus", "cc.offline": "Võrguühenduseta",
       "cc.offlineLong": "Võrguühenduseta — võrku pole",
@@ -1056,8 +1049,6 @@
       "cc.merge": "Liida, ära asenda",
       "theme.dark": "Tume", "theme.light": "Hele",
       "mood.studio": "Stuudio", "mood.aurora": "Virmalised", "mood.sunset": "Loojang", "mood.ocean": "Ookean", "mood.mono": "Mono",
-      "dock.cta": "Alusta oma projekti",
-
       /* ============================================================== Seaded
          Обращение к посетителю — teie (мн. вежливое), как на лендинге. */
       "set.tab.general": "Üldine", "set.tab.appearance": "Välimus",
@@ -1444,8 +1435,11 @@
    *
    * Почему понятно, что это язык, без слова «язык»: код набран моноширинным,
    * как коды языков на витрине (D-041 — коды, а не флаги, потому что флаг
-   * обозначает страну), подчёркнут пунктиром — общий знак «это меняется», —
-   * и озвучен полностью для тех, кто читает экран голосом.
+   * обозначает страну), одет в ту же стеклянную плашку с волосяной рамкой,
+   * что и остальные значки панели, — плашка и говорит «это можно нажать», —
+   * и озвучен полностью для тех, кто читает экран голосом. Пунктир под кодом
+   * тут стоял до v53 и был снят: на телефоне тонкая точечная линия под двумя
+   * буквами читается как подчёркивание ОПЕЧАТКИ, а не как приглашение.
    */
   function nextLang(code) {
     var i = 0, k;

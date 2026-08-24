@@ -1076,6 +1076,33 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: 
     max-width: calc(100vw - 20px);
   }
   .dh-text { white-space: normal; font-size: 12px; line-height: 1.4; }
+
+  /* ── ПОДСКАЗКА ВСТАЁТ В ОДИН РЯД С ПЛЮСОМ (v53) ──────────────────────
+     Повод от основателя 21.08.2026, со снимком: «подсказки должны быть на
+     одном уровне с плюсиком для экономия пространства».
+
+     На снимке видно, о чём речь: подсказка занимала ОТДЕЛЬНУЮ ПОЛОСУ во всю
+     ширину, а прямо под ней, в правом нижнем углу, стоял плюс — и слева от
+     него оставалась пустая треть экрана. Две строки там, где хватает одной.
+
+     ТОЛЬКО ПРИ ПУСТОЙ ПОЛКЕ, и это не осторожность, а необходимость. Когда
+     приложения открыты, внизу стоит док, и подсказка расступается перед ним
+     по его настоящей высоте (--dock-h) — правило выше. Опустить её к плюсу
+     безусловно значило бы посадить её на док. Условие html.dock-empty ловит
+     ровно то состояние, что на снимке: приложений нет, дока нет, плюс виден,
+     а место рядом с ним пустует. Плюс скрывается сам, когда открыто окно
+     (html.has-windows), — то есть оба живут и прячутся вместе.
+
+     Ширина считается от плюса, а не на глаз: 18 отступ + 42 сам плюс + 10
+     зазор. Так подсказка не наезжает на него ни при каком размере экрана. */
+  html.dock-empty #sbDeskHint {
+    left: 10px; right: calc(18px + 42px + 10px);
+    width: auto; max-width: none;
+    bottom: 22px;
+    transform: translate(0, 8px);
+  }
+  html.dock-empty #sbDeskHint.on { transform: translate(0, 0); }
+  html[data-motion="reduced"].dock-empty #sbDeskHint { transform: translate(0, 0); }
 }
 
 /* =================================================================== dock §4.1 */
@@ -1102,8 +1129,29 @@ html.dock-away #dock:hover .dock-label, html.dock-away #dock:focus-within .dock-
   display: flex; align-items: flex-end; gap: var(--dock-gap); padding: 8px 10px;
   border-radius: 22px; background: var(--glass); border: 1px solid var(--line);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.5); box-shadow: var(--shadow-soft);
+  /* ── ПОЛКА ПРОКРУЧИВАЕТСЯ, А НЕ ОБРЕЗАЕТСЯ (v53) ──────────────────────
+     Повод от основателя 21.08.2026: «док меню должно скроллиться по
+     горизонтали, когда иконки не помещаются на всю ширину экрана».
+     До этого полка просто росла шире экрана: она отцентрована через
+     left:50% + translateX(-50%), поэтому лишнее уходило ЗА ОБА КРАЯ разом,
+     и края полки — с первым и последним приложением — становились
+     недостижимы вовсе. Ни обрезки, ни прокрутки: просто пропадало.
+     Теперь полка не шире экрана и прокручивается пальцем.
+     overscroll-behavior-x:contain — чтобы жест по доку не утаскивал за
+     собой стол; touch-action:pan-x — чтобы браузер не гадал, что за жест;
+     полосу прокрутки прячем: полка сама показывает, что съехала. */
+  max-width: calc(100vw - 20px);
+  overflow-x: auto; overflow-y: hidden;
+  overscroll-behavior-x: contain; touch-action: pan-x;
+  scrollbar-width: none; -ms-overflow-style: none;
 }
-#dockInner { display: flex; align-items: flex-end; gap: var(--dock-gap); }
+.dock-shelf::-webkit-scrollbar { width: 0; height: 0; display: none; }
+/* Плитки не сжимаются: сжатая полка «влезает» ценой того, что значки
+   становятся кашей. Пусть лучше уезжает вбок и прокручивается. */
+/* Правила .dock-cta сняты вместе с самой кнопкой (v53, D-087): мёртвый
+   стиль лжёт не хуже мёртвого кода — он говорит, что элемент бывает. */
+#dockInner { display: flex; align-items: flex-end; gap: var(--dock-gap); flex: 0 0 auto; }
+#dockInner > * { flex: 0 0 auto; }
 .dock-item {
   /* padding: 0 — не украшение, а условие. Плитка это <button>, и общий сброс
      кнопок даёт ей поля по 6 px. При box-sizing: border-box закрытое
@@ -1125,8 +1173,6 @@ html.dock-away #dock:hover .dock-label, html.dock-away #dock:focus-within .dock-
   width: 0; min-width: 0; padding: 0; opacity: 0; pointer-events: none; overflow: hidden;
   margin-left: calc(var(--dock-gap) * -1);
 }
-.dock-cta { width: auto !important; opacity: 1 !important; pointer-events: auto !important; flex-direction: row; gap: 8px; text-decoration: none; color: var(--ink); padding-left: 4px; }
-.dock-cta-label { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
 .dock-tile {
   width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center;
   color: var(--ink); box-shadow: var(--shadow-soft); flex: none;
@@ -1135,7 +1181,6 @@ html.dock-away #dock:hover .dock-label, html.dock-away #dock:focus-within .dock-
 }
 /* The one coloured tile in the dock: the call to action. Seam means "here you
    can act", and this is the act. */
-.dock-cta .dock-tile { background: var(--accent); border-color: transparent; color: #0a0a0b; }
 .dock-tile svg { width: 21px; height: 21px; }
 .dock-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); opacity: 0; }
 .dock-item.running .dock-dot { opacity: 1; }
@@ -1162,13 +1207,37 @@ html.dock-away #dock:hover .dock-label, html.dock-away #dock:focus-within .dock-
 /* Круглая кнопка — деталь рабочего стола. Открытое окно её убирает: класс
    ставит updateAppSequence() в os/core/shell.js. */
 html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translateY(8px); }
+/* ── КНОПКА ДЕЙСТВИЯ ОДЕТА КАК ПОДСКАЗКА (v53) ────────────────────────────
+   Повод от основателя 21.08.2026: «у плюсика должен быть такой же дизайн как
+   у блока с подсказками». Они стоят в одном ряду (см. §8, html.dock-empty) и
+   до этого говорили на разных языках: подсказка — стеклянная плашка со
+   скруглением 14, тёплой рамкой и мягким свечением сверху; кнопка — гладкий
+   серый круг. Рядом это читалось как два предмета из разных наборов.
+   Теперь у них общая форма, общая рамка, общее свечение и общая тень; разные
+   только размер и знак внутри. Круг снят намеренно: скругление 14 — то же,
+   что у подсказки, и именно оно делает их родственниками. */
 #sbFab {
-  transition: opacity .22s ease, transform .22s ease;
-  position: fixed; right: 18px; bottom: 96px; z-index: 56; width: 42px; height: 42px; border-radius: 50%;
-  display: grid; place-items: center; font-size: 21px; line-height: 1; color: var(--ink);
-  background: var(--glass-2); border: 1px solid var(--line); backdrop-filter: blur(var(--glass-blur));
-  box-shadow: var(--shadow-soft);
+  transition: opacity .22s ease, transform .22s ease, border-color .6s ease, background .6s ease;
+  position: fixed; right: 18px; bottom: 96px; z-index: 56; width: 42px; height: 42px;
+  border-radius: 14px;
+  display: grid; place-items: center; line-height: 1; color: var(--ink);
+  background:
+    radial-gradient(160% 180% at 12% -40%,
+      rgba(var(--wp-light-rgb, 91, 124, 255), .13), transparent 64%),
+    var(--glass);
+  border: 1px solid rgba(var(--wp-light-rgb, 91, 124, 255), .30);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), .20),
+    0 16px 40px -20px rgba(0, 0, 0, .74),
+    0 2px 12px -7px rgba(var(--wp-light-rgb, 91, 124, 255), .22);
 }
+/* Шов — единственное цветное в кнопке: цвет здесь значит «можно действовать»
+   (см. --accent в §1), а не «нарядно». */
+#sbFab svg { width: 20px; height: 20px; color: var(--accent); }
+#sbFab:active { transform: scale(.94); }
+#sbFab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ================================================================== toasts §7 */
 /* On a phone a 320px toast starting 12px from the right edge reaches across
@@ -1383,12 +1452,10 @@ html.icons-small .icon-label { font-size: 10.5px; }
      до размера, который ещё берётся пальцем. Три состояния точки остаются:
      нет — закрыто, полная — на экране, полая — ждёт. */
   #dockHint { display: none; }
-  .dock-cta-label { display: none; }
-  #dock { bottom: max(10px, env(safe-area-inset-bottom)); }
+    #dock { bottom: max(10px, env(safe-area-inset-bottom)); }
   .dock-shelf { --dock-gap: 6px; padding: 6px 8px; border-radius: 18px; }
   .dock-item { width: 40px; }
-  .dock-cta { padding-left: 0; }
-  .dock-tile { width: 38px; height: 38px; border-radius: 12px; }
+    .dock-tile { width: 38px; height: 38px; border-radius: 12px; }
   .dock-tile svg { width: 18px; height: 18px; }
   .id-name { display: none; }
   .tb-identity::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: block; }
@@ -1475,17 +1542,44 @@ html.is-compact .titlebar { cursor: default; }
 /* ── Язык: один код, который и есть кнопка (v47, вторая редакция) ─────────
    Первая редакция держала в панели все четыре кода и вытеснила часы за край
    экрана. Здесь один код — тот, на котором система говорит сейчас: ширина в
-   две буквы, правый угол. Пунктир под кодом — общий знак «это меняется»;
-   долгое нажатие раскрывает остальные три. */
+   две буквы, правый угол. Короткое нажатие переводит на следующий язык,
+   долгое раскрывает остальные три. */
 .tb-langs { position: relative; display: flex; align-items: center; }
+/* ── КОД ЯЗЫКА ОДЕТ КАК ЕГО СОСЕДИ (v53) ──────────────────────────────────
+   Повод от основателя 21.08.2026, со снимком телефона: «переключение языков
+   выглядит ужасно — прошу совет сделать переключение языков таким, чтобы он
+   вписывался максимально в концепт и в дизайн».
+
+   ЧТО БЫЛО НЕ ТАК, и это не вкусовщина. Пунктир под кодом задумывался как
+   общий знак «это меняется». На снимке он читается иначе: тонкая точечная
+   линия под двумя буквами — это в точности то, чем браузеры и редакторы
+   подчёркивают ОПЕЧАТКУ. Система будто пометила собственное слово ошибкой.
+   Второе: код был ЕДИНСТВЕННЫМ элементом верхней панели без поверхности —
+   голый текст среди соседей, у которых стеклянная плашка с волосяной рамкой
+   (.win-chip, кнопка знака системы, и даже собственное меню этого же кода,
+   .tb-lang-menu). Он выбивался не потому, что плох сам по себе, а потому что
+   говорил на другом языке оформления, чем всё вокруг.
+
+   ЧТО СДЕЛАНО. Ничего не изобретено: взят словарь, который в системе уже
+   есть, — стекло + волосяная рамка + скругление, как у .win-chip, и отклик
+   на нажатие, как у кнопки знака системы (scale .94). Пунктир снят: знаком
+   «это можно нажать» теперь служит сама плашка, а не линия, похожая на
+   ошибку. Сохранено то, что решено раньше и остаётся верным: код, а не флаг
+   (D-041 — флаг обозначает страну, а не язык), моноширинный набор, две
+   буквы, правый угол экрана. */
 .tb-lang-now {
-  padding: 3px 5px; border: 0; background: none; cursor: pointer;
+  padding: 4px 7px; cursor: pointer;
   font-family: var(--mono); font-size: 11px; letter-spacing: .06em; line-height: 1;
-  color: var(--ink-2, var(--ink)); border-bottom: 1px dotted currentColor;
-  border-radius: 4px 4px 0 0;
-  transition: color .16s ease, background .16s ease;
+  color: var(--ink-2, var(--ink));
+  background: var(--glass); border: 1px solid var(--line); border-radius: 7px;
+  transition: color .16s ease, background .16s ease, border-color .16s ease, transform .12s var(--ease);
 }
-.tb-lang-now:hover { color: var(--ink); background: var(--glass-2); }
+.tb-lang-now:hover { color: var(--ink); background: var(--glass-2); border-color: var(--line-2); }
+.tb-lang-now:active { transform: scale(.94); }
+.tb-lang-now:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Язык, у которого своих строк нет (финский показывает английские), назван
+   приглушённо — тем же способом, что и в меню, где к нему добавляется «·».
+   Это не поломка, а честность: система говорит, что знает не всё. */
 .tb-lang-now.is-partial { opacity: .78; }
 
 .tb-lang-menu {

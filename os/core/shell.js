@@ -687,11 +687,19 @@
      * быстрое осознанное движение — морф разворота на весь экран, 130 мс, и
      * на него основатель не жаловался ни разу. Значит мерка своя, а не взятая
      * из чужих рекомендаций. Остальные движения приведены в ту же семью:
-     *     открыть   260 → 180 мс  (появление + масштаб + перелёт дороже
-     *                              морфа, потому чуть длиннее, но не вдвое)
-     *     закрыть   200 → 140 мс
-     *     свернуть  200 → 150 мс
-     *     вернуть   200 → 150 мс
+     *     открыть   260 → 180 → 120 мс
+     *     закрыть   200 → 140 → 100 мс
+     *     свернуть  200 → 150 → 110 мс
+     *     вернуть   200 → 150 → 110 мс
+     *
+     * ВТОРОЙ ШАГ (v53), по просьбе основателя «ускорить ещё сильнее». Первый
+     * шаг привёл окна в семью морфа (130 мс); второй ставит открытие ВРОВЕНЬ
+     * с самым быстрым движением системы и уводит остальные ниже него. Ниже
+     * сотни уходить не стали намеренно: движение короче ~100 мс перестаёт
+     * читаться как движение и превращается в подмену кадра — окно не
+     * прилетает, а возникает, и связь между нажатием и результатом теряется.
+     * Это не осторожность, а граница: дальше ускорять уже нечего, дальше
+     * можно только убрать анимацию совсем — что и делает reduced motion.
      * Закрытие короче открытия НАМЕРЕННО: вещь, которая уходит, не должна
      * держать внимание дольше, чем вещь, которую позвали.
      *
@@ -703,14 +711,14 @@
     el.style.transform = "translate3d(" + Math.round(fromX - cx) + "px," + Math.round(fromY - cy) + "px,0) scale(.94)";
     el.style.opacity = "0";
     requestAnimationFrame(function () {
-      el.style.transition = "transform 180ms cubic-bezier(.16,1,.3,1), opacity 150ms ease";
+      el.style.transition = "transform 120ms cubic-bezier(.16,1,.3,1), opacity 100ms ease";
       el.style.transform = "translate3d(0,0,0) scale(1)";
       el.style.opacity = "1";
       setTimeout(function () {
         el.style.transition = "";
         el.style.transform = "";
         el.classList.remove("opening");
-      }, 200);
+      }, 140);
     });
   }
 
@@ -782,11 +790,11 @@
     var el = win.el;
     el.classList.add("closing", "traveling");
     if (!reduced() && !systemReduced()) {
-      el.style.transition = "transform 140ms cubic-bezier(.16,1,.3,1), opacity 120ms ease";
+      el.style.transition = "transform 100ms cubic-bezier(.16,1,.3,1), opacity 80ms ease";
       el.style.transform = "scale(.96)";
       el.style.opacity = "0";
     }
-    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 150);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 110);
 
     if (focusedId === id) {
       var next = highestRemaining();
@@ -834,13 +842,13 @@
          родилось у открытия и законом window-motion-check распространено на
          все пути: счёт композитору один и тот же, где бы окно ни летело. */
       el.classList.add("traveling");
-      el.style.transition = "transform 150ms cubic-bezier(.16,1,.3,1), opacity 130ms ease";
+      el.style.transition = "transform 110ms cubic-bezier(.16,1,.3,1), opacity 90ms ease";
       el.style.transformOrigin = "center center";
       el.style.transform = "translate3d(" + Math.round(r.left + r.width / 2 - cx) + "px," + Math.round(r.top + r.height / 2 - cy) + "px,0) scale(.12)";
       el.style.opacity = "0";
-      setTimeout(function () { dockCatch(id); }, 110);
+      setTimeout(function () { dockCatch(id); }, 80);
     }
-    setTimeout(function () { el.classList.add("minimized"); el.style.transition = ""; el.classList.remove("traveling"); }, 160);
+    setTimeout(function () { el.classList.add("minimized"); el.style.transition = ""; el.classList.remove("traveling"); }, 120);
     if (focusedId === id) {
       var next = highestRemaining();
       focusedId = null;
@@ -858,7 +866,7 @@
     if (!reduced() && !systemReduced()) {
       el.classList.add("traveling");
       requestAnimationFrame(function () {
-        el.style.transition = "transform 150ms cubic-bezier(.16,1,.3,1), opacity 130ms ease";
+        el.style.transition = "transform 110ms cubic-bezier(.16,1,.3,1), opacity 90ms ease";
         el.style.transform = "translate3d(0,0,0) scale(1)";
         el.style.opacity = "1";
         /* После полёта — ни следа: transition, transform и traveling
@@ -869,7 +877,7 @@
           el.style.transition = "";
           el.style.transform = "";
           el.classList.remove("traveling");
-        }, 170);
+        }, 130);
       });
     } else { el.style.transform = ""; el.style.opacity = "1"; }
     dockRelease(id);

@@ -33,13 +33,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v52">
+<meta name="sysbaby-build" content="v53">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v52">
+<link rel="stylesheet" href="shared/system.css?b=v53">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -117,11 +117,11 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v52"></script>
-<script src="shared/portfolio.strings.js?b=v52"></script>
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v52" />
-<script src="shared/portfolio.view.js?b=v52"></script>
-<script src="shared/pricing.data.js?b=v52"></script>
+<script src="shared/portfolio.data.js?b=v53"></script>
+<script src="shared/portfolio.strings.js?b=v53"></script>
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v53" />
+<script src="shared/portfolio.view.js?b=v53"></script>
+<script src="shared/pricing.data.js?b=v53"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -623,6 +623,40 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
 html.in-build .langs{display:none !important}
 html.in-build .hero{min-height:auto}
 html.in-build body{overflow-y:auto}
+/* ── ПРОКРУТКА РАЗДЕЛА ВНУТРИ ОКНА: УБРАНЫ ДВА КАМНЯ WEBKIT (v53) ────────
+   Повод от основателя 21.08.2026: «на Айпаде не скроллится содержимое
+   приложения build, а на андроид scroll работает».
+
+   ЧТО ИЗМЕРЕНО. Прокручивать нужно .win-body — тело раздела витрины: на
+   планшетном размере в нём 104 px непрокрученного содержимого. Первый экран
+   ни при чём, у него запаса нет вовсе (проверено: 0 px и на 820×1180, и на
+   1180×820, и на 390×844) — жалоба про разделы, которые открываются внутри
+   витрины отдельными окнами. Цепочка вложенности до этого тела длинная:
+   окно ОС → рамка витрины → документ витрины → .window-layer → .win →
+   .win-body.
+
+   ДВА МЕСТА В ЭТОЙ ЦЕПОЧКЕ ИЗВЕСТНЫ КАК ОПАСНЫЕ ИМЕННО У WEBKIT, и оба
+   безобидны у Blink — отсюда и «на андроиде работает».
+     1. -webkit-overflow-scrolling:touch на самом .win-body. Свойство
+        устарело (с iOS 13 оно ничего не делает), но в старых сборках WebKit
+        заводит ОТДЕЛЬНЫЙ слой прокрутки, и вложенный внутрь рамки такой слой
+        жеста не получает. Снято: на любом современном движке это пустая
+        строка, а на старом — источник ровно этой беды.
+     2. .window-layer{position:fixed} внутри РАМКИ. fixed внутри iframe у
+        WebKit исторически считается по чужому вьюпорту, и прокрутка
+        вложенного в него overflow-контейнера теряется. В режиме окна рамка
+        сама и есть вьюпорт, поэтому absolute здесь равнозначен по виду и не
+        наступает на этот камень. Правка узкая: только html.in-build,
+        отдельная витрина продолжает жить с fixed.
+
+   ЧЕСТНАЯ ОГОВОРКА, записанная намеренно: у Совета НЕТ WEBKIT — в среде
+   стоит только Chromium, поставить второй движок не удалось (реестр закрыт).
+   Значит на движке iPad эта правка ПРИБОРОМ НЕ ПРОВЕРЕНА. Проверено другое:
+   что она не ломает то, что работало (Chromium, три размера), и что оба
+   снятых камня — известные, а не выдуманные. Подтвердить починку может
+   только владелец на своём устройстве; если не помогло — виноват третий
+   камень, и искать надо дальше, а не считать вопрос закрытым. */
+html.in-build .window-layer{position:absolute}
 
 .dock{
   position:fixed;left:50%;bottom:22px;z-index:300;
@@ -906,7 +940,7 @@ html[data-anim="paused"] .dock-flare{display:none}
    Дефект снят основателем с живого телефона: кнопка «Запросить предложение»
    в «Окупаемости» была заперта доком. Охраняется tools/dock-clearance-check.mjs. */
 .win-body{flex:1;overflow:auto;padding:22px 24px calc(26px + var(--dock-room,0px));
-  font-size:13.5px;line-height:1.6;color:var(--muted);-webkit-overflow-scrolling:touch}
+  font-size:13.5px;line-height:1.6;color:var(--muted)}
 .win-resize{position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize}
 .win-resize::after{content:"";position:absolute;right:4px;bottom:4px;width:7px;height:7px;border-right:1.5px solid var(--border);border-bottom:1.5px solid var(--border)}
 .snap-preview{position:fixed;z-index:199;border:1.5px dashed var(--accent-soft);border-radius:14px;background:var(--seam-haze);pointer-events:none;display:none}
