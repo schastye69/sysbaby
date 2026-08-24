@@ -156,11 +156,19 @@
        the colour picker opened on a garbage value. Read the real field. */
     var accentObj = currentAccent();
     var accent = String((accentObj && accentObj.a1) || accentObj || "").toLowerCase();
+    var accentMode = (accentObj && accentObj.mode) || "";
 
+    /* ── ХОД ВЫБИРАЕТСЯ ТЕМ ЖЕ РЯДОМ, ЧТО И КРАСКИ (v62) ─────────────────
+       Он стоит среди них последним и выглядит как они — но передаётся не
+       цветом, а именем: цвет у него меняется сам, и запомнить его как
+       «вот этот шестнадцатеричный» было бы неправдой уже через четыре
+       минуты. Отмечен он тоже по имени, а не по совпадению цвета. */
     var swatches = accentSwatches().map(function (sw) {
       var hex = String(sw.a1 || sw.hex || "");
-      return '<button type="button" class="st-swatch' + (hex.toLowerCase() === accent ? " active" : "") + '" ' +
-        'style="background:' + esc(hex) + '" data-accent="' + esc(hex) + '" title="' + esc(sw.name || sw.title || hex) + '" aria-label="' + esc(sw.name || sw.title || hex) + '"></button>';
+      var token = sw.drift ? String(sw.id) : hex;
+      var on = sw.drift ? (accentMode === String(sw.id)) : (hex.toLowerCase() === accent && !accentMode);
+      return '<button type="button" class="st-swatch' + (on ? " active" : "") + (sw.drift ? " is-drift" : "") + '" ' +
+        'style="background:' + esc(hex) + '" data-accent="' + esc(token) + '" title="' + esc(sw.name || sw.title || hex) + '" aria-label="' + esc(sw.name || sw.title || hex) + '"></button>';
     }).join("");
 
     var moods = wallpaperMoods();

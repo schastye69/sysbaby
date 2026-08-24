@@ -571,7 +571,22 @@ html.topbar-hidden.topbar-peek #topbar { transform: none; }
    is the thing sitting in the corner afterwards. The wordmark next to it is
    the landing's, character for character (hair spaces included) — one brand,
    two surfaces, no second drawing of it anywhere. */
-.tb-mark { display: inline-flex; align-items: center; gap: 7px; padding-left: 2px; flex: none; }
+.tb-mark { display: inline-flex; align-items: center; gap: 7px; padding-left: 2px; flex: none;
+  transform-origin: left center; transition: transform .22s var(--ease); }
+/* ── ЗНАК В ПОЛНОМ ЭКРАНЕ ЧУТЬ КРУПНЕЕ (v61) ─────────────────────────────
+   Повод от основателя: «иконка логотипа в режиме на весь экран должна стать
+   слегка больше и если на неё нажать еще раз, то она уменьшится».
+
+   1.12 — именно «слегка»: заметно, что состояние другое, и не настолько,
+   чтобы полоса перестроилась под новый размер. Точка роста слева, а не в
+   центре: знак стоит первым в полосе, и расти он должен вправо, в пустоту,
+   а не наползать на край экрана.
+
+   Класс ставится по событию fullscreenchange (см. topbar.js), то есть по
+   тому, что случилось на самом деле, а не по нашему намерению: выйти из
+   полного экрана можно клавишей Esc, мимо этой кнопки. */
+html.sb-fullscreen .tb-mark { transform: scale(1.12); }
+html[data-motion="reduced"] .tb-mark { transition: none; }
 /* Раньше здесь была цветная плитка с галочкой внутри. Теперь внутри — сам
    знак, и подложка вокруг него стала знаком внутри знака: она отобрана.
    Обе поверхности показывают одну и ту же фигуру одного цвета и без рамки,

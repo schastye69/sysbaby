@@ -316,9 +316,101 @@
     { id: "emerald", name: "Emerald", a1: "#22c58b", a2: "#7de08a" },
     { id: "amber", name: "Amber", a1: "#ff9d3d", a2: "#ffd65c" }
   ];
-  window.sbGetAccentSwatches = function () { return ACCENTS.map(function (a) { return { id: a.id, name: a.name, a1: a.a1, a2: a.a2 }; }); };
+  /* ── ШОВ, ИДУЩИЙ ПО КРУГУ СУТОК (v62) ────────────────────────────────────
+     ПОВОД, дословно от основателя: «accent colors добавляем ещё один,
+     который медленно будет переключать все цвета - как цветотерапия. они
+     должны переключаться медленно почти незаметно. можно назвать этот режим
+     концептуально, гениально и функционально».
+
+     ЧТО ЭТО. Шестая краска, которая не краска, а ХОД. Тон обходит полный
+     круг ровно за сутки и привязан к местной полуночи. Скорость — 0.25° в
+     минуту: увидеть движение нельзя никак, но в один и тот же час дня
+     система выглядит одинаково. Цвет становится часами, которые не читают,
+     а узнают. Отсюда и имя — Daylight: не название цвета, а название того,
+     чем этот цвет служит.
+
+     ПОЧЕМУ СВЕТЛОТА МЕНЯЕТСЯ ВМЕСТЕ С ТОНОМ, А НЕ ОСТАЁТСЯ ПОСТОЯННОЙ.
+     Шов — не украшение: в core.css у него объявлено одно значение — «здесь
+     можно действовать, или здесь что-то живое», и он же рисует кольца
+     фокуса. Значит он обязан быть виден ВСЕГДА. Измерено: при постоянной
+     светлоте 56% контраст к грунту гуляет от 2.78 на синем до 14.17 на
+     жёлтом — в пять раз, и на синем шов почти пропадает. Поэтому путь
+     проложен так, чтобы держать КОНТРАСТ, а не светлоту: под каждый тон
+     светлота подобрана заранее (таблица LIGHT, 24 узла через 15°), и по
+     всему кругу контраст остаётся 5.75…5.85 при цели 5.78 — контрасте
+     нынешнего Clay. Светлота при этом гуляет от 32.5% до 71%, и это цена,
+     которую платит цвет, чтобы шов не исчезал.
+
+     ПОЧЕМУ ЭТО ПОЧТИ НИЧЕГО НЕ СТОИТ. Свойство на корне объявляет
+     устаревшим стиль всего документа (это Совет измерил на доке, D-093).
+     Здесь оно пишется, только когда изменился ОКРУГЛЁННЫЙ до градуса тон, —
+     то есть раз в четыре минуты. Триста шестьдесят записей в сутки: та же
+     медленность, которая делает ход незаметным, делает его и бесплатным. */
+  var DRIFT_ID = "daylight";
+  var LIGHT = [63.5, 55.8, 46, 38.5, 32.5, 34, 35.3, 36, 36.5, 36.3, 36, 35.5,
+               35, 43, 55.5, 65.3, 71, 69.5, 67.3, 63.8, 57.5, 60, 61.8, 62.8];
+  var DRIFT_SAT = 73;
+
+  function hslHex(h, sPct, lPct) {
+    h = ((h % 360) + 360) % 360;
+    var sN = sPct / 100, lN = lPct / 100;
+    var c = (1 - Math.abs(2 * lN - 1)) * sN;
+    var x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    var m = lN - c / 2, r, g, b;
+    if (h < 60) { r = c; g = x; b = 0; }
+    else if (h < 120) { r = x; g = c; b = 0; }
+    else if (h < 180) { r = 0; g = c; b = x; }
+    else if (h < 240) { r = 0; g = x; b = c; }
+    else if (h < 300) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+    var to = function (v) { var n = Math.round((v + m) * 255); n = n < 0 ? 0 : (n > 255 ? 255 : n); return (n < 16 ? "0" : "") + n.toString(16); };
+    return "#" + to(r) + to(g) + to(b);
+  }
+  function driftLight(hue) {
+    var pos = (((hue % 360) + 360) % 360) / 15;
+    var i = Math.floor(pos) % LIGHT.length, j = (i + 1) % LIGHT.length, f = pos - Math.floor(pos);
+    return LIGHT[i] + (LIGHT[j] - LIGHT[i]) * f;
+  }
+  /* Чистая функция наружу: по мигу времени — цвет шва. Вынесена ОТДЕЛЬНО
+     именно затем, чтобы закон мог пройти все двадцать четыре часа, не трогая
+     системных часов машины. */
+  window.sbAccentForTime = function (ms) {
+    var d = new Date(typeof ms === "number" ? ms : Date.now());
+    var minutes = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+    var hue = Math.round(minutes / 1440 * 360 * 10) / 10;
+    var a1 = hslHex(hue, DRIFT_SAT, driftLight(hue));
+    var a2 = hslHex(hue + 28, DRIFT_SAT, Math.min(92, driftLight(hue + 28) + 10));
+    return { a1: a1, a2: a2, hue: hue };
+  };
+
+  var driftTimer = null, driftLastHue = null;
+  function driftTick(force) {
+    var now = window.sbAccentForTime();
+    var rounded = Math.round(now.hue);
+    if (!force && rounded === driftLastHue) return;   /* тот же градус — не трогаем документ */
+    driftLastHue = rounded;
+    applyAccent(now.a1, now.a2);
+  }
+  function driftStart() {
+    driftStop();
+    driftTick(true);
+    driftTimer = setInterval(function () { driftTick(false); }, 60000);
+  }
+  function driftStop() { if (driftTimer) { clearInterval(driftTimer); driftTimer = null; } driftLastHue = null; }
+  window.sbAccentDrifting = function () { return !!driftTimer; };
+
+  window.sbGetAccentSwatches = function () {
+    var list = ACCENTS.map(function (a) { return { id: a.id, name: a.name, a1: a.a1, a2: a.a2 }; });
+    var now = window.sbAccentForTime();
+    list.push({ id: DRIFT_ID, name: "Daylight", a1: now.a1, a2: now.a2, drift: true });
+    return list;
+  };
   window.sbGetCurrentAccent = function () {
     var v = readJSON(ACCENT_KEY, null);
+    if (v && v.mode === DRIFT_ID) {
+      var now = window.sbAccentForTime();
+      return { a1: now.a1, a2: now.a2, mode: DRIFT_ID };
+    }
     if (v && v.a1) return { a1: v.a1, a2: v.a2 || deriveSecond(v.a1) };
     return { a1: ACCENTS[0].a1, a2: ACCENTS[0].a2 };
   };
@@ -348,6 +440,16 @@
   }
 
   window.sbSetAccent = function (hex, second) {
+    /* Ход — не цвет, а режим, и приходит он тем же входом: приложение
+       настроек передаёт сюда либо шестнадцатеричный цвет, либо это имя. */
+    if (String(hex) === DRIFT_ID) {
+      writeJSON(ACCENT_KEY, { mode: DRIFT_ID });
+      driftStart();
+      var cur = window.sbAccentForTime();
+      announceSetting("accent", { a1: cur.a1, a2: cur.a2, mode: DRIFT_ID });
+      return { a1: cur.a1, a2: cur.a2, mode: DRIFT_ID };
+    }
+    driftStop();
     var a1 = String(hex || ACCENTS[0].a1);
     var a2 = second || null;
     if (!a2) {
@@ -3104,6 +3206,10 @@
     root.setAttribute("data-theme", window.sbIncognitoActive ? "dark" : (savedTheme === "light" ? "light" : "dark"));
     var acc = window.sbGetCurrentAccent();
     applyAccent(acc.a1, acc.a2);
+    /* Ход переживает перезагрузку: режим сохранён, часы идут дальше — значит
+       и цвет продолжается с того места, где человек его оставил, а не
+       начинается заново. То же правило, что у обоев (D-095). */
+    if (acc.mode === DRIFT_ID) driftStart();
     var mood = window.sbGetWallpaperMood();
     if (mood && mood !== "ocean") root.setAttribute("data-wp-mood", mood);
     ["motion", "dnd", "autohide", "transparency"].forEach(function (k) { applyControl(k, window.sbGetControlToggle(k)); });

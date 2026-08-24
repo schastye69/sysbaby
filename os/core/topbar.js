@@ -141,6 +141,7 @@
       "aria.turbo": "Turbo — give every frame to the work", "aria.cc": "Control Center",
       "aria.langs": "Language", "lang.partial": "the storefront speaks it; the system does not yet",
       "desk.allMinimized": "Desk cleared", "desk.allMinimizedSub": "Windows are waiting — tap an icon to bring one back",
+      "fs.no": "This browser keeps its own frame", "fs.noSub": "Full screen is not offered here — Safari on iPhone allows it for video only",
       "aria.icons": "Desktop icons", "aria.notes": "Desktop notes",
       "aria.dock": "Dock", "aria.fab": "Quick actions", "aria.cmdk": "Command palette", "aria.close": "Close",
       "cmdk.placeholder": "Search apps and actions…",
@@ -598,6 +599,7 @@
       "aria.turbo": "Турбо — отдать все кадры работе", "aria.cc": "Центр управления",
       "aria.langs": "Язык", "lang.partial": "витрина говорит, система пока нет",
       "desk.allMinimized": "Стол очищен", "desk.allMinimizedSub": "Окна ждут — нажмите значок, чтобы вернуть",
+      "fs.no": "Этот браузер оставляет свою рамку", "fs.noSub": "Полного экрана он не даёт — Safari на iPhone разрешает его только видео",
       "aria.icons": "Значки рабочего стола", "aria.notes": "Заметки на столе",
       "aria.dock": "Док", "aria.fab": "Быстрые действия", "aria.cmdk": "Командная палитра", "aria.close": "Закрыть",
       "cmdk.placeholder": "Поиск приложений и действий…",
@@ -1039,6 +1041,7 @@
       "aria.turbo": "Turbo — anna kõik kaadrid tööle", "aria.cc": "Juhtimiskeskus",
       "aria.langs": "Keel", "lang.partial": "vitriin räägib, süsteem veel mitte",
       "desk.allMinimized": "Laud on puhas", "desk.allMinimizedSub": "Aknad ootavad — puuduta ikooni, et tagasi tuua",
+      "fs.no": "See brauser jätab oma raami", "fs.noSub": "Täisekraani ta ei anna — iPhone'i Safari lubab seda ainult videole",
       "aria.icons": "Töölaua ikoonid", "aria.notes": "Töölaua märkmed",
       "aria.dock": "Dokk", "aria.fab": "Kiirtoimingud", "aria.cmdk": "Käsupalett", "aria.close": "Sulge",
       "cmdk.placeholder": "Otsi rakendusi ja toiminguid…",
@@ -1610,17 +1613,84 @@
     return true;
   };
 
+  /* ── ЗНАК СИСТЕМЫ — ДВА ШАГА, А НЕ ДВА НАЗНАЧЕНИЯ (v61) ──────────────────
+     ПОВОД, дословно от основателя 24.08.2026: «когда нажимаешь в первый раз
+     про иконке логотипа, то скрываются все окна, а если нажать ещё раз, то
+     страница с нашей os должна открыться на весь экран абсолютно на любом
+     устройстве. а иконка логотипа в режиме на весь экран должна стать
+     слегка больше и если на неё нажать еще раз, то она уменьшится, но это
+     можно сделать только тогда, когда все приложения свёрнуты».
+
+     ПОЧЕМУ ЭТО НЕ ДВЕ КНОПКИ В ОДНОЙ. Обе работы у знака — про одно и то
+     же: убрать лишнее и остаться со своей системой. Сначала уходят окна,
+     потом уходит браузер. Это одна лестница вниз, к чистому столу, и ступень
+     всегда следующая за той, где человек сейчас стоит.
+
+     ПРАВИЛО ОДНО, И ОНО САМО ДАЁТ ОБЕ ПОЛОВИНЫ ОСНОВАТЕЛЯ. Если на столе
+     есть что убрать — убираем и на этом останавливаемся. Если убирать
+     нечего — переключаем полный экран. Отсюда бесплатно следует и «уменьшить
+     можно только когда все приложения свёрнуты»: открытое окно съест
+     нажатие, свернувшись, и выход из полного экрана произойдёт следующим.
+
+     ЧЕСТНАЯ ГРАНИЦА, названная вслух: «абсолютно на любом устройстве» —
+     недостижимо. Safari на iPhone не даёт полного экрана ничему, кроме
+     видео: requestFullscreen там отсутствует. Мы не притворяемся, что
+     сработало, — говорим один раз и не повторяем. Молчаливое бездействие
+     было бы хуже: человек решил бы, что сломана кнопка.
+
+     Класс на корне ставится по СОБЫТИЮ fullscreenchange, а не по нашему
+     намерению: выйти из полного экрана можно и клавишей Esc, и средствами
+     браузера, мимо этой кнопки. Признак берётся у того, кто им владеет. */
+  function fsElement() {
+    return doc.fullscreenElement || doc.webkitFullscreenElement || null;
+  }
+  function fsSupported() {
+    var el = doc.documentElement;
+    return !!(el.requestFullscreen || el.webkitRequestFullscreen);
+  }
+  var fsToldUnsupported = false;
+  function toggleFullscreen() {
+    if (!fsSupported()) {
+      if (!fsToldUnsupported && window.showToast) {
+        fsToldUnsupported = true;
+        window.showToast(window.sbT("fs.no"), window.sbT("fs.noSub"), "");
+      }
+      return;
+    }
+    try {
+      if (fsElement()) {
+        (doc.exitFullscreen || doc.webkitExitFullscreen).call(doc);
+      } else {
+        var el = doc.documentElement;
+        (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+      }
+    } catch (err) { console.error("[topbar] fullscreen toggle failed", err); }
+  }
+  function syncFullscreenClass() {
+    doc.documentElement.classList.toggle("sb-fullscreen", !!fsElement());
+  }
+
   function wireMark() {
     var mark = $("#sbTopMark");
     if (!mark) return;
+    doc.addEventListener("fullscreenchange", syncFullscreenClass);
+    doc.addEventListener("webkitfullscreenchange", syncFullscreenClass);
+    syncFullscreenClass();
     mark.addEventListener("click", function () {
-      if (typeof window.sbMinimizeAll !== "function") return;
       var n = 0;
-      try { n = window.sbMinimizeAll(); } catch (err) { console.error("[topbar] minimise all failed", err); return; }
-      /* Молчать, когда убирать было нечего: подтверждать несделанное — врать. */
-      if (n > 0 && window.showToast) {
-        window.showToast(window.sbT("desk.allMinimized"), window.sbT("desk.allMinimizedSub"), "");
+      if (typeof window.sbMinimizeAll === "function") {
+        try { n = window.sbMinimizeAll(); } catch (err) { console.error("[topbar] minimise all failed", err); return; }
       }
+      if (n > 0) {
+        /* Первая ступень: со стола было что убрать. Молчать, когда убирать
+           было нечего, — правило прежнее: подтверждать несделанное значит врать. */
+        if (window.showToast) {
+          window.showToast(window.sbT("desk.allMinimized"), window.sbT("desk.allMinimizedSub"), "");
+        }
+        return;
+      }
+      /* Вторая ступень: стол уже чист — уходит браузер. */
+      toggleFullscreen();
     });
   }
 

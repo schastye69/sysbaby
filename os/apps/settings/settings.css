@@ -156,6 +156,19 @@
 }
 
 .st-swatch.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(0, 0, 0, .4); }
+/* ── ХОД ОТЛИЧАЕТСЯ ОТ КРАСОК ОДНОЙ ЧЕРТОЙ (v62) ────────────────────────
+   Он стоит в одном ряду с ними и обязан читаться как их родственник, но
+   он не краска, а ход: цвет в нём меняется сам, полный круг за сутки.
+   Разница показана самым тихим из возможных способов — тонкой дугой по
+   краю, как стрелка, обошедшая циферблат. Ни подписи, ни второго значка:
+   человек, выбравший его однажды, узнаёт кружок, а не читает пояснение. */
+.st-swatch.is-drift { position: relative; }
+.st-swatch.is-drift::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%;
+  border: 1px solid currentColor; opacity: .5;
+  border-left-color: transparent; border-bottom-color: transparent;
+  transform: rotate(-38deg); pointer-events: none;
+}
 
 .st-color {
   width: 26px;
