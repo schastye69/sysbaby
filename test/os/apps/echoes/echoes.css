@@ -26,13 +26,20 @@
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   border: 1px solid rgba(255, 255, 255, .08);
   background: rgba(255, 255, 255, .035);
   margin-bottom: 6px;
 }
 
-.ec-row:hover { background: rgba(255, 255, 255, .07); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .ec-row:hover { background: rgba(255, 255, 255, .07); }
+}
 
 .ec-wave {
   flex: 0 0 auto;
@@ -46,7 +53,7 @@
 .ec-wave i {
   display: block;
   width: 2px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: linear-gradient(180deg, var(--accent-2, #ec8a5f), var(--accent, #e0663c));
 }
 
@@ -54,7 +61,7 @@
   flex: 0 0 auto;
   width: 28px;
   height: 28px;
-  border-radius: 9px;
+  border-radius: var(--r-ctrl);
   display: grid;
   place-items: center;
   color: #fff;
@@ -75,12 +82,19 @@
   font: inherit;
   font-size: 11.5px;
   padding: 4px 9px;
-  border-radius: 9px;
+  border-radius: var(--r-ctrl);
   cursor: pointer;
   white-space: nowrap;
 }
 
-.ec-btn:hover { background: rgba(255, 255, 255, .13); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .ec-btn:hover { background: rgba(255, 255, 255, .13); }
+}
 .ec-btn.quiet { font-size: 11px; color: rgba(255, 255, 255, .7); }
 
 .ec-btn.x {
@@ -90,7 +104,14 @@
   color: rgba(255, 255, 255, .55);
 }
 
-.ec-btn.x:hover { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .5); background: rgba(255, 69, 58, .12); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .ec-btn.x:hover { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .5); background: rgba(255, 69, 58, .12); }
+}
 
 .ec-empty {
   display: flex;

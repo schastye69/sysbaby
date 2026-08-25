@@ -384,6 +384,9 @@
     var list = convos.filter(function (c) { return !needle || String(c.name).toLowerCase().indexOf(needle) !== -1; });
     var active = byId(activeId);
 
+    /* Прокрутка человека переживает перерисовку — средство оболочки,
+     общее для всех приложений (D-099). */
+    var _sbKeep = window.sbKeepScroll ? window.sbKeepScroll(host) : null;
     host.innerHTML =
       '<div class="app-msgr">' +
         '<aside class="mg-side">' +
@@ -401,6 +404,7 @@
         "</aside>" +
         '<section class="mg-thread">' + threadMarkup(win, active) + "</section>" +
       "</div>";
+    if (_sbKeep) _sbKeep();
 
     wire(win, host);
     scrollThread(host);

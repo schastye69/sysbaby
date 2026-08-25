@@ -129,13 +129,20 @@
     currentId = entry ? entry.id : null;
 
     if (!entry || !view) {
+      /* Прокрутка человека переживает перерисовку — средство оболочки,
+       общее для всех приложений (D-099). */
+      var _sbKeep = window.sbKeepScroll ? window.sbKeepScroll(host) : null;
       host.innerHTML = '<div class="app-project"><div class="pj-empty"><p>' + esc(t("pj.empty")) + "</p></div></div>";
+      if (_sbKeep) _sbKeep();
       return;
     }
 
     var url = embedUrl(entry, view);
     var context = [view.projectType, view.industry].filter(Boolean).join(" · ");
 
+    /* Прокрутка человека переживает перерисовку — средство оболочки,
+     общее для всех приложений (D-099). */
+    var _sbKeep = window.sbKeepScroll ? window.sbKeepScroll(host) : null;
     host.innerHTML =
       '<div class="app-project">' +
         '<div class="pj-top">' +
@@ -182,6 +189,7 @@
           "</div>" +
         "</div>" +
       "</div>";
+    if (_sbKeep) _sbKeep();
 
     wire(win, host, entry);
   }

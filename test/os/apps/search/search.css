@@ -40,7 +40,7 @@
   font-size: 10.5px;
   color: rgba(255, 255, 255, .5);
   border: 1px solid rgba(255, 255, 255, .16);
-  border-radius: 7px;
+  border-radius: var(--r-tag);
   padding: 2px 6px;
   background: rgba(255, 255, 255, .05);
 }
@@ -62,7 +62,7 @@
 
 .sk-chip {
   padding: 6px 11px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid rgba(255, 255, 255, .12);
   background: rgba(255, 255, 255, .05);
   color: inherit;
@@ -71,7 +71,14 @@
   cursor: pointer;
 }
 
-.sk-chip:hover { background: rgba(255, 255, 255, .12); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .sk-chip:hover { background: rgba(255, 255, 255, .12); }
+}
 
 .sk-rows { display: flex; flex-direction: column; gap: 3px; }
 
@@ -82,7 +89,7 @@
   width: 100%;
   text-align: left;
   padding: 8px 10px;
-  border-radius: 13px;
+  border-radius: var(--r-card);
   border: 1px solid transparent;
   background: transparent;
   color: inherit;
@@ -90,13 +97,20 @@
   cursor: pointer;
 }
 
-.sk-row:hover { background: rgba(255, 255, 255, .07); border-color: rgba(255, 255, 255, .1); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .sk-row:hover { background: rgba(255, 255, 255, .07); border-color: rgba(255, 255, 255, .1); }
+}
 
 .sk-tile {
   flex: 0 0 auto;
   width: 30px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: var(--r-ctrl);
   display: grid;
   place-items: center;
   color: rgba(255, 255, 255, .95);

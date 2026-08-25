@@ -26,7 +26,7 @@
   letter-spacing: .07em;
   color: rgba(255, 255, 255, .5);
   border: 1px solid rgba(58, 208, 168, .32);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 3px 9px;
 }
 
@@ -40,13 +40,20 @@
   font: inherit;
   font-size: 11.5px;
   padding: 6px 10px;
-  border-radius: 10px;
+  border-radius: var(--r-ctrl);
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.pj-btn:hover { background: rgba(255, 255, 255, .12); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .pj-btn:hover { background: rgba(255, 255, 255, .12); }
+}
 
 .pj-btn.accent {
   background: var(--accent, #e0663c);
@@ -55,7 +62,14 @@
   font-weight: 650;
 }
 
-.pj-btn.accent:hover { filter: brightness(1.08); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .pj-btn.accent:hover { filter: brightness(1.08); }
+}
 
 .pj-context {
   padding: 10px 14px 12px;
@@ -80,7 +94,7 @@
 .pj-chip {
   font-size: 10.5px;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(255, 255, 255, .06);
   border: 1px solid rgba(255, 255, 255, .09);
   color: rgba(255, 255, 255, .68);
@@ -104,7 +118,7 @@
   height: 100%;
   border: 0;
   opacity: 0;
-  transition: opacity .45s ease;
+  transition: opacity var(--t-scene) ease;
 }
 
 .pj-frame.loaded { opacity: 1; }
@@ -120,7 +134,7 @@
   padding: 30px;
   text-align: center;
   background: #08090c;
-  transition: opacity .5s ease;
+  transition: opacity var(--t-scene) ease;
 }
 
 .pj-placeholder.done { opacity: .35; }
@@ -129,7 +143,7 @@
 .pj-spinner {
   width: 26px;
   height: 26px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 2px solid rgba(255, 255, 255, .14);
   border-top-color: #3ad0a8;
   animation: pjSpin 1s linear infinite;

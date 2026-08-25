@@ -78,6 +78,12 @@
       "note.aria": "Note",
       "note.invite": "Leave a note here?",
       "note.inviteAria": "Leave a note here",
+      "note.minimize": "Back to the desktop",
+      "note.maximize": "Open full screen",
+      "note.body": "The rest of the note",
+      "note.bodyPlaceholder": "The rest — only here",
+      "note.more": "This note has more inside",
+      "tip.notefull": "Enter in a note's first line opens it full screen — the body is written only there.",
       "widget.quote": "Quote",
       "widget.payback": "Payback",
       "widget.capture": "Quick Capture",
@@ -141,9 +147,9 @@
       "aria.turbo": "Turbo — give every frame to the work", "aria.cc": "Control Center",
       "aria.langs": "Language", "lang.partial": "the storefront speaks it; the system does not yet",
       "desk.allMinimized": "Desk cleared", "desk.allMinimizedSub": "Windows are waiting — tap an icon to bring one back",
+      "fs.no": "This browser keeps its own frame", "fs.noSub": "Full screen is not offered here — Safari on iPhone allows it for video only",
       "aria.icons": "Desktop icons", "aria.notes": "Desktop notes",
-      "aria.dock": "Dock", "aria.dockCta": "Start your project",
-      "aria.fab": "Quick actions", "aria.cmdk": "Command palette", "aria.close": "Close",
+      "aria.dock": "Dock", "aria.fab": "Quick actions", "aria.cmdk": "Command palette", "aria.close": "Close",
       "cmdk.placeholder": "Search apps and actions…",
       "cc.connection": "Connection", "cc.online": "Online", "cc.offline": "Offline",
       "cc.offlineLong": "Offline — no network connection",
@@ -152,8 +158,6 @@
       "cc.merge": "Merge instead of replace",
       "theme.dark": "Dark", "theme.light": "Light",
       "mood.studio": "Studio", "mood.aurora": "Aurora", "mood.sunset": "Sunset", "mood.ocean": "Ocean", "mood.mono": "Mono",
-      "dock.cta": "Start your project",
-
       /* ================================================== Pulse / Настройки
          Приложения больше не пишут строки литералами. Ключ живёт здесь,
          рядом с остальными двумя языками, чтобы перевод нельзя было забыть:
@@ -543,6 +547,12 @@
       "note.aria": "Заметка",
       "note.invite": "Оставить заметку здесь?",
       "note.inviteAria": "Оставить заметку здесь",
+      "note.minimize": "Вернуть на стол",
+      "note.maximize": "Открыть на весь экран",
+      "note.body": "Тело заметки",
+      "note.bodyPlaceholder": "Остальное — только здесь",
+      "note.more": "В этой заметке есть продолжение",
+      "tip.notefull": "Enter в первой строке заметки открывает её на весь экран — тело пишется только там.",
       "widget.quote": "Смета",
       "widget.payback": "Окупаемость",
       "widget.capture": "Быстрая запись",
@@ -601,9 +611,9 @@
       "aria.turbo": "Турбо — отдать все кадры работе", "aria.cc": "Центр управления",
       "aria.langs": "Язык", "lang.partial": "витрина говорит, система пока нет",
       "desk.allMinimized": "Стол очищен", "desk.allMinimizedSub": "Окна ждут — нажмите значок, чтобы вернуть",
+      "fs.no": "Этот браузер оставляет свою рамку", "fs.noSub": "Полного экрана он не даёт — Safari на iPhone разрешает его только видео",
       "aria.icons": "Значки рабочего стола", "aria.notes": "Заметки на столе",
-      "aria.dock": "Док", "aria.dockCta": "Начать проект",
-      "aria.fab": "Быстрые действия", "aria.cmdk": "Командная палитра", "aria.close": "Закрыть",
+      "aria.dock": "Док", "aria.fab": "Быстрые действия", "aria.cmdk": "Командная палитра", "aria.close": "Закрыть",
       "cmdk.placeholder": "Поиск приложений и действий…",
       "cc.connection": "Соединение", "cc.online": "В сети", "cc.offline": "Не в сети",
       "cc.offlineLong": "Не в сети — нет подключения",
@@ -612,8 +622,6 @@
       "cc.merge": "Объединить, а не заменить",
       "theme.dark": "Тёмное", "theme.light": "Светлое",
       "mood.studio": "Студия", "mood.aurora": "Аврора", "mood.sunset": "Закат", "mood.ocean": "Океан", "mood.mono": "Моно",
-      "dock.cta": "Начать проект",
-
       /* ============================================================ Настройки */
       "set.tab.general": "Общее", "set.tab.appearance": "Оформление",
       "set.tab.sound": "Звук и фокус", "set.tab.desktop": "Док и рабочий стол",
@@ -987,6 +995,12 @@
       "note.aria": "Märge",
       "note.invite": "Jätta siia märge?",
       "note.inviteAria": "Jäta siia märge",
+      "note.minimize": "Tagasi töölauale",
+      "note.maximize": "Ava üle ekraani",
+      "note.body": "Märkme sisu",
+      "note.bodyPlaceholder": "Ülejäänu — ainult siin",
+      "note.more": "Sellel märkmel on jätk",
+      "tip.notefull": "Enter märkme esimesel real avab selle üle ekraani — sisu kirjutatakse ainult seal.",
       "widget.quote": "Pakkumine",
       "widget.payback": "Tasuvus",
       "widget.capture": "Kiirmärge",
@@ -1045,9 +1059,9 @@
       "aria.turbo": "Turbo — anna kõik kaadrid tööle", "aria.cc": "Juhtimiskeskus",
       "aria.langs": "Keel", "lang.partial": "vitriin räägib, süsteem veel mitte",
       "desk.allMinimized": "Laud on puhas", "desk.allMinimizedSub": "Aknad ootavad — puuduta ikooni, et tagasi tuua",
+      "fs.no": "See brauser jätab oma raami", "fs.noSub": "Täisekraani ta ei anna — iPhone'i Safari lubab seda ainult videole",
       "aria.icons": "Töölaua ikoonid", "aria.notes": "Töölaua märkmed",
-      "aria.dock": "Dokk", "aria.dockCta": "Alusta oma projekti",
-      "aria.fab": "Kiirtoimingud", "aria.cmdk": "Käsupalett", "aria.close": "Sulge",
+      "aria.dock": "Dokk", "aria.fab": "Kiirtoimingud", "aria.cmdk": "Käsupalett", "aria.close": "Sulge",
       "cmdk.placeholder": "Otsi rakendusi ja toiminguid…",
       "cc.connection": "Ühendus", "cc.online": "Võrgus", "cc.offline": "Võrguühenduseta",
       "cc.offlineLong": "Võrguühenduseta — võrku pole",
@@ -1056,8 +1070,6 @@
       "cc.merge": "Liida, ära asenda",
       "theme.dark": "Tume", "theme.light": "Hele",
       "mood.studio": "Stuudio", "mood.aurora": "Virmalised", "mood.sunset": "Loojang", "mood.ocean": "Ookean", "mood.mono": "Mono",
-      "dock.cta": "Alusta oma projekti",
-
       /* ============================================================== Seaded
          Обращение к посетителю — teie (мн. вежливое), как на лендинге. */
       "set.tab.general": "Üldine", "set.tab.appearance": "Välimus",
@@ -1444,8 +1456,11 @@
    *
    * Почему понятно, что это язык, без слова «язык»: код набран моноширинным,
    * как коды языков на витрине (D-041 — коды, а не флаги, потому что флаг
-   * обозначает страну), подчёркнут пунктиром — общий знак «это меняется», —
-   * и озвучен полностью для тех, кто читает экран голосом.
+   * обозначает страну), одет в ту же стеклянную плашку с волосяной рамкой,
+   * что и остальные значки панели, — плашка и говорит «это можно нажать», —
+   * и озвучен полностью для тех, кто читает экран голосом. Пунктир под кодом
+   * тут стоял до v53 и был снят: на телефоне тонкая точечная линия под двумя
+   * буквами читается как подчёркивание ОПЕЧАТКИ, а не как приглашение.
    */
   function nextLang(code) {
     var i = 0, k;
@@ -1610,23 +1625,91 @@
      подсказку нажатием, нужна дверь без поиска кнопки: законы и сама
      лампочка зовут одно и то же. */
   window.sbShowTipNow = function () {
+    hintRequested = true;   /* человек позвал сам — см. sbDeskHintYield */
     var tip = nextTip();
     if (!tip) return false;
     showTip(tip);
     return true;
   };
 
+  /* ── ЗНАК СИСТЕМЫ — ДВА ШАГА, А НЕ ДВА НАЗНАЧЕНИЯ (v61) ──────────────────
+     ПОВОД, дословно от основателя 24.08.2026: «когда нажимаешь в первый раз
+     про иконке логотипа, то скрываются все окна, а если нажать ещё раз, то
+     страница с нашей os должна открыться на весь экран абсолютно на любом
+     устройстве. а иконка логотипа в режиме на весь экран должна стать
+     слегка больше и если на неё нажать еще раз, то она уменьшится, но это
+     можно сделать только тогда, когда все приложения свёрнуты».
+
+     ПОЧЕМУ ЭТО НЕ ДВЕ КНОПКИ В ОДНОЙ. Обе работы у знака — про одно и то
+     же: убрать лишнее и остаться со своей системой. Сначала уходят окна,
+     потом уходит браузер. Это одна лестница вниз, к чистому столу, и ступень
+     всегда следующая за той, где человек сейчас стоит.
+
+     ПРАВИЛО ОДНО, И ОНО САМО ДАЁТ ОБЕ ПОЛОВИНЫ ОСНОВАТЕЛЯ. Если на столе
+     есть что убрать — убираем и на этом останавливаемся. Если убирать
+     нечего — переключаем полный экран. Отсюда бесплатно следует и «уменьшить
+     можно только когда все приложения свёрнуты»: открытое окно съест
+     нажатие, свернувшись, и выход из полного экрана произойдёт следующим.
+
+     ЧЕСТНАЯ ГРАНИЦА, названная вслух: «абсолютно на любом устройстве» —
+     недостижимо. Safari на iPhone не даёт полного экрана ничему, кроме
+     видео: requestFullscreen там отсутствует. Мы не притворяемся, что
+     сработало, — говорим один раз и не повторяем. Молчаливое бездействие
+     было бы хуже: человек решил бы, что сломана кнопка.
+
+     Класс на корне ставится по СОБЫТИЮ fullscreenchange, а не по нашему
+     намерению: выйти из полного экрана можно и клавишей Esc, и средствами
+     браузера, мимо этой кнопки. Признак берётся у того, кто им владеет. */
+  function fsElement() {
+    return doc.fullscreenElement || doc.webkitFullscreenElement || null;
+  }
+  function fsSupported() {
+    var el = doc.documentElement;
+    return !!(el.requestFullscreen || el.webkitRequestFullscreen);
+  }
+  var fsToldUnsupported = false;
+  function toggleFullscreen() {
+    if (!fsSupported()) {
+      if (!fsToldUnsupported && window.showToast) {
+        fsToldUnsupported = true;
+        window.showToast(window.sbT("fs.no"), window.sbT("fs.noSub"), "");
+      }
+      return;
+    }
+    try {
+      if (fsElement()) {
+        (doc.exitFullscreen || doc.webkitExitFullscreen).call(doc);
+      } else {
+        var el = doc.documentElement;
+        (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+      }
+    } catch (err) { console.error("[topbar] fullscreen toggle failed", err); }
+  }
+  function syncFullscreenClass() {
+    doc.documentElement.classList.toggle("sb-fullscreen", !!fsElement());
+  }
+
   function wireMark() {
     var mark = $("#sbTopMark");
     if (!mark) return;
+    doc.addEventListener("fullscreenchange", syncFullscreenClass);
+    doc.addEventListener("webkitfullscreenchange", syncFullscreenClass);
+    syncFullscreenClass();
     mark.addEventListener("click", function () {
-      if (typeof window.sbMinimizeAll !== "function") return;
       var n = 0;
-      try { n = window.sbMinimizeAll(); } catch (err) { console.error("[topbar] minimise all failed", err); return; }
-      /* Молчать, когда убирать было нечего: подтверждать несделанное — врать. */
-      if (n > 0 && window.showToast) {
-        window.showToast(window.sbT("desk.allMinimized"), window.sbT("desk.allMinimizedSub"), "");
+      if (typeof window.sbMinimizeAll === "function") {
+        try { n = window.sbMinimizeAll(); } catch (err) { console.error("[topbar] minimise all failed", err); return; }
       }
+      if (n > 0) {
+        /* Первая ступень: со стола было что убрать. Молчать, когда убирать
+           было нечего, — правило прежнее: подтверждать несделанное значит врать. */
+        if (window.showToast) {
+          window.showToast(window.sbT("desk.allMinimized"), window.sbT("desk.allMinimizedSub"), "");
+        }
+        return;
+      }
+      /* Вторая ступень: стол уже чист — уходит браузер. */
+      toggleFullscreen();
     });
   }
 
@@ -1788,6 +1871,10 @@
     { id: "inlinesearch", panel: null, pointer: true },
     { id: "cmdk", panel: null, pointer: true },
     { id: "stickynotes", panel: null },
+    /* v66: заметка выросла в окно (D-111) — подсказки обязаны расти вместе
+       с системой, о чём основатель просил отдельно: «прошу постоянно
+       обновлять информацию в подсказках». */
+    { id: "notefull", panel: null },
     { id: "windowspanel", panel: "sbTaskOverlay", pointer: true },
     { id: "appshortcuts", panel: "sbShortcutsOverlay", pointer: true },
     { id: "shortcutslist", panel: "sbShortcutsOverlay", pointer: true },
@@ -1814,7 +1901,7 @@
     });
   }
   var TIP_KEY = "sysbaby.tips.seen";
-  var tipTimer = null, currentTip = null;
+  var tipTimer = null, currentTip = null, hintRequested = false;
 
   function tipsSeen() { var v = readJSON(TIP_KEY, []); return Array.isArray(v) ? v : []; }
   function markTip(id) {
@@ -1864,7 +1951,22 @@
     var host = $("#sbDeskHint");
     if (host) host.classList.remove("on");
     currentTip = null;
+    hintRequested = false;
   }
+
+  /* ── ОДНО МЕСТО РЕЧИ: ИЗВЕЩЕНИЕ ВЫТЕСНЯЕТ САМОПРИШЕДШУЮ ПОДСКАЗКУ (v66) ──
+     Повод, дословно от основателя 25.08.2026: «оповещения должны
+     отображаться в блоке подсказок». У стола теперь один голос и одно
+     место, откуда он говорит, — линия над полкой. Кто говорит — решает
+     правило v47.1, симметрично достроенное: явно запрошенное важнее
+     пришедшего само. Подсказку, которую человек ВЫЗВАЛ лампочкой,
+     извещение не перебивает; подсказка, пришедшая по расписанию, уступает
+     извещению — оно свежее. */
+  window.sbDeskHintYield = function () {
+    if (!currentTip || hintRequested) return false;
+    hideTip();
+    return true;
+  };
   /* Retiring is not the same as hiding: nothing left to teach, so the bulb
      goes too. Silently — a notice saying "no more notices" is still a notice. */
   function retireTips() {
@@ -1885,6 +1987,7 @@
       }
       var tip = nextTip();
       if (!tip) { retireTips(); return; }
+      hintRequested = false;   /* пришла сама — уступит извещению */
       showTip(tip);
       tipTimer = setTimeout(function () {
         hideTip();

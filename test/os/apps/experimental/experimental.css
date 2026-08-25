@@ -80,7 +80,7 @@
   letter-spacing: .08em;
   text-transform: uppercase;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid rgba(255, 214, 10, .34);
   background: rgba(255, 214, 10, .06);
   color: rgba(255, 255, 255, .74);
@@ -89,7 +89,7 @@
 .xp-status i {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   background: var(--warn);
   animation: xpPulse 3.4s ease-in-out infinite;
 }
@@ -162,10 +162,18 @@ html[data-motion="reduced"] .xp-status i { animation: none; opacity: .8; }
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   opacity: .25;
-  transition: opacity .2s ease, background .2s ease;
+  transition: opacity var(--t-touch) ease, background var(--t-touch) ease;
 }
 
-.xp-back:hover, .xp-back:focus-visible { opacity: 1; background: rgba(8, 9, 12, .9); }
+.xp-back:focus-visible { opacity: 1; background: rgba(8, 9, 12, .9); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .xp-back:hover { opacity: 1; background: rgba(8, 9, 12, .9); }
+}
 html.is-touch .xp-back { opacity: .85; }
 
 @media (max-width: 620px) {

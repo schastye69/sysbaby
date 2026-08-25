@@ -30,7 +30,7 @@
   flex: 1;
   min-width: 0;
   padding: 7px 10px;
-  border-radius: 10px;
+  border-radius: var(--r-ctrl);
   border: 1px solid rgba(255, 255, 255, .1);
   background: rgba(255, 255, 255, .05);
   color: inherit;
@@ -40,7 +40,7 @@
 }
 
 .mg-input:focus-visible { outline: 2px solid var(--accent, #e0663c); outline-offset: 1px; }
-.mg-input.flat { border-radius: 999px; }
+.mg-input.flat { border-radius: var(--r-pill); }
 
 .mg-newbtn,
 .mg-attach-btn,
@@ -50,7 +50,7 @@
   flex: 0 0 30px;
   display: grid;
   place-items: center;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid rgba(255, 255, 255, .12);
   background: rgba(255, 255, 255, .06);
   color: inherit;
@@ -58,10 +58,24 @@
   padding: 0;
 }
 
-.mg-newbtn:hover, .mg-attach-btn:hover { background: rgba(255, 255, 255, .13); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .mg-newbtn:hover, .mg-attach-btn:hover { background: rgba(255, 255, 255, .13); }
+}
 .mg-newbtn svg, .mg-attach-btn svg, .mg-send svg { width: 16px; height: 16px; }
 .mg-send { background: var(--accent, #e0663c); border-color: transparent; color: #fff; }
-.mg-send:hover { filter: brightness(1.12); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .mg-send:hover { filter: brightness(1.12); }
+}
 
 .mg-newform {
   display: flex;
@@ -77,7 +91,7 @@
 .mg-tab {
   flex: 1;
   padding: 5px 8px;
-  border-radius: 8px;
+  border-radius: var(--r-ctrl);
   border: 1px solid rgba(255, 255, 255, .1);
   background: transparent;
   color: rgba(255, 255, 255, .65);
@@ -90,7 +104,7 @@
 
 .mg-start {
   padding: 6px 10px;
-  border-radius: 9px;
+  border-radius: var(--r-ctrl);
   border: 0;
   background: var(--accent, #e0663c);
   color: #fff;
@@ -108,12 +122,19 @@
   align-items: center;
   gap: 9px;
   padding: 8px 9px;
-  border-radius: 12px;
+  border-radius: var(--r-card);
   cursor: pointer;
   border: 1px solid transparent;
 }
 
-.mg-convo:hover { background: rgba(255, 255, 255, .05); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .mg-convo:hover { background: rgba(255, 255, 255, .05); }
+}
 .mg-convo.active { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .12); }
 .mg-convo.muted { opacity: .55; }
 
@@ -122,7 +143,7 @@
 .mg-avatar {
   width: 32px;
   height: 32px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   display: grid;
   place-items: center;
   font-size: 11.5px;
@@ -140,7 +161,7 @@
   bottom: -1px;
   width: 9px;
   height: 9px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(120, 120, 130, .9);
   border: 2px solid #14151a;
 }
@@ -155,19 +176,26 @@
   flex: 0 0 auto;
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--accent, #e0663c);
 }
 
 .mg-convo-actions { display: none; gap: 3px; }
-.mg-convo:hover .mg-convo-actions { display: flex; }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .mg-convo:hover .mg-convo-actions { display: flex; }
+}
 
 .mg-mini {
   width: 22px;
   height: 22px;
   display: grid;
   place-items: center;
-  border-radius: 7px;
+  border-radius: var(--r-tag);
   border: 1px solid rgba(255, 255, 255, .14);
   background: rgba(12, 13, 16, .8);
   color: rgba(255, 255, 255, .75);
@@ -175,8 +203,22 @@
   padding: 0;
 }
 
-.mg-mini:hover { background: rgba(255, 255, 255, .16); color: #fff; }
-.mg-mini.danger:hover { color: var(--danger, #ff453a); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .mg-mini:hover { background: rgba(255, 255, 255, .16); color: #fff; }
+}
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .mg-mini.danger:hover { color: var(--danger, #ff453a); }
+}
 .mg-mini svg { width: 13px; height: 13px; }
 
 .mg-list-empty,
@@ -212,7 +254,14 @@
   cursor: pointer;
 }
 
-.mg-head-name:hover { text-decoration: underline; text-underline-offset: 2px; }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .mg-head-name:hover { text-decoration: underline; text-underline-offset: 2px; }
+}
 .mg-head-members { font-size: 11px; color: rgba(255, 255, 255, .45); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .mg-messages { flex: 1; min-height: 0; overflow: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
@@ -224,7 +273,7 @@
   color: rgba(255, 255, 255, .45);
   background: rgba(255, 255, 255, .07);
   padding: 2px 9px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 
 .mg-msg { display: flex; flex-direction: column; max-width: 74%; }
@@ -235,7 +284,7 @@
 .mg-bubble {
   position: relative;
   padding: 8px 11px;
-  border-radius: 16px;
+  border-radius: var(--r-window);
   font-size: 13px;
   line-height: 1.5;
   border: 1px solid rgba(255, 255, 255, .1);
@@ -271,7 +320,7 @@
   font-size: 12px;
   background: rgba(20, 21, 26, .95);
   border: 1px solid rgba(255, 255, 255, .14);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 0 4px;
   line-height: 1.5;
 }
@@ -284,10 +333,17 @@
   font-size: 10px;
   color: rgba(255, 255, 255, .38);
   opacity: 0;
-  transition: opacity .16s ease;
+  transition: opacity var(--t-touch) ease;
 }
 
-.mg-msg:hover .mg-meta { opacity: 1; }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .mg-msg:hover .mg-meta { opacity: 1; }
+}
 
 .mg-meta-btn {
   border: 0;
@@ -300,7 +356,14 @@
   line-height: 1;
 }
 
-.mg-meta-btn:hover { color: rgba(255, 255, 255, .85); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .mg-meta-btn:hover { color: rgba(255, 255, 255, .85); }
+}
 .mg-meta-btn svg { width: 12px; height: 12px; vertical-align: middle; }
 
 .mg-system { align-self: center; max-width: 84%; text-align: center; }
@@ -312,7 +375,7 @@
   color: rgba(255, 255, 255, .58);
   background: rgba(255, 255, 255, .05);
   border: 1px dashed rgba(255, 255, 255, .16);
-  border-radius: 12px;
+  border-radius: var(--r-card);
   padding: 7px 12px;
 }
 
@@ -325,7 +388,7 @@
   color: inherit;
   font: inherit;
   font-size: 13px;
-  border-radius: 10px;
+  border-radius: var(--r-ctrl);
   padding: 4px 6px;
   resize: none;
   outline: none;
@@ -366,7 +429,7 @@
   width: 100%;
   text-align: left;
   padding: 6px 8px;
-  border-radius: 9px;
+  border-radius: var(--r-ctrl);
   border: 1px solid transparent;
   background: transparent;
   color: inherit;
@@ -375,7 +438,14 @@
   cursor: pointer;
 }
 
-.mg-attach-item:hover { background: rgba(255, 255, 255, .08); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .mg-attach-item:hover { background: rgba(255, 255, 255, .08); }
+}
 .mg-attach-item svg { width: 15px; height: 15px; flex: 0 0 auto; }
 .mg-attach-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mg-attach-path { font-size: 10.5px; color: rgba(255, 255, 255, .4); flex: 0 0 auto; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -395,7 +465,7 @@
   display: flex;
   gap: 2px;
   padding: 4px 6px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid rgba(255, 255, 255, .16);
   background: rgba(20, 21, 26, .97);
   box-shadow: 0 12px 30px rgba(0, 0, 0, .5);
@@ -407,11 +477,18 @@
   font-size: 16px;
   line-height: 1;
   padding: 3px 4px;
-  border-radius: 8px;
+  border-radius: var(--r-ctrl);
   cursor: pointer;
 }
 
-.mg-react-pop button:hover { background: rgba(255, 255, 255, .14); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .mg-react-pop button:hover { background: rgba(255, 255, 255, .14); }
+}
 
 @media (max-width: 620px) {
   .app-msgr { flex-direction: column; }
@@ -421,9 +498,16 @@
 /* v21 — the honest way out: thread → real studio letter */
 .mg-to-letter {
   margin-left: auto; flex: none; font: inherit; font-size: 10.5px; letter-spacing: .03em;
-  padding: 5px 11px; border-radius: 999px; cursor: pointer;
+  padding: 5px 11px; border-radius: var(--r-pill); cursor: pointer;
   border: 1px solid var(--accent-soft, rgba(224, 102, 60, .35));
   background: transparent; color: var(--accent, #e0663c);
-  transition: background .18s ease, color .18s ease;
+  transition: background var(--t-touch) ease, color var(--t-touch) ease;
 }
-.mg-to-letter:hover { background: var(--accent-soft, rgba(224, 102, 60, .16)); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .mg-to-letter:hover { background: var(--accent-soft, rgba(224, 102, 60, .16)); }
+}

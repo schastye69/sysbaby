@@ -35,6 +35,70 @@
   window.sbReadJSON = readJSON;
   window.sbWriteJSON = writeJSON;
 
+  /* ── ПЕРЕРИСОВКА НЕ ДВИГАЕТ ТО, ЧТО ПРОКРУТИЛ ЧЕЛОВЕК (v60) ──────────────
+     ПОВОД: основатель, дважды и с разных экранов. Сначала «Настройки»:
+     «я нажимаю на кнопку about и меню улетает в начало». Потом «Письма»:
+     «здесь снова телепорт. больше нигде не должно быть телепортов!».
+
+     В v58 это чинилось внутри одного приложения, и правило было записано
+     словами в шапке закона, а не в коде. Слова не исполняются: следующее
+     приложение с прокручиваемой полосой получило тот же дефект, не нарушив
+     ни строчки. Теперь это не приём, а СРЕДСТВО ОБОЛОЧКИ — одно на всех.
+
+     ПОЧЕМУ ЭТО ВООБЩЕ СЛУЧАЕТСЯ. Приложения перерисовывают корпус целиком
+     через innerHTML: так проще и так они устроены с самого начала. Но
+     innerHTML УНИЧТОЖАЕТ узлы, а вместе с ними и прокрутку — своё положение
+     в списке, свою полосу разделов, своё место в длинной ленте. Человек
+     этого не просил: перерисовка — дело системы, прокрутка — дело человека.
+
+     КАК УЗНАЁТСЯ ТОТ ЖЕ УЗЕЛ ПОСЛЕ ЗАМЕНЫ. Ссылку хранить нельзя — узел
+     будет другим. Ключом служит место в разметке: имя тега, полный список
+     классов и порядковый номер среди таких же внутри корпуса. Для полос и
+     лент этого достаточно, а если разметка сменилась целиком — ключ просто
+     не найдётся, и восстанавливать будет нечего. Это правильный исход:
+     лучше ничего не восстановить, чем восстановить не туда.
+
+     ВОЗВРАТ ИДЁТ СРАЗУ, в той же задаче, до отрисовки, — поэтому кадра с
+     полосой в начале не бывает вовсе.
+
+     Чего средство НЕ делает: не подводит полосу к активному разделу. Это
+     был бы второй телепорт вместо первого. Требование самое скромное — где
+     стояло, там и осталось. */
+  window.sbKeepScroll = function (host) {
+    if (!host || !host.querySelectorAll) return function () { };
+    var keyOf = function (el) {
+      return el.tagName + "." + (el.className && el.className.baseVal !== undefined
+        ? el.className.baseVal : String(el.className || ""));
+    };
+    var seen = Object.create(null), kept = [];
+    var all = [host].concat(Array.prototype.slice.call(host.querySelectorAll("*")));
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      var l = el.scrollLeft || 0, t = el.scrollTop || 0;
+      var k = keyOf(el);
+      var n = seen[k] = (seen[k] === undefined ? 0 : seen[k] + 1);
+      if (l > 0 || t > 0) kept.push({ k: k, n: n, l: l, t: t });
+    }
+    if (!kept.length) return function () { };
+    return function restore() {
+      var seen2 = Object.create(null);
+      var all2 = [host].concat(Array.prototype.slice.call(host.querySelectorAll("*")));
+      for (var j = 0; j < all2.length; j++) {
+        var el2 = all2[j];
+        var k2 = keyOf(el2);
+        var n2 = seen2[k2] = (seen2[k2] === undefined ? 0 : seen2[k2] + 1);
+        for (var m = 0; m < kept.length; m++) {
+          if (kept[m].k !== k2 || kept[m].n !== n2) continue;
+          var maxL = el2.scrollWidth - el2.clientWidth;
+          var maxT = el2.scrollHeight - el2.clientHeight;
+          if (maxL > 0) el2.scrollLeft = kept[m].l > maxL ? maxL : kept[m].l;
+          if (maxT > 0) el2.scrollTop = kept[m].t > maxT ? maxT : kept[m].t;
+          break;
+        }
+      }
+    };
+  };
+
   function rawGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function rawSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* §10 amnesiac */ } }
 
@@ -252,9 +316,101 @@
     { id: "emerald", name: "Emerald", a1: "#22c58b", a2: "#7de08a" },
     { id: "amber", name: "Amber", a1: "#ff9d3d", a2: "#ffd65c" }
   ];
-  window.sbGetAccentSwatches = function () { return ACCENTS.map(function (a) { return { id: a.id, name: a.name, a1: a.a1, a2: a.a2 }; }); };
+  /* ── ШОВ, ИДУЩИЙ ПО КРУГУ СУТОК (v62) ────────────────────────────────────
+     ПОВОД, дословно от основателя: «accent colors добавляем ещё один,
+     который медленно будет переключать все цвета - как цветотерапия. они
+     должны переключаться медленно почти незаметно. можно назвать этот режим
+     концептуально, гениально и функционально».
+
+     ЧТО ЭТО. Шестая краска, которая не краска, а ХОД. Тон обходит полный
+     круг ровно за сутки и привязан к местной полуночи. Скорость — 0.25° в
+     минуту: увидеть движение нельзя никак, но в один и тот же час дня
+     система выглядит одинаково. Цвет становится часами, которые не читают,
+     а узнают. Отсюда и имя — Daylight: не название цвета, а название того,
+     чем этот цвет служит.
+
+     ПОЧЕМУ СВЕТЛОТА МЕНЯЕТСЯ ВМЕСТЕ С ТОНОМ, А НЕ ОСТАЁТСЯ ПОСТОЯННОЙ.
+     Шов — не украшение: в core.css у него объявлено одно значение — «здесь
+     можно действовать, или здесь что-то живое», и он же рисует кольца
+     фокуса. Значит он обязан быть виден ВСЕГДА. Измерено: при постоянной
+     светлоте 56% контраст к грунту гуляет от 2.78 на синем до 14.17 на
+     жёлтом — в пять раз, и на синем шов почти пропадает. Поэтому путь
+     проложен так, чтобы держать КОНТРАСТ, а не светлоту: под каждый тон
+     светлота подобрана заранее (таблица LIGHT, 24 узла через 15°), и по
+     всему кругу контраст остаётся 5.75…5.85 при цели 5.78 — контрасте
+     нынешнего Clay. Светлота при этом гуляет от 32.5% до 71%, и это цена,
+     которую платит цвет, чтобы шов не исчезал.
+
+     ПОЧЕМУ ЭТО ПОЧТИ НИЧЕГО НЕ СТОИТ. Свойство на корне объявляет
+     устаревшим стиль всего документа (это Совет измерил на доке, D-093).
+     Здесь оно пишется, только когда изменился ОКРУГЛЁННЫЙ до градуса тон, —
+     то есть раз в четыре минуты. Триста шестьдесят записей в сутки: та же
+     медленность, которая делает ход незаметным, делает его и бесплатным. */
+  var DRIFT_ID = "daylight";
+  var LIGHT = [63.5, 55.8, 46, 38.5, 32.5, 34, 35.3, 36, 36.5, 36.3, 36, 35.5,
+               35, 43, 55.5, 65.3, 71, 69.5, 67.3, 63.8, 57.5, 60, 61.8, 62.8];
+  var DRIFT_SAT = 73;
+
+  function hslHex(h, sPct, lPct) {
+    h = ((h % 360) + 360) % 360;
+    var sN = sPct / 100, lN = lPct / 100;
+    var c = (1 - Math.abs(2 * lN - 1)) * sN;
+    var x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    var m = lN - c / 2, r, g, b;
+    if (h < 60) { r = c; g = x; b = 0; }
+    else if (h < 120) { r = x; g = c; b = 0; }
+    else if (h < 180) { r = 0; g = c; b = x; }
+    else if (h < 240) { r = 0; g = x; b = c; }
+    else if (h < 300) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+    var to = function (v) { var n = Math.round((v + m) * 255); n = n < 0 ? 0 : (n > 255 ? 255 : n); return (n < 16 ? "0" : "") + n.toString(16); };
+    return "#" + to(r) + to(g) + to(b);
+  }
+  function driftLight(hue) {
+    var pos = (((hue % 360) + 360) % 360) / 15;
+    var i = Math.floor(pos) % LIGHT.length, j = (i + 1) % LIGHT.length, f = pos - Math.floor(pos);
+    return LIGHT[i] + (LIGHT[j] - LIGHT[i]) * f;
+  }
+  /* Чистая функция наружу: по мигу времени — цвет шва. Вынесена ОТДЕЛЬНО
+     именно затем, чтобы закон мог пройти все двадцать четыре часа, не трогая
+     системных часов машины. */
+  window.sbAccentForTime = function (ms) {
+    var d = new Date(typeof ms === "number" ? ms : Date.now());
+    var minutes = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+    var hue = Math.round(minutes / 1440 * 360 * 10) / 10;
+    var a1 = hslHex(hue, DRIFT_SAT, driftLight(hue));
+    var a2 = hslHex(hue + 28, DRIFT_SAT, Math.min(92, driftLight(hue + 28) + 10));
+    return { a1: a1, a2: a2, hue: hue };
+  };
+
+  var driftTimer = null, driftLastHue = null;
+  function driftTick(force) {
+    var now = window.sbAccentForTime();
+    var rounded = Math.round(now.hue);
+    if (!force && rounded === driftLastHue) return;   /* тот же градус — не трогаем документ */
+    driftLastHue = rounded;
+    applyAccent(now.a1, now.a2);
+  }
+  function driftStart() {
+    driftStop();
+    driftTick(true);
+    driftTimer = setInterval(function () { driftTick(false); }, 60000);
+  }
+  function driftStop() { if (driftTimer) { clearInterval(driftTimer); driftTimer = null; } driftLastHue = null; }
+  window.sbAccentDrifting = function () { return !!driftTimer; };
+
+  window.sbGetAccentSwatches = function () {
+    var list = ACCENTS.map(function (a) { return { id: a.id, name: a.name, a1: a.a1, a2: a.a2 }; });
+    var now = window.sbAccentForTime();
+    list.push({ id: DRIFT_ID, name: "Daylight", a1: now.a1, a2: now.a2, drift: true });
+    return list;
+  };
   window.sbGetCurrentAccent = function () {
     var v = readJSON(ACCENT_KEY, null);
+    if (v && v.mode === DRIFT_ID) {
+      var now = window.sbAccentForTime();
+      return { a1: now.a1, a2: now.a2, mode: DRIFT_ID };
+    }
     if (v && v.a1) return { a1: v.a1, a2: v.a2 || deriveSecond(v.a1) };
     return { a1: ACCENTS[0].a1, a2: ACCENTS[0].a2 };
   };
@@ -284,6 +440,16 @@
   }
 
   window.sbSetAccent = function (hex, second) {
+    /* Ход — не цвет, а режим, и приходит он тем же входом: приложение
+       настроек передаёт сюда либо шестнадцатеричный цвет, либо это имя. */
+    if (String(hex) === DRIFT_ID) {
+      writeJSON(ACCENT_KEY, { mode: DRIFT_ID });
+      driftStart();
+      var cur = window.sbAccentForTime();
+      announceSetting("accent", { a1: cur.a1, a2: cur.a2, mode: DRIFT_ID });
+      return { a1: cur.a1, a2: cur.a2, mode: DRIFT_ID };
+    }
+    driftStop();
     var a1 = String(hex || ACCENTS[0].a1);
     var a2 = second || null;
     if (!a2) {
@@ -354,6 +520,9 @@
   function mountToast(t, ttl) {
     var host = layer();
     if (!host) return null;
+    /* Одно место речи (v66): извещение встаёт на линию подсказки, и
+       самопришедшая подсказка уступает ему. Вызванная лампочкой — нет. */
+    if (window.sbDeskHintYield) window.sbDeskHintYield();
     host.appendChild(t);
     requestAnimationFrame(function () { t.classList.add("in"); });
     var kill = function () {
@@ -671,18 +840,54 @@
        ЧТО ИМЕННО будет меняться. Причина написана в core.css у .window.opening:
        размытие превращает дешёвую анимацию переноса в дорогую, потому что
        подложка под движущимся окном каждый кадр другая. */
+    /* ── ОДНА СКОРОСТЬ НА ВСЮ СИСТЕМУ (v52) ───────────────────────────────
+     * Повод, дословно от основателя 21.08.2026: «окна приложений медленно
+     * открываются и закрываются — так всегда и было, но сейчас всё работает
+     * достаточно быстро, и то, что окна медленно закрываются и открываются,
+     * очень сильно бросается в глаза».
+     *
+     * ИЗМЕРЕНО ДО ПРАВКИ, телефон с замедлением вчетверо, от вызова до «окно
+     * стоит на месте»: открытие 341 мс (медиана из четырёх), закрытие 227 мс.
+     * При этом окно появляется в DOM за 20–60 мс — содержимое готово почти
+     * сразу, и все оставшиеся три сотни миллисекунд человек ждёт НЕ систему,
+     * а анимацию. Ускорять здесь можно ничего не ломая: ждать нечего.
+     *
+     * ПОЧЕМУ ИМЕННО ЭТИ ЧИСЛА, а не «покороче». В системе уже есть самое
+     * быстрое осознанное движение — морф разворота на весь экран, 130 мс, и
+     * на него основатель не жаловался ни разу. Значит мерка своя, а не взятая
+     * из чужих рекомендаций. Остальные движения приведены в ту же семью:
+     *     открыть   260 → 180 → 120 мс
+     *     закрыть   200 → 140 → 100 мс
+     *     свернуть  200 → 150 → 110 мс
+     *     вернуть   200 → 150 → 110 мс
+     *
+     * ВТОРОЙ ШАГ (v53), по просьбе основателя «ускорить ещё сильнее». Первый
+     * шаг привёл окна в семью морфа (130 мс); второй ставит открытие ВРОВЕНЬ
+     * с самым быстрым движением системы и уводит остальные ниже него. Ниже
+     * сотни уходить не стали намеренно: движение короче ~100 мс перестаёт
+     * читаться как движение и превращается в подмену кадра — окно не
+     * прилетает, а возникает, и связь между нажатием и результатом теряется.
+     * Это не осторожность, а граница: дальше ускорять уже нечего, дальше
+     * можно только убрать анимацию совсем — что и делает reduced motion.
+     * Закрытие короче открытия НАМЕРЕННО: вещь, которая уходит, не должна
+     * держать внимание дольше, чем вещь, которую позвали.
+     *
+     * Потолки стережёт tools/window-motion-check.mjs. До сегодня он проверял
+     * УСТРОЙСТВО движения — правда состояния мгновенна, в полёте не
+     * размывает, после полёта чисто — и ни слова не говорил о длительности:
+     * окно могло ехать две секунды, и доска была зелена. */
     el.classList.add("opening");
     el.style.transform = "translate3d(" + Math.round(fromX - cx) + "px," + Math.round(fromY - cy) + "px,0) scale(.94)";
     el.style.opacity = "0";
     requestAnimationFrame(function () {
-      el.style.transition = "transform 260ms cubic-bezier(.16,1,.3,1), opacity 240ms ease";
+      el.style.transition = "transform 120ms cubic-bezier(.16,1,.3,1), opacity 100ms ease";
       el.style.transform = "translate3d(0,0,0) scale(1)";
       el.style.opacity = "1";
       setTimeout(function () {
         el.style.transition = "";
         el.style.transform = "";
         el.classList.remove("opening");
-      }, 300);
+      }, 140);
     });
   }
 
@@ -754,11 +959,11 @@
     var el = win.el;
     el.classList.add("closing", "traveling");
     if (!reduced() && !systemReduced()) {
-      el.style.transition = "transform 200ms cubic-bezier(.16,1,.3,1), opacity 190ms ease";
+      el.style.transition = "transform 100ms cubic-bezier(.16,1,.3,1), opacity 80ms ease";
       el.style.transform = "scale(.96)";
       el.style.opacity = "0";
     }
-    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 210);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 110);
 
     if (focusedId === id) {
       var next = highestRemaining();
@@ -806,13 +1011,13 @@
          родилось у открытия и законом window-motion-check распространено на
          все пути: счёт композитору один и тот же, где бы окно ни летело. */
       el.classList.add("traveling");
-      el.style.transition = "transform 200ms cubic-bezier(.16,1,.3,1), opacity 180ms ease";
+      el.style.transition = "transform 110ms cubic-bezier(.16,1,.3,1), opacity 90ms ease";
       el.style.transformOrigin = "center center";
       el.style.transform = "translate3d(" + Math.round(r.left + r.width / 2 - cx) + "px," + Math.round(r.top + r.height / 2 - cy) + "px,0) scale(.12)";
       el.style.opacity = "0";
-      setTimeout(function () { dockCatch(id); }, 150);
+      setTimeout(function () { dockCatch(id); }, 80);
     }
-    setTimeout(function () { el.classList.add("minimized"); el.style.transition = ""; el.classList.remove("traveling"); }, 200);
+    setTimeout(function () { el.classList.add("minimized"); el.style.transition = ""; el.classList.remove("traveling"); }, 120);
     if (focusedId === id) {
       var next = highestRemaining();
       focusedId = null;
@@ -830,7 +1035,7 @@
     if (!reduced() && !systemReduced()) {
       el.classList.add("traveling");
       requestAnimationFrame(function () {
-        el.style.transition = "transform 200ms cubic-bezier(.16,1,.3,1), opacity 180ms ease";
+        el.style.transition = "transform 110ms cubic-bezier(.16,1,.3,1), opacity 90ms ease";
         el.style.transform = "translate3d(0,0,0) scale(1)";
         el.style.opacity = "1";
         /* После полёта — ни следа: transition, transform и traveling
@@ -841,7 +1046,7 @@
           el.style.transition = "";
           el.style.transform = "";
           el.classList.remove("traveling");
-        }, 220);
+        }, 130);
       });
     } else { el.style.transform = ""; el.style.opacity = "1"; }
     dockRelease(id);
@@ -1513,11 +1718,37 @@
      --dock-h; offsetHeight is used rather than the rect so an auto-hidden
      dock (translated off-screen) still reports its true size. */
   var dockRO = null;
+  var dockHPublished = "";
   function publishDockHeight() {
     var dock = $("#dock");
     if (!dock) return;
     var h = dock.offsetHeight;
-    if (h > 0) doc.documentElement.style.setProperty("--dock-h", h + "px");
+    if (!(h > 0)) return;
+    /* ── ПИСАТЬ В КОРЕНЬ — ЭТО НЕ ПРИСВОИТЬ (v64) ──────────────────────────
+       ПОВОД, дословно от основателя 25.08.2026: «после загрузки (startup) фон
+       рабочего стола моргает два раза в течении 10 секунд - прошу советв
+       очередной раз убрать этот баг».
+
+       «В очередной раз» — самое важное слово: моргание чинили дважды, оба
+       раза чиня видимое событие, которое показал основатель. Третий раз
+       означает, что чинили следствие.
+
+       Найдено прибором: за первые две секунды загрузки сюда приходили
+       ЧЕТЫРНАДЦАТЬ вызовов, и тринадцать из них писали ОДНО И ТО ЖЕ — «60px»,
+       десять раз подряд за 330 миллисекунд. А свойство, записанное в корень,
+       объявляет устаревшим стиль ВСЕГО документа (D-093, измерено здесь же).
+       То есть система десять раз просила браузер пересчитать всю страницу,
+       чтобы сообщить ему то, что он уже знал. На телефоне с двумя гигабайтами
+       и двадцатью тремя стеклянными поверхностями это и есть моргание.
+
+       Тот же урок уже был выучен на подсветке дока (D-092: «пиши только
+       изменившееся») и сюда не дошёл. Теперь дошёл.
+
+       Охраняется tools/root-restyle-check.mjs. */
+    var next = h + "px";
+    if (next === dockHPublished) return;
+    dockHPublished = next;
+    doc.documentElement.style.setProperty("--dock-h", next);
   }
   function measureDock() {
     var dock = $("#dock");
@@ -1573,26 +1804,94 @@
   };
 
   /* hover magnification (mouse only, off under reduced motion) */
+  /* ── УВЕЛИЧЕНИЕ ПОД УКАЗАТЕЛЕМ ПИШЕТ ТОЛЬКО ТО, ЧТО ИЗМЕНИЛОСЬ (v56) ──────
+     ПОВОД: директива основателя о производительности, §4 — «Сколько работы
+     происходит на каждый pointer movement во время drag?» и «Не допускайте
+     архитектуры: pointermove → massive DOM/state update → layout → paint».
+
+     КАК СЮДА ПРИШЛИ. Обсерватория назвала переключение окон самой дорогой
+     мелкой операцией: 19.17 пересчёта стиля на щелчок по плитке дока.
+     Первое подозрение — на focusWindow() и buildDock(); измерение его
+     СНЯЛО: focusWindow() стоит 1.07 пересчёта, buildDock() — 0.02 мс.
+     Дорог оказался не сам фокус, а путь указателя к плитке.
+
+     ЧТО БЫЛО ИЗМЕРЕНО. Одно движение указателя над доком стоило 8.73
+     пересчёта стиля и 2.508 мс — по пересчёту на каждую из девяти плиток.
+     При шестидесяти движениях в секунду это 150 мс в секунду: пятнадцать
+     процентов ядра на то, чтобы провести мышью вдоль дока.
+
+     ЧТО ЗДЕСЬ НЕ ТРОГАЛИ. Ни увеличение, ни его спад, ни порог в сто
+     пикселей, ни ограничение одним кадром через requestAnimationFrame —
+     оно тут было и работало правильно. Дорого стоило не то, ЧТО считается,
+     а то, В КАКОМ ПОРЯДКЕ это читается и пишется.
+
+     ЧТО СДЕЛАНО — ТРИ ПРАВКИ, И ТОЛЬКО ДВЕ ИЗ НИХ ПОМОГЛИ. Порядок важен,
+     потому что две неудачные гипотезы здесь дороже одной удачной: они
+     показывают, чего НЕ надо делать в следующий раз.
+
+       1. Пропуск неизменившихся значений. Гипотеза: большинству плиток
+          пишется то же число. ИЗМЕРЕНО: 8.72 против 8.73 — не помогло
+          ничем. Оставлено: дёшево и убирает лишние объявления. Но лечит
+          не оно.
+       2. Все замеры вперёд, все записи потом. Гипотеза: запись объявляет
+          стиль устаревшим, и следующий getBoundingClientRect() заставляет
+          движок пересчитать его заново — девять раз за движение.
+          ИЗМЕРЕНО: 8.72 → 2.52 пересчёта. Вот это и было причиной.
+       3. Прямая запись transform вместо переменной --mag. Гипотеза:
+          пользовательское свойство объявляет устаревшим весь поддерево
+          плитки, а не саму плитку. ИЗМЕРЕНО: пересчётов столько же (2.52),
+          но время упало с 2.012 мс до 0.672.
+
+     ИТОГ на одно движение указателя: 8.73 → 2.52 пересчёта стиля,
+     2.508 → 0.672 мс, скрипт 0.601 → 0.250 мс. Рисунок увеличения не
+     изменился ни на сотую: 1.45 под указателем, 1.213 у соседей, 1 дальше.
+
+     Уход указателя гасит увеличение той же строкой «1.000», что и память,
+     — иначе память и стиль расходились бы на ровном месте. */
   function wireDockMagnify() {
     var dock = $("#dock");
     if (!dock) return;
+    var FLAT = "1.000";
     var raf = 0, lastX = 0;
+    function setMag(item, v) {
+      if (item._sbMag === v) return;
+      item._sbMag = v;
+      item.style.transform = v === FLAT ? "" : "scale(" + v + ")";
+    }
     dock.addEventListener("pointermove", function (ev) {
       if (ev.pointerType !== "mouse" || reduced() || systemReduced() || isTouch()) return;
       lastX = ev.clientX;
       if (raf) return;
       raf = requestAnimationFrame(function () {
         raf = 0;
-        $$(".dock-item", dock).forEach(function (item) {
-          var r = item.getBoundingClientRect();
+        var items = $$(".dock-item", dock);
+        /* СНАЧАЛА ВСЕ ЗАМЕРЫ, ПОТОМ ВСЕ ЗАПИСИ, И ЭТО ГЛАВНОЕ ЗДЕСЬ.
+           Раньше замер и запись чередовались по плиткам: запись объявляла
+           стиль устаревшим, следующий getBoundingClientRect() заставлял
+           движок пересчитать его заново — и так девять раз за одно движение
+           указателя. Измерено: 8.73 пересчёта стиля на движение.
+
+           Проверено отдельно и НЕ подтвердилось: сначала Совет решил, что
+           виноваты сами записи, и добавил пропуск неизменившихся значений.
+           Числа не двинулись — 8.72 против 8.73. Значит, дело было не в
+           записях, а в их чередовании с чтениями. Пропуск оставлен: он
+           дешёв и убирает лишние объявления, — но лечит здесь не он.
+
+           Читать все рамки заранее можно потому, что увеличение правит
+           только transform: scale(), а transform не меняет разметку.
+           Положение плиток от увеличения не едет, и замер не устаревает. */
+        var mags = new Array(items.length);
+        for (var i = 0; i < items.length; i++) {
+          var r = items[i].getBoundingClientRect();
           var d = Math.abs((r.left + r.width / 2) - lastX);
-          var s = d > 100 ? 1 : 1 + 0.45 * (1 - d / 100);
-          item.style.setProperty("--mag", s.toFixed(3));
-        });
+          var sc = d > 100 ? 1 : 1 + 0.45 * (1 - d / 100);
+          mags[i] = sc.toFixed(3);
+        }
+        for (var j = 0; j < items.length; j++) setMag(items[j], mags[j]);
       });
     });
     dock.addEventListener("pointerleave", function () {
-      $$(".dock-item", dock).forEach(function (item) { item.style.setProperty("--mag", "1"); });
+      $$(".dock-item", dock).forEach(function (item) { setMag(item, FLAT); });
     });
     /* auto-hide */
     dock.addEventListener("pointerenter", function () { root.classList.remove("dock-away"); armDockHide(); });
@@ -2661,9 +2960,48 @@
        намеренно, чтобы точка вызова в lift() рассказывала историю. */
     function ghostResidue() { /* снято по слову основателя, v47.1 */ }
 
+    /* ── ЗАНАВЕС ЖДЁТ НЕ СИГНАЛА, А ГОТОВОГО СТОЛА (v59) ──────────────────
+       ПОВОД, дословно от основателя 24.08.2026: «рабочий стол ни в коем
+       случае вначале после загрузки не должен моргать. Startup должен
+       грузиться до тех пор, пока полностью не прогрузится рабочий стол».
+
+       ЧТО ИЗМЕРЕНО. Занавес начинал уходить на 1518-й миллисекунде — в тот
+       миг стол был проявлен на 80%, а ЗНАЧКИ на ШЕСТЬ ПРОЦЕНТОВ. Дальше
+       занавес таял целую секунду, а под ним одновременно проявлялись значки:
+       две встречные анимации с разными кривыми, и яркость на их сумме
+       сначала проваливается, потом возвращается. Это и есть моргание.
+
+       ОТКУДА ВЗЯЛОСЬ. Условие подъёма было «значки ОБЪЯВЛЕНЫ» — событие
+       sysbaby:desktop-ready, которое приходит в тот миг, когда классу
+       rv-icons только поставили класс. Между «начали проявляться» и
+       «проявились» лежит целый переход, и занавес уходил внутри него.
+
+       ЧТО СТАЛО. Ждём не объявления, а СОСТОЯНИЯ: прозрачность стола и слоя
+       значков должна дойти до единицы. Это спрашивается у самого экрана, а
+       не отсчитывается таймером, — значит, изменится длительность перехода в
+       стилях, и условие изменится вместе с ней само.
+
+       ПРЕДОХРАНИТЕЛЬ ОБЯЗАТЕЛЕН. Если слой не появится или переход застрянет,
+       ждать вечно нельзя: занавес — это то, что стоит между человеком и его
+       системой. Через LIFT_WAIT_CAP поднимаем в любом случае. Моргание —
+       беда, запертый вход — беда несравнимо большая. */
+    var LIFT_WAIT_CAP = 4000;
     var sequenceDone = false, iconsRevealed = root.classList.contains("rv-icons");
     function maybeLift() { if (sequenceDone && iconsRevealed) lift(); }
-    doc.addEventListener("sysbaby:desktop-ready", function () { iconsRevealed = true; maybeLift(); });
+
+    function layerSettled(id) {
+      var el = doc.getElementById(id);
+      if (!el) return true;                       /* слоя нет — ждать нечего */
+      var o = parseFloat(window.getComputedStyle(el).opacity);
+      return !(o >= 0) || o > 0.99;
+    }
+    function waitForDesktop(startedAt) {
+      if (finished) return;
+      if (layerSettled("desktop") && layerSettled("sbIconLayer")) { iconsRevealed = true; maybeLift(); return; }
+      if (now() - startedAt > LIFT_WAIT_CAP) { iconsRevealed = true; maybeLift(); return; }
+      requestAnimationFrame(function () { waitForDesktop(startedAt); });
+    }
+    doc.addEventListener("sysbaby:desktop-ready", function () { waitForDesktop(now()); });
 
     function endSequence() { sequenceDone = true; maybeLift(); }
 
@@ -2897,6 +3235,10 @@
     root.setAttribute("data-theme", window.sbIncognitoActive ? "dark" : (savedTheme === "light" ? "light" : "dark"));
     var acc = window.sbGetCurrentAccent();
     applyAccent(acc.a1, acc.a2);
+    /* Ход переживает перезагрузку: режим сохранён, часы идут дальше — значит
+       и цвет продолжается с того места, где человек его оставил, а не
+       начинается заново. То же правило, что у обоев (D-095). */
+    if (acc.mode === DRIFT_ID) driftStart();
     var mood = window.sbGetWallpaperMood();
     if (mood && mood !== "ocean") root.setAttribute("data-wp-mood", mood);
     ["motion", "dnd", "autohide", "transparency"].forEach(function (k) { applyControl(k, window.sbGetControlToggle(k)); });

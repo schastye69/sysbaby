@@ -311,6 +311,9 @@
     var active = null;
     all.forEach(function (n) { if (n.id === activeId) active = n; });
 
+    /* Прокрутка человека переживает перерисовку — средство оболочки,
+     общее для всех приложений (D-099). */
+    var _sbKeep = window.sbKeepScroll ? window.sbKeepScroll(host) : null;
     host.innerHTML =
       '<div class="app-notes">' +
         '<aside class="notes-side">' +
@@ -324,6 +327,7 @@
         "</aside>" +
         '<section class="notes-editor" id="notesEditor">' + editorMarkup(active) + "</section>" +
       "</div>";
+    if (_sbKeep) _sbKeep();
 
     wire(win, host);
   }
@@ -333,7 +337,11 @@
     if (!host) return;
     var listEl = host.querySelector("#notesList");
     if (!listEl) return;
+    /* Прокрутка человека переживает перерисовку — средство оболочки,
+     общее для всех приложений (D-099). */
+    var _sbKeep = window.sbKeepScroll ? window.sbKeepScroll(listEl.parentNode || listEl) : null;
     listEl.innerHTML = listMarkup(filtered(sorted(), win._notesFilter || ""));
+    if (_sbKeep) _sbKeep();
     wireRows(win, listEl);
   }
 

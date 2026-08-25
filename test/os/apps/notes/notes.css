@@ -31,7 +31,7 @@
   flex: 1;
   min-width: 0;
   padding: 7px 10px;
-  border-radius: 10px;
+  border-radius: var(--r-ctrl);
   border: 1px solid rgba(255, 255, 255, .1);
   background: rgba(255, 255, 255, .05);
   color: inherit;
@@ -47,14 +47,21 @@
   flex: 0 0 30px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
+  border-radius: var(--r-ctrl);
   border: 1px solid rgba(255, 255, 255, .12);
   background: rgba(255, 255, 255, .06);
   color: inherit;
   cursor: pointer;
 }
 
-.notes-add:hover { background: rgba(255, 255, 255, .12); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .notes-add:hover { background: rgba(255, 255, 255, .12); }
+}
 .notes-add svg { width: 17px; height: 17px; }
 
 .notes-list {
@@ -66,13 +73,20 @@
 
 .notes-row {
   padding: 9px 10px;
-  border-radius: 12px;
+  border-radius: var(--r-card);
   cursor: pointer;
   border: 1px solid transparent;
   touch-action: none;
 }
 
-.notes-row:hover { background: rgba(255, 255, 255, .05); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .notes-row:hover { background: rgba(255, 255, 255, .05); }
+}
 
 .notes-row.active {
   background: rgba(255, 255, 255, .09);
@@ -127,14 +141,21 @@
   height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
+  border-radius: var(--r-ctrl);
   border: 1px solid rgba(255, 255, 255, .1);
   background: transparent;
   color: rgba(255, 255, 255, .62);
   cursor: pointer;
 }
 
-.notes-del:hover { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .5); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .notes-del:hover { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .5); }
+}
 .notes-del svg { width: 16px; height: 16px; }
 
 .notes-title {
@@ -186,7 +207,7 @@
   pointer-events: none;
   max-width: 240px;
   padding: 8px 11px;
-  border-radius: 12px;
+  border-radius: var(--r-card);
   border: 1px solid rgba(255, 255, 255, .16);
   background: rgba(24, 25, 30, .92);
   box-shadow: 0 12px 34px rgba(0, 0, 0, .45);

@@ -156,11 +156,19 @@
        the colour picker opened on a garbage value. Read the real field. */
     var accentObj = currentAccent();
     var accent = String((accentObj && accentObj.a1) || accentObj || "").toLowerCase();
+    var accentMode = (accentObj && accentObj.mode) || "";
 
+    /* ── ХОД ВЫБИРАЕТСЯ ТЕМ ЖЕ РЯДОМ, ЧТО И КРАСКИ (v62) ─────────────────
+       Он стоит среди них последним и выглядит как они — но передаётся не
+       цветом, а именем: цвет у него меняется сам, и запомнить его как
+       «вот этот шестнадцатеричный» было бы неправдой уже через четыре
+       минуты. Отмечен он тоже по имени, а не по совпадению цвета. */
     var swatches = accentSwatches().map(function (sw) {
       var hex = String(sw.a1 || sw.hex || "");
-      return '<button type="button" class="st-swatch' + (hex.toLowerCase() === accent ? " active" : "") + '" ' +
-        'style="background:' + esc(hex) + '" data-accent="' + esc(hex) + '" title="' + esc(sw.name || sw.title || hex) + '" aria-label="' + esc(sw.name || sw.title || hex) + '"></button>';
+      var token = sw.drift ? String(sw.id) : hex;
+      var on = sw.drift ? (accentMode === String(sw.id)) : (hex.toLowerCase() === accent && !accentMode);
+      return '<button type="button" class="st-swatch' + (on ? " active" : "") + (sw.drift ? " is-drift" : "") + '" ' +
+        'style="background:' + esc(hex) + '" data-accent="' + esc(token) + '" title="' + esc(sw.name || sw.title || hex) + '" aria-label="' + esc(sw.name || sw.title || hex) + '"></button>';
     }).join("");
 
     var moods = wallpaperMoods();
@@ -356,11 +364,37 @@
 
   /* --------------------------------------------------------------- render */
 
+  /* ── ПОЛОСА РАЗДЕЛОВ НЕ ТЕЛЕПОРТИРУЕТСЯ В НАЧАЛО (v58) ────────────────────
+     ПОВОД, дословно от основателя 24.08.2026, со снимками: «в системе не
+     должно быть таких "телепортов" - я нажимаю на кнопку about и меню улетает
+     в начало».
+
+     ЧТО ПРОИСХОДИЛО. На узком экране полоса разделов лежит горизонтально и
+     прокручивается (.st-side, overflow-x: auto). Чтобы дотянуться до «About»,
+     человек прокручивает её вправо до конца. Нажатие перерисовывает ВЕСЬ
+     корпус окна через innerHTML — вместе с полосой. Новая полоса рождается
+     непрокрученной, и она прыгает в начало прямо под пальцем: раздел открылся
+     правильный, а кнопка, которую только что нажали, уехала за край.
+
+     ПОЧЕМУ ПРОКРУТКА ЗАПОМИНАЕТСЯ, А НЕ ВЫЧИСЛЯЕТСЯ. Соблазн был «подвести
+     полосу к активному разделу» — но это второй телепорт вместо первого:
+     человек не просил везти его куда-либо, он просил ничего не трогать.
+     Правильное поведение самое скромное: где стояло, там и осталось.
+
+     ── ПЕРЕЕХАЛО В ОБОЛОЧКУ (v60) ────────────────────────────────────────
+     Здесь это чинилось для одного приложения, и правило было записано
+     словами в шапке закона. Слова не исполняются: «Письма» получили тот же
+     телепорт, не нарушив ни строчки, и основатель прислал снимок со словами
+     «больше нигде не должно быть телепортов». Теперь восстановление —
+     средство оболочки sbKeepScroll (см. os/core/shell.js), одно на все
+     приложения; здесь остался только его вызов. */
   function render(win) {
     var host = bodyOf(win);
     if (!host) return;
     if (!win._settingsSection || !RENDERERS[win._settingsSection]) win._settingsSection = "general";
     var section = win._settingsSection;
+
+    var _sbKeep = window.sbKeepScroll ? window.sbKeepScroll(host) : null;
 
     host.innerHTML =
       '<div class="app-settings">' +
@@ -372,6 +406,8 @@
         "</aside>" +
         '<section class="st-pane">' + RENDERERS[section]() + "</section>" +
       "</div>";
+
+    if (_sbKeep) _sbKeep();
 
     wire(win, host);
     if (section === "privacy") measureStorage(win, "#stStorage");

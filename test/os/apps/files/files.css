@@ -35,11 +35,18 @@
   font: inherit;
   font-size: 12.5px;
   padding: 3px 6px;
-  border-radius: 8px;
+  border-radius: var(--r-ctrl);
   cursor: pointer;
 }
 
-.fv-crumb:hover { background: rgba(255, 255, 255, .07); color: inherit; }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .fv-crumb:hover { background: rgba(255, 255, 255, .07); color: inherit; }
+}
 .fv-crumb.current { color: inherit; font-weight: 600; cursor: default; }
 .fv-crumb-sep { color: rgba(255, 255, 255, .3); font-size: 12px; }
 
@@ -50,7 +57,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border-radius: 10px;
+  border-radius: var(--r-ctrl);
   border: 1px solid rgba(255, 255, 255, .12);
   background: rgba(255, 255, 255, .05);
   color: inherit;
@@ -59,7 +66,14 @@
   cursor: pointer;
 }
 
-.fv-tool:hover { background: rgba(255, 255, 255, .11); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .fv-tool:hover { background: rgba(255, 255, 255, .11); }
+}
 .fv-tool svg { width: 15px; height: 15px; }
 
 .fv-grid {
@@ -80,13 +94,20 @@
   align-items: center;
   gap: 6px;
   padding: 10px 6px 8px;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   border: 1px solid transparent;
   cursor: pointer;
   outline: none;
 }
 
-.fv-item:hover { background: rgba(255, 255, 255, .05); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .fv-item:hover { background: rgba(255, 255, 255, .05); }
+}
 .fv-item.selected { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .14); }
 .fv-item:focus-visible { outline: 2px solid var(--accent, #e0663c); outline-offset: 2px; }
 
@@ -95,7 +116,7 @@
   height: 44px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: var(--r-card);
   border: 1px solid rgba(255, 255, 255, .1);
   background: rgba(255, 255, 255, .06);
 }
@@ -118,7 +139,7 @@
   text-align: center;
   width: 100%;
   padding: 2px 4px;
-  border-radius: 7px;
+  border-radius: var(--r-tag);
   border: 1px solid var(--accent, #e0663c);
   background: rgba(0, 0, 0, .35);
   color: inherit;
@@ -133,15 +154,22 @@
   gap: 3px;
 }
 
-.fv-item:hover .fv-mini,
 .fv-item:focus-within .fv-mini { display: flex; }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .fv-item:hover .fv-mini { display: flex; }
+}
 
 .fv-mini-btn {
   width: 22px;
   height: 22px;
   display: grid;
   place-items: center;
-  border-radius: 7px;
+  border-radius: var(--r-tag);
   border: 1px solid rgba(255, 255, 255, .14);
   background: rgba(12, 13, 16, .8);
   color: rgba(255, 255, 255, .78);
@@ -149,8 +177,22 @@
   padding: 0;
 }
 
-.fv-mini-btn:hover { background: rgba(255, 255, 255, .16); color: #fff; }
-.fv-mini-btn.danger:hover { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .55); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .fv-mini-btn:hover { background: rgba(255, 255, 255, .16); color: #fff; }
+}
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .fv-mini-btn.danger:hover { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .55); }
+}
 .fv-mini-btn svg { width: 13px; height: 13px; }
 
 .fv-empty {
@@ -190,18 +232,25 @@
   font: inherit;
   font-size: 11.5px;
   padding: 4px 9px;
-  border-radius: 9px;
+  border-radius: var(--r-ctrl);
   cursor: pointer;
 }
 
-.fv-open-real:hover { background: rgba(58, 208, 168, .22); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .fv-open-real:hover { background: rgba(58, 208, 168, .22); }
+}
 
 .fv-edit {
   width: 26px;
   height: 26px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: var(--r-ctrl);
   border: 1px solid rgba(255, 255, 255, .12);
   background: rgba(255, 255, 255, .05);
   color: inherit;
@@ -209,7 +258,14 @@
   padding: 0;
 }
 
-.fv-edit:hover { background: rgba(255, 255, 255, .12); }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё: человек видит
+   предмет в состоянии, которого не выбирал. Повод — снимок основателя
+   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .fv-edit:hover { background: rgba(255, 255, 255, .12); }
+}
 .fv-edit svg { width: 14px; height: 14px; }
 
 .fv-preview-body,
@@ -242,7 +298,7 @@
   color: #ffd8a8;
   background: rgba(255, 157, 60, .14);
   border-bottom: 1px solid rgba(255, 157, 60, .3);
-  transition: opacity .35s ease;
+  transition: opacity var(--t-move) ease;
 }
 
 .fv-miss.fading { opacity: 0; }

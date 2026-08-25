@@ -442,11 +442,31 @@
   /* Where the note sits in the room decides how much of the wallpaper's light
      falls on it. Written once, on placement — a static value costs nothing,
      and the desktop is already paying for a moving wallpaper. */
+  /* ЗАГОЛОВОК — ПЕРВАЯ СТРОКА, ТЕЛО — ВСЁ ОСТАЛЬНОЕ. Хранится по-прежнему
+     одна строка: заголовок не заводился как поле, он был всегда, просто его
+     не читали. Данные, которые не пришлось переносить, невозможно потерять
+     при переносе. */
+  function splitNote(text) {
+    var s = String(text == null ? "" : text);
+    var i = s.indexOf("\n");
+    return i === -1 ? { title: s, body: "" } : { title: s.slice(0, i), body: s.slice(i + 1) };
+  }
+  function joinNote(title, body) {
+    var t = String(title == null ? "" : title);
+    var b = String(body == null ? "" : body);
+    return b ? t + "\n" + b : t;
+  }
+
   function lightNote(el) {
     var nx = (el.offsetLeft + el.offsetWidth / 2) / Math.max(1, window.innerWidth);
     var ny = (el.offsetTop + el.offsetHeight / 2) / Math.max(1, window.innerHeight);
     el.style.setProperty("--nx", nx.toFixed(3));
     el.style.setProperty("--ny", ny.toFixed(3));
+    /* Ряд огней висит НАД заметкой. У заметки, прижатой к верху стола, над
+       ней ничего нет, кроме полосы, — там ряд переворачивается вниз. */
+    if (el.classList && el.classList.contains("sticky-note")) {
+      el.classList.toggle("lights-below", el.offsetTop < 32);
+    }
   }
 
   /* The note's position, or nothing at all. Reads the inline style rather
@@ -454,6 +474,13 @@
      and refuses to answer when there is nothing trustworthy to say. */
   function notePos(el) {
     if (!el) return null;
+    /* РАЗВЁРНУТАЯ ЗАМЕТКА НЕ ИМЕЕТ МЕСТА НА СТОЛЕ (v64). Пока она на весь
+       экран, её собственные координаты сняты, а рамка показывает экран, а не
+       стол. Ответить здесь значило бы записать в хранилище координаты
+       полноэкранного окна — тот же дефект, что чинили с клавиатурой: чужое
+       решение, записанное как решение человека. Молчание тут — правильный
+       ответ: место заметки не изменилось, его просто сейчас не спрашивают. */
+    if (el.classList && el.classList.contains("full")) return null;
     var l = parseFloat(el.style.left), t = parseFloat(el.style.top);
     if (isFinite(l) && isFinite(t)) return { x: Math.round(l), y: Math.round(t) };
     if (!el.isConnected) return null;
@@ -468,23 +495,63 @@
     el.setAttribute("data-id", rec.id);
     el.style.left = num(rec.x, 120) + "px";
     el.style.top = num(rec.y, 140) + "px";
-    el.innerHTML = '<button class="note-del" type="button" aria-label="' + esc(tr("note.delete")) + '">✕</button>' +
-      '<textarea class="note-text" placeholder="' + esc(tr("note.placeholder")) + '" aria-label="' + esc(tr("note.aria")) + '"></textarea>' +
+    /* ── ЗАМЕТКА — ЭТО ОКНО, У КОТОРОГО ЗАГОЛОВОК СВОЙ ПЕРВЫЙ РЯД (v64) ────
+     *
+     * ПОВОД, дословно от основателя 24.08.2026: «если начинаешь печатать
+     * заметку или переносишь её по рабочему столу, в блоке у заметки должны
+     * появиться такие же пункты управления, как и у окон - закрыть, свернуть,
+     * развернуть. в режиме развернуть показываетсяя не только заголов
+     * заметки, но ещё и тело заметки, тело можно изменять и дополнять только
+     * в полноэкранном режиме».
+     *
+     * ЗАГОЛОВОК НЕ ЗАВОДИЛСЯ — ОН БЫЛ ВСЕГДА. Заголовок заметки — её первая
+     * строка, тело — всё остальное. Ни нового поля, ни переноса данных: у
+     * каждой уже написанной заметки заголовок появился в ту минуту, когда её
+     * написали. Хранится по-прежнему одна строка, и это важнее удобства:
+     * данные, которые не пришлось переносить, невозможно потерять при
+     * переносе.
+     *
+     * Охраняется tools/note-window-check.mjs.
+     */
+    /* Огни — ТЕ ЖЕ КНОПКИ, ЧТО У ОКНА: те же классы .lights/.light, тот же
+       рисунок. Основатель, дословно, 25.08.2026: «сделай кнопки у заметок
+       точной копией кнопок как у окон (без багов) ... в случае с заметками
+       развернуть и свернуть это одна кнопку». Поэтому огня два: закрыть и
+       качель — растянуть, пока заметка маленькая, вернуть, когда во весь
+       экран. Обе картинки лежат в одной кнопке, показывается одна — какую
+       выбирает состояние заметки, а не перерисовка. */
+    el.innerHTML =
+      '<div class="lights note-lights">' +
+        '<button class="light close" type="button" aria-label="' + esc(tr("note.delete")) + '">' +
+          '<svg viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="m3.5 3.5 5 5m0-5-5 5"/></svg></button>' +
+        '<button class="light max" type="button" aria-label="' + esc(tr("note.maximize")) + '">' +
+          '<svg class="ic-max" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M4.5 7.5 2.5 9.5M2.5 9.5V7M2.5 9.5H5M7.5 4.5 9.5 2.5M9.5 2.5V5M9.5 2.5H7"/></svg>' +
+          '<svg class="ic-min" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M3 6h6"/></svg></button>' +
+      '</div>' +
+      '<textarea class="note-text" rows="1" placeholder="' + esc(tr("note.placeholder")) + '" aria-label="' + esc(tr("note.aria")) + '"></textarea>' +
+      '<textarea class="note-body" placeholder="' + esc(tr("note.bodyPlaceholder")) + '" aria-label="' + esc(tr("note.body")) + '"></textarea>' +
       '<div class="note-chip-host"></div>';
     var ta = el.querySelector(".note-text");
-    ta.value = rec.text || "";
+    var bodyEl = el.querySelector(".note-body");
+    var parts = splitNote(rec.text);
+    ta.value = parts.title;
+    bodyEl.value = parts.body;
+    el.classList.toggle("has-body", !!parts.body.trim());
+    el.title = parts.body.trim() ? tr("note.more") : "";
     host.appendChild(el);
     autoGrow(ta);
     lightNote(el);
-    paintChips(el, ta.value);
+    paintChips(el, wholeText());
 
-    var lastNonEmpty = ta.value;
+    function wholeText() { return joinNote(ta.value, bodyEl.value); }
+
+    var lastNonEmpty = wholeText();
 
     function persist() {
       var live = window.sbNotesStore ? window.sbNotesStore.load() : [];
       var found = false;
-      var value = ta.value;
-      if (!value.trim() && lastNonEmpty.trim() && doc.activeElement !== ta) value = lastNonEmpty;  /* Android blur glitch guard */
+      var value = wholeText();
+      if (!value.trim() && lastNonEmpty.trim() && doc.activeElement !== ta && doc.activeElement !== bodyEl) value = lastNonEmpty;  /* Android blur glitch guard */
       for (var i = 0; i < live.length; i++) {
         if (live[i].id === rec.id) {
           live[i].text = value;
@@ -509,25 +576,147 @@
     }
     el._sbPersist = persist;
 
-    ta.addEventListener("input", function () {
-      if (ta.value.trim()) lastNonEmpty = ta.value;
+    /* Принять правку, пришедшую не отсюда (из приложения «Записи», из другой
+       вкладки), не уничтожая предмет: значения меняются, узел остаётся тем
+       же, и всё, что человек с ним сделал, остаётся при нём. */
+    el._sbAdopt = function (next) {
+      var p = splitNote(next.text);
+      var moved = false;
+      if (ta.value !== p.title) { ta.value = p.title; moved = true; }
+      if (bodyEl.value !== p.body) { bodyEl.value = p.body; moved = true; }
+      if (!el.classList.contains("full")) {
+        var nx = num(next.x, NaN), ny = num(next.y, NaN);
+        if (isFinite(nx) && el.style.left !== nx + "px") { el.style.left = nx + "px"; moved = true; }
+        if (isFinite(ny) && el.style.top !== ny + "px") { el.style.top = ny + "px"; moved = true; }
+      }
+      if (!moved) return;
+      el.classList.toggle("has-body", !!p.body.trim());
+      el.title = p.body.trim() ? tr("note.more") : "";
       autoGrow(ta);
-      paintChips(el, ta.value);
+      lightNote(el);
+      paintChips(el, next.text || "");
+    };
+
+    function noteChanged() {
+      var whole = wholeText();
+      if (whole.trim()) lastNonEmpty = whole;
+      el.classList.toggle("has-body", !!bodyEl.value.trim());
+      el.title = bodyEl.value.trim() ? tr("note.more") : "";
+      autoGrow(ta);
+      paintChips(el, whole);
       if (saveTimers[rec.id]) clearTimeout(saveTimers[rec.id]);
       saveTimers[rec.id] = setTimeout(function () { persist(); if (window.sbNotesStore) window.sbNotesStore.notify(); }, 250);
+    }
+    ta.addEventListener("input", noteChanged);
+    bodyEl.addEventListener("input", noteChanged);
+    /* Перевод строки в заголовке — это не перевод строки, а переход к телу:
+       у заголовка ровно одна строка, и заводить вторую ему нечем. */
+    ta.addEventListener("keydown", function (ev) {
+      if (ev.key !== "Enter" || ev.shiftKey) return;
+      ev.preventDefault();
+      if (!el.classList.contains("full")) setFull(true);
+      setTimeout(function () { try { bodyEl.focus(); } catch (e) { /* ignore */ } }, 60);
     });
-    ta.addEventListener("focus", function () {
+    bodyEl.addEventListener("focus", function () {
       el.classList.add("focused");
-      if (isTouch()) keyboardClamp(el);
+      if (isTouch()) keyboardWatch(el);
     });
-    ta.addEventListener("blur", function () {
-      el.classList.remove("focused");
-      if (!ta.value.trim()) { removeNote(el, rec.id, false); return; }
+    bodyEl.addEventListener("blur", function () {
+      if (isTouch()) keyboardStop();
       persist();
       if (window.sbNotesStore) window.sbNotesStore.notify();
     });
-    el.querySelector(".note-del").addEventListener("click", function () {
+    ta.addEventListener("focus", function () {
+      el.classList.add("focused");
+      dropHold();          /* правка сама держит огни — задержке нечего добавить */
+      if (isTouch()) keyboardWatch(el);
+    });
+    ta.addEventListener("blur", function () {
+      el.classList.remove("focused");
+      if (isTouch()) keyboardStop();
+      if (!ta.value.trim() && !bodyEl.value.trim() && !el.classList.contains("full")) {
+        removeNote(el, rec.id, false); return;
+      }
+      persist();
+      if (window.sbNotesStore) window.sbNotesStore.notify();
+    });
+    /* Три огня, те же и в том же порядке, что у окна. Закрыть — в Эхо, а не
+       в небытие: закрытое окно тоже возвращается. Свернуть — обратно на
+       стол. Развернуть — на весь экран, и только там правится тело. */
+    function setFull(on) {
+      if (on) {
+        if (el.classList.contains("full")) return;
+        $$(".sticky-note.full").forEach(function (n) { if (n !== el && n._sbSetFull) n._sbSetFull(false); });
+        liftNotes(0);                          /* см. keyboardFollow: fixed и transform несовместимы */
+        /* Место на столе объявлено в самом предмете (style.left/top/width) —
+           значит из стилей его не перекрыть ничем, кроме !important, а
+           !important в таблице означал бы, что правило спорит с предметом.
+           Место снимается на время и возвращается точно тем же, чем было:
+           тогда «свернуть» возвращает не «примерно туда», а туда. */
+        el._sbGeom = { left: el.style.left, top: el.style.top, width: el.style.width };
+        el.style.left = ""; el.style.top = ""; el.style.width = "";
+        el.classList.add("full");
+        fullNoteId = rec.id;
+        doc.documentElement.classList.add("sb-note-full");
+      } else {
+        if (!el.classList.contains("full")) return;
+        el.classList.remove("full");
+        if (el._sbGeom) {
+          el.style.left = el._sbGeom.left;
+          el.style.top = el._sbGeom.top;
+          el.style.width = el._sbGeom.width;
+          el._sbGeom = null;
+        }
+        lightNote(el);
+        if (fullNoteId === rec.id) fullNoteId = null;
+        if (!doc.querySelector(".sticky-note.full")) doc.documentElement.classList.remove("sb-note-full");
+      }
+    }
+    /* ── ОГНИ НЕ ГАСНУТ В ТОТ ЖЕ МИГ, КОГДА ОТПУСТИЛИ (v66) ─────────────────
+       ПОВОД, дословно от основателя 25.08.2026: «при перемещении заметок,
+       кнопки видны только во время переноса и нажать на них пользователь не
+       успевает - нужно сделать так, чтобы они не сразу исчезали и чтобы
+       пользователь мог успеть нажать на кнопку закрыть или развернуть».
+
+       Признак «dragging» кончается в миг отпускания — а разговор с заметкой
+       в этот миг не кончается: рука ещё над ней и тянется к кнопке. Поэтому
+       после переноса заметка остаётся В РУКАХ ещё четыре секунды: столько
+       нужно, чтобы поднять палец, увидеть ряд и попасть в кнопку, и мало,
+       чтобы стол успел засориться. Задержка снимается сама и снимается
+       заново при каждом новом касании этой заметки — держат её не часы, а
+       внимание. */
+    var holdTimer = 0;
+    function holdLights(ms) {
+      if (holdTimer) clearTimeout(holdTimer);
+      el.classList.add("lights-held");
+      holdTimer = setTimeout(function () {
+        holdTimer = 0;
+        el.classList.remove("lights-held");
+      }, ms || 4000);
+    }
+    function dropHold() {
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = 0; }
+      el.classList.remove("lights-held");
+    }
+    el._sbHoldLights = holdLights;
+
+    el._sbSetFull = setFull;
+    function syncMaxLabel() {
+      var b = el.querySelector(".light.max");
+      if (b) b.setAttribute("aria-label", esc(tr(el.classList.contains("full") ? "note.minimize" : "note.maximize")));
+    }
+    el.querySelector(".light.close").addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      setFull(false);
       removeNote(el, rec.id, true);
+    });
+    el.querySelector(".light.max").addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      holdLights(4000);
+      setFull(!el.classList.contains("full"));
+      syncMaxLabel();
+      if (el.classList.contains("full")) setTimeout(function () { try { bodyEl.focus(); } catch (e2) { /* ignore */ } }, 80);
+      else persist();
     });
 
     /* ЗАМЕТКА ПЕРЕТАСКИВАЕТСЯ КАК ЗНАЧОК (v47).
@@ -544,9 +733,19 @@
      */
     var drag = null;
     el.addEventListener("pointerdown", function (ev) {
-      if (ev.target && ev.target.closest(".note-del, .note-chip")) return;
-      if (el.classList.contains("focused")) return;      /* правят — не двигаем */
-      var onText = !!(ev.target && ev.target.closest(".note-text"));
+      if (ev.target && ev.target.closest(".light, .note-chip")) return;
+      if (el.classList.contains("full")) return;         /* на весь экран — не двигаем */
+      /* ── ПИШУЩУЮ ЗАМЕТКУ МОЖНО УНЕСТИ ЗА КРАЙ (v66) ─────────────────────
+         Повод, дословно от основателя 25.08.2026: «когда пишешь в заметку,
+         то её нельзя взять и перенести, пока не нажмёшь в другое место».
+         Прежнее правило v47 «правят — не двигаем» защищало текст от того,
+         чтобы лист уехал из-под руки, — но заодно требовало лишнего
+         нажатия в пустоту. Граница теперь проходит не по состоянию, а по
+         МЕСТУ ХВАТКИ: сам текст принадлежит письму (курсор, выделение,
+         прокрутка), а кромка листа и ряд огней — руке. Клавиатура при
+         переносе не прячется: отпустил — пишешь дальше. */
+      var onText = !!(ev.target && ev.target.closest(".note-text, .note-body"));
+      if (el.classList.contains("focused") && onText) return;   /* текст — письму */
       drag = {
         sx: ev.clientX, sy: ev.clientY,
         ox: el.offsetLeft, oy: el.offsetTop,
@@ -582,7 +781,9 @@
         try { ta.focus(); } catch (e) { /* ignore */ }
         return;
       }
+      if (!moved) return;   /* нажали кромку и не повели — ничего не значит */
       if (moved) {
+        holdLights(4000);   /* рука ещё над заметкой — см. запись выше */
         var spot = noteSpotNear(el.offsetLeft, el.offsetTop, el.offsetWidth, el.offsetHeight, el);
         if (spot.x !== el.offsetLeft || spot.y !== el.offsetTop) {
           el.classList.add("settling");
@@ -648,9 +849,85 @@
     ta.style.height = Math.min(260, Math.max(20, ta.scrollHeight)) + "px";
   }
 
-  function keyboardClamp(el) {
-    var maxTop = Math.round(window.innerHeight * 0.55) - el.offsetHeight;
-    if (el.offsetTop > maxTop) el.style.top = Math.max(48, maxTop) + "px";
+  /* ── КЛАВИАТУРА НЕ ДВИГАЕТ ЗАМЕТКУ (v64) ────────────────────────────────
+   *
+   * ПОВОД, дословно от основателя 25.08.2026, с тремя снимками подряд:
+   * «выбираю заметку и хочу в ней написать, но появляется клавиатура и
+   * сдвигает заметку - так быть не должно».
+   *
+   * ЧТО БЫЛО. Здесь стоял keyboardClamp, и он писал НАСТОЯЩУЮ координату:
+   * el.style.top. А persist() читает координату оттуда же — и сохраняет её.
+   * То есть заметка не просто прыгала под пальцем: она прыгала НАВСЕГДА.
+   * Два дефекта в одной строке — телепорт под рукой и чужое решение,
+   * записанное как решение человека. Измерено законом: top 640 → 388, и в
+   * хранилище y 640 → 388.
+   *
+   * ЧТО СТАЛО. Клавиатура — не событие в жизни заметки. Заметка лежит там,
+   * куда её положили. Если написанное закрыто клавиатурой, сдвигается
+   * ВЗГЛЯД: весь слой заметок целиком и только зрительно, преобразованием.
+   * Преобразование не координата — его не видит ни notePos, ни хранилище,
+   * и когда клавиатура уходит, всё стоит там же, где стояло.
+   *
+   * Высота клавиатуры не угадывается долей экрана, а берётся у самого
+   * браузера через visualViewport: угаданная доля — это тот же телепорт,
+   * просто в другую сторону.
+   *
+   * Охраняется tools/note-keyboard-check.mjs.
+   */
+  var kbLift = 0;
+  function liftNotes(px) {
+    var host = notesLayer();
+    if (!host) return;
+    px = Math.max(0, Math.round(px || 0));
+    if (px === kbLift) return;
+    kbLift = px;
+    host.style.transition = "transform var(--t-touch) var(--ease)";
+    host.style.transform = px ? "translateY(" + (-px) + "px)" : "";
+  }
+  window.sbLiftNotes = liftNotes;
+
+  function keyboardFollow(el) {
+    var vv = window.visualViewport;
+    if (!vv || !el || !el.isConnected) return;
+    var seen = vv.height + vv.offsetTop;      /* сколько экрана осталось видно */
+    var hidden = Math.max(0, Math.round(window.innerHeight - seen));
+
+    /* РАЗВЁРНУТАЯ ЗАМЕТКА НЕ ПОДНИМАЕТСЯ — ОНА УКОРАЧИВАЕТСЯ. Поднимать её
+       нечем и незачем: она уже занимает экран. И поднимать слой в этот
+       момент было бы прямо вредно — преобразование на предке делает
+       position: fixed относительным ему, и развёрнутая заметка перестала бы
+       быть развёрнутой. Поэтому здесь не сдвиг, а высота: сколько экрана
+       осталось, столько заметка и занимает. */
+    doc.documentElement.style.setProperty("--kb-inset", hidden + "px");
+    if (el.classList.contains("full")) { liftNotes(0); return; }
+
+    var r = el.getBoundingClientRect();
+    var natural = r.bottom + kbLift;          /* где низ заметки БЕЗ подъёма */
+    liftNotes(natural + 14 - seen);
+  }
+
+  var kbWatch = null;
+  function keyboardWatch(el) {
+    keyboardStop();
+    if (!window.visualViewport) return;
+    kbWatch = function () { keyboardFollow(el); };
+    window.visualViewport.addEventListener("resize", kbWatch);
+    window.visualViewport.addEventListener("scroll", kbWatch);
+    keyboardFollow(el);
+    /* Клавиатура выезжает не мгновенно, и первый замер часто застаёт экран
+       ещё целым. Три взгляда вдогонку дешевле таймера на глазок. */
+    setTimeout(kbWatch, 120);
+    setTimeout(kbWatch, 320);
+    setTimeout(kbWatch, 620);
+  }
+  function keyboardStop() {
+    doc.documentElement.style.setProperty("--kb-inset", "0px");
+    if (kbWatch && window.visualViewport) {
+      window.visualViewport.removeEventListener("resize", kbWatch);
+      window.visualViewport.removeEventListener("scroll", kbWatch);
+    }
+    kbWatch = null;
+    liftNotes(0);
   }
 
   function removeNote(el, id, soft) {
@@ -665,15 +942,61 @@
     }
   }
 
+  /* ПЕРЕСБОРКА СЛОЯ НЕ ОТМЕНЯЕТ ТОГО, ЧТО СДЕЛАЛ ЧЕЛОВЕК (v64).
+     Слой заметок пересобирается целиком на каждое изменение хранилища — а
+     хранилище пишется на каждое слово. Развёрнутая заметка при этом
+     уничтожалась вместе со слоем и рождалась заново обычной: человек
+     развернул её, написал букву — и она свернулась сама. Тот же род дефекта,
+     что «телепорт» (D-098): система вправе заменить содержимое, но не
+     вправе отменить чужое решение. Здесь решение — «эта заметка сейчас на
+     весь экран», и его надо пронести через пересборку. */
+  var fullNoteId = null;
+
   function loadDesktopNotes() {
     var host = notesLayer();
     if (!host || !window.sbNotesStore) return;
-    host.innerHTML = "";
-    window.sbNotesStore.load().forEach(function (n) {
-      if (!n.onDesktop) return;
-      if (!String(n.text || "").trim()) return;              /* empty restored notes never appear */
-      buildNote(n);
+
+    var want = window.sbNotesStore.load().filter(function (n) {
+      return n.onDesktop && String(n.text || "").trim();      /* empty restored notes never appear */
     });
+    var have = $$(".sticky-note", host);
+    var same = have.length === want.length;
+    for (var i = 0; same && i < have.length; i++) {
+      if (have[i].getAttribute("data-id") !== want[i].id) same = false;
+    }
+
+    /* ── СОСТАВ ТОТ ЖЕ — ЗНАЧИТ ПЕРЕСОБИРАТЬ НЕЧЕГО (v64) ──────────────────
+       Слой пересобирался через innerHTML на КАЖДОЕ изменение хранилища, а
+       хранилище пишется на каждое слово. Отсюда целое семейство дефектов
+       одного рода: предмет, с которым человек прямо сейчас работает,
+       уничтожался под рукой и рождался заново без всего, что человек с ним
+       сделал. Измерено: нажатие на огонь «развернуть» не срабатывало
+       НИКОГДА — между нажатием и щелчком успевали пройти потеря наводки,
+       запись и пересборка, и щелчок доставался кнопке, уже выброшенной из
+       документа.
+
+       Пересборка теперь только тогда, когда изменился СОСТАВ: заметка
+       появилась, исчезла или переехала в другом порядке. Если состав тот
+       же, менялся текст — а текст уже на экране, его туда набрали руками.
+       Чужую правку (из приложения «Записи») переносим значением, не трогая
+       ту заметку, в которой сейчас пишут. */
+    if (same) {
+      want.forEach(function (rec) {
+        var el = host.querySelector('.sticky-note[data-id="' + rec.id + '"]');
+        if (!el || el.classList.contains("focused")) return;
+        if (typeof el._sbAdopt === "function") el._sbAdopt(rec);
+      });
+      return;
+    }
+
+    var wasFull = fullNoteId;
+    host.innerHTML = "";
+    want.forEach(function (n) { buildNote(n); });
+    if (wasFull) {
+      var back = host.querySelector('.sticky-note[data-id="' + wasFull + '"]');
+      if (back && back._sbSetFull) back._sbSetFull(true);
+      else { fullNoteId = null; doc.documentElement.classList.remove("sb-note-full"); }
+    }
   }
 
   function forceSaveNotes() {
@@ -717,13 +1040,25 @@
     invite.className = "note-invite";
     invite.style.left = clamp(x, 12, window.innerWidth - 190) + "px";
     invite.style.top = clamp(y, 60, window.innerHeight - 90) + "px";
-    invite.innerHTML = '<button class="invite-plus" type="button" aria-label="' + esc(tr("note.inviteAria")) + '">+</button><span>' + esc(tr("note.invite")) + "</span>";
+    invite.innerHTML = '<span class="invite-plus" aria-hidden="true">+</span><span class="invite-word">' + esc(tr("note.invite")) + "</span>";
+    invite.setAttribute("role", "button");
+    invite.setAttribute("tabindex", "0");
+    invite.setAttribute("aria-label", esc(tr("note.inviteAria")));
     doc.body.appendChild(invite);
+    /* ПРИГЛАШЕНИЕ — ЭТО ЗАМЕТКА ДО ПЕРВОГО СЛОВА (v64). Свет от обоев
+       проводится к нему тем же счётом и по тому же месту, что и к заметке:
+       иначе оно осталось бы предметом из другой системы, случайно попавшим
+       на этот стол. */
+    lightNote(invite);
     var px = x, py = y;
-    invite.querySelector(".invite-plus").addEventListener("click", function (ev) {
+    function accept(ev) {
       ev.stopPropagation();
       closeInvite();
       createNoteAt(px, py);
+    }
+    invite.addEventListener("click", accept);
+    invite.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); accept(ev); }
     });
     setTimeout(closeInvite, isTouch() ? 5000 : 4200);
   }
@@ -979,7 +1314,11 @@
     }
     doc.addEventListener("pointerdown", function (ev) {
       if (!window.sbContextMenuOpen()) return;
-      if (ev.target && ev.target.closest && ev.target.closest("#sbCtxMenu")) return;
+      /* #sbFab исключён намеренно: общий сторож ловит pointerdown в фазе
+         перехвата, то есть ДО обработчика самой кнопки. Закрой он меню
+         здесь — кнопка увидела бы уже закрытое меню и открыла его снова,
+         и повторное нажатие никогда бы не закрывало. Пусть решает кнопка. */
+      if (ev.target && ev.target.closest && ev.target.closest("#sbCtxMenu, #sbFab")) return;
       window.sbCloseContextMenu();
     }, true);
     window.addEventListener("scroll", function () { window.sbCloseContextMenu(); }, true);
@@ -987,41 +1326,40 @@
   }
 
   /* ================================================ quick actions orb §4.5 */
+  /* ── КНОПКА ДЕЙСТВИЯ НЕ ХОДИТ ПО ЭКРАНУ (v54) ───────────────────────────
+     ПОВОД, дословно от основателя 21.08.2026, со снимком: «бывший плюсик не
+     должен иметь возможность перемещения по экрану - он должен быть
+     зафиксирован как подсказки и зафиксирован относительно подсказок очень
+     красиво и гениально».
+
+     ЧТО БЫЛО. Кнопку можно было утащить пальцем куда угодно, и место
+     запоминалось в sysbaby.fab.pos. На снимке она висела посреди экрана —
+     сама по себе, ни к чему не привязанная. Перетаскивание задумывалось как
+     свобода, а вышло как поломка: единственный способ вернуть кнопку домой
+     был поворот экрана (orientationchange стирал ключ). На настольной машине
+     повернуть экран нельзя — значит, обратной дороги не было вовсе.
+
+     ЧТО СТАЛО. Перетаскивания нет. Кнопка стоит там же, где подсказка, и
+     их общая линия задана ОДНИМ значением --desk-row-b (см. core.css §8):
+     не «96 тут и 22 там», а одно число на двоих. Место больше не хранится —
+     хранить нечего.
+
+     ЧИСТКА ПРИ ЧТЕНИИ. Ключ прошлой версии стирается на входе, а не ждёт,
+     пока человек догадается почистить хранилище: у кого кнопка уже утащена,
+     тот получает её на месте сразу после обновления. Тот же приём, что у
+     извещений в notifList().
+
+     И ПОБОЧНО — КЛАВИАТУРА. Раньше открытие висело на pointerup: кнопка,
+     объявленная <button>, не отзывалась на Enter и Tab вообще. Теперь это
+     click, и она открывается с клавиатуры, как всякая кнопка. */
   function wireFab() {
     var fab = $("#sbFab");
     if (!fab) return;
-    var saved = readJSON("sysbaby.fab.pos", null);
-    if (saved && isFinite(saved.x) && isFinite(saved.y) &&
-        saved.x > 0 && saved.x < window.innerWidth - 40 && saved.y > 40 && saved.y < window.innerHeight - 40) {
-      fab.style.left = saved.x + "px";
-      fab.style.top = saved.y + "px";
-      fab.style.right = "auto";
-      fab.style.bottom = "auto";
-    }
-    window.addEventListener("orientationchange", function () {
-      fab.style.left = ""; fab.style.top = ""; fab.style.right = ""; fab.style.bottom = "";
-      if (window.sbDB) window.sbDB.remove("sysbaby.fab.pos");
-    });
+    /* след прошлой версии: место утащенной кнопки. Стираем при чтении. */
+    if (window.sbDB) { try { window.sbDB.remove("sysbaby.fab.pos"); } catch (e) { /* ignore */ } }
+    fab.style.left = ""; fab.style.top = ""; fab.style.right = ""; fab.style.bottom = "";
 
-    var drag = null;
-    fab.addEventListener("pointerdown", function (ev) {
-      drag = { sx: ev.clientX, sy: ev.clientY, ox: fab.offsetLeft, oy: fab.offsetTop, moved: false };
-      try { fab.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
-    });
-    fab.addEventListener("pointermove", function (ev) {
-      if (!drag) return;
-      var dx = ev.clientX - drag.sx, dy = ev.clientY - drag.sy;
-      if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
-      drag.moved = true;
-      fab.style.right = "auto"; fab.style.bottom = "auto";
-      fab.style.left = clamp(drag.ox + dx, 6, window.innerWidth - fab.offsetWidth - 6) + "px";
-      fab.style.top = clamp(drag.oy + dy, 50, window.innerHeight - fab.offsetHeight - 6) + "px";
-    });
-    fab.addEventListener("pointerup", function () {
-      if (!drag) return;
-      var moved = drag.moved;
-      drag = null;
-      if (moved) { writeJSON("sysbaby.fab.pos", { x: fab.offsetLeft, y: fab.offsetTop }); return; }
+    fab.addEventListener("click", function () {
       if (window.sbContextMenuOpen()) { window.sbCloseContextMenu(); return; }
       var r = fab.getBoundingClientRect();
       buildMenu(desktopMenuItems(r.left, r.top - 12), r.left - 150, Math.max(60, r.top - 320));

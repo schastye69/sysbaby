@@ -237,7 +237,11 @@
       }
     }
 
+    /* Прокрутка человека переживает перерисовку — средство оболочки,
+     общее для всех приложений (D-099). */
+    var _sbKeep = window.sbKeepScroll ? window.sbKeepScroll(host) : null;
     host.innerHTML = '<div class="app-echoes">' + markup + "</div>";
+    if (_sbKeep) _sbKeep();
     wire(win, host, echoes.length);
   }
 
