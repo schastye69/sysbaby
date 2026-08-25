@@ -520,6 +520,9 @@
   function mountToast(t, ttl) {
     var host = layer();
     if (!host) return null;
+    /* Одно место речи (v66): извещение встаёт на линию подсказки, и
+       самопришедшая подсказка уступает ему. Вызванная лампочкой — нет. */
+    if (window.sbDeskHintYield) window.sbDeskHintYield();
     host.appendChild(t);
     requestAnimationFrame(function () { t.classList.add("in"); });
     var kill = function () {

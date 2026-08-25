@@ -26,7 +26,7 @@
   align-items: center;
   gap: 8px;
   padding: 7px 9px;
-  border-radius: 10px;
+  border-radius: var(--r-ctrl);
   border: 1px solid transparent;
   background: transparent;
   color: rgba(255, 255, 255, .74);
@@ -52,7 +52,7 @@
   margin-left: auto;
   min-width: 18px;
   padding: 1px 5px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 10.5px;
   font-weight: 700;
   text-align: center;
@@ -83,7 +83,7 @@
   flex: 1;
   min-width: 0;
   padding: 6px 9px;
-  border-radius: 9px;
+  border-radius: var(--r-ctrl);
   border: 1px solid rgba(255, 255, 255, .1);
   background: rgba(255, 255, 255, .05);
   color: inherit;
@@ -98,7 +98,7 @@
   font: inherit;
   font-size: 12px;
   padding: 6px 11px;
-  border-radius: 10px;
+  border-radius: var(--r-ctrl);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -136,7 +136,7 @@
   display: flex;
   gap: 6px;
   padding: 8px 8px 9px;
-  border-radius: 12px;
+  border-radius: var(--r-card);
   cursor: pointer;
   border: 1px solid transparent;
 }
@@ -162,7 +162,7 @@
   display: inline-block;
   width: 6px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--accent, #e0663c);
   margin-right: 5px;
   vertical-align: middle;
@@ -174,7 +174,7 @@
   text-transform: uppercase;
   letter-spacing: .04em;
   padding: 1px 5px;
-  border-radius: 5px;
+  border-radius: var(--r-tag);
   background: rgba(255, 255, 255, .14);
   color: rgba(255, 255, 255, .75);
 }
@@ -253,7 +253,7 @@
 .ml-connected {
   margin-top: 20px;
   padding: 12px 13px 13px;
-  border-radius: 16px;
+  border-radius: var(--r-window);
   border: 1px solid rgba(255, 255, 255, .1);
   background: rgba(255, 255, 255, .04);
 }
@@ -269,7 +269,7 @@
   width: 100%;
   text-align: left;
   padding: 8px 10px;
-  border-radius: 12px;
+  border-radius: var(--r-card);
   border: 1px solid rgba(255, 255, 255, .1);
   background: rgba(255, 255, 255, .03);
   color: inherit;
@@ -294,7 +294,7 @@
   letter-spacing: .05em;
   color: rgba(255, 255, 255, .55);
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: var(--r-tag);
   background: rgba(255, 255, 255, .08);
 }
 
@@ -307,7 +307,7 @@
   display: inline-block;
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--good, #30d158);
   box-shadow: 0 0 0 3px rgba(48, 209, 88, .22);
 }
@@ -320,7 +320,7 @@
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  border-radius: 18px;
+  border-radius: var(--r-window);
   border: 1px solid rgba(255, 255, 255, .14);
   background: rgba(16, 17, 22, .96);
   box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
@@ -337,7 +337,7 @@
 .ml-compose-x {
   width: 24px;
   height: 24px;
-  border-radius: 8px;
+  border-radius: var(--r-ctrl);
   border: 1px solid rgba(255, 255, 255, .12);
   background: transparent;
   color: inherit;
@@ -357,7 +357,7 @@
 
 .ml-field {
   padding: 8px 10px;
-  border-radius: 10px;
+  border-radius: var(--r-ctrl);
   border: 1px solid rgba(255, 255, 255, .1);
   background: rgba(255, 255, 255, .05);
   color: inherit;
@@ -385,7 +385,7 @@
 .ml-mode { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; }
 .ml-mode-btn {
   font: inherit; font-size: 11.5px; padding: 5px 12px; cursor: pointer;
-  border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: var(--r-pill); border: 1px solid rgba(255, 255, 255, .14);
   background: transparent; color: rgba(255, 255, 255, .6);
 }
 .ml-mode-btn.active {
@@ -413,7 +413,7 @@
 .ml-btn.studio { border-color: var(--accent-soft, rgba(224, 102, 60, .3)); }
 
 .ml-tag {
-  display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px;
+  display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: var(--r-pill);
   font-size: 9.5px; letter-spacing: .04em; vertical-align: 1px;
 }
 .ml-tag.delivered { color: #7de08a; border: 1px solid rgba(125, 224, 138, .35); }
@@ -421,7 +421,7 @@
 .ml-tag.studio { color: var(--accent, #e0663c); border: 1px solid var(--accent-soft, rgba(224, 102, 60, .35)); }
 
 .ml-delivery {
-  margin: 8px 0 2px; padding: 7px 10px; border-radius: 9px; font-size: 11.5px; line-height: 1.5;
+  margin: 8px 0 2px; padding: 7px 10px; border-radius: var(--r-ctrl); font-size: 11.5px; line-height: 1.5;
 }
 .ml-delivery.ok { background: rgba(125, 224, 138, .08); border: 1px solid rgba(125, 224, 138, .22); color: #a9e8b1; }
 .ml-delivery.quiet { background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .1); color: rgba(255, 255, 255, .55); }

@@ -513,14 +513,20 @@
      *
      * Охраняется tools/note-window-check.mjs.
      */
+    /* Огни — ТЕ ЖЕ КНОПКИ, ЧТО У ОКНА: те же классы .lights/.light, тот же
+       рисунок. Основатель, дословно, 25.08.2026: «сделай кнопки у заметок
+       точной копией кнопок как у окон (без багов) ... в случае с заметками
+       развернуть и свернуть это одна кнопку». Поэтому огня два: закрыть и
+       качель — растянуть, пока заметка маленькая, вернуть, когда во весь
+       экран. Обе картинки лежат в одной кнопке, показывается одна — какую
+       выбирает состояние заметки, а не перерисовка. */
     el.innerHTML =
-      '<div class="note-lights">' +
-        '<button class="note-light close" type="button" aria-label="' + esc(tr("note.delete")) + '">' +
+      '<div class="lights note-lights">' +
+        '<button class="light close" type="button" aria-label="' + esc(tr("note.delete")) + '">' +
           '<svg viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="m3.5 3.5 5 5m0-5-5 5"/></svg></button>' +
-        '<button class="note-light min" type="button" aria-label="' + esc(tr("note.minimize")) + '">' +
-          '<svg viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M3 6h6"/></svg></button>' +
-        '<button class="note-light max" type="button" aria-label="' + esc(tr("note.maximize")) + '">' +
-          '<svg viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M4.5 7.5 2.5 9.5M2.5 9.5V7M2.5 9.5H5M7.5 4.5 9.5 2.5M9.5 2.5V5M9.5 2.5H7"/></svg></button>' +
+        '<button class="light max" type="button" aria-label="' + esc(tr("note.maximize")) + '">' +
+          '<svg class="ic-max" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M4.5 7.5 2.5 9.5M2.5 9.5V7M2.5 9.5H5M7.5 4.5 9.5 2.5M9.5 2.5V5M9.5 2.5H7"/></svg>' +
+          '<svg class="ic-min" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M3 6h6"/></svg></button>' +
       '</div>' +
       '<textarea class="note-text" rows="1" placeholder="' + esc(tr("note.placeholder")) + '" aria-label="' + esc(tr("note.aria")) + '"></textarea>' +
       '<textarea class="note-body" placeholder="' + esc(tr("note.bodyPlaceholder")) + '" aria-label="' + esc(tr("note.body")) + '"></textarea>' +
@@ -622,6 +628,7 @@
     });
     ta.addEventListener("focus", function () {
       el.classList.add("focused");
+      dropHold();          /* правка сама держит огни — задержке нечего добавить */
       if (isTouch()) keyboardWatch(el);
     });
     ta.addEventListener("blur", function () {
@@ -665,20 +672,49 @@
         if (!doc.querySelector(".sticky-note.full")) doc.documentElement.classList.remove("sb-note-full");
       }
     }
+    /* ── ОГНИ НЕ ГАСНУТ В ТОТ ЖЕ МИГ, КОГДА ОТПУСТИЛИ (v66) ─────────────────
+       ПОВОД, дословно от основателя 25.08.2026: «при перемещении заметок,
+       кнопки видны только во время переноса и нажать на них пользователь не
+       успевает - нужно сделать так, чтобы они не сразу исчезали и чтобы
+       пользователь мог успеть нажать на кнопку закрыть или развернуть».
+
+       Признак «dragging» кончается в миг отпускания — а разговор с заметкой
+       в этот миг не кончается: рука ещё над ней и тянется к кнопке. Поэтому
+       после переноса заметка остаётся В РУКАХ ещё четыре секунды: столько
+       нужно, чтобы поднять палец, увидеть ряд и попасть в кнопку, и мало,
+       чтобы стол успел засориться. Задержка снимается сама и снимается
+       заново при каждом новом касании этой заметки — держат её не часы, а
+       внимание. */
+    var holdTimer = 0;
+    function holdLights(ms) {
+      if (holdTimer) clearTimeout(holdTimer);
+      el.classList.add("lights-held");
+      holdTimer = setTimeout(function () {
+        holdTimer = 0;
+        el.classList.remove("lights-held");
+      }, ms || 4000);
+    }
+    function dropHold() {
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = 0; }
+      el.classList.remove("lights-held");
+    }
+    el._sbHoldLights = holdLights;
+
     el._sbSetFull = setFull;
-    el.querySelector(".note-light.close").addEventListener("click", function (ev) {
+    function syncMaxLabel() {
+      var b = el.querySelector(".light.max");
+      if (b) b.setAttribute("aria-label", esc(tr(el.classList.contains("full") ? "note.minimize" : "note.maximize")));
+    }
+    el.querySelector(".light.close").addEventListener("click", function (ev) {
       ev.stopPropagation();
       setFull(false);
       removeNote(el, rec.id, true);
     });
-    el.querySelector(".note-light.min").addEventListener("click", function (ev) {
+    el.querySelector(".light.max").addEventListener("click", function (ev) {
       ev.stopPropagation();
-      if (el.classList.contains("full")) { setFull(false); persist(); return; }
-      try { ta.blur(); bodyEl.blur(); } catch (e) { /* ignore */ }
-    });
-    el.querySelector(".note-light.max").addEventListener("click", function (ev) {
-      ev.stopPropagation();
+      holdLights(4000);
       setFull(!el.classList.contains("full"));
+      syncMaxLabel();
       if (el.classList.contains("full")) setTimeout(function () { try { bodyEl.focus(); } catch (e2) { /* ignore */ } }, 80);
       else persist();
     });
@@ -697,10 +733,19 @@
      */
     var drag = null;
     el.addEventListener("pointerdown", function (ev) {
-      if (ev.target && ev.target.closest(".note-lights, .note-chip")) return;
+      if (ev.target && ev.target.closest(".light, .note-chip")) return;
       if (el.classList.contains("full")) return;         /* на весь экран — не двигаем */
-      if (el.classList.contains("focused")) return;      /* правят — не двигаем */
-      var onText = !!(ev.target && ev.target.closest(".note-text"));
+      /* ── ПИШУЩУЮ ЗАМЕТКУ МОЖНО УНЕСТИ ЗА КРАЙ (v66) ─────────────────────
+         Повод, дословно от основателя 25.08.2026: «когда пишешь в заметку,
+         то её нельзя взять и перенести, пока не нажмёшь в другое место».
+         Прежнее правило v47 «правят — не двигаем» защищало текст от того,
+         чтобы лист уехал из-под руки, — но заодно требовало лишнего
+         нажатия в пустоту. Граница теперь проходит не по состоянию, а по
+         МЕСТУ ХВАТКИ: сам текст принадлежит письму (курсор, выделение,
+         прокрутка), а кромка листа и ряд огней — руке. Клавиатура при
+         переносе не прячется: отпустил — пишешь дальше. */
+      var onText = !!(ev.target && ev.target.closest(".note-text, .note-body"));
+      if (el.classList.contains("focused") && onText) return;   /* текст — письму */
       drag = {
         sx: ev.clientX, sy: ev.clientY,
         ox: el.offsetLeft, oy: el.offsetTop,
@@ -736,7 +781,9 @@
         try { ta.focus(); } catch (e) { /* ignore */ }
         return;
       }
+      if (!moved) return;   /* нажали кромку и не повели — ничего не значит */
       if (moved) {
+        holdLights(4000);   /* рука ещё над заметкой — см. запись выше */
         var spot = noteSpotNear(el.offsetLeft, el.offsetTop, el.offsetWidth, el.offsetHeight, el);
         if (spot.x !== el.offsetLeft || spot.y !== el.offsetTop) {
           el.classList.add("settling");
@@ -834,7 +881,7 @@
     px = Math.max(0, Math.round(px || 0));
     if (px === kbLift) return;
     kbLift = px;
-    host.style.transition = "transform .18s var(--ease)";
+    host.style.transition = "transform var(--t-touch) var(--ease)";
     host.style.transform = px ? "translateY(" + (-px) + "px)" : "";
   }
   window.sbLiftNotes = liftNotes;

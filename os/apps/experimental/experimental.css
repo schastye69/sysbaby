@@ -80,7 +80,7 @@
   letter-spacing: .08em;
   text-transform: uppercase;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid rgba(255, 214, 10, .34);
   background: rgba(255, 214, 10, .06);
   color: rgba(255, 255, 255, .74);
@@ -89,7 +89,7 @@
 .xp-status i {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   background: var(--warn);
   animation: xpPulse 3.4s ease-in-out infinite;
 }
@@ -162,7 +162,7 @@ html[data-motion="reduced"] .xp-status i { animation: none; opacity: .8; }
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   opacity: .25;
-  transition: opacity .2s ease, background .2s ease;
+  transition: opacity var(--t-touch) ease, background var(--t-touch) ease;
 }
 
 .xp-back:focus-visible { opacity: 1; background: rgba(8, 9, 12, .9); }

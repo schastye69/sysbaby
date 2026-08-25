@@ -83,6 +83,7 @@
       "note.body": "The rest of the note",
       "note.bodyPlaceholder": "The rest — only here",
       "note.more": "This note has more inside",
+      "tip.notefull": "Enter in a note's first line opens it full screen — the body is written only there.",
       "widget.quote": "Quote",
       "widget.payback": "Payback",
       "widget.capture": "Quick Capture",
@@ -551,6 +552,7 @@
       "note.body": "Тело заметки",
       "note.bodyPlaceholder": "Остальное — только здесь",
       "note.more": "В этой заметке есть продолжение",
+      "tip.notefull": "Enter в первой строке заметки открывает её на весь экран — тело пишется только там.",
       "widget.quote": "Смета",
       "widget.payback": "Окупаемость",
       "widget.capture": "Быстрая запись",
@@ -998,6 +1000,7 @@
       "note.body": "Märkme sisu",
       "note.bodyPlaceholder": "Ülejäänu — ainult siin",
       "note.more": "Sellel märkmel on jätk",
+      "tip.notefull": "Enter märkme esimesel real avab selle üle ekraani — sisu kirjutatakse ainult seal.",
       "widget.quote": "Pakkumine",
       "widget.payback": "Tasuvus",
       "widget.capture": "Kiirmärge",
@@ -1622,6 +1625,7 @@
      подсказку нажатием, нужна дверь без поиска кнопки: законы и сама
      лампочка зовут одно и то же. */
   window.sbShowTipNow = function () {
+    hintRequested = true;   /* человек позвал сам — см. sbDeskHintYield */
     var tip = nextTip();
     if (!tip) return false;
     showTip(tip);
@@ -1867,6 +1871,10 @@
     { id: "inlinesearch", panel: null, pointer: true },
     { id: "cmdk", panel: null, pointer: true },
     { id: "stickynotes", panel: null },
+    /* v66: заметка выросла в окно (D-111) — подсказки обязаны расти вместе
+       с системой, о чём основатель просил отдельно: «прошу постоянно
+       обновлять информацию в подсказках». */
+    { id: "notefull", panel: null },
     { id: "windowspanel", panel: "sbTaskOverlay", pointer: true },
     { id: "appshortcuts", panel: "sbShortcutsOverlay", pointer: true },
     { id: "shortcutslist", panel: "sbShortcutsOverlay", pointer: true },
@@ -1893,7 +1901,7 @@
     });
   }
   var TIP_KEY = "sysbaby.tips.seen";
-  var tipTimer = null, currentTip = null;
+  var tipTimer = null, currentTip = null, hintRequested = false;
 
   function tipsSeen() { var v = readJSON(TIP_KEY, []); return Array.isArray(v) ? v : []; }
   function markTip(id) {
@@ -1943,7 +1951,22 @@
     var host = $("#sbDeskHint");
     if (host) host.classList.remove("on");
     currentTip = null;
+    hintRequested = false;
   }
+
+  /* ── ОДНО МЕСТО РЕЧИ: ИЗВЕЩЕНИЕ ВЫТЕСНЯЕТ САМОПРИШЕДШУЮ ПОДСКАЗКУ (v66) ──
+     Повод, дословно от основателя 25.08.2026: «оповещения должны
+     отображаться в блоке подсказок». У стола теперь один голос и одно
+     место, откуда он говорит, — линия над полкой. Кто говорит — решает
+     правило v47.1, симметрично достроенное: явно запрошенное важнее
+     пришедшего само. Подсказку, которую человек ВЫЗВАЛ лампочкой,
+     извещение не перебивает; подсказка, пришедшая по расписанию, уступает
+     извещению — оно свежее. */
+  window.sbDeskHintYield = function () {
+    if (!currentTip || hintRequested) return false;
+    hideTip();
+    return true;
+  };
   /* Retiring is not the same as hiding: nothing left to teach, so the bulb
      goes too. Silently — a notice saying "no more notices" is still a notice. */
   function retireTips() {
@@ -1964,6 +1987,7 @@
       }
       var tip = nextTip();
       if (!tip) { retireTips(); return; }
+      hintRequested = false;   /* пришла сама — уступит извещению */
       showTip(tip);
       tipTimer = setTimeout(function () {
         hideTip();

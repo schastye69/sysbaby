@@ -26,7 +26,7 @@
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   border: 1px solid rgba(255, 255, 255, .08);
   background: rgba(255, 255, 255, .035);
   margin-bottom: 6px;
@@ -53,7 +53,7 @@
 .ec-wave i {
   display: block;
   width: 2px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: linear-gradient(180deg, var(--accent-2, #ec8a5f), var(--accent, #e0663c));
 }
 
@@ -61,7 +61,7 @@
   flex: 0 0 auto;
   width: 28px;
   height: 28px;
-  border-radius: 9px;
+  border-radius: var(--r-ctrl);
   display: grid;
   place-items: center;
   color: #fff;
@@ -82,7 +82,7 @@
   font: inherit;
   font-size: 11.5px;
   padding: 4px 9px;
-  border-radius: 9px;
+  border-radius: var(--r-ctrl);
   cursor: pointer;
   white-space: nowrap;
 }

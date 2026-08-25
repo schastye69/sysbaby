@@ -45,9 +45,43 @@
   --good: #4ea87a;
   /* Honest corners: a friendly-app 24px radius belongs to somebody else's
      operating system. Same ladder as the landing's windows. */
+  /* ── ЧЕТЫРЕ УГЛА И ДВЕ ФОРМЫ (v66) ──────────────────────────────────────
+     Аудит 25.08.2026 нашёл в стилях 25 разных скруглений при трёх объявленных
+     именах; чаще всего система говорила чужим словом — 999px, 35 раз. Теперь
+     угол — слово языка: четыре размера и две формы, и ничего больше.
+     Новый размер возможен только новым словом здесь, то есть решением.
+     Пиктограммы (класс на -glyph) — картинки, их штрихи свободны.
+     Охраняется tools/radius-scale-check.mjs. */
   --r-window: 16px;
   --r-card: 12px;
   --r-ctrl: 9px;
+  --r-tag: 6px;
+  --r-pill: 999px;
+  --r-round: 50%;
+  /* ── ПЯТЬ СКОРОСТЕЙ ОТВЕТА (v66) ────────────────────────────────────────
+     Тот же аудит: 25 разных длительностей — у языка с двадцатью пятью
+     временами глагола нет грамматики. Переход — это ответ на действие, и по
+     скорости ответа слышно, ЧТО произошло. Дыхание фона (animation) живёт
+     своим темпом и грамматике ответов не подчинено.
+     Охраняется tools/duration-scale-check.mjs. */
+  /* Шестое слово (v66). Увеличение плитки дока СЛЕДУЕТ за указателем: оно
+     переписывается каждый кадр, пока рука движется, — это не отклик на
+     нажатие, а слежение за непрерывным вводом. Категория настоящая: сюда же
+     попадёт всякое будущее движение, идущее ЗА рукой, а не отвечающее ей.
+
+     ЧЕСТНО О ЧИСЛЕ. Перевод шкалы поставил сюда --t-touch (.16s) вместо
+     измеренных когда-то .12s, и доска покраснела на стоимости. Я проверил
+     обе величины прибором — и разницы НЕ НАШЁЛ: 1.18–1.26 мс при .12s
+     против 1.11–1.32 при .16s, то есть шум машины больше разницы. Значит
+     .12s возвращено не потому, что доказано быстрее, а потому что менять
+     измеренное значение без доказательства нельзя. Слово заведено, чтобы
+     это значение было решением, а не остатком. */
+  --t-track: .12s;
+  --t-touch: .16s;
+  --t-move: .3s;
+  --t-scene: .45s;
+  --t-drift: .6s;
+  --t-rise: 1s;
   --shadow: 0 24px 60px rgba(0, 0, 0, .55), 0 4px 14px rgba(0, 0, 0, .4);
   --shadow-soft: 0 12px 34px rgba(0, 0, 0, .38);
   --ease: cubic-bezier(.16, 1, .3, 1);
@@ -198,14 +232,14 @@ html, body {
 
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; background: none; border: 0; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-ctrl); }
 kbd { font-family: var(--mono); font-size: 12px; }
 
 /* generic controls */
 .btn {
   padding: 9px 14px; border-radius: var(--r-ctrl);
   background: var(--glass); border: 1px solid var(--line);
-  color: var(--ink); transition: background .16s ease, transform .16s var(--ease);
+  color: var(--ink); transition: background var(--t-touch) ease, transform var(--t-touch) var(--ease);
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -221,7 +255,7 @@ kbd { font-family: var(--mono); font-size: 12px; }
 .btn.link { background: none; border: 0; color: var(--ink-2); padding: 6px 2px; text-decoration: underline; text-underline-offset: 3px; }
 .btn.ghost { background: transparent; }
 .btn.danger { color: var(--danger); }
-.btn.tiny { padding: 5px 10px; font-size: 12px; border-radius: 9px; }
+.btn.tiny { padding: 5px 10px; font-size: 12px; border-radius: var(--r-ctrl); }
 
 .field { display: flex; flex-direction: column; gap: 5px; margin: 10px 0; font-size: 13px; color: var(--ink-2); }
 .field input, .field select {
@@ -373,7 +407,7 @@ html.sb-incognito .wp-layer > * { display: none !important; }
   display: grid; place-items: center;
   background: radial-gradient(1000px 700px at 50% 20%, rgba(var(--accent-rgb), .12), transparent 60%), var(--bg);
   padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
-  transition: opacity .42s ease;
+  transition: opacity var(--t-scene) ease;
 }
 #sbLogin.out { opacity: 0; pointer-events: none; }
 html.sb-has-session #sbLogin { display: none; }
@@ -418,7 +452,7 @@ html.sb-has-session #sbLogin { display: none; }
 .login-foot { margin: 14px 0 6px; color: var(--ink-3); font-size: 12px; line-height: 1.5; }
 .login-row { display: flex; justify-content: space-between; margin-top: 8px; }
 .login-chip-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.login-chip { padding: 7px 12px; border-radius: 999px; background: var(--glass-2); font-family: var(--mono); font-size: 13px; }
+.login-chip { padding: 7px 12px; border-radius: var(--r-pill); background: var(--glass-2); font-family: var(--mono); font-size: 13px; }
 
 /* ============================================ boot progress (engine kept) */
 #sbBoot { display: none; }
@@ -442,7 +476,7 @@ html.sb-has-session #sbLogin { display: none; }
   position: fixed; inset: 0; z-index: 200;
   display: grid; place-items: center;
   background: radial-gradient(120% 90% at 50% 40%, #0b0c11 0%, #020203 70%);
-  transition: opacity 1s var(--ease);
+  transition: opacity var(--t-rise) var(--ease);
 }
 #sbCurtain.lifting { opacity: 0; pointer-events: none; }
 
@@ -450,7 +484,7 @@ html.sb-has-session #sbLogin { display: none; }
    1.25x is a hairline, and it costs four fifths less to draw */
 #sbCurtainNet {
   position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0;
-  opacity: 0; transition: opacity 1.1s ease; pointer-events: none;
+  opacity: 0; transition: opacity var(--t-rise) ease; pointer-events: none;
 }
 #sbCurtainNet.on { opacity: 1; }
 html[data-motion="reduced"] #sbCurtainNet { display: none; }
@@ -461,11 +495,11 @@ html[data-motion="reduced"] #sbCurtainNet { display: none; }
   font-family: var(--mono);
   font-size: clamp(7.5px, 2.1vw, 12px); line-height: 1.25; letter-spacing: .02em;
   white-space: pre; text-align: left; color: #e8967a;
-  opacity: .30; transition: opacity .9s var(--ease); pointer-events: none;
+  opacity: .30; transition: opacity var(--t-rise) var(--ease); pointer-events: none;
 }
 #sbCurtain.said .cur-log { opacity: .08; }
 html[data-motion="reduced"] .cur-log { display: none; }
-.cur-log-line { opacity: 0; transform: translateY(5px); transition: opacity .55s var(--ease), transform .55s var(--ease); }
+.cur-log-line { opacity: 0; transform: translateY(5px); transition: opacity var(--t-scene) var(--ease), transform var(--t-scene) var(--ease); }
 /* Неудавшийся шаг загрузки остаётся на экране и назван собой. Скрыть его
    значило бы вернуться к заставке, которая рассказывает, а не показывает. */
 .cur-log-line.failed { color: #e0663c; opacity: .95; }
@@ -507,7 +541,7 @@ html[data-motion="reduced"] .cur-mark { animation-duration: .4s !important; }
   /* unresolved: the material, still cooling */
   color: #e8967a; opacity: .72;
   text-shadow: 0 0 9px rgba(224, 102, 60, .5), 0 0 2px rgba(236, 138, 95, .8);
-  transition: color .3s ease, text-shadow .3s ease, opacity .2s ease, transform .2s ease;
+  transition: color var(--t-move) ease, text-shadow var(--t-move) ease, opacity var(--t-touch) ease, transform var(--t-touch) ease;
 }
 /* resolved: the sentence, clean and unlit — the message is never a neon sign */
 .cur-cell.locked { color: #fff; opacity: 1; text-shadow: none; font-weight: 650; }
@@ -515,7 +549,7 @@ html[data-motion="reduced"] .cur-mark { animation-duration: .4s !important; }
 .cur-cell.broken { opacity: .15; transform: translateY(-2px) scale(.9); }
 .cur-cell.settle { animation: curSettle .34s var(--spring); }
 @keyframes curSettle { 0% { transform: scale(1); } 42% { transform: scale(1.18); } 100% { transform: scale(1); } }
-html[data-motion="reduced"] .cur-cell { transition-duration: .12s !important; }
+html[data-motion="reduced"] .cur-cell { transition-duration: var(--t-touch) !important; }
 html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
 
 /* Not a fade-out: the last sentence stays on the desktop, barely there.
@@ -526,7 +560,7 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
   display: flex; align-items: center; justify-content: center;
   font-family: var(--mono); font-size: clamp(8.5px, 2.85vw, 15px); font-weight: 600;
   letter-spacing: .03em; white-space: pre; line-height: 1.5;
-  color: #fff; opacity: .13; pointer-events: none; transition: opacity 1.1s var(--ease);
+  color: #fff; opacity: .13; pointer-events: none; transition: opacity var(--t-rise) var(--ease);
 }
 #sbGhostLine.out { opacity: 0; }
 
@@ -534,7 +568,7 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
 #sbFarewell {
   position: fixed; inset: 0; z-index: 400; background: #000; color: rgba(255, 255, 255, .9);
   display: grid; place-items: center; gap: 20px; grid-auto-flow: row;
-  opacity: 0; transition: opacity .5s ease;
+  opacity: 0; transition: opacity var(--t-scene) ease;
 }
 #sbFarewell.on { opacity: 1; }
 /* Четвёртый — и по обходу всех градиентных плиток последний — предмет прежней
@@ -544,13 +578,13 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
 .farewell-line { font-family: var(--mono); font-size: 14px; letter-spacing: .02em; }
 #sbBootFail {
   position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 500;
-  padding: 14px 16px; border-radius: 14px; white-space: pre-wrap;
+  padding: 14px 16px; border-radius: var(--r-card); white-space: pre-wrap;
   background: rgba(60, 10, 12, .94); border: 1px solid rgba(255, 69, 58, .5);
   color: #ffd9d6; font-family: var(--mono); font-size: 12px; line-height: 1.6;
 }
 #sbQuotaBanner {
   position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 480;
-  padding: 12px 14px; border-radius: 12px;
+  padding: 12px 14px; border-radius: var(--r-card);
   background: rgba(70, 40, 0, .94); border: 1px solid rgba(255, 214, 10, .45);
   color: #ffe9b0; font-family: var(--mono); font-size: 12px;
 }
@@ -564,7 +598,7 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
   backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
   border-bottom: 1px solid var(--line);
   opacity: 0; transform: translateY(-8px);
-  transition: opacity .4s ease, transform .4s var(--ease);
+  transition: opacity var(--t-scene) ease, transform var(--t-scene) var(--ease);
 }
 html.rv-topbar #topbar { opacity: 1; transform: none; }
 html.topbar-hidden #topbar { transform: translateY(-100%); }
@@ -579,7 +613,7 @@ html.topbar-hidden.topbar-peek #topbar { transform: none; }
    the landing's, character for character (hair spaces included) — one brand,
    two surfaces, no second drawing of it anywhere. */
 .tb-mark { display: inline-flex; align-items: center; gap: 7px; padding-left: 2px; flex: none;
-  transform-origin: left center; transition: transform .22s var(--ease); }
+  transform-origin: left center; transition: transform var(--t-move) var(--ease); }
 /* ── ЗНАК В ПОЛНОМ ЭКРАНЕ ЧУТЬ КРУПНЕЕ (v61) ─────────────────────────────
    Повод от основателя: «иконка логотипа в режиме на весь экран должна стать
    слегка больше и если на неё нажать еще раз, то она уменьшится».
@@ -616,7 +650,7 @@ html[data-motion="reduced"] .tb-mark { transition: none; }
 html[data-motion="reduced"] .sb-lock { animation: none }
 .mark-word { color: var(--ink); white-space: nowrap; }
 
-.tb-identity { display: inline-flex; align-items: baseline; gap: 1px; padding: 5px 9px; border-radius: 999px; font-size: 13px; }
+.tb-identity { display: inline-flex; align-items: baseline; gap: 1px; padding: 5px 9px; border-radius: var(--r-pill); font-size: 13px; }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал. Повод — снимок основателя
@@ -628,7 +662,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 .id-name { font-weight: 600; }
 .tb-btn {
   position: relative; display: inline-grid; place-items: center;
-  width: 30px; height: 28px; border-radius: 9px; color: var(--ink-2);
+  width: 30px; height: 28px; border-radius: var(--r-ctrl); color: var(--ink-2);
 }
 .tb-btn svg { width: 17px; height: 17px; }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
@@ -642,12 +676,12 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 .tb-btn.on, .tb-btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
 .tb-badge {
   position: absolute; top: 1px; right: 1px; min-width: 14px; height: 14px; padding: 0 3px;
-  border-radius: 999px; background: var(--danger); color: #fff; font-size: 9.5px;
+  border-radius: var(--r-pill); background: var(--danger); color: #fff; font-size: 9.5px;
   display: grid; place-items: center;
 }
 .tb-sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; }
 .tb-seq { display: flex; align-items: center; gap: 4px; overflow: hidden; }
-.seq-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px; border-radius: 9px; max-width: 170px; }
+.seq-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px; border-radius: var(--r-ctrl); max-width: 170px; }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал. Повод — снимок основателя
@@ -659,7 +693,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 .seq-item.active { background: var(--glass-2); }
 .seq-item.dim { opacity: .5; }
 .seq-tile {
-  width: 16px; height: 16px; border-radius: 5px; flex: none;
+  width: 16px; height: 16px; border-radius: var(--r-tag); flex: none;
   display: grid; place-items: center; color: var(--ink-2);
   background: var(--glass); border: 1px solid var(--line);
 }
@@ -705,7 +739,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
   background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-card);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.5); box-shadow: var(--shadow);
   opacity: 0; transform: translateY(-6px) scale(.99);
-  transition: opacity .18s ease, transform .18s var(--ease);
+  transition: opacity var(--t-touch) ease, transform var(--t-touch) var(--ease);
 }
 #sbControlCenter.open { opacity: 1; transform: none; }
 .cc-grid { display: flex; flex-direction: column; gap: 12px; }
@@ -729,24 +763,24 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 .cc-block { display: flex; flex-direction: column; gap: 7px; }
 .cc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
-  padding: 6px 11px; border-radius: 999px; font-size: 12px; color: var(--ink-2);
+  padding: 6px 11px; border-radius: var(--r-pill); font-size: 12px; color: var(--ink-2);
   background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
 }
 .chip.on { background: var(--accent-soft); border-color: var(--accent-ring); color: var(--ink); }
 .cc-accents { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.accent-sw { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; }
+.accent-sw { width: 26px; height: 26px; border-radius: var(--r-round); border: 2px solid transparent; }
 .accent-sw.on { border-color: #fff; box-shadow: 0 0 0 2px rgba(0, 0, 0, .35); }
-.accent-custom { width: 30px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: none; }
+.accent-custom { width: 30px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: var(--r-ctrl); background: none; }
 .cc-buttons { display: flex; flex-direction: column; gap: 6px; }
 .cc-buttons .btn { text-align: left; }
 
 /* ============================================================== desktop §4 */
-#desktop { position: fixed; inset: 0; z-index: 1; opacity: 0; transition: opacity .5s ease; }
+#desktop { position: fixed; inset: 0; z-index: 1; opacity: 0; transition: opacity var(--t-scene) ease; }
 html.rv-scene #desktop { opacity: 1; }
 #sbIconLayer, #sbWidgetLayer, #sbNoteLayer { position: absolute; inset: var(--topbar-h) 0 0 0; }
-#sbIconLayer { z-index: 2; opacity: 0; transition: opacity .45s ease; }
+#sbIconLayer { z-index: 2; opacity: 0; transition: opacity var(--t-scene) ease; }
 html.rv-icons #sbIconLayer { opacity: 1; }
-#sbWidgetLayer { z-index: 3; opacity: 0; transition: opacity .45s ease; pointer-events: none; }
+#sbWidgetLayer { z-index: 3; opacity: 0; transition: opacity var(--t-scene) ease; pointer-events: none; }
 html.rv-widgets #sbWidgetLayer { opacity: 1; }
 #sbWidgetLayer > * { pointer-events: auto; }
 #sbNoteLayer { z-index: 4; pointer-events: none; }
@@ -755,8 +789,8 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
 /* desktop icons */
 .desk-icon {
   position: absolute; width: 80px; height: 92px; display: flex; flex-direction: column;
-  align-items: center; gap: 6px; padding: 6px 2px; border-radius: 14px;
-  transition: background .16s ease, transform .18s var(--ease);
+  align-items: center; gap: 6px; padding: 6px 2px; border-radius: var(--r-card);
+  transition: background var(--t-touch) ease, transform var(--t-touch) var(--ease);
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -768,7 +802,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
 }
 .desk-icon.selected { background: var(--accent-soft); outline: 1px solid var(--accent-ring); }
 .desk-icon.dragging { opacity: .85; transition: none; z-index: 9; }
-.desk-icon.settling { transition: left .28s var(--spring), top .28s var(--spring); }
+.desk-icon.settling { transition: left var(--t-move) var(--spring), top var(--t-move) var(--spring); }
 .desk-icon.hidden-icon { display: none; }
 .desk-icon.drop-target, .desk-icon.armed { outline: 2px solid var(--accent); }
 /* The tile is graphite: the environment is achromatic, and ten simultaneous
@@ -781,12 +815,12 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
    рисуется отдельным слоем и не стоит ни одного лишнего прохода, но даёт
    плитке грань: свет падает сверху, как и на всём остальном столе. */
 .icon-tile {
-  width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center;
+  width: 46px; height: 46px; border-radius: var(--r-card); display: grid; place-items: center;
   color: var(--ink);
   box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, .07);
   background: linear-gradient(155deg, rgba(242, 242, 240, .13), rgba(242, 242, 240, .028));
   border: 1px solid var(--line);
-  transition: box-shadow .18s var(--ease), background .18s ease;
+  transition: box-shadow var(--t-touch) var(--ease), background var(--t-touch) ease;
 }
 .desk-icon.active-app .icon-tile {
   box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, .12);
@@ -814,8 +848,8 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
 }
 .desk-icon.active-app .icon-label { color: var(--ink); }
 .icon-spark {
-  position: absolute; top: 2px; right: 4px; width: 18px; height: 18px; border-radius: 50%;
-  display: grid; place-items: center; color: var(--ink-3); opacity: 0; transition: opacity .16s ease;
+  position: absolute; top: 2px; right: 4px; width: 18px; height: 18px; border-radius: var(--r-round);
+  display: grid; place-items: center; color: var(--ink-3); opacity: 0; transition: opacity var(--t-touch) ease;
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -829,11 +863,11 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
 .icon-capsule {
   position: absolute; top: calc(100% - 4px); left: 50%; transform: translateX(-50%) scaleY(.9);
   transform-origin: top center; width: 200px; z-index: 12; opacity: 0; pointer-events: none;
-  transition: opacity .18s ease, transform .18s var(--ease);
+  transition: opacity var(--t-touch) ease, transform var(--t-touch) var(--ease);
 }
 .desk-icon.capsule-open .icon-capsule { opacity: 1; pointer-events: auto; transform: translateX(-50%) scaleY(1); }
 .icon-capsule input {
-  width: 100%; padding: 9px 12px; border-radius: 999px; font-size: 13px;
+  width: 100%; padding: 9px 12px; border-radius: var(--r-pill); font-size: 13px;
   background: var(--glass-2); border: 1px solid var(--line-2); color: var(--ink);
   backdrop-filter: blur(var(--glass-blur)); outline: none;
 }
@@ -879,8 +913,8 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
     /* and the shadow it casts, away from it */
     0 14px 34px -18px rgba(0, 0, 0, .72),
     0 2px 10px -6px rgba(var(--wp-light-rgb, 91, 124, 255), calc(.10 * var(--lit)));
-  transition: left .3s var(--ease), top .3s var(--ease),
-              border-color .5s ease, box-shadow .5s ease, background .5s ease;
+  transition: left var(--t-move) var(--ease), top var(--t-move) var(--ease),
+              border-color var(--t-scene) ease, box-shadow var(--t-scene) ease, background var(--t-scene) ease;
 }
 /* Writing brings the light up, the way leaning toward a lamp does. */
 .sticky-note.focused {
@@ -898,7 +932,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
     inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), .22),
     0 26px 54px -22px rgba(0, 0, 0, .84);
 }
-.sticky-note.settling { transition: left .3s var(--ease), top .3s var(--ease); }
+.sticky-note.settling { transition: left var(--t-move) var(--ease), top var(--t-move) var(--ease); }
 .sticky-note.selected { outline: 1px solid rgba(var(--wp-light-rgb, 91, 124, 255), .5); }
 html[data-motion="reduced"] .sticky-note { transition: none; }
 /* ВСЯ ЗАМЕТКА — РУЧКА, ПОКА ЕЁ НЕ ПРАВЯТ (v47). Прежде здесь было обратное, и
@@ -918,11 +952,11 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
 .note-del { position: absolute; top: 4px; right: 6px; color: var(--ink-3); font-size: 12px; padding: 4px; }
 .note-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .note-chip {
-  display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: var(--r-pill);
   font-size: 11px; color: var(--ink-2); background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
 }
 .note-chip.live { border-color: var(--accent-ring); }
-.chip-tile { width: 10px; height: 10px; border-radius: 4px; }
+.chip-tile { width: 10px; height: 10px; border-radius: var(--r-tag); }
 /* ── ПРИГЛАШЕНИЕ — ЭТО ЗАМЕТКА ДО ПЕРВОГО СЛОВА (v64) ──────────────────────
    ПОВОД, дословно от основателя: «всплывающее "окно оставить заметку здесь?"
    должно быть более концептуальным по дизайну - блок должен иметь такой же
@@ -980,7 +1014,7 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
 }
 }
 .invite-plus {
-  width: 20px; height: 20px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  width: 20px; height: 20px; flex: none; border-radius: var(--r-round); display: grid; place-items: center;
   color: var(--accent); font-size: 15px; line-height: 1;
   border: 1px dashed rgba(var(--wp-light-rgb, 91, 124, 255), .42);
 }
@@ -1005,43 +1039,33 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
    ушёл бы под полосу (класс ставит lightNote в desktop.js). */
 .note-lights {
   position: absolute; bottom: calc(100% + 5px); right: 0; z-index: 2;
-  display: flex; gap: 4px;
   opacity: 0; pointer-events: none;
-  transition: opacity .18s var(--ease);
+  transition: opacity var(--t-touch) var(--ease);
 }
 .sticky-note.lights-below .note-lights { bottom: auto; top: calc(100% + 5px); }
+/* Качель растянуть/вернуть: обе картинки в одной кнопке, показывается та,
+   которую выбирает состояние заметки. */
+.note-lights .light.max .ic-min { display: none; }
+.sticky-note.full .note-lights .light.max .ic-max { display: none; }
+.sticky-note.full .note-lights .light.max .ic-min { display: block; }
 .sticky-note.focused .note-lights,
 .sticky-note.dragging .note-lights,
+.sticky-note.lights-held .note-lights,
 .sticky-note.full .note-lights { opacity: 1; pointer-events: auto; }
+/* Показанные огни заметки светятся так же, как огни окна в фокусе, — это
+   ОДНИ кнопки в одном состоянии «со мной говорят», и вещество у них одно. */
+.sticky-note.focused .note-lights.lights,
+.sticky-note.dragging .note-lights.lights,
+.sticky-note.lights-held .note-lights.lights,
+.sticky-note.full .note-lights.lights { border-color: var(--line-2); background: rgba(255, 255, 255, .07); }
+.sticky-note.focused .note-lights .light,
+.sticky-note.dragging .note-lights .light,
+.sticky-note.lights-held .note-lights .light,
+.sticky-note.full .note-lights .light { color: var(--ink-2); }
 @media (hover: hover) and (pointer: fine) {
   .sticky-note:hover .note-lights { opacity: 1; pointer-events: auto; }
 }
 html[data-motion="reduced"] .note-lights { transition: none; }
-.note-light {
-  width: 20px; height: 20px; flex: none; border-radius: 50%;
-  display: grid; place-items: center;
-  color: var(--ink-3); background: rgba(255, 255, 255, .05);
-  border: 1px solid var(--line);
-}
-.note-light svg { width: 10px; height: 10px; display: block; }
-.note-light:focus-visible { background: var(--glass-2); color: var(--ink); }
-/* Наведение — это про мышь. На устройстве без мыши :hover включается по
-   касанию и держится до следующего касания где-нибудь ещё: человек видит
-   предмет в состоянии, которого не выбирал. Повод — снимок основателя
-   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
-   Охраняется tools/hover-is-not-touch-check.mjs. */
-@media (hover: hover) {
-  .note-light:hover { background: var(--glass-2); color: var(--ink); }
-}
-.note-light.close:focus-visible { background: rgba(255, 69, 58, .18); color: #ff6a60; }
-/* Наведение — это про мышь. На устройстве без мыши :hover включается по
-   касанию и держится до следующего касания где-нибудь ещё: человек видит
-   предмет в состоянии, которого не выбирал. Повод — снимок основателя
-   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
-   Охраняется tools/hover-is-not-touch-check.mjs. */
-@media (hover: hover) {
-  .note-light.close:hover { background: rgba(255, 69, 58, .18); color: #ff6a60; }
-}
 
 /* ── ЗАГОЛОВОК НА СТОЛЕ, ТЕЛО — НА ВЕСЬ ЭКРАН (v64) ───────────────────────
    ПОВОД: «в режиме развернуть показываетсяя не только заголов заметки, но
@@ -1089,7 +1113,7 @@ html[data-motion="reduced"] .note-lights { transition: none; }
    по-прежнему тот же стол, просто сейчас говорят не с ним. */
 html.sb-note-full #sbNoteLayer { z-index: 120; }
 html.sb-note-full #sbIconLayer,
-html.sb-note-full #sbDeskHint { opacity: .28; transition: opacity .2s var(--ease); }
+html.sb-note-full #sbDeskHint { opacity: .28; transition: opacity var(--t-touch) var(--ease); }
 html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
 
 /* widgets */
@@ -1117,7 +1141,7 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
 .cap-recent { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
 .cap-recent li { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.marquee { position: fixed; z-index: 25; border: 1px solid var(--accent-ring); background: var(--accent-soft); pointer-events: none; border-radius: 4px; }
+.marquee { position: fixed; z-index: 25; border: 1px solid var(--accent-ring); background: var(--accent-soft); pointer-events: none; border-radius: var(--r-tag); }
 
 /* ================================================================ windows §3 */
 #windowLayer { position: fixed; inset: 0; z-index: 20; isolation: isolate; pointer-events: none; }
@@ -1170,7 +1194,7 @@ html[data-theme="light"] .window::before { background: rgba(12, 14, 20, .08); }
    sat exactly on the close key. */
 html.sb-fullscreen-window #topbar {
   transform: translateY(-110%); opacity: 0; pointer-events: none;
-  transition: transform .3s ease, opacity .25s ease;
+  transition: transform var(--t-move) ease, opacity var(--t-move) ease;
 }
 .window.drop-target { outline: 2px solid var(--accent); }
 html.dragging .window { backdrop-filter: blur(6px); }
@@ -1185,14 +1209,14 @@ html.dragging .window { backdrop-filter: blur(6px); }
     colour, and only under the pointer. */
 .lights {
   display: flex; align-items: center; gap: 2px;
-  padding: 2px; border-radius: 10px;
+  padding: 2px; border-radius: var(--r-ctrl);
   background: rgba(255, 255, 255, .045);
   border: 1px solid var(--line);
 }
 .light {
-  width: 22px; height: 18px; border-radius: 7px; display: grid; place-items: center;
+  width: 22px; height: 18px; border-radius: var(--r-tag); display: grid; place-items: center;
   background: transparent; color: var(--ink-3);
-  transition: background .14s ease, color .14s ease;
+  transition: background var(--t-touch) ease, color var(--t-touch) ease;
 }
 .light svg { width: 11px; height: 11px; }
 .light:focus-visible { background: var(--glass-2); color: var(--ink); }
@@ -1217,7 +1241,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
 .window.focused .light { color: var(--ink-2); }
 .win-title { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
 .win-chip {
-  width: 16px; height: 16px; border-radius: 5px; flex: none;
+  width: 16px; height: 16px; border-radius: var(--r-tag); flex: none;
   display: grid; place-items: center; color: var(--ink-2);
   background: var(--glass); border: 1px solid var(--line);
 }
@@ -1233,7 +1257,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
   position: fixed; z-index: 19; border-radius: var(--r-window); pointer-events: none; opacity: 0;
   background: var(--accent-soft); border: 1px solid var(--accent-ring);
   backdrop-filter: blur(8px);
-  transition: opacity .16s ease, left .16s var(--ease), top .16s var(--ease), width .16s var(--ease), height .16s var(--ease);
+  transition: opacity var(--t-touch) ease, left var(--t-touch) var(--ease), top var(--t-touch) var(--ease), width var(--t-touch) var(--ease), height var(--t-touch) var(--ease);
 }
 #sbSnapGhost.on { opacity: 1; }
 
@@ -1248,7 +1272,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
   background: var(--glass); border: 1px solid var(--line);
 }
 .expose-tile {
-  width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center;
+  width: 42px; height: 42px; border-radius: var(--r-card); display: grid; place-items: center;
   color: var(--ink); background: linear-gradient(150deg, rgba(242, 242, 240, .12), rgba(242, 242, 240, .03));
   border: 1px solid var(--line);
 }
@@ -1283,7 +1307,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
   bottom: var(--desk-row-b);
   display: flex; align-items: stretch; gap: 0;
   max-width: min(560px, calc(100vw - 32px));
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background:
     radial-gradient(160% 180% at 12% -40%,
       rgba(var(--wp-light-rgb, 91, 124, 255), .13), transparent 64%),
@@ -1297,16 +1321,16 @@ html.dragging .window { backdrop-filter: blur(6px); }
     0 2px 12px -7px rgba(var(--wp-light-rgb, 91, 124, 255), .22);
   /* It arrives from below, out of the dock it is standing on. */
   opacity: 0; transform: translate(-50%, 14px);
-  transition: opacity .42s var(--ease), transform .42s var(--ease),
-              border-color .6s ease, box-shadow .6s ease, background .6s ease;
+  transition: opacity var(--t-scene) var(--ease), transform var(--t-scene) var(--ease),
+              border-color var(--t-drift) ease, box-shadow var(--t-drift) ease, background var(--t-drift) ease;
   pointer-events: none;
 }
 #sbDeskHint.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
-html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: translate(-50%, 0); }
+html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); transform: translate(-50%, 0); }
 
 .dh-body {
   display: flex; align-items: center; gap: 10px; min-width: 0;
-  padding: 10px 6px 10px 13px; border-radius: 14px 0 0 14px; text-align: left;
+  padding: 10px 6px 10px 13px; border-radius: var(--r-card) 0 0 var(--r-card); text-align: left;
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -1327,7 +1351,7 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: 
 }
 .dh-close {
   flex: none; display: grid; place-items: center; width: 32px;
-  border-radius: 0 14px 14px 0; color: var(--ink-3);
+  border-radius: 0 var(--r-card) var(--r-card) 0; color: var(--ink-3);
 }
 .dh-close svg { width: 13px; height: 13px; }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
@@ -1406,7 +1430,7 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: .16s; transform: 
 #dock {
   position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%);
   z-index: 55; display: flex; flex-direction: column; align-items: center; gap: 6px;
-  transition: transform .3s var(--ease), opacity .3s ease;
+  transition: transform var(--t-move) var(--ease), opacity var(--t-move) ease;
 }
 /* Док не уходит за кромку — он затихает. То же решение, что на лендинге:
    единственный вход в продукт не должен исчезать с экрана. Настройка в
@@ -1439,7 +1463,7 @@ html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within 
 .dock-shelf {
   --dock-gap: 8px;
   display: flex; align-items: flex-end; gap: var(--dock-gap); padding: 8px 10px;
-  border-radius: 22px; background: var(--glass); border: 1px solid var(--line);
+  border-radius: var(--r-window); background: var(--glass); border: 1px solid var(--line);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.5); box-shadow: var(--shadow-soft);
   /* ── ПОЛКА ПРОКРУЧИВАЕТСЯ, А НЕ ОБРЕЗАЕТСЯ (v53) ──────────────────────
      Повод от основателя 21.08.2026: «док меню должно скроллиться по
@@ -1484,7 +1508,7 @@ html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within 
      transform-origin остаётся здесь: он не меняется никогда и потому в
      обработчике ему делать нечего. */
   width: 46px; padding: 0; transform: scale(1); transform-origin: bottom center;
-  transition: width .28s var(--ease), opacity .22s ease, margin .28s var(--ease), transform .12s linear;
+  transition: width var(--t-move) var(--ease), opacity var(--t-move) ease, margin var(--t-move) var(--ease), transform var(--t-track) linear;
 }
 /* ЗАКРЫТОЕ ПРИЛОЖЕНИЕ ЗАНИМАЕТ РОВНО НОЛЬ (v47.1).
    Ширину ему обнуляли, а ПРОМЕЖУТОК между ним и соседом — нет: отрицательное
@@ -1499,7 +1523,7 @@ html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within 
   margin-left: calc(var(--dock-gap) * -1);
 }
 .dock-tile {
-  width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center;
+  width: 42px; height: 42px; border-radius: var(--r-card); display: grid; place-items: center;
   color: var(--ink); box-shadow: var(--shadow-soft); flex: none;
   background: linear-gradient(150deg, rgba(242, 242, 240, .12), rgba(242, 242, 240, .03));
   border: 1px solid var(--line);
@@ -1507,7 +1531,7 @@ html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within 
 /* The one coloured tile in the dock: the call to action. Seam means "here you
    can act", and this is the act. */
 .dock-tile svg { width: 21px; height: 21px; }
-.dock-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); opacity: 0; }
+.dock-dot { width: 4px; height: 4px; border-radius: var(--r-round); background: var(--ink-3); opacity: 0; }
 .dock-item.running .dock-dot { opacity: 1; }
 .dock-item.active-app .dock-dot { background: var(--accent); }
 /* Свёрнутое окно — точка полая: приложение живо, но его не видно. Закрытое —
@@ -1525,7 +1549,7 @@ html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within 
 @keyframes dockBounce { 0% { transform: translateY(0); } 40% { transform: translateY(-16px); } 100% { transform: translateY(0); } }
 .dock-badge {
   position: absolute; top: -3px; right: 2px; min-width: 17px; height: 17px; padding: 0 4px;
-  border-radius: 999px; background: var(--danger); color: #fff; font-size: 10.5px;
+  border-radius: var(--r-pill); background: var(--danger); color: #fff; font-size: 10.5px;
   display: grid; place-items: center;
 }
 #dockHint { font-size: 11.5px; color: var(--ink-3); }
@@ -1542,8 +1566,8 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
    только размер и знак внутри. Круг снят намеренно: скругление 14 — то же,
    что у подсказки, и именно оно делает их родственниками. */
 #sbFab {
-  transition: opacity .22s ease, transform .22s ease, border-color .6s ease, background .6s ease;
-  position: fixed; z-index: 56; border-radius: 14px;
+  transition: opacity var(--t-move) ease, transform var(--t-move) ease, border-color var(--t-drift) ease, background var(--t-drift) ease;
+  position: fixed; z-index: 56; border-radius: var(--r-card);
   /* ── КНОПКА СТОИТ В РЯДУ, А НЕ ГДЕ ПРИДЁТСЯ (v54) ────────────────────
      Все четыре числа — из §1, оттуда же их читает подсказка. Своих чисел
      у кнопки больше нет: 96px и 22px убраны, потому что были ВТОРЫМ
@@ -1575,15 +1599,43 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
    window keeps its controls. A notice must never sit on the key that closes
    the thing it is talking about, so on narrow screens the layer starts below
    a titlebar's height. */
+/* ── ОДНО МЕСТО РЕЧИ (v66) ────────────────────────────────────────────────
+   Повод, дословно от основателя 25.08.2026: «оповещения должны отображаться
+   в блоке подсказок». Извещения жили в верхнем правом углу, в собственном
+   тёмном веществе; подсказка — внизу, над полкой, освещённая обоями. Два
+   голоса из двух углов в разном платье — а говорит-то один стол.
+
+   Теперь у стола ОДНА линия речи — над полкой, по центру, — и одно
+   вещество: то же, что у подсказки и заметки, свет от обоев. Кто стоит на
+   линии — решает правило v47.1, достроенное симметрично: вызванная
+   лампочкой подсказка важнее извещений (они уступают), самопришедшая
+   подсказка уступает извещению (оно свежее). Голос один — очередь общая.
+   Охраняется tools/one-voice-check.mjs. */
 #toastLayer {
-  position: fixed; top: calc(var(--topbar-h) + 10px); right: 12px; z-index: 90;
-  display: flex; flex-direction: column; gap: 8px; width: min(320px, calc(100vw - 24px));
+  position: fixed; left: 50%; transform: translateX(-50%);
+  top: auto; bottom: var(--desk-row-b);
+  z-index: 90; display: flex; flex-direction: column-reverse; gap: 8px;
+  width: min(560px, calc(100vw - 32px));
+  pointer-events: none;
 }
+#toastLayer .toast { pointer-events: auto; }
 .toast {
-  display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 12px 14px;
-  border-radius: var(--r-card); background: var(--glass-2); border: 1px solid var(--line);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow-soft);
-  opacity: 0; transform: translateX(14px); transition: opacity .22s ease, transform .22s var(--ease);
+  display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 11px 14px;
+  border-radius: var(--r-card);
+  background:
+    radial-gradient(160% 180% at 12% -40%,
+      rgba(var(--wp-light-rgb, 91, 124, 255), .13), transparent 64%),
+    var(--glass);
+  border: 1px solid rgba(var(--wp-light-rgb, 91, 124, 255), .30);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), .20),
+    0 16px 40px -20px rgba(0, 0, 0, .74),
+    0 2px 12px -7px rgba(var(--wp-light-rgb, 91, 124, 255), .22);
+  /* Приходит снизу, из полки, — тем же движением, что подсказка. */
+  opacity: 0; transform: translateY(14px);
+  transition: opacity var(--t-move) ease, transform var(--t-move) var(--ease);
 }
 .toast.in { opacity: 1; transform: none; }
 /* Извещений на экране не больше трёх: четвёртое не информирует, а заслоняет.
@@ -1594,7 +1646,7 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
 .toast-title { font-size: 13px; font-weight: 600; }
 .toast-text { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
 .toast-action {
-  grid-column: 2; justify-self: start; margin-top: 8px; padding: 5px 11px; border-radius: 9px;
+  grid-column: 2; justify-self: start; margin-top: 8px; padding: 5px 11px; border-radius: var(--r-ctrl);
   font-size: 12px; background: var(--accent-soft); border: 1px solid var(--accent-ring); color: var(--ink);
 }
 .toast-warn { border-color: rgba(255, 214, 10, .45); }
@@ -1629,7 +1681,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 @keyframes panelIn { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: none; } }
 .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .panel-head h3 { margin: 0; font-size: 14px; font-weight: 600; }
-.panel-close { color: var(--ink-3); padding: 4px 6px; border-radius: 8px; }
+.panel-close { color: var(--ink-3); padding: 4px 6px; border-radius: var(--r-ctrl); }
 .panel-body { padding: 12px 16px 16px; overflow: hidden; display: flex; flex-direction: column; gap: 8px; }
 /* REQUIRED cap: panel lists always stay reachable (§6.0) */
 .panel-scroll { max-height: min(56vh, 420px); overflow: auto; padding-right: 4px; }
@@ -1641,7 +1693,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
 .foot-note { font-size: 11.5px; color: var(--ink-3); }
 .kv-row { display: flex; align-items: center; gap: 12px; padding: 7px 2px; font-size: 13px; color: var(--ink-2); }
-.kv-row kbd { min-width: 74px; padding: 3px 7px; border-radius: 7px; background: rgba(255, 255, 255, .07); border: 1px solid var(--line); text-align: center; }
+.kv-row kbd { min-width: 74px; padding: 3px 7px; border-radius: var(--r-tag); background: rgba(255, 255, 255, .07); border: 1px solid var(--line); text-align: center; }
 .kv-row.wide { justify-content: space-between; }
 .kv-k { color: var(--ink-3); }
 .kv-v { text-align: right; max-width: 62%; overflow-wrap: anywhere; }
@@ -1662,14 +1714,14 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .notif-title { font-size: 13px; }
 .notif-text, .task-sub, .notif-time, .clip-time { font-size: 11.5px; color: var(--ink-3); }
 .notif-x, .task-x { color: var(--ink-3); padding: 3px 6px; }
-.task-tile, .lay-tile { width: 16px; height: 16px; border-radius: 6px; flex: none; }
+.task-tile, .lay-tile { width: 16px; height: 16px; border-radius: var(--r-tag); flex: none; }
 .widget-tile { background: linear-gradient(160deg, #7f8794, #40454f); }
 .lay-tiles { display: flex; gap: 3px; }
 .task-name { flex: 1; font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clip-text { flex: 1; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clip-row.copied { border-color: var(--accent-ring); background: var(--accent-soft); }
 .fixed-badge {
-  position: fixed; right: 14px; bottom: 150px; z-index: 92; padding: 6px 12px; border-radius: 999px;
+  position: fixed; right: 14px; bottom: 150px; z-index: 92; padding: 6px 12px; border-radius: var(--r-pill);
   font-family: var(--mono); font-size: 12px; color: var(--ink-2);
   background: var(--glass-2); border: 1px solid var(--line); backdrop-filter: blur(var(--glass-blur));
 }
@@ -1692,7 +1744,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 #sbCmdkList { list-style: none; margin: 0; padding: 6px; max-height: min(52vh, 400px); overflow: auto; }
 .cmdk-item { display: flex; align-items: center; gap: 11px; padding: 9px 11px; border-radius: var(--r-ctrl); cursor: pointer; }
 .cmdk-item.active { background: var(--accent-soft); }
-.cmdk-tile { width: 26px; height: 26px; border-radius: 9px; display: grid; place-items: center; flex: none; color: rgba(255, 255, 255, .92); }
+.cmdk-tile { width: 26px; height: 26px; border-radius: var(--r-ctrl); display: grid; place-items: center; flex: none; color: rgba(255, 255, 255, .92); }
 .cmdk-tile svg { width: 15px; height: 15px; }
 .cmdk-text { display: flex; flex-direction: column; min-width: 0; }
 .cmdk-title { font-size: 13px; }
@@ -1706,7 +1758,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow);
 }
 #sbCtxMenu:not(.open) { display: none; }
-.ctx-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 8px 11px; border-radius: 10px; font-size: 13px; text-align: left; color: var(--ink); }
+.ctx-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 8px 11px; border-radius: var(--r-ctrl); font-size: 13px; text-align: left; color: var(--ink); }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал. Повод — снимок основателя
@@ -1722,7 +1774,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .term-host, .sb-terminal { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; }
 .sb-terminal { padding: 12px 14px; font-family: var(--mono); font-size: 12.5px; background: rgba(0, 0, 0, .28); }
 .term-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-.term-chip { padding: 3px 9px; border-radius: 999px; font-size: 11px; color: var(--ink-3); background: rgba(255, 255, 255, .05); border: 1px solid var(--line); }
+.term-chip { padding: 3px 9px; border-radius: var(--r-pill); font-size: 11px; color: var(--ink-3); background: rgba(255, 255, 255, .05); border: 1px solid var(--line); }
 .term-out { flex: 1; min-height: 0; overflow: auto; line-height: 1.55; }
 .term-row { white-space: pre-wrap; overflow-wrap: anywhere; }
 .term-echo { color: var(--ink-3); }
@@ -1772,12 +1824,12 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
    посчитанное под тогдашнее число значков, и каждое новое приложение молча
    расходилось с ним (v47). */
 html.icons-small .desk-icon { width: 68px; height: 80px; }
-html.icons-small .icon-tile { width: 40px; height: 40px; border-radius: 12px; }
+html.icons-small .icon-tile { width: 40px; height: 40px; border-radius: var(--r-card); }
 html.icons-small .icon-tile svg { width: 19px; height: 19px; }
 html.icons-small .icon-label { font-size: 10.5px; }
 @media (max-width: 680px) {
   #sbWidgetLayer { display: none; }
-  .window { border-radius: 16px; }
+  .window { border-radius: var(--r-window); }
 }
 @media (max-width: 640px) {
 }
@@ -1797,12 +1849,12 @@ html.icons-small .icon-label { font-size: 10.5px; }
      нет — закрыто, полная — на экране, полая — ждёт. */
   #dockHint { display: none; }
     #dock { bottom: max(10px, env(safe-area-inset-bottom)); }
-  .dock-shelf { --dock-gap: 6px; padding: 6px 8px; border-radius: 18px; }
+  .dock-shelf { --dock-gap: 6px; padding: 6px 8px; border-radius: var(--r-window); }
   .dock-item { width: 40px; }
-    .dock-tile { width: 38px; height: 38px; border-radius: 12px; }
+    .dock-tile { width: 38px; height: 38px; border-radius: var(--r-card); }
   .dock-tile svg { width: 18px; height: 18px; }
   .id-name { display: none; }
-  .tb-identity::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: block; }
+  .tb-identity::after { content: ""; width: 8px; height: 8px; border-radius: var(--r-round); background: var(--accent); display: block; }
 }
 @media (max-width: 560px) {
   .tb-seq { display: none; }
@@ -1827,15 +1879,10 @@ html.icons-small .icon-label { font-size: 10.5px; }
 @media (max-width: 620px) {
   /* Высота полки не постоянна — её публикует shell.js в --dock-h. Извещения
      встают НАД ней по этому числу, а не по угаданному отступу. */
-  #toastLayer {
-    top: auto; bottom: calc(max(10px, env(safe-area-inset-bottom)) + var(--dock-h, 62px) + 10px);
-    left: 10px; right: 10px; width: auto; gap: 6px; flex-direction: column-reverse;
-  }
-  .toast {
-    padding: 10px 12px; gap: 9px; border-radius: 14px;
-    background: rgba(24, 20, 19, .94); backdrop-filter: none;
-    transform: translateY(10px);
-  }
+  /* Линия речи одна на всех экранах (см. «одно место речи» выше) — на
+     узком меняется только кегль и запас по бокам. */
+  #toastLayer { gap: 6px; width: calc(100vw - 20px); }
+  .toast { padding: 10px 12px; gap: 9px; }
   .toast-title { font-size: 12.5px; }
   .toast-text { font-size: 11.5px; }
   .toast-action { margin-top: 6px; padding: 4px 10px; }
@@ -1914,8 +1961,8 @@ html.is-compact .titlebar { cursor: default; }
   padding: 4px 7px; cursor: pointer;
   font-family: var(--mono); font-size: 11px; letter-spacing: .06em; line-height: 1;
   color: var(--ink-2, var(--ink));
-  background: var(--glass); border: 1px solid var(--line); border-radius: 7px;
-  transition: color .16s ease, background .16s ease, border-color .16s ease, transform .12s var(--ease);
+  background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-tag);
+  transition: color var(--t-touch) ease, background var(--t-touch) ease, border-color var(--t-touch) ease, transform var(--t-touch) var(--ease);
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -1934,14 +1981,14 @@ html.is-compact .titlebar { cursor: default; }
 
 .tb-lang-menu {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 80;
-  min-width: 132px; padding: 5px; border-radius: 12px;
+  min-width: 132px; padding: 5px; border-radius: var(--r-card);
   background: var(--glass); border: 1px solid var(--line);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow);
   display: flex; flex-direction: column; gap: 1px;
 }
 .tb-lang-item {
   display: flex; align-items: center; gap: 9px; width: 100%;
-  padding: 7px 9px; border: 0; border-radius: 8px; background: none; cursor: pointer;
+  padding: 7px 9px; border: 0; border-radius: var(--r-ctrl); background: none; cursor: pointer;
   color: var(--ink-2, var(--ink)); text-align: left; font-size: 12.5px; line-height: 1;
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
@@ -1968,8 +2015,8 @@ html.is-compact .titlebar { cursor: default; }
 button.tb-mark {
   border: 0; background: none; padding: 4px 2px; margin: 0; cursor: pointer;
   display: inline-flex; align-items: center; min-width: 26px; min-height: 26px;
-  border-radius: 8px; color: inherit; font: inherit;
-  transition: background .16s ease, transform .12s var(--ease);
+  border-radius: var(--r-ctrl); color: inherit; font: inherit;
+  transition: background var(--t-touch) ease, transform var(--t-touch) var(--ease);
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -2001,8 +2048,8 @@ button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset:
    Правило не восстановлено намеренно; доказано в desktop-drag-check §4. */
 .desk-icon::after {
   content: ""; position: absolute; left: 50%; bottom: 2px; width: 4px; height: 4px;
-  margin-left: -2px; border-radius: 50%; background: var(--ink-3);
-  opacity: 0; transition: opacity .18s ease, box-shadow .18s ease;
+  margin-left: -2px; border-radius: var(--r-round); background: var(--ink-3);
+  opacity: 0; transition: opacity var(--t-touch) ease, box-shadow var(--t-touch) ease;
   pointer-events: none;
 }
 .desk-icon.running::after { opacity: 1; }
