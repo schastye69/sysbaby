@@ -455,12 +455,17 @@
     if (idbPromise) return idbPromise;
     idbPromise = new Promise(function (resolve) {
       var req;
-      try { req = window.indexedDB.open("sysbaby", 1); } catch (e) { resolve(null); return; }
+      /* Версия 2 (v69): добавлен склад «things» — сами вещи, принесённые в
+         Хранилище. Повышение версии перезапускает onupgradeneeded, и он
+         создаёт ТОЛЬКО недостающее: прежние accounts и snapshots остаются
+         на месте со всем содержимым. */
+      try { req = window.indexedDB.open("sysbaby", 2); } catch (e) { resolve(null); return; }
       if (!req) { resolve(null); return; }
       req.onupgradeneeded = function () {
         var db = req.result;
         try { if (!db.objectStoreNames.contains("accounts")) db.createObjectStore("accounts", { keyPath: "id" }); } catch (e) { /* ignore */ }
         try { if (!db.objectStoreNames.contains("snapshots")) db.createObjectStore("snapshots", { keyPath: "profileId" }); } catch (e) { /* ignore */ }
+        try { if (!db.objectStoreNames.contains("things")) db.createObjectStore("things", { keyPath: "id" }); } catch (e) { /* ignore */ }
       };
       req.onsuccess = function () { resolve(req.result); };
       req.onerror = function () { resolve(null); };
@@ -496,6 +501,81 @@
       });
     }).catch(function () { return null; });
   }
+
+  /* ── СКЛАД ВЕЩЕЙ (v69) ────────────────────────────────────────────────────
+     ПОВОД — просьба основателя развивать приложения; Совет назвал первым
+     пробелом то, что Хранилище умело только текст, набранный в нём самом.
+
+     ПОЧЕМУ ВЕЩЬ НЕ ЛЕЖИТ В ОПИСИ. Дерево Хранилища — один документ JSON,
+     который переписывается ЦЕЛИКОМ при каждой правке: переименовали папку —
+     записали всё дерево заново. Снимок на четыре мегабайта, положенный в
+     дерево, переписывался бы вместе с ним при каждом чихе и упёрся бы в
+     квоту localStorage (пять мегабайт на всё) с первой же вещи. Поэтому у
+     вещи два места: ЗАПИСЬ о ней (имя, род, размер, номер) — в описи,
+     содержимое — здесь, где его никто не переписывает попусту.
+
+     Инкогнито не пишет никуда — это правило старше Хранилища, и idb() уже
+     возвращает null. Отказ здесь не молчаливый: put отвечает null, а
+     приложение обязано сказать об этом человеку (см. vault-things-check).
+
+     Охраняется tools/vault-things-check.mjs. */
+  var THING_SEQ = 0;
+  function newThingId() {
+    THING_SEQ++;
+    return "t" + Date.now().toString(36) + "-" + THING_SEQ.toString(36) +
+      "-" + Math.floor(Math.random() * 1679616).toString(36);
+  }
+
+  window.sbThings = {
+    /* Кладёт вещь на склад и отдаёт её номер. null означает «склада нет»:
+       инкогнито, отказ браузера, переполнение. Молчать об этом нельзя. */
+    put: function (blob, meta) {
+      if (!blob) return Promise.resolve(null);
+      var id = newThingId();
+      var rec = {
+        id: id,
+        blob: blob,
+        name: (meta && meta.name) || "вещь",
+        mime: (meta && meta.mime) || blob.type || "application/octet-stream",
+        size: blob.size || 0,
+        at: Date.now()
+      };
+      return idbPut("things", rec).then(function (okFlag) { return okFlag ? id : null; });
+    },
+    get: function (id) {
+      if (!id) return Promise.resolve(null);
+      return idbGet("things", id);
+    },
+    del: function (id) {
+      if (!id) return Promise.resolve(false);
+      return idb().then(function (db) {
+        if (!db) return false;
+        return new Promise(function (resolve) {
+          var tx;
+          try { tx = db.transaction("things", "readwrite"); } catch (e) { resolve(false); return; }
+          try { tx.objectStore("things").delete(id); } catch (e) { resolve(false); return; }
+          tx.oncomplete = function () { resolve(true); };
+          tx.onerror = function () { resolve(false); };
+          tx.onabort = function () { resolve(false); };
+        });
+      }).catch(function () { return false; });
+    },
+    /* Сколько вещей на складе. Нужно не для красоты: закон проверяет им, что
+       выброшенная из описи вещь действительно ушла, а не осталась лежать. */
+    count: function () {
+      return idb().then(function (db) {
+        if (!db) return 0;
+        return new Promise(function (resolve) {
+          var tx;
+          try { tx = db.transaction("things", "readonly"); } catch (e) { resolve(0); return; }
+          var rq;
+          try { rq = tx.objectStore("things").count(); } catch (e) { resolve(0); return; }
+          rq.onsuccess = function () { resolve(rq.result || 0); };
+          rq.onerror = function () { resolve(0); };
+        });
+      }).catch(function () { return 0; });
+    }
+  };
 
   function idbPutAccount(rec) {
     if (!rec) return;

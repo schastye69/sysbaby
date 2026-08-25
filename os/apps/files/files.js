@@ -10,9 +10,17 @@
 (function () {
   "use strict";
 
+  var doc = document;
   var KEY = "sysbaby.files.v1";
   var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.2a1.2 1.2 0 0 1 1.2-1.2h4l1.8 2h8.3a1.2 1.2 0 0 1 1.2 1.2v8.6a1.2 1.2 0 0 1-1.2 1.2H4.7a1.2 1.2 0 0 1-1.2-1.2V7.2Z"/></svg>';
   var FOLDER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.2a1.2 1.2 0 0 1 1.2-1.2h4l1.8 2h8.3a1.2 1.2 0 0 1 1.2 1.2v8.6a1.2 1.2 0 0 1-1.2 1.2H4.7a1.2 1.2 0 0 1-1.2-1.2V7.2Z"/></svg>';
+  var THING_SVG = {
+    image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></svg>',
+    doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/><path d="M8 12.5h7M8 15.5h7M8 18h4"/></svg>',
+    sound: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.5h3l4-3v11l-4-3H5z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.8a7.5 7.5 0 0 1 0 10.4"/></svg>',
+    film: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M10 9.5l5 2.5-5 2.5z"/></svg>',
+    thing: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/></svg>'
+  };
   var FILE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/></svg>';
 
   /* ------------------------------------------------------------ seed data */
@@ -246,6 +254,105 @@
     return candidate;
   }
 
+  /* ── ВЕЩИ (v69) ───────────────────────────────────────────────────────────
+     ПОВОД — просьба основателя развивать приложения; Совет назвал первым
+     пробелом то, что Хранилище умело только текст, набранный в нём самом.
+     Снимок с телефона, договор, счёт внести было нельзя.
+
+     У вещи ДВА МЕСТА. В описи (дереве) лежит запись — имя, род, вес, номер;
+     содержимое живёт на складе (window.sbThings, IndexedDB). Дерево — один
+     документ JSON, переписываемый целиком при каждой правке; вещь в нём
+     переписывалась бы вместе с ним и упёрлась бы в квоту с первого снимка.
+
+     Охраняется tools/vault-things-check.mjs. */
+
+  var THING_CAP = 25 * 1024 * 1024;   /* предел на одну вещь: см. запись ниже */
+
+  function kindOf(mime, name) {
+    var m = String(mime || "").toLowerCase();
+    var n = String(name || "").toLowerCase();
+    if (m.indexOf("image/") === 0) return "image";
+    if (m.indexOf("audio/") === 0) return "sound";
+    if (m.indexOf("video/") === 0) return "film";
+    if (m.indexOf("pdf") !== -1 || /\.(pdf|docx?|odt|rtf|pages|xlsx?|pptx?)$/.test(n)) return "doc";
+    return "thing";
+  }
+  function kindWord(kind) {
+    return t("fv.kind" + kind.charAt(0).toUpperCase() + kind.slice(1));
+  }
+  /* Вес говорится на языке стола: «Б/КБ/МБ» — такие же слова, как «картинка»
+     и «документ», и переводятся вместе с ними. */
+  function weigh(bytes) {
+    var b = Number(bytes) || 0;
+    if (b < 1024) return b + " " + t("fv.unitB");
+    if (b < 1024 * 1024) return Math.round(b / 1024) + " " + t("fv.unitKB");
+    return (Math.round(b / 104857.6) / 10) + " " + t("fv.unitMB");
+  }
+
+  /* Ссылки на вещи, выданные браузеру. Держатся, пока окно живо, и
+     отзываются при перерисовке: иначе каждая перерисовка оставляла бы за
+     собой ещё одну ссылку на мегабайты. */
+  var thingUrls = [];
+  function releaseThingUrls() {
+    thingUrls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) { /* ignore */ } });
+    thingUrls = [];
+  }
+  function thingUrl(blob) {
+    var u = URL.createObjectURL(blob);
+    thingUrls.push(u);
+    return u;
+  }
+
+  /* ── ПРИЁМ ВЕЩЕЙ ──────────────────────────────────────────────────────────
+     Отказ здесь всегда произносится. Молчаливый отказ хуже отказа: человек
+     решит, что вещь внесена, закроет окно — и узнает о потере тогда, когда
+     вещи уже нет нигде. */
+  window.sbVaultBring = function (files) {
+    var list = Array.prototype.slice.call(files || []);
+    if (!list.length) return Promise.resolve([]);
+    if (!window.sbThings) { toast(t("fv.noBring"), t("fv.noBringNote")); return Promise.resolve([]); }
+    ensureLoaded();
+    var folder = currentFolder();
+    var done = [];
+    return list.reduce(function (chain, file) {
+      return chain.then(function () {
+        if (file.size > THING_CAP) {
+          toast(t("fv.tooBig", { name: file.name }), t("fv.tooBigNote", { limit: weigh(THING_CAP) }));
+          return null;
+        }
+        return window.sbThings.put(file, { name: file.name, mime: file.type }).then(function (id) {
+          if (!id) { toast(t("fv.noBring"), t("fv.noBringNote")); return null; }
+          var node = {
+            name: uniqueName(folder, file.name || "вещь", false),
+            type: "file",
+            thingId: id,
+            kind: kindOf(file.type, file.name),
+            mime: file.type || "",
+            size: file.size || 0
+          };
+          folder.children = folder.children || [];
+          folder.children.push(node);
+          done.push(node.name);
+          persist();
+          toast(t("fv.brought", { name: node.name }), t("fv.broughtNote"));
+          return node;
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      openWindows_render();
+      return done;
+    });
+  };
+
+  /* Перерисовать все открытые окна Хранилища — приём вещи мог случиться и
+     не из окна (перетаскиванием на стол в будущем). */
+  function openWindows_render() {
+    var wins = (window.openWindows || {});
+    Object.keys(wins).forEach(function (id) {
+      if (id === "files" && wins[id] && wins[id].el) render(wins[id]);
+    });
+  }
+
   /* -------------------------------------------------------------- markup */
 
   function breadcrumbMarkup() {
@@ -259,9 +366,14 @@
 
   function itemMarkup(node, idx) {
     var isFolder = node.type === "folder";
+    var isThing = !isFolder && !!node.thingId;
+    /* Вещь показывает свой род прямо на плитке: род и вес — это и есть то,
+       что человек о ней знает до открытия. */
+    var tile = isFolder ? FOLDER_SVG : (isThing ? THING_SVG[node.kind || "thing"] || FILE_SVG : FILE_SVG);
     return '<div class="fv-item' + (idx === selectedIndex ? " selected" : "") + '" data-index="' + idx + '" tabindex="0">' +
-      '<div class="fv-tile ' + (isFolder ? "folder" : "file") + '">' + (isFolder ? FOLDER_SVG : FILE_SVG) + "</div>" +
+      '<div class="fv-tile ' + (isFolder ? "folder" : "file") + (isThing ? " thing kind-" + esc(node.kind || "thing") : "") + '">' + tile + "</div>" +
       '<div class="fv-name" data-sb-userdata data-name-for="' + idx + '">' + esc(node.name) + "</div>" +
+      (isThing ? '<div class="fv-thing-note">' + esc(t("fv.thingKind", { kind: kindWord(node.kind || "thing"), size: weigh(node.size) })) + "</div>" : "") +
       '<div class="fv-mini">' +
         '<button type="button" class="fv-mini-btn" data-rename="' + idx + '" title="' + esc(t("fv.rename")) + '" aria-label="' + esc(t("fv.rename")) + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 19.5h4l10-10a1.6 1.6 0 0 0 0-2.3l-1.7-1.7a1.6 1.6 0 0 0-2.3 0l-10 10v4Z"/></svg>' +
@@ -277,8 +389,33 @@
      предпросмотре работала только для брифов витрины — их в Хранилище
      больше нет, и файл человека система за витринный не выдаёт. */
 
+  /* ── ПРОСМОТР ВЕЩИ (v69) ──────────────────────────────────────────────────
+     Картинку система ПОКАЗЫВАЕТ. Про всё прочее говорит честно: род, вес,
+     имя — и предлагает сохранить к себе. Обещать «просмотр документа» и
+     показать пустоту было бы хуже, чем сказать словами: система никогда не
+     заявляет о том, чего не сделала. */
+  function thingPreviewMarkup(node) {
+    var kind = node.kind || "thing";
+    var head = '<div class="fv-preview-head">' +
+      '<span class="fv-preview-name" data-sb-userdata>' + esc(node.name) + "</span>" +
+      '<span class="fv-preview-actions">' +
+        '<button type="button" class="fv-edit" id="fvThingSave" title="' + esc(t("fv.thingSave")) + '" aria-label="' + esc(t("fv.thingSave")) + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v10M8.2 11l3.8 3.8L15.8 11M5 18.5h14"/></svg>' +
+        "</button>" +
+      "</span></div>";
+    var body = kind === "image"
+      ? '<div class="fv-thing-view"><img id="fvThingImg" alt="' + esc(node.name) + '"></div>'
+      : '<div class="fv-thing-view fv-thing-said">' +
+          '<div class="fv-thing-icon">' + (THING_SVG[kind] || FILE_SVG) + "</div>" +
+          '<div class="fv-thing-said-text">' +
+            esc(t("fv.thingKind", { kind: kindWord(kind), size: weigh(node.size) })) +
+          "</div></div>";
+    return '<div class="fv-preview" data-thing="' + esc(node.thingId) + '">' + head + body + "</div>";
+  }
+
   function previewMarkup(node) {
     if (!node) return "";
+    if (node.thingId) return thingPreviewMarkup(node);
     return '<div class="fv-preview">' +
       '<div class="fv-preview-head">' +
         '<span class="fv-preview-name" data-sb-userdata>' + esc(node.name) + "</span>" +
@@ -307,6 +444,9 @@
     var children = folder.children || [];
     var previewNode = previewIndex >= 0 && children[previewIndex] && children[previewIndex].type === "file"
       ? children[previewIndex] : null;
+    /* Ссылки прошлой перерисовки отзываются здесь: держать их дольше значит
+       держать мегабайты за уже стёртой картинкой. */
+    releaseThingUrls();
 
     /* Прокрутка человека переживает перерисовку — средство оболочки,
      общее для всех приложений (D-099). */
@@ -322,6 +462,9 @@
             '<button type="button" class="fv-tool" id="fvNewFile" title="' + esc(t("fv.newFile")) + '">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/><path d="M11.5 12v5M9 14.5h5"/></svg>' +
               "<span>" + esc(t("fv.newFile")) + "</span></button>" +
+            '<button type="button" class="fv-tool" id="fvBring" title="' + esc(t("fv.bring")) + '">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16.5v-10M8.2 10L12 6.2 15.8 10M5 19.5h14"/></svg>' +
+              "<span>" + esc(t("fv.bring")) + "</span></button>" +
           "</div>" +
         "</div>" +
         '<div class="fv-grid" id="fvGrid">' +
@@ -330,6 +473,7 @@
             : '<div class="fv-empty">' + esc(t("fv.empty")) + "</div>") +
         "</div>" +
         (previewNode ? previewMarkup(previewNode) : "") +
+        '<div class="fv-catch">' + esc(t("fv.bringDrop")) + "</div>" +
       "</div>";
     if (_sbKeep) _sbKeep();
 
@@ -339,6 +483,68 @@
   /* --------------------------------------------------------------- wiring */
 
   function wire(win, host) {
+    /* ── ВЕЩЬ ПОКАЗЫВАЕТСЯ ПОСЛЕ ТОГО, КАК ЕЁ ДОСТАЛИ СО СКЛАДА ──────────────
+       Склад отвечает не сразу (IndexedDB — обещание), поэтому картинка
+       вставляется, когда пришла, а не когда нарисовали разметку. */
+    var thingBox = host.querySelector(".fv-preview[data-thing]");
+    if (thingBox && window.sbThings) {
+      var tid = thingBox.getAttribute("data-thing");
+      window.sbThings.get(tid).then(function (rec) {
+        if (!rec || !rec.blob || !thingBox.isConnected) return;
+        var img = thingBox.querySelector("#fvThingImg");
+        if (img) img.src = thingUrl(rec.blob);
+        var save = thingBox.querySelector("#fvThingSave");
+        if (save) save.addEventListener("click", function () {
+          var a = doc.createElement("a");
+          a.href = thingUrl(rec.blob);
+          a.download = rec.name || "thing";
+          doc.body.appendChild(a);
+          a.click();
+          doc.body.removeChild(a);
+        });
+      });
+    }
+
+    /* ── ПРИНЕСТИ ВЕЩЬ: КНОПКА И ОТПУСКАНИЕ НА ОКНО ─────────────────────── */
+    var bring = host.querySelector("#fvBring");
+    if (bring) {
+      bring.addEventListener("click", function () {
+        var inp = doc.createElement("input");
+        inp.type = "file";
+        inp.multiple = true;
+        inp.style.cssText = "position:fixed;left:-9999px;width:1px;height:1px";
+        doc.body.appendChild(inp);
+        inp.addEventListener("change", function () {
+          var files = inp.files;
+          doc.body.removeChild(inp);
+          if (files && files.length) window.sbVaultBring(files);
+        });
+        inp.click();
+      });
+    }
+    var shell = host.querySelector(".app-files");
+    if (shell) {
+      ["dragenter", "dragover"].forEach(function (ev) {
+        shell.addEventListener(ev, function (e) {
+          if (!e.dataTransfer || Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") === -1) return;
+          e.preventDefault();
+          shell.classList.add("catching");
+        });
+      });
+      ["dragleave", "dragend"].forEach(function (ev) {
+        shell.addEventListener(ev, function (e) {
+          if (e.target !== shell) return;
+          shell.classList.remove("catching");
+        });
+      });
+      shell.addEventListener("drop", function (e) {
+        if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
+        e.preventDefault();
+        shell.classList.remove("catching");
+        window.sbVaultBring(e.dataTransfer.files);
+      });
+    }
+
     host.querySelectorAll(".fv-crumb").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var idx = parseInt(btn.getAttribute("data-crumb"), 10);
@@ -488,6 +694,17 @@
     input.addEventListener("blur", commit);
   }
 
+  /* Все номера вещей внутри узла — сам узел и всё, что под ним. */
+  function collectThings(node) {
+    var out = [];
+    (function walk(n) {
+      if (!n) return;
+      if (n.thingId) out.push(n.thingId);
+      (n.children || []).forEach(walk);
+    })(node);
+    return out;
+  }
+
   function removeNode(win, idx) {
     var folder = currentFolder();
     var node = (folder.children || [])[idx];
@@ -497,6 +714,13 @@
       : t("fv.confirm.file", { name: node.name });
     var extra = (node.type === "folder" && (node.children || []).length) ? t("fv.confirm.nested") : "";
     if (!window.confirm(question + extra)) return;
+    /* ── ВЫНУТАЯ ИЗ ОПИСИ ВЕЩЬ УХОДИТ СО СКЛАДА (v69) ──────────────────────
+       Иначе Хранилище копило бы навсегда то, что человек уже выбросил, и
+       узнать об этом было бы неоткуда: в описи вещи нет, а место занято.
+       Собирается и то, что лежит внутри выброшенной папки. */
+    collectThings(node).forEach(function (id) {
+      if (window.sbThings) window.sbThings.del(id);
+    });
     folder.children.splice(idx, 1);
     persist();
     selectedIndex = -1;
