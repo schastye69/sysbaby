@@ -765,33 +765,85 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 .wx-place { color: var(--ink-3); }
 .tb-clock { display: flex; align-items: center; font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); white-space: pre; }
 .clock-cell { display: inline-block; min-width: .62ch; text-align: center; }
-/* Цифра — семь стержней той же доли толщины, что перекладина знака (D-135).
-   currentColor: часы остаются частью полосы, а не гостем в ней. */
-.clock-cell.digit { display: inline-flex; align-items: center; min-width: .66em; }
-.clock-glyph { height: .92em; width: .57em; display: block; overflow: visible; }
+/* ── ЦИФРА ОТКРЫТА ТАК ЖЕ, КАК ЗНАК (D-135, переписано в v77) ────────────
+   Сперва у цифры была та же ДОЛЯ ТОЛЩИНЫ, что у перекладины крюка: 20 из ста.
+   Проверку она проходила и была уродлива — основатель сказал прямо: «цифры на
+   большом экране просто ужасные».
+   Ошибка была в том, что списано ЧИСЛО, а не КАЧЕСТВО. У знака один штрих на
+   всю коробку; у цифры в той же коробке три столбца и пять строк штрихов, и
+   при равной толщине просвет между ними схлопывается — выходит плита. «Похоже
+   на знак» — это ОТКРЫТОСТЬ: перекладина 19.88 охватывает просвет 36.12, то
+   есть просвет вдвое шире штриха. У прежней цифры это отношение было 0.90 —
+   вдвое теснее знака. Штрих 13.5 даёт 1.81, ровно знак.
+
+   РАЗМЕР В ОДИН РЯД С СОСЕДЯМИ. Цифра была выше строчных букв рядом и
+   выбивалась. Высота глифа приравнена к высоте прописной буквы соседнего
+   шрифта (.72em), и часы встают в ту же оптическую полосу, что «RU» и дата.
+
+   СВЕТ. Погашенные стержни почти не видны: цифра должна читаться как цифра, а
+   не как сломанный индикатор. А горящие ЛОВЯТ СВЕТ КОМНАТЫ — цвет и сила
+   ореола приходят снаружи, из --lit. Часы показывают время дважды: цифрами и
+   тем, каким светом они освещены. */
+.clock-cell.digit { display: inline-flex; align-items: center; min-width: .58em; }
+.clock-glyph { height: .72em; width: .46em; display: block; overflow: visible; }
 .clock-glyph line {
-  stroke: currentColor; stroke-width: 20; stroke-linecap: round;
-  opacity: .085;
+  stroke: currentColor; stroke-width: 13.5; stroke-linecap: round;
+  opacity: .035;
   transition: opacity var(--t-touch) ease;
 }
-.clock-glyph line.on { opacity: 1; }
+/* ИМЯ --lit В СИСТЕМЕ УЖЕ ЗАНЯТО: так называется освещённость вещества
+   заметок. Свет часов назван --lit-ink, чтобы два разных знания не делили
+   одно имя — на этом столкновении заметка внутри часов (или наоборот) начала
+   бы красить себя чужим числом, и найти это было бы тяжело. */
+.clock-glyph line.on { opacity: 1; stroke: var(--lit-ink, currentColor); }
+/* Ореол растёт вместе с цифрой: в полосе он едва заметен, в панели — виден.
+   Множитель один, число одно. */
+.tb-clock { filter: drop-shadow(0 0 var(--lit-blur, 0px) var(--lit-glow, transparent)); }
+.pl-time { filter: drop-shadow(0 0 calc(var(--lit-blur, 0px) * 1.2) var(--lit-glow, transparent)); }
+.time-big { filter: drop-shadow(0 0 calc(var(--lit-blur, 0px) * 2.6) var(--lit-glow, transparent)); }
 html[data-motion="reduced"] .clock-glyph line { transition: none; }
 .clock-cell.roll { animation: cellRoll .32s var(--ease); }
 @keyframes cellRoll { from { transform: translateY(-45%); opacity: .2; } to { transform: none; opacity: 1; } }
 .cc-trigger { width: auto; gap: 5px; padding: 0 7px; display: inline-flex; }
-.net-glyph { width: 13px; height: 13px; border-radius: 50%; border: 2px solid currentColor; opacity: .8; }
-.net-glyph.offline { opacity: .35; background: linear-gradient(45deg, transparent 44%, currentColor 44%, currentColor 56%, transparent 56%); }
-.bat-glyph {
-  position: relative; width: 22px; height: 11px; border: 1px solid currentColor; border-radius: 3px; opacity: .8;
+/* ── ПИТАНИЕ И СЕТЬ — ОДИН ЗНАК ИЗ НАШЕГО ЖЕ МАТЕРИАЛА (D-139) ───────────
+   ПОВОД: «прошу заменить иконку кольца с батарейкой на более концептуальный,
+   интеллектуальный и гениальный вариант и без кружочка».
+
+   ЧТО БЫЛО. Кольцо (сеть) и прямоугольник с заливкой (заряд) — две картинки
+   из чужого языка: обведённое кольцо и нарисованная батарейка. Ни то ни
+   другое не сделано из того, из чего сделана эта система.
+
+   ЧТО СТАЛО. ОДИН СТЕРЖЕНЬ — та же деталь, из которой собраны цифры часов:
+   тот же штрих, те же круглые концы, та же открытость. Погашенная часть едва
+   видна (как погашенный сегмент цифры), горящая слева — это и есть заряд.
+   Смотришь на часы и на питание — видишь одну вещь, сделанную из одного.
+
+   СЕТЬ БЕЗ ВТОРОЙ КАРТИНКИ. Нет связи — стержень становится ПРЕРЫВИСТЫМ.
+   Разорванная линия и значит разрыв; кружок для этого не нужен. Оба факта
+   названы словами в подписи знака, поэтому ни один не потерян для того, кто
+   не различает тонкостей рисунка. */
+.pw-glyph {
+  position: relative; display: inline-block; width: 26px; height: 4px; flex: none;
+  opacity: .85;
 }
-.bat-glyph::before {
-  content: ""; position: absolute; left: 1px; top: 1px; bottom: 1px; width: var(--fill, 60%);
-  max-width: calc(100% - 2px); background: currentColor; border-radius: 1px;
+.pw-glyph i { position: absolute; left: 0; top: 0; height: 100%; border-radius: var(--r-pill); display: block; }
+.pw-off { width: 100%; background: currentColor; opacity: .12; }
+.pw-on {
+  width: var(--fill, 60%); max-width: 100%; background: currentColor;
+  transition: width var(--t-move) var(--ease);
 }
-.bat-glyph.charging { color: var(--good); }
-.bat-glyph.warn { color: var(--warn); }
-.bat-glyph.danger { color: var(--danger); }
-.bat-glyph.neutral::before { width: 0; }
+.pw-glyph.charging .pw-on { background: var(--good); }
+.pw-glyph.warn .pw-on { background: var(--warn); }
+.pw-glyph.danger .pw-on { background: var(--danger); }
+.pw-glyph.neutral .pw-on { width: 0; }
+/* Разрыв связи — разорванная линия. */
+.pw-glyph.offline .pw-off,
+.pw-glyph.offline .pw-on {
+  -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 4px, transparent 4px 7px);
+  mask-image: repeating-linear-gradient(90deg, #000 0 4px, transparent 4px 7px);
+}
+.pw-glyph.offline { opacity: .5; }
+html[data-motion="reduced"] .pw-on { transition: none; }
 .tb-timer-wrap { position: relative; }
 .pop {
   position: absolute; right: 0; top: calc(100% + 8px); width: 232px; padding: 14px; z-index: 70;
@@ -967,7 +1019,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
      corner, a third of it at the opposite one */
   --lit: calc(.34 + (var(--nx) * .42) + ((1 - var(--ny)) * .24));
 
-  position: absolute; width: 196px; padding: 11px 11px 9px;
+  position: absolute; width: 196px; padding: 10px 0 0 11px;
   border-radius: var(--r-card);
   color: var(--ink);
   background:
@@ -1013,11 +1065,16 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
 .sticky-note.focused .note-text { touch-action: auto; -webkit-user-select: text; user-select: text; cursor: text; }
 /* Ширину заметке ставит замер текста (autoGrow в os/core/desktop.js): короткая
    заметка маленькая с первого слова. Здесь остаётся только предел. */
-.sticky-note { min-width: 118px; max-width: 320px; }
+.sticky-note { min-width: 118px; max-width: 320px; padding: 10px 0 0 11px; }
 .sticky-note .note-text { min-height: 20px; }
+/* СПРАВА И СНИЗУ ОТ ТЕКСТА ОТСТУПОВ НЕТ (прямая просьба основателя).
+   Заметка кончается там же, где кончается текст: ширину ей ставит замер
+   текста, высоту — сам текст, а поля остаются только сверху и слева, где они
+   нужны для света кромки и для пальца. */
 .note-text {
-  width: 100%; min-height: 52px; max-height: 260px; resize: none; border: 0; outline: none;
+  width: 100%; min-height: 20px; max-height: 260px; resize: none; border: 0; outline: none;
   background: none; color: var(--ink); font-size: 13px; line-height: 1.45;
+  padding: 0; margin: 0; display: block;
 }
 .note-del { position: absolute; top: 4px; right: 6px; color: var(--ink-3); font-size: 12px; padding: 4px; }
 .note-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
@@ -1049,14 +1106,19 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
   --lit: calc(.34 + (var(--nx) * .42) + ((1 - var(--ny)) * .24));
 
   position: fixed; z-index: 30; display: flex; align-items: center; gap: 9px;
-  width: 196px; padding: 11px 11px 9px;
+  width: 196px; padding: 10px 11px 9px 11px;
   border-radius: var(--r-card);
   font-size: 13px; line-height: 1.45; color: var(--ink-2);
   background:
     radial-gradient(140% 120% at calc(var(--nx) * 100%) -30%,
       rgba(var(--wp-light-rgb, 91, 124, 255), calc(.10 * var(--lit))), transparent 62%),
     var(--glass);
-  border: 1px dashed rgba(var(--wp-light-rgb, 91, 124, 255), calc(.20 + .26 * var(--lit)));
+  /* ТОЧНАЯ КОПИЯ ЗАМЕТКИ, А НЕ НАМЁК НА НЕЁ. Кромка была пунктирной —
+     «здесь будет заметка». Основатель сказал прямо: приглашение должно быть
+     точной копией заметки на столе. Пунктир — это чужой язык черновика; в
+     этой системе приглашение сделано из того же вещества и той же кромкой,
+     что и настоящая заметка, и отличается только словами внутри. */
+  border: 1px solid rgba(var(--wp-light-rgb, 91, 124, 255), calc(.16 + .22 * var(--lit)));
   backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
   box-shadow:
@@ -2228,9 +2290,9 @@ html[data-motion="reduced"] .echo-catch { animation: none; }
 @media (hover: hover) { .tb-clock-btn:hover { background: rgba(255, 255, 255, .06); border-color: var(--line); } }
 .tb-clock-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .panel-time { width: min(360px, calc(100vw - 24px)); }
-.time-big { display: flex; align-items: center; justify-content: center; gap: 2px; padding: 10px 0 2px; color: var(--ink); }
+.time-big { display: flex; align-items: center; justify-content: center; gap: 3px; padding: 12px 0 4px; color: var(--ink); }
 .time-cell { display: inline-flex; align-items: center; }
-.time-cell .clock-glyph { height: 46px; width: 28px; }
+.time-cell .clock-glyph { height: 44px; width: 28px; }
 .time-cell.colon { font-family: var(--mono); font-size: 34px; line-height: 1; opacity: .32; padding: 0 2px; }
 .time-sub { text-align: center; font-size: 12.5px; color: var(--ink-3); padding-bottom: 14px; }
 .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 2px 10px; }

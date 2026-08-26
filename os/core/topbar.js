@@ -76,7 +76,7 @@
       "note.delete": "Delete note",
       "note.placeholder": "Write something…",
       "note.aria": "Note",
-      "note.invite": "Leave a note here?",
+      "note.invite": "Leave a note?",
       "note.inviteAria": "Leave a note here",
       "note.minimize": "Back to the desktop",
       "note.maximize": "Open full screen",
@@ -159,7 +159,7 @@
       "cc.charging": "Charging", "cc.onBattery": "On battery",
       "cc.merge": "Merge instead of replace",
       "theme.dark": "Dark", "theme.light": "Light",
-      "mood.studio": "Studio", "mood.aurora": "Aurora", "mood.sunset": "Sunset", "mood.ocean": "Ocean", "mood.mono": "Mono", "mood.daylight": "Daylight", "mood.therapy": "Light therapy", "menu.tidyDesk": "Tidy desk", "menu.bringThing": "Bring a thing\u2026", "menu.hideFab": "Remove this button", "part.fab": "Quick actions button", "br.back": "Back", "br.fwd": "Forward", "br.again": "Reload", "br.bookmark": "Save this page", "br.bookmarked": "Saved", "br.openTab": "Open in a real tab", "br.placeholder": "Address, or something to look up", "br.frameTitle": "Page", "br.saved": "Saved", "br.recent": "Recent", "br.empty.title": "Nothing open yet", "br.empty.sub": "Type an address and press Enter. Many sites refuse to be shown inside another page \u2014 the arrow at the right opens the current address in a real tab, always.", "panel.time": "Time & calendar", "aria.time": "Time and calendar", "pl.prev": "Previous", "pl.next": "Next", "pl.play": "Play", "pl.pause": "Pause", "pl.seek": "Position", "pl.pick": "Choose a folder", "pl.count": "{n} tracks", "pl.brought": "Music", "pl.broughtN": "{n} tracks brought in", "pl.none": "No audio files in that folder", "pl.empty.title": "No music yet", "pl.empty.sub": "A browser cannot look through your device on its own. Choose a folder once \u2014 everything playable in it comes in, and the controls appear above the dock.",
+      "mood.studio": "Studio", "mood.aurora": "Aurora", "mood.sunset": "Sunset", "mood.ocean": "Ocean", "mood.mono": "Mono", "mood.daylight": "Daylight", "mood.therapy": "Light therapy", "menu.tidyDesk": "Tidy desk", "menu.bringThing": "Bring a thing\u2026", "menu.hideFab": "Remove this button", "part.fab": "Quick actions button", "br.back": "Back", "br.fwd": "Forward", "br.again": "Reload", "br.bookmark": "Save this page", "br.bookmarked": "Saved", "br.openTab": "Open in a real tab", "br.placeholder": "Address, or something to look up", "br.frameTitle": "Page", "br.saved": "Saved", "br.recent": "Recent", "br.empty.title": "Nothing open yet", "br.empty.sub": "Type an address and press Enter. Many sites refuse to be shown inside another page \u2014 the arrow at the right opens the current address in a real tab, always.", "panel.time": "Time & calendar", "aria.time": "Time and calendar", "pl.prev": "Previous", "pl.next": "Next", "pl.play": "Play", "pl.pause": "Pause", "pl.seek": "Position", "pl.pick": "Choose a folder", "pl.count": "{n} tracks", "pl.brought": "Music", "pl.broughtN": "{n} tracks brought in", "pl.none": "No audio files in that folder", "pl.empty.title": "No music yet", "pl.empty.sub": "A browser cannot look through your device on its own. Choose ONE folder \u2014 Music or Download, for example. Android refuses the storage root itself: if it says \u201cCan\u2019t use this folder\u201d, step into a folder and choose that.", "br.blank": "Page blank?", "br.blank.go": "Open in a tab", "br.shut.sub": "You told the system this site refuses to be shown inside another page. It opens in a real tab from now on \u2014 and this can be undone.", "br.shut.retry": "Try here again",
       /* ================================================== Pulse / Настройки
          Приложения больше не пишут строки литералами. Ключ живёт здесь,
          рядом с остальными двумя языками, чтобы перевод нельзя было забыть:
@@ -411,11 +411,11 @@
       "fv.thingOpen": "Open in Viewer",
       "fv.kindImage": "image", "fv.kindDoc": "document", "fv.kindSound": "sound", "fv.kindFilm": "film", "fv.kindThing": "file",
       "fv.unitB": "B", "fv.unitKB": "KB", "fv.unitMB": "MB",
-      "vw.title": "Viewer", "vw.empty": "Nothing is open. Bring a thing into the Vault and open it.",
+      "vw.title": "Viewer", "vw.empty": "Nothing to look at yet. Bring a thing into the Vault \u2014 then open it here.",
       "vw.notShown": "This one is not shown here — it is kept whole. Save it to yourself and open it where it belongs.",
       "vw.gone": "The thing is gone", "vw.goneNote": "Its record points at nothing on the shelf. Nothing was changed.",
       "fv.newFolder.name": "New Folder", "fv.newFile.name": "Untitled.txt",
-      "fv.empty": "This folder is empty. Anything you add stays in this browser.",
+      "fv.empty": "Empty here. Whatever you bring in stays, and never leaves this browser: only you and your system.",
       "fv.confirm.folder": "Delete the folder \"{name}\"?",
       "fv.confirm.file": "Delete the file \"{name}\"?",
       "fv.confirm.nested": " Everything inside it will be deleted too.",
@@ -465,13 +465,13 @@
       "nt.ph.title": "Title", "nt.ph.body": "Start typing…",
       "nt.ph.search": "Search notes", "nt.new": "New note",
       "nt.emptyList": "Nothing found",
-      "nt.empty": "No notes yet. Anything you write is kept in this browser.",
+      "nt.empty": "No notes yet. Write one and it stays with you \u2014 not a line of it leaves.",
       "nt.newNote": "New note",
       "ec.restore": "Restore",
       "ec.silenceTitle": "Delete forever — cannot be undone", "ec.silenceAria": "Delete forever",
       "ec.appRemoved": "Removed from desktop — never deleted",
-      "ec.empty.title": "Nothing echoes here yet",
-      "ec.empty.sub": "Deleted notes and apps you’ve removed from the desktop settle here first — nothing disappears without a second chance. Drag anything onto {echoes} to send it here.",
+      "ec.empty.title": "Quiet in here",
+      "ec.empty.sub": "Everything you clear off the desk settles here first. Nothing disappears until you say so. Drag anything onto {echoes} and it lands here.",
       "ec.count.one": "{n} echo", "ec.count.many": "{n} echoes",
       "ec.apps.one": "{n} hidden app", "ec.apps.many": "{n} hidden apps",
       "ec.silenceAll": "Silence all",
@@ -558,7 +558,7 @@
       "note.delete": "Удалить заметку",
       "note.placeholder": "Напишите что-нибудь…",
       "note.aria": "Заметка",
-      "note.invite": "Оставить заметку здесь?",
+      "note.invite": "Оставишь заметку?",
       "note.inviteAria": "Оставить заметку здесь",
       "note.minimize": "Вернуть на стол",
       "note.maximize": "Открыть на весь экран",
@@ -636,7 +636,7 @@
       "cc.charging": "Зарядка", "cc.onBattery": "От батареи",
       "cc.merge": "Объединить, а не заменить",
       "theme.dark": "Тёмное", "theme.light": "Светлое",
-      "mood.studio": "Студия", "mood.aurora": "Аврора", "mood.sunset": "Закат", "mood.ocean": "Океан", "mood.mono": "Моно", "mood.daylight": "Дневной свет", "mood.therapy": "Светотерапия", "menu.tidyDesk": "\u041f\u0440\u0438\u0431\u0440\u0430\u0442\u044c \u0441\u0442\u043e\u043b", "menu.bringThing": "\u041f\u0440\u0438\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0449\u044c\u2026", "menu.hideFab": "\u0423\u0431\u0440\u0430\u0442\u044c \u044d\u0442\u0443 \u043a\u043d\u043e\u043f\u043a\u0443", "part.fab": "\u041a\u043d\u043e\u043f\u043a\u0430 \u0431\u044b\u0441\u0442\u0440\u044b\u0445 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0439", "br.back": "\u041d\u0430\u0437\u0430\u0434", "br.fwd": "\u0412\u043f\u0435\u0440\u0451\u0434", "br.again": "\u041e\u0431\u043d\u043e\u0432\u0438\u0442\u044c", "br.bookmark": "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443", "br.bookmarked": "\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043e", "br.openTab": "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0439 \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439", "br.placeholder": "\u0410\u0434\u0440\u0435\u0441 \u0438\u043b\u0438 \u0447\u0442\u043e \u043d\u0430\u0439\u0442\u0438", "br.frameTitle": "\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430", "br.saved": "\u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0435", "br.recent": "\u041d\u0435\u0434\u0430\u0432\u043d\u0435\u0435", "br.empty.title": "\u041f\u043e\u043a\u0430 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u043e\u0442\u043a\u0440\u044b\u0442\u043e", "br.empty.sub": "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0430\u0434\u0440\u0435\u0441 \u0438 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u0412\u0432\u043e\u0434. \u041c\u043d\u043e\u0433\u0438\u0435 \u0441\u0430\u0439\u0442\u044b \u0437\u0430\u043f\u0440\u0435\u0449\u0430\u044e\u0442 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0441\u0435\u0431\u044f \u0432\u043d\u0443\u0442\u0440\u0438 \u0434\u0440\u0443\u0433\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b \u2014 \u0441\u0442\u0440\u0435\u043b\u043a\u0430 \u0441\u043f\u0440\u0430\u0432\u0430 \u0432\u0441\u0435\u0433\u0434\u0430 \u043e\u0442\u043a\u0440\u043e\u0435\u0442 \u0430\u0434\u0440\u0435\u0441 \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0439 \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439.", "panel.time": "\u0412\u0440\u0435\u043c\u044f \u0438 \u043a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c", "aria.time": "\u0412\u0440\u0435\u043c\u044f \u0438 \u043a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c", "pl.prev": "\u041d\u0430\u0437\u0430\u0434", "pl.next": "\u0412\u043f\u0435\u0440\u0451\u0434", "pl.play": "\u0418\u0433\u0440\u0430\u0442\u044c", "pl.pause": "\u041f\u0430\u0443\u0437\u0430", "pl.seek": "\u041f\u043e\u043b\u043e\u0436\u0435\u043d\u0438\u0435", "pl.pick": "\u0423\u043a\u0430\u0437\u0430\u0442\u044c \u043f\u0430\u043f\u043a\u0443", "pl.count": "\u0414\u043e\u0440\u043e\u0436\u0435\u043a: {n}", "pl.brought": "\u041c\u0443\u0437\u044b\u043a\u0430", "pl.broughtN": "\u041f\u0440\u0438\u043d\u0435\u0441\u0435\u043d\u043e \u0434\u043e\u0440\u043e\u0436\u0435\u043a: {n}", "pl.none": "\u0412 \u044d\u0442\u043e\u0439 \u043f\u0430\u043f\u043a\u0435 \u043d\u0435\u0442 \u0437\u0432\u0443\u043a\u043e\u0432\u044b\u0445 \u0444\u0430\u0439\u043b\u043e\u0432", "pl.empty.title": "\u041c\u0443\u0437\u044b\u043a\u0438 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442", "pl.empty.sub": "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043d\u0435 \u043c\u043e\u0436\u0435\u0442 \u0441\u0430\u043c \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0432\u0430\u0448\u0435 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e. \u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0430\u043f\u043a\u0443 \u043e\u0434\u0438\u043d \u0440\u0430\u0437 \u2014 \u0432\u0441\u0451, \u0447\u0442\u043e \u0432 \u043d\u0435\u0439 \u0438\u0433\u0440\u0430\u0435\u0442\u0441\u044f, \u043f\u0440\u0438\u0434\u0451\u0442 \u0441\u044e\u0434\u0430, \u0430 \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u0432\u0441\u0442\u0430\u043d\u0435\u0442 \u043d\u0430\u0434 \u043f\u043e\u043b\u043a\u043e\u0439.",
+      "mood.studio": "Студия", "mood.aurora": "Аврора", "mood.sunset": "Закат", "mood.ocean": "Океан", "mood.mono": "Моно", "mood.daylight": "Дневной свет", "mood.therapy": "Светотерапия", "menu.tidyDesk": "\u041f\u0440\u0438\u0431\u0440\u0430\u0442\u044c \u0441\u0442\u043e\u043b", "menu.bringThing": "\u041f\u0440\u0438\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0449\u044c\u2026", "menu.hideFab": "\u0423\u0431\u0440\u0430\u0442\u044c \u044d\u0442\u0443 \u043a\u043d\u043e\u043f\u043a\u0443", "part.fab": "\u041a\u043d\u043e\u043f\u043a\u0430 \u0431\u044b\u0441\u0442\u0440\u044b\u0445 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0439", "br.back": "\u041d\u0430\u0437\u0430\u0434", "br.fwd": "\u0412\u043f\u0435\u0440\u0451\u0434", "br.again": "\u041e\u0431\u043d\u043e\u0432\u0438\u0442\u044c", "br.bookmark": "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443", "br.bookmarked": "\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043e", "br.openTab": "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0439 \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439", "br.placeholder": "\u0410\u0434\u0440\u0435\u0441 \u0438\u043b\u0438 \u0447\u0442\u043e \u043d\u0430\u0439\u0442\u0438", "br.frameTitle": "\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430", "br.saved": "\u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0435", "br.recent": "\u041d\u0435\u0434\u0430\u0432\u043d\u0435\u0435", "br.empty.title": "\u041f\u043e\u043a\u0430 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u043e\u0442\u043a\u0440\u044b\u0442\u043e", "br.empty.sub": "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0430\u0434\u0440\u0435\u0441 \u0438 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u0412\u0432\u043e\u0434. \u041c\u043d\u043e\u0433\u0438\u0435 \u0441\u0430\u0439\u0442\u044b \u0437\u0430\u043f\u0440\u0435\u0449\u0430\u044e\u0442 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0441\u0435\u0431\u044f \u0432\u043d\u0443\u0442\u0440\u0438 \u0434\u0440\u0443\u0433\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b \u2014 \u0441\u0442\u0440\u0435\u043b\u043a\u0430 \u0441\u043f\u0440\u0430\u0432\u0430 \u0432\u0441\u0435\u0433\u0434\u0430 \u043e\u0442\u043a\u0440\u043e\u0435\u0442 \u0430\u0434\u0440\u0435\u0441 \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0439 \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439.", "panel.time": "\u0412\u0440\u0435\u043c\u044f \u0438 \u043a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c", "aria.time": "\u0412\u0440\u0435\u043c\u044f \u0438 \u043a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c", "pl.prev": "\u041d\u0430\u0437\u0430\u0434", "pl.next": "\u0412\u043f\u0435\u0440\u0451\u0434", "pl.play": "\u0418\u0433\u0440\u0430\u0442\u044c", "pl.pause": "\u041f\u0430\u0443\u0437\u0430", "pl.seek": "\u041f\u043e\u043b\u043e\u0436\u0435\u043d\u0438\u0435", "pl.pick": "\u0423\u043a\u0430\u0437\u0430\u0442\u044c \u043f\u0430\u043f\u043a\u0443", "pl.count": "\u0414\u043e\u0440\u043e\u0436\u0435\u043a: {n}", "pl.brought": "\u041c\u0443\u0437\u044b\u043a\u0430", "pl.broughtN": "\u041f\u0440\u0438\u043d\u0435\u0441\u0435\u043d\u043e \u0434\u043e\u0440\u043e\u0436\u0435\u043a: {n}", "pl.none": "\u0412 \u044d\u0442\u043e\u0439 \u043f\u0430\u043f\u043a\u0435 \u043d\u0435\u0442 \u0437\u0432\u0443\u043a\u043e\u0432\u044b\u0445 \u0444\u0430\u0439\u043b\u043e\u0432", "pl.empty.title": "\u041c\u0443\u0437\u044b\u043a\u0438 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442", "pl.empty.sub": "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043d\u0435 \u043c\u043e\u0436\u0435\u0442 \u0441\u0430\u043c \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0432\u0430\u0448\u0435 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e. \u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u041e\u0414\u041d\u0423 \u043f\u0430\u043f\u043a\u0443 \u2014 \u043d\u0430\u043f\u0440\u0438\u043c\u0435\u0440, Music \u0438\u043b\u0438 Download. \u041a\u043e\u0440\u0435\u043d\u044c \u043f\u0430\u043c\u044f\u0442\u0438 Android \u0432\u044b\u0431\u0440\u0430\u0442\u044c \u043d\u0435 \u0434\u0430\u0451\u0442: \u0435\u0441\u043b\u0438 \u043f\u0438\u0448\u0435\u0442 \u00abCan\u2019t use this folder\u00bb \u2014 \u0437\u0430\u0439\u0434\u0438\u0442\u0435 \u0432\u043d\u0443\u0442\u0440\u044c \u043f\u0430\u043f\u043a\u0438 \u0438 \u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0435\u0451.", "br.blank": "\u041f\u0443\u0441\u0442\u043e?", "br.blank.go": "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439", "br.shut.sub": "\u0412\u044b \u0441\u043a\u0430\u0437\u0430\u043b\u0438 \u0441\u0438\u0441\u0442\u0435\u043c\u0435, \u0447\u0442\u043e \u044d\u0442\u043e\u0442 \u0441\u0430\u0439\u0442 \u043d\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0430\u0435\u0442 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0441\u0435\u0431\u044f \u0432\u043d\u0443\u0442\u0440\u0438 \u0434\u0440\u0443\u0433\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b. \u0422\u0435\u043f\u0435\u0440\u044c \u043e\u043d \u0441\u0440\u0430\u0437\u0443 \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439 \u2014 \u0438 \u044d\u0442\u043e \u043c\u043e\u0436\u043d\u043e \u043e\u0442\u043c\u0435\u043d\u0438\u0442\u044c.", "br.shut.retry": "\u041f\u043e\u043f\u0440\u043e\u0431\u043e\u0432\u0430\u0442\u044c \u0441\u043d\u043e\u0432\u0430 \u0437\u0434\u0435\u0441\u044c",
       /* ============================================================ Настройки */
       "set.tab.general": "Общее", "set.tab.appearance": "Оформление",
       "set.tab.sound": "Звук и фокус", "set.tab.desktop": "Док и рабочий стол",
@@ -880,11 +880,11 @@
       "fv.thingOpen": "Открыть в Просмотре",
       "fv.kindImage": "картинка", "fv.kindDoc": "документ", "fv.kindSound": "звук", "fv.kindFilm": "видео", "fv.kindThing": "файл",
       "fv.unitB": "Б", "fv.unitKB": "КБ", "fv.unitMB": "МБ",
-      "vw.title": "Просмотр", "vw.empty": "Ничего не открыто. Принесите вещь в Хранилище и откройте её.",
+      "vw.title": "Просмотр", "vw.empty": "Пока смотреть нечего. Принеси вещь в Хранилище — и открой её здесь.",
       "vw.notShown": "Эту вещь здесь не показывают — она хранится целиком. Сохраните к себе и откройте там, где ей место.",
       "vw.gone": "Вещи больше нет", "vw.goneNote": "Запись о ней указывает в пустоту. Ничего не изменено.",
       "fv.newFolder.name": "Новая папка", "fv.newFile.name": "Без имени.txt",
-      "fv.empty": "Папка пуста. Всё, что вы добавите, остаётся в этом браузере.",
+      "fv.empty": "Здесь пусто. Что принесёшь — то и будет лежать, и никуда отсюда не уйдёт: только ты и твоя система.",
       "fv.confirm.folder": "Удалить папку «{name}»?",
       "fv.confirm.file": "Удалить файл «{name}»?",
       "fv.confirm.nested": " Всё, что внутри, будет удалено тоже.",
@@ -929,13 +929,13 @@
       "nt.ph.title": "Название", "nt.ph.body": "Начните писать…",
       "nt.ph.search": "Поиск по заметкам", "nt.new": "Новая заметка",
       "nt.emptyList": "Ничего не найдено",
-      "nt.empty": "Заметок пока нет. Всё, что вы напишете, хранится в этом браузере.",
+      "nt.empty": "Заметок пока нет. Напишешь — останется у тебя: ни одна строка отсюда не уходит.",
       "nt.newNote": "Новая заметка",
       "ec.restore": "Вернуть",
       "ec.silenceTitle": "Удалить навсегда — это не отменить", "ec.silenceAria": "Удалить навсегда",
       "ec.appRemoved": "Убрано с рабочего стола — не удалено",
-      "ec.empty.title": "Здесь пока не эхо",
-      "ec.empty.sub": "Удалённые заметки и приложения, убранные с рабочего стола, сначала оседают здесь — ничего не исчезает без второго шанса. Перетащите что угодно на {echoes}, чтобы отправить сюда.",
+      "ec.empty.title": "Здесь пока тихо",
+      "ec.empty.sub": "Всё, что ты уберёшь со стола, сначала осядет здесь. Ничего не исчезает, пока ты сам не скажешь. Перетащи что угодно на {echoes} — и оно окажется тут.",
       "ec.count.one": "Эхо: {n}", "ec.count.many": "Эхо: {n}",
       "ec.apps.one": "Скрытых приложений: {n}", "ec.apps.many": "Скрытых приложений: {n}",
       "ec.silenceAll": "Заглушить всё",
@@ -1019,7 +1019,7 @@
       "note.delete": "Kustuta märge",
       "note.placeholder": "Kirjuta midagi…",
       "note.aria": "Märge",
-      "note.invite": "Jätta siia märge?",
+      "note.invite": "Jätad märkme?",
       "note.inviteAria": "Jäta siia märge",
       "note.minimize": "Tagasi töölauale",
       "note.maximize": "Ava üle ekraani",
@@ -1097,7 +1097,7 @@
       "cc.charging": "Laeb", "cc.onBattery": "Akutoitel",
       "cc.merge": "Liida, ära asenda",
       "theme.dark": "Tume", "theme.light": "Hele",
-      "mood.studio": "Stuudio", "mood.aurora": "Virmalised", "mood.sunset": "Loojang", "mood.ocean": "Ookean", "mood.mono": "Mono", "mood.daylight": "Päevavalgus", "mood.therapy": "Valgusteraapia", "menu.tidyDesk": "Korista laud", "menu.bringThing": "Too asi\u2026", "menu.hideFab": "Eemalda see nupp", "part.fab": "Kiirtegevuste nupp", "br.back": "Tagasi", "br.fwd": "Edasi", "br.again": "V\u00e4rskenda", "br.bookmark": "Salvesta leht", "br.bookmarked": "Salvestatud", "br.openTab": "Ava p\u00e4ris kaardil", "br.placeholder": "Aadress v\u00f5i otsing", "br.frameTitle": "Leht", "br.saved": "Salvestatud", "br.recent": "Hiljutine", "br.empty.title": "Midagi pole veel avatud", "br.empty.sub": "Sisesta aadress ja vajuta Enter. Paljud saidid keelavad end teise lehe sees n\u00e4idata \u2014 parempoolne nool avab aadressi alati p\u00e4ris kaardil.", "panel.time": "Aeg ja kalender", "aria.time": "Aeg ja kalender", "pl.prev": "Eelmine", "pl.next": "J\u00e4rgmine", "pl.play": "Esita", "pl.pause": "Paus", "pl.seek": "Asukoht", "pl.pick": "Vali kaust", "pl.count": "Lugusid: {n}", "pl.brought": "Muusika", "pl.broughtN": "Toodud lugusid: {n}", "pl.none": "Selles kaustas pole helifaile", "pl.empty.title": "Muusikat veel pole", "pl.empty.sub": "Brauser ei saa ise sinu seadet l\u00e4bi vaadata. Vali kaust \u00fcks kord \u2014 k\u00f5ik esitatav tuleb siia ja juhtnupud ilmuvad doki kohale.",
+      "mood.studio": "Stuudio", "mood.aurora": "Virmalised", "mood.sunset": "Loojang", "mood.ocean": "Ookean", "mood.mono": "Mono", "mood.daylight": "Päevavalgus", "mood.therapy": "Valgusteraapia", "menu.tidyDesk": "Korista laud", "menu.bringThing": "Too asi\u2026", "menu.hideFab": "Eemalda see nupp", "part.fab": "Kiirtegevuste nupp", "br.back": "Tagasi", "br.fwd": "Edasi", "br.again": "V\u00e4rskenda", "br.bookmark": "Salvesta leht", "br.bookmarked": "Salvestatud", "br.openTab": "Ava p\u00e4ris kaardil", "br.placeholder": "Aadress v\u00f5i otsing", "br.frameTitle": "Leht", "br.saved": "Salvestatud", "br.recent": "Hiljutine", "br.empty.title": "Midagi pole veel avatud", "br.empty.sub": "Sisesta aadress ja vajuta Enter. Paljud saidid keelavad end teise lehe sees n\u00e4idata \u2014 parempoolne nool avab aadressi alati p\u00e4ris kaardil.", "panel.time": "Aeg ja kalender", "aria.time": "Aeg ja kalender", "pl.prev": "Eelmine", "pl.next": "J\u00e4rgmine", "pl.play": "Esita", "pl.pause": "Paus", "pl.seek": "Asukoht", "pl.pick": "Vali kaust", "pl.count": "Lugusid: {n}", "pl.brought": "Muusika", "pl.broughtN": "Toodud lugusid: {n}", "pl.none": "Selles kaustas pole helifaile", "pl.empty.title": "Muusikat veel pole", "pl.empty.sub": "Brauser ei saa ise sinu seadet l\u00e4bi vaadata. Vali \u00dcKS kaust \u2014 n\u00e4iteks Music v\u00f5i Download. Androidi m\u00e4lu juurt valida ei saa: kui \u00fctleb \u201cCan\u2019t use this folder\u201d, mine kausta sisse ja vali see.", "br.blank": "T\u00fchi?", "br.blank.go": "Ava kaardil", "br.shut.sub": "Sa \u00fctlesid s\u00fcsteemile, et see sait ei luba end teise lehe sees n\u00e4idata. Nutu avaneb ta alati p\u00e4ris kaardil \u2014 ja selle saab tagasi v\u00f5tta.", "br.shut.retry": "Proovi siin uuesti",
       /* ============================================================== Seaded
          Обращение к посетителю — teie (мн. вежливое), как на лендинге. */
       "set.tab.general": "Üldine", "set.tab.appearance": "Välimus",
@@ -1342,11 +1342,11 @@
       "fv.thingOpen": "Ava Vaates",
       "fv.kindImage": "pilt", "fv.kindDoc": "dokument", "fv.kindSound": "heli", "fv.kindFilm": "video", "fv.kindThing": "fail",
       "fv.unitB": "B", "fv.unitKB": "KB", "fv.unitMB": "MB",
-      "vw.title": "Vaade", "vw.empty": "Midagi pole avatud. Too asi Hoidlasse ja ava see.",
+      "vw.title": "Vaade", "vw.empty": "Vaadata pole veel midagi. Too asi Hoidlasse — ja ava see siin.",
       "vw.notShown": "Seda siin ei näidata — see hoitakse tervikuna. Salvesta endale ja ava seal, kus tema koht on.",
       "vw.gone": "Asja enam ei ole", "vw.goneNote": "Kirje osutab tühjusesse. Midagi ei muudetud.",
       "fv.newFolder.name": "Uus kaust", "fv.newFile.name": "Nimetu.txt",
-      "fv.empty": "Kaust on tühi. Kõik, mille lisate, jääb sellesse brauserisse.",
+      "fv.empty": "Siin on tühi. Mille sa siia tood, see jääb ega lahku siit kunagi: ainult sina ja sinu süsteem.",
       "fv.confirm.folder": "Kas kustutada kaust „{name}“?",
       "fv.confirm.file": "Kas kustutada fail „{name}“?",
       "fv.confirm.nested": " Kustutatakse ka kõik, mis selle sees on.",
@@ -1391,13 +1391,13 @@
       "nt.ph.title": "Pealkiri", "nt.ph.body": "Alustage kirjutamist…",
       "nt.ph.search": "Otsi märkmetest", "nt.new": "Uus märge",
       "nt.emptyList": "Midagi ei leitud",
-      "nt.empty": "Märkmeid veel pole. Kõik, mida kirjutate, hoitakse selles brauseris.",
+      "nt.empty": "Märkmeid veel pole. Kirjuta — ja see jääb sinu juurde: ükski rida siit ei lahku.",
       "nt.newNote": "Uus märge",
       "ec.restore": "Taasta",
       "ec.silenceTitle": "Kustuta jäädavalt — seda ei saa tagasi võtta", "ec.silenceAria": "Kustuta jäädavalt",
       "ec.appRemoved": "Töölaualt eemaldatud — mitte kustutatud",
-      "ec.empty.title": "Siin ei kaja veel miski",
-      "ec.empty.sub": "Kustutatud märkmed ja töölaualt eemaldatud rakendused settivad kõigepealt siia — miski ei kao ilma teise võimaluseta. Lohistage midagi {echoes} peale, et see siia saata.",
+      "ec.empty.title": "Siin on vaikne",
+      "ec.empty.sub": "Kõik, mille sa laualt ära koristad, settib kõigepealt siia. Miski ei kao enne, kui sa ise ütled. Lohista ükskõik mis {echoes} peale — ja see maandub siia.",
       "ec.count.one": "{n} kaja", "ec.count.many": "{n} kaja",
       "ec.apps.one": "{n} peidetud rakendus", "ec.apps.many": "{n} peidetud rakendust",
       "ec.silenceAll": "Vaigista kõik",
@@ -1850,6 +1850,68 @@
   }
   window.sbClockGlyph = function (ch) { var g = makeGlyph(); setGlyph(g, ch); return g; };
 
+  /* ── ЧАСЫ ЛОВЯТ СВЕТ КОМНАТЫ (D-137) ──────────────────────────────────
+     ПОВОД: «нужно часы сделать гармоничными и максимально концептуальными
+     (сейчас концептуальность есть, но недостаточно какого-то уникального
+     эффекта связанного со светом)».
+
+     ЧТО ЗДЕСЬ УНИКАЛЬНОГО, И ПОЧЕМУ ЭТО НЕ УКРАШЕНИЕ. Часы не светятся сами —
+     они ОСВЕЩЕНЫ той же комнатой, что и всё вокруг. Если выбраны суточные
+     обои, свет идёт по кругу суток вместе с ними: в три часа ночи цифры почти
+     без ореола, к полудню он ясно виден. Если обои обычные — светит шов.
+     Значит часы показывают время ДВАЖДЫ: цифрами и тем, каким светом они
+     освещены. Такого эффекта не может быть ни у кого другого — он вырастает
+     из того, что в этой системе уже есть.
+
+     ЦЕНА. Свойство пишется на ОДИН элемент (сами часы), а не в корень: запись
+     в корень объявляет устаревшим стиль всего документа (D-093, D-112). И
+     пишется, только когда округлённый цвет изменился, — не чаще раза в
+     несколько минут. */
+  var litLast = "";
+  function roomLight() {
+    /* Комната, если она живая; иначе шов. Спрашиваем в одном месте. */
+    try {
+      var mood = window.sbGetWallpaperMood ? window.sbGetWallpaperMood() : "studio";
+      if (mood === "therapy" && window.sbTherapyForTime) return window.sbTherapyForTime();
+      if (mood === "daylight" && window.sbWallpaperForTime) return window.sbWallpaperForTime();
+      var acc = window.sbGetCurrentAccent ? window.sbGetCurrentAccent() : null;
+      if (acc && acc.a1) return { c1: acc.a1, level: 0.5 };
+    } catch (err) { console.error("[clock] light read failed", err); }
+    return null;
+  }
+  function paintLight() {
+    var w = roomLight();
+    if (!w || !w.c1) return;
+    var lvl = typeof w.level === "number" ? w.level : 0.5;
+    /* Ореол мал даже в самый светлый час: часы — не лампа, они лишь ловят
+       свет. Цифра остаётся белой, цветным становится только сияние вокруг. */
+    var blur = Math.round((1.4 + lvl * 4.2) * 10) / 10;
+    var alpha = Math.round((0.16 + lvl * 0.34) * 100) / 100;
+    var key = w.c1 + "|" + blur + "|" + alpha;
+    if (key === litLast) return;
+    litLast = key;
+    var n = parseInt(String(w.c1).slice(1), 16);
+    var rgba = "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + alpha + ")";
+    /* СВЕТ ОБЪЯВЛЕН В ОДНОМ МЕСТЕ, потому что читают его трое: часы в полосе,
+       крупное время в панели и время в проигрывателе. Три копии одного знания
+       разошлись бы — этот урок в проекте оплачен четырежды.
+       ЗАПИСЬ В КОРЕНЬ ЗДЕСЬ ОПРАВДАНА ЦЕНОЙ: она объявляет устаревшим стиль
+       всего документа (D-093, D-112), но случается, только когда изменился
+       ОКРУГЛЁННЫЙ цвет света — то есть раз в несколько минут, а не раз в
+       секунду. Закон это и стережёт: за четыре секунды хода — ни одной. */
+    var root = doc.documentElement;
+    root.style.setProperty("--lit-glow", rgba);
+    root.style.setProperty("--lit-blur", blur + "px");
+    /* Сам штрих — чуть тёплее белого в сторону света, но остаётся белым:
+       цветные цифры в рабочей полосе кричали бы. */
+    root.style.setProperty("--lit-ink", "color-mix(in oklab, var(--ink) 88%, " + w.c1 + ")");
+  }
+  window.sbClockLight = paintLight;
+  if (window.sbBus && typeof window.sbBus.on === "function") {
+    window.sbBus.on("mood:change", function () { litLast = ""; paintLight(); });
+    window.sbBus.on("accent:change", function () { litLast = ""; paintLight(); });
+  }
+
   var clockCells = null, lastClock = "";
   function localeFor() { var l = lang(); return l === "ru" ? "ru-RU" : (l === "ee" ? "et-EE" : "en-GB"); }
 
@@ -1907,6 +1969,7 @@
         }
       }
     }
+    paintLight();
     host.setAttribute("data-whole", whole);
     host.setAttribute("aria-label", whole);
     lastClock = whole;
@@ -1917,13 +1980,25 @@
   window.sbRepaintClock = function () { paintClock(true); };
   doc.addEventListener("visibilitychange", function () { if (doc.visibilityState === "visible") paintClock(true); });
 
+  /* ОБА ФАКТА НАЗВАНЫ СЛОВАМИ. Знак один, но заряд и связь — разные вещи, и
+     ни одна не должна пропасть для того, кто читает подпись, а не рисунок. */
+  function sayPower() {
+    var el = $("#sbPowerGlyph");
+    if (!el) return;
+    var bits = [el.getAttribute("data-bat"), el.getAttribute("data-net")].filter(Boolean);
+    if (!bits.length) return;
+    el.setAttribute("aria-label", bits.join(" · "));
+    el.title = bits.join(" · ");
+  }
+
   /* ====================================================== connectivity (§5) */
   function paintNet() {
-    var el = $("#sbNetGlyph");
+    var el = $("#sbPowerGlyph");
     var online = navigator.onLine !== false;
     if (el) {
       el.classList.toggle("offline", !online);
-      el.title = online ? window.sbT("cc.online") : window.sbT("cc.offlineLong");
+      el.setAttribute("data-net", online ? window.sbT("cc.online") : window.sbT("cc.offlineLong"));
+      sayPower();
     }
     var row = $("#sbCcNet");
     if (row) row.textContent = online ? window.sbT("cc.online") : window.sbT("cc.offline");
@@ -1933,9 +2008,9 @@
 
   /* ========================================================== battery (§5) */
   function paintBattery(bat) {
-    var el = $("#sbBatteryGlyph"), row = $("#sbCcBattery"), line = $("#sbCcBatteryLine");
+    var el = $("#sbPowerGlyph"), row = $("#sbCcBattery"), line = $("#sbCcBatteryLine");
     if (!bat) {
-      if (el) { el.classList.add("neutral"); el.title = window.sbT("cc.batteryNA"); }
+      if (el) { el.classList.add("neutral"); el.setAttribute("data-bat", window.sbT("cc.batteryNA")); sayPower(); }
       if (row) row.textContent = "—";
       if (line) line.textContent = window.sbT("cc.battery");
       return;
@@ -1946,7 +2021,8 @@
       el.classList.toggle("charging", !!bat.charging);
       el.classList.toggle("warn", pct <= 20 && pct > 10);
       el.classList.toggle("danger", pct <= 10);
-      el.title = pct + "% — " + (bat.charging ? window.sbT("cc.charging") : window.sbT("cc.onBattery"));
+      el.setAttribute("data-bat", pct + "% — " + (bat.charging ? window.sbT("cc.charging") : window.sbT("cc.onBattery")));
+      sayPower();
     }
     if (row) {
       if (window.sbAnimateFigure) window.sbAnimateFigure(row, pct, function (n) { return Math.round(n) + "%"; });

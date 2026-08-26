@@ -33,6 +33,7 @@
 
   var HIST_KEY = "sysbaby.browser.history";
   var MARK_KEY = "sysbaby.browser.marks";
+  var SHUT_KEY = "sysbaby.browser.shut";      /* хозяева, закрывшиеся от рамки */
   var HIST_CAP = 200;
 
   function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
@@ -82,6 +83,45 @@
     writeJSON(MARK_KEY, m);
     return m;
   };
+  /* ── БРАУЗЕР НЕ УГАДЫВАЕТ. ОН ЗАПОМИНАЕТ (D-138) ──────────────────────
+     ПОВОД: «прошу совет принять гениальное решение по браузеру» — со снимком,
+     где вместо google.com серая пустота.
+
+     ЧТО ПОКАЗАЛ ПРИБОР. Совет проверил все способы узнать изнутри, отказал
+     сайт или нет: событие load, доступ к contentWindow, число вложенных рамок,
+     длина истории, время до загрузки. РАЗНИЦЫ НЕТ НИ В ЧЁМ. google.com
+     (запрещает) и example.com с Wikipedia (разрешают) отвечают одинаково:
+     load сработал, SecurityError при доступе, ноль вложенных рамок, 216–223 мс.
+     Значит система не может узнать. Точка.
+
+     НО ЭТО ЗНАЕТ ЧЕЛОВЕК — МГНОВЕННО, ГЛАЗАМИ. И вот решение: система не
+     угадывает, она ЗАПОМИНАЕТ. Пусто? Одно нажатие — страница открывается
+     настоящей вкладкой, и этот хозяин записывается как закрывшийся. Больше
+     этот сайт пустотой не встретит НИКОГДА: в следующий раз он сразу уходит
+     вкладкой, а на его месте стоит наша честная карточка, а не серый лист.
+
+     ПОЧЕМУ ЭТО ЛУЧШЕ СПИСКА, ЗАШИТОГО В КОД. Список устаревает молча: сайт
+     разрешил показ — а мы всё ещё уводим вкладкой; запретил — а мы всё ещё
+     показываем пустоту. Память человека не устаревает: она о ТОМ ЖЕ ВЕБЕ, в
+     котором он живёт, и её всегда можно отменить одним нажатием («попробовать
+     снова здесь»). Браузер становится лучше от того, что им пользуются, — и
+     ни одного числа, вписанного Советом наугад. */
+  function hostOf(url) {
+    try { return new URL(url).host.toLowerCase(); } catch (e) { return ""; }
+  }
+  window.sbBrowserShutHosts = function () { var v = readJSON(SHUT_KEY, []); return Array.isArray(v) ? v : []; };
+  window.sbBrowserIsShut = function (url) {
+    var h = hostOf(url);
+    return !!h && window.sbBrowserShutHosts().indexOf(h) !== -1;
+  };
+  window.sbBrowserMarkShut = function (url, shut) {
+    var h = hostOf(url);
+    if (!h) return;
+    var list = window.sbBrowserShutHosts().filter(function (x) { return x !== h; });
+    if (shut !== false) list.push(h);
+    writeJSON(SHUT_KEY, list);
+  };
+
   window.sbBrowserForget = function (url) {
     writeJSON(MARK_KEY, window.sbBrowserBookmarks().filter(function (x) { return x.url !== url; }));
     writeJSON(HIST_KEY, window.sbBrowserHistory().filter(function (x) { return x.url !== url; }));
@@ -110,6 +150,16 @@
           'aria-label="' + esc(t("br.openTab")) + '" title="' + esc(t("br.openTab")) + '">' + I.out + "</a>" +
       "</div>" +
       '<div class="br-stage">' +
+        '<div class="br-shut" hidden>' +
+          '<div class="br-shut-host"></div>' +
+          '<p class="br-shut-sub">' + esc(t("br.shut.sub")) + "</p>" +
+          '<div class="br-shut-acts">' +
+            '<a class="br-shut-go" href="about:blank" target="_blank" rel="noopener noreferrer">' + I.out + "<span>" + esc(t("br.openTab")) + "</span></a>" +
+            '<button type="button" class="br-shut-retry">' + esc(t("br.shut.retry")) + "</button>" +
+          "</div>" +
+        "</div>" +
+        '<div class="br-blank" hidden>' + esc(t("br.blank")) +
+          ' <button type="button" class="br-blank-go">' + esc(t("br.blank.go")) + "</button></div>" +
         '<div class="br-empty">' +
           '<div class="br-empty-glyph">' + ICON + "</div>" +
           '<p class="br-empty-title">' + esc(t("br.empty.title")) + "</p>" +
@@ -156,20 +206,49 @@
       app.querySelector(".br-again").disabled = at < 0;
       app.querySelector(".br-mark").disabled = at < 0;
     }
+    function showShut(url) {
+      stopFrame();
+      var card = app.querySelector(".br-shut");
+      app.querySelector(".br-blank").hidden = true;
+      var em = app.querySelector(".br-empty");
+      if (em) em.hidden = true;
+      card.hidden = false;
+      card.querySelector(".br-shut-host").textContent = hostOf(url);
+      card.querySelector(".br-shut-go").href = url;
+      input.value = url; out.href = url;
+      remember(url, url);
+      syncNav();
+    }
+    function stopFrame() {
+      if (frame) { try { frame.src = "about:blank"; } catch (e) { } if (frame.parentNode) frame.parentNode.removeChild(frame); }
+      frame = null;
+    }
     function show(url, push) {
+      if (push) { stack = stack.slice(0, at + 1); stack.push(url); at = stack.length - 1; }
+      /* Хозяин, о котором человек уже сказал «пусто», встречается карточкой, а
+         не серым листом. Рамка к нему даже не идёт — и запроса наружу нет. */
+      if (window.sbBrowserIsShut(url)) return showShut(url);
+      var card = app.querySelector(".br-shut");
+      if (card) card.hidden = true;
+      app.querySelector(".br-blank").hidden = false;
+      var em0 = app.querySelector(".br-empty");
+      if (em0) em0.hidden = true;
       if (!frame) {
         frame = doc.createElement("iframe");
         frame.className = "br-frame";
         frame.setAttribute("referrerpolicy", "no-referrer");
         frame.setAttribute("allow", "clipboard-write; fullscreen");
         frame.setAttribute("title", t("br.frameTitle"));
-        stage.innerHTML = "";
-        stage.appendChild(frame);
+        /* Рамка ВСТАВЛЯЕТСЯ, а не заменяет собой сцену: карточка «пусто?» и
+           карточка закрывшегося хозяина живут здесь же и стирать их нельзя.
+           Прежняя строка stage.innerHTML = "" сносила их обе. */
+        var em = stage.querySelector(".br-empty");
+        if (em) em.hidden = true;
+        stage.insertBefore(frame, stage.firstChild);
       }
       frame.src = url;
       input.value = url;
       out.href = url;
-      if (push) { stack = stack.slice(0, at + 1); stack.push(url); at = stack.length - 1; }
       remember(url, url);
       syncNav();
     }
@@ -202,6 +281,21 @@
     app.addEventListener("click", function (ev) {
       var b = ev.target.closest && ev.target.closest("[data-go]");
       if (b) go(b.getAttribute("data-go"), true);
+    });
+
+    /* «Пусто?» — единственное, что система спрашивает у человека, и
+       спрашивает ровно один раз на хозяина. */
+    app.querySelector(".br-blank-go").addEventListener("click", function () {
+      if (at < 0) return;
+      var url = stack[at];
+      window.sbBrowserMarkShut(url, true);
+      try { window.open(url, "_blank", "noopener"); } catch (e) { /* ignore */ }
+      showShut(url);
+    });
+    app.querySelector(".br-shut-retry").addEventListener("click", function () {
+      if (at < 0) return;
+      window.sbBrowserMarkShut(stack[at], false);
+      show(stack[at], false);
     });
 
     paintMarks(app);
