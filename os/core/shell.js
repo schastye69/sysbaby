@@ -261,12 +261,17 @@
       window.sbSetControlToggle("motion", true);
       window.sbSetControlToggle("transparency", true);
       if (window.sbField) window.sbField.setLevel("off");
+      /* Комната замирает такой, какая она сейчас: ни одного хода, но и ни
+         одного погашенного цвета. Основатель: «accent colors обязательно
+         должны быть живыми и только в turbo такими». */
+      if (window.sbRoomFreeze) window.sbRoomFreeze();
     } else {
       var was = cur.was || {};
       cur = { on: false };
       window.sbSetControlToggle("motion", !!was.motion);
       window.sbSetControlToggle("transparency", !!was.transparency);
       if (window.sbField) window.sbField.setLevel(was.field === "off" || was.field === "quiet" ? was.field : "live");
+      if (window.sbRoomThaw) window.sbRoomThaw();
     }
     writeJSON(TURBO_KEY, cur);
     root.classList.toggle("sb-turbo", on);
@@ -292,6 +297,9 @@
       window.sbSetControlToggle("transparency", true);
       if (window.sbField) window.sbField.setLevel("off");
       else doc.addEventListener("DOMContentLoaded", function () { if (window.sbField) window.sbField.setLevel("off"); });
+      /* Турбо, переживший перезагрузку, замораживает комнату после того, как
+         она встала: applyMood зовут позже, значит и заморозка позже. */
+      setTimeout(function () { if (window.sbRoomFreeze) window.sbRoomFreeze(); }, 0);
     }
   }
 
@@ -383,38 +391,27 @@
     return { a1: a1, a2: a2, hue: hue };
   };
 
-  var driftTimer = null, driftLastHue = null;
-  function driftTick(force) {
-    var now = window.sbAccentForTime();
-    var rounded = Math.round(now.hue);
-    if (!force && rounded === driftLastHue) return;   /* тот же градус — не трогаем документ */
-    driftLastHue = rounded;
-    applyAccent(now.a1, now.a2);
-  }
-  function driftStart() {
-    driftStop();
-    driftTick(true);
-    driftTimer = setInterval(function () { driftTick(false); }, 60000);
-  }
-  function driftStop() { if (driftTimer) { clearInterval(driftTimer); driftTimer = null; } driftLastHue = null; }
-  window.sbAccentDrifting = function () { return !!driftTimer; };
+  /* Отдельного хода у краски больше нет: комната и шов идут одной пружиной
+     (wpTick). sbAccentDrifting отвечает про неё же — снаружи это по-прежнему
+     один вопрос «идёт ли ход». */
+  window.sbAccentDrifting = function () { return !!(window.sbRoomDrifting && window.sbRoomDrifting()); };
 
-  window.sbGetAccentSwatches = function () {
-    var list = ACCENTS.map(function (a) { return { id: a.id, name: a.name, a1: a.a1, a2: a.a2 }; });
-    var now = window.sbAccentForTime();
-    list.push({ id: DRIFT_ID, name: "Daylight", a1: now.a1, a2: now.a2, drift: true });
-    return list;
-  };
+  /* ── ОТДЕЛЬНОГО ВЫБОРА КРАСКИ БОЛЬШЕ НЕТ (D-141) ──────────────────────
+     Здесь стоял список из шести красок и функция sbSetAccent. Они сняты не
+     ради простоты: пока выбор был отдельным, шов и комната могли встать в
+     ссору, и вставали. Шов — это свет комнаты, увиденный на кромке; выбирать
+     его отдельно значит выбирать второй источник света в той же комнате.
+     Кто ставит шов теперь: wpTick, из sbRoomLight текущего настроения. */
   window.sbGetCurrentAccent = function () {
-    var v = readJSON(ACCENT_KEY, null);
-    if (v && v.mode === DRIFT_ID) {
-      var now = window.sbAccentForTime();
-      return { a1: now.a1, a2: now.a2, mode: DRIFT_ID };
-    }
-    if (v && v.a1) return { a1: v.a1, a2: v.a2 || deriveSecond(v.a1) };
-    return { a1: ACCENTS[0].a1, a2: ACCENTS[0].a2 };
+    /* НАПИСАННЫЙ свет, а не пересчитанный: пока комната заморожена, шов
+       обязан стоять вместе с ней (D-143). Пересчёт остаётся запасным путём
+       для мига до первого хода пружины. */
+    var w = (window.sbRoomNow && window.sbRoomNow()) || window.sbRoomLight();
+    /* НАДЕТЫЙ шов, если он уже надет. Пересчёт — только для мига до первого
+       хода пружины, когда надевать ещё нечего. */
+    var seam = wpSeam || window.sbSeamForRoom(w);
+    return { a1: seam.a1, a2: seam.a2, mode: w.mood };
   };
-
   function hexToRgb(hex) {
     var h = String(hex || "").replace("#", "");
     if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
@@ -422,46 +419,14 @@
     if (!isFinite(n)) return { r: 91, g: 124, b: 255 };
     return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
   }
-  function rgbToHsl(r, g, b) {
-    r /= 255; g /= 255; b /= 255;
-    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), h = 0, s = 0, l = (mx + mn) / 2, d = mx - mn;
-    if (d) {
-      s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
-      if (mx === r) h = ((g - b) / d + (g < b ? 6 : 0));
-      else if (mx === g) h = (b - r) / d + 2;
-      else h = (r - g) / d + 4;
-      h *= 60;
-    }
-    return { h: h, s: s, l: l };
-  }
-  function deriveSecond(hex) {
-    var c = hexToRgb(hex), hsl = rgbToHsl(c.r, c.g, c.b);
-    return "hsl(" + Math.round((hsl.h + 28) % 360) + "," + Math.round(hsl.s * 100) + "%," + Math.round(clamp(hsl.l * 100 + 10, 0, 92)) + "%)";
-  }
-
-  window.sbSetAccent = function (hex, second) {
-    /* Ход — не цвет, а режим, и приходит он тем же входом: приложение
-       настроек передаёт сюда либо шестнадцатеричный цвет, либо это имя. */
-    if (String(hex) === DRIFT_ID) {
-      writeJSON(ACCENT_KEY, { mode: DRIFT_ID });
-      driftStart();
-      var cur = window.sbAccentForTime();
-      announceSetting("accent", { a1: cur.a1, a2: cur.a2, mode: DRIFT_ID });
-      return { a1: cur.a1, a2: cur.a2, mode: DRIFT_ID };
-    }
-    driftStop();
-    var a1 = String(hex || ACCENTS[0].a1);
-    var a2 = second || null;
-    if (!a2) {
-      for (var i = 0; i < ACCENTS.length; i++) if (ACCENTS[i].a1.toLowerCase() === a1.toLowerCase()) a2 = ACCENTS[i].a2;
-    }
-    if (!a2) a2 = deriveSecond(a1);
-    applyAccent(a1, a2);
-    writeJSON(ACCENT_KEY, { a1: a1, a2: a2 });
-    announceSetting("accent", { a1: a1, a2: a2 });
-    return { a1: a1, a2: a2 };
-  };
+  /* Шов, КОТОРЫЙ СЕЙЧАС НАДЕТ. Не «какой был бы по часам», а какой написан:
+     он ступенчатый (округлён до четырёх градусов), и читатели обязаны видеть
+     ту же ступеньку, иначе у них заведётся своя, более частая жизнь. Именно
+     это и случилось с часами: шов на кромке менялся раз в девять секунд, а
+     свет часов пересчитывался непрерывно и писал в корень куда чаще (D-143). */
+  var wpSeam = null;
   function applyAccent(a1, a2) {
+    wpSeam = { a1: a1, a2: a2 };
     var c = hexToRgb(a1), st = root.style;
     st.setProperty("--accent", a1);
     st.setProperty("--accent-2", a2);
@@ -470,15 +435,93 @@
     st.setProperty("--accent-ring", "rgba(" + c.r + "," + c.g + "," + c.b + ",.55)");
   }
 
+  /* ═══════════════ КОМНАТА И ШОВ — ОДНО (D-141) ═══════════════════════════
+
+     ПОВОД, дословно от основателя 26.08.2026: «убрать accent color и сделать
+     их частью wallpapers (они должны менять в зависимости от выбранной темы)
+     и accent colors обязательно должны быть живыми и только в turbo такими».
+
+     ЧТО БЫЛО НЕ ТАК, ЕСЛИ НАЗЫВАТЬ КОРЕНЬ. Шов и комната были ДВУМЯ
+     НЕЗАВИСИМЫМИ ПРИБОРАМИ: краску выбирали отдельно, обои отдельно. Значит
+     их можно было поставить в ссору — и они ссорились. На снимке основателя
+     оранжевый шов стоял посреди зелёной комнаты светотерапии, и оба были
+     «правильные». Двух источников света в одной комнате не бывает.
+
+     РЕШЕНИЕ ОСНОВАТЕЛЯ И ЕСТЬ ЛЕКАРСТВО: выбор один. Человек выбирает
+     КОМНАТУ, а шов — это её свет, увиденный на кромке. Поссориться им больше
+     нечем: источник один. Это пятый раз за неделю, когда лекарство одно и то
+     же — одно знание, одно имя (D-114, D-127, D-129, D-136).
+
+     И ВТОРОЕ: ЖИВЫ ВСЕ. Раньше жило одно настроение из семи. Теперь у
+     каждого своё кольцо и свой ПОЯС — узкий у спокойных, широкий у
+     деятельных. «Живой» не значит «любой»: Ocean дышит в холодном поясе и
+     оранжевым не станет, иначе выбор комнаты ничего бы не значил.
+
+     hue  — середина пояса;  span — ширина пояса;  cycle — за сколько кольцо;
+     room — сколько света в комнате (от … до);  sat — насыщенность краски. */
   var MOODS = [
-    { id: "studio", name: "Studio" },
-    { id: "ocean", name: "Ocean" },
-    { id: "aurora", name: "Aurora" },
-    { id: "sunset", name: "Sunset" },
-    { id: "mono", name: "Mono" },
-    { id: "daylight", name: "Daylight", drift: true },
-    { id: "therapy", name: "Light therapy", drift: true, session: true }
+    { id: "studio", name: "Studio", hue: 22, span: 16, cycle: 40 * 60000, room: [0.30, 0.46], sat: 68 },
+    { id: "ocean", name: "Ocean", hue: 196, span: 30, cycle: 34 * 60000, room: [0.26, 0.44], sat: 70 },
+    { id: "aurora", name: "Aurora", hue: 152, span: 74, cycle: 26 * 60000, room: [0.24, 0.46], sat: 72 },
+    { id: "sunset", name: "Sunset", hue: 12, span: 46, cycle: 30 * 60000, room: [0.28, 0.50], sat: 76 },
+    { id: "mono", name: "Mono", hue: 218, span: 8, cycle: 48 * 60000, room: [0.20, 0.36], sat: 14 },
+    { id: "daylight", name: "Daylight", drift: true, day: true, cycle: 24 * 3600000, room: null, sat: 73 },
+    { id: "therapy", name: "Light therapy", drift: true, session: true, span: 360,
+      cycle: 14 * 60000, room: [0.62, 1.0], sat: 78 }
   ];
+  function moodDef(id) {
+    for (var i = 0; i < MOODS.length; i++) if (MOODS[i].id === id) return MOODS[i];
+    return MOODS[0];
+  }
+  window.sbMoodCycle = function (id) { return moodDef(id).cycle; };
+
+  /* СВЕТ КОМНАТЫ В ДАННЫЙ МИГ — одна функция на все настроения.
+     Для суточных часы берутся от полуночи (комната равна часу); для
+     остальных — от начала их собственного кольца, чтобы закон мог пройти
+     кольцо, не переводя часов машины. */
+  window.sbRoomLight = function (ms, moodId) {
+    var m = moodDef(moodId || (window.sbGetWallpaperMood ? window.sbGetWallpaperMood() : "studio"));
+    var t = (typeof ms === "number" ? ms : Date.now());
+    if (m.day) {
+      var d = new Date(t);
+      var minutes = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+      var pos = minutes / 60;
+      var i = Math.floor(pos) % 24, j = (i + 1) % 24, f = pos - Math.floor(pos);
+      var lvl = ROOM[i] + (ROOM[j] - ROOM[i]) * f;
+      return { hue: Math.round(minutes / 1440 * 360 * 10) / 10,
+               level: Math.round(lvl * 1000) / 1000, sat: m.sat, mood: m.id };
+    }
+    var phase = (t % m.cycle) / m.cycle;
+    var hue, level;
+    if (m.span >= 360) {                       /* сеанс: полный круг */
+      hue = Math.round(phase * 360 * 10) / 10;
+      /* Семь вдохов за кольцо — по одному на цвет. */
+      var breath = (1 - Math.cos(phase * 7 * 2 * Math.PI)) / 2;
+      level = m.room[0] + (m.room[1] - m.room[0]) * breath;
+    } else {                                   /* спокойное: дыхание в поясе */
+      var w = Math.sin(phase * 2 * Math.PI);
+      hue = m.hue + (m.span / 2) * w;
+      /* Свет дышит со сдвигом в четверть: комната не бледнеет и не
+         разгорается ровно вместе с тоном — так дышит настоящий свет. */
+      var w2 = Math.sin(phase * 2 * Math.PI + Math.PI / 2);
+      level = m.room[0] + (m.room[1] - m.room[0]) * (w2 + 1) / 2;
+    }
+    return { hue: Math.round(((hue % 360) + 360) % 360 * 10) / 10,
+             level: Math.round(level * 1000) / 1000, sat: m.sat, mood: m.id };
+  };
+
+  /* ШОВ ИЗ СВЕТА КОМНАТЫ. Светлота берётся выверенной кривой LIGHT — той
+     самой, которая держит контраст ровным по всему кругу (D-107). Поэтому
+     шов читается в любой комнате по построению, а не по удаче. */
+  window.sbSeamForRoom = function (w) {
+    var sat = (w && w.sat) || 73;
+    var hue = (w && w.hue) || 0;
+    return {
+      a1: hslHex(hue, sat, driftLight(hue)),
+      a2: hslHex(hue + 28, sat, Math.min(92, driftLight(hue + 28) + 10)),
+      hue: hue
+    };
+  };
 
   /* ============================================ суточная комната (D-127) §
 
@@ -511,8 +554,8 @@
     0.10, 0.07, 0.05, 0.04, 0.05, 0.09, 0.18, 0.32, 0.48, 0.62, 0.74, 0.84,
     0.92, 1.00, 0.97, 0.90, 0.80, 0.68, 0.55, 0.43, 0.34, 0.27, 0.20, 0.15
   ];
-  var WP_A1 = [0.13, 0.36];   /* верхний свет: ночь … полдень */
-  var WP_A2 = [0.08, 0.23];   /* нижний свет */
+  var WP_A1 = [0.13, 0.44];   /* верхний свет: тихо … ярко */
+  var WP_A2 = [0.08, 0.29];   /* нижний свет */
   /* ТРЕТИЙ СЛОЙ — И ЭТО ГЛАВНЫЙ ИЗ ТРЁХ.
      Первая редакция двигала только два цветных пятна, и закон её отверг:
      на настоящих пикселях полдень оказался НЕ СВЕТЛЕЕ трёх часов ночи
@@ -524,7 +567,14 @@
      ненасыщенный (WP_WASH_SAT) — потому что дневной свет в комнате белый, а
      не бирюзовый, и потому что зелёный канал, который и решает яркость,
      у ненасыщенного цвета сильнее. Ночью его нет вовсе. */
-  var WP_WASH = [0.00, 0.46];
+  /* ЗАЛИВКА УБАВЛЕНА, ЦВЕТНЫЕ ПЯТНА ПРИБАВЛЕНЫ (v78). Пока заливкой
+     пользовалась одна суточная комната, её потолок в 0.46 всплывал редко — на
+     час в сутки. Светотерапия держится высоко ВСЁ ВРЕМЯ, и на снимке
+     основателя стол оказался залит молоком: цвет комнаты был, но он потонул в
+     белизне, и смена тона переставала читаться. Отсюда и слова «цвета
+     меняются слишком медленно либо не меняются совсем» — они менялись, но их
+     не было видно. Комнату надо ОСВЕЩАТЬ, а не заволакивать. */
+  var WP_WASH = [0.00, 0.30];
   var WP_WASH_SAT = 26, WP_WASH_LIGHT = 66;
 
   window.sbWallpaperForTime = function (ms) {
@@ -613,6 +663,20 @@
     return w;
   }
   window.sbTherapyApply = function (ms) { return paintTint(window.sbTherapyForTime(ms)); };
+  /* Из света комнаты — её краска: два пятна и мягкая заливка во весь стол. */
+  function tintOf(w) {
+    var r2 = function (v) { return Math.round(v * 1000) / 1000; };
+    var lvl = w.level;
+    var mix = function (p) { return r2(p[0] + (p[1] - p[0]) * lvl); };
+    return {
+      hue: w.hue, level: lvl,
+      c1: hslHex(w.hue, w.sat, driftLight(w.hue)),
+      c2: hslHex(w.hue + 28, w.sat, Math.min(92, driftLight(w.hue + 28) + 10)),
+      c3: hslHex(w.hue, WP_WASH_SAT, WP_WASH_LIGHT),
+      a1: mix(WP_A1), a2: mix(WP_A2), a3: mix(WP_WASH)
+    };
+  }
+  window.sbRoomTint = tintOf;
   window.sbWallpaperApply = function (ms) {
     var w = window.sbWallpaperForTime(ms);
     var el = doc.getElementById("sbMoodTint");
@@ -630,28 +694,80 @@
   }
 
   var wpTimer = null, wpLastHue = null, wpLastLvl = null, wpMode = null;
+  /* ОДИН ХОД НА КОМНАТУ И ШОВ. Раньше их было два: свой таймер у обоев и
+     свой у краски. Два хода об одном и том же однажды разошлись бы — как
+     разошлись сами комната и шов. Теперь пружина одна. */
+  /* ── У КОМНАТЫ И ШВА РАЗНОЕ РАЗРЕШЕНИЕ, И ЭТО ИЗМЕРЕНО ────────────────
+     Комната — большое мягкое поле на ОДНОМ элементе: писать его часто дёшево,
+     и градус за градусом там читается как плавность.
+     Шов — тонкая линия, и живёт он в КОРНЕ документа, а запись в корень
+     объявляет устаревшим стиль всего документа (D-093, D-112). Прибор
+     показал: при кольце в четырнадцать минут выходило 29 записей в корень за
+     пять секунд — шесть в секунду. Это много.
+     Поэтому шов округляется до четырёх градусов. На тонкой линии четыре
+     градуса не различить, а записей в корень становится вчетверо меньше.
+     Разные поверхности — разное разрешение, и каждое оправдано тем, что на
+     этой поверхности видно. */
+  var wpLastSeam = null;
+  /* ── ЧТО НАПИСАНО, А НЕ ЧТО «БЫЛО БЫ» (D-143) ──────────────────────────
+     Замер клиники: замороженная комната (Турбо) продолжала двигаться для
+     ЧИТАТЕЛЕЙ — часы за четыре секунды покоя трижды писали в корень. Причина
+     — раздвоение знания, шестой случай в этом проекте: пружина хранила
+     надетый свет в wpLastHue/wpLastLvl, а sbGetCurrentAccent каждый раз
+     ВЫЧИСЛЯЛ свет заново от Date.now(). Заморозка останавливала перо, но не
+     часы, по которым читают, — и «замерла» было неправдой.
+     Теперь надетый свет лежит в ОДНОМ месте. Заморозка оставляет его
+     написанным, и все читатели видят то же самое, что видит глаз. */
+  var wpNow = null;
   function wpTick(force) {
-    var now = Date.now();
-    var w = wpMode === "therapy" ? window.sbTherapyForTime(now) : window.sbWallpaperForTime(now);
+    var w = window.sbRoomLight(Date.now(), wpMode);
+    wpNow = w;
     var hue = Math.round(w.hue), lvl = Math.round(w.level * 200);
     if (!force && hue === wpLastHue && lvl === wpLastLvl) return;
     wpLastHue = hue; wpLastLvl = lvl;
-    paintTint(w);
+    paintTint(tintOf(w));
+    var step = Math.round(w.hue / 4);
+    if (force || step !== wpLastSeam) {
+      wpLastSeam = step;
+      var seam = window.sbSeamForRoom(w);
+      applyAccent(seam.a1, seam.a2);
+      if (window.sbClockLight) window.sbClockLight();
+    }
   }
-  /* Один ход на оба суточных настроения — с разным шагом, потому что у них
-     разная скорость: сутки меряются минутами, сеанс — секундами. */
+  /* Шаг подобран под кольцо: у сеанса в четырнадцать минут округлённый
+     градус меняется каждые 2.3 с, у суточного — раз в четыре минуты. Спим
+     ровно столько, сколько нужно этому кольцу, и ни секундой чаще. */
   function wpStart(mode) {
     wpStop();
     wpMode = mode;
     wpTick(true);
-    wpTimer = setInterval(function () { wpTick(false); }, mode === "therapy" ? 2000 : 60000);
+    /* Турбо не спрашивают здесь: он замораживает явно (sbRoomFreeze). Иначе
+       порядок записи в хранилище решал бы, оживёт комната или нет, — а это
+       ровно тот вид скрытой связи, из-за которого шов и комната когда-то
+       разошлись. */
+    var cyc = window.sbMoodCycle(mode);
+    var step = Math.max(1000, Math.min(60000, Math.round(cyc / 720)));
+    wpTimer = setInterval(function () { wpTick(false); }, step);
+  }
+  /* ОСТАНОВИТЬ ХОД — НЕ ЗНАЧИТ ПОГАСИТЬ СВЕТ. Турбо замораживает комнату
+     такой, какая она сейчас: краска остаётся, идёт только пружина. Гасить
+     краску нужно лишь при полной разборке. */
+  function wpFreeze() {
+    if (wpTimer) { clearInterval(wpTimer); wpTimer = null; }
   }
   function wpStop() {
-    if (wpTimer) { clearInterval(wpTimer); wpTimer = null; }
-    wpLastHue = null; wpLastLvl = null; wpMode = null;
+    wpFreeze();
+    wpLastHue = null; wpLastLvl = null; wpLastSeam = null; wpMode = null;
+    wpNow = null; wpSeam = null;        /* света нет — и читатели это видят */
     wpClear();
   }
   window.sbWallpaperDrifting = function () { return !!wpTimer; };
+  window.sbRoomDrifting = function () { return !!wpTimer; };
+  window.sbRoomFreeze = function () { wpFreeze(); };
+  /* Свет, который СЕЙЧАС НАПИСАН на комнате. Читают отсюда все, кому нужен
+     её цвет: иначе замороженная комната продолжала бы плыть у них в руках. */
+  window.sbRoomNow = function () { return wpNow; };
+  window.sbRoomThaw = function () { if (!wpTimer) wpStart(window.sbGetWallpaperMood()); };
 
   /* Надеть настроение умеет ОДНА функция. Раньше это знали в двух местах —
      здесь и в boot, — места разошлись, и выбранный Ocean не переживал
@@ -661,7 +777,8 @@
   function applyMood(valid) {
     if (valid === "studio") root.removeAttribute("data-wp-mood");
     else root.setAttribute("data-wp-mood", valid);
-    if (valid === "daylight" || valid === "therapy") wpStart(valid); else wpStop();
+    /* Живы ВСЕ комнаты, а не одна: ход идёт при любом настроении. */
+    wpStart(valid);
   }
 
   window.sbWallpaperMoods = MOODS.map(function (m) {
@@ -3673,12 +3790,8 @@
     /* restore persisted appearance before first reveal */
     var savedTheme = window.sbDB ? window.sbDB.get(THEME_KEY) : null;
     root.setAttribute("data-theme", window.sbIncognitoActive ? "dark" : (savedTheme === "light" ? "light" : "dark"));
-    var acc = window.sbGetCurrentAccent();
-    applyAccent(acc.a1, acc.a2);
-    /* Ход переживает перезагрузку: режим сохранён, часы идут дальше — значит
-       и цвет продолжается с того места, где человек его оставил, а не
-       начинается заново. То же правило, что у обоев (D-095). */
-    if (acc.mode === DRIFT_ID) driftStart();
+    /* Шов ставит сама комната: applyMood → wpStart → wpTick. Отдельного
+       восстановления краски из хранилища больше нет — хранить нечего. */
     /* Та же функция, что и при выборе, — второго знания о настроении в
        системе больше нет. */
     applyMood(window.sbGetWallpaperMood());

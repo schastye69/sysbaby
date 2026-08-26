@@ -28,22 +28,17 @@
   function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
   function appName(id) { return window.sbAppTitle ? window.sbAppTitle(id) : id; }
 
-  var SEED = [
-    { id: 1, name: "Sample Client · Logistics", initials: "SL", color: "#0a84ff", unread: true, muted: false, isGroup: false, members: [], online: true,
-      messages: [
-        { from: "them", text: "The new order-routing automation went live this morning — dispatch time is already down about 40%.", tsOffsetHours: 5 },
-        { from: "them", text: "Could we scope the supplier-invoice flow for next sprint?", tsOffsetHours: 4.8 }
-      ] },
-    { id: 2, name: "Sample Client · Retail", initials: "SR", color: "#ff9500", unread: false, muted: false, isGroup: false, members: [], online: false,
-      messages: [
-        { from: "them", text: "Signed the SoW and sent it back — kickoff Monday?", tsOffsetHours: 26 },
-        { from: "me", text: "Received. Kickoff confirmed for Monday 10:00.", tsOffsetHours: 25.8 }
-      ] },
-    { id: 3, name: "Sample Project · Delivery", initials: "SP", color: "#30d158", unread: false, muted: false, isGroup: true, members: ["Delivery Lead", "Engineer", "Sample Client"], online: true,
-      messages: [
-        { from: "them", senderName: "Delivery Lead", text: "Staging passed all checks. Client demo scheduled Thursday 14:00.", tsOffsetHours: 70 }
-      ] }
-  ];
+  /* ── СИСТЕМА ПРИХОДИТ ПУСТОЙ (D-142) ────────────────────────────────────
+     ПОВОД, дословно от основателя 26.08.2026: «прошу полностью очистить
+     содержимое приложений от всяких примеров и мусора. Система должна
+     выглядеть чистой».
+     Засеянные примеры были нужны, пока систему показывали. Теперь ею
+     пользуются — и чужие письма, чужие папки и чужие разговоры в своей
+     системе выглядят ровно тем, чем являются: мусором. Приложение, которому
+     нечего показать, теперь ГОВОРИТ с человеком (D-140), а не притворяется
+     занятым. */
+  var SEED = [];
+
 
   /* -------------------------------------------------------------- helpers */
 

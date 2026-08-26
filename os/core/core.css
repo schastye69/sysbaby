@@ -88,6 +88,9 @@
   --spring: cubic-bezier(.34, 1.56, .64, 1);
   --font: system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  /* Цвет бренда. Неподвижен: им красится знак, и только он. Шов (--accent)
+     живёт вместе с комнатой — это разные вещи, и у них разные имена. */
+  --brand: #e0663c;
   --topbar-h: 44px;
   /* Вырез телефона — ОДНО объявление на всю систему (D-129). Всё, что о нём
      знает, читает эту переменную; закон может подменить её и посмотреть, что
@@ -702,7 +705,15 @@ html[data-motion="reduced"] .tb-mark { transition: none; }
    обратное: длинное слово везде и знак только на телефоне. */
 .sb-min { display: block; width: 17px; height: 17px; animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both; }
 .sb-ls, .sb-hs { fill: var(--ink); }
-.sb-lb, .sb-hb { fill: var(--accent); }
+/* ── ЗНАК НЕ ДРЕЙФУЕТ (D-141) ───────────────────────────────────────────
+   Крюк брал цвет у шва — и это было верно, пока шов был неподвижной краской
+   бренда. С D-141 шов живёт вместе с комнатой, и знак поехал за ним: доска
+   поймала расхождение с лендингом (224,102,60 против 219,104,67).
+   Решение: ЖИВЁТ ШОВ, А НЕ ЗНАК. Логотип, меняющий цвет, — не логотип.
+   Основатель просил живых акцентов; про знак он этого не просил, и закон о
+   знаке существует ровно затем, чтобы такое не проходило молча.
+   У бренда своё имя, и оно неподвижно на обеих поверхностях. */
+.sb-lb, .sb-hb { fill: var(--brand, #e0663c); }
 .sb-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @keyframes markIn { from { opacity: 0; transform: translate3d(-8%, -8%, 0) scale(.82) } to { opacity: 1; transform: none } }
 @media (prefers-reduced-motion: reduce) { .sb-lock { animation: none } }

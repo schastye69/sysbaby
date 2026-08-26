@@ -25,90 +25,25 @@
 
   /* ------------------------------------------------------------ seed data */
 
-  var SEED_TREE = {
-    name: "Home",
-    type: "folder",
-    children: [
-      {
-        name: "Demo Workspace",
-        type: "folder",
-        children: [
-          {
-            name: "Sample Client · Logistics",
-            type: "folder",
-            children: [
-              { name: "SoW (Sample).md", type: "file", content: "# Statement of Work — Sample Client · Logistics\n\nSAMPLE DATA — illustrates CRM functionality, not a real client.\n\nScope: order-routing automation, supplier-invoice flow (phase 2).\nTimeline: 6 weeks." },
-              { name: "Automation-Spec (Sample).md", type: "file", content: "# Order-Routing Automation (Sample)\n\nSAMPLE DATA — for demonstration only.\n\n- Ingest orders from the dispatch queue\n- Route by zone + carrier SLA\n- Auto-notify warehouse on assignment" },
-              { name: "Invoice (Sample).txt", type: "file", content: "SAMPLE INVOICE — demonstration only\nInvoice #S-0142\nClient: Sample Client · Logistics\nAmount: €1,490.00\nStatus: Paid" }
-            ]
-          },
-          {
-            name: "Sample Client · Retail",
-            type: "folder",
-            children: [
-              { name: "SoW (Sample).md", type: "file", content: "# Statement of Work — Sample Client · Retail\n\nSAMPLE DATA — illustrates CRM functionality, not a real client.\n\nScope: inventory sync + reorder automation.\nTimeline: 4 weeks." },
-              { name: "Kickoff Notes (Sample).txt", type: "file", content: "SAMPLE DATA — demonstration only.\nKickoff — Sample Client · Retail:\n- Confirmed integrations (POS, warehouse)\n- Weekly sync agreed\n- First milestone: inventory sync" }
-            ]
-          },
-          {
-            name: "Proposals (Sample)",
-            type: "folder",
-            children: [
-              { name: "Sample Lead · Food & Beverage.md", type: "file", content: "# Proposal — Sample Lead · Food & Beverage\n\nSAMPLE DATA — demonstration only, not a real prospect.\n\nInterest: invoicing + supplier-onboarding automation.\nStage: intro call." }
-            ]
-          }
-        ]
-      },
-      {
-        name: "Templates",
-        type: "folder",
-        children: [
-          { name: "Statement-of-Work.md", type: "file", content: "# Statement of Work (template)\n\n## Scope\n## Timeline\n## Deliverables\n## Acceptance criteria" }
-        ]
-      }
-    ]
-  };
+  /* ── СИСТЕМА ПРИХОДИТ ПУСТОЙ (D-142) ────────────────────────────────────
+     ПОВОД, дословно от основателя 26.08.2026: «прошу полностью очистить
+     содержимое приложений от всяких примеров и мусора. Система должна
+     выглядеть чистой».
+     Засеянные примеры были нужны, пока систему показывали. Теперь ею
+     пользуются — и чужие письма, чужие папки и чужие разговоры в своей
+     системе выглядят ровно тем, чем являются: мусором. Приложение, которому
+     нечего показать, теперь ГОВОРИТ с человеком (D-140), а не притворяется
+     занятым. */
+  var SEED_TREE = { name: "Home", type: "folder", children: [] };
+
 
   /* ABOUT_PORTFOLIO снят вместе с выведенной папкой (v48, D-066):
      Хранилище принадлежит человеку, витринное живёт в build. */
 
-  /* The Journal: the system's own memory, planted once (guard key below) so
-   * the desktop feels like it lived before you arrived — because it did.
-   * Everything in these files is true and checkable; the same history answers
-   * to `log` in the Terminal. Delete the folder and it stays deleted:
-   * memory offered, never forced. */
-  var JOURNAL_GUARD = "sysbaby.journal.files.v1";
-  var JOURNAL_FOLDER = {
-    name: "Journal",
-    type: "folder",
-    children: [
-      {
-        name: "Read me first.txt",
-        type: "file",
-        content: "This folder is the system's own memory.\n\nEvery system we hand over keeps a record of how it came to be — decisions, dead ends, repairs. This desktop is no exception, because it is the same kind of thing: a working system, built by hand, owned by the person in front of it.\n\nThe short version lives in the Terminal — open it and type `log`.\n\nEvery entry is true. That is the entire trick."
-      },
-      {
-        name: "How the door got its light.txt",
-        type: "file",
-        content: "aug 2026\n\nThe landing page used to say the word 'applications' at the bottom of the screen, once, to tell you a dock was hiding there.\n\nFirst we made the word assemble itself out of glyphs. Then we made it speak three languages. Then we deleted it.\n\nWhat stayed is a thin line of warm light at the bottom edge — the light under a door. Move toward it and the door opens; the dock's tiles gather to your touch and settle into place.\n\nA label explains. Light invites. We keep choosing the second one.\n"
-      },
-      {
-        name: "The day the mail worked.txt",
-        type: "file",
-        content: "10 aug 2026\n\nThe order form on the landing page looked finished for weeks. It was not — the chain behind it was broken in three places, and nobody knew, because everything LOOKED fine.\n\nDNS pointed one way, the mail routing another, and the form's endpoint was never activated. We untangled it link by link: registrar → DNS → mail routing → inbox. Then we sent a real letter through the real form and watched it arrive.\n\nThat evening the project's counter of PROVEN things moved off zero. Everything before that had been opinion.\n\nRule kept since: a feature exists when it is observed working, not when its code reads well.\n"
-      },
-      {
-        name: "Where your work is kept.txt",
-        type: "file",
-        content: "Everything you do in this desktop is stored in this browser and nowhere else. No account, no server, no copy taken.\n\nThat is easy to claim and easy to check: turn off your network and keep working. Nothing will stop.\n\nClose the tab and it is all still here when you come back. Clear your browser data and it is all genuinely gone — including this file."
-      },
-      {
-        name: "Rules the house keeps.txt",
-        type: "file",
-        content: "Collected from the build journal, in force everywhere in this desktop:\n\n1. You own the system. Your data lives in your browser; export it whole any time. Nothing phones home.\n\n2. Nothing is deleted casually. Removed things wait in Echoes until you decide — certainty is not demanded at the worst moment.\n\n3. The machine speaks in labels, people speak in sentences. When this desktop talks like a person, a person wrote those words.\n\n4. Nothing pretends. Sample data says so on its face. Nothing simulates a delivery, a reply, or a presence that is not there.\n\n5. Evidence over opinion. When two designs argued, we built both and let the runtime decide.\n"
-      }
-    ]
-  };
+  /* Журнала в Хранилище тоже больше нет (D-142): система приходит пустой.
+     История сборки жива и доступна там, где ей место, — команда `log` в
+     Терминале; в чужой папке она была бы тем же мусором. */
+
 
   /* -------------------------------------------------------------- helpers */
 
@@ -204,16 +139,8 @@
       return true;
     });
 
-    /* The Journal is planted exactly once — including into trees stored
-     * before it existed. If the visitor deletes it, the guard key remembers
-     * and it never comes back on its own: offered memory, not forced. */
-    if (dbGet(JOURNAL_GUARD) !== "1") {
-      var hasJournal = tree.children.some(function (node) {
-        return node && node.type === "folder" && node.name === "Journal";
-      });
-      if (!hasJournal) tree.children.push(clone(JOURNAL_FOLDER));
-      dbSet(JOURNAL_GUARD, "1");
-    }
+    /* Журнал больше не сажается (D-142): система приходит пустой. Тем, у кого
+       он уже вырос, он остаётся — свои папки система не трогает. */
 
     persist();
     pathStack = [tree];

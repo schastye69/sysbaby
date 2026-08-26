@@ -27,13 +27,17 @@
   /* Тексты засеянных эх живут в STRINGS ядра (ключи ec.seed.*): это голос
      студии, и он должен звучать на языке того, кто открыл систему. После
      засева это обычные данные профиля — перевод к ним больше не возвращается. */
-  var TRACE_NOTES = [
-    { id: "trace-echo-0", key: "ec.seed.0", ageDays: 9 },
-    { id: "trace-echo-1", key: "ec.seed.1", ageDays: 4 },
-    { id: "trace-echo-2", key: "ec.seed.2", ageDays: 21 },
-    { id: "trace-echo-3", key: "ec.seed.3", ageDays: 2 },
-    { id: "trace-echo-4", key: "ec.seed.4", ageDays: 1 }
-  ];
+  /* ── СИСТЕМА ПРИХОДИТ ПУСТОЙ (D-142) ────────────────────────────────────
+     ПОВОД, дословно от основателя 26.08.2026: «прошу полностью очистить
+     содержимое приложений от всяких примеров и мусора. Система должна
+     выглядеть чистой».
+     Засеянные примеры были нужны, пока систему показывали. Теперь ею
+     пользуются — и чужие письма, чужие папки и чужие разговоры в своей
+     системе выглядят ровно тем, чем являются: мусором. Приложение, которому
+     нечего показать, теперь ГОВОРИТ с человеком (D-140), а не притворяется
+     занятым. */
+  var TRACE_NOTES = [];
+
   /* (The former TRACE_DOCUMENTS file moved to the Vault's Journal folder in
    * v21 — documents belong with documents; echoes hold what was let go.) */
 
@@ -74,14 +78,9 @@
           deletedAt: now - Math.round(trace.ageDays * 86400000)
         });
       });
-      if (!have["trace-scribble-journal"]) {
-        batch.unshift({
-          id: "trace-scribble-journal",
-          text: journalNote(),
-          pinned: true,
-          updatedAt: now - 3 * 86400000
-        });
-      }
+      /* Приколотой заметки-путеводителя тоже больше нет (D-142): система
+         приходит пустой, и первая заметка на столе — та, которую напишет
+         человек, а не мы. */
       s.save(batch);
       db.set(TRACE_GUARD, "1");
       s.notify();

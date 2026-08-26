@@ -33,13 +33,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v77">
+<meta name="sysbaby-build" content="v78">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v77">
+<link rel="stylesheet" href="shared/system.css?b=v78">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -117,11 +117,11 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v77"></script>
-<script src="shared/portfolio.strings.js?b=v77"></script>
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v77" />
-<script src="shared/portfolio.view.js?b=v77"></script>
-<script src="shared/pricing.data.js?b=v77"></script>
+<script src="shared/portfolio.data.js?b=v78"></script>
+<script src="shared/portfolio.strings.js?b=v78"></script>
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v78" />
+<script src="shared/portfolio.view.js?b=v78"></script>
+<script src="shared/pricing.data.js?b=v78"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -313,7 +313,7 @@ html[data-anim="paused"] .backdrop .wallpaper{animation:none}
 .sb-lock{height:16px;width:auto;display:block}
 .sb-min{display:none}
 .sb-ls,.sb-hs{fill:#efe9e1}
-.sb-lb,.sb-hb{fill:var(--accent)}
+.sb-lb,.sb-hb{fill:var(--brand,#e0663c)}
 .sb-lock{animation:markIn .68s cubic-bezier(.2,.7,.2,1) both}
 .sb-vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @keyframes markIn{from{opacity:0;transform:translate3d(-8%,-8%,0) scale(.82)}to{opacity:1;transform:none}}

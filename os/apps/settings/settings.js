@@ -129,15 +129,13 @@
       '<div class="st-note"><p>' + esc(t("set.general.note")) + "</p></div>";
   }
 
-  function accentSwatches() {
-    if (typeof window.sbGetAccentSwatches !== "function") return [];
-    try { return window.sbGetAccentSwatches() || []; } catch (err) { console.error("[settings] accent swatches failed", err); return []; }
-  }
-
-  function currentAccent() {
-    if (typeof window.sbGetCurrentAccent !== "function") return "";
-    try { return window.sbGetCurrentAccent() || ""; } catch (err) { console.error("[settings] accent read failed", err); return ""; }
-  }
+  /* ── РЯД КРАСОК СНЯТ ЦЕЛИКОМ (D-141) ───────────────────────────────────
+     Основатель: «убрать accent color и сделать их частью wallpapers (они
+     должны меняться в зависимости от выбранной темы)». Здесь стояли
+     accentSwatches() и currentAccent() — две двери к отдельному выбору
+     цвета. Дверей больше нет: цвет приходит от комнаты, и выбор комнаты
+     ниже — единственный выбор цвета в системе. Читатели сняты вместе с
+     рядом, иначе приложение продолжало бы звать из ядра то, чего там нет. */
 
   function wallpaperMoods() {
     var moods = window.sbWallpaperMoods;
@@ -151,25 +149,9 @@
 
   function appearanceMarkup() {
     var theme = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
-    /* The shell's accent contract is {a1, a2, name} — this used to read a
-       `.hex` field that never existed, so no swatch ever showed as active and
-       the colour picker opened on a garbage value. Read the real field. */
-    var accentObj = currentAccent();
-    var accent = String((accentObj && accentObj.a1) || accentObj || "").toLowerCase();
-    var accentMode = (accentObj && accentObj.mode) || "";
-
-    /* ── ХОД ВЫБИРАЕТСЯ ТЕМ ЖЕ РЯДОМ, ЧТО И КРАСКИ (v62) ─────────────────
-       Он стоит среди них последним и выглядит как они — но передаётся не
-       цветом, а именем: цвет у него меняется сам, и запомнить его как
-       «вот этот шестнадцатеричный» было бы неправдой уже через четыре
-       минуты. Отмечен он тоже по имени, а не по совпадению цвета. */
-    var swatches = accentSwatches().map(function (sw) {
-      var hex = String(sw.a1 || sw.hex || "");
-      var token = sw.drift ? String(sw.id) : hex;
-      var on = sw.drift ? (accentMode === String(sw.id)) : (hex.toLowerCase() === accent && !accentMode);
-      return '<button type="button" class="st-swatch' + (on ? " active" : "") + (sw.drift ? " is-drift" : "") + '" ' +
-        'style="background:' + esc(hex) + '" data-accent="' + esc(token) + '" title="' + esc(sw.name || sw.title || hex) + '" aria-label="' + esc(sw.name || sw.title || hex) + '"></button>';
-    }).join("");
+    /* РЯДА КРАСОК ЗДЕСЬ БОЛЬШЕ НЕТ (D-141). Шов приходит от обоев: выбор
+       комнаты и есть выбор цвета. Пока выборов было два, они могли встать в
+       ссору — и вставали. */
 
     var moods = wallpaperMoods();
     var mood = currentMood();
@@ -177,7 +159,8 @@
       /* Имена настроений обоев уже переведены в ядре (ключи mood.*) — тот же
          список показывает Центр управления. Приложение берёт их оттуда, а не
          печатает английское m.name, иначе два места назвали бы одно разными
-         словами. */
+         словами. Выбор обоев теперь — единственный выбор цвета в системе:
+         шов приходит отсюда же (D-141). */
       var moodName = t("mood." + m.id);
       if (moodName === "mood." + m.id) moodName = m.name || m.label || m.id;
       /* Суточное настроение помечено тем же знаком, что и суточная краска:
@@ -221,10 +204,6 @@
         '<span class="st-segment" data-theme-state="dark">' +
           '<button type="button" class="st-seg active" data-theme="dark">' + esc(t("set.appearance.themeDark")) + "</button>" +
         "</span>") +
-      rowMarkup(esc(t("set.appearance.accent")),
-        esc(t("set.appearance.accentSub")),
-        /* см. примечание о нативном выборе цвета в core/topbar.js */
-        '<span class="st-swatches">' + swatches + "</span>") +
       rowMarkup(esc(t("set.appearance.mood")),
         esc(t("set.appearance.moodSub")),
         '<span class="st-chips">' + (moodChips || '<span class="st-muted">' + esc(t("set.appearance.moodNone")) + "</span>") + "</span>") +
@@ -483,7 +462,7 @@
    * source of that very event), and repaints collapse to one per frame. */
   var SECTION_KINDS = {
     general: { lang: 1 },
-    appearance: { theme: 1, accent: 1, mood: 1, brightness: 1, toggle: 1 },
+    appearance: { theme: 1, mood: 1, brightness: 1, toggle: 1 },
     sound: { toggle: 1, volume: 1 },
     desktop: { toggle: 1 },
     privacy: {},
@@ -504,7 +483,7 @@
     /* A slider mid-drag re-rendering itself would fight the pointer. */
     var active = document.activeElement;
     if (active && bodyOf(win).contains(active) && (active.type === "range" || active.type === "color" || active.tagName === "INPUT")) {
-      if (kind === "volume" || kind === "brightness" || kind === "accent") return;
+      if (kind === "volume" || kind === "brightness") return;
     }
 
     if (syncScheduled) return;
@@ -571,16 +550,6 @@
       });
     });
 
-    host.querySelectorAll("[data-accent]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        if (typeof window.sbSetAccent !== "function") return;
-        try { window.sbSetAccent(btn.getAttribute("data-accent")); }
-        catch (err) { console.error("[settings] setAccent failed", err); }
-        render(win);
-      });
-    });
-
-
     host.querySelectorAll("[data-mood]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         if (typeof window.sbSetWallpaperMood !== "function") return;
@@ -639,9 +608,9 @@
     var reset = host.querySelector("#stResetAppearance");
     if (reset) {
       reset.addEventListener("click", function () {
-        if (typeof window.sbSetAccent === "function") {
-          try { window.sbSetAccent("#e0663c"); } catch (err) { console.error("[settings] accent reset failed", err); }
-        }
+        /* Сброс возвращает КОМНАТУ — вместе с ней возвращается и цвет
+           (D-141): отдельного цвета, который можно было бы сбросить, в
+           системе больше нет. */
         if (typeof window.sbSetWallpaperMood === "function") {
           try { window.sbSetWallpaperMood("studio"); } catch (err) { console.error("[settings] mood reset failed", err); }
         }

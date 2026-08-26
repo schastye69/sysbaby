@@ -28,7 +28,7 @@
       "cc.sound": "Sound", "cc.dnd": "Do Not Disturb", "cc.autohide": "Dim Dock",
       "cc.motion": "Turbo", "cc.transparency": "Reduce transparency",
       "cc.volume": "Volume", "cc.brightness": "Brightness", "cc.language": "Language",
-      "cc.wallpaper": "Wallpaper", "cc.accent": "Accent color", "cc.appearance": "Appearance",
+      "cc.wallpaper": "Wallpaper", "cc.appearance": "Appearance",
       "cc.shortcuts": "Keyboard Shortcuts", "cc.layouts": "Workspace Layouts",
       "cc.desktop": "Manage Desktop", "cc.health": "Health", "cc.incognito": "Incognito Desktop",
       "cc.exit": "Exit Incognito", "cc.signout": "Sign out, softly",
@@ -176,8 +176,6 @@
       "set.appearance.theme": "Theme",
       "set.appearance.themeSub": "Dark is the only theme this release ships. A light theme that half the apps do not honour would look broken, and shipping it broken is worse than not having it.",
       "set.appearance.themeDark": "DARK",
-      "set.appearance.accent": "Accent color",
-      "set.appearance.accentSub": "Recolors the dock highlight, toggles, focus rings and more, everywhere at once",
       "set.appearance.mood": "Wallpaper mood",
       "set.appearance.moodSub": "Recolors the background scenery — everything else stays the same",
       "set.appearance.moodNone": "No moods available",
@@ -243,10 +241,10 @@
       "set.advanced.diagSub": "Live FPS, memory, storage and session errors",
       "set.advanced.diagBtn": "Open",
       "set.advanced.reset": "Reset appearance",
-      "set.advanced.resetSub": "Accent color and wallpaper mood only — nothing else is touched",
+      "set.advanced.resetSub": "Your room and its light — nothing else is touched",
       "set.advanced.resetBtn": "Reset",
       "set.advanced.resetDoneTitle": "Appearance reset",
-      "set.advanced.resetDoneBody": "Accent color and wallpaper mood are back to default.",
+      "set.advanced.resetDoneBody": "Your desk is back in Studio, and its light with it.",
       "set.about.build": "Build",
       "set.about.apps": "Applications",
       "set.about.appsValue": "{registered} registered · {launchable} in the dock",
@@ -513,7 +511,7 @@
       "cc.sound": "Звук", "cc.dnd": "Не беспокоить", "cc.autohide": "Приглушать док",
       "cc.motion": "Турбо", "cc.transparency": "Меньше прозрачности",
       "cc.volume": "Громкость", "cc.brightness": "Яркость", "cc.language": "Язык",
-      "cc.wallpaper": "Обои", "cc.accent": "Акцент", "cc.appearance": "Оформление",
+      "cc.wallpaper": "Обои", "cc.appearance": "Оформление",
       "cc.shortcuts": "Горячие клавиши", "cc.layouts": "Раскладки окон",
       "cc.desktop": "Рабочий стол", "cc.health": "Диагностика", "cc.incognito": "Скрытый рабочий стол",
       "cc.exit": "Выйти из инкогнито", "cc.signout": "Выйти, тихо",
@@ -650,8 +648,6 @@
       "set.appearance.theme": "Тема",
       "set.appearance.themeSub": "В этом выпуске есть только тёмная тема. Светлая, которую половина приложений не соблюдает, выглядела бы поломкой, а выпустить поломанным хуже, чем не выпускать вовсе.",
       "set.appearance.themeDark": "ТЁМНАЯ",
-      "set.appearance.accent": "Акцентный цвет",
-      "set.appearance.accentSub": "Перекрашивает подсветку дока, переключатели, кольца фокуса и остальное — сразу везде",
       "set.appearance.mood": "Настроение обоев",
       "set.appearance.moodSub": "Перекрашивает фоновый пейзаж — всё остальное остаётся прежним",
       "set.appearance.moodNone": "Настроений нет",
@@ -717,10 +713,10 @@
       "set.advanced.diagSub": "Живые FPS, память, хранилище и ошибки сессии",
       "set.advanced.diagBtn": "Открыть",
       "set.advanced.reset": "Сбросить оформление",
-      "set.advanced.resetSub": "Только акцентный цвет и настроение обоев — остальное не трогается",
+      "set.advanced.resetSub": "Только комната и её свет — остальное не трогается",
       "set.advanced.resetBtn": "Сбросить",
       "set.advanced.resetDoneTitle": "Оформление сброшено",
-      "set.advanced.resetDoneBody": "Акцентный цвет и настроение обоев вернулись к исходным.",
+      "set.advanced.resetDoneBody": "Ваш стол снова в Studio, и свет вернулся вместе с ним.",
       "set.about.build": "Сборка",
       "set.about.apps": "Приложения",
       "set.about.appsValue": "{registered} зарегистрировано · {launchable} в доке",
@@ -974,7 +970,7 @@
       "cc.sound": "Heli", "cc.dnd": "Mitte segada", "cc.autohide": "Tumenda dokk",
       "cc.motion": "Turbo", "cc.transparency": "Vähem läbipaistvust",
       "cc.volume": "Helitugevus", "cc.brightness": "Heledus", "cc.language": "Keel",
-      "cc.wallpaper": "Taust", "cc.accent": "Aktsentvärv", "cc.appearance": "Välimus",
+      "cc.wallpaper": "Taust", "cc.appearance": "Välimus",
       "cc.shortcuts": "Klaviatuuri otseteed", "cc.layouts": "Akende paigutused",
       "cc.desktop": "Töölaua haldus", "cc.health": "Seisund", "cc.incognito": "Peidetud töölaud",
       "cc.exit": "Välju inkognitost", "cc.signout": "Logi välja, vaikselt",
@@ -1112,8 +1108,6 @@
       "set.appearance.theme": "Teema",
       "set.appearance.themeSub": "See väljalase tuleb ainult tumeda teemaga. Hele teema, mida pooled rakendused ei järgi, näeks katkine välja, ja katkisena välja anda on halvem kui üldse mitte anda.",
       "set.appearance.themeDark": "TUME",
-      "set.appearance.accent": "Rõhuvärv",
-      "set.appearance.accentSub": "Värvib korraga üle doki esiletõste, lülitid, fookusrõngad ja muu",
       "set.appearance.mood": "Tausta meeleolu",
       "set.appearance.moodSub": "Värvib ümber taustamaastiku — kõik muu jääb samaks",
       "set.appearance.moodNone": "Meeleolusid pole saadaval",
@@ -1179,10 +1173,10 @@
       "set.advanced.diagSub": "Reaalajas FPS, mälu, salvestusruum ja sessiooni vead",
       "set.advanced.diagBtn": "Ava",
       "set.advanced.reset": "Lähtesta välimus",
-      "set.advanced.resetSub": "Ainult rõhuvärv ja tausta meeleolu — muud ei puudutata",
+      "set.advanced.resetSub": "Ainult sinu tuba ja selle valgus — muud ei puudutata",
       "set.advanced.resetBtn": "Lähtesta",
       "set.advanced.resetDoneTitle": "Välimus lähtestatud",
-      "set.advanced.resetDoneBody": "Rõhuvärv ja tausta meeleolu on tagasi vaikeväärtustel.",
+      "set.advanced.resetDoneBody": "Sinu laud on taas Studios, ja valgus koos sellega.",
       "set.about.build": "Versioon",
       "set.about.apps": "Rakendused",
       "set.about.appsValue": "{registered} registreeritud · {launchable} dokis",
@@ -1869,13 +1863,19 @@
      несколько минут. */
   var litLast = "";
   function roomLight() {
-    /* Комната, если она живая; иначе шов. Спрашиваем в одном месте. */
+    /* ── ОДИН СВЕТ НА ВСЮ КОМНАТУ (D-143) ──────────────────────────────────
+       Здесь стояли три ветки: у светотерапии спрашивали её обои, у суточного
+       — свои, у остальных брали шов. Это было раздвоением дважды: часы сами
+       выводили цвет комнаты по её имени (хотя с D-141 шов И ЕСТЬ её свет,
+       увиденный на кромке), и вдобавок читали ВЫЧИСЛЕННЫЙ свет вместо
+       НАПИСАННОГО — поэтому в замороженной комнате часы продолжали писать.
+       Спрашиваем один раз и у одного: что на комнате надето сейчас. */
     try {
-      var mood = window.sbGetWallpaperMood ? window.sbGetWallpaperMood() : "studio";
-      if (mood === "therapy" && window.sbTherapyForTime) return window.sbTherapyForTime();
-      if (mood === "daylight" && window.sbWallpaperForTime) return window.sbWallpaperForTime();
+      var now = window.sbRoomNow ? window.sbRoomNow() : null;
       var acc = window.sbGetCurrentAccent ? window.sbGetCurrentAccent() : null;
-      if (acc && acc.a1) return { c1: acc.a1, level: 0.5 };
+      if (acc && acc.a1) {
+        return { c1: acc.a1, level: (now && typeof now.level === "number") ? now.level : 0.5 };
+      }
     } catch (err) { console.error("[clock] light read failed", err); }
     return null;
   }
@@ -1899,12 +1899,23 @@
        всего документа (D-093, D-112), но случается, только когда изменился
        ОКРУГЛЁННЫЙ цвет света — то есть раз в несколько минут, а не раз в
        секунду. Закон это и стережёт: за четыре секунды хода — ни одной. */
-    var root = doc.documentElement;
-    root.style.setProperty("--lit-glow", rgba);
-    root.style.setProperty("--lit-blur", blur + "px");
+    /* КАЖДОЕ СВОЙСТВО — СО СВОИМ ВОПРОСОМ (D-143). Ключ общий на троих, но
+       меняются они врозь: цвет плывёт непрерывно, а размытие держится
+       ступенькой. Писать все три потому, что изменилось одно, значит дважды
+       объявить устаревшим стиль всего документа НИ ЗА ЧТО. Замер клиники
+       поймал это в лоб: --lit-blur переписан тем же значением, которое уже
+       стояло. Спрашиваем у корня, что там сейчас, и пишем только новое. */
+    var root = doc.documentElement, st = root.style;
+    var ink = "color-mix(in oklab, var(--ink) 88%, " + w.c1 + ")";
+    setIfNew(st, "--lit-glow", rgba);
+    setIfNew(st, "--lit-blur", blur + "px");
     /* Сам штрих — чуть тёплее белого в сторону света, но остаётся белым:
        цветные цифры в рабочей полосе кричали бы. */
-    root.style.setProperty("--lit-ink", "color-mix(in oklab, var(--ink) 88%, " + w.c1 + ")");
+    setIfNew(st, "--lit-ink", ink);
+  }
+  function setIfNew(st, key, value) {
+    if (st.getPropertyValue(key) === value) return;
+    st.setProperty(key, value);
   }
   window.sbClockLight = paintLight;
   if (window.sbBus && typeof window.sbBus.on === "function") {
@@ -1969,7 +1980,16 @@
         }
       }
     }
-    paintLight();
+    /* ── СВЕТ НЕ ПРИВЯЗАН К МИНУТЕ (D-143) ────────────────────────────────
+       Здесь стоял вызов paintLight(). Ход часов — это МИНУТА: раньше цифры
+       не меняются, и до сюда мы доходим раз в минуту. Свет комнаты за это
+       время успевает уйти далеко, и минутная стрелка догоняла его одним
+       рывком — в замершей комнате это выглядело как запись в корень «сама
+       по себе», и закон root-restyle-check ловил её то в одном прогоне, то
+       в другом. Причина не в пороге и не в удаче: у света и у цифр РАЗНЫЙ
+       ход, и связывать их нельзя. Свет ставит комната — wpTick зовёт
+       sbClockLight ровно тогда, когда шов ступил (D-141). Часы рисуют
+       цифры. Каждый прибор при своём предмете. */
     host.setAttribute("data-whole", whole);
     host.setAttribute("aria-label", whole);
     lastClock = whole;
@@ -2385,16 +2405,8 @@
    поверхность, выданная за свою. Плюс на телефоне он занимает пол-экрана ради
    выбора оттенка, который всё равно должен лежать в палитре проекта.
    Остаются готовые оттенки — свои, названные, в языке системы. */
-    var swHost = $("#sbCcAccents");
-    if (swHost && window.sbGetAccentSwatches) {
-      swHost.innerHTML = window.sbGetAccentSwatches().map(function (a) {
-        return '<button class="accent-sw" type="button" data-accent="' + esc(a.a1) + '" title="' + esc(a.name) + '" ' +
-          'style="background:linear-gradient(135deg,' + esc(a.a1) + "," + esc(a.a2) + ')"></button>';
-      }).join("");
-      $$("[data-accent]", swHost).forEach(function (b) {
-        b.addEventListener("click", function () { window.sbSetAccent(b.getAttribute("data-accent")); paintCc(); });
-      });
-    }
+    /* Ряда красок в Центре управления больше нет: шов приходит от обоев,
+       и ряд обоев ниже — единственный выбор цвета (D-141). */
 
     var incogBtn = $("#sbCcIncog");
     if (incogBtn) {

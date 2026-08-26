@@ -471,9 +471,17 @@
       ghost.classList.toggle("armed", isEchoesTarget(ev.clientX, ev.clientY));
     }
 
+    /* ── У ЖЕСТА ДВА КОНЦА (D-144) ─────────────────────────────────────
+       Второй — pointercancel: браузер забирает указатель себе, решив, что
+       человек ЛИСТАЕТ, а не тащит. На телефоне в этом списке так и есть
+       почти всегда. Пока конец был один, отобранный жест не заканчивался
+       никогда: pointermove оставался на документе, а призрак карточки
+       ездил за пальцем до перезагрузки. Ядро этот конец знает у окон и
+       значков — здесь его забыли. */
     function up() {
       document.removeEventListener("pointermove", move);
       document.removeEventListener("pointerup", up);
+      document.removeEventListener("pointercancel", up);
       if (typeof window.sbEchoesHighlight === "function") {
         try { window.sbEchoesHighlight(false); } catch (err) { console.error("[notes] echoes highlight failed", err); }
       }
@@ -492,6 +500,7 @@
 
     document.addEventListener("pointermove", move);
     document.addEventListener("pointerup", up);
+    document.addEventListener("pointercancel", up);
   }
 
   /* ------------------------------------------------------- live refresh */

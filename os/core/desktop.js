@@ -687,6 +687,15 @@
     var lastNonEmpty = wholeText();
 
     function persist() {
+      /* ── УБРАННАЯ ЗАМЕТКА НЕ ВОСКРЕСАЕТ (v78) ──────────────────────────
+         Ниже есть строка «не нашли в живых — добавим». Она нужна, пока
+         заметка живая: хранилище могло не успеть узнать о ней. Но после
+         удаления заметки в живых её и НЕ ДОЛЖНО быть, и та же строка
+         возвращала её обратно — потому что blur от закрытия вызывает
+         сохранение уже ПОСЛЕ softDelete. Прибор показал это в лоб: заметка
+         оставалась в живых и не попадала в Эхо.
+         Метка ставится в самом начале удаления, до всякого blur. */
+      if (el._sbRemoved) return;
       var live = window.sbNotesStore ? window.sbNotesStore.load() : [];
       var found = false;
       var value = wholeText();
@@ -1102,12 +1111,33 @@
   }
 
   function removeNote(el, id, soft) {
-    /* Полёт снимается ДО того, как заметку уберут из слоя: двойник рисуется
-       с живого предмета. Сами данные при этом не ждут картинки — softDelete
-       ниже идёт своим ходом (D-132). Полёт только для мягкого удаления: у
-       пустой заметки уходить некуда, её нигде не сохраняли. */
+    /* ── ПОРЯДОК ЗДЕСЬ И ЕСТЬ ВСЁ ЛЕКАРСТВО (v78) ───────────────────────
+       На телефоне основателя система переставала запускаться с сообщением,
+       которое само назвало причину: «The node to be removed is no longer a
+       child of this node. Perhaps it was moved in a "blur" event handler?»
+       Так и было. Удаление заметки, в которой стоит курсор, синхронно вызывает
+       blur; обработчик blur сохраняет текст, хранилище оповещает, слой заметок
+       пересобирается — и к моменту, когда исходное removeChild доходит до
+       дела, его узла в слое уже нет. Проверка el.parentNode от этого не
+       спасала: она сделана ДО того, как всё это случилось.
+
+       ПЕРВАЯ ПОПЫТКА чинила это так: снять фокус, а потом убрать узел. Падение
+       ушло — и заметка ВОСКРЕСАЛА: пересборка после blur успевала создать
+       новый узел, а убирался старый, уже отцепленный. Лечить надо было не
+       момент, а порядок.
+
+       ПОРЯДОК ТАКОЙ. Сперва снимок для полёта — он рисуется с живого. Потом
+       снимаем фокус, чтобы blur отработал сейчас, а не посреди уборки. Потом
+       меняем ДАННЫЕ — и слой пересобирается сам, уже без этой заметки. И
+       только в конце убираем то, что могло остаться: el.remove() к
+       отцепленному узлу равнодушен. Данные ведут, картинка идёт следом
+       (D-132). */
+    if (el) el._sbRemoved = true;      /* с этой метки сохранения молчат */
     if (soft && el && window.sbFlyToEchoes) { try { window.sbFlyToEchoes(el); } catch (e) { } }
-    if (el && el.parentNode) el.parentNode.removeChild(el);
+    if (el) {
+      try { var ae = doc.activeElement; if (ae && el.contains(ae) && ae.blur) ae.blur(); }
+      catch (e) { /* ignore */ }
+    }
     if (soft && window.sbNotesStore) {
       window.sbNotesStore.softDelete(id);
       if (window.showToast) window.showToast(tr("toast.toEchoes", { app: appTitleOf("echoes") }), tr("toast.toEchoesNote"), "");
@@ -1115,8 +1145,11 @@
       /* empty note: never persist an invisible ghost */
       var live = window.sbNotesStore.load().filter(function (n) { return n.id !== id; });
       window.sbNotesStore.save(live);
+      window.sbNotesStore.notify();
     }
+    if (el) { try { el.remove(); } catch (e) { /* узла уже нет — это и требовалось */ } }
   }
+
 
   /* ПЕРЕСБОРКА СЛОЯ НЕ ОТМЕНЯЕТ ТОГО, ЧТО СДЕЛАЛ ЧЕЛОВЕК (v64).
      Слой заметок пересобирается целиком на каждое изменение хранилища — а
@@ -1370,9 +1403,13 @@
             o.n.style.top = Math.round(o.y + dy) + "px";
           });
         }
+        /* Второй конец жеста — pointercancel (D-144). Без него оборванный
+           групповой перенос продолжал ехать за указателем: замер поймал
+           274 пикселя ПОСЛЕ того, как жест забрали. */
         function up() {
           doc.removeEventListener("pointermove", move);
           doc.removeEventListener("pointerup", up);
+          doc.removeEventListener("pointercancel", up);
           origins.forEach(function (o) {
             if (o.n.classList.contains("sticky-note") && window.sbPersistNotePosition) {
               window.sbPersistNotePosition(o.n.getAttribute("data-id"), o.n.offsetLeft, o.n.offsetTop);
@@ -1382,6 +1419,7 @@
         }
         doc.addEventListener("pointermove", move);
         doc.addEventListener("pointerup", up);
+        doc.addEventListener("pointercancel", up);
       }, true);
     });
   }
