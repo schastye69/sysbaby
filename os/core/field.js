@@ -334,16 +334,41 @@
        anything sitting on the desktop — a note, for now — reads them. Change
        the mood and the light on every note changes with it, because it is
        the same light. */
+    /* ── ПИШЕТСЯ ТОЛЬКО ИЗМЕНИВШЕЕСЯ (D-159, урок D-143) ────────────────
+       Раньше сюда приходили при СМЕНЕ настроения — то есть по нажатию
+       человека, изредка. С D-159 живая комната зовёт это на каждом шаге шва,
+       и четыре записи в корень стали регулярным расходом: каждая объявляет
+       устаревшим стиль ВСЕГО документа (D-093, D-112). Соседний закон поймал
+       это в тот же прогон — «свойство не пишется тем значением, которое уже
+       стоит», четыре штуки. Спрашиваем у корня, что там сейчас, и пишем
+       только новое: ровно тот же приём, что у света часов. */
     publishLight: function (p) {
       var st = doc.documentElement.style;
-      st.setProperty("--wp-light", "rgb(" + p[0][0] + "," + p[0][1] + "," + p[0][2] + ")");
-      st.setProperty("--wp-light-rgb", p[0][0] + "," + p[0][1] + "," + p[0][2]);
-      st.setProperty("--wp-light-2", "rgb(" + p[2][0] + "," + p[2][1] + "," + p[2][2] + ")");
-      st.setProperty("--wp-light-2-rgb", p[2][0] + "," + p[2][1] + "," + p[2][2]);
+      var put = function (key, value) {
+        if (st.getPropertyValue(key) === value) return;
+        st.setProperty(key, value);
+      };
+      put("--wp-light", "rgb(" + p[0][0] + "," + p[0][1] + "," + p[0][2] + ")");
+      put("--wp-light-rgb", p[0][0] + "," + p[0][1] + "," + p[0][2]);
+      put("--wp-light-2", "rgb(" + p[2][0] + "," + p[2][1] + "," + p[2][2] + ")");
+      put("--wp-light-2-rgb", p[2][0] + "," + p[2][1] + "," + p[2][2]);
     },
 
     applyMood: function (mood) {
-      var p = MOOD_PALETTE[mood] || MOOD_PALETTE.studio;
+      /* ── ЖИВЫЕ КОМНАТЫ КРАСЯТ ФОН СВОИМ СВЕТОМ (D-159) ─────────────────
+         Таблица ниже знает пять неподвижных комнат. Живые (суточная,
+         светотерапия, праздник) в ней не значатся, и неизвестное имя молча
+         падало на studio — фон оставался графитовым и не менялся НИКОГДА.
+         Основатель: «в feast не меняется цвет анимации фона рабочего стола, а
+         должен». Дописывать в таблицу ещё три строки значило бы повторить ту
+         же ошибку в четвёртый раз: список жил бы отдельно от объявления
+         комнат. Поэтому у живых комнат палитра СПРАШИВАЕТСЯ у света. */
+      var p = null;
+      var live = (window.sbWallpaperMoods || []).some(function (m) { return m.id === mood && m.drift; });
+      if (live && typeof window.sbRoomPalette === "function") {
+        try { p = window.sbRoomPalette(mood); } catch (err) { p = null; }
+      }
+      if (!p) p = MOOD_PALETTE[mood] || MOOD_PALETTE.studio;
       this.publishLight(p);
       if (!this.pal || p === this.palTo) { this.palTo = p; return; }
       this.palTo = p;
@@ -716,6 +741,10 @@
        to take effect without a reload. */
     refresh: function () { if (Field.cv) Field.setLevel(Field.level); },
     mood: function (id) { Field.applyMood(id); },
+    /* Цель по цвету — наружу, чтобы закон мог СПРОСИТЬ, а не угадывать по
+       пикселям: «фон следует за комнатой» — это утверждение, и его надо чем-то
+       мерить. Тем же рассуждением наружу отданы touchCount и drawCount. */
+    palette: function () { return Field.palTo ? Field.palTo.map(function (c) { return c.slice(); }) : null; },
     pulse: function () { Field.pulse(); },
     running: function () { return !!Field.cv && Field.on && !Field.parked; },
     /* Ступень качества наружу — чтобы её можно было проверить законом и

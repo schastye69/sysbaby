@@ -372,6 +372,17 @@ html.sb-incognito .wp-layer {
    nothing to keep on screen. */
 #sbMoodTint {
   mix-blend-mode: screen; opacity: .55;
+  /* ── ЗДЕСЬ СТОЯЛ ПЕРЕХОД, И ОН НЕ РАБОТАЛ (D-158) ──────────────────────
+     Первым лекарством от мерцания Совет поставил transition: background-image
+     — расчёт был на то, что браузер сам пройдёт промежуточные цвета между
+     двумя перерисовками. ЗАМЕР СКАЗАЛ ОБРАТНОЕ: сорок снимков вычисленного
+     стиля за шесть секунд дали шесть РАЗНЫХ значений, а не сорок, — то есть
+     промежуточных кадров не было вовсе. Многослойный градиент из трёх
+     радиальных заливок браузер не интерполирует.
+     Строка снята, а не оставлена «на всякий случай»: мёртвое правило с
+     объяснением, как оно помогает, — это комментарий, который врёт.
+     Настоящее лекарство оказалось не в CSS, а в шаге пружины (см. wpStart в
+     os/core/shell.js): мелкие шаги вместо редких больших. */
   /* studio: clay ember low, neutral light high — the room is warm, not painted */
   background:
     radial-gradient(900px 640px at 76% 16%, rgba(224, 102, 60, .16), transparent 64%),
@@ -968,7 +979,72 @@ html[data-motion="reduced"] .pw-on { transition: none; }
 }
 .cc-toggle.on { background: var(--accent-soft); border-color: var(--accent-ring); color: var(--ink); }
 .cc-slider, .cc-select { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--ink-2); }
-.cc-slider input[type="range"] { width: 100%; accent-color: var(--accent); }
+/* ═══════════════ ПОЛЗУНОК — ЭТО СВЕТ, КОТОРЫЙ ПРИБАВЛЯЮТ (D-156) ═════════
+   ПОВОД, дословно от основателя 26.08.2026, со снимком панели: «ползунки
+   volume и brightness как-будто с другой вселенной. они должны быть
+   красивыми, концептуальными, уникальными и интеллектуальными».
+   ОН ПРАВ БУКВАЛЬНО: здесь стояло только accent-color, то есть ползунки были
+   РОДНЫМИ ПОЛЗУНКАМИ БРАУЗЕРА — чужая деталь Android посреди нашего стекла.
+   ЧТО СДЕЛАНО И ПОЧЕМУ ИМЕННО ТАК. Громкость и яркость — это «сколько
+   света», и рисуются они тем же светом, что и часы: пройденная часть несёт
+   шов комнаты и светится теми же --lit-glow / --lit-blur, которыми светятся
+   цифры. Ручка — не шарик, а ПАЛОЧКА: тот самый штрих, из которого сложены
+   цифры часов и буква y в знаке. Так ползунок оказывается членом одной семьи
+   с часами, а не гостем из чужой системы.
+   Заполнение считается переменной --fill: у WebKit нет ::progress, и без неё
+   пройденную часть пришлось бы рисовать вторым элементом. Ставит её один
+   слушатель на весь документ (shell.js) — значит и будущие ползунки получат
+   её сами, без единой правки. */
+.cc-slider input[type="range"],
+input.st-range[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 34px; background: transparent; cursor: pointer;
+  --fill: 50%;
+}
+.cc-slider input[type="range"]::-webkit-slider-runnable-track,
+input.st-range[type="range"]::-webkit-slider-runnable-track {
+  height: 3px; border-radius: var(--r-pill);
+  background:
+    linear-gradient(90deg, var(--accent-2), var(--accent)) 0 / var(--fill) 100% no-repeat,
+    rgba(255, 255, 255, .10);
+}
+.cc-slider input[type="range"]::-moz-range-track,
+input.st-range[type="range"]::-moz-range-track {
+  height: 3px; border-radius: var(--r-pill); background: rgba(255, 255, 255, .10);
+}
+.cc-slider input[type="range"]::-moz-range-progress,
+input.st-range[type="range"]::-moz-range-progress {
+  height: 3px; border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+}
+/* Палочка. Ширина в три точки — тот же штрих, что у цифр; высота двадцать —
+   чтобы её было видно и чтобы палец знал, за что берётся.
+   СКРУГЛЕНИЕ — --r-pill, а не число: у трёхточечного штриха «шесть точек»
+   со шкалы дали бы кляксу, а таблетка в этой шкале и объявлена ФОРМОЙ —
+   полностью круглые торцы. Так штрих остаётся на шкале, а не рядом с ней.
+.cc-slider input[type="range"]::-webkit-slider-thumb,
+input.st-range[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 3px; height: 20px; border-radius: var(--r-pill); border: 0;
+  background: var(--lit-ink, var(--ink));
+  margin-top: -8.5px;
+  filter: drop-shadow(0 0 var(--lit-blur, 0px) var(--lit-glow, transparent));
+  transition: height var(--t-touch) var(--ease), background var(--t-touch) ease;
+}
+.cc-slider input[type="range"]::-moz-range-thumb,
+input.st-range[type="range"]::-moz-range-thumb {
+  width: 3px; height: 20px; border-radius: var(--r-pill); border: 0;
+  background: var(--lit-ink, var(--ink));
+  filter: drop-shadow(0 0 var(--lit-blur, 0px) var(--lit-glow, transparent));
+}
+/* Под пальцем палочка не толстеет, а ВЫТЯГИВАЕТСЯ — как загорающийся сегмент.
+   Толщина у этого штриха постоянная: она и делает его штрихом. */
+.cc-slider input[type="range"]:active::-webkit-slider-thumb,
+input.st-range[type="range"]:active::-webkit-slider-thumb { height: 26px; margin-top: -11.5px; }
+.cc-slider input[type="range"]:focus-visible::-webkit-slider-thumb,
+input.st-range[type="range"]:focus-visible::-webkit-slider-thumb { background: var(--accent); height: 26px; margin-top: -11.5px; }
+html[data-motion="reduced"] .cc-slider input[type="range"]::-webkit-slider-thumb,
+html[data-motion="reduced"] input.st-range[type="range"]::-webkit-slider-thumb { transition: none; }
 .cc-select select { padding: 8px 10px; border-radius: var(--r-ctrl); background: rgba(255, 255, 255, .04); border: 1px solid var(--line); }
 .cc-block { display: flex; flex-direction: column; gap: 7px; }
 .cc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1355,15 +1431,33 @@ html[data-motion="reduced"] .note-lights { transition: none; }
 }
 .sticky-note.full .note-text {
   font-size: 20px; font-weight: 600; letter-spacing: -.2px; line-height: 1.3;
-  min-height: 0; max-height: none; padding-right: 78px;
+  min-height: 0; max-height: none;
+  /* Место под кнопки резервируется С ТОЙ СТОРОНЫ, ГДЕ ОНИ СТОЯТ (D-155).
+     Здесь стояло глухое padding-right: 78px — оно было верным, пока кнопки
+     были только справа. */
+  padding-left: 78px; padding-right: 0;
 }
+html[data-controls="right"] .sticky-note.full .note-text { padding-left: 0; padding-right: 78px; }
 .sticky-note.full .note-body {
   display: block; flex: 1; min-height: 0;
   width: 100%; resize: none; border: 0; outline: none; background: none;
   color: var(--ink-2); font-size: 14.5px; line-height: 1.55;
   overflow: auto;
 }
-.sticky-note.full .note-lights { bottom: auto; top: 14px; right: 14px; }
+/* ── РАЗВЁРНУТУЮ ЗАМЕТКУ НАДО МОЧЬ СВЕРНУТЬ (D-155) ───────────────────────
+   ПОВОД, дословно от основателя 26.08.2026, со снимком: «в полной версии не
+   могу свернуть».
+   ЧТО БЫЛО НЕ ТАК. Строка задавала right, но не снимала left — а с D-153 у
+   ряда огней появился left: 0 по умолчанию. Заданные ОБА края растягивают
+   абсолютный элемент во всю ширину: ряд стал полосой в 380 точек, кнопка
+   осталась у левого края, и поверх неё лёг заголовок, который берёт всю
+   ширину. Нарисовано было всё правильно; палец до кнопки не доходил.
+   Замер (телефонный кадр 420×880): ряд 13…393, кнопка 16…38, заголовок
+   начинается с 31 — elementFromPoint в центре кнопки возвращал не кнопку.
+   Правило теперь снимает противоположный край явно, а не надеется на то,
+   что его никто не задал. */
+.sticky-note.full .note-lights { bottom: auto; top: 14px; left: 14px; right: auto; }
+html[data-controls="right"] .sticky-note.full .note-lights { left: auto; right: 14px; }
 /* Пока заметка на весь экран, стол за ней притушен — но не спрятан: это
    по-прежнему тот же стол, просто сейчас говорят не с ним. */
 html.sb-note-full #sbNoteLayer { z-index: 120; }

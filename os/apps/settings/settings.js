@@ -435,6 +435,9 @@
     if (_sbKeep) _sbKeep();
 
     wire(win, host);
+    /* Заполнение ползунков (D-156): разметка приходит готовой, а «input» до
+       первого касания не случается. */
+    if (window.sbPaintAllRanges) window.sbPaintAllRanges(host);
     if (section === "privacy") measureStorage(win, "#stStorage");
     if (section === "about") measureStorage(win, "#stAboutStorage");
   }

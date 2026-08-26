@@ -2306,6 +2306,9 @@
        больше нет, и разойтись с Настройками ему негде. Перерисовывается он
        только когда состав ИЗМЕНИЛСЯ — иначе каждое открытие панели переписывало
        бы десяток узлов ни за что. */
+    /* Заполнение ползунков — при каждой отрисовке панели: разметка приходит
+       готовой, а событие «input» до первого касания не случается (D-156). */
+    if (window.sbPaintAllRanges) window.sbPaintAllRanges($("#sbControlCenter"));
     var side = window.sbGetControlSide ? window.sbGetControlSide() : "left";
     $$("[data-side]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-side") === side); });
     var moodHost = $("#sbCcMoods");
