@@ -137,6 +137,11 @@
      ниже — единственный выбор цвета в системе. Читатели сняты вместе с
      рядом, иначе приложение продолжало бы звать из ядра то, чего там нет. */
 
+  function controlSide() {
+    if (typeof window.sbGetControlSide !== "function") return "left";
+    try { return window.sbGetControlSide(); } catch (err) { console.error("[settings] side read failed", err); return "left"; }
+  }
+
   function wallpaperMoods() {
     var moods = window.sbWallpaperMoods;
     return Array.isArray(moods) ? moods : [];
@@ -209,6 +214,14 @@
         '<span class="st-chips">' + (moodChips || '<span class="st-muted">' + esc(t("set.appearance.moodNone")) + "</span>") + "</span>") +
       rowMarkup(esc(t("set.appearance.brightness")), esc(t("set.appearance.brightnessSub")),
         '<input type="range" class="st-range" id="stBrightness" min="0" max="100" value="' + brightness + '" aria-label="' + esc(t("set.appearance.brightness")) + '">') +
+      /* Сторона кнопок окон (D-153): основатель просил переключатель в панели
+         управления, а паритет требует, чтобы всё, что умеет панель, умел и
+         Pulse. Один и тот же выбор, две двери — но знание одно, на документе. */
+      rowMarkup(esc(t("set.appearance.controls")), esc(t("set.appearance.controlsSub")),
+        '<span class="st-segment">' +
+          '<button type="button" class="st-seg' + (controlSide() === "left" ? " active" : "") + '" data-side="left">' + esc(t("cc.controls.left")) + "</button>" +
+          '<button type="button" class="st-seg' + (controlSide() === "right" ? " active" : "") + '" data-side="right">' + esc(t("cc.controls.right")) + "</button>" +
+        "</span>") +
       rowMarkup(esc(t("set.appearance.turbo")), esc(t("set.appearance.turboSub")), switchMarkup("motion")) +
       rowMarkup(esc(t("set.appearance.transparency")), esc(t("set.appearance.transparencySub")), switchMarkup("transparency"));
   }
@@ -462,7 +475,7 @@
    * source of that very event), and repaints collapse to one per frame. */
   var SECTION_KINDS = {
     general: { lang: 1 },
-    appearance: { theme: 1, mood: 1, brightness: 1, toggle: 1 },
+    appearance: { theme: 1, mood: 1, brightness: 1, toggle: 1, side: 1 },
     sound: { toggle: 1, volume: 1 },
     desktop: { toggle: 1 },
     privacy: {},
@@ -546,6 +559,15 @@
         if (typeof window.setTheme !== "function") return;
         try { window.setTheme(btn.getAttribute("data-theme")); }
         catch (err) { console.error("[settings] setTheme failed", err); }
+        render(win);
+      });
+    });
+
+    host.querySelectorAll("[data-side]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (typeof window.sbSetControlSide !== "function") return;
+        try { window.sbSetControlSide(btn.getAttribute("data-side")); }
+        catch (err) { console.error("[settings] side set failed", err); }
         render(win);
       });
     });

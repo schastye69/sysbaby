@@ -113,8 +113,19 @@
      НЕДЕЛЯ НАЧИНАЕТСЯ С ПОНЕДЕЛЬНИКА. Не настройка: система живёт в Таллине,
      и здесь неделя начинается так. */
   var calShift = 0;
+  /* ── КАЛЕНДАРЬ ГОВОРИЛ ПО-АНГЛИЙСКИ ВСЕГДА (D-154) ──────────────────────
+     Здесь стояло window.sbGetLang — функции с таким именем в системе НЕТ:
+     язык объявлен как window.sbLang. Тернарник с запасным «en» проглатывал
+     это молча, и панель времени показывала английские месяцы и дни недели на
+     всех трёх языках. Ошибку нашёл закон о заметке из календаря — он потребовал
+     дату СЛОВАМИ ТОГО ЯЗЫКА, на котором сидит человек, и получил «Tuesday 14
+     July» там, где просил русский.
+     УРОК НЕ В ОПЕЧАТКЕ. Запасное значение, поставленное «на всякий случай»,
+     превратило отсутствие функции в тихую неправду: система не сломалась, она
+     стала врать. Поэтому имя теперь спрашивается у того, кто его объявляет,
+     а промах виден в самом языке панели. */
   function calLocale() {
-    var l = window.sbGetLang ? window.sbGetLang() : "en";
+    var l = typeof window.sbLang === "function" ? window.sbLang() : "en";
     return l === "ru" ? "ru-RU" : (l === "ee" ? "et-EE" : "en-GB");
   }
   function bigTime(d) {
@@ -177,13 +188,34 @@
       grid.appendChild(pad);
     }
     for (var n = 1; n <= days; n++) {
-      var cell = doc.createElement("span");
+      var cell = doc.createElement("button");
+      cell.type = "button";
       cell.className = "cal-day";
       if (calShift === 0 && n === now.getDate()) cell.className += " today";
       cell.textContent = String(n);
+      cell.setAttribute("data-day", String(n));
       grid.appendChild(cell);
     }
     body.appendChild(grid);
+
+    /* ── ДЕНЬ, НА КОТОРЫЙ НАЖАЛИ, СТАНОВИТСЯ ЗАМЕТКОЙ (D-154) ─────────────
+       ПОВОД, дословно от основателя 26.08.2026: «при нажатии на любой день
+       календаря автоматически перенаправляет пользователя на рабочий стол и
+       система вписывает в новую заметку это число — максимально доходчиво и
+       тепло. и пользователь дальше может продолжить писать, что будет в эту
+       дату».
+       ДАТА ПИШЕТСЯ СЛОВАМИ, А НЕ ФОРМАТОМ. «14.07» — это машина, говорящая
+       с человеком на своём языке; «Понедельник, 14 июля» — человек, которому
+       не нужно ничего расшифровывать. Язык берётся тот, на котором он сидит.
+       СЛУШАТЕЛЬ НА СЕТКЕ, А НЕ НА КАЖДОМ ЧИСЛЕ: клеток тридцать одна, и они
+       перерисовываются при каждом перелистывании месяца. */
+    grid.addEventListener("click", function (ev) {
+      var b3 = ev.target && ev.target.closest ? ev.target.closest("[data-day]") : null;
+      if (!b3) return;
+      var dayN = Number(b3.getAttribute("data-day")) || 1;
+      var picked = new Date(view.getFullYear(), view.getMonth(), dayN);
+      openDayNote(picked);
+    });
 
     $$(".cal-step", body).forEach(function (b2) {
       b2.addEventListener("click", function () {
@@ -192,6 +224,45 @@
       });
     });
   }
+  /* Заметка этого дня. Панель закрывается ПЕРВОЙ: заметка, родившаяся за
+     закрытой панелью, для человека не родилась вовсе — он её не увидит и
+     решит, что нажатие не сработало. */
+  function openDayNote(when) {
+    var overlay = doc.getElementById("sbTimeOverlay");
+    if (overlay && timePanel && typeof timePanel.close === "function") timePanel.close();
+    else if (overlay) overlay.classList.remove("open");
+
+    var line = "";
+    try {
+      line = when.toLocaleDateString(calLocale(), { weekday: "long", day: "numeric", month: "long" });
+    } catch (err) { line = String(when.getDate()); }
+    line = line.charAt(0).toUpperCase() + line.slice(1);
+
+    if (typeof window.sbAddQuickNote !== "function") return;
+    /* Кладётся туда, где человек её увидит: чуть ниже полосы и левее середины
+       стола, но в пределах экрана даже на телефоне. */
+    var x = Math.max(16, Math.round(window.innerWidth * 0.12));
+    var y = Math.max(96, Math.round(window.innerHeight * 0.28));
+    var id = window.sbAddQuickNote(line, { onDesktop: true, x: x, y: y });
+
+    if (window.showToast) {
+      try { window.showToast(tr("note.day.title"), tr("note.day.body"), ""); }
+      catch (err) { /* ignore */ }
+    }
+    /* И курсор сразу в ней: «пользователь дальше может продолжить писать».
+       Заметка, в которую надо ещё попасть пальцем, обрывает ровно ту мысль,
+       ради которой её и завели. Ждём кадра — до отрисовки её ещё нет. */
+    setTimeout(function () {
+      var el = doc.querySelector('#sbNoteLayer .sticky-note[data-id="' + id + '"]');
+      var ta = el ? el.querySelector(".note-text") : null;
+      if (!ta) return;
+      try {
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+      } catch (err) { /* ignore */ }
+    }, 260);
+  }
+
   var timePanel = window.sbRegisterPanel("sbTimeOverlay", "sbTimeClose", function () {
     calShift = 0;
     paintTime();

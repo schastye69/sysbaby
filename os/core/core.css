@@ -1265,12 +1265,24 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
    заметки. Место резервировать не нужно, ничего не прыгает при появлении.
    У заметки, прижатой к верху экрана, ряд переворачивается вниз — иначе он
    ушёл бы под полосу (класс ставит lightNote в desktop.js). */
+/* ── СТОРОНА КНОПОК ОДНА НА ВСЕ ОКНА (D-153) ──────────────────────────────
+   Основатель: «у заметок точно также должны кнопки закрыть и свернуть
+   располагаться слева… переключать между левым и правым режимом расположения
+   кнопок управления АБСОЛЮТНО ВСЕХ ОКОН». Слово стоит одно — на документе, —
+   и его читают обе поверхности. Заметка тоже окно, только маленькое. */
 .note-lights {
-  position: absolute; bottom: calc(100% + 5px); right: 0; z-index: 2;
+  position: absolute; bottom: calc(100% + 5px); left: 0; z-index: 2;
   opacity: 0; pointer-events: none;
   transition: opacity var(--t-touch) var(--ease);
 }
 .sticky-note.lights-below .note-lights { bottom: auto; top: calc(100% + 5px); }
+html[data-controls="right"] .note-lights { left: auto; right: 0; }
+/* У окна приложения ряд огней стоит первым в шапке; вправо он уходит
+   порядком, а не переносом узла: перенос сбил бы фокус и порядок обхода
+   с клавиатуры, а порядок — только рисование. */
+html[data-controls="right"] .titlebar .lights { order: 3; }
+html[data-controls="right"] .titlebar .win-title { order: 1; }
+html[data-controls="right"] .titlebar .tb-right { order: 2; }
 /* ── НА ВЕСЬ ЭКРАН ЗАМЕТКУ МОЖНО ТОЛЬКО СВЕРНУТЬ (v67) ────────────────────
    ПРЕДЛОЖЕНИЕ ОСНОВАТЕЛЯ, дословно 25.08.2026: «когда заметка развёрнута на
    весь экран - её можно только свернуть - для удобства и для того, чтобы

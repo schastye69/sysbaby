@@ -7,7 +7,7 @@
      именно его метку читают снаружи: ежедневный наблюдатель, восьмой шаг
      выкладки и закон тестового контура. Ставится не руками, а
      tools/stamp-build.mjs — из единственного объявления версии. -->
-<meta name="sysbaby-build" content="v80">
+<meta name="sysbaby-build" content="v81">
 <title>sys.baby OS</title>
 <!-- ЗНАК. Один квадрат и он же, сдвинутый на 1,988 — та же величина, на которой
      построено поле обоев. Пересечение выбито: пустота в середине — это точка из
@@ -54,22 +54,22 @@
      метка меняется каждой сборкой, а старый адрес перестаёт существовать.
      Штампы проставляются tools/stamp-build.mjs и охраняются законом
      build-stamp.mjs — ресурс без метки валит сборку. -->
-<script src="os/core/store.js?b=v80"></script>
+<script src="os/core/store.js?b=v81"></script>
 
-<link rel="stylesheet" href="os/core/core.css?b=v80" />
-<link rel="stylesheet" href="os/apps/files/files.css?b=v80" />
-<link rel="stylesheet" href="os/apps/browser/browser.css?b=v80" />
-<link rel="stylesheet" href="os/apps/player/player.css?b=v80" />
-<link rel="stylesheet" href="os/apps/viewer/viewer.css?b=v80" />
-<link rel="stylesheet" href="os/apps/notes/notes.css?b=v80" />
-<link rel="stylesheet" href="os/apps/mail/mail.css?b=v80" />
-<link rel="stylesheet" href="os/apps/messenger/messenger.css?b=v80" />
-<link rel="stylesheet" href="os/apps/search/search.css?b=v80" />
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v80" />
-<link rel="stylesheet" href="os/apps/project/project.css?b=v80" />
-<link rel="stylesheet" href="os/apps/settings/settings.css?b=v80" />
-<link rel="stylesheet" href="os/apps/echoes/echoes.css?b=v80" />
-<link rel="stylesheet" href="os/apps/build/build.css?b=v80" />
+<link rel="stylesheet" href="os/core/core.css?b=v81" />
+<link rel="stylesheet" href="os/apps/files/files.css?b=v81" />
+<link rel="stylesheet" href="os/apps/browser/browser.css?b=v81" />
+<link rel="stylesheet" href="os/apps/player/player.css?b=v81" />
+<link rel="stylesheet" href="os/apps/viewer/viewer.css?b=v81" />
+<link rel="stylesheet" href="os/apps/notes/notes.css?b=v81" />
+<link rel="stylesheet" href="os/apps/mail/mail.css?b=v81" />
+<link rel="stylesheet" href="os/apps/messenger/messenger.css?b=v81" />
+<link rel="stylesheet" href="os/apps/search/search.css?b=v81" />
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v81" />
+<link rel="stylesheet" href="os/apps/project/project.css?b=v81" />
+<link rel="stylesheet" href="os/apps/settings/settings.css?b=v81" />
+<link rel="stylesheet" href="os/apps/echoes/echoes.css?b=v81" />
+<link rel="stylesheet" href="os/apps/build/build.css?b=v81" />
 <!-- ── СИСТЕМА ЖИВЁТ БЕЗ СЕТИ (D-145) ───────────────────────────────────────
      Основатель: «необходимо сделать так, что даже, когда интернета на телефоне
      или другом устройстве нет, сайт sys.baby должен продолжать работу».
@@ -299,20 +299,32 @@
 
     <div class="cc-block">
       <span class="cc-k" data-i18n="cc.wallpaper">Wallpaper</span>
-      <div class="cc-chips">
-        <button class="chip" type="button" data-mood="studio" data-i18n="mood.studio">Studio</button>
-        <button class="chip" type="button" data-mood="aurora" data-i18n="mood.aurora">Aurora</button>
-        <button class="chip" type="button" data-mood="sunset" data-i18n="mood.sunset">Sunset</button>
-        <button class="chip" type="button" data-mood="ocean" data-i18n="mood.ocean">Ocean</button>
-        <button class="chip" type="button" data-mood="mono" data-i18n="mood.mono">Mono</button>
-        <button class="chip" type="button" data-mood="daylight" data-i18n="mood.daylight">Daylight</button>
-        <button class="chip" type="button" data-mood="therapy" data-i18n="mood.therapy">Light therapy</button>
+      <!-- ── РЯД ОБОЕВ СТРОИТ СИСТЕМА, А НЕ РАЗМЕТКА (D-152) ─────────────
+           Здесь стояли семь кнопок, написанных руками. Восьмая комната
+           появилась в Настройках и НЕ появилась тут: человек, открывший
+           быструю панель, новой комнаты просто не нашёл бы. Список, написанный
+           в двух местах, расходится не «если», а «когда». Теперь ряд заполняет
+           paintCc из sbWallpaperMoods — из того же объявления, что и Настройки.
+           Охраняется tools/room-and-seam-check.mjs: состав, а не длина. -->
+      <div class="cc-chips" id="sbCcMoods"></div>
+    </div>
+
+    <!-- ── СТОРОНА УПРАВЛЯЮЩИХ КНОПОК (D-153) ────────────────────────────
+         Прямая просьба основателя: переключатель левого и правого режима
+         «абсолютно всех окон» — и он просил его именно здесь, в панели
+         управления. Слово одно на всю систему, поэтому и кнопки две. -->
+    <div class="cc-block">
+      <span class="cc-k" data-i18n="cc.controls">Window controls</span>
+      <div class="cc-chips" id="sbCcSide">
+        <button class="chip" type="button" data-side="left" data-i18n="cc.controls.left">Left</button>
+        <button class="chip" type="button" data-side="right" data-i18n="cc.controls.right">Right</button>
       </div>
     </div>
 
-    <div class="cc-block">
-      <span class="cc-k" data-i18n="cc.accent">Accent color</span>
-    </div>
+    <!-- Здесь стоял блок «Accent color». Ряд красок сняли (D-141), а его
+         заголовок остался стоять над пустотой — и, поскольку ключ перевода
+         тоже сняли, человек видел на экране голое «cc.accent». Пустой блок
+         снят целиком: подпись без содержимого — это обещание без предмета. -->
 
     <div class="cc-buttons">
       <button class="btn ghost" type="button" data-panel="sbShortcutsOverlay" data-i18n="cc.shortcuts">Keyboard Shortcuts</button>
@@ -494,32 +506,32 @@
 
 
 <!-- ================================================================== scripts -->
-<script src="os/core/shell.js?b=v80"></script>
-<script src="os/core/panels.js?b=v80"></script>
-<script src="os/core/palette.js?b=v80"></script>
-<script src="os/core/desktop.js?b=v80"></script>
-<script src="os/core/topbar.js?b=v80"></script>
-<script src="os/core/terminal.js?b=v80"></script>
-<script src="os/core/links.js?b=v80"></script>
-<script src="os/core/field.js?b=v80"></script>
+<script src="os/core/shell.js?b=v81"></script>
+<script src="os/core/panels.js?b=v81"></script>
+<script src="os/core/palette.js?b=v81"></script>
+<script src="os/core/desktop.js?b=v81"></script>
+<script src="os/core/topbar.js?b=v81"></script>
+<script src="os/core/terminal.js?b=v81"></script>
+<script src="os/core/links.js?b=v81"></script>
+<script src="os/core/field.js?b=v81"></script>
 
-<script src="shared/portfolio.data.js?b=v80"></script>
-<script src="shared/portfolio.strings.js?b=v80"></script>
-<script src="shared/pricing.data.js?b=v80"></script>
+<script src="shared/portfolio.data.js?b=v81"></script>
+<script src="shared/portfolio.strings.js?b=v81"></script>
+<script src="shared/pricing.data.js?b=v81"></script>
 
-<script src="os/apps/files/files.js?b=v80"></script>
-<script src="os/apps/browser/browser.js?b=v80"></script>
-<script src="os/apps/player/player.js?b=v80"></script>
-<script src="os/apps/viewer/viewer.js?b=v80"></script>
-<script src="os/apps/notes/notes.js?b=v80"></script>
-<script src="os/apps/mail/mail.js?b=v80"></script>
-<script src="os/apps/messenger/messenger.js?b=v80"></script>
-<script src="os/apps/search/search.js?b=v80"></script>
-<script src="shared/portfolio.view.js?b=v80"></script>
-<script src="os/apps/project/project.js?b=v80"></script>
-<script src="os/apps/settings/settings.js?b=v80"></script>
-<script src="os/apps/echoes/echoes.js?b=v80"></script>
-<script src="os/apps/build/build.js?b=v80"></script>
+<script src="os/apps/files/files.js?b=v81"></script>
+<script src="os/apps/browser/browser.js?b=v81"></script>
+<script src="os/apps/player/player.js?b=v81"></script>
+<script src="os/apps/viewer/viewer.js?b=v81"></script>
+<script src="os/apps/notes/notes.js?b=v81"></script>
+<script src="os/apps/mail/mail.js?b=v81"></script>
+<script src="os/apps/messenger/messenger.js?b=v81"></script>
+<script src="os/apps/search/search.js?b=v81"></script>
+<script src="shared/portfolio.view.js?b=v81"></script>
+<script src="os/apps/project/project.js?b=v81"></script>
+<script src="os/apps/settings/settings.js?b=v81"></script>
+<script src="os/apps/echoes/echoes.js?b=v81"></script>
+<script src="os/apps/build/build.js?b=v81"></script>
 <!-- Скамейка (Experimental/Phosphor) выведена из клиентской витрины v20.9:
      витрина продаёт сданные системы, а самое интригующее имя на столе
      конкурировало с подсказкой №1 за первое касание. Папка приложения

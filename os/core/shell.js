@@ -963,6 +963,36 @@
      and forgot themselves on reload, and neither had a reader another surface
      could ask. Now both persist through sbDB, both have get/set contracts,
      and both announce — so Pulse and the Control Center stay in step live. */
+  /* ═══════════════ СТОРОНА УПРАВЛЯЮЩИХ КНОПОК (D-153) ═════════════════════
+     ПОВОД, дословно от основателя 26.08.2026: «у заметок точно также должны
+     кнопки закрыть и свернуть располагаться слева стороны, а не справа… И
+     прошу совет внедрить в панель управления окон ещё одну кнопку, которая
+     будет позволять переключать между левым и правым режимом расположения
+     кнопок управления абсолютно всех окон».
+     ДВА ТРЕБОВАНИЯ, И ВТОРОЕ СИЛЬНЕЕ. «Слева» — предпочтение; «АБСОЛЮТНО
+     ВСЕХ ОКОН» — правило. Поэтому сторона объявляется ОДИН раз на документе,
+     а не расставляется по местам: окна приложений и заметки на столе (те же
+     окна, только маленькие) читают одно и то же слово и разъехаться не могут
+     по построению. Знание одно — значит и спорить нечему.
+     По умолчанию слева: так стоят кнопки у окон приложений с самого начала,
+     и заметки теперь встают в тот же ряд. */
+  var SIDE_KEY = "sysbaby.controls.side";
+  function sideOf(v) { return v === "right" ? "right" : "left"; }
+  window.sbGetControlSide = function () {
+    var raw = window.sbDB ? window.sbDB.get(SIDE_KEY) : null;
+    return sideOf(raw);
+  };
+  window.sbSetControlSide = function (side) {
+    var v = sideOf(side);
+    root.setAttribute("data-controls", v);
+    if (window.sbDB) window.sbDB.set(SIDE_KEY, v);
+    if (window.sbBus && window.sbBus.emit) window.sbBus.emit("setting:change", { kind: "side", value: v });
+    try {
+      doc.dispatchEvent(new CustomEvent("sysbaby:setting-changed", { detail: { kind: "side", value: v } }));
+    } catch (e) { /* ignore */ }
+    return v;
+  };
+
   var VOLUME_KEY = "sysbaby.sound.volume";
   var BRIGHT_KEY = "sysbaby.display.brightness";
 
@@ -3845,6 +3875,9 @@
        системе больше нет. */
     applyMood(window.sbGetWallpaperMood());
     ["motion", "dnd", "autohide", "transparency"].forEach(function (k) { applyControl(k, window.sbGetControlToggle(k)); });
+    /* Сторона кнопок — до первого показа окон, иначе они успели бы встать
+       слева и переехать на глазах (D-153). */
+    window.sbSetControlSide(window.sbGetControlSide());
     applyParts();
     wireTurbo();
     /* volume and brightness come back exactly as they were left */
