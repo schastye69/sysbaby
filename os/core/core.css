@@ -89,6 +89,15 @@
   --font: system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo, monospace;
   --topbar-h: 44px;
+  /* Вырез телефона — ОДНО объявление на всю систему (D-129). Всё, что о нём
+     знает, читает эту переменную; закон может подменить её и посмотреть, что
+     станет с панелью, не имея настоящего телефона под рукой. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  /* Сколько места панель занимает НА САМОМ ДЕЛЕ. Раньше этого числа не было
+     нигде: три места ставили содержимое под панель по 44 точкам, как будто
+     выреза не существует, а сама панель прятала вырез внутрь своей высоты и
+     ряд управления съезжал вниз. Теперь имя одно и читают его все. */
+  --topbar-box: calc(var(--topbar-h) + var(--safe-top));
 
   /* ── НИЖНИЙ РЯД СТОЛА: ОДНО ЧИСЛО НА ДВОИХ (v54) ────────────────────────
      Повод от основателя 21.08.2026: «бывший плюсик ... должен быть
@@ -355,6 +364,31 @@ html[data-wp-mood="mono"] #sbMoodTint {
   background: radial-gradient(920px 660px at 74% 18%, rgba(206, 212, 226, .26), transparent 64%);
 }
 
+/* Daylight — суточная комната (D-127).
+   Единственное настроение, чей рисунок пишет не эта таблица, а часы: два
+   света в #sbMoodTint получают тон и силу от sbWallpaperApply. Здесь
+   объявлен только запасной вид — на тот случай, если стиль ещё не написан
+   (первые миги загрузки, выключенный скрипт): пусть это будет Studio, а не
+   пустота. */
+html[data-wp-mood="daylight"] #sbMoodTint {
+  opacity: .82;
+  background:
+    radial-gradient(900px 640px at 76% 16%, rgba(224, 102, 60, .16), transparent 64%),
+    radial-gradient(760px 580px at 16% 84%, rgba(242, 242, 240, .09), transparent 62%);
+}
+/* ПЕРЕХОДА ЗДЕСЬ НЕТ, И ЭТО РЕШЕНИЕ. Совет сперва приписал сюда плавный
+   переход — рефлексом, а не мыслью, — и duration-scale-check его отверг за
+   голую длительность. Проверка правила показала, что дело не в записи числа:
+   переход — это ОТВЕТ НА ДЕЙСТВИЕ человека, а суточный свет никому не
+   отвечает. Шаг у него — одна триста шестидесятая круга; его не видно и без
+   всякого перехода, а полноэкранная анимация градиента стоила бы кадров на
+   слабом телефоне. Правило убрано целиком, а не переписано в токен. */
+html[data-wp-mood="daylight"] .wp-layer {
+  background:
+    radial-gradient(760px 560px at 14% 82%, rgba(242, 242, 240, .04), transparent 60%),
+    linear-gradient(168deg, #101013 0%, #0a0a0c 52%, #070708 100%);
+}
+
 /* Плёночное зерно: бесшовная плитка 180px серой турбулентности.
    -------------------------------------------------------------------------
    12.08, поле: на телефоне вместо зерна была видна регулярная СЕТКА, на
@@ -591,9 +625,9 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
 
 /* =============================================================== topbar §5 */
 #topbar {
-  position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h); z-index: 60;
+  position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-box); z-index: 60;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 0 12px; padding-top: env(safe-area-inset-top);
+  padding: 0 12px; padding-top: var(--safe-top);
   background: linear-gradient(180deg, rgba(10, 11, 15, .82), rgba(10, 11, 15, .52));
   backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
   border-bottom: 1px solid var(--line);
@@ -641,7 +675,9 @@ html[data-motion="reduced"] .tb-mark { transition: none; }
    последний оставшийся масштаб. */
 .sb-wm { display: inline-flex; align-items: center; white-space: nowrap; }
 .sb-lock { height: 16px; width: auto; display: block; animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both; }
-.sb-min { display: none; }
+/* В панели — только знак, на любой ширине (D-128). Раньше здесь стояло
+   обратное: длинное слово везде и знак только на телефоне. */
+.sb-min { display: block; width: 17px; height: 17px; animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both; }
 .sb-ls, .sb-hs { fill: var(--ink); }
 .sb-lb, .sb-hb { fill: var(--accent); }
 .sb-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -732,7 +768,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 
 /* ====================================================== control center §7 */
 #sbControlCenter {
-  position: fixed; top: calc(var(--topbar-h) + 6px); right: 10px; z-index: 95;
+  position: fixed; top: calc(var(--topbar-box) + 6px); right: 10px; z-index: 95;
   width: min(340px, calc(100vw - 20px));
   max-height: min(78vh, 640px); overflow: auto;
   padding: 14px;
@@ -777,7 +813,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 /* ============================================================== desktop §4 */
 #desktop { position: fixed; inset: 0; z-index: 1; opacity: 0; transition: opacity var(--t-scene) ease; }
 html.rv-scene #desktop { opacity: 1; }
-#sbIconLayer, #sbWidgetLayer, #sbNoteLayer { position: absolute; inset: var(--topbar-h) 0 0 0; }
+#sbIconLayer, #sbWidgetLayer, #sbNoteLayer { position: absolute; inset: var(--topbar-box) 0 0 0; }
 #sbIconLayer { z-index: 2; opacity: 0; transition: opacity var(--t-scene) ease; }
 html.rv-icons #sbIconLayer { opacity: 1; }
 #sbWidgetLayer { z-index: 3; opacity: 0; transition: opacity var(--t-scene) ease; pointer-events: none; }
@@ -1105,7 +1141,7 @@ html[data-motion="reduced"] .note-lights { transition: none; }
 .sticky-note.full {
   position: fixed;
   left: 12px; right: 12px;
-  top: calc(var(--topbar-h) + 12px);
+  top: calc(var(--topbar-box) + 12px);
   bottom: calc(12px + var(--kb-inset, 0px) + max(0px, env(safe-area-inset-bottom)));
   width: auto; max-width: none; min-width: 0;
   z-index: 120;
@@ -1896,8 +1932,7 @@ html.icons-small .icon-label { font-size: 10.5px; }
      Правило системы: словесный знак сжимается ДО СВОЕЙ ТОЧКИ, а не исчезает.
      Литеры уходят, фигура остаётся и вырастает до размера, который читается
      сама по себе. Это тот же объект, просто последний оставшийся масштаб. */
-  .sb-lock { display: none; }
-  .sb-min { display: block; width: 17px; height: 17px; }
+  /* правило переехало наверх: знак теперь везде, а не только здесь */
 }
 /* ── ИЗВЕЩЕНИЕ НЕ НАКРЫВАЕТ ПОЛЕ ЗНАЧКОВ (v47.1) ─────────────────────────
    На широком экране извещения живут в правом верхнем углу — там пусто. На
@@ -2112,3 +2147,12 @@ button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset:
 .note-due.late { color: #ff9b8f; border-color: rgba(255, 69, 58, .42); background: rgba(255, 69, 58, .12); }
 .sticky-note.is-due { border-color: rgba(var(--accent-rgb), .48); }
 .sticky-note.is-late { border-color: rgba(255, 69, 58, .40); }
+
+/* Чип суточных обоев в Центре управления — тот же знак-дуга. */
+.chip.is-drift { position: relative; }
+.chip.is-drift::after {
+  content: ""; position: absolute; inset: -3px; border-radius: var(--r-pill);
+  border: 1px solid currentColor; opacity: .55;
+  border-left-color: transparent; border-bottom-color: transparent;
+  transform: rotate(-38deg); pointer-events: none;
+}

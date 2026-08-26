@@ -343,3 +343,23 @@
 }
 html[data-theme="light"] .st-select { border-color: rgba(0, 0, 0, .18); background-color: rgba(0, 0, 0, .05); }
 html[data-theme="light"] .st-select option { background: #fff; color: #16171a; }
+
+/* Суточное настроение обоев — тот же знак, что у суточной краски: дуга,
+   обошедшая циферблат. Знак один на две вещи, потому что вещь одна: свет,
+   идущий по кругу суток. */
+.st-chip.is-drift { position: relative; }
+.st-chip.is-drift::after {
+  content: ""; position: absolute; inset: -3px; border-radius: var(--r-pill);
+  border: 1px solid currentColor; opacity: .55;
+  border-left-color: transparent; border-bottom-color: transparent;
+  transform: rotate(-38deg); pointer-events: none;
+}
+
+/* Длинное имя в «О системе» (D-128). Оно пришло из верхней панели, где было
+   не к месту, и здесь ему дано настоящее место: во всю ширину карточки, с
+   воздухом вокруг. Ширина ограничена, чтобы на широком столе имя не
+   растягивалось в полосу. */
+.st-hero.has-wordmark { padding: 22px 0 20px; }
+.st-hero-word { display: block; margin: 0 auto 10px; width: min(268px, 74%); }
+.st-hero-word .sb-lock { width: 100%; height: auto; display: block; }
+.st-hero-word .sb-min { display: none; }

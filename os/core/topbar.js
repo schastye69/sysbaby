@@ -159,7 +159,7 @@
       "cc.charging": "Charging", "cc.onBattery": "On battery",
       "cc.merge": "Merge instead of replace",
       "theme.dark": "Dark", "theme.light": "Light",
-      "mood.studio": "Studio", "mood.aurora": "Aurora", "mood.sunset": "Sunset", "mood.ocean": "Ocean", "mood.mono": "Mono",
+      "mood.studio": "Studio", "mood.aurora": "Aurora", "mood.sunset": "Sunset", "mood.ocean": "Ocean", "mood.mono": "Mono", "mood.daylight": "Daylight",
       /* ================================================== Pulse / Настройки
          Приложения больше не пишут строки литералами. Ключ живёт здесь,
          рядом с остальными двумя языками, чтобы перевод нельзя было забыть:
@@ -636,7 +636,7 @@
       "cc.charging": "Зарядка", "cc.onBattery": "От батареи",
       "cc.merge": "Объединить, а не заменить",
       "theme.dark": "Тёмное", "theme.light": "Светлое",
-      "mood.studio": "Студия", "mood.aurora": "Аврора", "mood.sunset": "Закат", "mood.ocean": "Океан", "mood.mono": "Моно",
+      "mood.studio": "Студия", "mood.aurora": "Аврора", "mood.sunset": "Закат", "mood.ocean": "Океан", "mood.mono": "Моно", "mood.daylight": "Дневной свет",
       /* ============================================================ Настройки */
       "set.tab.general": "Общее", "set.tab.appearance": "Оформление",
       "set.tab.sound": "Звук и фокус", "set.tab.desktop": "Док и рабочий стол",
@@ -1097,7 +1097,7 @@
       "cc.charging": "Laeb", "cc.onBattery": "Akutoitel",
       "cc.merge": "Liida, ära asenda",
       "theme.dark": "Tume", "theme.light": "Hele",
-      "mood.studio": "Stuudio", "mood.aurora": "Virmalised", "mood.sunset": "Loojang", "mood.ocean": "Ookean", "mood.mono": "Mono",
+      "mood.studio": "Stuudio", "mood.aurora": "Virmalised", "mood.sunset": "Loojang", "mood.ocean": "Ookean", "mood.mono": "Mono", "mood.daylight": "Päevavalgus",
       /* ============================================================== Seaded
          Обращение к посетителю — teie (мн. вежливое), как на лендинге. */
       "set.tab.general": "Üldine", "set.tab.appearance": "Välimus",
@@ -2127,7 +2127,24 @@
     var accent = window.sbGetCurrentAccent ? window.sbGetCurrentAccent() : { a1: "#5b7cff" };
     $$("[data-accent]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-accent").toLowerCase() === String(accent.a1).toLowerCase()); });
     var mood = window.sbGetWallpaperMood ? window.sbGetWallpaperMood() : "studio";
-    $$("[data-mood]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-mood") === mood); });
+    var drifty = {};
+    (window.sbWallpaperMoods || []).forEach(function (m) { if (m.drift) drifty[m.id] = 1; });
+    $$("[data-mood]").forEach(function (b) {
+      var id = b.getAttribute("data-mood");
+      b.classList.toggle("on", id === mood);
+      /* Суточное настроение показывает цвет своего часа прямо на чипе —
+         иначе оно ничем не отличается от пяти неподвижных и его снова никто
+         не найдёт. Тот же знак-дуга, что у суточной краски. */
+      if (!drifty[id]) return;
+      b.classList.add("is-drift");
+      if (typeof window.sbWallpaperForTime !== "function") return;
+      try {
+        var w = window.sbWallpaperForTime();
+        b.style.background = "linear-gradient(135deg," + w.c1 + "," + w.c2 + ")";
+        b.style.borderColor = "transparent";
+        b.style.color = "#fff";
+      } catch (err) { console.error("[cc] mood preview failed", err); }
+    });
     var themeNow = window.sbGetTheme ? window.sbGetTheme() : "dark";
     $$("[data-theme-chip]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-theme-chip") === themeNow); });
     /* Sliders and the language selector are settings too — they repaint from

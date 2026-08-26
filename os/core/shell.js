@@ -475,14 +475,140 @@
     { id: "ocean", name: "Ocean" },
     { id: "aurora", name: "Aurora" },
     { id: "sunset", name: "Sunset" },
-    { id: "mono", name: "Mono" }
+    { id: "mono", name: "Mono" },
+    { id: "daylight", name: "Daylight", drift: true }
   ];
-  window.sbWallpaperMoods = MOODS.map(function (m) { return { id: m.id, name: m.name }; });
-  window.sbGetWallpaperMood = function () { return (window.sbDB && window.sbDB.get(MOOD_KEY)) || "studio"; };
-  window.sbSetWallpaperMood = function (id) {
-    var valid = MOODS.some(function (m) { return m.id === id; }) ? id : "studio";
+
+  /* ============================================ суточная комната (D-127) §
+
+     ПОВОД: «прошу совет сделать отдельную цветовую гамму, которая будет
+     работать как светотерапия чередуя все наши цвета (я про wallpaper)».
+
+     ДВА РАЗНЫХ ВОПРОСА, И У НИХ РАЗНЫЕ ОТВЕТЫ.
+
+     ТОН — «чередуя все наши цвета». Тот же круг, что у шва: минута суток,
+     переведённая в градус. Комната и шов идут по одним часам и в одном
+     градусе — это один свет в двух местах, а не два прибора, которые
+     когда-нибудь разойдутся.
+
+     СВЕТЛОТА КРАСКИ — оставлена от шва (LIGHT): это выверенная поправка на
+     то, что синий читается тусклее жёлтого при равной светлоте. Не путать
+     её с количеством света: это «сколько весит ЭТОТ тон», а не «сколько
+     света в комнате».
+
+     КОЛИЧЕСТВО СВЕТА — «светотерапия», и это новая кривая, ROOM. Она
+     привязана к ЧАСУ, а не к тону: в четыре утра комната почти погасшая, к
+     полудню разгорается, к ночи гаснет обратно. Именно это и есть терапия
+     — свет, который живёт по суткам, а не краска, которая едет по кругу.
+
+     ЦЕНА. Пишется не в корень, а в один элемент #sbMoodTint: запись
+     свойства в корень объявляет устаревшим стиль ВСЕГО документа (D-093,
+     D-112), а inline-стиль одного элемента — нет. Пишем, только когда
+     изменился округлённый градус или округлённая доля света: около
+     семисот записей в сутки в один элемент. */
+  var ROOM = [
+    0.10, 0.07, 0.05, 0.04, 0.05, 0.09, 0.18, 0.32, 0.48, 0.62, 0.74, 0.84,
+    0.92, 1.00, 0.97, 0.90, 0.80, 0.68, 0.55, 0.43, 0.34, 0.27, 0.20, 0.15
+  ];
+  var WP_A1 = [0.13, 0.36];   /* верхний свет: ночь … полдень */
+  var WP_A2 = [0.08, 0.23];   /* нижний свет */
+  /* ТРЕТИЙ СЛОЙ — И ЭТО ГЛАВНЫЙ ИЗ ТРЁХ.
+     Первая редакция двигала только два цветных пятна, и закон её отверг:
+     на настоящих пикселях полдень оказался НЕ СВЕТЛЕЕ трёх часов ночи
+     (0.0145 против 0.0151). Причина простая и её стоит записать: два
+     насыщенных пятна, накрывающих меньше половины стола, меняют СРЕДНЮЮ
+     яркость почти никак — они меняют цвет, а не количество света. А
+     «светотерапия» — это именно количество.
+     Значит нужен слой во весь стол: мягкий, почти белый свет часа. Он
+     ненасыщенный (WP_WASH_SAT) — потому что дневной свет в комнате белый, а
+     не бирюзовый, и потому что зелёный канал, который и решает яркость,
+     у ненасыщенного цвета сильнее. Ночью его нет вовсе. */
+  var WP_WASH = [0.00, 0.46];
+  var WP_WASH_SAT = 26, WP_WASH_LIGHT = 66;
+
+  window.sbWallpaperForTime = function (ms) {
+    var d = new Date(typeof ms === "number" ? ms : Date.now());
+    var minutes = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+    var hue = Math.round(minutes / 1440 * 360 * 10) / 10;
+    var pos = minutes / 60;
+    var i = Math.floor(pos) % 24, j = (i + 1) % 24, f = pos - Math.floor(pos);
+    var lvl = ROOM[i] + (ROOM[j] - ROOM[i]) * f;
+    lvl = Math.round(lvl * 1000) / 1000;
+    var r2 = function (v) { return Math.round(v * 1000) / 1000; };
+    return {
+      hue: hue,
+      level: lvl,
+      c1: hslHex(hue, DRIFT_SAT, driftLight(hue)),
+      c2: hslHex(hue + 28, DRIFT_SAT, Math.min(92, driftLight(hue + 28) + 10)),
+      c3: hslHex(hue, WP_WASH_SAT, WP_WASH_LIGHT),
+      a1: r2(WP_A1[0] + (WP_A1[1] - WP_A1[0]) * lvl),
+      a2: r2(WP_A2[0] + (WP_A2[1] - WP_A2[0]) * lvl),
+      a3: r2(WP_WASH[0] + (WP_WASH[1] - WP_WASH[0]) * lvl)
+    };
+  };
+
+  function tintRgba(hex, a) {
+    var c = hexToRgb(hex);
+    return "rgba(" + c.r + "," + c.g + "," + c.b + "," + a + ")";
+  }
+  /* Вынесено наружу ровно затем, чтобы закон мог сфотографировать любой час,
+     не переводя часов машины, и фотографировал при этом НАСТОЯЩИЙ красящий
+     ход, а не свою копию его замысла. */
+  window.sbWallpaperApply = function (ms) {
+    var w = window.sbWallpaperForTime(ms);
+    var el = doc.getElementById("sbMoodTint");
+    if (el) {
+      el.style.backgroundImage =
+        "radial-gradient(900px 640px at 76% 16%, " + tintRgba(w.c1, w.a1) + ", transparent 64%)," +
+        "radial-gradient(760px 580px at 16% 84%, " + tintRgba(w.c2, w.a2) + ", transparent 62%)," +
+        "linear-gradient(" + tintRgba(w.c3, w.a3) + ", " + tintRgba(w.c3, w.a3) + ")";
+    }
+    return w;
+  };
+  function wpClear() {
+    var el = doc.getElementById("sbMoodTint");
+    if (el) el.style.backgroundImage = "";
+  }
+
+  var wpTimer = null, wpLastHue = null, wpLastLvl = null;
+  function wpTick(force) {
+    var w = window.sbWallpaperForTime();
+    var hue = Math.round(w.hue), lvl = Math.round(w.level * 200);
+    if (!force && hue === wpLastHue && lvl === wpLastLvl) return;
+    wpLastHue = hue; wpLastLvl = lvl;
+    window.sbWallpaperApply(Date.now());
+  }
+  function wpStart() {
+    wpStop();
+    wpTick(true);
+    wpTimer = setInterval(function () { wpTick(false); }, 60000);
+  }
+  function wpStop() {
+    if (wpTimer) { clearInterval(wpTimer); wpTimer = null; }
+    wpLastHue = null; wpLastLvl = null;
+    wpClear();
+  }
+  window.sbWallpaperDrifting = function () { return !!wpTimer; };
+
+  /* Надеть настроение умеет ОДНА функция. Раньше это знали в двух местах —
+     здесь и в boot, — места разошлись, и выбранный Ocean не переживал
+     перезагрузку: boot восстанавливал всё, кроме него, по строке, оставшейся
+     с тех пор, когда Ocean был значением по умолчанию. Чинится не строка, а
+     раздвоение. */
+  function applyMood(valid) {
     if (valid === "studio") root.removeAttribute("data-wp-mood");
     else root.setAttribute("data-wp-mood", valid);
+    if (valid === "daylight") wpStart(); else wpStop();
+  }
+
+  window.sbWallpaperMoods = MOODS.map(function (m) { return { id: m.id, name: m.name, drift: !!m.drift }; });
+  window.sbGetWallpaperMood = function () {
+    var v = (window.sbDB && window.sbDB.get(MOOD_KEY)) || "studio";
+    return MOODS.some(function (m) { return m.id === v; }) ? v : "studio";
+  };
+  window.sbSetWallpaperMood = function (id) {
+    var valid = MOODS.some(function (m) { return m.id === id; }) ? id : "studio";
+    applyMood(valid);
     if (window.sbDB) window.sbDB.set(MOOD_KEY, valid);
     $$('[data-mood]').forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-mood") === valid); });
     sbBus.emit("mood:change", { id: valid });
@@ -3239,8 +3365,9 @@
        и цвет продолжается с того места, где человек его оставил, а не
        начинается заново. То же правило, что у обоев (D-095). */
     if (acc.mode === DRIFT_ID) driftStart();
-    var mood = window.sbGetWallpaperMood();
-    if (mood && mood !== "ocean") root.setAttribute("data-wp-mood", mood);
+    /* Та же функция, что и при выборе, — второго знания о настроении в
+       системе больше нет. */
+    applyMood(window.sbGetWallpaperMood());
     ["motion", "dnd", "autohide", "transparency"].forEach(function (k) { applyControl(k, window.sbGetControlToggle(k)); });
     wireTurbo();
     /* volume and brightness come back exactly as they were left */

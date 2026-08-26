@@ -180,7 +180,18 @@
          словами. */
       var moodName = t("mood." + m.id);
       if (moodName === "mood." + m.id) moodName = m.name || m.label || m.id;
-      return '<button type="button" class="st-chip' + (m.id === mood ? " active" : "") + '" data-mood="' + esc(m.id) + '">' + esc(moodName) + "</button>";
+      /* Суточное настроение помечено тем же знаком, что и суточная краска:
+         дуга, обошедшая круг. Человек, однажды узнавший этот знак на шве,
+         узнаёт его и здесь — и не читает второго пояснения. И оно светится
+         цветом ТЕКУЩЕГО часа: среди пяти ровных чипов один живой. */
+      var live = "";
+      if (m.drift && typeof window.sbWallpaperForTime === "function") {
+        try {
+          var w = window.sbWallpaperForTime();
+          live = ' style="background:linear-gradient(135deg,' + esc(w.c1) + ',' + esc(w.c2) + ');border-color:transparent;color:#fff"';
+        } catch (err) { console.error("[settings] mood preview failed", err); }
+      }
+      return '<button type="button" class="st-chip' + (m.id === mood ? " active" : "") + (m.drift ? " is-drift" : "") + '" data-mood="' + esc(m.id) + '"' + live + ">" + esc(moodName) + "</button>";
     }).join("");
 
     var brightness = typeof window.sbGetBrightness === "function" ? window.sbGetBrightness() : 100;
@@ -335,9 +346,29 @@
       return '<div class="st-spec"><span>' + esc(pair[0]) + "</span><span>" + pair[1] + "</span></div>";
     }).join("");
 
+    /* Длинное имя системы стоит ЗДЕСЬ — там, куда приходят спросить «что это
+       такое». Оно не набирается шрифтом и не копируется сюда контуром: берётся
+       из единственного экземпляра в документе (<template id="sbWordmarkFull">).
+       Второй экземпляр однажды разошёлся бы с первым молча. Если шаблона нет —
+       остаётся прежний значок, приложение не падает. */
+    var wordmark = "";
+    try {
+      var tpl = document.getElementById("sbWordmarkFull");
+      if (tpl && tpl.content && tpl.content.firstElementChild) {
+        wordmark = tpl.content.firstElementChild.outerHTML;
+      }
+    } catch (err) { console.error("[settings] wordmark read failed", err); }
+
     return '<h2 class="st-title">' + esc(t("set.tab.about")) + "</h2>" +
-      '<div class="st-hero"><div class="st-hero-logo">' + ICON + "</div>" +
-        '<div class="st-hero-name">sys.baby</div><div class="st-hero-version">' + esc(build) + "</div></div>" +
+      '<div class="st-hero' + (wordmark ? " has-wordmark" : "") + '">' +
+        (wordmark
+          ? '<div class="st-hero-word" role="img" aria-label="sys.baby">' + wordmark + "</div>"
+          : '<div class="st-hero-logo">' + ICON + "</div><div class=\"st-hero-name\">sys.baby</div>") +
+        /* Строка сборки под знаком СНЯТА: ровно та же строка стоит первой же
+           строкой таблицы ниже, в тридцати точках отсюда. Пока в шапке стояло
+           слово «sys.baby», повтора не было; со знаком он стал очевиден.
+           Дефект внесён этой же правкой и ею же убран. */
+        (wordmark ? "" : '<div class="st-hero-version">' + esc(build) + "</div>") + "</div>" +
       '<div class="st-specs">' + rows + "</div>" +
       '<div class="st-card">' +
         "<h3>" + esc(t("set.about.whatTitle")) + "</h3>" +
