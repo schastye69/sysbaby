@@ -386,6 +386,145 @@
 
   function notesLayer() { return noteLayer || (noteLayer = $("#sbNoteLayer")); }
 
+  /* ── СРОК ЗАМЕТКИ — ЭТО ЕЁ СОБСТВЕННЫЕ СЛОВА (v71) ────────────────────────
+     ПОВОД — просьба основателя развивать приложения. В очереди стояли «Срок
+     на заметках» и «Сегодня»; дойдя до них, Совет пересмотрел собственное
+     предложение и не стал строить ни поля даты, ни приложения.
+
+     Заголовок заметки уже оказался её первой строкой — не заведённым полем,
+     а ПРОЧИТАННЫМ (D-111). Срок устроен так же: дата читается в самом
+     тексте. «Позвонить завтра», «сдать 1 сентября», «через 3 дня» — человек
+     и так пишет это, когда пишет о деле; заводить рядом поле значило бы
+     просить сказать одно и то же дважды. Отсюда то, чего у поля не бывает:
+     срок появляется у ВСЕХ уже написанных заметок без переноса данных,
+     меняется правкой текста, и хранить его не нужно — в записи по-прежнему
+     одна строка.
+
+     ГРАНИЦЫ, И ОНИ ЗДЕСЬ ГЛАВНОЕ:
+       · Прошедшая дата сроком НЕ становится. «Встретились 20 мая» — рассказ
+         о прошлом, а не дело.
+       · Понятое ПОКАЗЫВАЕТСЯ меткой: человек видит, что именно вычитала
+         система. Молча угаданный срок — худший из всех.
+       · Относительное («через 3 дня») считается от времени ЗАПИСИ, а не от
+         мига, когда на заметку посмотрели: иначе срок уезжал бы каждый день.
+       · Заметка НЕ ДВИГАЕТСЯ. Место заметки — решение человека (D-098,
+         D-109): меняется вид, а не положение.
+
+     Охраняется tools/note-due-check.mjs. */
+
+  var MONTHS = ["январ", "феврал", "март", "апрел", "ма", "июн", "июл", "август", "сентябр", "октябр", "ноябр", "декабр"];
+  var WEEKDAYS = ["воскресен", "понедельник", "вторник", "сред", "четверг", "пятниц", "суббот"];
+  var DAY = 86400000;
+
+  function startOfDay(ms) { var d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); }
+
+  /* Ближайшая НЕ прошедшая дата, названная в тексте. writtenAt — когда
+     заметку записали: от него считается всё относительное. */
+  /* Чистая функция: и «когда записали», и «когда смотрим» приходят снаружи.
+     Так закон может пройти любой день, не трогая часов машины, — тем же
+     приёмом, которым проверяется ход краски (D-107). */
+  window.sbNoteDue = function (text, writtenAt, nowAt) {
+    var src = String(text == null ? "" : text).toLowerCase();
+    if (!src) return null;
+    var from = startOfDay(typeof writtenAt === "number" ? writtenAt : Date.now());
+    var todayAt = startOfDay(typeof nowAt === "number" ? nowAt : Date.now());
+    var found = [];
+
+    if (/(^|[^а-яё])сегодня([^а-яё]|$)/.test(src)) found.push({ at: from, said: "today" });
+    if (/(^|[^а-яё])завтра([^а-яё]|$)/.test(src)) found.push({ at: from + DAY, said: "tomorrow" });
+    if (/(^|[^а-яё])послезавтра([^а-яё]|$)/.test(src)) found.push({ at: from + 2 * DAY, said: "after" });
+
+    var rel = src.match(/через\s+(\d{1,3})\s*(дн|недел|месяц)/);
+    if (rel) {
+      var n = parseInt(rel[1], 10);
+      var mult = rel[2] === "недел" ? 7 : (rel[2] === "месяц" ? 30 : 1);
+      found.push({ at: from + n * mult * DAY, said: "in" });
+    }
+
+    /* «1 сентября», «1 сент», «15 марта» */
+    var named = src.match(/(\d{1,2})\s+([а-яё]{3,})/);
+    if (named) {
+      var mi = -1;
+      for (var i = 0; i < MONTHS.length; i++) {
+        if (named[2].indexOf(MONTHS[i]) === 0) { mi = i; break; }
+      }
+      if (mi >= 0) {
+        var dd = parseInt(named[1], 10);
+        var y = new Date(from).getFullYear();
+        var at = startOfDay(new Date(y, mi, dd, 12).getTime());
+        /* ── ГОД ПЕРЕНОСИТСЯ ТОЛЬКО ЧЕРЕЗ ГРАНИЦУ ГОДА ────────────────────
+           «1 сентября», написанное в июне, — сентябрь этого года. «20 мая»,
+           написанное в июне, — рассказ о прошлом, а не дело: переносить его
+           на будущий май значило бы придумать человеку намерение. А вот «5
+           января», написанное 30 декабря, отстоит почти на год назад — так
+           далеко назад пишут только про следующий год. Отсюда правило:
+           перенос ТОЛЬКО если названная дата отстала больше чем на 300
+           дней. Это не подгонка, а единственный случай, который иначе не
+           различить. */
+        if (at < from && (from - at) > 300 * DAY) at = startOfDay(new Date(y + 1, mi, dd, 12).getTime());
+        found.push({ at: at, said: "date" });
+      }
+    }
+
+    /* «25.12» и «25.12.2026» */
+    var dot = src.match(/(^|[^\d])(\d{1,2})[.\/](\d{1,2})(?:[.\/](\d{2,4}))?([^\d]|$)/);
+    if (dot) {
+      var d2 = parseInt(dot[2], 10), m2 = parseInt(dot[3], 10) - 1;
+      var y2 = dot[4] ? parseInt(dot[4].length === 2 ? "20" + dot[4] : dot[4], 10) : new Date(from).getFullYear();
+      if (d2 >= 1 && d2 <= 31 && m2 >= 0 && m2 <= 11) {
+        var at2 = startOfDay(new Date(y2, m2, d2, 12).getTime());
+        if (!dot[4] && at2 < from && (from - at2) > 300 * DAY) at2 = startOfDay(new Date(y2 + 1, m2, d2, 12).getTime());
+        found.push({ at: at2, said: "date" });
+      }
+    }
+
+    /* «в пятницу» — ближайший такой день, начиная с завтрашнего. */
+    var wd = src.match(/в[оо]?\s+([а-яё]{4,})/);
+    if (wd) {
+      for (var w = 0; w < WEEKDAYS.length; w++) {
+        if (wd[1].indexOf(WEEKDAYS[w]) === 0) {
+          var cur = new Date(from).getDay();
+          var delta = (w - cur + 7) % 7;
+          if (delta === 0) delta = 7;
+          found.push({ at: from + delta * DAY, said: "weekday" });
+          break;
+        }
+      }
+    }
+
+    /* ── ЧТО ОТСЕИВАЕТСЯ, И ЭТО ДВА РАЗНЫХ ПРОШЛОГО ──────────────────────
+       Дата, которая была в прошлом УЖЕ КОГДА ЗАМЕТКУ ПИСАЛИ, — рассказ, а
+       не дело: «встретились 20 мая», написанное в июне. Такое отсеивается.
+       Дата, которая была впереди в миг записи, но с тех пор прошла, — это
+       ПРОСРОЧЕННОЕ ДЕЛО, и его нельзя прятать: именно о нём человеку нужно
+       знать больше всего. Поэтому отбор идёт по времени ЗАПИСИ, а «поздно
+       или нет» считается по сегодняшнему дню. */
+    var live = found.filter(function (f) { return f.at >= from; });
+    if (!live.length) return null;
+    live.sort(function (a, b) { return a.at - b.at; });
+    var best = live[0];
+    return {
+      at: best.at,
+      said: best.said,
+      late: best.at < todayAt,
+      today: best.at === todayAt,
+      days: Math.round((best.at - todayAt) / DAY)
+    };
+  };
+
+  /* Как срок называется человеку. Метка обязана СКАЗАТЬ понятое: молча
+     угаданный срок хуже отсутствующего. */
+  window.sbNoteDueLabel = function (due) { return dueLabel(due); };
+
+  function dueLabel(due) {
+    if (!due) return "";
+    if (due.late) return tr("note.due.late");
+    if (due.today) return tr("note.due.today");
+    if (due.days === 1) return tr("note.due.tomorrow");
+    var d = new Date(due.at);
+    return tr("note.due.on", { date: d.getDate() + "." + String(d.getMonth() + 1).padStart(2, "0") });
+  }
+
   function appMentionChips(text) {
     var reg = (window.SysBaby && window.SysBaby.apps) || {};
     var low = String(text || "").toLowerCase();
@@ -541,7 +680,7 @@
     host.appendChild(el);
     autoGrow(ta);
     lightNote(el);
-    paintChips(el, wholeText());
+    paintChips(el, wholeText(), rec);
 
     function wholeText() { return joinNote(ta.value, bodyEl.value); }
 
@@ -594,7 +733,7 @@
       el.title = p.body.trim() ? tr("note.more") : "";
       autoGrow(ta);
       lightNote(el);
-      paintChips(el, next.text || "");
+      paintChips(el, next.text || "", next);
     };
 
     function noteChanged() {
@@ -603,7 +742,7 @@
       el.classList.toggle("has-body", !!bodyEl.value.trim());
       el.title = bodyEl.value.trim() ? tr("note.more") : "";
       autoGrow(ta);
-      paintChips(el, whole);
+      paintChips(el, whole, rec);
       if (saveTimers[rec.id]) clearTimeout(saveTimers[rec.id]);
       saveTimers[rec.id] = setTimeout(function () { persist(); if (window.sbNotesStore) window.sbNotesStore.notify(); }, 250);
     }
@@ -821,10 +960,21 @@
     return el;
   }
 
-  function paintChips(el, text) {
+  function paintChips(el, text, rec) {
     var host = el.querySelector(".note-chip-host");
     if (!host) return;
-    host.innerHTML = appMentionChips(text);
+    /* Срок читается из тех же слов и показывается рядом с упоминаниями
+       приложений: и то и другое — то, что система ВЫЧИТАЛА в заметке, а не
+       завела отдельно. */
+    var due = window.sbNoteDue(text, rec && rec.updatedAt);
+    el.classList.toggle("is-due", !!due && due.today);
+    el.classList.toggle("is-late", !!due && due.late);
+    var dueMark = due
+      ? '<span class="note-due' + (due.late ? " late" : (due.today ? " now" : "")) + '">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12.5" r="7.5"/><path d="M12 8.5v4.2l2.6 1.6"/></svg>' +
+        esc(dueLabel(due)) + "</span>"
+      : "";
+    host.innerHTML = dueMark + appMentionChips(text);
     $$(".note-chip", host).forEach(function (b) {
       b.addEventListener("click", function (ev) {
         ev.stopPropagation();

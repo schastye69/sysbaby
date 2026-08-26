@@ -2090,3 +2090,25 @@ button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset:
 .desk-icon.running.is-min::after { background: transparent; box-shadow: inset 0 0 0 1px var(--ink-3); }
 .desk-icon.active-app::after { background: var(--accent); }
 .desk-icon.active-app.is-min::after { background: transparent; box-shadow: inset 0 0 0 1px var(--accent); }
+
+/* ── СРОК НА ЗАМЕТКЕ (v71) ────────────────────────────────────────────────
+   Срок читается в словах самой заметки (см. sbNoteDue в desktop.js) и
+   показывается меткой: человек видит, что именно вычитала система. Молча
+   угаданный срок хуже отсутствующего.
+
+   Заметка при этом НЕ ДВИГАЕТСЯ: место заметки — решение человека (D-098,
+   D-109). Меняется вид, а не положение. Наступивший срок греет кромку;
+   просроченный говорит об этом цветом тревоги — но не кричит, потому что
+   стол принадлежит человеку, а не его делам.
+   Охраняется tools/note-due-check.mjs. */
+.note-due {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px; border-radius: var(--r-pill);
+  font-size: 11px; color: var(--ink-2);
+  background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+}
+.note-due svg { width: 11px; height: 11px; flex: none; }
+.note-due.now { color: var(--ink); border-color: var(--accent-ring); background: var(--accent-soft); }
+.note-due.late { color: #ff9b8f; border-color: rgba(255, 69, 58, .42); background: rgba(255, 69, 58, .12); }
+.sticky-note.is-due { border-color: rgba(var(--accent-rgb), .48); }
+.sticky-note.is-late { border-color: rgba(255, 69, 58, .40); }
