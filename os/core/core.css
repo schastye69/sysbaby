@@ -29,7 +29,14 @@
   --ink-3: rgba(242, 242, 240, .36);
   --line: rgba(242, 242, 240, .09);
   --line-2: rgba(242, 242, 240, .16);
-  --glass: rgba(242, 242, 240, .055);
+  /* ── СТЕКЛО ТОНЬШЕ, И В НЁМ ЕСТЬ КОМНАТА (D-147) ────────────────────────
+     Основатель: «фон окон тоже сделать более прозрачным». Плёнка утоньшена,
+     а рядом появился второй слой — свет комнаты. Раздельно, а не одним
+     цветом, потому что --glass во многих местах уже стоит последним слоем
+     многослойного фона: сделай его сам многослойным — и те места сломались
+     бы молча. Один рецепт, два слоя, оба объявлены здесь. */
+  --glass: rgba(242, 242, 240, .04);
+  --glass-tint: rgba(var(--accent-rgb), .07);
   --glass-2: rgba(242, 242, 240, .10);
   --glass-blur: 26px;
   /* The seam. One colour, one meaning: here you can act, or here something is
@@ -169,6 +176,15 @@ html.sb-incognito {
   --line: rgba(255, 255, 255, .18);
   --glass: rgba(255, 255, 255, .05);
 }
+
+/* ── ТУРБО УДЕШЕВЛЯЕТ СТЕКЛО, А НЕ ОТМЕНЯЕТ ЕГО (D-148) ────────────────────
+   Замер (открытие окна, телефонный кадр, медиана из 18 открытий):
+       стекло 26px — 34.1 мс
+       стекло 10px — 26.7 мс
+       без стекла  — 26.0 мс
+   Вся экономия сидит в РАДИУСЕ. Снятие стекла целиком приносит сверх того
+   0.7 мс — и стоит системе всей её внешности. Турбо берёт радиус. */
+html.sb-turbo { --glass-blur: 10px; }
 
 /* reduce transparency: a real accessibility mode (spec addition §7) */
 html[data-transparency="reduced"] {
@@ -654,11 +670,59 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
   position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-box); z-index: 60;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 0 12px; padding-top: var(--safe-top);
-  background: linear-gradient(180deg, rgba(10, 11, 15, .82), rgba(10, 11, 15, .52));
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
-  border-bottom: 1px solid var(--line);
+  /* ── ПОЛОСА — ВОЗДУХ, А НЕ ПЛИТА (D-147) ────────────────────────────────
+     ПОВОД, дословно от основателя 26.08.2026, со снимком зелёной комнаты:
+     «верхняя панель - единственный чужеродный элемент и он фиксится большей
+     прозрачностью и гениальностью», «необходимо сделать верхнюю панель более
+     прозрачной. интеллектуально и концептуально по дизайну», «и очень дорого».
+     ЧТО БЫЛО НЕ ТАК, ЕСЛИ НАЗЫВАТЬ КОРЕНЬ. Здесь стояла почти чёрная плита:
+     rgba(10,11,15,.82) → .52, то есть цвет, НЕ ИМЕЮЩИЙ К КОМНАТЕ ОТНОШЕНИЯ.
+     На снимке это видно без прибора: комната бирюзовая, значки, заметка и
+     подсказка — стеклянные и подкрашены ею, а полоса чёрная. Она была
+     единственной поверхностью системы, которая не знала, в какой комнате
+     висит. С D-141 у системы один источник света; полоса из него не пила.
+     ЧТО СТАЛО, И ПОЧЕМУ ИМЕННО ТАК.
+     · Вещество полосы — СВЕТ КОМНАТЫ, а не чернила: --accent-rgb на очень
+       малой доле. В бирюзовой комнате полоса бирюзовая, в Studio — тёплая.
+     · Чернила остались только НАВЕРХУ и только затем, чтобы читались знаки
+       под строкой состояния телефона. Книзу они уходят в ноль — поэтому у
+       полосы нет «низа»: она не кончается, она растворяется.
+     · Сплошной линии снизу больше нет. Вместо неё волосок, который ярче в
+       середине и исчезает к краям: это то, чем дорогое стекло отличается от
+       нарисованной панели — у него нет обрубленного края.
+     · Размытие выше прежнего: чем меньше вещества, тем больше работы у
+       стекла. Прозрачность без размытия — это не воздух, а дырка.
+     Охраняется tools/air-check.mjs: комната обязана просвечивать
+     (полоса меняет цвет вместе с комнатой), шва внизу быть не должно, а
+     часы — читаться. */
+  background:
+    linear-gradient(180deg, rgba(var(--accent-rgb), .10), rgba(var(--accent-rgb), .02) 62%, transparent),
+    linear-gradient(180deg, rgba(8, 9, 12, .42), rgba(8, 9, 12, .14) 58%, transparent);
+  backdrop-filter: blur(calc(var(--glass-blur) * 1.35)) saturate(1.7);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.35)) saturate(1.7);
+  border-bottom: 0;
   opacity: 0; transform: translateY(-8px);
   transition: opacity var(--t-scene) ease, transform var(--t-scene) var(--ease);
+}
+/* Волосок вместо шва: ярче в середине, в ноль к краям. Он не отделяет полосу
+   от стола — он лишь намекает, где кончается стекло, и на телефоне его почти
+   не видно. Поверх содержимого он не ложится: pointer-events сняты. */
+#topbar::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    transparent, rgba(var(--accent-rgb), .16) 22%, rgba(255, 255, 255, .10) 50%,
+    rgba(var(--accent-rgb), .16) 78%, transparent);
+}
+/* Без размытия прозрачность превращается в дырку: там, где стекло не
+   поддержано, вещества добавляют. Это не «запасной вид», это тот же замысел
+   на устройстве, которое не умеет размывать. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  #topbar {
+    background:
+      linear-gradient(180deg, rgba(var(--accent-rgb), .16), rgba(var(--accent-rgb), .04) 62%, transparent),
+      linear-gradient(180deg, rgba(8, 9, 12, .72), rgba(8, 9, 12, .34) 58%, rgba(8, 9, 12, .12));
+  }
 }
 html.rv-topbar #topbar { opacity: 1; transform: none; }
 html.topbar-hidden #topbar { transform: translateY(-100%); }
@@ -714,6 +778,19 @@ html[data-motion="reduced"] .tb-mark { transition: none; }
    знаке существует ровно затем, чтобы такое не проходило молча.
    У бренда своё имя, и оно неподвижно на обеих поверхностях. */
 .sb-lb, .sb-hb { fill: var(--brand, #e0663c); }
+/* ── ЗНАК В ПОЛОСЕ ЖИВЁТ ВМЕСТЕ С КОМНАТОЙ (D-149) ────────────────────────
+   Основатель: «иконка логотипа должна тоже меняться в зависимости от
+   wallpaper». Выше записано обратное — и записано честно: тогда он этого
+   НЕ просил, и закон о знаке стоял затем, чтобы самовольный дрейф не прошёл
+   молча. Теперь просит; решение меняется по его слову, а не по нашему.
+   ГДЕ ИМЕННО. Только знак в верхней полосе — там, где система стоит в СВОЕЙ
+   комнате. Знак бренда на витрине, длинное написание в «О системе» и значок
+   вкладки остаются неподвижными: имя бренда не может зависеть от того, какие
+   сегодня обои. Так живое и неподвижное не спорят — у них разные места.
+   ЧТО ИМЕННО МЕНЯЕТСЯ. Крюк берёт свет комнаты, вторая половина остаётся
+   белой. Знак всегда двухцветный, и читается он одинаково в любой комнате —
+   а был бы одноцветным, в тёплой комнате слился бы сам с собой. */
+#topbar .sb-lb, #topbar .sb-hb { fill: var(--accent); }
 .sb-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @keyframes markIn { from { opacity: 0; transform: translate3d(-8%, -8%, 0) scale(.82) } to { opacity: 1; transform: none } }
 @media (prefers-reduced-motion: reduce) { .sb-lock { animation: none } }
@@ -1314,9 +1391,14 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
 .window {
   position: absolute; pointer-events: auto; display: flex; flex-direction: column; overflow: hidden;
   min-width: 340px; min-height: 280px;
-  border-radius: var(--r-window); background: var(--glass);
+  border-radius: var(--r-window);
+  /* Окно сделано из комнаты: сверху её свет, книзу он сходит на нет, и под
+     всем этим тончайшая плёнка. Плита превращается в воздух, но край и блик
+     остаются — иначе окно перестанет читаться как предмет. */
+  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--glass);
   border: 1px solid var(--line); box-shadow: var(--shadow);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
 }
 .window::before {
   content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: rgba(255, 255, 255, .16); pointer-events: none;

@@ -254,12 +254,26 @@
         on: true,
         was: {
           motion: window.sbGetControlToggle("motion"),
-          transparency: window.sbGetControlToggle("transparency"),
           field: window.sbField ? window.sbField.level() : "live"
         }
       };
       window.sbSetControlToggle("motion", true);
-      window.sbSetControlToggle("transparency", true);
+      /* ── ТУРБО БОЛЬШЕ НЕ СНИМАЕТ СТЕКЛО (D-148) ───────────────────────
+         Здесь стояло sbSetControlToggle("transparency", true) — то есть
+         Турбо ВКЛЮЧАЛ человеку режим доступности «меньше прозрачности» и
+         тем убирал стекло со всей системы. Основатель, со снимком: «верхняя
+         панель - единственный чужеродный элемент», «фон окон тоже сделать
+         более прозрачным». Причина, по которой у него всё было плитой, —
+         вот эта строка.
+         ЗАМЕРЕНО, А НЕ ПРЕДПОЛОЖЕНО (открытие окна, телефонный кадр,
+         медиана из 18 открытий): стекло 26px — 34.1 мс, стекло 10px —
+         26.7 мс, БЕЗ СТЕКЛА ВООБЩЕ — 26.0 мс. То есть вся экономия сидела
+         в РАДИУСЕ размытия, а не в наличии стекла: убрав стекло целиком,
+         Турбо выигрывал 0.7 мс сверх того, что даёт меньший радиус, — и
+         платил за них внешностью всей системы. Теперь Турбо уменьшает
+         радиус (html.sb-turbo в core.css), а стекло остаётся.
+         И отдельно: «меньше прозрачности» — это ВЫБОР ЧЕЛОВЕКА, режим
+         доступности. Скоростной режим не имеет права его за него делать. */
       if (window.sbField) window.sbField.setLevel("off");
       /* Комната замирает такой, какая она сейчас: ни одного хода, но и ни
          одного погашенного цвета. Основатель: «accent colors обязательно
@@ -269,7 +283,7 @@
       var was = cur.was || {};
       cur = { on: false };
       window.sbSetControlToggle("motion", !!was.motion);
-      window.sbSetControlToggle("transparency", !!was.transparency);
+      /* Прозрачность Турбо не трогал — возвращать нечего (D-148). */
       if (window.sbField) window.sbField.setLevel(was.field === "off" || was.field === "quiet" ? was.field : "live");
       if (window.sbRoomThaw) window.sbRoomThaw();
     }
@@ -294,7 +308,6 @@
       btn.setAttribute("aria-pressed", "true");
       btn.classList.add("on");
       window.sbSetControlToggle("motion", true);
-      window.sbSetControlToggle("transparency", true);
       if (window.sbField) window.sbField.setLevel("off");
       else doc.addEventListener("DOMContentLoaded", function () { if (window.sbField) window.sbField.setLevel("off"); });
       /* Турбо, переживший перезагрузку, замораживает комнату после того, как
@@ -467,7 +480,28 @@
     { id: "mono", name: "Mono", hue: 218, span: 8, cycle: 48 * 60000, room: [0.20, 0.36], sat: 14 },
     { id: "daylight", name: "Daylight", drift: true, day: true, cycle: 24 * 3600000, room: null, sat: 73 },
     { id: "therapy", name: "Light therapy", drift: true, session: true, span: 360,
-      cycle: 14 * 60000, room: [0.62, 1.0], sat: 78 }
+      cycle: 14 * 60000, room: [0.62, 1.0], sat: 78 },
+    /* ── ПРАЗДНИК: ГОД СВЕТА ЗА ДВЕ МИНУТЫ, НАЧИНАЯ С СЕГОДНЯ (D-150) ─────
+       ПОВОД, дословно от основателя 26.08.2026: «нужно ещё придумать третью
+       экстра тему, например, праздник (только более гениально) и тогда
+       светотерапия в ускоренном темпе + какой-то гениальный и концептуальный
+       трюк», «всё максимально интеллектуально и дорого».
+       ЧТО ЗДЕСЬ ЗА ТРЮК И ПОЧЕМУ ОН НЕ УКРАШЕНИЕ. Ускоренная светотерапия
+       сама по себе — это «то же, но быстрее»; праздником её делает не
+       скорость. Круг цвета и круг года — ОДНА И ТА ЖЕ ОКРУЖНОСТЬ: 365 дней
+       ложатся на 360 градусов почти один в один. Поэтому у праздника есть
+       НАЧАЛО, и оно не в нуле — оно СЕГОДНЯ: тон стартует с угла текущего дня
+       года, комната проходит весь год за две минуты и возвращается ровно в
+       тот день, в котором человек сидит. 26 августа — 238-й день, то есть
+       235°: синева. Первое января — красное. Праздник у каждой даты свой — и
+       свой БЕЗ ЕДИНОЙ ЗАПИСАННОЙ ДАТЫ: система не знает ни одного праздника
+       по имени и ничего не празднует за человека. Она показывает ему его
+       собственный год.
+       ЦЕНА НАЗВАНА ВСЛУХ. Шов ступает раз в четыре градуса; круг за две
+       минуты — это ступенька каждые 1.3 с, всемеро чаще светотерапии.
+       Праздник — комната на минуты, а не на день. */
+    { id: "feast", name: "Feast", drift: true, session: true, feast: true, span: 360,
+      cycle: 2 * 60000, room: [0.58, 1.0], sat: 94 }
   ];
   function moodDef(id) {
     for (var i = 0; i < MOODS.length; i++) if (MOODS[i].id === id) return MOODS[i];
@@ -479,6 +513,17 @@
      Для суточных часы берутся от полуночи (комната равна часу); для
      остальных — от начала их собственного кольца, чтобы закон мог пройти
      кольцо, не переводя часов машины. */
+  /* Угол сегодняшнего дня на круге года. 365 дней ложатся на 360 градусов
+     почти один в один — это не натяжка, а совпадение, которым и стоит
+     воспользоваться. Первое января — 0°, 26 августа — около 235°. */
+  function dayAngle(t) {
+    var d = new Date(t);
+    var start = new Date(d.getFullYear(), 0, 0);
+    var day = Math.floor((d - start) / 86400000);
+    return (day / 365) * 360;
+  }
+  window.sbDayAngle = function (t) { return dayAngle(typeof t === "number" ? t : Date.now()); };
+
   window.sbRoomLight = function (ms, moodId) {
     var m = moodDef(moodId || (window.sbGetWallpaperMood ? window.sbGetWallpaperMood() : "studio"));
     var t = (typeof ms === "number" ? ms : Date.now());
@@ -495,6 +540,10 @@
     var hue, level;
     if (m.span >= 360) {                       /* сеанс: полный круг */
       hue = Math.round(phase * 360 * 10) / 10;
+      /* Праздник начинает круг с сегодняшнего дня года (D-150). Смещение
+         считается от той же метки времени, что и фаза, — иначе в полночь
+         комната и календарь разошлись бы. */
+      if (m.feast) hue = Math.round((((hue + dayAngle(t)) % 360) + 360) % 360 * 10) / 10;
       /* Семь вдохов за кольцо — по одному на цвет. */
       var breath = (1 - Math.cos(phase * 7 * 2 * Math.PI)) / 2;
       level = m.room[0] + (m.room[1] - m.room[0]) * breath;

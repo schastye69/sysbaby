@@ -832,4 +832,151 @@
     if (hit) writeAll(all);
     return hit;
   };
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     РАЗОВАЯ УБОРКА ЗАВОДСКИХ ПРИМЕРОВ · решение D-147
+
+     ПОВОД, дословно от основателя. Сперва: «сейчас полностью очистите
+     содержимое приложений от всяких примеров и мусора. Система должна
+     выглядеть чистой». Затем, со снимком своего Хранилища, где стоят Demo
+     Workspace, Templates и Journal: «система по прежнему не очищена от
+     мусора и примеров».
+
+     ЧТО БЫЛО СДЕЛАНО НЕ ДО КОНЦА. D-142 убрал ЗАВОД: новые профили приходят
+     пустыми. Но у того, кто открывал систему раньше, примеры УЖЕ ЛЕЖАТ в
+     его собственном хранилище, и очистка завода их не трогает. Формально
+     просьба исполнена; по существу — нет: основатель просил не «чтобы у
+     будущих было чисто», а чтобы стало чисто У НЕГО.
+
+     ПОЧЕМУ ЗДЕСЬ, А НЕ В КАЖДОМ ПРИЛОЖЕНИИ. Уборка — ОДНО событие: она
+     случается однажды и целиком. Разложенная по четырём приложениям, она
+     стала бы четырьмя событиями с четырьмя сторожами, и порядок загрузки
+     решал бы, что убрано, а что нет. Здесь она происходит ДО того, как хоть
+     одно приложение прочитало своё хранилище: store.js грузится первым.
+     Знание чужих форм — цена, которую платит любая миграция; она датирована
+     и одноразова, и в этом её отличие от постоянной связи.
+
+     ГЛАВНОЕ ПРАВИЛО: УНОСИТСЯ ТОЛЬКО СВОЁ. Тронутое человеком остаётся —
+     папка, куда он положил файл; разговор, где он написал; письмо, которое
+     он завёл сам. Узнаётся своё не по имени (имя человек может повторить),
+     а по ОТПЕЧАТКУ посаженного текста: «SAMPLE DATA», «SAMPLE INVOICE»,
+     заголовок шаблона, docId дневникового слоя. Ни одну из этих строк не
+     напечатать случайно.
+
+     Охраняется tools/demo-sweep-check.mjs — на профиле, где засев ЛЕЖИТ.
+     ═══════════════════════════════════════════════════════════════════════ */
+  (function sweepFactoryDemo() {
+    var GUARD = "sysbaby.demo.swept.v1";
+    function dbGet(k) {
+      try { return window.sbDB ? window.sbDB.get(k) : localStorage.getItem(k); }
+      catch (e) { return null; }
+    }
+    function dbSet(k, v) {
+      try { if (window.sbDB) window.sbDB.set(k, v); else localStorage.setItem(k, v); }
+      catch (e) { /* ignore */ }
+    }
+    if (dbGet(GUARD) === "1") return;
+
+    /* ---- Хранилище: папка уходит, только если ВСЁ в ней — посаженное ---- */
+    var PLANTED_FILE = /SAMPLE DATA|SAMPLE INVOICE|^# Statement of Work \(template\)/;
+    function plantedFile(node) {
+      if (node.docId) return true;                     /* дневниковый слой */
+      return PLANTED_FILE.test(String(node.content || ""));
+    }
+    function plantedTree(node) {
+      if (!node || typeof node !== "object") return false;
+      if (node.type === "file") return plantedFile(node);
+      var kids = node.children || [];
+      if (!kids.length) return false;                  /* пустую папку не трогаем */
+      for (var i = 0; i < kids.length; i++) if (!plantedTree(kids[i])) return false;
+      return true;
+    }
+    try {
+      var vraw = dbGet("sysbaby.files.v1");
+      if (vraw) {
+        var tree = JSON.parse(vraw);
+        if (tree && Array.isArray(tree.children)) {
+          var kept = tree.children.filter(function (c) { return !plantedTree(c); });
+          if (kept.length !== tree.children.length) {
+            tree.children = kept;
+            dbSet("sysbaby.files.v1", JSON.stringify(tree));
+          }
+        }
+      }
+    } catch (e) { if (window.console) console.error("[sweep] vault", e); }
+
+    /* ---- Почта: письмо узнаётся по паре «адрес + тема» ------------------ */
+    var PLANTED_MAIL = {
+      "client@sample.demo": "Order-routing automation — go-live results",
+      "client2@sample.demo": "Signed SoW — kickoff Monday?",
+      "lead@sample.demo": "Interested in automating our invoicing",
+      "delivery@sys.baby": "Sample rollout — staging passed",
+      "build@sys.baby": "This mailbox has a real door"
+    };
+    try {
+      var mraw = dbGet("sysbaby.mail.v2");
+      if (mraw) {
+        var box = JSON.parse(mraw);
+        if (box && Array.isArray(box.data)) {
+          var live = box.data.filter(function (m) {
+            return !(m && PLANTED_MAIL[m.fromAddr] && PLANTED_MAIL[m.fromAddr] === m.subject);
+          });
+          if (live.length !== box.data.length) {
+            box.data = live;
+            dbSet("sysbaby.mail.v2", JSON.stringify(box));
+          }
+        }
+      }
+    } catch (e) { if (window.console) console.error("[sweep] mail", e); }
+
+    /* ---- Переписка: разговор уходит, только если человек в нём молчал --- */
+    var PLANTED_CONVO = {
+      "Sample Client · Logistics": 1,
+      "Sample Client · Retail": 1,
+      "Sample Project · Delivery": 1
+    };
+    var PLANTED_LINE = [
+      "The new order-routing automation went live this morning — dispatch time is already down about 40%.",
+      "Could we scope the supplier-invoice flow for next sprint?",
+      "Signed the SoW and sent it back — kickoff Monday?",
+      "Received. Kickoff confirmed for Monday 10:00.",
+      "Staging passed all checks. Client demo scheduled Thursday 14:00.",
+      "This is a sample conversation — nothing was sent anywhere. What you write stays in this browser."
+    ];
+    try {
+      var craw = dbGet("sysbaby.messenger.v3");
+      if (craw) {
+        var list = JSON.parse(craw);
+        if (Array.isArray(list)) {
+          var keptC = list.filter(function (c) {
+            if (!c || !PLANTED_CONVO[c.name]) return true;
+            var msgs = c.messages || [];
+            for (var i = 0; i < msgs.length; i++) {
+              if (PLANTED_LINE.indexOf(String(msgs[i] && msgs[i].text)) === -1) return true;
+            }
+            return false;
+          });
+          if (keptC.length !== list.length) dbSet("sysbaby.messenger.v3", JSON.stringify(keptC));
+        }
+      }
+    } catch (e) { if (window.console) console.error("[sweep] whisper", e); }
+
+    /* ---- Заметки: следы дневникового слоя узнаются по своим же именам --- */
+    try {
+      var nraw = dbGet("sysbaby.notes.v2");
+      if (nraw) {
+        var notes = JSON.parse(nraw);
+        if (Array.isArray(notes)) {
+          var keptN = notes.filter(function (n) {
+            return !(n && (/^trace-echo-/.test(String(n.id)) || n.id === "trace-scribble-journal"));
+          });
+          if (keptN.length !== notes.length) dbSet("sysbaby.notes.v2", JSON.stringify(keptN));
+        }
+      }
+    } catch (e) { if (window.console) console.error("[sweep] notes", e); }
+
+    dbSet(GUARD, "1");
+    if (window.sbDB && window.sbDB.flushSync) { try { window.sbDB.flushSync(); } catch (e) { /* ignore */ } }
+  })();
+
 })();
