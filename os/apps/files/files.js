@@ -399,6 +399,9 @@
     var head = '<div class="fv-preview-head">' +
       '<span class="fv-preview-name" data-sb-userdata>' + esc(node.name) + "</span>" +
       '<span class="fv-preview-actions">' +
+        '<button type="button" class="fv-edit" id="fvThingOpen" title="' + esc(t("fv.thingOpen")) + '" aria-label="' + esc(t("fv.thingOpen")) + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>' +
+        "</button>" +
         '<button type="button" class="fv-edit" id="fvThingSave" title="' + esc(t("fv.thingSave")) + '" aria-label="' + esc(t("fv.thingSave")) + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v10M8.2 11l3.8 3.8L15.8 11M5 18.5h14"/></svg>' +
         "</button>" +
@@ -493,6 +496,10 @@
         if (!rec || !rec.blob || !thingBox.isConnected) return;
         var img = thingBox.querySelector("#fvThingImg");
         if (img) img.src = thingUrl(rec.blob);
+        var open = thingBox.querySelector("#fvThingOpen");
+        if (open) open.addEventListener("click", function () {
+          if (window.sbView) window.sbView(tid);
+        });
         var save = thingBox.querySelector("#fvThingSave");
         if (save) save.addEventListener("click", function () {
           var a = doc.createElement("a");
@@ -576,7 +583,12 @@
           previewIndex = -1;
           editing = false;
           render(win);
+          return;
         }
+        /* Вещь открывается в смотровой — одной на всю систему (D-124).
+           Хранилище показывает вещь мельком в своей полосе просмотра; чтобы
+           посмотреть по-настоящему, её отдают тому, чьё это дело. */
+        if (node && node.thingId && window.sbView) window.sbView(node.thingId);
       });
     });
 

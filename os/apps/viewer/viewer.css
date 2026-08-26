@@ -1,0 +1,43 @@
+/* Просмотр (Viewer) — смотровая, одна на всю систему. См. viewer.js. */
+.app-viewer {
+  display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 10px;
+}
+.vw-stage {
+  flex: 1; min-height: 0; display: grid; place-items: center;
+  padding: 10px; border-radius: var(--r-card);
+  background: rgba(255, 255, 255, .03);
+  overflow: hidden;
+}
+/* Вещь показывается ЦЕЛИКОМ и в своих пропорциях: обрезать чужой снимок
+   ради красивой рамки — значит показать не то, что принесли. */
+.vw-img, .vw-media {
+  max-width: 100%; max-height: 100%; display: block;
+  border-radius: var(--r-ctrl); background: rgba(0, 0, 0, .25);
+}
+.vw-said { grid-auto-flow: row; gap: 12px; text-align: center; }
+.vw-icon { color: var(--ink-3); }
+.vw-icon svg { width: 48px; height: 48px; display: block; margin: 0 auto; }
+.vw-said-text { font-size: 13px; color: var(--ink-2); max-width: 34ch; }
+.vw-empty {
+  margin: auto; text-align: center; font-size: 13px; color: var(--ink-3);
+  max-width: 34ch; padding: 24px;
+}
+.vw-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex: none;
+}
+.vw-what { font-size: 12px; color: var(--ink-3); }
+.vw-save {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 12px; border-radius: var(--r-ctrl);
+  background: var(--glass); border: 1px solid var(--line); color: var(--ink);
+  font-size: 12.5px;
+  transition: background var(--t-touch) ease;
+}
+.vw-save svg { width: 15px; height: 15px; }
+/* Наведение — это про мышь. На устройстве без мыши :hover включается по
+   касанию и держится до следующего касания где-нибудь ещё.
+   Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover: hover) {
+  .vw-save:hover { background: var(--glass-2); }
+}

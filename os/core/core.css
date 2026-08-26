@@ -1263,7 +1263,26 @@ html.dragging .window { backdrop-filter: blur(6px); }
 .win-chip svg { width: 10px; height: 10px; }
 .win-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .win-brand { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
-.tb-right .win-kbd, .win-kbd { color: var(--ink-3); font-size: 11px; }
+/* ── КЛАВИША ПОКАЗЫВАЕТСЯ ТАМ, ГДЕ ЕЁ МОЖНО НАЖАТЬ (v70) ──────────────────
+   ПОВОД — снимок основателя 25.08.2026 с телефона: в правом углу полосы окна
+   «Настройки» стоит «⌃,». Клавиши Ctrl на этом устройстве нет и не будет —
+   система обещала действие, которого человек совершить не может.
+
+   Правило в системе уже было и сюда не дошло: подсказки стола давно не
+   предлагают телефону наведение и правый щелчок, подсказка про ⌘K под доком
+   давно убрана — и в стилях об этом написано прямо, «клавиш тут нет».
+   Подпись в полосе окна осталась, потому что правило жило словами в трёх
+   местах, а не одним прибором.
+
+   Спрашивается САМО УСТРОЙСТВО, а не ширина экрана: узкое окно на настольной
+   машине клавиши имеет, широкий планшет — нет. (pointer: fine) — тот же
+   вопрос, которым система решает про наведение (D-113).
+
+   Охраняется tools/keys-where-keys-are-check.mjs. */
+.tb-right .win-kbd, .win-kbd { display: none; }
+@media (pointer: fine) {
+  .tb-right .win-kbd, .win-kbd { display: inline; color: var(--ink-3); font-size: 11px; }
+}
 .window-body { flex: 1; min-height: 0; overflow: auto; }
 .app-fail { padding: 22px; color: var(--ink-2); font-size: 13px; }
 .resize-handle { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize; }
