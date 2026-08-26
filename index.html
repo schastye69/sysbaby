@@ -7,7 +7,7 @@
      именно его метку читают снаружи: ежедневный наблюдатель, восьмой шаг
      выкладки и закон тестового контура. Ставится не руками, а
      tools/stamp-build.mjs — из единственного объявления версии. -->
-<meta name="sysbaby-build" content="v72">
+<meta name="sysbaby-build" content="v75">
 <title>sys.baby OS</title>
 <!-- ЗНАК. Один квадрат и он же, сдвинутый на 1,988 — та же величина, на которой
      построено поле обоев. Пересечение выбито: пустота в середине — это точка из
@@ -54,20 +54,21 @@
      метка меняется каждой сборкой, а старый адрес перестаёт существовать.
      Штампы проставляются tools/stamp-build.mjs и охраняются законом
      build-stamp.mjs — ресурс без метки валит сборку. -->
-<script src="os/core/store.js?b=v72"></script>
+<script src="os/core/store.js?b=v75"></script>
 
-<link rel="stylesheet" href="os/core/core.css?b=v72" />
-<link rel="stylesheet" href="os/apps/files/files.css?b=v72" />
-<link rel="stylesheet" href="os/apps/viewer/viewer.css?b=v72" />
-<link rel="stylesheet" href="os/apps/notes/notes.css?b=v72" />
-<link rel="stylesheet" href="os/apps/mail/mail.css?b=v72" />
-<link rel="stylesheet" href="os/apps/messenger/messenger.css?b=v72" />
-<link rel="stylesheet" href="os/apps/search/search.css?b=v72" />
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v72" />
-<link rel="stylesheet" href="os/apps/project/project.css?b=v72" />
-<link rel="stylesheet" href="os/apps/settings/settings.css?b=v72" />
-<link rel="stylesheet" href="os/apps/echoes/echoes.css?b=v72" />
-<link rel="stylesheet" href="os/apps/build/build.css?b=v72" />
+<link rel="stylesheet" href="os/core/core.css?b=v75" />
+<link rel="stylesheet" href="os/apps/files/files.css?b=v75" />
+<link rel="stylesheet" href="os/apps/browser/browser.css?b=v75" />
+<link rel="stylesheet" href="os/apps/viewer/viewer.css?b=v75" />
+<link rel="stylesheet" href="os/apps/notes/notes.css?b=v75" />
+<link rel="stylesheet" href="os/apps/mail/mail.css?b=v75" />
+<link rel="stylesheet" href="os/apps/messenger/messenger.css?b=v75" />
+<link rel="stylesheet" href="os/apps/search/search.css?b=v75" />
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v75" />
+<link rel="stylesheet" href="os/apps/project/project.css?b=v75" />
+<link rel="stylesheet" href="os/apps/settings/settings.css?b=v75" />
+<link rel="stylesheet" href="os/apps/echoes/echoes.css?b=v75" />
+<link rel="stylesheet" href="os/apps/build/build.css?b=v75" />
 </head>
 
 <body>
@@ -200,7 +201,7 @@
       <span class="net-glyph" id="sbNetGlyph" aria-hidden="true"></span>
       <span class="bat-glyph" id="sbBatteryGlyph" aria-hidden="true"></span>
     </button>
-    <div class="tb-clock" id="sbClock"></div>
+    <button class="tb-clock-btn" id="sbClockBtn" type="button" aria-haspopup="dialog" title="Time and calendar" data-i18n-title="aria.time" aria-label="Time and calendar" data-i18n-aria="aria.time"><span class="tb-clock" id="sbClock"></span></button>
     <!-- ВЫБОР ЯЗЫКА — У САМОГО КРАЯ (v47, третья редакция).
          Сначала это была полоса из четырёх кодов — она вытеснила часы за
          экран. Потом один код, но в начале правой группы, то есть посреди
@@ -264,6 +265,7 @@
         <button class="chip" type="button" data-mood="ocean" data-i18n="mood.ocean">Ocean</button>
         <button class="chip" type="button" data-mood="mono" data-i18n="mood.mono">Mono</button>
         <button class="chip" type="button" data-mood="daylight" data-i18n="mood.daylight">Daylight</button>
+        <button class="chip" type="button" data-mood="therapy" data-i18n="mood.therapy">Light therapy</button>
       </div>
     </div>
 
@@ -393,6 +395,14 @@
   </div>
 </div>
 
+<div class="panel-overlay" id="sbTimeOverlay" hidden>
+  <div class="panel panel-time" role="dialog" aria-modal="true" aria-labelledby="sbTimeTitle">
+    <header class="panel-head"><h3 id="sbTimeTitle" data-i18n="panel.time">Time</h3>
+      <button class="panel-close" id="sbTimeClose" type="button" aria-label="Close" data-i18n-aria="aria.close">✕</button></header>
+    <div class="panel-body"></div>
+  </div>
+</div>
+
 <div class="panel-overlay" id="sbShortcutsOverlay" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="sbShortcutsTitle">
     <header class="panel-head"><h3 id="sbShortcutsTitle" data-i18n="panel.shortcuts">Keyboard shortcuts</h3>
@@ -444,30 +454,31 @@
 
 
 <!-- ================================================================== scripts -->
-<script src="os/core/shell.js?b=v72"></script>
-<script src="os/core/panels.js?b=v72"></script>
-<script src="os/core/palette.js?b=v72"></script>
-<script src="os/core/desktop.js?b=v72"></script>
-<script src="os/core/topbar.js?b=v72"></script>
-<script src="os/core/terminal.js?b=v72"></script>
-<script src="os/core/links.js?b=v72"></script>
-<script src="os/core/field.js?b=v72"></script>
+<script src="os/core/shell.js?b=v75"></script>
+<script src="os/core/panels.js?b=v75"></script>
+<script src="os/core/palette.js?b=v75"></script>
+<script src="os/core/desktop.js?b=v75"></script>
+<script src="os/core/topbar.js?b=v75"></script>
+<script src="os/core/terminal.js?b=v75"></script>
+<script src="os/core/links.js?b=v75"></script>
+<script src="os/core/field.js?b=v75"></script>
 
-<script src="shared/portfolio.data.js?b=v72"></script>
-<script src="shared/portfolio.strings.js?b=v72"></script>
-<script src="shared/pricing.data.js?b=v72"></script>
+<script src="shared/portfolio.data.js?b=v75"></script>
+<script src="shared/portfolio.strings.js?b=v75"></script>
+<script src="shared/pricing.data.js?b=v75"></script>
 
-<script src="os/apps/files/files.js?b=v72"></script>
-<script src="os/apps/viewer/viewer.js?b=v72"></script>
-<script src="os/apps/notes/notes.js?b=v72"></script>
-<script src="os/apps/mail/mail.js?b=v72"></script>
-<script src="os/apps/messenger/messenger.js?b=v72"></script>
-<script src="os/apps/search/search.js?b=v72"></script>
-<script src="shared/portfolio.view.js?b=v72"></script>
-<script src="os/apps/project/project.js?b=v72"></script>
-<script src="os/apps/settings/settings.js?b=v72"></script>
-<script src="os/apps/echoes/echoes.js?b=v72"></script>
-<script src="os/apps/build/build.js?b=v72"></script>
+<script src="os/apps/files/files.js?b=v75"></script>
+<script src="os/apps/browser/browser.js?b=v75"></script>
+<script src="os/apps/viewer/viewer.js?b=v75"></script>
+<script src="os/apps/notes/notes.js?b=v75"></script>
+<script src="os/apps/mail/mail.js?b=v75"></script>
+<script src="os/apps/messenger/messenger.js?b=v75"></script>
+<script src="os/apps/search/search.js?b=v75"></script>
+<script src="shared/portfolio.view.js?b=v75"></script>
+<script src="os/apps/project/project.js?b=v75"></script>
+<script src="os/apps/settings/settings.js?b=v75"></script>
+<script src="os/apps/echoes/echoes.js?b=v75"></script>
+<script src="os/apps/build/build.js?b=v75"></script>
 <!-- Скамейка (Experimental/Phosphor) выведена из клиентской витрины v20.9:
      витрина продаёт сданные системы, а самое интригующее имя на столе
      конкурировало с подсказкой №1 за первое касание. Папка приложения

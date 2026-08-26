@@ -159,7 +159,7 @@
       "cc.charging": "Charging", "cc.onBattery": "On battery",
       "cc.merge": "Merge instead of replace",
       "theme.dark": "Dark", "theme.light": "Light",
-      "mood.studio": "Studio", "mood.aurora": "Aurora", "mood.sunset": "Sunset", "mood.ocean": "Ocean", "mood.mono": "Mono", "mood.daylight": "Daylight",
+      "mood.studio": "Studio", "mood.aurora": "Aurora", "mood.sunset": "Sunset", "mood.ocean": "Ocean", "mood.mono": "Mono", "mood.daylight": "Daylight", "mood.therapy": "Light therapy", "menu.tidyDesk": "Tidy desk", "menu.bringThing": "Bring a thing\u2026", "menu.hideFab": "Remove this button", "part.fab": "Quick actions button", "br.back": "Back", "br.fwd": "Forward", "br.again": "Reload", "br.bookmark": "Save this page", "br.bookmarked": "Saved", "br.openTab": "Open in a real tab", "br.placeholder": "Address, or something to look up", "br.frameTitle": "Page", "br.saved": "Saved", "br.recent": "Recent", "br.empty.title": "Nothing open yet", "br.empty.sub": "Type an address and press Enter. Many sites refuse to be shown inside another page \u2014 the arrow at the right opens the current address in a real tab, always.", "panel.time": "Time & calendar", "aria.time": "Time and calendar",
       /* ================================================== Pulse / Настройки
          Приложения больше не пишут строки литералами. Ключ живёт здесь,
          рядом с остальными двумя языками, чтобы перевод нельзя было забыть:
@@ -258,7 +258,7 @@
       "set.about.data": "Your data",
       "set.about.dataValue": "{count} local keys",
       "set.about.network": "Network",
-      "set.about.networkValue": "none — no analytics, no tracking, no calls home",
+      "set.about.networkValue": "the system itself makes none — no analytics, no tracking, no calls home. Pages you open in Browser talk to their own sites.",
       "set.about.languages": "Languages",
       "set.about.whatTitle": "What this desktop is",
       "set.about.whatBody": "A working answer to one question: what does it feel like when your business software belongs to you? Every app here is real — the notes keep, the files move, the terminal answers — and every word of it runs on your device. The client systems in {portfolio} are the same idea, built for real companies.",
@@ -636,7 +636,7 @@
       "cc.charging": "Зарядка", "cc.onBattery": "От батареи",
       "cc.merge": "Объединить, а не заменить",
       "theme.dark": "Тёмное", "theme.light": "Светлое",
-      "mood.studio": "Студия", "mood.aurora": "Аврора", "mood.sunset": "Закат", "mood.ocean": "Океан", "mood.mono": "Моно", "mood.daylight": "Дневной свет",
+      "mood.studio": "Студия", "mood.aurora": "Аврора", "mood.sunset": "Закат", "mood.ocean": "Океан", "mood.mono": "Моно", "mood.daylight": "Дневной свет", "mood.therapy": "Светотерапия", "menu.tidyDesk": "\u041f\u0440\u0438\u0431\u0440\u0430\u0442\u044c \u0441\u0442\u043e\u043b", "menu.bringThing": "\u041f\u0440\u0438\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0449\u044c\u2026", "menu.hideFab": "\u0423\u0431\u0440\u0430\u0442\u044c \u044d\u0442\u0443 \u043a\u043d\u043e\u043f\u043a\u0443", "part.fab": "\u041a\u043d\u043e\u043f\u043a\u0430 \u0431\u044b\u0441\u0442\u0440\u044b\u0445 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0439", "br.back": "\u041d\u0430\u0437\u0430\u0434", "br.fwd": "\u0412\u043f\u0435\u0440\u0451\u0434", "br.again": "\u041e\u0431\u043d\u043e\u0432\u0438\u0442\u044c", "br.bookmark": "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443", "br.bookmarked": "\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043e", "br.openTab": "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0439 \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439", "br.placeholder": "\u0410\u0434\u0440\u0435\u0441 \u0438\u043b\u0438 \u0447\u0442\u043e \u043d\u0430\u0439\u0442\u0438", "br.frameTitle": "\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430", "br.saved": "\u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0435", "br.recent": "\u041d\u0435\u0434\u0430\u0432\u043d\u0435\u0435", "br.empty.title": "\u041f\u043e\u043a\u0430 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u043e\u0442\u043a\u0440\u044b\u0442\u043e", "br.empty.sub": "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0430\u0434\u0440\u0435\u0441 \u0438 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u0412\u0432\u043e\u0434. \u041c\u043d\u043e\u0433\u0438\u0435 \u0441\u0430\u0439\u0442\u044b \u0437\u0430\u043f\u0440\u0435\u0449\u0430\u044e\u0442 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0441\u0435\u0431\u044f \u0432\u043d\u0443\u0442\u0440\u0438 \u0434\u0440\u0443\u0433\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b \u2014 \u0441\u0442\u0440\u0435\u043b\u043a\u0430 \u0441\u043f\u0440\u0430\u0432\u0430 \u0432\u0441\u0435\u0433\u0434\u0430 \u043e\u0442\u043a\u0440\u043e\u0435\u0442 \u0430\u0434\u0440\u0435\u0441 \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0439 \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439.", "panel.time": "\u0412\u0440\u0435\u043c\u044f \u0438 \u043a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c", "aria.time": "\u0412\u0440\u0435\u043c\u044f \u0438 \u043a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c",
       /* ============================================================ Настройки */
       "set.tab.general": "Общее", "set.tab.appearance": "Оформление",
       "set.tab.sound": "Звук и фокус", "set.tab.desktop": "Док и рабочий стол",
@@ -732,7 +732,7 @@
       "set.about.data": "Ваши данные",
       "set.about.dataValue": "{count} локальных ключей",
       "set.about.network": "Сеть",
-      "set.about.networkValue": "нет — ни аналитики, ни слежения, ни обращений наружу",
+      "set.about.networkValue": "сама система — никаких: ни аналитики, ни слежения, ни обращений наружу. Страницы, открытые в Браузере, говорят со своими сайтами.",
       "set.about.languages": "Языки",
       "set.about.whatTitle": "Что это за рабочий стол",
       "set.about.whatBody": "Работающий ответ на один вопрос: каково это, когда рабочая программа принадлежит вам? Каждое приложение здесь настоящее — заметки хранятся, файлы двигаются, терминал отвечает — и всё это работает на вашем устройстве. Клиентские системы в разделе {portfolio} — та же мысль, собранная для реальных компаний.",
@@ -1097,7 +1097,7 @@
       "cc.charging": "Laeb", "cc.onBattery": "Akutoitel",
       "cc.merge": "Liida, ära asenda",
       "theme.dark": "Tume", "theme.light": "Hele",
-      "mood.studio": "Stuudio", "mood.aurora": "Virmalised", "mood.sunset": "Loojang", "mood.ocean": "Ookean", "mood.mono": "Mono", "mood.daylight": "Päevavalgus",
+      "mood.studio": "Stuudio", "mood.aurora": "Virmalised", "mood.sunset": "Loojang", "mood.ocean": "Ookean", "mood.mono": "Mono", "mood.daylight": "Päevavalgus", "mood.therapy": "Valgusteraapia", "menu.tidyDesk": "Korista laud", "menu.bringThing": "Too asi\u2026", "menu.hideFab": "Eemalda see nupp", "part.fab": "Kiirtegevuste nupp", "br.back": "Tagasi", "br.fwd": "Edasi", "br.again": "V\u00e4rskenda", "br.bookmark": "Salvesta leht", "br.bookmarked": "Salvestatud", "br.openTab": "Ava p\u00e4ris kaardil", "br.placeholder": "Aadress v\u00f5i otsing", "br.frameTitle": "Leht", "br.saved": "Salvestatud", "br.recent": "Hiljutine", "br.empty.title": "Midagi pole veel avatud", "br.empty.sub": "Sisesta aadress ja vajuta Enter. Paljud saidid keelavad end teise lehe sees n\u00e4idata \u2014 parempoolne nool avab aadressi alati p\u00e4ris kaardil.", "panel.time": "Aeg ja kalender", "aria.time": "Aeg ja kalender",
       /* ============================================================== Seaded
          Обращение к посетителю — teie (мн. вежливое), как на лендинге. */
       "set.tab.general": "Üldine", "set.tab.appearance": "Välimus",
@@ -1194,7 +1194,7 @@
       "set.about.data": "Teie andmed",
       "set.about.dataValue": "{count} kohalikku võtit",
       "set.about.network": "Võrk",
-      "set.about.networkValue": "puudub — ei analüütikat, ei jälgimist, ei ühtegi kõnet koju",
+      "set.about.networkValue": "süsteem ise ei tee ühtegi — ei analüütikat, ei jälgimist, ei kõnet koju. Brauseris avatud lehed suhtlevad oma saitidega.",
       "set.about.languages": "Keeled",
       "set.about.whatTitle": "Mis see töölaud on",
       "set.about.whatBody": "Töötav vastus ühele küsimusele: milline on tunne, kui teie äritarkvara kuulub teile? Iga rakendus siin on päris — märkmed püsivad, failid liiguvad, terminal vastab — ja iga sõna sellest töötab teie seadmes. Kliendisüsteemid jaotises {portfolio} on sama mõte, ehitatud päris ettevõtetele.",
@@ -1790,7 +1790,66 @@
     });
   }
 
-  /* ============================================================== clock (§5) */
+  /* ============================================================== clock (§5)
+
+     ── ЦИФРЫ ИЗ ТОГО ЖЕ МАТЕРИАЛА, ЧТО И ЗНАК (D-135) ────────────────────
+     ПОВОД, дословно: «время должно быть более концептуальным и цифры должны
+     быть похожи на палочки иконки и на буквы y в логотипе».
+
+     ИЗ ЧЕГО СДЕЛАН ЗНАК, ЕСЛИ ИЗМЕРИТЬ, А НЕ ОПИСАТЬ. В контуре крюка на
+     коробке сто на сто перекладина имеет толщину 19.88 и скругление 16
+     снаружи, 7 внутри. Язык знака — СТЕРЖЕНЬ примерно в пятую часть коробки
+     с круглыми концами. Цифра собрана ровно из этого: семь стержней той же
+     относительной толщины, круглые концы, ни одной засечки. Коробка 62×100,
+     стержень 20 — те же 20%, что у знака.
+
+     ПОЧЕМУ СТЕРЖНИ, А НЕ ШРИФТ. Шрифтом это было бы ПОХОЖЕ; стержнями это
+     то же самое. И цена та же: цифра — семь неподвижных отрезков, у которых
+     раз в секунду меняется только признак «горит». Ни одного нового узла,
+     ни одной записи в корень — а часы идут круглые сутки, и любая ошибка
+     здесь умножается на восемьдесят шесть тысяч.  */
+  var SEGS = ["A", "B", "C", "D", "E", "F", "G"];
+  var SEG_XY = {
+    A: [17, 12, 45, 12], B: [50, 17, 50, 45], C: [50, 55, 50, 83],
+    D: [17, 88, 45, 88], E: [12, 55, 12, 83], F: [12, 17, 12, 45], G: [17, 50, 45, 50]
+  };
+  var DIGIT = {
+    "0": "ABCDEF", "1": "BC", "2": "ABGED", "3": "ABGCD", "4": "FGBC",
+    "5": "AFGCD", "6": "AFGEDC", "7": "ABC", "8": "ABCDEFG", "9": "ABCDFG"
+  };
+  function makeGlyph() {
+    var svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "clock-glyph");
+    svg.setAttribute("viewBox", "0 0 62 100");
+    svg.setAttribute("aria-hidden", "true");
+    SEGS.forEach(function (k) {
+      var xy = SEG_XY[k];
+      var ln = doc.createElementNS("http://www.w3.org/2000/svg", "line");
+      ln.setAttribute("x1", xy[0]); ln.setAttribute("y1", xy[1]);
+      ln.setAttribute("x2", xy[2]); ln.setAttribute("y2", xy[3]);
+      ln.setAttribute("data-seg", k);
+      svg.appendChild(ln);
+    });
+    return svg;
+  }
+  function setGlyph(svg, ch) {
+    var on = DIGIT[ch] || "";
+    if (svg._sbCh === ch) return;
+    svg._sbCh = ch;
+    var lines = svg.childNodes;
+    for (var i = 0; i < lines.length; i++) {
+      var k = lines[i].getAttribute("data-seg");
+      var want = on.indexOf(k) !== -1;
+      /* Признак переставляется, только если он ДЕЙСТВИТЕЛЬНО меняется:
+         иначе каждая секунда просила бы пересчитать стили ни за чем. */
+      if ((lines[i].getAttribute("class") === "on") !== want) {
+        if (want) lines[i].setAttribute("class", "on");
+        else lines[i].removeAttribute("class");
+      }
+    }
+  }
+  window.sbClockGlyph = function (ch) { var g = makeGlyph(); setGlyph(g, ch); return g; };
+
   var clockCells = null, lastClock = "";
   function localeFor() { var l = lang(); return l === "ru" ? "ru-RU" : (l === "ee" ? "et-EE" : "en-GB"); }
 
@@ -1812,30 +1871,50 @@
     var whole = narrow ? timeStr : dateStr + "  " + timeStr;
     if (whole === lastClock && !force) return;
 
-    if (!clockCells || clockCells.length !== whole.length || force) {
+    /* Пересборка нужна, только когда СОСТАВ строки изменился — например,
+       окно сузилось и секунды ушли. Обычная секунда состава не меняет. */
+    var shape = whole.replace(/\d/g, "#");
+    if (!clockCells || clockCells.length !== whole.length || clockCells._shape !== shape || force) {
       host.innerHTML = "";
       clockCells = [];
+      clockCells._shape = shape;
       for (var i = 0; i < whole.length; i++) {
         var s = doc.createElement("span");
         s.className = "clock-cell";
-        s.textContent = whole[i];
+        if (DIGIT[whole[i]] !== undefined) {
+          s.className += " digit";
+          var g = makeGlyph();
+          setGlyph(g, whole[i]);
+          s.appendChild(g);
+          s._sbGlyph = g;
+        } else {
+          s.textContent = whole[i];
+        }
         host.appendChild(s);
         clockCells.push(s);
       }
     } else {
       for (var j = 0; j < whole.length; j++) {
-        if (clockCells[j].textContent !== whole[j]) {
-          clockCells[j].textContent = whole[j];
-          if (!reduced()) {
-            clockCells[j].classList.remove("roll");
-            void clockCells[j].offsetWidth;
-            clockCells[j].classList.add("roll");
-          }
+        var cell = clockCells[j];
+        var cur = cell._sbGlyph ? cell._sbGlyph._sbCh : cell.textContent;
+        if (cur === whole[j]) continue;
+        if (cell._sbGlyph) setGlyph(cell._sbGlyph, whole[j]);
+        else cell.textContent = whole[j];
+        if (!reduced()) {
+          cell.classList.remove("roll");
+          void cell.offsetWidth;
+          cell.classList.add("roll");
         }
       }
     }
+    host.setAttribute("data-whole", whole);
+    host.setAttribute("aria-label", whole);
     lastClock = whole;
   }
+  /* Полная пересборка часов вынесена наружу — не ради красоты, а чтобы закон
+     мог ИЗМЕРИТЬ, сколько она стоит, и сравнить с ценой обычного хода. Порог,
+     назначенный на глаз, оказался бы внутри разброса. */
+  window.sbRepaintClock = function () { paintClock(true); };
   doc.addEventListener("visibilitychange", function () { if (doc.visibilityState === "visible") paintClock(true); });
 
   /* ====================================================== connectivity (§5) */
@@ -2128,7 +2207,7 @@
     $$("[data-accent]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-accent").toLowerCase() === String(accent.a1).toLowerCase()); });
     var mood = window.sbGetWallpaperMood ? window.sbGetWallpaperMood() : "studio";
     var drifty = {};
-    (window.sbWallpaperMoods || []).forEach(function (m) { if (m.drift) drifty[m.id] = 1; });
+    (window.sbWallpaperMoods || []).forEach(function (m) { if (m.drift) drifty[m.id] = m.session ? "session" : "drift"; });
     $$("[data-mood]").forEach(function (b) {
       var id = b.getAttribute("data-mood");
       b.classList.toggle("on", id === mood);
@@ -2136,10 +2215,12 @@
          иначе оно ничем не отличается от пяти неподвижных и его снова никто
          не найдёт. Тот же знак-дуга, что у суточной краски. */
       if (!drifty[id]) return;
-      b.classList.add("is-drift");
-      if (typeof window.sbWallpaperForTime !== "function") return;
+      b.classList.toggle("is-session", drifty[id] === "session");
+      b.classList.toggle("is-drift", drifty[id] === "drift");
+      var read = drifty[id] === "session" ? window.sbTherapyForTime : window.sbWallpaperForTime;
+      if (typeof read !== "function") return;
       try {
-        var w = window.sbWallpaperForTime();
+        var w = read();
         b.style.background = "linear-gradient(135deg," + w.c1 + "," + w.c2 + ")";
         b.style.borderColor = "transparent";
         b.style.color = "#fff";

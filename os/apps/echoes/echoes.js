@@ -210,14 +210,36 @@
     "</div>";
   }
 
+  /* Части стола — не приложения (кнопка действия и всё, что появится дальше).
+     Список читается у оболочки: Эхо не знает, из чего стол состоит, оно знает
+     только, что убранное лежит здесь. */
+  function hiddenParts() {
+    if (typeof window.sbDeskParts !== "function") return [];
+    try { return window.sbDeskParts().filter(function (p) { return p.hidden; }); }
+    catch (err) { console.error("[echoes] desk parts failed", err); return []; }
+  }
+  function partRowMarkup(part) {
+    return '<div class="ec-row app">' +
+      '<span class="ec-app-tile part">' + ICON + "</span>" +
+      '<span class="ec-row-text">' +
+        '<span class="ec-snippet">' + esc(part.title) + "</span>" +
+        '<span class="ec-time">' + esc(t("ec.appRemoved")) + "</span>" +
+      "</span>" +
+      '<span class="ec-actions">' +
+        '<button type="button" class="ec-btn" data-restore-part="' + esc(part.id) + '">' + esc(t("ec.restore")) + "</button>" +
+      "</span>" +
+    "</div>";
+  }
+
   function render(win) {
     var host = bodyOf(win);
     if (!host) return;
     var echoes = deletedNotes();
     var apps = hiddenApps();
+    var parts = hiddenParts();
 
     var markup;
-    if (!echoes.length && !apps.length) {
+    if (!echoes.length && !apps.length && !parts.length) {
       markup = '<div class="ec-empty">' +
         '<div class="ec-empty-glyph">' + ICON + "</div>" +
         '<p class="ec-empty-title">' + esc(t("ec.empty.title")) + "</p>" +
@@ -231,9 +253,10 @@
           '<button type="button" class="ec-btn quiet" id="ecSilenceAll">' + esc(t("ec.silenceAll")) + "</button>" +
         "</div>" + echoes.map(echoRowMarkup).join("");
       }
-      if (apps.length) {
-        markup += '<div class="ec-head second"><span>' + esc(t(apps.length === 1 ? "ec.apps.one" : "ec.apps.many", { n: apps.length })) + "</span></div>" +
-          apps.map(appRowMarkup).join("");
+      if (apps.length || parts.length) {
+        var n = apps.length + parts.length;
+        markup += '<div class="ec-head second"><span>' + esc(t(n === 1 ? "ec.apps.one" : "ec.apps.many", { n: n })) + "</span></div>" +
+          apps.map(appRowMarkup).join("") + parts.map(partRowMarkup).join("");
       }
     }
 
@@ -282,6 +305,15 @@
       });
     }
 
+    host.querySelectorAll("[data-restore-part]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (typeof window.sbSetDeskPartHidden !== "function") return;
+        try { window.sbSetDeskPartHidden(btn.getAttribute("data-restore-part"), false); }
+        catch (err) { console.error("[echoes] part restore failed", err); return; }
+        render(win);
+      });
+    });
+
     host.querySelectorAll("[data-restore-app]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         if (typeof window.sbSetIconHidden !== "function") return;
@@ -307,6 +339,7 @@
   }
   if (window.sbBus && typeof window.sbBus.on === "function") {
     window.sbBus.on("icon:visibility", refreshOpen);
+    window.sbBus.on("part:visibility", refreshOpen);
   }
 
   /* ------------------------------------------------- opt-in trace seeding */

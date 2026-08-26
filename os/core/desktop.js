@@ -1102,6 +1102,11 @@
   }
 
   function removeNote(el, id, soft) {
+    /* Полёт снимается ДО того, как заметку уберут из слоя: двойник рисуется
+       с живого предмета. Сами данные при этом не ждут картинки — softDelete
+       ниже идёт своим ходом (D-132). Полёт только для мягкого удаления: у
+       пустой заметки уходить некуда, её нигде не сохраняли. */
+    if (soft && el && window.sbFlyToEchoes) { try { window.sbFlyToEchoes(el); } catch (e) { } }
     if (el && el.parentNode) el.parentNode.removeChild(el);
     if (soft && window.sbNotesStore) {
       window.sbNotesStore.softDelete(id);
@@ -1420,23 +1425,81 @@
     });
   }
 
+  /* ── МЕНЮ КНОПКИ ОТВЕЧАЕТ ЗА ЭТОТ СТОЛ, А НЕ ЗА СПИСОК ПАНЕЛЕЙ (D-133) ──
+     ПОВОД, дословно: «меню бывшего плюсика нужно переработать концептуально».
+
+     ЧТО БЫЛО. Шесть пунктов, всегда одни и те же. Это список ПАНЕЛЕЙ, которые
+     в системе существуют, а не список того, что человек может сделать здесь и
+     сейчас. «Переключить окна» при одном окне ничего не сделает. «Горячие
+     клавиши» на телефоне некому нажать. «Выровнять виджеты», когда виджетов не
+     трогали, — работа без повода.
+
+     ПРАВИЛО. Кнопка — рука самого стола: на телефоне другого пути к его
+     действиям нет. Она отвечает на один вопрос — «что я могу сделать с этим
+     столом прямо сейчас» — и молчит обо всём, что сейчас ничего не сделает.
+     Меню от этого КОРОЧЕ прежнего, а не длиннее: пункт, появившийся по поводу,
+     стоит больше трёх, висящих всегда.
+
+     ПОРЯДОК ТОЖЕ СМЫСЛОВОЙ, а не алфавитный: сперва то, что кладут НА стол,
+     потом то, что делают СО столом, потом всё остальное, и последней —
+     уборка самой кнопки. */
+  function panel(name) { if (window.sbPanels && window.sbPanels[name]) window.sbPanels[name].open(); }
+  function openWindowCount() {
+    return doc.querySelectorAll(".window:not(.minimized)").length;
+  }
   function desktopMenuItems(x, y) {
     var items = [
-      { label: tr("menu.newNote"), run: function () { createNoteAt(x, y); } },        /* FIX: really creates one */
-      { label: tr("menu.tidyWidgets"), run: function () { if (window.sbTidyWidgets) window.sbTidyWidgets(); } },
-      { label: tr("menu.saveWidgets"), run: function () {
+      /* НА СТОЛ. Единственное, что стол умеет без всякого повода, и ради чего
+         кнопку чаще всего и нажимают. */
+      { label: tr("menu.newNote"), run: function () { createNoteAt(x, y); } }
+    ];
+    if (typeof window.sbVaultBring === "function") {
+      items.push({ label: tr("menu.bringThing"), run: function () {
+        var inp = doc.createElement("input");
+        inp.type = "file"; inp.multiple = true;
+        inp.addEventListener("change", function () { window.sbVaultBring(inp.files); });
+        inp.click();
+      } });
+    }
+
+    /* СО СТОЛОМ. Каждый пункт — по поводу. */
+    var deskBits = [];
+    if (window.sbIconPlaces && Object.keys(window.sbIconPlaces()).length) {
+      deskBits.push({ label: tr("menu.tidyDesk"), run: function () { if (window.sbTidyDesk) window.sbTidyDesk(); } });
+    }
+    /* «Виджеты трогали» — это ровно то, что записано в раскладке: пусто
+       значит нечего выравнивать и нечего сохранять. Отдельного признака не
+       заводим: он был бы вторым знанием об одном и том же (урок D-127). */
+    var wl = layoutAll();
+    if (Object.keys(wl).filter(function (k) { return k !== "__v"; }).length) {
+      deskBits.push({ label: tr("menu.tidyWidgets"), run: function () { if (window.sbTidyWidgets) window.sbTidyWidgets(); } });
+      deskBits.push({ label: tr("menu.saveWidgets"), run: function () {
         var nm = window.prompt(tr("menu.nameLayout"));
         if (nm && window.sbSaveCurrentWidgetLayout) window.sbSaveCurrentWidgetLayout(nm);
-      } }
-    ];
+      } });
+    }
     (window.sbGetSavedWidgetLayouts ? window.sbGetSavedWidgetLayouts() : []).forEach(function (L) {
-      items.push({ label: tr("menu.restoreLayout", { name: L.name }), run: function () { if (window.sbApplyNamedLayout) window.sbApplyNamedLayout(L.snap); } });
+      deskBits.push({ label: tr("menu.restoreLayout", { name: L.name }),
+        run: function () { if (window.sbApplyNamedLayout) window.sbApplyNamedLayout(L.snap); } });
     });
-    items.push("-");
-    [["menu.clipboard", "sbClipOverlay"], ["menu.switchWindows", "sbTaskOverlay"],
-     ["menu.shortcuts", "sbShortcutsOverlay"]].forEach(function (p) {
-      items.push({ label: tr(p[0]), run: function () { if (window.sbPanels && window.sbPanels[p[1]]) window.sbPanels[p[1]].open(); } });
-    });
+    if (openWindowCount() >= 2) {
+      deskBits.push({ label: tr("menu.switchWindows"), run: function () { panel("sbTaskOverlay"); } });
+    }
+    if (deskBits.length) { items.push("-"); deskBits.forEach(function (b) { items.push(b); }); }
+
+    /* И ЕЩЁ. Только то, чему есть чем воспользоваться. */
+    var rest = [];
+    rest.push({ label: tr("menu.clipboard"), run: function () { panel("sbClipOverlay"); } });
+    /* Клавиши — там, где есть клавиши. Тот же приём, что у подсказки .win-kbd. */
+    if (window.matchMedia && window.matchMedia("(pointer: fine)").matches) {
+      rest.push({ label: tr("menu.shortcuts"), run: function () { panel("sbShortcutsOverlay"); } });
+    }
+    rest.push({ label: tr("menu.hideFab"), run: function () {
+      var fab = $("#sbFab");
+      if (fab && window.sbFlyToEchoes) { try { window.sbFlyToEchoes(fab); } catch (e) { } }
+      if (window.sbSetDeskPartHidden) window.sbSetDeskPartHidden("fab", true);
+    } });
+    if (rest.length) { items.push("-"); rest.forEach(function (b) { items.push(b); }); }
     return items;
   }
 

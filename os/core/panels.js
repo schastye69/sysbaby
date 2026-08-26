@@ -101,6 +101,113 @@
     ["right-click", "sc.deskMenu"]
   ];
 
+  /* ── ВРЕМЯ И КАЛЕНДАРЬ (D-135) ────────────────────────────────────────
+     ПОВОД: «при нажатии на время должно открываться расширенное время и
+     календарь в небольшом стеклянном окне максимально концептуально и цельно
+     по дизайну с нашим дизайном».
+     «Цельно с нашим дизайном» здесь значит буквально одно: панель НЕ своя.
+     Это то же стекло, тот же заголовок, тот же уход по Esc и тот же возврат
+     фокуса, что у всех остальных панелей, — иначе «цельно» было бы словом, а
+     не свойством. Своего здесь ровно две вещи: крупное время теми же
+     стержнями, что в полосе, и сетка месяца.
+     НЕДЕЛЯ НАЧИНАЕТСЯ С ПОНЕДЕЛЬНИКА. Не настройка: система живёт в Таллине,
+     и здесь неделя начинается так. */
+  var calShift = 0;
+  function calLocale() {
+    var l = window.sbGetLang ? window.sbGetLang() : "en";
+    return l === "ru" ? "ru-RU" : (l === "ee" ? "et-EE" : "en-GB");
+  }
+  function bigTime(d) {
+    var str = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) +
+      ":" + ("0" + d.getSeconds()).slice(-2);
+    var box = doc.createElement("div");
+    box.className = "time-big";
+    for (var i = 0; i < str.length; i++) {
+      var cell = doc.createElement("span");
+      cell.className = "time-cell";
+      if (str[i] === ":") { cell.className += " colon"; cell.textContent = ":"; }
+      else if (window.sbClockGlyph) cell.appendChild(window.sbClockGlyph(str[i]));
+      else cell.textContent = str[i];
+      box.appendChild(cell);
+    }
+    return box;
+  }
+  function paintTime() {
+    var body = panelBody("sbTimeOverlay");
+    if (!body) return;
+    var now = new Date();
+    var view = new Date(now.getFullYear(), now.getMonth() + calShift, 1);
+    body.innerHTML = "";
+
+    body.appendChild(bigTime(now));
+
+    var sub = doc.createElement("div");
+    sub.className = "time-sub";
+    sub.textContent = now.toLocaleDateString(calLocale(),
+      { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    body.appendChild(sub);
+
+    var nav = doc.createElement("div");
+    nav.className = "cal-nav";
+    nav.innerHTML = '<button type="button" class="cal-step" data-step="-1" aria-label="\u2190">\u2039</button>' +
+      '<span class="cal-title">' + esc(view.toLocaleDateString(calLocale(), { month: "long", year: "numeric" })) + "</span>" +
+      '<button type="button" class="cal-step" data-step="1" aria-label="\u2192">\u203a</button>';
+    body.appendChild(nav);
+
+    var head = doc.createElement("div");
+    head.className = "cal-head";
+    /* 2024-01-01 — понедельник; берём семь дней подряд от него, чтобы имена
+       пришли из самой системы дат, а не были вписаны сюда по-русски. */
+    for (var w = 0; w < 7; w++) {
+      var dw = new Date(2024, 0, 1 + w);
+      var sp = doc.createElement("span");
+      sp.textContent = dw.toLocaleDateString(calLocale(), { weekday: "short" }).replace(/\.$/, "");
+      head.appendChild(sp);
+    }
+    body.appendChild(head);
+
+    var grid = doc.createElement("div");
+    grid.className = "cal-grid";
+    var first = new Date(view.getFullYear(), view.getMonth(), 1);
+    var lead = (first.getDay() + 6) % 7;           /* понедельник = 0 */
+    var days = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
+    for (var b = 0; b < lead; b++) {
+      var pad = doc.createElement("span");
+      pad.className = "cal-pad";
+      grid.appendChild(pad);
+    }
+    for (var n = 1; n <= days; n++) {
+      var cell = doc.createElement("span");
+      cell.className = "cal-day";
+      if (calShift === 0 && n === now.getDate()) cell.className += " today";
+      cell.textContent = String(n);
+      grid.appendChild(cell);
+    }
+    body.appendChild(grid);
+
+    $$(".cal-step", body).forEach(function (b2) {
+      b2.addEventListener("click", function () {
+        calShift += Number(b2.getAttribute("data-step")) || 0;
+        paintTime();
+      });
+    });
+  }
+  var timePanel = window.sbRegisterPanel("sbTimeOverlay", "sbTimeClose", function () {
+    calShift = 0;
+    paintTime();
+  });
+  if (timePanel) {
+    window.sbPanels = window.sbPanels || {};
+    var btn = doc.getElementById("sbClockBtn");
+    if (btn) btn.addEventListener("click", function () { timePanel.open(); });
+    /* Пока панель открыта, крупное время идёт: стоящие часы в окне «время» —
+       это ровно та ложь, ради которой окно и открывают. */
+    setInterval(function () {
+      var ov = doc.getElementById("sbTimeOverlay");
+      if (ov && ov.classList.contains("open")) paintTime();
+    }, 1000);
+  }
+
   var shortcuts = window.sbRegisterPanel("sbShortcutsOverlay", "sbShortcutsClose", function () {
     var body = panelBody("sbShortcutsOverlay");
     if (!body) return;

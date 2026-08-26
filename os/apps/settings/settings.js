@@ -185,13 +185,15 @@
          узнаёт его и здесь — и не читает второго пояснения. И оно светится
          цветом ТЕКУЩЕГО часа: среди пяти ровных чипов один живой. */
       var live = "";
-      if (m.drift && typeof window.sbWallpaperForTime === "function") {
+      var read = m.session ? window.sbTherapyForTime : window.sbWallpaperForTime;
+      if (m.drift && typeof read === "function") {
         try {
-          var w = window.sbWallpaperForTime();
+          var w = read();
           live = ' style="background:linear-gradient(135deg,' + esc(w.c1) + ',' + esc(w.c2) + ');border-color:transparent;color:#fff"';
         } catch (err) { console.error("[settings] mood preview failed", err); }
       }
-      return '<button type="button" class="st-chip' + (m.id === mood ? " active" : "") + (m.drift ? " is-drift" : "") + '" data-mood="' + esc(m.id) + '"' + live + ">" + esc(moodName) + "</button>";
+      var mk = m.session ? " is-session" : (m.drift ? " is-drift" : "");
+      return '<button type="button" class="st-chip' + (m.id === mood ? " active" : "") + mk + '" data-mood="' + esc(m.id) + '"' + live + ">" + esc(moodName) + "</button>";
     }).join("");
 
     var brightness = typeof window.sbGetBrightness === "function" ? window.sbGetBrightness() : 100;

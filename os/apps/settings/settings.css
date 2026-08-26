@@ -347,19 +347,40 @@ html[data-theme="light"] .st-select option { background: #fff; color: #16171a; }
 /* Суточное настроение обоев — тот же знак, что у суточной краски: дуга,
    обошедшая циферблат. Знак один на две вещи, потому что вещь одна: свет,
    идущий по кругу суток. */
-.st-chip.is-drift { position: relative; }
-.st-chip.is-drift::after {
-  content: ""; position: absolute; inset: -3px; border-radius: var(--r-pill);
-  border: 1px solid currentColor; opacity: .55;
-  border-left-color: transparent; border-bottom-color: transparent;
-  transform: rotate(-38deg); pointer-events: none;
+/* ЗНАКИ ДВУХ ЖИВЫХ НАСТРОЕНИЙ.
+   Первая редакция брала знак у круглой краски — кольцо, повёрнутое как
+   стрелка, обошедшая циферблат. На КРУГЛОЙ точке это читается; на широкой
+   пилюле то же кольцо растянулось в косой овал и налезло на соседний чип.
+   Знак был верный, а место — нет.
+   Теперь у каждого свой глиф ВНУТРИ чипа, слева от слова:
+     Daylight — круг, наполовину светлый: день, идущий по кругу;
+     Светотерапия — точка света с ореолом: свет, идущий наружу.
+   Оба нарисованы currentColor, поэтому живут в любом цвете чипа. */
+.st-chip.is-drift, .st-chip.is-session { display: inline-flex; align-items: center; }
+.st-chip.is-drift::before {
+  content: ""; width: 9px; height: 9px; border-radius: var(--r-round); flex: none;
+  border: 1px solid currentColor; margin-right: 7px;
+  background: linear-gradient(90deg, currentColor 0 50%, transparent 50% 100%);
+}
+.st-chip.is-session::before {
+  content: ""; width: 5px; height: 5px; border-radius: var(--r-round); flex: none;
+  background: currentColor; margin: 0 9px 0 3px;
+  outline: 1px solid currentColor; outline-offset: 2.5px;
 }
 
 /* Длинное имя в «О системе» (D-128). Оно пришло из верхней панели, где было
    не к месту, и здесь ему дано настоящее место: во всю ширину карточки, с
    воздухом вокруг. Ширина ограничена, чтобы на широком столе имя не
    растягивалось в полосу. */
-.st-hero.has-wordmark { padding: 22px 0 20px; }
-.st-hero-word { display: block; margin: 0 auto 10px; width: min(268px, 74%); }
+/* Мельче и с воздухом. Основатель: «логотип sys.baby в настройках about
+   должен быть гораздо меньше. должен выглядеть премиально». Премиальность
+   здесь — не украшение, а сдержанность: знак не кричит размером, вокруг него
+   пусто, и под ним тонкая линия, которая отделяет имя от цифр. */
+.st-hero.has-wordmark { padding: 30px 0 26px; }
+.st-hero-word { display: block; margin: 0 auto; width: 132px; max-width: 46%; }
 .st-hero-word .sb-lock { width: 100%; height: auto; display: block; }
 .st-hero-word .sb-min { display: none; }
+.st-hero.has-wordmark::after {
+  content: ""; display: block; width: 46px; height: 1px; margin: 22px auto 0;
+  background: var(--line);
+}

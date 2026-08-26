@@ -476,7 +476,8 @@
     { id: "aurora", name: "Aurora" },
     { id: "sunset", name: "Sunset" },
     { id: "mono", name: "Mono" },
-    { id: "daylight", name: "Daylight", drift: true }
+    { id: "daylight", name: "Daylight", drift: true },
+    { id: "therapy", name: "Light therapy", drift: true, session: true }
   ];
 
   /* ============================================ суточная комната (D-127) §
@@ -547,6 +548,53 @@
     };
   };
 
+  /* ============================================ светотерапия (D-131) §
+
+     ПОВОД: «в wallpaper должен быть режим светотерапия концептуально
+     оформленный и с такой же красивой иконкой как у daylight, но только в
+     тематике светотерапии».
+
+     ЭТО ДРУГОЙ ПРЕДМЕТ, А НЕ ВТОРАЯ КРАСКА. Daylight следует ЧАСАМ: комната
+     равна часу, круг занимает сутки, ход принципиально незаметен — он и не
+     должен быть заметен, часы не показывают. Светотерапия ничего не
+     показывает: она РАБОТАЕТ. У неё есть длительность сеанса, и за этот сеанс
+     через комнату проходят все наши цвета — каждый успевает побыть и уйти.
+     Ход виден, если посмотреть. Не виден — значит это не терапия.
+
+     ДЛИТЕЛЬНОСТЬ. Двадцать восемь минут: семь цветов по четыре минуты —
+     столько держат цвет в цветотерапии, и столько же длится обычный сеанс
+     световой лампы. Число взято оттуда, а не выбрано на глаз.
+
+     ЯРКОСТЬ. Лампа не гаснет: свет держится высоко весь сеанс и лишь дышит
+     вместе с цветом — каждый цвет приходит, разгорается и уходит. Комната при
+     этом остаётся тёмной ровно настолько, чтобы подписи читались: это
+     стережёт тот же закон, что и у Daylight.
+
+     ЦЕНА. Пишется в один элемент, как и Daylight. Тон округляется до градуса,
+     градус меняется раз в 4.7 секунды — двенадцать записей в минуту в один
+     #sbMoodTint, без единой записи в корень документа. */
+  var SESSION_MS = 28 * 60 * 1000;
+  var TH_LEVEL = [0.62, 1.00];
+  var TH_A1 = [0.26, 0.44], TH_A2 = [0.16, 0.28], TH_WASH = [0.22, 0.40];
+
+  window.sbTherapyForTime = function (ms) {
+    var t = (typeof ms === "number" ? ms : Date.now());
+    var phase = (t % SESSION_MS) / SESSION_MS;          /* 0..1 — место в сеансе */
+    var hue = Math.round(phase * 360 * 10) / 10;
+    /* Дыхание цвета: семь вдохов за круг — по одному на цвет. */
+    var breath = (1 - Math.cos(phase * 7 * 2 * Math.PI)) / 2;
+    var lvl = Math.round((TH_LEVEL[0] + (TH_LEVEL[1] - TH_LEVEL[0]) * breath) * 1000) / 1000;
+    var r2 = function (v) { return Math.round(v * 1000) / 1000; };
+    var mix = function (p) { return r2(p[0] + (p[1] - p[0]) * lvl); };
+    return {
+      hue: hue, level: lvl,
+      c1: hslHex(hue, DRIFT_SAT, driftLight(hue)),
+      c2: hslHex(hue + 28, DRIFT_SAT, Math.min(92, driftLight(hue + 28) + 10)),
+      c3: hslHex(hue, WP_WASH_SAT, WP_WASH_LIGHT),
+      a1: mix(TH_A1), a2: mix(TH_A2), a3: mix(TH_WASH)
+    };
+  };
+
   function tintRgba(hex, a) {
     var c = hexToRgb(hex);
     return "rgba(" + c.r + "," + c.g + "," + c.b + "," + a + ")";
@@ -554,6 +602,17 @@
   /* Вынесено наружу ровно затем, чтобы закон мог сфотографировать любой час,
      не переводя часов машины, и фотографировал при этом НАСТОЯЩИЙ красящий
      ход, а не свою копию его замысла. */
+  function paintTint(w) {
+    var el = doc.getElementById("sbMoodTint");
+    if (el) {
+      el.style.backgroundImage =
+        "radial-gradient(900px 640px at 76% 16%, " + tintRgba(w.c1, w.a1) + ", transparent 64%)," +
+        "radial-gradient(760px 580px at 16% 84%, " + tintRgba(w.c2, w.a2) + ", transparent 62%)," +
+        "linear-gradient(" + tintRgba(w.c3, w.a3) + ", " + tintRgba(w.c3, w.a3) + ")";
+    }
+    return w;
+  }
+  window.sbTherapyApply = function (ms) { return paintTint(window.sbTherapyForTime(ms)); };
   window.sbWallpaperApply = function (ms) {
     var w = window.sbWallpaperForTime(ms);
     var el = doc.getElementById("sbMoodTint");
@@ -570,22 +629,26 @@
     if (el) el.style.backgroundImage = "";
   }
 
-  var wpTimer = null, wpLastHue = null, wpLastLvl = null;
+  var wpTimer = null, wpLastHue = null, wpLastLvl = null, wpMode = null;
   function wpTick(force) {
-    var w = window.sbWallpaperForTime();
+    var now = Date.now();
+    var w = wpMode === "therapy" ? window.sbTherapyForTime(now) : window.sbWallpaperForTime(now);
     var hue = Math.round(w.hue), lvl = Math.round(w.level * 200);
     if (!force && hue === wpLastHue && lvl === wpLastLvl) return;
     wpLastHue = hue; wpLastLvl = lvl;
-    window.sbWallpaperApply(Date.now());
+    paintTint(w);
   }
-  function wpStart() {
+  /* Один ход на оба суточных настроения — с разным шагом, потому что у них
+     разная скорость: сутки меряются минутами, сеанс — секундами. */
+  function wpStart(mode) {
     wpStop();
+    wpMode = mode;
     wpTick(true);
-    wpTimer = setInterval(function () { wpTick(false); }, 60000);
+    wpTimer = setInterval(function () { wpTick(false); }, mode === "therapy" ? 2000 : 60000);
   }
   function wpStop() {
     if (wpTimer) { clearInterval(wpTimer); wpTimer = null; }
-    wpLastHue = null; wpLastLvl = null;
+    wpLastHue = null; wpLastLvl = null; wpMode = null;
     wpClear();
   }
   window.sbWallpaperDrifting = function () { return !!wpTimer; };
@@ -598,10 +661,12 @@
   function applyMood(valid) {
     if (valid === "studio") root.removeAttribute("data-wp-mood");
     else root.setAttribute("data-wp-mood", valid);
-    if (valid === "daylight") wpStart(); else wpStop();
+    if (valid === "daylight" || valid === "therapy") wpStart(valid); else wpStop();
   }
 
-  window.sbWallpaperMoods = MOODS.map(function (m) { return { id: m.id, name: m.name, drift: !!m.drift }; });
+  window.sbWallpaperMoods = MOODS.map(function (m) {
+    return { id: m.id, name: m.name, drift: !!m.drift, session: !!m.session };
+  });
   window.sbGetWallpaperMood = function () {
     var v = (window.sbDB && window.sbDB.get(MOOD_KEY)) || "studio";
     return MOODS.some(function (m) { return m.id === v; }) ? v : "studio";
@@ -2078,21 +2143,70 @@
    * ПОЧЕМУ ЭТО НЕ «ПРОСТО НАСТРОЙКА». Стол — вещь человека. Система не
    * переставляет на нём предметы без его слова; вернуть всё в сетку можно,
    * но по команде (sbTidyDesk), а не самой собой. */
+  /* ── МЕСТО ЗНАЧКА — ЭТО КЛЕТКА, А НЕ ДОЛЯ ЭКРАНА (D-130) ────────────────
+     ПОВОД, дословно от основателя 26.08.2026, с четырьмя снимками:
+     «полноэкранный режим меняет расположение иконок и затем при переходе
+     обратно они ещё сильнее разбрасываются… и вот что происходит с иконками,
+     когда я поворачиваю экран телефона».
+
+     ЧТО БЫЛО. Место хранилось долей ширины и долей высоты: fx = x/W, fy = y/H.
+     При повороте W и H не просто меняются — они МЕНЯЮТСЯ МЕСТАМИ. Два значка,
+     стоявших рядом в одной клетке друг от друга, после поворота расходились
+     на произвольное расстояние: доля сохраняет отношение к краю, но не
+     сохраняет РАССТАНОВКУ. Это и есть «разбрасываются».
+
+     И ВТОРОЕ, отчего «ещё сильнее». Сетка обходит клетки, занятые рукой
+     («как вода вокруг камня»). Камни, поставленные долями, после поворота
+     оказывались в других местах — и поток обтекал их иначе. Съезжали не
+     только переставленные значки, а ВЕСЬ верхний ряд, которого человек вообще
+     не трогал. Прибор показал: messenger [44,104] → [278,14], и следом за ним
+     все остальные.
+
+     ЧТО СТАЛО. Место — это КЛЕТКА стола: столбец и строка. Рука и так кладёт
+     значок в клетку (freeCellNear возвращает выровненную по сетке точку) —
+     значит доля была лишь неточной записью того, что уже было клеткой.
+     Клетка переживает поворот, потому что она не про пиксели.
+
+     И ТРЕТЬЕ, без чего первые два не работают: геометрия сетки считается
+     теперь по ВСЕМ значкам, а не по одним свободным. Раньше стоило унести
+     один значок рукой — и сетка для остальных пересчитывалась и съезжала:
+     клетка означала бы разное в зависимости от того, сколько значков успели
+     передвинуть. Сетка — свойство СТОЛА и экрана, а не того, кого двигали. */
   var iconPlaces = null;
   function getIconPlaces() {
     if (!iconPlaces) {
       var v = readJSON("sysbaby.icons.pos", {});
       iconPlaces = (v && typeof v === "object" && !Array.isArray(v)) ? v : {};
+      /* Записи прошлых версий (доли) переводятся в клетки ОДИН РАЗ, при
+         чтении: у кого стол уже расставлен, тот не должен ничего чинить
+         руками. Тот же приём, что у места кнопки действия (v54). */
+      var host = $("#sbIconLayer"), g = window.sbDesktopGrid;
+      var moved = false;
+      if (host && g && g.stepX) {
+        Object.keys(iconPlaces).forEach(function (k) {
+          var v2 = iconPlaces[k];
+          if (!v2 || typeof v2.c === "number") return;
+          if (typeof v2.fx !== "number") { delete iconPlaces[k]; moved = true; return; }
+          var W = host.clientWidth || 1, H = host.clientHeight || 1;
+          iconPlaces[k] = {
+            c: Math.max(0, Math.round((v2.fx * W - g.originX) / g.stepX)),
+            r: Math.max(0, Math.round((v2.fy * H - g.originY) / g.stepY))
+          };
+          moved = true;
+        });
+        if (moved) writeJSON("sysbaby.icons.pos", iconPlaces);
+      }
     }
     return iconPlaces;
   }
   function rememberIconPlace(id, x, y) {
-    var host = $("#sbIconLayer");
-    if (!host) return;
-    var W = host.clientWidth, H = host.clientHeight;
-    if (!W || !H) return;
+    var g = window.sbDesktopGrid;
+    if (!g || !g.stepX || !g.stepY) return;
     var places = getIconPlaces();
-    places[id] = { fx: x / W, fy: y / H };
+    places[id] = {
+      c: Math.max(0, Math.round((x - g.originX) / g.stepX)),
+      r: Math.max(0, Math.round((y - g.originY) / g.stepY))
+    };
     iconPlaces = places;
     writeJSON("sysbaby.icons.pos", places);
   }
@@ -2167,7 +2281,11 @@
     var places = getIconPlaces();
     var placed = all.filter(function (n) { return !!places[n.getAttribute("data-app")]; });
     var nodes = all.filter(function (n) { return !places[n.getAttribute("data-app")]; });
-    var count = nodes.length || all.length;
+    /* Геометрия сетки считается по ВСЕМ значкам. Раньше — только по
+       свободным, и тогда стоило унести один рукой, как сетка для остальных
+       пересчитывалась и съезжала. Клетка обязана означать одно и то же
+       независимо от того, сколько значков передвинуто. */
+    var count = all.length;
     if (!count) { window.sbDesktopGrid = { originX: 0, originY: 0, cellW: 80, cellH: 92, cols: 0, rows: 0, gapX: 16, gapY: 12, stepX: 96, stepY: 104 }; return; }
 
     /* §4.2, ПЕРЕСЧИТАНО В v47.
@@ -2211,31 +2329,37 @@
        Теперь клетка, пересекающаяся с поставленным вручную значком,
        пропускается, и ряд течёт дальше — как вода вокруг камня. */
     var HH0 = host.clientHeight || (cellH * 2);
-    var stones = placed.map(function (n) {
-      var pos = places[n.getAttribute("data-app")];
-      if (!pos) return null;
-      return { x: clamp(pos.fx * W, 2, Math.max(2, W - cellW - 2)),
-               y: clamp(pos.fy * HH0, 2, Math.max(2, HH0 - cellH - 2)) };
-    }).filter(Boolean);
-    function cellFree(x, y) {
-      for (var k = 0; k < stones.length; k++) {
-        var st = stones[k];
-        if (!(x + cellW <= st.x || st.x + cellW <= x || y + cellH <= st.y || st.y + cellH <= y)) return false;
-      }
-      return true;
-    }
+    var stepX = cellW + gapX, stepY = cellH + gapY;
+    var maxRow = Math.max(0, Math.floor((HH0 - originY - cellH) / stepY));
+    /* Камни — клетки, занятые рукой. Столбец зажимается в нынешнюю ширину
+       стола, строка — в его высоту: на повёрнутом экране столбцов больше, а
+       строк меньше, и клетка, которой там нет, обязана всё-таки где-то стоять.
+       Зажим — ТОЛЬКО ДЛЯ ПОКАЗА: в хранилище остаётся то, что назвал человек,
+       поэтому возврат в прежнюю сторону возвращает и прежнюю расстановку. */
+    var taken = Object.create(null);
+    var stoneOf = Object.create(null);
+    placed.forEach(function (n) {
+      var id = n.getAttribute("data-app"), pos = places[id];
+      if (!pos) return;
+      var c = clamp(pos.c | 0, 0, Math.max(0, cols - 1));
+      var r = clamp(pos.r | 0, 0, maxRow);
+      /* Две разные клетки могли сойтись в одну после зажима — расходятся по
+         одному и тому же правилу всегда, иначе показ был бы случайным. */
+      var guard = 0;
+      while (taken[c + "," + r] && guard++ < 400) { c++; if (c >= cols) { c = 0; r++; } }
+      taken[c + "," + r] = 1;
+      stoneOf[id] = { c: c, r: r };
+    });
     var slot = 0;
     nodes.forEach(function (n) {
       if (n.getAttribute("data-dragged") === "1") return;   /* палец ещё держит — не вырывать */
-      var x, y;
+      var c, r, guard = 0;
       do {
-        var c = slot % cols, r = Math.floor(slot / cols);
-        x = originX + c * (cellW + gapX);
-        y = originY + r * (cellH + gapY);
-        slot++;
-      } while (!cellFree(x, y) && slot < 400);
-      n.style.left = x + "px";
-      n.style.top = y + "px";
+        c = slot % cols; r = Math.floor(slot / cols); slot++;
+      } while (taken[c + "," + r] && guard++ < 400);
+      taken[c + "," + r] = 1;
+      n.style.left = (originX + c * stepX) + "px";
+      n.style.top = (originY + r * stepY) + "px";
       n.style.width = cellW + "px";
       n.style.height = cellH + "px";
     });
@@ -2243,15 +2367,14 @@
     /* Запомненные ставятся по своей доле — и зажимаются в границы стола:
        доля записана на другом экране, и без этой строки значок мог бы
        оказаться за краем после поворота телефона. */
-    var HH = host.clientHeight || (cellH * 2);
     placed.forEach(function (n) {
-      var pos = places[n.getAttribute("data-app")];
-      if (!pos) return;
+      var st = stoneOf[n.getAttribute("data-app")];
+      if (!st) return;
       n.style.width = cellW + "px";
       n.style.height = cellH + "px";
       if (n.getAttribute("data-dragged") === "1") return;
-      n.style.left = Math.round(clamp(pos.fx * W, 2, Math.max(2, W - cellW - 2))) + "px";
-      n.style.top = Math.round(clamp(pos.fy * HH, 2, Math.max(2, HH - cellH - 2))) + "px";
+      n.style.left = (originX + st.c * stepX) + "px";
+      n.style.top = (originY + st.r * stepY) + "px";
     });
     $$(".desk-icon", host).forEach(function (n) { n.removeAttribute("data-dragged"); });
 
@@ -2293,11 +2416,38 @@
   }
   window.sbDesktopObstacles = obstacles;
 
+  /* ── КЛЕТКА, НАЗВАННАЯ ЧЕЛОВЕКОМ, ДОСТАЁТСЯ ЧЕЛОВЕКУ (D-130) ────────────
+     ПОВОД, дословно: «в некоторые места нет возможности их перемещать -
+     просто не возможно оставить иконку на определенном месте».
+     Прибор подтвердил: просили клетку (1,1) — система давала (0,2). Причина
+     была в том, что помехой считался ЛЮБОЙ значок. Но значки из общего ряда
+     не стоят на своих местах — они их лишь занимают до тех пор, пока никто не
+     попросил: весь ряд и так смыкается вокруг переставленных рукой. Значит
+     помеха не они.
+     ПРАВИЛО. Помеха — только то, что поставлено ЧЕЛОВЕКОМ: другой
+     переставленный значок и заметка. Против них ищется ближайшая свободная
+     клетка — спорить с чужим решением система не вправе. Всё остальное
+     уступает дорогу и смыкает ряды. */
+  function handObstacles(exceptEl) {
+    var out = [];
+    var places = getIconPlaces();
+    $$("#sbIconLayer .desk-icon").forEach(function (n) {
+      if (n === exceptEl || n.classList.contains("hidden-icon")) return;
+      if (!places[n.getAttribute("data-app")]) return;   /* из общего ряда — уступит */
+      out.push({ x: n.offsetLeft, y: n.offsetTop, w: n.offsetWidth, h: n.offsetHeight });
+    });
+    $$("#sbNoteLayer .sticky-note").forEach(function (n) {
+      if (n === exceptEl) return;
+      out.push({ x: n.offsetLeft, y: n.offsetTop, w: n.offsetWidth, h: n.offsetHeight });
+    });
+    return out;
+  }
+
   function freeCellNear(x, y, w, h, exceptEl) {
     var g = window.sbDesktopGrid;
     if (!g || !g.cols) return { x: x, y: y };
     var col = Math.round((x - g.originX) / g.stepX), row = Math.round((y - g.originY) / g.stepY);
-    var others = obstacles(exceptEl);
+    var others = handObstacles(exceptEl);
     for (var rad = 0; rad <= 6; rad++) {
       for (var dc = -rad; dc <= rad; dc++) {
         for (var dr = -rad; dr <= rad; dr++) {
@@ -2406,6 +2556,7 @@
       if (over && id !== "echoes") {
         /* Унесённый со стола забывает своё место: вернувшись, он должен
            встать в ряд, а не в точку, из которой его когда-то унесли. */
+        if (window.sbFlyToEchoes) { try { window.sbFlyToEchoes(node); } catch (e) { } }
         forgetIconPlace(id);
         window.sbSetIconHidden(id, true);
         window.showToast(tr("toast.toEchoes", { app: appTitle("echoes") }), tr("toast.toEchoesIcon"), ICONS.note);
@@ -2421,6 +2572,19 @@
          о ней, иначе значок вернётся в сетку — ровно тот дефект, о котором
          написал основатель. */
       rememberIconPlace(id, snap.x, snap.y);
+      /* РЯДЫ СМЫКАЮТСЯ СРАЗУ, А НЕ ПОТОМ (D-130).
+         Здесь перекладки не было — и стол оставался в противоречии с самим
+         собой: значок уже унесён, а клетка, где он стоял, ещё считалась
+         занятой. Первое же событие, вызывающее перекладку — поворот телефона,
+         полноэкранный режим, даже адресная строка, — смыкало ряды разом, и со
+         стороны человека это выглядело так, будто расположение меняет
+         полноэкранный режим. Дословно из повода: «полноэкранный режим меняет
+         расположение иконок». Менял не он: он лишь первым показывал то, что
+         уже было решено переносом.
+         Теперь ряды смыкаются в тот же миг, под рукой человека, как следствие
+         его собственного движения. Перенесённый значок при этом не двинется:
+         он уже камень на своей клетке. */
+      layoutIcons();
       setTimeout(function () { node.classList.remove("settling"); }, 320);
     }
     node.addEventListener("pointerup", endIconDrag);
@@ -2471,6 +2635,155 @@
     }
     return null;
   }
+  /* ============================================ ПОЛЁТ В ЭХО (D-132) §
+
+     ПОВОД: «нам нужна гениальная и концептуальная анимация во время удаления
+     любого элемента на рабочем столе (например, улетает в приложение echo)».
+
+     ЧТО ЭТО ЗА ДВИЖЕНИЕ. В sys.baby ничего не пропадает: удалённое лежит в
+     Эхе, пока человек сам не скажет иначе, — так и написано в самом
+     приложении: «Убрано с рабочего стола — не удалено». Но человек этого НЕ
+     ВИДИТ: предмет исчезает, и обещание приходится принимать на слово. Полёт
+     — не украшение. Это единственный миг, когда обещание системы можно
+     увидеть глазами: предмет не пропал, он УШЁЛ, и видно куда.
+
+     ЧЕТЫРЕ ПРАВИЛА, БЕЗ КОТОРЫХ ЭТО БЫЛО БЫ УКРАШЕНИЕМ.
+     1. Данные не ждут картинки: предмет удаляют сразу, полёт идёт следом.
+        Закрыл вкладку посреди движения — ничего не воскресло.
+     2. Двойник висит поверх (position: fixed) и в раскладке не участвует:
+        соседи не дёргаются оттого, что что-то улетает.
+     3. Летит по ДУГЕ, а не по прямой: прямая читается как рывок, дуга — как
+        «отпустили, и оно пошло». Дуга сделана offset-path, одним свойством,
+        которое композитор считает сам.
+     4. Выключил движение — полёта нет, но Эхо всё равно отзывается:
+        обещание важнее картинки.
+
+     КУДА ЛЕТИТ, ЕСЛИ ЭХА НЕ ВИДНО. К значку Эха; если его нет на столе — к
+     плитке в доке; если и её нет — к нижнему краю у дока, туда, где Эхо
+     живёт. Молча никуда не летим. */
+  function echoTarget() {
+    var icon = $('.desk-icon[data-app="echoes"]:not(.hidden-icon)');
+    if (icon) return { el: icon, r: icon.getBoundingClientRect() };
+    var tile = $('#dock [data-app="echoes"]');
+    if (tile) return { el: tile, r: tile.getBoundingClientRect() };
+    var dock = $("#dock");
+    if (dock) { var d = dock.getBoundingClientRect(); return { el: null, r: { left: d.left + d.width / 2 - 20, top: d.top, width: 40, height: 40 } }; }
+    return { el: null, r: { left: window.innerWidth / 2 - 20, top: window.innerHeight - 60, width: 40, height: 40 } };
+  }
+  function echoCatch() {
+    var t = echoTarget();
+    if (!t.el) return;
+    t.el.classList.add("echo-catch");
+    setTimeout(function () { t.el.classList.remove("echo-catch"); }, 620);
+  }
+  window.sbFlyToEchoes = function (el) {
+    var reduced = false;
+    try { reduced = !!window.sbGetControlToggle("motion") ||
+      (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) { }
+    /* Эхо отзывается НА ПРИЛЁТЕ, а не на отлёте: отклик — это «поймал», а не
+       «отпустили». Первая редакция звала echoCatch() в начале, и значок
+       вздрагивал раньше, чем к нему что-то прилетело: движение читалось как
+       два несвязанных события вместо одного. Без движения отклик идёт сразу —
+       лететь нечему, а сказать «принято» всё равно надо. */
+    if (reduced || !el || !el.getBoundingClientRect) { echoCatch(); return Promise.resolve(); }
+    var from = el.getBoundingClientRect();
+    if (!from.width || !from.height) { echoCatch(); return Promise.resolve(); }
+    var to = echoTarget().r;
+    var fly = doc.createElement("div");
+    fly.className = "sb-flyer";
+    fly.setAttribute("aria-hidden", "true");
+    fly.style.left = from.left + "px";
+    fly.style.top = from.top + "px";
+    fly.style.width = from.width + "px";
+    fly.style.height = from.height + "px";
+    /* ── ДВОЙНИК — КАРТИНКА, И ОН НЕ ОТЗЫВАЕТСЯ НА ИМЯ ПРЕДМЕТА ──────────
+       Первая редакция копировала узел как есть — вместе с id и data-id. И
+       пока картинка летела, в документе полсекунды жило ВТОРОЕ существо с тем
+       же именем: запрос .sticky-note[data-id="…"] находил его и отвечал «она
+       всё ещё на столе». Поймала это доска (note-window-check), и жалоба была
+       по существу, а не придиркой: код продукта тоже спрашивает про
+       .sticky-note.full, и удаление развёрнутой заметки нашло бы двойника.
+       Имя и состояние с картинки сняты: у неё остаётся только вид. */
+    var shot = el.cloneNode(true);
+    (function strip(node) {
+      if (node.nodeType !== 1) return;
+      node.removeAttribute("id");
+      var at = node.attributes, kill = [];
+      for (var i = 0; i < at.length; i++) if (at[i].name.indexOf("data-") === 0) kill.push(at[i].name);
+      kill.forEach(function (n) { node.removeAttribute(n); });
+      node.setAttribute("tabindex", "-1");
+      for (var c = 0; c < node.children.length; c++) strip(node.children[c]);
+    })(shot);
+    /* Состояния — это про живой предмет, а не про его вид. */
+    ["full", "focused", "dragging", "armed", "settling", "lights-held", "editing"]
+      .forEach(function (c) { shot.classList.remove(c); });
+    shot.setAttribute("aria-hidden", "true");
+    shot.style.margin = "0"; shot.style.left = "0"; shot.style.top = "0";
+    shot.style.width = "100%"; shot.style.height = "100%"; shot.style.position = "static";
+    shot.style.transform = "none";
+    fly.appendChild(shot);
+    doc.body.appendChild(fly);
+
+    var dx = (to.left + to.width / 2) - (from.left + from.width / 2);
+    var dy = (to.top + to.height / 2) - (from.top + from.height / 2);
+    /* Дуга: точка отрыва идёт вверх и вбок, потом падает в цель. Подъём —
+       четверть расстояния, но не больше 120 точек: на длинном столе иначе
+       предмет улетал бы за верхний край. */
+    var lift = Math.min(120, Math.max(28, Math.hypot(dx, dy) * 0.25));
+    var path = "path('M 0 0 C " + Math.round(dx * 0.25) + " " + Math.round(-lift) +
+               ", " + Math.round(dx * 0.7) + " " + Math.round(dy * 0.35 - lift * 0.4) +
+               ", " + Math.round(dx) + " " + Math.round(dy) + "')";
+    fly.style.offsetPath = path;
+    fly.style.offsetRotate = "0deg";
+    var DUR = 640;
+    var anim = fly.animate(
+      [{ offsetDistance: "0%", opacity: 1, scale: "1" },
+       { offsetDistance: "62%", opacity: .95, scale: ".62", offset: .62 },
+       { offsetDistance: "100%", opacity: 0, scale: ".16" }],
+      { duration: DUR, easing: "cubic-bezier(.34,.02,.28,1)", fill: "forwards" });
+    /* Отклик встречает предмет чуть раньше касания — так две части движения
+       читаются как одно: значок уже подался навстречу, когда предмет входит. */
+    var meet = setTimeout(echoCatch, Math.round(DUR * 0.78));
+    return anim.finished.catch(function () { }).then(function () {
+      clearTimeout(meet); echoCatch();
+      if (fly.parentNode) fly.parentNode.removeChild(fly);
+    });
+  };
+
+  /* ── ЧАСТИ СТОЛА, КОТОРЫЕ МОЖНО УБРАТЬ (D-133) ─────────────────────────
+     Кнопка действия — не приложение, и в списке приложений ей места нет. Но
+     убирается она туда же, куда и всё остальное: в Эхо, откуда её видно и
+     откуда её можно вернуть. Иначе это была бы не уборка, а потеря.
+     Список назван здесь один раз; Эхо читает его, а не знает о кнопке само. */
+  var PARTS_KEY = "sysbaby.desk.parts.hidden";
+  var PART_DEFS = [{ id: "fab", key: "part.fab" }];
+  function hiddenParts() {
+    var v = readJSON(PARTS_KEY, []);
+    return Array.isArray(v) ? v : [];
+  }
+  window.sbDeskParts = function () {
+    var hid = hiddenParts();
+    return PART_DEFS.map(function (d) {
+      return { id: d.id, title: tr(d.key), hidden: hid.indexOf(d.id) !== -1 };
+    });
+  };
+  function applyParts() {
+    var hid = hiddenParts();
+    PART_DEFS.forEach(function (d) {
+      var el = d.id === "fab" ? $("#sbFab") : null;
+      if (el) el.classList.toggle("part-hidden", hid.indexOf(d.id) !== -1);
+    });
+  }
+  window.sbSetDeskPartHidden = function (id, hidden) {
+    if (!PART_DEFS.some(function (d) { return d.id === id; })) return;
+    var hid = hiddenParts().filter(function (x) { return x !== id; });
+    if (hidden) hid.push(id);
+    writeJSON(PARTS_KEY, hid);
+    applyParts();
+    sbBus.emit("part:visibility", { id: id, hidden: !!hidden });
+  };
+  window.sbApplyDeskParts = applyParts;
+
   window.sbEchoesHighlight = function (active) {
     var icon = $('.desk-icon[data-app="echoes"]');
     if (icon) icon.classList.toggle("drop-target", !!active);
@@ -2485,6 +2798,7 @@
     var id = ghostNode.getAttribute("data-id");
     var over = echoesDropTarget(ev.clientX, ev.clientY);
     if (over && id && window.sbNotesStore) {
+      if (window.sbFlyToEchoes) { try { window.sbFlyToEchoes(ghostNode); } catch (e) { } }
       window.sbNotesStore.softDelete(id);
       window.showToast(tr("toast.toEchoes", { app: appTitle("echoes") }), tr("toast.toEchoesNote"), ICONS.note);
     }
@@ -3369,6 +3683,7 @@
        системе больше нет. */
     applyMood(window.sbGetWallpaperMood());
     ["motion", "dnd", "autohide", "transparency"].forEach(function (k) { applyControl(k, window.sbGetControlToggle(k)); });
+    applyParts();
     wireTurbo();
     /* volume and brightness come back exactly as they were left */
     var savedVol = window.sbDB ? window.sbDB.get(VOLUME_KEY) : null;
