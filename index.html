@@ -7,7 +7,7 @@
      именно его метку читают снаружи: ежедневный наблюдатель, восьмой шаг
      выкладки и закон тестового контура. Ставится не руками, а
      tools/stamp-build.mjs — из единственного объявления версии. -->
-<meta name="sysbaby-build" content="v78">
+<meta name="sysbaby-build" content="v79">
 <title>sys.baby OS</title>
 <!-- ЗНАК. Один квадрат и он же, сдвинутый на 1,988 — та же величина, на которой
      построено поле обоев. Пересечение выбито: пустота в середине — это точка из
@@ -54,22 +54,63 @@
      метка меняется каждой сборкой, а старый адрес перестаёт существовать.
      Штампы проставляются tools/stamp-build.mjs и охраняются законом
      build-stamp.mjs — ресурс без метки валит сборку. -->
-<script src="os/core/store.js?b=v78"></script>
+<script src="os/core/store.js?b=v79"></script>
 
-<link rel="stylesheet" href="os/core/core.css?b=v78" />
-<link rel="stylesheet" href="os/apps/files/files.css?b=v78" />
-<link rel="stylesheet" href="os/apps/browser/browser.css?b=v78" />
-<link rel="stylesheet" href="os/apps/player/player.css?b=v78" />
-<link rel="stylesheet" href="os/apps/viewer/viewer.css?b=v78" />
-<link rel="stylesheet" href="os/apps/notes/notes.css?b=v78" />
-<link rel="stylesheet" href="os/apps/mail/mail.css?b=v78" />
-<link rel="stylesheet" href="os/apps/messenger/messenger.css?b=v78" />
-<link rel="stylesheet" href="os/apps/search/search.css?b=v78" />
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v78" />
-<link rel="stylesheet" href="os/apps/project/project.css?b=v78" />
-<link rel="stylesheet" href="os/apps/settings/settings.css?b=v78" />
-<link rel="stylesheet" href="os/apps/echoes/echoes.css?b=v78" />
-<link rel="stylesheet" href="os/apps/build/build.css?b=v78" />
+<link rel="stylesheet" href="os/core/core.css?b=v79" />
+<link rel="stylesheet" href="os/apps/files/files.css?b=v79" />
+<link rel="stylesheet" href="os/apps/browser/browser.css?b=v79" />
+<link rel="stylesheet" href="os/apps/player/player.css?b=v79" />
+<link rel="stylesheet" href="os/apps/viewer/viewer.css?b=v79" />
+<link rel="stylesheet" href="os/apps/notes/notes.css?b=v79" />
+<link rel="stylesheet" href="os/apps/mail/mail.css?b=v79" />
+<link rel="stylesheet" href="os/apps/messenger/messenger.css?b=v79" />
+<link rel="stylesheet" href="os/apps/search/search.css?b=v79" />
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v79" />
+<link rel="stylesheet" href="os/apps/project/project.css?b=v79" />
+<link rel="stylesheet" href="os/apps/settings/settings.css?b=v79" />
+<link rel="stylesheet" href="os/apps/echoes/echoes.css?b=v79" />
+<link rel="stylesheet" href="os/apps/build/build.css?b=v79" />
+<!-- ── СИСТЕМА ЖИВЁТ БЕЗ СЕТИ (D-145) ───────────────────────────────────────
+     Основатель: «необходимо сделать так, что даже, когда интернета на телефоне
+     или другом устройстве нет, сайт sys.baby должен продолжать работу».
+     Опись оболочки не написана в работнике списком — её приносит ЭТА страница:
+     она перечисляет то, что реально загрузила, вместе с меткой сборки. Список
+     и оболочка не могут разойтись, потому что список — это и есть оболочка.
+     Адрес относительный: дома документ лежит в /os/, в интернете — в корне,
+     и область работника в обоих случаях совпадает с областью системы. -->
+<script>
+(function () {
+  "use strict";
+  if (!("serviceWorker" in navigator)) return;
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").then(function (reg) {
+      function tellHim() {
+        var w = reg.active || navigator.serviceWorker.controller;
+        if (!w) return;
+        var urls = ["./"];
+        var add = function (u) {
+          if (!u) return;
+          try { if (new URL(u, location.href).origin !== location.origin) return; }
+          catch (e) { return; }
+          if (urls.indexOf(u) === -1) urls.push(u);
+        };
+        var nodes = document.querySelectorAll("link[rel=stylesheet][href], script[src]");
+        for (var i = 0; i < nodes.length; i++) {
+          add(nodes[i].getAttribute("href") || nodes[i].getAttribute("src"));
+        }
+        var meta = document.querySelector('meta[name="sysbaby-build"]');
+        w.postMessage({
+          type: "precache",
+          build: meta ? meta.getAttribute("content") : "unstamped",
+          urls: urls
+        });
+      }
+      if (reg.active) tellHim();
+      navigator.serviceWorker.ready.then(tellHim);
+    }).catch(function (err) { if (window.console) console.error("[sw] register failed", err); });
+  });
+})();
+</script>
 </head>
 
 <body>
@@ -453,32 +494,32 @@
 
 
 <!-- ================================================================== scripts -->
-<script src="os/core/shell.js?b=v78"></script>
-<script src="os/core/panels.js?b=v78"></script>
-<script src="os/core/palette.js?b=v78"></script>
-<script src="os/core/desktop.js?b=v78"></script>
-<script src="os/core/topbar.js?b=v78"></script>
-<script src="os/core/terminal.js?b=v78"></script>
-<script src="os/core/links.js?b=v78"></script>
-<script src="os/core/field.js?b=v78"></script>
+<script src="os/core/shell.js?b=v79"></script>
+<script src="os/core/panels.js?b=v79"></script>
+<script src="os/core/palette.js?b=v79"></script>
+<script src="os/core/desktop.js?b=v79"></script>
+<script src="os/core/topbar.js?b=v79"></script>
+<script src="os/core/terminal.js?b=v79"></script>
+<script src="os/core/links.js?b=v79"></script>
+<script src="os/core/field.js?b=v79"></script>
 
-<script src="shared/portfolio.data.js?b=v78"></script>
-<script src="shared/portfolio.strings.js?b=v78"></script>
-<script src="shared/pricing.data.js?b=v78"></script>
+<script src="shared/portfolio.data.js?b=v79"></script>
+<script src="shared/portfolio.strings.js?b=v79"></script>
+<script src="shared/pricing.data.js?b=v79"></script>
 
-<script src="os/apps/files/files.js?b=v78"></script>
-<script src="os/apps/browser/browser.js?b=v78"></script>
-<script src="os/apps/player/player.js?b=v78"></script>
-<script src="os/apps/viewer/viewer.js?b=v78"></script>
-<script src="os/apps/notes/notes.js?b=v78"></script>
-<script src="os/apps/mail/mail.js?b=v78"></script>
-<script src="os/apps/messenger/messenger.js?b=v78"></script>
-<script src="os/apps/search/search.js?b=v78"></script>
-<script src="shared/portfolio.view.js?b=v78"></script>
-<script src="os/apps/project/project.js?b=v78"></script>
-<script src="os/apps/settings/settings.js?b=v78"></script>
-<script src="os/apps/echoes/echoes.js?b=v78"></script>
-<script src="os/apps/build/build.js?b=v78"></script>
+<script src="os/apps/files/files.js?b=v79"></script>
+<script src="os/apps/browser/browser.js?b=v79"></script>
+<script src="os/apps/player/player.js?b=v79"></script>
+<script src="os/apps/viewer/viewer.js?b=v79"></script>
+<script src="os/apps/notes/notes.js?b=v79"></script>
+<script src="os/apps/mail/mail.js?b=v79"></script>
+<script src="os/apps/messenger/messenger.js?b=v79"></script>
+<script src="os/apps/search/search.js?b=v79"></script>
+<script src="shared/portfolio.view.js?b=v79"></script>
+<script src="os/apps/project/project.js?b=v79"></script>
+<script src="os/apps/settings/settings.js?b=v79"></script>
+<script src="os/apps/echoes/echoes.js?b=v79"></script>
+<script src="os/apps/build/build.js?b=v79"></script>
 <!-- Скамейка (Experimental/Phosphor) выведена из клиентской витрины v20.9:
      витрина продаёт сданные системы, а самое интригующее имя на столе
      конкурировало с подсказкой №1 за первое касание. Папка приложения

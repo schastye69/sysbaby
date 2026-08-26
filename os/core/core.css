@@ -1030,7 +1030,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
      corner, a third of it at the opposite one */
   --lit: calc(.34 + (var(--nx) * .42) + ((1 - var(--ny)) * .24));
 
-  position: absolute; width: 196px; padding: 10px 0 0 11px;
+  position: absolute; width: 196px; padding: 11px;
   border-radius: var(--r-card);
   color: var(--ink);
   background:
@@ -1076,12 +1076,20 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
 .sticky-note.focused .note-text { touch-action: auto; -webkit-user-select: text; user-select: text; cursor: text; }
 /* Ширину заметке ставит замер текста (autoGrow в os/core/desktop.js): короткая
    заметка маленькая с первого слова. Здесь остаётся только предел. */
-.sticky-note { min-width: 118px; max-width: 320px; padding: 10px 0 0 11px; }
+.sticky-note { min-width: 118px; max-width: 320px; padding: 11px; }
 .sticky-note .note-text { min-height: 20px; }
-/* СПРАВА И СНИЗУ ОТ ТЕКСТА ОТСТУПОВ НЕТ (прямая просьба основателя).
-   Заметка кончается там же, где кончается текст: ширину ей ставит замер
-   текста, высоту — сам текст, а поля остаются только сверху и слева, где они
-   нужны для света кромки и для пальца. */
+/* ── ОБЛАЧКО: ПОЛЕ ОДИНАКОВО СО ВСЕХ СТОРОН ────────────────────────────────
+   Здесь стояло «справа и снизу отступов нет» — и это была ошибка Совета,
+   а не решение. Основатель сказал: «не должно быть никаких отступов справа и
+   снизу от текста», Совет понял буквально и снял поля. Основатель поправил:
+   «отступ от текста заметок по всем сторонам должен быть одинаковый.
+   Представим, что это облачки с текстом внутри», — и, увидев, что не сделано,
+   в третий раз: «снизу от текста заметки должен быть такой же отступ, как
+   сверху и по горизонтали».
+   Ширину заметке по-прежнему ставит замер текста (autoGrow), и поле он берёт
+   ИЗМЕРЕНИЕМ (offsetWidth заметки минус offsetWidth текста), а не числом —
+   поэтому смена поля здесь не требует правки там. Зазор охраняется
+   tools/note-window-check.mjs с четырёх сторон. */
 .note-text {
   width: 100%; min-height: 20px; max-height: 260px; resize: none; border: 0; outline: none;
   background: none; color: var(--ink); font-size: 13px; line-height: 1.45;
