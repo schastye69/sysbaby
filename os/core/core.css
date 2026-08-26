@@ -119,7 +119,21 @@
   --fab-size: 42px;
   --fab-inset: 18px;
   --desk-row-gap: 10px;
-  --desk-row-b: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 90px) + 12px);
+  /* Сколько места занимает полоса проигрывателя вместе с зазором над ней.
+     Ноль, пока музыки нет. Объявлено ЗДЕСЬ, рядом с высотой дока, потому что
+     это того же рода: «сколько места занято внизу», и весь ряд читает одно
+     выражение. */
+  --player-row: 0px;
+  /* ДВА ИМЕНИ, И КАЖДОЕ ЗНАЧИТ РОВНО ОДНО.
+     --row-base — линия нижнего ряда САМА ПО СЕБЕ: над полкой, с зазором.
+     --desk-row-b — где стоит РЕЧЬ: та же линия плюс место, занятое полосой
+     проигрывателя.
+     Полоса встаёт на --row-base, речь на --desk-row-b. Без первого имени
+     полосе пришлось бы повторить выражение у себя — и это было бы третье
+     место, знающее одно и то же, ровно та ошибка, которую Совет чинил сегодня
+     трижды (D-114, D-127, D-129). */
+  --row-base: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 90px) + 12px);
+  --desk-row-b: calc(var(--row-base) + var(--player-row, 0px));
 }
 
 html[data-theme="light"] {
@@ -1463,7 +1477,7 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); t
    его настоящей высоте, как и на широком экране. */
 @media (max-width: 620px) {
   /* на телефоне полка ниже — запас до первой публикации --dock-h тоже */
-  :root { --desk-row-b: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 62px) + 12px); }
+  :root { --row-base: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 62px) + 12px); }
   .dh-text { white-space: normal; font-size: 12px; line-height: 1.4; }
 
   /* ── ПОДСКАЗКА ВСТАЁТ В ОДИН РЯД С ПЛЮСОМ (v53) ──────────────────────
@@ -1512,7 +1526,7 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); t
   /* Нет дока — весь ряд опускается к самому низу. --desk-row-b общее, и
      кнопка идёт вниз вместе с подсказкой, а не отдельным числом. */
   html.dock-empty {
-    --desk-row-b: 22px;
+    --row-base: 22px;
   }
 }
 
