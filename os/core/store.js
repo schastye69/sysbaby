@@ -20,12 +20,35 @@
   function ssSet(k, v) { try { window.sessionStorage.setItem(k, v); return true; } catch (e) { return false; } }
   function ssDel(k) { try { window.sessionStorage.removeItem(k); return true; } catch (e) { return false; } }
 
+  /* ── ПЕРЕЧИСЛЕНИЕ ТОЖЕ ПРОХОДИТ ЧЕРЕЗ ЗАМОК · решение D-172 ────────────────
+     Замок стоит на границе Storage: чтение и запись он перехватывает (D-164).
+     А ПЕРЕЧИСЛЕНИЕ — нет: localStorage.key() отдаёт то, что лежит на диске, а
+     там при запертом замке лежат конверты sysbaby.v.<хеш>, и настоящих имён
+     не видно ВООБЩЕ — в этом и был смысл (D-166).
+     Дефект нашёл закон копий: выгрузка профиля, сделанная при стоящем замке,
+     возвращалась БЕЗ ЗАМЕТОК. Она перечисляла диск, находила там конверты и
+     не находила ни одного знакомого имени. То есть и кнопка «выгрузить
+     профиль», и копии в папку сохраняли ПУСТОТУ — молча.
+     Лечение здесь, в единственном месте, где система вообще перечисляет
+     ключи: пока замок открыт, имена берутся из памяти, где они настоящие.
+     Диск при этом остаётся тем же — конвертами. */
   function lsKeys() {
-    var out = [];
+    var out = [], seen = {};
     try {
       var n = window.localStorage.length;
-      for (var i = 0; i < n; i++) { var k = window.localStorage.key(i); if (k != null) out.push(k); }
+      for (var i = 0; i < n; i++) {
+        var k = window.localStorage.key(i);
+        if (k == null) continue;
+        if (k.indexOf("sysbaby.v.") === 0) continue;      /* конверт — не имя */
+        if (!seen[k]) { seen[k] = 1; out.push(k); }
+      }
     } catch (e) { /* storage blocked — treated as empty (§10 amnesiac session) */ }
+    try {
+      if (window.sbVault && window.sbVault.isOpen() && typeof vaultOpenNames === "function") {
+        var mine = vaultOpenNames(), j;
+        for (j = 0; j < mine.length; j++) if (!seen[mine[j]]) { seen[mine[j]] = 1; out.push(mine[j]); }
+      }
+    } catch (e) { /* ignore */ }
     return out;
   }
 
@@ -467,13 +490,17 @@
          Хранилище. Повышение версии перезапускает onupgradeneeded, и он
          создаёт ТОЛЬКО недостающее: прежние accounts и snapshots остаются
          на месте со всем содержимым. */
-      try { req = window.indexedDB.open("sysbaby", 2); } catch (e) { resolve(null); return; }
+      /* Версия 3 (D-172): добавлен склад «handles» — разрешение на настоящую
+         папку для резервных копий. Хранить его больше негде: указатель на
+         папку не строка и в localStorage не ложится. */
+      try { req = window.indexedDB.open("sysbaby", 3); } catch (e) { resolve(null); return; }
       if (!req) { resolve(null); return; }
       req.onupgradeneeded = function () {
         var db = req.result;
         try { if (!db.objectStoreNames.contains("accounts")) db.createObjectStore("accounts", { keyPath: "id" }); } catch (e) { /* ignore */ }
         try { if (!db.objectStoreNames.contains("snapshots")) db.createObjectStore("snapshots", { keyPath: "profileId" }); } catch (e) { /* ignore */ }
         try { if (!db.objectStoreNames.contains("things")) db.createObjectStore("things", { keyPath: "id" }); } catch (e) { /* ignore */ }
+        try { if (!db.objectStoreNames.contains("handles")) db.createObjectStore("handles", { keyPath: "id" }); } catch (e) { /* ignore */ }
       };
       req.onsuccess = function () { resolve(req.result); };
       req.onerror = function () { resolve(null); };
@@ -641,6 +668,10 @@
     };
   }
   window.sbExportProfile = buildExport;
+  /* Склад отдан наружу: синхронизация копий (sync.js) хранит в нём указатель
+     на настоящую папку. Свой второй indexedDB.open был бы вторым знанием об
+     одном хранилище — а с ним и вторая версия схемы, и расхождение. */
+  window.sbIdb = { put: idbPut, get: idbGet };
 
   window.sbExportFileName = function (profileId) {
     var env = buildExport(profileId);
@@ -1178,6 +1209,21 @@
     protectedKeys: protectedKeysNow,
     sealedNames: sealedNamesNow,
     neverLocked: function () { return VAULT_NEVER.slice(); },
+    /* ── КОПИИ НАСЛЕДУЮТ ЗАМОК (D-172) ──────────────────────────────────
+       Выгрузка профиля — открытый текст. Писать её в папку, пока человек
+       запер систему, значило бы вынести наружу ровно то, что он спрятал:
+       замок на диске и открытая копия рядом — это не замок.
+       Поэтому конверт отдаётся наружу, и синхронизация кладёт в папку
+       запертое запертым. Открыть такую копию можно только тем же паролем —
+       и это сказано человеку прямо в окне. */
+    seal: function (text) {
+      if (!vaultOpen || !vaultKeys) return Promise.reject(new Error("closed"));
+      return sealPair(vaultKeys, "backup", text);
+    },
+    openSealed: function (envelope) {
+      if (!vaultOpen || !vaultKeys) return Promise.reject(new Error("closed"));
+      return openPair(vaultKeys, envelope).then(function (p) { return p.value; });
+    },
     /* Чем именно заперто — не тайна: тайна это ключ, а не имя шифра. */
     cipher: function () {
       var rec = lockRecord();
@@ -1416,6 +1462,13 @@
      завтрашние. Список пишущих не может быть полным; граница — может. */
   var sealQueue = Promise.resolve();
   var mem = new Map();               /* открытые значения защищённых ключей */
+  /* Настоящие имена того, что сейчас открыто. Спрашивает lsKeys — перечисление
+     обязано видеть то же, что видит чтение (D-172). */
+  function vaultOpenNames() {
+    var out = [];
+    mem.forEach(function (v, k) { if (v != null) out.push(k); });
+    return out;
+  }
   var nameMap = new Map();           /* настоящее имя → имя конверта на диске */
   /* ── ЩЕЛЬ МЕЖДУ «ЕЩЁ НЕ ЗАПЕРТО» И «УЖЕ ЗАПЕРТО» (D-170, нашёл закон) ────
      Поворот ключа занимает полсекунды: столько считается растяжка пароля. Всё
@@ -1482,6 +1535,11 @@
     try {
       shadow("setItem", function (k, v) {
         if (!isOurs(this)) return rawStore.set.call(this, k, v);
+        /* ── ПОСЛЕ УХОДА НЕ ПИШЕТСЯ НИЧЕГО (D-174) ─────────────────────────
+           У системы есть отложенные записи и таймеры. Любой из них воскресил
+           бы стёртое через миг после уборки — и человек, нажавший «стереть
+           всё», нашёл бы на диске свежие следы своего же ухода. */
+        if (window.sbVanishing) return;
         if (isProtectedKey(k)) {
           if (vaultOpen) {
             mem.set(String(k), String(v));
@@ -1508,6 +1566,7 @@
       });
       shadow("removeItem", function (k) {
         if (!isOurs(this)) return rawStore.del.call(this, k);
+        if (window.sbVanishing) return rawStore.del.call(ls, k);   /* стирать — можно всегда */
         if (isProtectedKey(k)) {
           if (vaultOpen) { mem.set(String(k), null); scheduleSeal(String(k)); return; }
           if (sealing) { pending.set(String(k), null); return; }

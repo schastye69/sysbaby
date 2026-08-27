@@ -99,10 +99,31 @@
      живёт вместе с комнатой — это разные вещи, и у них разные имена. */
   --brand: #e0663c;
   --topbar-h: 44px;
-  /* Вырез телефона — ОДНО объявление на всю систему (D-129). Всё, что о нём
+  /* ── ВЫРЕЗ СЧИТАЕТСЯ ТОЛЬКО ТАМ, ГДЕ ОН НАШ · решение D-177 ───────────────
+     Вырез телефона — ОДНО объявление на всю систему (D-129). Всё, что о нём
      знает, читает эту переменную; закон может подменить её и посмотреть, что
-     станет с панелью, не имея настоящего телефона под рукой. */
-  --safe-top: env(safe-area-inset-top, 0px);
+     станет с панелью, не имея настоящего телефона под рукой.
+
+     ПОВОД, дословно от основателя 27.08.2026, со снимком из другого браузера:
+     «в другом браузере слишком высокий отступ сверху». На снимке над полосой
+     стоит пустая полоса в полсотни точек — а страница и без того начинается
+     ПОД адресной строкой браузера.
+
+     ПРИЧИНА. env(safe-area-inset-top) отвечает на вопрос «сколько сверху
+     занято системой». Пока страница — обычная вкладка, за это отвечает САМ
+     БРАУЗЕР: он рисует свою полосу и отдаёт странице уже свободное место.
+     Но некоторые браузеры Android всё равно сообщают вырез — и мы отступали
+     второй раз от того, от чего уже отступил браузер. Место резервировалось
+     дважды.
+
+     ПРАВИЛО. Страница резервирует место под вырез ТОЛЬКО когда она сама и
+     есть весь экран: установленное приложение (standalone) или полный экран.
+     В обычной вкладке — ноль, и за верх отвечает тот, кто рисует свою полосу.
+     Это же правило само собой включает вырез обратно, когда основатель
+     нажимает «во весь экран» (D-163), — и высота полосы там измеряется, а не
+     помнится (D-170).
+     Охраняется tools/safe-top-check.mjs. */
+  --safe-top: 0px;
   /* Сколько места панель занимает НА САМОМ ДЕЛЕ. Раньше этого числа не было
      нигде: три места ставили содержимое под панель по 44 точкам, как будто
      выреза не существует, а сама панель прятала вырез внутрь своей высоты и
@@ -145,6 +166,15 @@
   --row-base: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 90px) + 12px);
   --desk-row-b: calc(var(--row-base) + var(--player-row, 0px));
 }
+
+/* Здесь страница И ЕСТЬ весь экран — значит вырез её, и место под него
+   резервирует она (D-177). Отдельными блоками, а не внутри :root: @media
+   внутри блока объявлений не работает, а класс на корне ставится по событию
+   полного экрана (topbar.js). */
+@media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  :root { --safe-top: env(safe-area-inset-top, 0px); }
+}
+html.sb-fullscreen { --safe-top: env(safe-area-inset-top, 0px); }
 
 html[data-theme="light"] {
   --bg: #eef0f5;
@@ -391,11 +421,67 @@ html.sb-incognito .wp-layer {
   width: min(360px, 100%); display: flex; flex-direction: column; gap: 12px;
   text-align: center;
 }
-.vg-mark {
-  width: 34px; height: 34px; margin: 0 auto 4px; border-radius: var(--r-card);
-  background: linear-gradient(140deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 var(--lit-blur, 12px) var(--lit-glow, transparent);
+/* ── ДВЕРЬ — ЭТО ДИАФРАГМА · решение D-182 ────────────────────────────────
+   ПОВОД, дословно от основателя 27.08.2026, со снимком экрана замка: «прошу
+   совет сделать эту страницу более концептуальной, дорогой, гениальной,
+   красивой и высокоинтеллектуальной. используйте какой-нибудь сверхновый
+   дизайнерский эффект, который люди заполнять навсегда».
+   ЗДЕСЬ СТОЯЛ ГРАДИЕНТНЫЙ КВАДРАТИК 34×34 — знак ради знака. Между тем у этой
+   страницы есть собственный смысл, и он крупнее любого украшения: это ДВЕРЬ, и
+   дверь этой системы — диафрагма (D-165, D-181). Тот же прибор, что в полосе
+   размером в шестнадцать точек, здесь во весь экран и ЗАКРЫТ.
+   ТРЮК, РАДИ КОТОРОГО ВСЁ. Растяжка пароля считается от полусекунды до двух с
+   половиной — это цена, которую платит тот, кто станет пароль угадывать
+   (D-166). Обычная система прячет такую задержку под вертящимся кружком и
+   врёт: «загрузка». Здесь задержка ПОКАЗАНА ТЕМ, ЧЕМ ОНА ЕСТЬ: пока считается
+   ключ, лепестки МЕДЛЕННО ПОВОРАЧИВАЮТСЯ. Человек видит, как поворачивается
+   ключ, и ждёт не зря — он смотрит на работу, а не на ожидание.
+   Верный пароль — лепестки расходятся, и сквозь них проступает свет комнаты.
+   Неверный — сжимаются ещё на волос и один раз холодеют. Ни одного слова не
+   нужно, чтобы понять, что произошло. */
+.vg-iris { width: min(58vw, 232px); height: min(58vw, 232px); margin: 0 auto 6px; display: block; }
+.vg-iris svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.vg-iris .vgi-glow {
+  fill: var(--accent);
+  opacity: 0;
+  transition: opacity var(--t-scene) ease;
 }
+.vg-iris .vgi-rim {
+  fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: .5;
+  transition: stroke var(--t-move) ease, opacity var(--t-move) ease;
+}
+.vg-iris .vgi-blades {
+  transform-box: view-box; transform-origin: 100px 100px;
+  transform: rotate(var(--vg-turn, 0deg));
+}
+.vg-iris .vgi-blade {
+  fill: rgba(255, 255, 255, .045);
+  stroke: rgba(var(--accent-rgb), .5);
+  stroke-width: .8;
+  transform-box: view-box; transform-origin: 100px 100px;
+  transform: rotate(var(--vg-close, 27deg));
+  transition: transform var(--t-rise) cubic-bezier(.16, 1, .3, 1), fill var(--t-scene) ease, stroke var(--t-scene) ease;
+}
+/* Ключ поворачивается — и это видно. Оборот медленный: он показывает работу,
+   а не торопит. */
+#sbVaultGate.vg-work .vgi-blades { animation: vgTurn 3.6s linear infinite; }
+#sbVaultGate.vg-work .vgi-blade { fill: rgba(var(--accent-rgb), .1); }
+#sbVaultGate.vg-work .vgi-rim { opacity: .85; }
+#sbVaultGate.vg-work .vgi-glow { opacity: .1; }
+@keyframes vgTurn { to { transform: rotate(360deg); } }
+/* Верный пароль: лепестки расходятся, свет проступает. */
+#sbVaultGate.vg-open .vgi-blade { --vg-close: -34deg; fill: rgba(255, 255, 255, .02); stroke: rgba(var(--accent-rgb), .16); }
+#sbVaultGate.vg-open .vgi-glow { opacity: .5; }
+#sbVaultGate.vg-open .vgi-rim { opacity: .18; }
+/* Неверный: сжимается на волос и один раз холодеет. */
+#sbVaultGate.vg-wrong .vgi-blade { --vg-close: 33deg; }
+#sbVaultGate.vg-wrong .vgi-rim { animation: vgCold var(--t-scene) ease; }
+@keyframes vgCold { 50% { stroke: #8fb6ff; opacity: 1; } }
+/* Турбо и снятое движение своё возьмут сами: html.sb-turbo * уже снимает и
+   длительности переходов, и анимации (см. раздел Турбо). Повторять это здесь
+   значило бы завести второе знание об одном правиле — и, как показала доска,
+   ещё и голую длительность мимо шкалы. */
+html[data-motion="reduced"] #sbVaultGate.vg-work .vgi-blades { animation: none; }
 .vg-title { font-size: 19px; font-weight: 700; letter-spacing: -.01em; margin: 0; }
 .vg-sub { font-size: 13px; line-height: 1.5; color: var(--ink-2); margin: 0; }
 #sbVaultPass {
@@ -529,7 +615,10 @@ html.sb-incognito .wp-layer > * { display: none !important; }
   position: fixed; inset: 0; z-index: 300;
   display: grid; place-items: center;
   background: radial-gradient(1000px 700px at 50% 20%, rgba(var(--accent-rgb), .12), transparent 60%), var(--bg);
-  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  /* Вырез читается через общее имя, а не напрямую (D-129, уточнено D-177):
+     экран входа — обычная страница во вкладке, и резервировать там место под
+     вырез значило бы делать это второй раз за браузером. */
+  padding: max(16px, var(--safe-top)) 16px max(16px, env(safe-area-inset-bottom));
   transition: opacity var(--t-scene) ease;
 }
 #sbLogin.out { opacity: 0; pointer-events: none; }
@@ -2018,11 +2107,30 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
     inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), .20),
     0 16px 40px -20px rgba(0, 0, 0, .74),
     0 2px 12px -7px rgba(var(--wp-light-rgb, 91, 124, 255), .22);
-  /* Приходит снизу, из полки, — тем же движением, что подсказка. */
+  /* ── ПРАВИЛЬНОЕ МЕСТО НЕ ЗАВИСИТ ОТ ТОГО, БЫЛ ЛИ КАДР · решение D-176 ────
+     Здесь стояло opacity: 0; transform: translateY(14px), а прийти на место
+     извещение должно было по классу .in, который ставился через кадр.
+     Доска показала дважды: кадров может НЕ БЫТЬ — фоновая вкладка, слабый
+     телефон, полсекунды счёта растяжки пароля, — и тогда извещение навсегда
+     оставалось невидимым и на 14 точек ниже своего места, садясь на полосу
+     проигрывателя. Первая починка добавила второй путь (кадр ИЛИ срок) и
+     ставила класс — но переход всё равно требует кадров, чтобы доехать.
+     ЛЕЧЕНИЕ ГЛУБЖЕ: покой стал БАЗОЙ, а приход — анимацией. Не было кадров —
+     извещение просто стоит там, где должно, без движения. Были — оно
+     приезжает снизу, как и раньше. Правильное место больше не зависит от
+     того, успел ли браузер что-нибудь нарисовать. */
+  opacity: 1; transform: none;
+}
+/* Анимация НАВЕШИВАЕТСЯ ТОЛЬКО ВНУТРИ КАДРА (D-176, shell.js): пока кадров
+   нет, класса нет, и извещение просто стоит на своём месте видимым. Замороженная
+   анимация иначе держала бы его в своём первом кадре — невидимым и на 14 точек
+   ниже, — и это ровно то, что доска ловила дважды. */
+.toast.enter { animation: toastIn var(--t-move) var(--ease); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(14px); } }
+.toast.out {
   opacity: 0; transform: translateY(14px);
   transition: opacity var(--t-move) ease, transform var(--t-move) var(--ease);
 }
-.toast.in { opacity: 1; transform: none; }
 /* Извещений на экране не больше трёх: четвёртое не информирует, а заслоняет.
    Правило стоит в вёрстке, а не в скрипте, — оно про место, а не про смысл. */
 #toastLayer .toast:nth-child(n + 4) { display: none; }
@@ -2051,42 +2159,44 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 #sbControlCenter .tip-bulb { display: flex; align-items: center; }
 #sbControlCenter .tip-bulb.retired { display: none; }
 
-/* ── ДИАФРАГМА · решение D-165 ─────────────────────────────────────────────
-   Замок этой системы — не дужка и не скоба, а прибор, который решает,
-   СКОЛЬКО СВЕТА ПРОЙДЁТ. Отверстие шестиугольное, как у настоящей
-   шестилепестковой диафрагмы; швы расходятся из его углов к оправе и
-   открываются ровно настолько, насколько закрылось отверстие.
-   Три состояния, и каждое читается без подписи:
-     data-state="none" — замка нет вовсе: зрачок раскрыт во всю оправу,
-                         цвет приглушён. Прятать нечего, и это видно;
-     data-state="open" — замок поставлен, сеанс открыт: диафрагма зажата до
-                         зрачка, оправа горит светом комнаты;
-     data-state="shut" — заперто: отверстие сведено в точку.
-   Цвет берётся из --accent, то есть из света комнаты, как у всего в панели:
-   знак живёт вместе с обоями, а не своей отдельной жизнью. */
-.iris-btn svg.iris { width: 16px; height: 16px; overflow: visible; }
-.iris-btn .iris-rim {
-  fill: none; stroke: currentColor; stroke-width: 1.3; opacity: .55;
+/* ── ЗНАК АККАУНТА — ДИАФРАГМА СО ЗРАЧКОМ · решения D-165, D-181 ───────────
+   Замок этой системы — не дужка и не скоба, а прибор, который решает, СКОЛЬКО
+   СВЕТА ПРОЙДЁТ. Отверстие шестиугольное, как у настоящей шестилепестковой
+   диафрагмы; швы расходятся из его углов к оправе.
+   Зрачок — это ЧЕЛОВЕК: та самая точка, которой знак аккаунта был раньше. Она
+   на месте всегда, и вокруг неё сходятся лепестки.
+     data-state="none" — замка нет: лепестки раскрыты у самой оправы, точка
+                         видна целиком, цвет приглушён. Прятать нечего;
+     data-state="open" — замок стоит, сеанс открыт: лепестки сомкнулись вокруг
+                         точки, оправа горит светом комнаты. Человек внутри;
+     data-state="shut" — заперто: лепестки почти сошлись.
+   Цвет берётся из --accent, то есть из света комнаты: знак живёт вместе с
+   обоями, а не своей отдельной жизнью. */
+.id-mark { display: inline-flex; align-items: center; }
+.id-mark svg.iris { width: 18px; height: 18px; overflow: visible; display: block; }
+.tb-identity .iris-rim {
+  fill: none; stroke: currentColor; stroke-width: 1.2; opacity: .38;
   transition: stroke var(--t-move) ease, opacity var(--t-move) ease;
 }
-.iris-btn .iris-seams line {
-  stroke: currentColor; stroke-width: 1.1; opacity: .38;
+.tb-identity .iris-seams line {
+  stroke: currentColor; stroke-width: 1; opacity: .22;
   transition: opacity var(--t-move) ease;
 }
-.iris-btn .iris-eye {
-  fill: currentColor; opacity: .5;
+.tb-identity .iris-blades {
+  fill: none; stroke: currentColor; stroke-width: 1.5; opacity: .45;
   transform-box: view-box; transform-origin: 12px 12px;
-  transform: scale(.92);
-  transition: transform var(--t-move) cubic-bezier(.16, 1, .3, 1), opacity var(--t-move) ease, fill var(--t-move) ease;
+  transform: scale(.95);
+  transition: transform var(--t-scene) cubic-bezier(.16, 1, .3, 1), opacity var(--t-move) ease, stroke-width var(--t-move) ease;
 }
-.iris-btn[data-state="open"] { color: var(--accent); }
-.iris-btn[data-state="open"] .iris-eye { transform: scale(.34); opacity: .95; }
-.iris-btn[data-state="open"] .iris-rim { opacity: .9; }
-.iris-btn[data-state="open"] .iris-seams line { opacity: .5; }
-.iris-btn[data-state="shut"] { color: var(--accent); }
-.iris-btn[data-state="shut"] .iris-eye { transform: scale(.1); opacity: 1; }
-.iris-btn[data-state="shut"] .iris-rim { opacity: 1; }
-.iris-btn[data-state="shut"] .iris-seams line { opacity: .62; }
+.tb-identity .iris-pupil { fill: var(--accent); transition: fill var(--t-move) ease; }
+.tb-identity[data-state="open"] { color: var(--accent); }
+.tb-identity[data-state="open"] .iris-blades { transform: scale(.44); opacity: .95; stroke-width: 2.1; }
+.tb-identity[data-state="open"] .iris-rim { opacity: .8; }
+.tb-identity[data-state="open"] .iris-seams line { opacity: .45; }
+.tb-identity[data-state="shut"] { color: var(--accent); }
+.tb-identity[data-state="shut"] .iris-blades { transform: scale(.3); opacity: 1; stroke-width: 2.4; }
+.tb-identity[data-state="shut"] .iris-rim { opacity: 1; }
+.tb-identity[data-state="shut"] .iris-seams line { opacity: .6; }
 /* Знак «турбо в силе» (D-167): в панели он есть только пока турбо включён. */
 .turbo-mark svg { width: 15px; height: 15px; }
 .turbo-mark { color: var(--accent); }
@@ -2104,6 +2214,36 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
   transform-box: view-box; transform-origin: 12px 12px; transform: scale(.62);
 }
 
+/* ── ОКНО АККАУНТА · решения D-173, D-174 ────────────────────────────────── */
+.panel-account { width: min(460px, 100%); }
+.acc-sec { margin-top: 6px; }
+.acc-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; }
+.acc-row .acc-k { font-size: 13px; color: var(--ink-2); }
+.acc-row .acc-v { font-size: 12.5px; color: var(--ink-3); text-align: right; overflow-wrap: anywhere; }
+.acc-hint { font-size: 12px; color: var(--ink-3); line-height: 1.55; margin: 2px 0 6px; }
+.acc-who { display: flex; align-items: center; gap: 10px; padding: 4px 2px 12px; }
+.acc-dot { width: 10px; height: 10px; border-radius: var(--r-round); background: var(--accent); flex: none; }
+.acc-who-text { display: flex; flex-direction: column; min-width: 0; font-size: 14px; }
+.acc-who-sub { font-size: 11.5px; color: var(--ink-3); }
+.acc-field { display: flex; flex-direction: column; gap: 6px; }
+.acc-label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
+.acc-field input {
+  width: 100%; padding: 10px 12px; font-size: 14px; border-radius: var(--r-ctrl);
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
+}
+.acc-field input:focus { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
+.acc-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 2px; }
+.acc-acts .btn { flex: 1 1 150px; }
+.acc-profiles { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Взведённая кнопка сообщает о себе цветом, а не только словом: тот, кто
+   нажал случайно, должен УВИДЕТЬ, что дальше произойдёт непоправимое. */
+.btn.danger.armed { border-color: rgba(255, 69, 58, .8); background: rgba(255, 69, 58, .16); color: #fff; }
+.acc-truth {
+  font-size: 11.5px; line-height: 1.6; color: var(--ink-3);
+  padding: 10px 11px; border-radius: var(--r-ctrl);
+  background: rgba(255, 255, 255, .028); border: 1px solid var(--line);
+}
+
 /* ── ОКНО ЗАМКА · решение D-165 ───────────────────────────────────────────── */
 .panel-lock { width: min(420px, 100%); }
 .lock-state {
@@ -2118,6 +2258,11 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
   font-family: var(--mono); font-size: 11px; line-height: 1.7; color: var(--ink-3);
   padding: 9px 11px; border-radius: var(--r-ctrl); background: rgba(255, 255, 255, .028);
   border: 1px solid var(--line); overflow-wrap: anywhere;
+  /* <pre> по умолчанию НЕ переносит строк: на телефоне имя шифра уезжало за
+     правый край окна и обрывалось на PBKDF2-SHA256:60000 (снимок основателя).
+     overflow-wrap здесь бессилен — переносить нечего, пока белое пространство
+     не разрешено переносить. */
+  white-space: pre-wrap; word-break: break-word; margin: 0;
 }
 .lock-field { display: flex; flex-direction: column; gap: 7px; }
 .lock-field input {
@@ -2149,7 +2294,24 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .panel-head h3 { margin: 0; font-size: 14px; font-weight: 600; }
 .panel-close { color: var(--ink-3); padding: 4px 6px; border-radius: var(--r-ctrl); }
-.panel-body { padding: 12px 16px 16px; overflow: hidden; display: flex; flex-direction: column; gap: 8px; }
+/* ── СОДЕРЖИМОЕ ОКНА ОБЯЗАНО БЫТЬ ДОСТИЖИМО · решение D-175 ───────────────
+   ПОВОД, дословно от основателя 27.08.2026, со снимком окна замка на телефоне:
+   «не полностью можно увидеть содержимое окна и не работает скролл».
+   ЗДЕСЬ СТОЯЛО overflow: hidden. Пока в окнах жили короткие списки, обёрнутые
+   в .panel-scroll, это не было видно: свой скролл был у списка. Первое же
+   окно, где содержимое ДЛИННОЕ САМО ПО СЕБЕ (замок: состояние, что закрыто,
+   чем закрыто, цена, поле пароля, три кнопки), упёрлось в 84vh и было
+   срезано — без единого способа доскроллить.
+   Правило перевёрнуто: тело окна прокручивается САМО, когда не помещается.
+   min-height: 0 здесь не украшение — без него колонка flex отказывается
+   сжиматься ниже содержимого, и overflow: auto не получает во что скроллить.
+   Охраняется tools/panel-reach-check.mjs: у КАЖДОГО окна последняя строка
+   содержимого достижима. */
+.panel-body {
+  padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 8px;
+  overflow-y: auto; overflow-x: hidden; min-height: 0;
+  overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+}
 /* REQUIRED cap: panel lists always stay reachable (§6.0) */
 .panel-scroll { max-height: min(56vh, 420px); overflow: auto; padding-right: 4px; }
 .panel-sub { margin: 12px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
@@ -2321,7 +2483,12 @@ html.icons-small .icon-label { font-size: 10.5px; }
     .dock-tile { width: 38px; height: 38px; border-radius: var(--r-card); }
   .dock-tile svg { width: 18px; height: 18px; }
   .id-name { display: none; }
-  .tb-identity::after { content: ""; width: 8px; height: 8px; border-radius: var(--r-round); background: var(--accent); display: block; }
+  /* ── КРУЖОК — ЭТО ДВЕРЬ, И В НЕЁ ДОЛЖЕН ПОПАДАТЬ ПАЛЕЦ (D-173) ───────────
+     Знак виден восьмью точками, но нажимают не знак, а кнопку: на телефоне у
+     неё было 26×18, то есть по высоте меньше суставa пальца. Пока кружок
+     ничего не открывал, это было незаметно; теперь за ним окно аккаунта, и
+     промах стоит человеку попытки. Знак остаётся мелким — площадь растёт. */
+  .tb-identity { min-width: 34px; min-height: 34px; justify-content: center; padding: 5px 8px; }
 }
 @media (max-width: 560px) {
   .tb-seq { display: none; }

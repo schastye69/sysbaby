@@ -944,24 +944,30 @@
        самопришедшая подсказка уступает ему. Вызванная лампочкой — нет. */
     if (window.sbDeskHintYield) window.sbDeskHintYield();
     host.appendChild(t);
-    /* ── ИЗВЕЩЕНИЕ ОБЯЗАНО ПРИЙТИ, ДАЖЕ ЕСЛИ КАДРА НЕ БУДЕТ (D-170) ────────
-       Здесь стоял один requestAnimationFrame. Пока вкладка на виду, он
-       приходит через кадр — и всё в порядке. Но кадров может НЕ БЫТЬ: браузер
-       душит рисование в фоновой вкладке, на слабом телефоне под нагрузкой, во
-       время долгого счёта (а замок теперь считает растяжку пароля полсекунды
-       подряд). Тогда класс не ставится никогда, извещение остаётся невидимым
-       и на 14 точек ниже своего места — и садится на полосу проигрывателя.
-       Закон player-check показал это дважды подряд на полной доске и ни разу
-       по отдельности: сам прибор при этом мерил полёт вместо приземления, и
-       две ошибки прятали друг друга.
-       Теперь у прихода два пути, и достаточно любого: кадр или срок. */
-    var shown = false;
-    var reveal = function () { if (shown) return; shown = true; t.classList.add("in"); };
-    requestAnimationFrame(reveal);
-    setTimeout(reveal, 60);
+    /* ── ПОКОЙ — БАЗА, ДВИЖЕНИЕ — ИСКЛЮЧЕНИЕ (D-176) ──────────────────────
+       Извещение уже стоит на своём месте и видимо: так объявлен сам класс
+       .toast. Анимация прихода навешивается ТОЛЬКО ВНУТРИ КАДРА — значит
+       только там, где кадры вообще идут. Нет кадров (фоновая вкладка, слабый
+       телефон, полсекунды счёта растяжки пароля) — нет и анимации, а
+       извещение всё равно на месте и видно.
+       Прежние две редакции ошибались одинаково: сначала класс ставился через
+       кадр, потом через кадр ИЛИ срок — но и переход, и анимация всё равно
+       требуют кадров, чтобы ДОЕХАТЬ, и замороженные держали извещение в своём
+       первом кадре: невидимым и на 14 точек ниже места. Доска ловила это
+       дважды, а закон при этом мерил чужой предмет в движении. */
+    requestAnimationFrame(function () {
+      t.classList.add("enter");
+      /* И СНИМАЕТСЯ ПО СРОКУ, А НЕ ПО КОНЦУ АНИМАЦИИ. Доска показала четвёртый
+         оборот той же ошибки: кадр случился (класс встал), но часы анимации не
+         пошли — браузер душит их в невидимой вкладке, — и класс держал
+         извещение в первом кадре анимации целых три секунды. Украшение не
+         имеет права держать предмет дольше своего срока: класс снимается сам,
+         и с этого мига положение задаёт только база. */
+      setTimeout(function () { t.classList.remove("enter"); }, 700);
+    });
     var kill = function () {
       if (!t.parentNode) return;
-      t.classList.remove("in");
+      t.classList.add("out");
       setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 240);
     };
     t.addEventListener("click", function (ev) {
@@ -989,7 +995,7 @@
     if (!host) return 0;
     var list = $$(".toast", host);
     list.forEach(function (t) {
-      t.classList.remove("in");
+      t.classList.add("out");
       setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 240);
     });
     return list.length;
@@ -3706,15 +3712,23 @@
     return tr(key);
   }
 
+  var IRIS_SVG = '<svg viewBox="0 0 200 200" aria-hidden="true"><circle class="vgi-glow" cx="100" cy="100" r="58"/><g class="vgi-blades"><path class="vgi-blade" d="M196.0,100.0 A96,96 0 0 1 148.0,183.1 L145.0,126.0 Z"/><path class="vgi-blade" d="M148.0,183.1 A96,96 0 0 1 52.0,183.1 L100.0,152.0 Z"/><path class="vgi-blade" d="M52.0,183.1 A96,96 0 0 1 4.0,100.0 L55.0,126.0 Z"/><path class="vgi-blade" d="M4.0,100.0 A96,96 0 0 1 52.0,16.9 L55.0,74.0 Z"/><path class="vgi-blade" d="M52.0,16.9 A96,96 0 0 1 148.0,16.9 L100.0,48.0 Z"/><path class="vgi-blade" d="M148.0,16.9 A96,96 0 0 1 196.0,100.0 L145.0,74.0 Z"/></g><circle class="vgi-rim" cx="100" cy="100" r="97"/></svg>';
   function runVaultGate(onDone) {
     if (!window.sbVault || !window.sbVault.isLocked() || !window.sbVault.available()) { onDone(); return; }
     var gate = doc.createElement("div");
     gate.id = "sbVaultGate";
     gate.setAttribute("role", "dialog");
     gate.setAttribute("aria-modal", "true");
+    gate.classList.add("vg-shut");
     gate.innerHTML =
       '<div class="vg-box">' +
-        '<div class="vg-mark" aria-hidden="true"></div>' +
+        /* ── ДВЕРЬ — ЭТО ДИАФРАГМА (D-182) ────────────────────────────────
+           Тот же прибор, что в полосе размером в шестнадцать точек, здесь во
+           весь экран и закрыт. Ни одного слова не нужно, чтобы понять, что
+           закрыто и чем открывается. Геометрия честная: шесть лепестков с
+           дуговой внешней кромкой, повёрнутые вокруг центра; закрытие — это
+           поворот, как у настоящей диафрагмы, а не изменение размера. */
+        '<div class="vg-iris" aria-hidden="true">' + IRIS_SVG + "</div>" +
         '<h1 class="vg-title">' + escapeHtml(gateText("lock.locked")) + "</h1>" +
         '<p class="vg-sub">' + escapeHtml(gateText("lock.sub")) + "</p>" +
         '<input type="password" id="sbVaultPass" autocomplete="current-password" ' +
@@ -3730,19 +3744,39 @@
       if (busy) return;
       busy = true;
       errEl.hidden = true;
+      /* ── ЗАДЕРЖКА ПОКАЗАНА ТЕМ, ЧЕМ ОНА ЕСТЬ (D-182) ────────────────────
+         Растяжка пароля считается от полусекунды до двух с половиной — это
+         цена, которую платит тот, кто станет пароль угадывать. Обычная
+         система прячет её под вертящимся кружком и врёт «загрузка». Здесь
+         поворачиваются ЛЕПЕСТКИ: человек видит, как поворачивается ключ. */
+      gate.classList.remove("vg-wrong");
+      gate.classList.add("vg-work");
       window.sbVault.unlock(field.value).then(function (okp) {
         busy = false;
+        gate.classList.remove("vg-work");
         if (!okp) {
+          gate.classList.add("vg-wrong");
           errEl.textContent = gateText("lock.wrong");
           errEl.hidden = false;
           field.value = "";
           field.focus();
           return;
         }
-        gate.remove();
-        onDone();
+        /* Верный пароль: диафрагма расходится, и сквозь неё проступает свет
+           комнаты. Дверь снимается ПОСЛЕ того, как она открылась, — иначе
+           открылась бы не дверь, а пустота на её месте. */
+        gate.classList.add("vg-open");
+        var go = function () { if (gate.parentNode) gate.remove(); onDone(); };
+        var done = false;
+        var once = function () { if (done) return; done = true; go(); };
+        setTimeout(once, 980);
+        gate.addEventListener("transitionend", function (ev) {
+          if (ev.propertyName === "transform") once();
+        });
       }, function () {
         busy = false;
+        gate.classList.remove("vg-work");
+        gate.classList.add("vg-wrong");
         errEl.textContent = gateText("lock.wrong");
         errEl.hidden = false;
       });
@@ -4259,6 +4293,144 @@
       try { localStorage.removeItem("sysbaby.authed"); } catch (e) { /* ignore */ }
       location.reload();
     }, 2400);
+  };
+
+  /* ═══════════════ УЙТИ, НЕ ОСТАВИВ СЛЕДОВ · решение D-174 ════════════════
+     ПОВОД, дословно от основателя 27.08.2026: «в окне обязательно должна быть
+     кнопка быстрого закрытия сессии и сайта sys.baby и чтобы одновременно
+     стёрлась история и кэш (чтобы в истории не было видно что человек сидел на
+     этом сайте) и все остальные функции зачистки следов используйте».
+
+     ЧТО СТРАНИЦА МОЖЕТ, И ЭТО ДЕЛАЕТСЯ ВСЁ, ДО ПОСЛЕДНЕГО:
+       · снимается признак входа и метка сеанса;
+       · снимаются с учёта служебные работники (service workers) — иначе
+         следующий вход поднимет прежний кэш из могилы;
+       · стираются ВСЕ хранилища кэша этого адреса;
+       · гасятся все cookie этого адреса, по всем путям от корня до текущего;
+       · чистится sessionStorage;
+       · при глубоком уходе — ещё и localStorage с базами IndexedDB;
+       · подменяются АДРЕС и ЗАГОЛОВОК текущей записи истории, после чего
+         страница уходит на about:blank ЗАМЕНОЙ записи, а не переходом:
+         «назад» больше не приводит сюда;
+       · делается попытка закрыть вкладку.
+
+     ЧЕГО СТРАНИЦА НЕ МОЖЕТ, И СОВЕТ НЕ СТАНЕТ ЭТО ИЗОБРАЖАТЬ. Список
+     посещений браузера — НЕ ПАМЯТЬ СТРАНИЦЫ. Ни один сайт не имеет права его
+     читать и стирать, и это правильно: сайт, умеющий стереть из вашей истории
+     себя, умеет стереть и всё остальное. Мы подменяем запись, до которой
+     дотягиваемся, и говорим об остальном прямо — в самом окне, до нажатия.
+     Обещать «сотрём историю» значило бы продать ложное чувство безопасности —
+     ровно ту ошибку, от которой предостерегает раздел входа.
+
+     ПОРЯДОК ШАГОВ ВЫБРАН, А НЕ СЛУЧАЕН. Сперва работники и кэш — их отмена
+     асинхронна и может не успеть, если сперва снести хранилище и уйти. Затем
+     cookie и хранилища. Затем — и только затем — подмена записи и уход.
+     Охраняется tools/vanish-check.mjs. */
+  window.sbVanish = function (opts) {
+    var deep = !!(opts && opts.deep);
+    var quiet = !!(opts && opts.quiet);          /* закон смотрит, не уходя */
+    var report = { deep: deep, workers: 0, caches: 0, cookies: 0, idb: 0, local: 0, session: 0, url: null, title: null, left: false };
+
+    /* С этого мига система не пишет НИЧЕГО: у неё есть отложенные записи и
+       таймеры, и любой из них воскресил бы стёртое через миг после уборки. */
+    window.sbVanishing = true;
+
+    function killWorkers() {
+      if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return Promise.resolve();
+      return navigator.serviceWorker.getRegistrations().then(function (regs) {
+        report.workers = regs.length;
+        return Promise.all(regs.map(function (r) { return r.unregister()["catch"](function () { return false; }); }));
+      })["catch"](function () { return null; });
+    }
+    function killCaches() {
+      if (!window.caches || !window.caches.keys) return Promise.resolve();
+      return window.caches.keys().then(function (names) {
+        report.caches = names.length;
+        return Promise.all(names.map(function (n) { return window.caches["delete"](n); }));
+      })["catch"](function () { return null; });
+    }
+    function killCookies() {
+      var raw = "";
+      try { raw = doc.cookie || ""; } catch (e) { raw = ""; }
+      if (!raw) return;
+      var names = raw.split(";").map(function (c) { return c.split("=")[0].trim(); }).filter(Boolean);
+      report.cookies = names.length;
+      /* Пути перебираются от корня до текущего: cookie, поставленная на
+         вложенном пути, из корня не гасится — это не тонкость, а причина,
+         по которой «мы всё стёрли» бывает неправдой. */
+      var parts = String(location.pathname || "/").split("/");
+      var paths = ["/"], acc = "";
+      for (var i = 0; i < parts.length; i++) {
+        if (!parts[i]) continue;
+        acc += "/" + parts[i];
+        paths.push(acc);
+        paths.push(acc + "/");
+      }
+      var host = location.hostname;
+      var domains = ["", host, "." + host];
+      names.forEach(function (n) {
+        paths.forEach(function (pth) {
+          domains.forEach(function (dm) {
+            try {
+              doc.cookie = n + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=" + pth + (dm ? "; domain=" + dm : "");
+            } catch (e) { /* ignore */ }
+          });
+        });
+      });
+    }
+    function killIdb() {
+      if (!window.indexedDB) return Promise.resolve();
+      var wipe = function (names) {
+        report.idb = names.length;
+        return Promise.all(names.map(function (n) {
+          return new Promise(function (res) {
+            var req;
+            try { req = window.indexedDB.deleteDatabase(n); } catch (e) { res(false); return; }
+            req.onsuccess = function () { res(true); };
+            req.onerror = function () { res(false); };
+            req.onblocked = function () { res(false); };
+            setTimeout(function () { res(false); }, 1500);
+          });
+        }));
+      };
+      if (window.indexedDB.databases) {
+        return window.indexedDB.databases().then(function (list) {
+          return wipe((list || []).map(function (d) { return d && d.name; }).filter(Boolean));
+        })["catch"](function () { return wipe(["sysbaby"]); });
+      }
+      return wipe(["sysbaby"]);
+    }
+
+    return killWorkers().then(killCaches).then(function () {
+      killCookies();
+      try {
+        report.session = window.sessionStorage.length;
+        window.sessionStorage.clear();
+      } catch (e) { /* ignore */ }
+      try { localStorage.removeItem("sysbaby.authed"); } catch (e) { /* ignore */ }
+      if (!deep) return null;
+      try {
+        report.local = window.localStorage.length;
+        window.localStorage.clear();
+      } catch (e) { /* ignore */ }
+      return killIdb();
+    }).then(function () {
+      /* Подмена записи, до которой мы дотягиваемся. Заголовок браузер держит
+         вместе с адресом, и он тоже наш до последнего кадра. */
+      try {
+        doc.title = " ";
+        report.title = doc.title;
+        history.replaceState(null, "", "/");
+        report.url = location.pathname;
+      } catch (e) { /* ignore */ }
+      if (quiet) return report;
+      report.left = true;
+      try { location.replace("about:blank"); } catch (e) { /* ignore */ }
+      /* Закрыть вкладку удаётся только той, которую открыл скрипт. Пробуем —
+         и не изображаем успеха, если браузер откажет. */
+      setTimeout(function () { try { window.close(); } catch (e) { /* ignore */ } }, 60);
+      return report;
+    });
   };
 
   /* deep link ?open=<appId> */

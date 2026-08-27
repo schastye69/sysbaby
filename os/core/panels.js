@@ -854,48 +854,47 @@
   });
 
 
-  /* ══════════════════ ОКНО ЗАМКА · решение D-165 ══════════════════════════
-     Основатель, 27.08.2026: «При нажатии на замок, должно открываться окно
-     как у календаря… а в окне будет вот эти настройки: lock what you have
-     written. Только мне нужно, чтобы совет сделал так, чтобы была зашифрована
-     абсолютно вся информация профиля».
-     ЗАЧЕМ ОКНО, А НЕ КНОПКА. Прежде замок стоял кнопкой в быстрой панели, а
-     пароль спрашивался через window.prompt браузера — то есть ОТКРЫТЫМ
-     ТЕКСТОМ на виду у всех, кто рядом, и без единого слова о цене. У решения,
-     которое нельзя отменить, должно быть место, где помещается правда: что
-     закрывается, чем закрывается и что будет, если слово забыто.
-     Охраняется tools/vault-lock-check.mjs. */
+
+  /* ══════ ОКНО АККАУНТА · решения D-173, D-174, D-172, D-181 ═══════════════
+     Одно окно на всё, что есть «я» в этой системе: кто я, чем закрыт, куда
+     ложатся копии и как отсюда уйти. Раньше это жило в трёх местах — правка
+     имени в самой полосе, замок отдельным окном, выгрузка в быстрой панели, —
+     и человек, искавший «мои настройки», не находил их нигде целиком.
+     Основатель, 27.08.2026: «необходимо совместить иконку аккаунта и иконку
+     шифрования в одно целое а информацию о шифровании перенести в окно
+     аккаунта — так будет правильнее». Совет согласен и по существу: замок —
+     не вещь рядом с человеком, а его свойство.
+     Охраняется tools/vanish-check.mjs и tools/backup-sync-check.mjs. */
+
   function cipherLine() {
     var c = window.sbVault && window.sbVault.cipher ? window.sbVault.cipher() : null;
     if (!c) return "";
-    var kdf = (c.kdf || []).join("  →  ");
-    var ci = (c.ciphers || []).join("  →  ");
-    return [ci, c.mac, kdf, "padding " + (c.pad || 256) + " B", c.names ? "names " + c.names : ""]
+    return [(c.ciphers || []).join("  →  "), c.mac, (c.kdf || []).join("  →  "),
+      "padding " + (c.pad || 256) + " B", c.names ? "names " + c.names : ""]
       .filter(Boolean).join("\n");
   }
 
-  function lockBody() {
-    var body = panelBody("sbLockOverlay");
-    if (!body) return;
+  /* ── РАЗДЕЛ «ЗАМОК» ─────────────────────────────────────────────────────── */
+  function lockSection() {
     var V = window.sbVault;
-    if (!V || !V.available()) {
-      body.innerHTML = '<p class="panel-copy">' + esc(tr("lock.what")) + "</p>" +
-        '<p class="panel-copy dim">' + esc(tr("diag.noCrypto") || "") + "</p>";
-      return;
+    if (!V) return "";
+    if (!V.available()) {
+      /* Замка нет — и сказано, ПОЧЕМУ. Чаще всего причина видна в адресной
+         строке: страница открыта по http, а по нему браузер криптографию не
+         даёт вовсе (D-178). Молчание оставило бы человека думать, что замок
+         сломан, — а он просто не может здесь существовать. */
+      return '<h4 class="panel-sub">' + esc(tr("lock.title")) + "</h4>" +
+        '<p class="lock-warn">' + esc(tr("lock.insecure")) + "</p>";
     }
     var locked = V.isLocked();
-    var open = V.isOpen();
-    var state = locked
-      ? tr("lock.state.armed")
-      : tr("lock.state.none");
-    var head =
-      '<div class="lock-state' + (locked ? "" : " off") + '"><span class="lk-dot"></span><span>' + esc(state) + "</span></div>" +
+    var head = '<h4 class="panel-sub">' + esc(tr("lock.title")) + "</h4>" +
+      '<div class="lock-state' + (locked ? "" : " off") + '"><span class="lk-dot"></span><span>' +
+      esc(locked ? tr("lock.state.armed") : tr("lock.state.none")) + "</span></div>" +
       '<p class="panel-copy">' + esc(tr("lock.what")) + "</p>" +
       '<p class="panel-copy dim">' + esc(tr("lock.accounts")) + "</p>" +
       '<pre class="lock-cipher">' + esc(cipherLine()) + "</pre>" +
       '<p class="lock-warn">' + esc(tr("lock.warn")) + "</p>";
-
-    var form = locked
+    return head + (locked
       ? '<div class="lock-field">' +
           '<input type="password" id="sbLockCur" autocomplete="current-password" placeholder="' + esc(tr("lock.old")) + '" aria-label="' + esc(tr("lock.old")) + '">' +
           '<input type="password" id="sbLockNew" autocomplete="new-password" hidden placeholder="' + esc(tr("lock.new")) + '" aria-label="' + esc(tr("lock.new")) + '">' +
@@ -909,102 +908,270 @@
           '<input type="password" id="sbLockP1" autocomplete="new-password" placeholder="' + esc(tr("lock.new")) + '" aria-label="' + esc(tr("lock.new")) + '">' +
           '<input type="password" id="sbLockP2" autocomplete="new-password" placeholder="' + esc(tr("lock.again")) + '" aria-label="' + esc(tr("lock.again")) + '">' +
         "</div>" +
-        '<div class="lock-acts"><button type="button" class="btn primary" id="sbLockDo">' + esc(tr("lock.set")) + "</button></div>";
-
-    body.innerHTML = head + form + '<p class="panel-err" id="sbLockErr" role="alert"></p>';
-    wireLockBody(body);
+        '<div class="lock-acts"><button type="button" class="btn primary" id="sbLockDo">' + esc(tr("lock.set")) + "</button></div>");
   }
 
   function wireLockBody(body) {
     var V = window.sbVault;
-    var err = body.querySelector("#sbLockErr");
-    function say(msg) { if (err) err.textContent = msg || ""; }
+    if (!V) return;
+    var err = body.querySelector("#sbAccErr");
+    function say(m) { if (err) err.textContent = m || ""; }
     function busy(on) {
       body.querySelectorAll("button").forEach(function (b) { b.disabled = !!on; });
       if (on) say(tr("lock.busy"));
     }
     var doBtn = body.querySelector("#sbLockDo");
-    if (doBtn) {
-      doBtn.addEventListener("click", function () {
-        var p1 = body.querySelector("#sbLockP1").value;
-        var p2 = body.querySelector("#sbLockP2").value;
-        if (String(p1).length < 4) { say(tr("lock.short")); return; }
-        if (p1 !== p2) { say(tr("lock.mismatch")); return; }
-        busy(true);
-        V.lock(p1).then(function () {
-          /* Заперто — значит заперто с этого мига: сеанс закрыт, ключей в
-             памяти нет. Перезагрузка не украшение — она единственный честный
-             способ показать запертую систему, не оставив на экране ни строчки
-             из уже закрытого (D-166). */
-          window.location.reload();
-        }, function () { busy(false); say(tr("lock.failed")); });
-      });
-    }
+    if (doBtn) doBtn.addEventListener("click", function () {
+      var p1 = body.querySelector("#sbLockP1").value;
+      var p2 = body.querySelector("#sbLockP2").value;
+      if (String(p1).length < 4) { say(tr("lock.short")); return; }
+      if (p1 !== p2) { say(tr("lock.mismatch")); return; }
+      busy(true);
+      V.lock(p1).then(function () {
+        /* Заперто — значит заперто с этого мига: сеанс закрыт, ключей в памяти
+           нет. Перезагрузка — единственный честный способ показать запертую
+           систему, не оставив на экране ни строчки из уже закрытого (D-166). */
+        window.location.reload();
+      }, function () { busy(false); say(tr("lock.failed")); });
+    });
     var changeBtn = body.querySelector("#sbLockChange");
     var newField = body.querySelector("#sbLockNew");
-    if (changeBtn && newField) {
-      changeBtn.addEventListener("click", function () {
-        if (newField.hidden) { newField.hidden = false; newField.focus(); say(""); return; }
-        var cur = body.querySelector("#sbLockCur").value;
-        var nw = newField.value;
-        if (String(nw).length < 4) { say(tr("lock.short")); return; }
-        busy(true);
-        V.rekey(cur, nw).then(function (okp) {
-          busy(false);
-          if (!okp) { say(tr("lock.wrong")); return; }
-          say(tr("lock.changed"));
-          newField.value = "";
-          newField.hidden = true;
-          body.querySelector("#sbLockCur").value = "";
-          if (window.sbPaintIris) window.sbPaintIris();
-        }, function () { busy(false); say(tr("lock.failed")); });
-      });
-    }
+    if (changeBtn && newField) changeBtn.addEventListener("click", function () {
+      if (newField.hidden) { newField.hidden = false; newField.focus(); say(""); return; }
+      var cur = body.querySelector("#sbLockCur").value;
+      var nw = newField.value;
+      if (String(nw).length < 4) { say(tr("lock.short")); return; }
+      busy(true);
+      V.rekey(cur, nw).then(function (okp) {
+        busy(false);
+        if (!okp) { say(tr("lock.wrong")); return; }
+        say(tr("lock.changed"));
+        newField.value = ""; newField.hidden = true;
+        body.querySelector("#sbLockCur").value = "";
+        if (window.sbPaintIris) window.sbPaintIris();
+      }, function () { busy(false); say(tr("lock.failed")); });
+    });
     var removeBtn = body.querySelector("#sbLockRemove");
-    if (removeBtn) {
-      removeBtn.addEventListener("click", function () {
-        var cur = body.querySelector("#sbLockCur").value;
-        busy(true);
-        V.remove(cur).then(function (okp) {
-          busy(false);
-          if (!okp) { say(tr("lock.wrong")); return; }
-          if (window.showToast) window.showToast(tr("lock.title"), tr("lock.removed"), "");
-          lockBody();
-          if (window.sbPaintIris) window.sbPaintIris();
-        }, function () { busy(false); say(tr("lock.failed")); });
-      });
-    }
+    if (removeBtn) removeBtn.addEventListener("click", function () {
+      var cur = body.querySelector("#sbLockCur").value;
+      busy(true);
+      V.remove(cur).then(function (okp) {
+        busy(false);
+        if (!okp) { say(tr("lock.wrong")); return; }
+        if (window.showToast) window.showToast(tr("lock.title"), tr("lock.removed"), "");
+        accountBody();
+        if (window.sbPaintIris) window.sbPaintIris();
+      }, function () { busy(false); say(tr("lock.failed")); });
+    });
     var nowBtn = body.querySelector("#sbLockNow");
     if (nowBtn) nowBtn.addEventListener("click", function () { window.location.reload(); });
   }
 
-  var lockPanel = window.sbRegisterPanel("sbLockOverlay", "sbLockClose", lockBody);
+  /* ── РАЗДЕЛ «КОПИИ» · решение D-172 ─────────────────────────────────────── */
+  function whenText(ms) {
+    if (!ms) return tr("bk.never");
+    var d = new Date(ms);
+    try { return d.toLocaleString(window.sbLang ? undefined : undefined); }
+    catch (e) { return String(d); }
+  }
+  function backupSection() {
+    var B = window.sbBackup;
+    var head = '<h4 class="panel-sub">' + esc(tr("bk.title")) + "</h4>";
+    if (!B || !B.supported()) {
+      /* В ПУСТОТУ НЕ РАБОТАЕТ. Браузер без права писать в папку не получает
+         синхронизации — и получает объяснение вместо неё. Писать копии в то же
+         хранилище и звать это копиями Совет не станет: одна чистка браузера
+         унесла бы обе. */
+      return head + '<p class="acc-hint">' + esc(tr("bk.unsupported")) + "</p>" +
+        '<div class="acc-acts"><button type="button" class="btn ghost" id="sbAccExport">' + esc(tr("bk.exportNow")) + "</button></div>";
+    }
+    var st = B.state() || {};
+    var has = B.hasFolder();
+    var on = B.isOn();
+    return head +
+      '<p class="acc-hint">' + esc(tr("bk.what")) + "</p>" +
+      '<div class="acc-row"><span class="acc-k">' + esc(tr("bk.folder")) + '</span><span class="acc-v" id="sbBkFolder">' +
+        esc(has ? (B.folderName() || st.dirName || "—") : tr("bk.noFolder")) + "</span></div>" +
+      '<div class="acc-row"><span class="acc-k">' + esc(tr("bk.last")) + '</span><span class="acc-v" id="sbBkLast">' +
+        esc(st.lastOk ? whenText(st.lastOk) + (st.sealed ? " · " + tr("bk.sealed") : "") : tr("bk.never")) + "</span></div>" +
+      (st.lastErr ? '<p class="panel-err">' + esc(tr("bk.err")) + " " + esc(String(st.lastErr)) + "</p>" : "") +
+      '<div class="acc-acts">' +
+        '<button type="button" class="btn ghost" id="sbBkPick">' + esc(has ? tr("bk.change") : tr("bk.choose")) + "</button>" +
+        '<button type="button" class="btn ' + (on ? "primary" : "ghost") + '" id="sbBkToggle"' + (has ? "" : " disabled") + ">" +
+          esc(on ? tr("bk.on") : tr("bk.off")) + "</button>" +
+        '<button type="button" class="btn ghost" id="sbBkNow"' + (has ? "" : " disabled") + ">" + esc(tr("bk.saveNow")) + "</button>" +
+      "</div>" +
+      (has ? "" : '<p class="acc-hint">' + esc(tr("bk.needFolder")) + "</p>") +
+      '<div class="acc-acts"><button type="button" class="btn ghost" id="sbAccExport">' + esc(tr("bk.exportNow")) + "</button></div>";
+  }
 
-  /* ── ДИАФРАГМА ГОВОРИТ СОСТОЯНИЕМ, А НЕ ПОДПИСЬЮ ─────────────────────────
-     Знак в полосе читается без слов: раскрытое отверстие — прятать нечего;
-     зажатое до зрачка — замок стоит; сведённое в точку — заперто. Состояние
-     спрашивается у самого замка, а не хранится вторым списком. */
+  function wireBackupBody(body) {
+    var B = window.sbBackup;
+    var err = body.querySelector("#sbAccErr");
+    function say(m) { if (err) err.textContent = m || ""; }
+    var pick = body.querySelector("#sbBkPick");
+    if (pick && B) pick.addEventListener("click", function () {
+      B.chooseFolder().then(function () { accountBody(); }, function (e) {
+        if (e && e.name === "AbortError") return;      /* человек передумал — не ошибка */
+        say(String((e && e.message) || e));
+      });
+    });
+    var toggle = body.querySelector("#sbBkToggle");
+    if (toggle && B) toggle.addEventListener("click", function () {
+      var next = !B.isOn();
+      toggle.disabled = true;
+      B.setOn(next).then(function (okp) {
+        if (!okp) say(tr("bk.needFolder"));
+        accountBody();
+      });
+    });
+    var now = body.querySelector("#sbBkNow");
+    if (now && B) now.addEventListener("click", function () {
+      now.disabled = true;
+      B.saveNow().then(function (r) {
+        if (r && r.error) say(String(r.error));
+        else if (r && r.skipped === "permission") say(tr("bk.permission"));
+        accountBody();
+      });
+    });
+  }
+
+  /* ── ОКНО ЦЕЛИКОМ ───────────────────────────────────────────────────────── */
+  function accountBody() {
+    var body = panelBody("sbAccountOverlay");
+    if (!body) return;
+    var rec = (window.sbProfiles && window.sbProfiles.currentRecord) ? window.sbProfiles.currentRecord() : null;
+    var list = (window.sbProfiles && window.sbProfiles.list) ? window.sbProfiles.list() : [];
+    var cur = (window.sbProfiles && window.sbProfiles.current) ? window.sbProfiles.current() : "local";
+    var name = (window.sbGetUsername ? window.sbGetUsername() : "") || "";
+
+    var who = '<div class="acc-who"><span class="acc-dot" aria-hidden="true"></span>' +
+      '<span class="acc-who-text"><b>' + esc(name || tr("acc.guest")) + "</b>" +
+      (rec && rec.name ? '<span class="acc-who-sub">' + esc(rec.name) + "</span>" : "") + "</span></div>";
+
+    var field =
+      '<label class="acc-field"><span class="acc-label">' + esc(tr("acc.name")) + "</span>" +
+      '<input type="text" id="sbAccName" maxlength="18" autocomplete="username" autocapitalize="off" spellcheck="false" value="' + esc(name) + '">' +
+      "</label>" +
+      '<p class="panel-copy dim">' + esc(tr("acc.nameSub")) + "</p>" +
+      '<div class="acc-acts"><button type="button" class="btn ghost" id="sbAccSave">' + esc(tr("acc.save")) + "</button></div>";
+
+    var profiles = "";
+    if (list.length > 1) {
+      profiles = '<h4 class="panel-sub">' + esc(tr("acc.profile")) + '</h4><div class="acc-profiles">' +
+        list.map(function (p) {
+          return '<button type="button" class="chip' + (p.id === cur ? " on" : "") + '" data-profile="' + esc(p.id) + '">' +
+            esc(p.name || p.id) + "</button>";
+        }).join("") + "</div>";
+    }
+
+    var leaving =
+      '<h4 class="panel-sub">' + esc(tr("acc.leave")) + "</h4>" +
+      '<p class="panel-copy">' + esc(tr("acc.leaveSub")) + "</p>" +
+      '<div class="acc-acts"><button type="button" class="btn primary wide" id="sbAccLeave">' + esc(tr("acc.leave")) + "</button></div>" +
+      '<p class="panel-copy dim">' + esc(tr("acc.wipeSub")) + "</p>" +
+      '<div class="acc-acts"><button type="button" class="btn ghost danger" id="sbAccWipe">' + esc(tr("acc.wipe")) + "</button></div>" +
+      '<p class="acc-truth">' + esc(tr("acc.truth")) + "</p>" +
+      '<div class="acc-acts"><button type="button" class="btn link" id="sbAccSignOut">' + esc(tr("acc.signout")) + "</button></div>";
+
+    body.innerHTML = '<div class="panel-scroll">' + who + field + profiles +
+      '<div class="acc-sec">' + lockSection() + "</div>" +
+      '<div class="acc-sec">' + backupSection() + "</div>" +
+      '<div class="acc-sec">' + leaving + "</div>" +
+      '<p class="panel-err" id="sbAccErr" role="alert"></p>' +
+      "</div>";
+    wireAccountBody(body);
+    wireLockBody(body);
+    wireBackupBody(body);
+    if (window.sbPaintIris) window.sbPaintIris();
+  }
+
+  function wireAccountBody(body) {
+    var err = body.querySelector("#sbAccErr");
+    function say(m) { if (err) err.textContent = m || ""; }
+
+    var input = body.querySelector("#sbAccName");
+    var save = body.querySelector("#sbAccSave");
+    if (save && input) {
+      save.addEventListener("click", function () {
+        if (String(input.value || "").trim().length < 2) { say(tr("acc.nameSub")); return; }
+        if (window.sbSetUsername) window.sbSetUsername(input.value);
+        say(tr("acc.saved"));
+        accountBody();
+      });
+      input.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); save.click(); } });
+    }
+
+    body.querySelectorAll("[data-profile]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (window.sbProfiles) window.sbProfiles.switchTo(b.getAttribute("data-profile"));
+      });
+    });
+
+    var exp = body.querySelector("#sbAccExport");
+    if (exp) exp.addEventListener("click", function () {
+      var trigger = doc.getElementById("sbCcExport");
+      if (trigger) { trigger.click(); return; }
+      if (typeof window.sbExportProfile !== "function") return;
+      try {
+        var blob = new Blob([JSON.stringify(window.sbExportProfile(), null, 2)], { type: "application/json" });
+        var a = doc.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "sysbaby-profile.json";
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+      } catch (e) { say(String((e && e.message) || e)); }
+    });
+
+    var out = body.querySelector("#sbAccSignOut");
+    if (out) out.addEventListener("click", function () { if (window.sbSignOut) window.sbSignOut(); });
+
+    /* ── КНОПКА ТРЕВОГИ НЕ ПЕРЕСПРАШИВАЕТ ────────────────────────────────── */
+    var leave = body.querySelector("#sbAccLeave");
+    if (leave) leave.addEventListener("click", function () {
+      if (!window.sbVanish) return;
+      leave.disabled = true;
+      window.sbVanish({ deep: false });
+    });
+
+    /* ── А КНОПКА, КОТОРУЮ НЕЛЬЗЯ ОТМЕНИТЬ, ПЕРЕСПРАШИВАЕТ ВСЕГДА ────────── */
+    var wipe = body.querySelector("#sbAccWipe");
+    if (wipe) {
+      var armed = false, disarm = null;
+      wipe.addEventListener("click", function () {
+        if (!window.sbVanish) return;
+        if (!armed) {
+          armed = true;
+          say(tr("acc.wipeAsk"));
+          wipe.classList.add("armed");
+          clearTimeout(disarm);
+          /* Взведённое состояние гаснет само: кнопка, оставшаяся заряженной на
+             минуту, однажды сработает от случайного касания. */
+          disarm = setTimeout(function () { armed = false; wipe.classList.remove("armed"); say(""); }, 8000);
+          return;
+        }
+        clearTimeout(disarm);
+        wipe.disabled = true;
+        window.sbVanish({ deep: true });
+      });
+    }
+  }
+
+  var accountPanel = window.sbRegisterPanel("sbAccountOverlay", "sbAccountClose", accountBody);
+  if (accountPanel) window.sbOpenAccountPanel = function () { accountPanel.open(); };
+
+  /* ── ЗНАК ГОВОРИТ СОСТОЯНИЕМ, А НЕ ПОДПИСЬЮ ─────────────────────────────
+     Читается без слов: лепестки раскрыты — прятать нечего; сомкнулись вокруг
+     точки — замок стоит; почти сошлись — заперто. Состояние спрашивается у
+     самого замка, а не хранится вторым списком. */
   window.sbPaintIris = function () {
-    var btn = doc.getElementById("sbIrisBtn");
+    var btn = doc.getElementById("sbTopIdentity");
     if (!btn) return;
     var V = window.sbVault;
-    if (!V || !V.available()) { btn.hidden = true; return; }
-    btn.hidden = false;
-    var st = !V.isLocked() ? "none" : (V.isOpen() ? "open" : "shut");
+    var st = (!V || !V.available() || !V.isLocked()) ? "none" : (V.isOpen() ? "open" : "shut");
     if (btn.getAttribute("data-state") !== st) btn.setAttribute("data-state", st);
   };
-
-  (function wireIris() {
-    var btn = doc.getElementById("sbIrisBtn");
-    if (!btn || !lockPanel) return;
-    btn.addEventListener("click", function () { lockPanel.open(); });
-    window.sbOpenLockPanel = function () { lockPanel.open(); };
-    /* Человек ответил «сейчас» на знакомстве (D-171) — окно замка открывается
-       само, как только стол готов. Ответ одноразовый: спросили один раз. */
-    if (window.sbWantsLockNow) {
-      window.sbWantsLockNow = false;
-      setTimeout(function () { lockPanel.open(); }, 1200);
-    }
+  (function watchVault() {
     window.sbPaintIris();
     if (window.sbBus && window.sbBus.on) {
       window.sbBus.on("vault:change", function () { window.sbPaintIris(); });

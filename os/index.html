@@ -7,7 +7,7 @@
      именно его метку читают снаружи: ежедневный наблюдатель, восьмой шаг
      выкладки и закон тестового контура. Ставится не руками, а
      tools/stamp-build.mjs — из единственного объявления версии. -->
-<meta name="sysbaby-build" content="v85">
+<meta name="sysbaby-build" content="v88">
 <title>sys.baby OS</title>
 <!-- ЗНАК. Один квадрат и он же, сдвинутый на 1,988 — та же величина, на которой
      построено поле обоев. Пересечение выбито: пустота в середине — это точка из
@@ -54,22 +54,22 @@
      метка меняется каждой сборкой, а старый адрес перестаёт существовать.
      Штампы проставляются tools/stamp-build.mjs и охраняются законом
      build-stamp.mjs — ресурс без метки валит сборку. -->
-<script src="core/store.js?b=v85"></script>
+<script src="core/store.js?b=v88"></script>
 
-<link rel="stylesheet" href="core/core.css?b=v85" />
-<link rel="stylesheet" href="apps/files/files.css?b=v85" />
-<link rel="stylesheet" href="apps/browser/browser.css?b=v85" />
-<link rel="stylesheet" href="apps/player/player.css?b=v85" />
-<link rel="stylesheet" href="apps/viewer/viewer.css?b=v85" />
-<link rel="stylesheet" href="apps/notes/notes.css?b=v85" />
-<link rel="stylesheet" href="apps/mail/mail.css?b=v85" />
-<link rel="stylesheet" href="apps/messenger/messenger.css?b=v85" />
-<link rel="stylesheet" href="apps/search/search.css?b=v85" />
-<link rel="stylesheet" href="../shared/portfolio.view.css?b=v85" />
-<link rel="stylesheet" href="apps/project/project.css?b=v85" />
-<link rel="stylesheet" href="apps/settings/settings.css?b=v85" />
-<link rel="stylesheet" href="apps/echoes/echoes.css?b=v85" />
-<link rel="stylesheet" href="apps/build/build.css?b=v85" />
+<link rel="stylesheet" href="core/core.css?b=v88" />
+<link rel="stylesheet" href="apps/files/files.css?b=v88" />
+<link rel="stylesheet" href="apps/browser/browser.css?b=v88" />
+<link rel="stylesheet" href="apps/player/player.css?b=v88" />
+<link rel="stylesheet" href="apps/viewer/viewer.css?b=v88" />
+<link rel="stylesheet" href="apps/notes/notes.css?b=v88" />
+<link rel="stylesheet" href="apps/mail/mail.css?b=v88" />
+<link rel="stylesheet" href="apps/messenger/messenger.css?b=v88" />
+<link rel="stylesheet" href="apps/search/search.css?b=v88" />
+<link rel="stylesheet" href="../shared/portfolio.view.css?b=v88" />
+<link rel="stylesheet" href="apps/project/project.css?b=v88" />
+<link rel="stylesheet" href="apps/settings/settings.css?b=v88" />
+<link rel="stylesheet" href="apps/echoes/echoes.css?b=v88" />
+<link rel="stylesheet" href="apps/build/build.css?b=v88" />
 <!-- ── СИСТЕМА ЖИВЁТ БЕЗ СЕТИ (D-145) ───────────────────────────────────────
      Основатель: «необходимо сделать так, что даже, когда интернета на телефоне
      или другом устройстве нет, сайт sys.baby должен продолжать работу».
@@ -78,6 +78,36 @@
      и оболочка не могут разойтись, потому что список — это и есть оболочка.
      Адрес относительный: дома документ лежит в /os/, в интернете — в корне,
      и область работника в обоих случаях совпадает с областью системы. -->
+<!-- ── СТРАНИЦА ПОДНИМАЕТ СЕБЯ НА HTTPS · решение D-178 ─────────────────────
+     ПОВОД: снимок основателя 27.08.2026 — другой браузер открыл http://sys.baby/
+     без «s». На незащищённом адресе браузер НЕ ДАЁТ странице криптографию:
+     нет входа с паролем, нет замка вовсе, нет служебного работника, значит и
+     офлайна. Система при этом выглядит целой — и человек может начать писать,
+     не зная, что запереть написанное здесь невозможно. Это худший вид поломки:
+     тихий.
+     Настоящее лечение — на стороне домена (Always Use HTTPS и HSTS в
+     Cloudflare), и туда у Совета доступа нет. Но страница может поднять себя
+     сама, и обязана: ждать чужой правки, оставляя человека без замка, нельзя.
+     ОДНА ПОПЫТКА. Метка ставится в sessionStorage НЕЗАЩИЩЁННОГО адреса — а он
+     для браузера отдельное хранилище. Если https действительно недоступен и
+     сервер вернёт нас обратно на http, метка уже здесь, и второй попытки не
+     будет: петля невозможна по построению, а не по счётчику.
+     Стоит ПЕРВЫМ скриптом: всё, что ниже, не должно успеть выполниться на
+     адресе, который мы сейчас покинем. -->
+<script>
+(function () {
+  "use strict";
+  if (location.protocol !== "http:") return;
+  var h = location.hostname;
+  if (h === "localhost" || h === "127.0.0.1" || h === "::1" ||
+      /^\d{1,3}(\.\d{1,3}){3}$/.test(h) || h.slice(-6) === ".local") return;
+  try {
+    if (sessionStorage.getItem("sysbaby.https.tried") === "1") return;
+    sessionStorage.setItem("sysbaby.https.tried", "1");
+  } catch (e) { /* хранилища нет — пробуем один раз всё равно */ }
+  location.replace("https://" + location.host + location.pathname + location.search + location.hash);
+})();
+</script>
 <script>
 (function () {
   "use strict";
@@ -251,7 +281,38 @@
       <span class="mark-word sb-wm" aria-label="sys.baby"><span class="sb-vh">sys.baby</span><svg class="sb-min" viewBox="0 0 100 100" aria-hidden="true"><path class="sb-hs" d="M10.06 26.06a16 16 0 0 1 16-16H66.06V29.94H36.94a7 7 0 0 0-7 7V70.06H10.06Z"/><path class="sb-hb" d="M89.94 73.94a16 16 0 0 1-16 16H29.94V70.06H63.06a7 7 0 0 0 7-7V29.94H89.94Z"/></svg></span>
     </button>
     <span class="tb-sep" aria-hidden="true"></span>
-    <button class="tb-identity" id="sbTopIdentity" type="button" title="Click to set your username" data-i18n-title="aria.identity">
+    <!-- ── ОДИН ЗНАК ВМЕСТО ДВУХ · решение D-181 ─────────────────────────────
+         Основатель: «необходимо совместить иконку аккаунта и иконку шифрования
+         в одно целое а информацию о шифровании перенести в окно аккаунта — так
+         будет правильнее… когда активирована функция шифрования, иконка
+         аккаунта должна гениально, красиво, концептуально и интеллектуально
+         показывать поверх иконки то, что аккаунт в полной безопасности».
+         Совет согласен, и вот почему это верно по существу: замок — не
+         отдельная вещь рядом с человеком, а СВОЙСТВО человека в системе. Два
+         знака в полосе были двумя ответами на один вопрос «кто здесь и как он
+         закрыт».
+         ПОСТРОЕНИЕ. Точка аккаунта становится ЗРАЧКОМ диафрагмы. Человек —
+         свет; диафрагма — то, что его закрывает. Замка нет — лепестки
+         раскрыты у самой оправы, точка видна целиком. Замок стоит — лепестки
+         сомкнулись вокруг неё, и остаётся кольцо света: человек внутри, под
+         защитой, но не исчез. Один знак, две правды, и обе читаются без
+         подписи. -->
+    <button class="tb-identity" id="sbTopIdentity" type="button" data-state="none" title="Account" data-i18n-title="aria.identity" aria-haspopup="dialog">
+      <span class="id-mark" aria-hidden="true">
+        <svg class="iris" viewBox="0 0 24 24">
+          <g class="iris-seams">
+            <line x1="12" y1="12" x2="22.2" y2="12"/>
+            <line x1="12" y1="12" x2="17.1" y2="20.833"/>
+            <line x1="12" y1="12" x2="6.9" y2="20.833"/>
+            <line x1="12" y1="12" x2="1.8" y2="12"/>
+            <line x1="12" y1="12" x2="6.9" y2="3.167"/>
+            <line x1="12" y1="12" x2="17.1" y2="3.167"/>
+          </g>
+          <polygon class="iris-blades" points="21,12 16.5,19.794 7.5,19.794 3,12 7.5,4.206 16.5,4.206"/>
+          <circle class="iris-pupil" cx="12" cy="12" r="3.4"/>
+          <circle class="iris-rim" cx="12" cy="12" r="10.2"/>
+        </svg>
+      </span>
       <span class="id-name" id="sbIdentityName">guest</span>
     </button>
     <button class="tb-btn" id="sbBell" type="button" aria-label="Notifications" data-i18n-aria="aria.notifications">
@@ -294,36 +355,8 @@
     <button class="tb-btn turbo-mark" id="sbTurboMark" type="button" hidden aria-pressed="true" aria-label="Turbo is on — tap to give the frames back" data-i18n-aria="aria.turboOn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11L9.8 22 19.5 9.5H13L13 2z"/></svg>
     </button>
-    <!-- ── ДИАФРАГМА · решение D-165 ────────────────────────────────────────
-         Основатель: «также нужно поставить иконку замка на верхнюю панель
-         рядом с иконкой турбо режима. Или вместо замка возьмите нечто более
-         концептуальное и гениальное. если замок, то найдите самый необычный».
-         ВЗЯТО НЕ ЗАМОК. Висячий замок — предмет чужого мира: он про дверь,
-         сундук и ключ на поясе. Эта система сделана из СВЕТА: комната дышит
-         светом, панель написана светом, поле стола — свет. И спрашивают её не
-         «заперто ли», а «ВИДНО ЛИ». Прибор, который решает, сколько света
-         пройдёт, называется диафрагмой, и он закрывается лепестками до точки.
-         Открытая диафрагма — смотри что хочешь, ничего не спрятано. Сжатая до
-         зрачка — свет перекрыт, снаружи не видно ничего. Это ровно то, что
-         основатель просил словами «чтобы не возможно было вообще ничего
-         увидеть», только сказанное формой, а не подписью.
-         Шесть лепестков — настоящая геометрия шестилепестковой диафрагмы:
-         отверстие шестиугольное, швы расходятся из его углов к оправе. Цвет
-         берётся из света комнаты, как у всего в этой панели. -->
-    <button class="tb-btn iris-btn" id="sbIrisBtn" type="button" aria-haspopup="dialog" data-state="none" aria-label="Lock" data-i18n-aria="aria.lock">
-      <svg class="iris" viewBox="0 0 24 24" aria-hidden="true">
-        <g class="iris-seams">
-          <line x1="12" y1="12" x2="22.2" y2="12"/>
-          <line x1="12" y1="12" x2="17.1" y2="20.833"/>
-          <line x1="12" y1="12" x2="6.9" y2="20.833"/>
-          <line x1="12" y1="12" x2="1.8" y2="12"/>
-          <line x1="12" y1="12" x2="6.9" y2="3.167"/>
-          <line x1="12" y1="12" x2="17.1" y2="3.167"/>
-        </g>
-        <polygon class="iris-eye" points="21,12 16.5,19.794 7.5,19.794 3,12 7.5,4.206 16.5,4.206"/>
-        <circle class="iris-rim" cx="12" cy="12" r="10.2"/>
-      </svg>
-    </button>
+    <!-- Отдельный знак диафрагмы стоял здесь (D-165). Снят по слову
+         основателя: он слился со знаком аккаунта слева (D-181). -->
     <button class="tb-btn cc-trigger" id="sbCcTrigger" type="button" aria-label="Control Center" data-i18n-aria="aria.cc">
       <span class="pw-glyph" id="sbPowerGlyph" role="img" aria-label="Power"><i class="pw-off"></i><i class="pw-on"></i></span>
     </button>
@@ -612,50 +645,59 @@
   </div>
 </div>
 
-<!-- ── ОКНО ЗАМКА · решение D-165 ─────────────────────────────────────────
-     Основатель: «При нажатии на замок, должно открываться окно как у
-     календаря (только окно должно быть идеально по центру…)». Окно — то же
-     самое: тот же .panel-overlay, тот же заголовок, та же кнопка закрытия.
-     Про «идеально по центру» см. решение D-169 в core.css: календарь стоял не
-     по центру не потому, что окна не центруются, а потому что ОДНО окно
-     назначило себе ширину другой линейкой, чем та, которой отмерена комната. -->
-<div class="panel-overlay" id="sbLockOverlay" hidden>
-  <div class="panel panel-lock" role="dialog" aria-modal="true" aria-labelledby="sbLockTitle">
-    <header class="panel-head"><h3 id="sbLockTitle" data-i18n="panel.lock">Lock</h3>
-      <button class="panel-close" id="sbLockClose" type="button" aria-label="Close" data-i18n-aria="aria.close">✕</button></header>
+<!-- ── ОКНО АККАУНТА · решение D-173 ──────────────────────────────────────
+     Основатель: «при нажатии на кружочек возле иконки логотипа на панеле
+     сверху в левом углу должно появляться мини окно с настройками аккаунта».
+     ЧТО ТАМ БЫЛО ДО ЭТОГО. Нажатие делало имя правимым прямо в полосе. На
+     широком экране это работало; на телефоне же .id-name скрыт вовсе, и от
+     кнопки остаётся один кружок — то есть палец делал правимым НЕВИДИМОЕ
+     поле. Человек нажимал и не видел ничего. Правка имени переехала в это
+     окно, где поле видно на любом экране. -->
+<div class="panel-overlay" id="sbAccountOverlay" hidden>
+  <div class="panel panel-account" role="dialog" aria-modal="true" aria-labelledby="sbAccountTitle">
+    <header class="panel-head"><h3 id="sbAccountTitle" data-i18n="panel.account">Account</h3>
+      <button class="panel-close" id="sbAccountClose" type="button" aria-label="Close" data-i18n-aria="aria.close">✕</button></header>
     <div class="panel-body"></div>
   </div>
+</div>
+
+<!-- Окно замка стояло здесь (D-165). Стало разделом окна аккаунта по слову
+     основателя: «информацию о шифровании перенести в окно аккаунта — так будет
+     правильнее» (D-181). -->
 </div>
 
 
 
 <!-- ================================================================== scripts -->
-<script src="core/shell.js?b=v85"></script>
-<script src="core/panels.js?b=v85"></script>
-<script src="core/palette.js?b=v85"></script>
-<script src="core/desktop.js?b=v85"></script>
-<script src="core/topbar.js?b=v85"></script>
-<script src="core/terminal.js?b=v85"></script>
-<script src="core/links.js?b=v85"></script>
-<script src="core/field.js?b=v85"></script>
+<script src="core/shell.js?b=v88"></script>
+<script src="core/panels.js?b=v88"></script>
+<script src="core/palette.js?b=v88"></script>
+<script src="core/desktop.js?b=v88"></script>
+<script src="core/topbar.js?b=v88"></script>
+<script src="core/terminal.js?b=v88"></script>
+<script src="core/links.js?b=v88"></script>
+<script src="core/field.js?b=v88"></script>
+<!-- Синхронизация копий (D-172): после store.js — ей нужен и склад, и
+     выгрузка профиля, и замок. -->
+<script src="core/sync.js?b=v88"></script>
 
-<script src="../shared/portfolio.data.js?b=v85"></script>
-<script src="../shared/portfolio.strings.js?b=v85"></script>
-<script src="../shared/pricing.data.js?b=v85"></script>
+<script src="../shared/portfolio.data.js?b=v88"></script>
+<script src="../shared/portfolio.strings.js?b=v88"></script>
+<script src="../shared/pricing.data.js?b=v88"></script>
 
-<script src="apps/files/files.js?b=v85"></script>
-<script src="apps/browser/browser.js?b=v85"></script>
-<script src="apps/player/player.js?b=v85"></script>
-<script src="apps/viewer/viewer.js?b=v85"></script>
-<script src="apps/notes/notes.js?b=v85"></script>
-<script src="apps/mail/mail.js?b=v85"></script>
-<script src="apps/messenger/messenger.js?b=v85"></script>
-<script src="apps/search/search.js?b=v85"></script>
-<script src="../shared/portfolio.view.js?b=v85"></script>
-<script src="apps/project/project.js?b=v85"></script>
-<script src="apps/settings/settings.js?b=v85"></script>
-<script src="apps/echoes/echoes.js?b=v85"></script>
-<script src="apps/build/build.js?b=v85"></script>
+<script src="apps/files/files.js?b=v88"></script>
+<script src="apps/browser/browser.js?b=v88"></script>
+<script src="apps/player/player.js?b=v88"></script>
+<script src="apps/viewer/viewer.js?b=v88"></script>
+<script src="apps/notes/notes.js?b=v88"></script>
+<script src="apps/mail/mail.js?b=v88"></script>
+<script src="apps/messenger/messenger.js?b=v88"></script>
+<script src="apps/search/search.js?b=v88"></script>
+<script src="../shared/portfolio.view.js?b=v88"></script>
+<script src="apps/project/project.js?b=v88"></script>
+<script src="apps/settings/settings.js?b=v88"></script>
+<script src="apps/echoes/echoes.js?b=v88"></script>
+<script src="apps/build/build.js?b=v88"></script>
 <!-- Скамейка (Experimental/Phosphor) выведена из клиентской витрины v20.9:
      витрина продаёт сданные системы, а самое интригующее имя на столе
      конкурировало с подсказкой №1 за первое касание. Папка приложения

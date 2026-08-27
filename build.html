@@ -22,6 +22,24 @@ header('Content-Type: text/html; charset=utf-8');
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- Витрина поднимает себя на https ровно так же, как система (D-178): вход в
+     систему начинается отсюда, и начинать его на незащищённом адресе значит
+     привести человека туда, где замок не работает. Одна попытка, метка в
+     хранилище незащищённого адреса — петля невозможна по построению. -->
+<script>
+(function () {
+  "use strict";
+  if (location.protocol !== "http:") return;
+  var h = location.hostname;
+  if (h === "localhost" || h === "127.0.0.1" || h === "::1" ||
+      /^\d{1,3}(\.\d{1,3}){3}$/.test(h) || h.slice(-6) === ".local") return;
+  try {
+    if (sessionStorage.getItem("sysbaby.https.tried") === "1") return;
+    sessionStorage.setItem("sysbaby.https.tried", "1");
+  } catch (e) { /* хранилища нет — пробуем один раз всё равно */ }
+  location.replace("https://" + location.host + location.pathname + location.search + location.hash);
+})();
+</script>
 <meta name="theme-color" content="#05060a" id="themeColorMeta">
 <title>sys.baby — Business software you own</title>
 <!-- ЗНАК. Один квадрат и он же, сдвинутый на 1,988 — та же величина, на которой
@@ -33,13 +51,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v85">
+<meta name="sysbaby-build" content="v88">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v85">
+<link rel="stylesheet" href="shared/system.css?b=v88">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -117,11 +135,11 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v85"></script>
-<script src="shared/portfolio.strings.js?b=v85"></script>
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v85" />
-<script src="shared/portfolio.view.js?b=v85"></script>
-<script src="shared/pricing.data.js?b=v85"></script>
+<script src="shared/portfolio.data.js?b=v88"></script>
+<script src="shared/portfolio.strings.js?b=v88"></script>
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v88" />
+<script src="shared/portfolio.view.js?b=v88"></script>
+<script src="shared/pricing.data.js?b=v88"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
