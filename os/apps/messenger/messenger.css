@@ -461,7 +461,7 @@
 
 .mg-react-pop {
   position: fixed;
-  z-index: 9999;
+  z-index: var(--z-above);
   display: flex;
   gap: 2px;
   padding: 4px 6px;

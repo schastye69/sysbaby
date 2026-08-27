@@ -32,9 +32,9 @@
 }
 .br-url:focus { outline: none; border-color: var(--accent); }
 .br-stage { flex: 1; min-height: 0; position: relative; background: #fff; }
-.br-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; z-index: 1; }
+.br-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; z-index: var(--z-inside); }
 .br-empty {
-  position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column;
+  position: absolute; inset: 0; z-index: var(--z-inside); display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 8px; padding: 24px;
   background: var(--bg); text-align: center;
 }
@@ -63,7 +63,7 @@
    появилась, человек её просто не замечает; если нет — это единственное, что
    он видит на сером листе. */
 .br-blank {
-  position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 3;
+  position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: var(--z-inside);
   display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 8px 12px; border-radius: var(--r-pill);
   background: rgba(12, 12, 14, .82); border: 1px solid var(--line);
@@ -79,7 +79,7 @@
 /* Карточка хозяина, о котором человек уже сказал «пусто». Наша, тёмная, с
    именем сайта — вместо чужого серого листа. */
 .br-shut {
-  position: absolute; inset: 0; z-index: 4;
+  position: absolute; inset: 0; z-index: var(--z-inside);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 6px; padding: 28px; text-align: center; background: var(--bg);
 }

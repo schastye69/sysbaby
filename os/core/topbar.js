@@ -152,7 +152,7 @@
       "aria.icons": "Desktop icons", "aria.notes": "Desktop notes",
       "aria.dock": "Dock", "aria.fab": "Quick actions", "aria.cmdk": "Command palette", "aria.close": "Close",
       "cmdk.placeholder": "Search apps and actions…",
-      "cc.connection": "Connection", "cc.online": "Online", "cc.offline": "Offline",
+      "net.gone": "No internet", "net.nothingChanged": "Nothing has changed. Everything you have written is here, because it was always here. Only Browser needs the network — other people's pages are not ours to keep.", "net.stillHere": "No network — the system is here", "cc.connection": "Connection", "cc.online": "Online", "cc.offline": "Offline",
       "cc.offlineLong": "Offline — no network connection",
       "cc.battery": "Battery", "cc.batteryNA": "Battery status unavailable",
       "cc.charging": "Charging", "cc.onBattery": "On battery",
@@ -626,7 +626,7 @@
       "aria.icons": "Значки рабочего стола", "aria.notes": "Заметки на столе",
       "aria.dock": "Док", "aria.fab": "Быстрые действия", "aria.cmdk": "Командная палитра", "aria.close": "Закрыть",
       "cmdk.placeholder": "Поиск приложений и действий…",
-      "cc.connection": "Соединение", "cc.online": "В сети", "cc.offline": "Не в сети",
+      "net.gone": "Интернета нет", "net.nothingChanged": "Ничего не изменилось. Всё написанное здесь, потому что оно всегда было здесь. Сеть нужна только Браузеру — чужие страницы не наши, чтобы их хранить.", "net.stillHere": "Сети нет — система на месте", "cc.connection": "Соединение", "cc.online": "В сети", "cc.offline": "Не в сети",
       "cc.offlineLong": "Не в сети — нет подключения",
       "cc.battery": "Батарея", "cc.batteryNA": "Состояние батареи недоступно",
       "cc.charging": "Зарядка", "cc.onBattery": "От батареи",
@@ -1084,7 +1084,7 @@
       "aria.icons": "Töölaua ikoonid", "aria.notes": "Töölaua märkmed",
       "aria.dock": "Dokk", "aria.fab": "Kiirtoimingud", "aria.cmdk": "Käsupalett", "aria.close": "Sulge",
       "cmdk.placeholder": "Otsi rakendusi ja toiminguid…",
-      "cc.connection": "Ühendus", "cc.online": "Võrgus", "cc.offline": "Võrguühenduseta",
+      "net.gone": "Internetti pole", "net.nothingChanged": "Midagi ei muutunud. Kõik kirjutatu on siin, sest see oli alati siin. Võrku vajab ainult Brauser — teiste lehed ei ole meie omad, et neid hoida.", "net.stillHere": "Võrku pole — süsteem on siin", "cc.connection": "Ühendus", "cc.online": "Võrgus", "cc.offline": "Võrguühenduseta",
       "cc.offlineLong": "Võrguühenduseta — võrku pole",
       "cc.battery": "Aku", "cc.batteryNA": "Aku olek pole saadaval",
       "cc.charging": "Laeb", "cc.onBattery": "Akutoitel",
@@ -2022,7 +2022,36 @@
     el.title = bits.join(" · ");
   }
 
-  /* ====================================================== connectivity (§5) */
+  /* ═══════ СВЯЗЬ · «ИНТЕРНЕТА НЕТ. НИЧЕГО НЕ ИЗМЕНИЛОСЬ» · решение D-183 ═════
+     ПОВОД, дословно от основателя 27.08.2026: «нужно написать где-то как-то
+     гениально и концептуально — твоя система остаётся с тобой даже тогда,
+     когда нет интернета».
+
+     ПОЧЕМУ НЕ ЛОЗУНГ, А ПОВЕДЕНИЕ. Написать эту фразу на витрине может кто
+     угодно; доказать её может только тот, у кого она правда. Поэтому она
+     сказана не там, где её читают, а ТАМ, ГДЕ ОНА СЛУЧАЕТСЯ: в тот самый миг,
+     когда связь пропала.
+
+     ВСЯ ПРОЧАЯ ПРОГРАММА встречает потерю сети как АВАРИЮ: красная полоса,
+     «нет подключения», «повторить попытку». Для них это правда авария — их
+     работа на чужом сервере. Здесь всё наоборот: сервера нет вовсе, и потеря
+     сети НЕ МЕНЯЕТ РОВНО НИЧЕГО. Отсутствие сети — не поломка, а РОДНОЕ
+     СОСТОЯНИЕ этой системы; подключение — исключение, а не условие.
+     Поэтому система не предупреждает — она ЗДОРОВАЕТСЯ. Одной строкой, один
+     раз, и никогда больше: «Интернета нет. Ничего не изменилось».
+
+     ЧЕСТНАЯ ОГОВОРКА СТОИТ РЯДОМ, а не спрятана: Браузер без сети чужих
+     страниц не покажет — они не наши. Всё остальное на месте, потому что
+     всегда было здесь.
+
+     ПОЧЕМУ ОДИН РАЗ И С ЗАДЕРЖКОЙ. Связь на телефоне мигает: в лифте, в
+     метро, на краю соты. Извещение на каждое мигание — та самая тревога, от
+     которой мы отказываемся. Ждём три секунды непрерывного молчания сети и
+     говорим ОДИН раз за сеанс. Возвращение сети не объявляется вовсе: раз
+     ничего не менялось, то и возвращаться нечему.
+     Охраняется tools/offline-voice-check.mjs. */
+  var netSaid = false;
+  var netTimer = null;
   function paintNet() {
     var el = $("#sbPowerGlyph");
     var online = navigator.onLine !== false;
@@ -2032,10 +2061,27 @@
       sayPower();
     }
     var row = $("#sbCcNet");
-    if (row) row.textContent = online ? window.sbT("cc.online") : window.sbT("cc.offline");
+    if (row) row.textContent = online ? window.sbT("cc.online") : window.sbT("net.stillHere");
   }
-  window.addEventListener("online", paintNet);
-  window.addEventListener("offline", paintNet);
+  function greetOffline() {
+    if (netSaid) return;
+    netSaid = true;
+    if (window.showToast) {
+      try { window.showToast(window.sbT("net.gone"), window.sbT("net.nothingChanged"), "", false, "toast-calm", "event"); }
+      catch (e) { /* ignore */ }
+    }
+  }
+  function onNetChange() {
+    paintNet();
+    if (netTimer) { clearTimeout(netTimer); netTimer = null; }
+    if (navigator.onLine === false) netTimer = setTimeout(greetOffline, 3000);
+  }
+  window.addEventListener("online", onNetChange);
+  window.addEventListener("offline", onNetChange);
+  /* Загрузка без сети — тот же случай: система уже работает, и сказать об этом
+     надо ровно так же спокойно. */
+  if (navigator.onLine === false) netTimer = setTimeout(greetOffline, 3000);
+  window.sbNetGreeted = function () { return netSaid; };
 
   /* ========================================================== battery (§5) */
   function paintBattery(bat) {

@@ -16,7 +16,7 @@
      на единицу ниже самого дока — док главнее.
      Найдено снимком: закон мерил положение и зазор до речи, и всё было
      зелёным, пока на снимке полоса не оказалась спрятанной за окном build. */
-  z-index: 54;
+  z-index: var(--z-float);
   display: flex; align-items: center; gap: 8px;
   padding: 7px 10px;
   max-width: min(560px, calc(100vw - 24px));

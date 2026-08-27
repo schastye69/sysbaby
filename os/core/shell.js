@@ -1321,7 +1321,19 @@
   /* ============================================================ window mgr §3 */
   var openWindows = Object.create(null);
   var openOrder = [];              /* ids in open order (topbar app sequence) */
-  var zCounter = 40;
+  /* ── ОКНА СЧИТАЮТСЯ ОТ СТУПЕНИ ШКАЛЫ, А НЕ ОТ ЧИСЛА (D-184) ──────────────
+     Здесь стояло 40 — число, о котором этот файл договорился сам с собой,
+     ровно как когда-то высота полосы (D-170). Теперь оно берётся у той же
+     лестницы, что и все прочие слои: подвинется ступень — подвинутся окна, и
+     ни одно из них не окажется под полкой или над панелью по недосмотру. */
+  function depthOf(name, fallback) {
+    try {
+      var v = parseFloat(window.getComputedStyle(root).getPropertyValue(name));
+      if (isFinite(v)) return v;
+    } catch (e) { /* ignore */ }
+    return fallback;
+  }
+  var zCounter = depthOf("--z-window", 42);
   var cascade = 0;
   var focusedId = null;
   var pendingClose = Object.create(null);

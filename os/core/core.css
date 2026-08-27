@@ -130,6 +130,50 @@
      ряд управления съезжал вниз. Теперь имя одно и читают его все. */
   --topbar-box: calc(var(--topbar-h) + var(--safe-top));
 
+  /* ══════════════ ШКАЛА ГЛУБИНЫ · решение D-184 ═══════════════════════════
+     ПОВОД: давняя просьба основателя, повторённая 27.08.2026 в списке работ —
+     «шкала глубины».
+     ЧТО БЫЛО. Сорок голых чисел по всей таблице, от 0 до 9000, и ещё пять в
+     приложениях — включая два по 9999 у вещей, которые летают над всей
+     системой. Порядок слоёв нигде не был записан: он существовал только в
+     голове того, кто в последний раз подбирал число. Каждое новое «поверх
+     всего» решалось прибавлением нулей — так и появляются 9999.
+     ЧТО СТАЛО. Лестница объявлена ОДИН РАЗ, здесь, снизу вверх, и у каждой
+     ступени есть имя того, что на ней живёт. Числа сохранены прежние: шкала
+     наводит порядок в НАЗВАНИЯХ и делает порядок видимым, а не переставляет
+     систему — переставить слои значило бы починить одно и сломать другое.
+     Ступеней много, и это честно: в системе действительно два десятка слоёв.
+     Шкала не обязана быть короткой — она обязана быть ЕДИНСТВЕННОЙ.
+     Охраняется tools/depth-scale-check.mjs: голых чисел выше девяти в стилях
+     нет, у фиксированных вещей глубина только со шкалы, и ступени идут строго
+     по возрастанию без повторов. */
+  --z-under: -1;        /* под содержимым: подложки, тени под вещью */
+  --z-flat: 0;          /* само содержимое */
+  --z-inside: 1;        /* внутри вещи: полоски, метки, углы */
+  --z-lift: 5;          /* приподнятое внутри вещи */
+  --z-desk: 20;         /* вещи стола: значки, заметки */
+  --z-guide: 40;        /* направляющие выравнивания */
+  --z-window: 42;       /* окна; выше этого числа их считает сама оболочка */
+  --z-shelf: 55;        /* полка */
+  --z-float: 56;        /* плавающая вещь над столом */
+  --z-topbar: 60;       /* верхняя полоса */
+  --z-fullwin: 70;      /* окно во весь экран и меню полосы */
+  --z-menu: 80;         /* выпадающее меню */
+  --z-veil: 88;         /* затемнение под чем-то важным */
+  --z-speech: 90;       /* речь стола */
+  --z-badge: 92;        /* закреплённая метка */
+  --z-hint: 95;         /* подсказка */
+  --z-panel: 100;       /* окна панелей */
+  --z-palette: 110;     /* палитра команд */
+  --z-curtain: 120;     /* занавес */
+  --z-scene: 200;       /* сцена входа */
+  --z-login: 300;       /* вход */
+  --z-blackout: 400;    /* аварийный экран */
+  --z-playerbed: 480;   /* подложка полосы проигрывателя */
+  --z-player: 500;      /* полоса проигрывателя */
+  --z-door: 900;        /* дверь замка */
+  --z-above: 9000;      /* поверх всего: прощание, перенос вещи */
+
   /* ── НИЖНИЙ РЯД СТОЛА: ОДНО ЧИСЛО НА ДВОИХ (v54) ────────────────────────
      Повод от основателя 21.08.2026: «бывший плюсик ... должен быть
      зафиксирован как подсказки и зафиксирован относительно подсказок очень
@@ -343,7 +387,7 @@ kbd { font-family: var(--mono); font-size: 12px; }
    navy default this replaced was the reference's, not this brand's. Ocean is
    still one chip away. */
 .wp-layer {
-  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  position: absolute; inset: 0; z-index: var(--z-flat); pointer-events: none;
   background:
     radial-gradient(900px 620px at 78% 18%, rgba(224, 102, 60, .09), transparent 62%),
     radial-gradient(760px 560px at 14% 82%, rgba(242, 242, 240, .05), transparent 60%),
@@ -388,7 +432,7 @@ html.sb-incognito .wp-layer {
    reduced motion, in the light theme, in incognito, or with the level set to
    off. Everything here is scoped to an id inside .wp-layer and reaches
    nothing else on the page. */
-.wp-layer > * { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.wp-layer > * { position: absolute; inset: 0; z-index: var(--z-flat); pointer-events: none; }
 #sbField { width: 100%; height: 100%; display: block; }
 #sbField.off, #sbBreath.off { display: none !important; }
 
@@ -411,7 +455,7 @@ html.sb-incognito .wp-layer {
 .cc-warn { font-size: 12px; line-height: 1.45; color: #ffb4a6; margin: 4px 0 8px; }
 
 #sbVaultGate {
-  position: fixed; inset: 0; z-index: 900;
+  position: fixed; inset: 0; z-index: var(--z-door);
   display: grid; place-items: center; padding: 24px;
   background: rgba(6, 7, 10, .92);
   backdrop-filter: blur(calc(var(--glass-blur) * 1.2));
@@ -612,7 +656,7 @@ html.sb-incognito .wp-layer > * { display: none !important; }
 
 /* ============================================================== login §2.1 */
 #sbLogin {
-  position: fixed; inset: 0; z-index: 300;
+  position: fixed; inset: 0; z-index: var(--z-login);
   display: grid; place-items: center;
   background: radial-gradient(1000px 700px at 50% 20%, rgba(var(--accent-rgb), .12), transparent 60%), var(--bg);
   /* Вырез читается через общее имя, а не напрямую (D-129, уточнено D-177):
@@ -685,7 +729,7 @@ html.sb-has-session #sbLogin { display: none; }
    the same near-black the desktop resolves to, and the handoff is a single
    opacity transition, never a cut. */
 #sbCurtain {
-  position: fixed; inset: 0; z-index: 200;
+  position: fixed; inset: 0; z-index: var(--z-scene);
   display: grid; place-items: center;
   background: radial-gradient(120% 90% at 50% 40%, #0b0c11 0%, #020203 70%);
   transition: opacity var(--t-rise) var(--ease);
@@ -695,7 +739,7 @@ html.sb-has-session #sbLogin { display: none; }
 /* the drifting network, capped well below device resolution: a hairline at
    1.25x is a hairline, and it costs four fifths less to draw */
 #sbCurtainNet {
-  position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0;
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: var(--z-flat);
   opacity: 0; transition: opacity var(--t-rise) ease; pointer-events: none;
 }
 #sbCurtainNet.on { opacity: 1; }
@@ -720,7 +764,7 @@ html[data-motion="reduced"] .cur-log { display: none; }
 /* the mark is lifted out of flow so the SENTENCE, not the logo and sentence
    together, sits on the optical centre — which is also what lets the residue
    land in exactly the place the sentence just left */
-.cur-stage { position: relative; text-align: center; z-index: 1; }
+.cur-stage { position: relative; text-align: center; z-index: var(--z-inside); }
 /* Занавес показывает ТОТ ЖЕ знак, что стоит потом в углу и в значке вкладки.
    Раньше здесь была цветная плитка с галочкой — предмет, который нигде больше
    не встречался, то есть обещание, которого система не сдерживала.
@@ -768,7 +812,7 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
    Nobody is meant to consciously read it — it is meant to still be true when
    they look away. */
 #sbGhostLine {
-  position: fixed; inset: 0; z-index: 5;
+  position: fixed; inset: 0; z-index: var(--z-lift);
   display: flex; align-items: center; justify-content: center;
   font-family: var(--mono); font-size: clamp(8.5px, 2.85vw, 15px); font-weight: 600;
   letter-spacing: .03em; white-space: pre; line-height: 1.5;
@@ -778,7 +822,7 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
 
 /* farewell + failure surfaces */
 #sbFarewell {
-  position: fixed; inset: 0; z-index: 400; background: #000; color: rgba(255, 255, 255, .9);
+  position: fixed; inset: 0; z-index: var(--z-blackout); background: #000; color: rgba(255, 255, 255, .9);
   display: grid; place-items: center; gap: 20px; grid-auto-flow: row;
   opacity: 0; transition: opacity var(--t-scene) ease;
 }
@@ -789,13 +833,13 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
 .farewell-mark svg { width: 100%; height: 100%; display: block; }
 .farewell-line { font-family: var(--mono); font-size: 14px; letter-spacing: .02em; }
 #sbBootFail {
-  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 500;
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: var(--z-player);
   padding: 14px 16px; border-radius: var(--r-card); white-space: pre-wrap;
   background: rgba(60, 10, 12, .94); border: 1px solid rgba(255, 69, 58, .5);
   color: #ffd9d6; font-family: var(--mono); font-size: 12px; line-height: 1.6;
 }
 #sbQuotaBanner {
-  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 480;
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: var(--z-playerbed);
   padding: 12px 14px; border-radius: var(--r-card);
   background: rgba(70, 40, 0, .94); border: 1px solid rgba(255, 214, 10, .45);
   color: #ffe9b0; font-family: var(--mono); font-size: 12px;
@@ -803,7 +847,7 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
 
 /* =============================================================== topbar §5 */
 #topbar {
-  position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-box); z-index: 60;
+  position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-box); z-index: var(--z-topbar);
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 0 12px; padding-top: var(--safe-top);
   /* ── ПОЛОСА — ВОЗДУХ, А НЕ ПЛИТА (D-147) ────────────────────────────────
@@ -1070,7 +1114,7 @@ html[data-motion="reduced"] .clock-glyph line { transition: none; }
 html[data-motion="reduced"] .pw-on { transition: none; }
 .tb-timer-wrap { position: relative; }
 .pop {
-  position: absolute; right: 0; top: calc(100% + 8px); width: 232px; padding: 14px; z-index: 70;
+  position: absolute; right: 0; top: calc(100% + 8px); width: 232px; padding: 14px; z-index: var(--z-fullwin);
   background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-card);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow);
 }
@@ -1078,7 +1122,7 @@ html[data-motion="reduced"] .pw-on { transition: none; }
 
 /* ====================================================== control center §7 */
 #sbControlCenter {
-  position: fixed; top: calc(var(--topbar-box) + 6px); right: 10px; z-index: 95;
+  position: fixed; top: calc(var(--topbar-box) + 6px); right: 10px; z-index: var(--z-hint);
   width: min(340px, calc(100vw - 20px));
   max-height: min(78vh, 640px); overflow: auto;
   padding: 14px;
@@ -1162,15 +1206,15 @@ html[data-motion="reduced"] .sb-range-stick { transition: none; }
 .cc-buttons .btn { text-align: left; }
 
 /* ============================================================== desktop §4 */
-#desktop { position: fixed; inset: 0; z-index: 1; opacity: 0; transition: opacity var(--t-scene) ease; }
+#desktop { position: fixed; inset: 0; z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) ease; }
 html.rv-scene #desktop { opacity: 1; }
 #sbIconLayer, #sbWidgetLayer, #sbNoteLayer { position: absolute; inset: var(--topbar-box) 0 0 0; }
-#sbIconLayer { z-index: 2; opacity: 0; transition: opacity var(--t-scene) ease; }
+#sbIconLayer { z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) ease; }
 html.rv-icons #sbIconLayer { opacity: 1; }
-#sbWidgetLayer { z-index: 3; opacity: 0; transition: opacity var(--t-scene) ease; pointer-events: none; }
+#sbWidgetLayer { z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) ease; pointer-events: none; }
 html.rv-widgets #sbWidgetLayer { opacity: 1; }
 #sbWidgetLayer > * { pointer-events: auto; }
-#sbNoteLayer { z-index: 4; pointer-events: none; }
+#sbNoteLayer { z-index: var(--z-inside); pointer-events: none; }
 #sbNoteLayer > * { pointer-events: auto; }
 
 /* desktop icons */
@@ -1188,7 +1232,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
   .desk-icon:hover { background: rgba(255, 255, 255, .06); }
 }
 .desk-icon.selected { background: var(--accent-soft); outline: 1px solid var(--accent-ring); }
-.desk-icon.dragging { opacity: .85; transition: none; z-index: 9; }
+.desk-icon.dragging { opacity: .85; transition: none; z-index: var(--z-lift); }
 .desk-icon.settling { transition: left var(--t-move) var(--spring), top var(--t-move) var(--spring); }
 .desk-icon.hidden-icon { display: none; }
 .desk-icon.drop-target, .desk-icon.armed { outline: 2px solid var(--accent); }
@@ -1249,7 +1293,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
 .icon-spark svg { width: 12px; height: 12px; }
 .icon-capsule {
   position: absolute; top: calc(100% - 4px); left: 50%; transform: translateX(-50%) scaleY(.9);
-  transform-origin: top center; width: 200px; z-index: 12; opacity: 0; pointer-events: none;
+  transform-origin: top center; width: 200px; z-index: var(--z-desk); opacity: 0; pointer-events: none;
   transition: opacity var(--t-touch) ease, transform var(--t-touch) var(--ease);
 }
 .desk-icon.capsule-open .icon-capsule { opacity: 1; pointer-events: auto; transform: translateX(-50%) scaleY(1); }
@@ -1378,7 +1422,7 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
   --ny: .5;
   --lit: calc(.34 + (var(--nx) * .42) + ((1 - var(--ny)) * .24));
 
-  position: fixed; z-index: 30; display: flex; align-items: center; gap: 9px;
+  position: fixed; z-index: var(--z-desk); display: flex; align-items: center; gap: 9px;
   width: 196px; padding: 10px 11px 9px 11px;
   border-radius: var(--r-card);
   font-size: 13px; line-height: 1.45; color: var(--ink-2);
@@ -1448,7 +1492,7 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
    кнопок управления АБСОЛЮТНО ВСЕХ ОКОН». Слово стоит одно — на документе, —
    и его читают обе поверхности. Заметка тоже окно, только маленькое. */
 .note-lights {
-  position: absolute; bottom: calc(100% + 5px); left: 0; z-index: 2;
+  position: absolute; bottom: calc(100% + 5px); left: 0; z-index: var(--z-inside);
   opacity: 0; pointer-events: none;
   transition: opacity var(--t-touch) var(--ease);
 }
@@ -1525,7 +1569,7 @@ html[data-motion="reduced"] .note-lights { transition: none; }
   top: calc(var(--topbar-box) + 12px);
   bottom: calc(12px + var(--kb-inset, 0px) + max(0px, env(safe-area-inset-bottom)));
   width: auto; max-width: none; min-width: 0;
-  z-index: 120;
+  z-index: var(--z-curtain);
   display: flex; flex-direction: column; gap: 8px;
   padding: 16px 18px 14px;
   transition: none;
@@ -1561,7 +1605,7 @@ html[data-controls="right"] .sticky-note.full .note-text { padding-left: 0; padd
 html[data-controls="right"] .sticky-note.full .note-lights { left: auto; right: 14px; }
 /* Пока заметка на весь экран, стол за ней притушен — но не спрятан: это
    по-прежнему тот же стол, просто сейчас говорят не с ним. */
-html.sb-note-full #sbNoteLayer { z-index: 120; }
+html.sb-note-full #sbNoteLayer { z-index: var(--z-curtain); }
 html.sb-note-full #sbIconLayer,
 html.sb-note-full #sbDeskHint { opacity: .28; transition: opacity var(--t-touch) var(--ease); }
 html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
@@ -1581,7 +1625,7 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
 .sb-widget-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
 .sb-widget-resize { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; }
 .sb-widget-resize::after { content: ""; position: absolute; right: 4px; bottom: 4px; width: 7px; height: 7px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); }
-.align-guide { position: fixed; z-index: 40; background: var(--accent); opacity: .55; pointer-events: none; }
+.align-guide { position: fixed; z-index: var(--z-guide); background: var(--accent); opacity: .55; pointer-events: none; }
 .align-guide.v { top: 0; bottom: 0; width: 1px; }
 .align-guide.h { left: 0; right: 0; height: 1px; }
 .cap-form input {
@@ -1591,10 +1635,10 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
 .cap-recent { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
 .cap-recent li { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.marquee { position: fixed; z-index: 25; border: 1px solid var(--accent-ring); background: var(--accent-soft); pointer-events: none; border-radius: var(--r-tag); }
+.marquee { position: fixed; z-index: var(--z-desk); border: 1px solid var(--accent-ring); background: var(--accent-soft); pointer-events: none; border-radius: var(--r-tag); }
 
 /* ================================================================ windows §3 */
-#windowLayer { position: fixed; inset: 0; z-index: 20; isolation: isolate; pointer-events: none; }
+#windowLayer { position: fixed; inset: 0; z-index: var(--z-desk); isolation: isolate; pointer-events: none; }
 .window {
   position: absolute; pointer-events: auto; display: flex; flex-direction: column; overflow: hidden;
   min-width: 340px; min-height: 280px;
@@ -1641,7 +1685,7 @@ html[data-theme="light"] .window::before { background: rgba(12, 14, 20, .08); }
 /* Полный экран обязан быть полным: rect максимизации ставится инлайном с
    отступом под верхнюю панель, а второй нажим прячет панель — и сверху
    оставалась её тень пустоты. !important здесь бьёт инлайн-стили осознанно. */
-.window.fullscreen { top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 70; }
+.window.fullscreen { top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: var(--z-fullwin); }
 /* Fullscreen is a contract, not a costume (v21, закон window-controls):
    the window fills the glass to y:0 — so the bar RETREATS instead of
    parking itself over the window's own close/minimise/maximise keys.
@@ -1728,7 +1772,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
 .resize-handle { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize; }
 .resize-handle::after { content: ""; position: absolute; right: 5px; bottom: 5px; width: 7px; height: 7px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); }
 #sbSnapGhost {
-  position: fixed; z-index: 19; border-radius: var(--r-window); pointer-events: none; opacity: 0;
+  position: fixed; z-index: var(--z-desk); border-radius: var(--r-window); pointer-events: none; opacity: 0;
   background: var(--accent-soft); border: 1px solid var(--accent-ring);
   backdrop-filter: blur(8px);
   transition: opacity var(--t-touch) ease, left var(--t-touch) var(--ease), top var(--t-touch) var(--ease), width var(--t-touch) var(--ease), height var(--t-touch) var(--ease);
@@ -1737,7 +1781,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
 
 /* Exposé */
 #sbExpose {
-  position: fixed; inset: 0; z-index: 88; display: grid; place-items: center; padding: 60px 24px;
+  position: fixed; inset: 0; z-index: var(--z-veil); display: grid; place-items: center; padding: 60px 24px;
   background: rgba(4, 5, 8, .72); backdrop-filter: blur(14px);
 }
 .expose-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
@@ -1773,7 +1817,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
      because of where it is in the document — not because of a number that has
      to be kept ahead of the hint's own. The reported bug was the opposite
      arrangement: a fixed element at z-index 54 painting over every window. */
-  position: absolute; left: 50%; z-index: 5;
+  position: absolute; left: 50%; z-index: var(--z-lift);
   /* clear of the dock by measurement, not by a number that ages badly:
      the shell publishes --dock-h from the dock's real height. Само
      выражение переехало в --desk-row-b (§1): на этой линии стоит не одна
@@ -1903,7 +1947,7 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); t
 /* =================================================================== dock §4.1 */
 #dock {
   position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%);
-  z-index: 55; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  z-index: var(--z-shelf); display: flex; flex-direction: column; align-items: center; gap: 6px;
   transition: transform var(--t-move) var(--ease), opacity var(--t-move) ease;
 }
 /* Док не уходит за кромку — он затихает. То же решение, что на лендинге:
@@ -2041,7 +2085,7 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
    что у подсказки, и именно оно делает их родственниками. */
 #sbFab {
   transition: opacity var(--t-move) ease, transform var(--t-move) ease, border-color var(--t-drift) ease, background var(--t-drift) ease;
-  position: fixed; z-index: 56; border-radius: var(--r-card);
+  position: fixed; z-index: var(--z-float); border-radius: var(--r-card);
   /* ── КНОПКА СТОИТ В РЯДУ, А НЕ ГДЕ ПРИДЁТСЯ (v54) ────────────────────
      Все четыре числа — из §1, оттуда же их читает подсказка. Своих чисел
      у кнопки больше нет: 96px и 22px убраны, потому что были ВТОРЫМ
@@ -2088,7 +2132,7 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
 #toastLayer {
   position: fixed; left: 50%; transform: translateX(-50%);
   top: auto; bottom: var(--desk-row-b);
-  z-index: 90; display: flex; flex-direction: column-reverse; gap: 8px;
+  z-index: var(--z-speech); display: flex; flex-direction: column-reverse; gap: 8px;
   width: min(560px, calc(100vw - 32px));
   pointer-events: none;
 }
@@ -2143,6 +2187,10 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
   font-size: 12px; background: var(--accent-soft); border: 1px solid var(--accent-ring); color: var(--ink);
 }
 .toast-warn { border-color: rgba(255, 214, 10, .45); }
+/* Спокойное извещение (D-183): им говорится то, что НЕ является бедой. Потеря
+   сети для этой системы — родное состояние, и цвет тревоги здесь был бы
+   враньём вида. Оно берёт свет комнаты, а не жёлтый цвет предупреждения. */
+.toast-calm { border-color: var(--accent-ring); background: var(--accent-soft); }
 
 /* ── ТУРБО (v47.3) ────────────────────────────────────────────────────────
    Кнопка в панели показывает состояние собой: включённая горит акцентом.
@@ -2280,7 +2328,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 
 /* ================================================================= panels §6 */
 .panel-overlay {
-  position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 20px;
+  position: fixed; inset: 0; z-index: var(--z-panel); display: none; place-items: center; padding: 20px;
   background: rgba(4, 5, 8, .55); backdrop-filter: blur(8px);
 }
 .panel-overlay.open { display: grid; }
@@ -2350,7 +2398,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .clip-text { flex: 1; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clip-row.copied { border-color: var(--accent-ring); background: var(--accent-soft); }
 .fixed-badge {
-  position: fixed; right: 14px; bottom: 150px; z-index: 92; padding: 6px 12px; border-radius: var(--r-pill);
+  position: fixed; right: 14px; bottom: 150px; z-index: var(--z-badge); padding: 6px 12px; border-radius: var(--r-pill);
   font-family: var(--mono); font-size: 12px; color: var(--ink-2);
   background: var(--glass-2); border: 1px solid var(--line); backdrop-filter: blur(var(--glass-blur));
 }
@@ -2359,7 +2407,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 
 /* ================================================================ palette §8 */
 #sbCmdk {
-  position: fixed; inset: 0; z-index: 110; display: none; justify-content: center; align-items: flex-start;
+  position: fixed; inset: 0; z-index: var(--z-palette); display: none; justify-content: center; align-items: flex-start;
   padding: 14vh 20px 20px; background: rgba(4, 5, 8, .5); backdrop-filter: blur(8px);
 }
 #sbCmdk.open { display: flex; }
@@ -2382,7 +2430,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 
 /* =========================================================== context menu */
 #sbCtxMenu {
-  position: fixed; z-index: 120; min-width: 208px; padding: 6px;
+  position: fixed; z-index: var(--z-curtain); min-width: 208px; padding: 6px;
   border-radius: var(--r-card); background: var(--glass-2); border: 1px solid var(--line);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow);
 }
@@ -2613,7 +2661,7 @@ html.is-compact .titlebar { cursor: default; }
 .tb-lang-now.is-partial { opacity: .78; }
 
 .tb-lang-menu {
-  position: absolute; top: calc(100% + 6px); right: 0; z-index: 80;
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: var(--z-menu);
   min-width: 132px; padding: 5px; border-radius: var(--r-card);
   background: var(--glass); border: 1px solid var(--line);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow);
@@ -2729,7 +2777,7 @@ button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset:
 /* Двойник, улетающий в Эхо (D-132). Висит поверх всего и ни к чему не
    принадлежит: раскладка о нём не знает, попасть в него пальцем нельзя. */
 .sb-flyer {
-  position: fixed; z-index: 9000; pointer-events: none;
+  position: fixed; z-index: var(--z-above); pointer-events: none;
   will-change: offset-distance, opacity, scale;
 }
 .sb-flyer > * { pointer-events: none; }

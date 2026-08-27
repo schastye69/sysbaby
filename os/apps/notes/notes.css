@@ -203,7 +203,7 @@
 /* Cursor-following drag chip. Class + data-id are the shell drop contract. */
 .notes-row-ghost {
   position: fixed;
-  z-index: 9999;
+  z-index: var(--z-above);
   pointer-events: none;
   max-width: 240px;
   padding: 8px 11px;

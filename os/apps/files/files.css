@@ -333,7 +333,7 @@
 /* Отпускание вещи на окно. Подпись лежит поверх и появляется только тогда,
    когда над окном действительно что-то несут. */
 .fv-catch {
-  position: absolute; inset: 0; z-index: 3;
+  position: absolute; inset: 0; z-index: var(--z-inside);
   display: none; place-items: center; text-align: center; padding: 20px;
   font-size: 13px; color: var(--ink);
   background: rgba(var(--accent-rgb), .10);
