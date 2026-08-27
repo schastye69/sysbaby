@@ -853,6 +853,164 @@
     if (ev.key === "w" && tasks) { ev.preventDefault(); tasks.open(); }
   });
 
+
+  /* ══════════════════ ОКНО ЗАМКА · решение D-165 ══════════════════════════
+     Основатель, 27.08.2026: «При нажатии на замок, должно открываться окно
+     как у календаря… а в окне будет вот эти настройки: lock what you have
+     written. Только мне нужно, чтобы совет сделал так, чтобы была зашифрована
+     абсолютно вся информация профиля».
+     ЗАЧЕМ ОКНО, А НЕ КНОПКА. Прежде замок стоял кнопкой в быстрой панели, а
+     пароль спрашивался через window.prompt браузера — то есть ОТКРЫТЫМ
+     ТЕКСТОМ на виду у всех, кто рядом, и без единого слова о цене. У решения,
+     которое нельзя отменить, должно быть место, где помещается правда: что
+     закрывается, чем закрывается и что будет, если слово забыто.
+     Охраняется tools/vault-lock-check.mjs. */
+  function cipherLine() {
+    var c = window.sbVault && window.sbVault.cipher ? window.sbVault.cipher() : null;
+    if (!c) return "";
+    var kdf = (c.kdf || []).join("  →  ");
+    var ci = (c.ciphers || []).join("  →  ");
+    return [ci, c.mac, kdf, "padding " + (c.pad || 256) + " B", c.names ? "names " + c.names : ""]
+      .filter(Boolean).join("\n");
+  }
+
+  function lockBody() {
+    var body = panelBody("sbLockOverlay");
+    if (!body) return;
+    var V = window.sbVault;
+    if (!V || !V.available()) {
+      body.innerHTML = '<p class="panel-copy">' + esc(tr("lock.what")) + "</p>" +
+        '<p class="panel-copy dim">' + esc(tr("diag.noCrypto") || "") + "</p>";
+      return;
+    }
+    var locked = V.isLocked();
+    var open = V.isOpen();
+    var state = locked
+      ? tr("lock.state.armed")
+      : tr("lock.state.none");
+    var head =
+      '<div class="lock-state' + (locked ? "" : " off") + '"><span class="lk-dot"></span><span>' + esc(state) + "</span></div>" +
+      '<p class="panel-copy">' + esc(tr("lock.what")) + "</p>" +
+      '<p class="panel-copy dim">' + esc(tr("lock.accounts")) + "</p>" +
+      '<pre class="lock-cipher">' + esc(cipherLine()) + "</pre>" +
+      '<p class="lock-warn">' + esc(tr("lock.warn")) + "</p>";
+
+    var form = locked
+      ? '<div class="lock-field">' +
+          '<input type="password" id="sbLockCur" autocomplete="current-password" placeholder="' + esc(tr("lock.old")) + '" aria-label="' + esc(tr("lock.old")) + '">' +
+          '<input type="password" id="sbLockNew" autocomplete="new-password" hidden placeholder="' + esc(tr("lock.new")) + '" aria-label="' + esc(tr("lock.new")) + '">' +
+        "</div>" +
+        '<div class="lock-acts">' +
+          '<button type="button" class="btn ghost" id="sbLockChange">' + esc(tr("lock.change")) + "</button>" +
+          '<button type="button" class="btn ghost" id="sbLockRemove">' + esc(tr("lock.remove")) + "</button>" +
+          '<button type="button" class="btn primary" id="sbLockNow">' + esc(tr("lock.now")) + "</button>" +
+        "</div>"
+      : '<div class="lock-field">' +
+          '<input type="password" id="sbLockP1" autocomplete="new-password" placeholder="' + esc(tr("lock.new")) + '" aria-label="' + esc(tr("lock.new")) + '">' +
+          '<input type="password" id="sbLockP2" autocomplete="new-password" placeholder="' + esc(tr("lock.again")) + '" aria-label="' + esc(tr("lock.again")) + '">' +
+        "</div>" +
+        '<div class="lock-acts"><button type="button" class="btn primary" id="sbLockDo">' + esc(tr("lock.set")) + "</button></div>";
+
+    body.innerHTML = head + form + '<p class="panel-err" id="sbLockErr" role="alert"></p>';
+    wireLockBody(body);
+  }
+
+  function wireLockBody(body) {
+    var V = window.sbVault;
+    var err = body.querySelector("#sbLockErr");
+    function say(msg) { if (err) err.textContent = msg || ""; }
+    function busy(on) {
+      body.querySelectorAll("button").forEach(function (b) { b.disabled = !!on; });
+      if (on) say(tr("lock.busy"));
+    }
+    var doBtn = body.querySelector("#sbLockDo");
+    if (doBtn) {
+      doBtn.addEventListener("click", function () {
+        var p1 = body.querySelector("#sbLockP1").value;
+        var p2 = body.querySelector("#sbLockP2").value;
+        if (String(p1).length < 4) { say(tr("lock.short")); return; }
+        if (p1 !== p2) { say(tr("lock.mismatch")); return; }
+        busy(true);
+        V.lock(p1).then(function () {
+          /* Заперто — значит заперто с этого мига: сеанс закрыт, ключей в
+             памяти нет. Перезагрузка не украшение — она единственный честный
+             способ показать запертую систему, не оставив на экране ни строчки
+             из уже закрытого (D-166). */
+          window.location.reload();
+        }, function () { busy(false); say(tr("lock.failed")); });
+      });
+    }
+    var changeBtn = body.querySelector("#sbLockChange");
+    var newField = body.querySelector("#sbLockNew");
+    if (changeBtn && newField) {
+      changeBtn.addEventListener("click", function () {
+        if (newField.hidden) { newField.hidden = false; newField.focus(); say(""); return; }
+        var cur = body.querySelector("#sbLockCur").value;
+        var nw = newField.value;
+        if (String(nw).length < 4) { say(tr("lock.short")); return; }
+        busy(true);
+        V.rekey(cur, nw).then(function (okp) {
+          busy(false);
+          if (!okp) { say(tr("lock.wrong")); return; }
+          say(tr("lock.changed"));
+          newField.value = "";
+          newField.hidden = true;
+          body.querySelector("#sbLockCur").value = "";
+          if (window.sbPaintIris) window.sbPaintIris();
+        }, function () { busy(false); say(tr("lock.failed")); });
+      });
+    }
+    var removeBtn = body.querySelector("#sbLockRemove");
+    if (removeBtn) {
+      removeBtn.addEventListener("click", function () {
+        var cur = body.querySelector("#sbLockCur").value;
+        busy(true);
+        V.remove(cur).then(function (okp) {
+          busy(false);
+          if (!okp) { say(tr("lock.wrong")); return; }
+          if (window.showToast) window.showToast(tr("lock.title"), tr("lock.removed"), "");
+          lockBody();
+          if (window.sbPaintIris) window.sbPaintIris();
+        }, function () { busy(false); say(tr("lock.failed")); });
+      });
+    }
+    var nowBtn = body.querySelector("#sbLockNow");
+    if (nowBtn) nowBtn.addEventListener("click", function () { window.location.reload(); });
+  }
+
+  var lockPanel = window.sbRegisterPanel("sbLockOverlay", "sbLockClose", lockBody);
+
+  /* ── ДИАФРАГМА ГОВОРИТ СОСТОЯНИЕМ, А НЕ ПОДПИСЬЮ ─────────────────────────
+     Знак в полосе читается без слов: раскрытое отверстие — прятать нечего;
+     зажатое до зрачка — замок стоит; сведённое в точку — заперто. Состояние
+     спрашивается у самого замка, а не хранится вторым списком. */
+  window.sbPaintIris = function () {
+    var btn = doc.getElementById("sbIrisBtn");
+    if (!btn) return;
+    var V = window.sbVault;
+    if (!V || !V.available()) { btn.hidden = true; return; }
+    btn.hidden = false;
+    var st = !V.isLocked() ? "none" : (V.isOpen() ? "open" : "shut");
+    if (btn.getAttribute("data-state") !== st) btn.setAttribute("data-state", st);
+  };
+
+  (function wireIris() {
+    var btn = doc.getElementById("sbIrisBtn");
+    if (!btn || !lockPanel) return;
+    btn.addEventListener("click", function () { lockPanel.open(); });
+    window.sbOpenLockPanel = function () { lockPanel.open(); };
+    /* Человек ответил «сейчас» на знакомстве (D-171) — окно замка открывается
+       само, как только стол готов. Ответ одноразовый: спросили один раз. */
+    if (window.sbWantsLockNow) {
+      window.sbWantsLockNow = false;
+      setTimeout(function () { lockPanel.open(); }, 1200);
+    }
+    window.sbPaintIris();
+    if (window.sbBus && window.sbBus.on) {
+      window.sbBus.on("vault:change", function () { window.sbPaintIris(); });
+    }
+  })();
+
   /* topbar bell + panel triggers */
   function wireTriggers() {
     var bell = $("#sbBell");

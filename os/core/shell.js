@@ -289,24 +289,29 @@
     }
     writeJSON(TURBO_KEY, cur);
     root.classList.toggle("sb-turbo", on);
-    var btn = $("#sbTurboBtn");
-    if (btn) {
-      btn.setAttribute("aria-pressed", on ? "true" : "false");
-      btn.classList.toggle("on", on);
+    /* ── ПАНЕЛЬ ПОКАЗЫВАЕТ ТО, ЧТО В СИЛЕ (D-167) ─────────────────────────
+       Кнопки Турбо в полосе больше нет — она переехала в быструю панель и
+       Настройки. Осталось то, без чего нельзя: ЗНАК. Пока Турбо выключен, в
+       полосе пусто; включён — знак горит, и нажатие его снимает. Режим,
+       который меняет вид всей системы и при этом ничем себя не выдаёт, —
+       ловушка: человек видит замершие обои и решает, что система сломалась. */
+    var mark = $("#sbTurboMark");
+    if (mark) {
+      mark.hidden = !on;
+      mark.setAttribute("aria-pressed", on ? "true" : "false");
+      mark.classList.toggle("on", on);
     }
     sbBus.emit("turbo:change", { on: on });
     return on;
   };
   function wireTurbo() {
-    var btn = $("#sbTurboBtn");
-    if (!btn) return;
-    btn.addEventListener("click", function () { window.sbTurbo(!window.sbTurbo()); });
+    var mark = $("#sbTurboMark");
+    if (mark) mark.addEventListener("click", function () { window.sbTurbo(false); });
     /* Пережить перезагрузку: включённый Турбо восстанавливается ДО первого
        кадра стола — иначе поле успеет запуститься и тут же остановиться. */
     if (turboOn()) {
       root.classList.add("sb-turbo");
-      btn.setAttribute("aria-pressed", "true");
-      btn.classList.add("on");
+      if (mark) { mark.hidden = false; mark.setAttribute("aria-pressed", "true"); mark.classList.add("on"); }
       window.sbSetControlToggle("motion", true);
       if (window.sbField) window.sbField.setLevel("off");
       else doc.addEventListener("DOMContentLoaded", function () { if (window.sbField) window.sbField.setLevel("off"); });
@@ -939,7 +944,21 @@
        самопришедшая подсказка уступает ему. Вызванная лампочкой — нет. */
     if (window.sbDeskHintYield) window.sbDeskHintYield();
     host.appendChild(t);
-    requestAnimationFrame(function () { t.classList.add("in"); });
+    /* ── ИЗВЕЩЕНИЕ ОБЯЗАНО ПРИЙТИ, ДАЖЕ ЕСЛИ КАДРА НЕ БУДЕТ (D-170) ────────
+       Здесь стоял один requestAnimationFrame. Пока вкладка на виду, он
+       приходит через кадр — и всё в порядке. Но кадров может НЕ БЫТЬ: браузер
+       душит рисование в фоновой вкладке, на слабом телефоне под нагрузкой, во
+       время долгого счёта (а замок теперь считает растяжку пароля полсекунды
+       подряд). Тогда класс не ставится никогда, извещение остаётся невидимым
+       и на 14 точек ниже своего места — и садится на полосу проигрывателя.
+       Закон player-check показал это дважды подряд на полной доске и ни разу
+       по отдельности: сам прибор при этом мерил полёт вместо приземления, и
+       две ошибки прятали друг друга.
+       Теперь у прихода два пути, и достаточно любого: кадр или срок. */
+    var shown = false;
+    var reveal = function () { if (shown) return; shown = true; t.classList.add("in"); };
+    requestAnimationFrame(reveal);
+    setTimeout(reveal, 60);
     var kill = function () {
       if (!t.parentNode) return;
       t.classList.remove("in");
@@ -1043,7 +1062,9 @@
   window.sbSetControlSide = function (side) {
     var v = sideOf(side);
     root.setAttribute("data-controls", v);
-    if (window.sbDB) window.sbDB.set(SIDE_KEY, v);
+    /* Та же причина, что у яркости (D-170): загрузка ставит то же значение,
+       что уже стоит, и не должна заводить ключ, которого человек не заводил. */
+    if (window.sbDB && window.sbDB.get(SIDE_KEY) !== v) window.sbDB.set(SIDE_KEY, v);
     if (window.sbBus && window.sbBus.emit) window.sbBus.emit("setting:change", { kind: "side", value: v });
     try {
       doc.dispatchEvent(new CustomEvent("sysbaby:setting-changed", { detail: { kind: "side", value: v } }));
@@ -1200,7 +1221,16 @@
   window.sbSetBrightness = function (v) {
     var val = clamp(num(v, 100), 0, 100);
     applyBrightness(val);
-    if (window.sbDB) window.sbDB.set(BRIGHT_KEY, String(val));
+    /* ── ПИШЕТСЯ ТОЛЬКО ИЗМЕНЁННОЕ (D-170, нашла доска) ──────────────────
+       Загрузка зовёт sbSetBrightness(sbGetBrightness()) — то есть ставит то
+       же значение, что уже стоит. Прежняя редакция писала его в хранилище
+       каждый раз, и в свежем профиле заводился ключ, которого человек не
+       заводил: закон smoke-shell показал его как ключ без хозяина. Настройка,
+       которой никто не касался, не должна появляться в хранилище сама. */
+    if (window.sbDB) {
+      var was = window.sbDB.get(BRIGHT_KEY);
+      if (was !== String(val)) window.sbDB.set(BRIGHT_KEY, String(val));
+    }
     announceSetting("brightness", { value: val });
     return val;
   };
@@ -1671,11 +1701,12 @@
     var r0 = fly ? el.getBoundingClientRect() : null;
     var y = Math.round(rect.y);
     var h = Math.round(rect.h);
-    if (!el.classList.contains("fullscreen") && y < TOPBAR_H) {
+    var bar = topbarBox();
+    if (!el.classList.contains("fullscreen") && y < bar) {
       /* Высоту укорачиваем на то же, на что опустили верх: иначе окно, сдвинутое
          вниз, вылезет нижним краем за экран — починили бы одно, сломали другое. */
-      h = Math.max(160, h - (TOPBAR_H - y));
-      y = TOPBAR_H;
+      h = Math.max(160, h - (bar - y));
+      y = bar;
     }
     win.x = Math.round(rect.x); win.y = y;
     win.w = Math.round(rect.w); win.h = h;
@@ -1720,9 +1751,46 @@
     });
   };
 
-  /* The system bar's height. Maximize is measured against it rather than
-     against the viewport, so it has to be a number this file agrees on. */
-  var TOPBAR_H = 44;
+  /* ── ВЫСОТА ПОЛОСЫ СПРАШИВАЕТСЯ У ПОЛОСЫ · решение D-170 ──────────────────
+   *
+   * ПОВОД, дословно от основателя 27.08.2026, со снимками Музыки и Настроек:
+   * «в режиме full screen не видно верхню чась окна. не возможно передвинуть
+   * и так далее».
+   *
+   * ЗДЕСЬ СТОЯЛО `var TOPBAR_H = 44`, и рядом честная подпись: «это должно
+   * быть число, о котором этот файл договорился сам с собой». Ровно в ней и
+   * была ошибка. Полоса в core.css высотой НЕ 44:
+   *     --topbar-box: calc(var(--topbar-h) + var(--safe-top));
+   *     --safe-top:   env(safe-area-inset-top, 0px);
+   * На обычной вкладке вырез экрана не отдаёт ничего, safe-top = 0, и оба
+   * числа совпадают — потому дефект и не показывался ни на одном стенде и ни
+   * на одном телефоне в обычном режиме. Но В ПОЛНОМ ЭКРАНЕ Android отдаёт
+   * странице вырез: safe-top становится 24–48 px, полоса вырастает — а окна
+   * этот файл по-прежнему ставит на 44. Шапка окна высотой 42 px целиком
+   * уходит ПОД полосу (у окна z-index 42, у полосы 60), и человек остаётся
+   * без единственной ручки: ни передвинуть, ни свернуть, ни закрыть.
+   *
+   * ДВОЙНОЕ ЗНАНИЕ, ДЕВЯТЫЙ СЛУЧАЙ — и второй раз подряд именно про высоту
+   * верхней полосы. Лечение всегда одно: не помнить чужое число, а спросить
+   * у того, кто им владеет. Спрашиваем сперва саму полосу (её измеренная
+   * высота — последняя правда), и лишь если её ещё нет в разметке — счётные
+   * свойства комнаты. Числа 44 в этом файле больше нет. */
+  function topbarBox() {
+    var el = doc.getElementById("topbar");
+    if (el) {
+      /* Именно height, а не bottom: убранная полоса (translateY) сохраняет
+         высоту, и место под неё резервируется всё равно — она вернётся. */
+      var r = el.getBoundingClientRect();
+      if (r && r.height > 0) return Math.round(r.height);
+    }
+    var cs = window.getComputedStyle(root);
+    var h = parseFloat(cs.getPropertyValue("--topbar-h"));
+    var s = parseFloat(cs.getPropertyValue("--safe-top"));
+    if (!isFinite(h)) h = 44;
+    if (!isFinite(s)) s = 0;
+    return Math.round(h + s);
+  }
+  window.sbTopbarBox = topbarBox;
 
   /* ── ПРЯМОУГОЛЬНИК КОМПАКТНОГО ОКНА: МЕЖДУ ПАНЕЛЬЮ И ПОЛКОЙ (v48) ───────
    *
@@ -1748,14 +1816,14 @@
          ±12px (значок пришёл, подпись мигнула), и окна ездили за этим
          дребезгом. На узком экране полка фиксирована правилами §14
          core.css (плитка 38 + поля 6), итого 62 — берём её как константу
-         той же природы, что TOPBAR_H, плюс 22 воздуха. */
+         той же природы, что высота полосы, плюс 22 воздуха. */
     return 84;
   }
   function compactRect() {
     return {
-      x: 0, y: TOPBAR_H,
+      x: 0, y: topbarBox(),
       w: window.innerWidth,
-      h: Math.max(220, window.innerHeight - TOPBAR_H - dockAllowance())
+      h: Math.max(220, window.innerHeight - topbarBox() - dockAllowance())
     };
   }
   /* Отдельного слушателя resize здесь НЕТ намеренно: подгонкой окон под
@@ -1783,7 +1851,7 @@
       win.maximized = true; win.snapped = null;
       win.el.classList.add("maximized");
       win.el.classList.remove("snapped");
-      /* WHY y = TOPBAR_H AND NOT 0
+      /* WHY y = topbarBox() AND NOT 0
          A maximized window used to be placed at the very top of the viewport,
          directly underneath the system bar — which is fixed at z-index 60
          while the window layer is 20. The titlebar was never removed and was
@@ -1877,9 +1945,9 @@
      функция, и разойтись им негде. */
   function maximizedRect() {
     return {
-      x: 0, y: TOPBAR_H,
+      x: 0, y: topbarBox(),
       w: window.innerWidth,
-      h: Math.max(160, window.innerHeight - TOPBAR_H)
+      h: Math.max(160, window.innerHeight - topbarBox())
     };
   }
 
@@ -2110,7 +2178,7 @@
         } else {
           applyRect(w, {
             x: clamp(w.x, -(w.w - 160), Math.max(14, window.innerWidth - 160)),
-            y: clamp(w.y, 44, Math.max(44, window.innerHeight - 40)),
+            y: clamp(w.y, topbarBox(), Math.max(topbarBox(), window.innerHeight - 40)),
             w: Math.min(w.w, window.innerWidth - 28), h: Math.min(w.h, window.innerHeight - 60)
           }, false);
         }
@@ -2118,6 +2186,31 @@
       layoutIcons();
     }, 150);
   });
+
+  /* ── КОМНАТА ПОМЕНЯЛА РАЗМЕР — ОКНА ПЕРЕСТАВЛЯЮТСЯ (D-170) ───────────────
+     Вход в полный экран и выход из него меняют НЕ ТОЛЬКО высоту вида: Android
+     отдаёт странице вырез, safe-top скачет с нуля до 24–48 px, и вместе с ним
+     меняется высота верхней полосы. Событие resize при этом приходит не
+     всегда и не сразу — а окно, оставшееся стоять по старой мерке, прячет
+     свою шапку под полосу. Поэтому переклад считается и по самому событию
+     полного экрана: ровно тот случай, о котором написал основатель.
+     Два кадра ожидания — не суеверие: env(safe-area-inset-*) обновляется
+     после смены режима, и мерить раньше значит мерить прошлую комнату. */
+  function refitWindows() {
+    Object.keys(openWindows).forEach(function (id) {
+      var w = openWindows[id];
+      if (w.el.classList.contains("fullscreen")) return;
+      if (compact()) { applyRect(w, compactRect(), false); return; }
+      if (w.maximized) { applyRect(w, { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight }, false); return; }
+      applyRect(w, { x: w.x, y: w.y, w: w.w, h: w.h }, false);
+    });
+  }
+  window.sbRefitWindows = refitWindows;
+  function onFullscreenChange() {
+    requestAnimationFrame(function () { requestAnimationFrame(function () { refitWindows(); layoutIcons(); }); });
+  }
+  doc.addEventListener("fullscreenchange", onFullscreenChange);
+  doc.addEventListener("webkitfullscreenchange", onFullscreenChange);
 
   /* topbar auto-hide while a window is maximized (desktop only) */
   var peekTimer = null;
@@ -3595,6 +3688,24 @@
      Экран говорит ровно то, что происходит, и ровно то, чего не будет:
      восстановления нет. Ошибся — говорим об этом и остаёмся на месте, ничего
      не портя: замок не имеет права наказывать за опечатку. */
+  /* Экран замка говорит на языке, который берётся у САМОГО БРАУЗЕРА: язык
+     системы теперь тоже заперт (D-164), и спрашивать его до пароля неоткуда.
+     Настройка браузера — не сведения о человеке: её видно любому сайту. */
+  function gateLang() {
+    try {
+      var l = String((navigator.languages && navigator.languages[0]) || navigator.language || "en").toLowerCase();
+      if (l.indexOf("ru") === 0) return "ru";
+      if (l.indexOf("et") === 0 || l.indexOf("ee") === 0) return "ee";
+    } catch (e) { /* ignore */ }
+    return "en";
+  }
+  function gateText(key) {
+    if (typeof window.sbTIn === "function") {
+      try { return window.sbTIn(gateLang(), key); } catch (e) { /* ignore */ }
+    }
+    return tr(key);
+  }
+
   function runVaultGate(onDone) {
     if (!window.sbVault || !window.sbVault.isLocked() || !window.sbVault.available()) { onDone(); return; }
     var gate = doc.createElement("div");
@@ -3604,11 +3715,11 @@
     gate.innerHTML =
       '<div class="vg-box">' +
         '<div class="vg-mark" aria-hidden="true"></div>' +
-        '<h1 class="vg-title">' + escapeHtml(tr("lock.locked")) + "</h1>" +
-        '<p class="vg-sub">' + escapeHtml(tr("lock.sub")) + "</p>" +
+        '<h1 class="vg-title">' + escapeHtml(gateText("lock.locked")) + "</h1>" +
+        '<p class="vg-sub">' + escapeHtml(gateText("lock.sub")) + "</p>" +
         '<input type="password" id="sbVaultPass" autocomplete="current-password" ' +
-          'aria-label="' + escapeHtml(tr("lock.ask")) + '" placeholder="' + escapeHtml(tr("lock.ask")) + '">' +
-        '<button type="button" class="btn primary" id="sbVaultOpen">' + escapeHtml(tr("lock.open")) + "</button>" +
+          'aria-label="' + escapeHtml(gateText("lock.ask")) + '" placeholder="' + escapeHtml(gateText("lock.ask")) + '">' +
+        '<button type="button" class="btn primary" id="sbVaultOpen">' + escapeHtml(gateText("lock.open")) + "</button>" +
         '<p class="vg-err" id="sbVaultErr" role="alert" hidden></p>' +
       "</div>";
     doc.body.appendChild(gate);
@@ -3622,7 +3733,7 @@
       window.sbVault.unlock(field.value).then(function (okp) {
         busy = false;
         if (!okp) {
-          errEl.textContent = tr("lock.wrong");
+          errEl.textContent = gateText("lock.wrong");
           errEl.hidden = false;
           field.value = "";
           field.focus();
@@ -3632,7 +3743,7 @@
         onDone();
       }, function () {
         busy = false;
-        errEl.textContent = tr("lock.wrong");
+        errEl.textContent = gateText("lock.wrong");
         errEl.hidden = false;
       });
     }
@@ -3640,6 +3751,29 @@
     field.addEventListener("keydown", function (ev) { if (ev.key === "Enter") tryOpen(); });
     setTimeout(function () { try { field.focus(); } catch (e) { /* ignore */ } }, 60);
   }
+
+  /* ── ВИД СИСТЕМЫ ВОССТАНАВЛИВАЕТСЯ ОДНОЙ ФУНКЦИЕЙ (D-164) ────────────────
+     Раньше это делал только загрузчик, и одного раза хватало: настройки
+     лежали открыто и были доступны с первого мига. С поправкой основателя
+     («абсолютно все данные должны быть не видны!») они лежат в конверте, и до
+     пароля система не знает ни обоев, ни языка. Значит восстановление вида
+     случается ДВАЖДЫ — при загрузке и при открытии замка, — а раз так, оно
+     обязано быть ОДНОЙ функцией: два места разошлись бы в первый же выпуск.
+     Тот же довод, по которому applyMood когда-то свели в одну (D-127). */
+  window.sbApplyStoredAppearance = function () {
+    var savedTheme = window.sbDB ? window.sbDB.get(THEME_KEY) : null;
+    root.setAttribute("data-theme", window.sbIncognitoActive ? "dark" : (savedTheme === "light" ? "light" : "dark"));
+    /* Шов ставит сама комната: applyMood → wpStart → wpTick. */
+    applyMood(window.sbGetWallpaperMood());
+    ["motion", "dnd", "autohide", "transparency"].forEach(function (k) { applyControl(k, window.sbGetControlToggle(k)); });
+    /* Сторона кнопок — до первого показа окон, иначе они успели бы встать
+       слева и переехать на глазах (D-153). */
+    window.sbSetControlSide(window.sbGetControlSide());
+    if (typeof window.sbSetBrightness === "function" && typeof window.sbGetBrightness === "function") {
+      try { window.sbSetBrightness(window.sbGetBrightness()); } catch (e) { /* ignore */ }
+    }
+    if (typeof window.sbApplyLang === "function") { try { window.sbApplyLang(); } catch (e) { /* ignore */ } }
+  };
 
   /* ---- cinematic curtain ---- */
   function runCurtain(onDone) {
@@ -4013,6 +4147,27 @@
     }
     if (pwInput) pwInput.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); if (cont) cont.click(); } });
 
+    /* Показать дверь замка и дождаться ответа. Если криптографии браузера
+       нет — двери нет тоже: нарисованный замок хуже отсутствующего. */
+    function offerLock(done) {
+      var step3 = $("#sbLoginStep3", card);
+      if (!step3 || !window.sbVault || !window.sbVault.available()) { done(false); return; }
+      if (step1) step1.hidden = true;
+      if (step2) step2.hidden = true;
+      step3.hidden = false;
+      var t = $("#sbLockOfferTitle", step3), b = $("#sbLockOfferBody", step3);
+      var now = $("#sbLockOfferNow", step3), later = $("#sbLockOfferLater", step3);
+      if (t) t.textContent = gateText("auth.lock.title");
+      if (b) b.textContent = gateText("auth.lock.body");
+      if (now) now.textContent = gateText("auth.lock.now");
+      if (later) later.textContent = gateText("auth.lock.later");
+      var answered = false;
+      function answer(v) { if (answered) return; answered = true; done(v); }
+      if (now) now.addEventListener("click", function () { answer(true); });
+      if (later) later.addEventListener("click", function () { answer(false); });
+      if (later) setTimeout(function () { later.focus(); }, 120);
+    }
+
     function finish(profileId, username) {
       rawSet("sysbaby.authed", "1");
       try { sessionStorage.setItem("sysbaby.session.active", "1"); } catch (e) { /* ignore */ }
@@ -4048,7 +4203,15 @@
         if (registering) {
           if (pw.length < 4) { refuse("At least 4 characters."); return; }
           window.sbAuth.register(chosen, pw).then(function (prof) {
-            finish(prof ? prof.id : null, chosen);
+            /* ── О ЗАМКЕ ГОВОРЯТ ПРИ ЗНАКОМСТВЕ (D-171) ────────────────────
+               Не требование, а дверь, которую показали: «сейчас» или «потом».
+               Заставить человека завести второй пароль в ту же минуту, когда
+               он завёл первый, — почти наверняка получить тот же пароль
+               дважды, а это хуже, чем никакого замка. */
+            offerLock(function (wantsNow) {
+              if (wantsNow) window.sbWantsLockNow = true;
+              finish(prof ? prof.id : null, chosen);
+            });
           })["catch"](function (err) {
             refuse(err && err.message === "exists" ? "That name is taken on this device." : "Could not create the account here.");
           });
@@ -4109,18 +4272,7 @@
   /* =============================================================== bootstrap */
   function boot() {
     applyFlags();
-    /* restore persisted appearance before first reveal */
-    var savedTheme = window.sbDB ? window.sbDB.get(THEME_KEY) : null;
-    root.setAttribute("data-theme", window.sbIncognitoActive ? "dark" : (savedTheme === "light" ? "light" : "dark"));
-    /* Шов ставит сама комната: applyMood → wpStart → wpTick. Отдельного
-       восстановления краски из хранилища больше нет — хранить нечего. */
-    /* Та же функция, что и при выборе, — второго знания о настроении в
-       системе больше нет. */
-    applyMood(window.sbGetWallpaperMood());
-    ["motion", "dnd", "autohide", "transparency"].forEach(function (k) { applyControl(k, window.sbGetControlToggle(k)); });
-    /* Сторона кнопок — до первого показа окон, иначе они успели бы встать
-       слева и переехать на глазах (D-153). */
-    window.sbSetControlSide(window.sbGetControlSide());
+    window.sbApplyStoredAppearance();
     applyParts();
     wireTurbo();
     /* volume and brightness come back exactly as they were left */

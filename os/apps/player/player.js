@@ -169,6 +169,22 @@
       if (audio && audio.duration) audio.currentTime = audio.duration * (seek.value / 1000);
     });
     publishHeight();
+    /* ── МЕРИТЬ НАДО ВСТАВШЕЕ, А НЕ ВСТАЮЩЕЕ (D-170, нашла доска) ──────────
+       publishHeight() звался один раз, при рождении полосы, — то есть до
+       того, как в неё встали название дорожки и кнопки. Итоговая высота
+       оказывалась на четыре точки больше объявленной, и речь стола садилась
+       на полосу этими четырьмя точками. Закон player-check этого не видел:
+       он мерил извещение через 500 мс, посреди его полёта, и заставал ещё
+       не приземлившимся — то есть выше, чем оно окажется. Два прибора врали
+       в одну сторону, и ошибка держалась.
+       Теперь высота публикуется при КАЖДОМ изменении размера полосы: имя
+       говорит правду в любой момент, а не только в первый. */
+    if (window.ResizeObserver && !bar.__sbRo) {
+      try {
+        bar.__sbRo = new window.ResizeObserver(function () { publishHeight(); });
+        bar.__sbRo.observe(bar);
+      } catch (e) { /* без наблюдателя останется прежний путь */ }
+    }
     return bar;
   }
 
@@ -187,6 +203,7 @@
     doc.documentElement.style.setProperty("--player-row", h + "px");
   }
   function dropBar() {
+    if (bar && bar.__sbRo) { try { bar.__sbRo.disconnect(); } catch (e) { /* ignore */ } bar.__sbRo = null; }
     if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
     bar = null; lastH = -1;
     doc.documentElement.style.setProperty("--player-row", "0px");

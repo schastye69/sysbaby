@@ -7,7 +7,7 @@
      именно его метку читают снаружи: ежедневный наблюдатель, восьмой шаг
      выкладки и закон тестового контура. Ставится не руками, а
      tools/stamp-build.mjs — из единственного объявления версии. -->
-<meta name="sysbaby-build" content="v84">
+<meta name="sysbaby-build" content="v85">
 <title>sys.baby OS</title>
 <!-- ЗНАК. Один квадрат и он же, сдвинутый на 1,988 — та же величина, на которой
      построено поле обоев. Пересечение выбито: пустота в середине — это точка из
@@ -54,22 +54,22 @@
      метка меняется каждой сборкой, а старый адрес перестаёт существовать.
      Штампы проставляются tools/stamp-build.mjs и охраняются законом
      build-stamp.mjs — ресурс без метки валит сборку. -->
-<script src="os/core/store.js?b=v84"></script>
+<script src="os/core/store.js?b=v85"></script>
 
-<link rel="stylesheet" href="os/core/core.css?b=v84" />
-<link rel="stylesheet" href="os/apps/files/files.css?b=v84" />
-<link rel="stylesheet" href="os/apps/browser/browser.css?b=v84" />
-<link rel="stylesheet" href="os/apps/player/player.css?b=v84" />
-<link rel="stylesheet" href="os/apps/viewer/viewer.css?b=v84" />
-<link rel="stylesheet" href="os/apps/notes/notes.css?b=v84" />
-<link rel="stylesheet" href="os/apps/mail/mail.css?b=v84" />
-<link rel="stylesheet" href="os/apps/messenger/messenger.css?b=v84" />
-<link rel="stylesheet" href="os/apps/search/search.css?b=v84" />
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v84" />
-<link rel="stylesheet" href="os/apps/project/project.css?b=v84" />
-<link rel="stylesheet" href="os/apps/settings/settings.css?b=v84" />
-<link rel="stylesheet" href="os/apps/echoes/echoes.css?b=v84" />
-<link rel="stylesheet" href="os/apps/build/build.css?b=v84" />
+<link rel="stylesheet" href="os/core/core.css?b=v85" />
+<link rel="stylesheet" href="os/apps/files/files.css?b=v85" />
+<link rel="stylesheet" href="os/apps/browser/browser.css?b=v85" />
+<link rel="stylesheet" href="os/apps/player/player.css?b=v85" />
+<link rel="stylesheet" href="os/apps/viewer/viewer.css?b=v85" />
+<link rel="stylesheet" href="os/apps/notes/notes.css?b=v85" />
+<link rel="stylesheet" href="os/apps/mail/mail.css?b=v85" />
+<link rel="stylesheet" href="os/apps/messenger/messenger.css?b=v85" />
+<link rel="stylesheet" href="os/apps/search/search.css?b=v85" />
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v85" />
+<link rel="stylesheet" href="os/apps/project/project.css?b=v85" />
+<link rel="stylesheet" href="os/apps/settings/settings.css?b=v85" />
+<link rel="stylesheet" href="os/apps/echoes/echoes.css?b=v85" />
+<link rel="stylesheet" href="os/apps/build/build.css?b=v85" />
 <!-- ── СИСТЕМА ЖИВЁТ БЕЗ СЕТИ (D-145) ───────────────────────────────────────
      Основатель: «необходимо сделать так, что даже, когда интернета на телефоне
      или другом устройстве нет, сайт sys.baby должен продолжать работу».
@@ -166,6 +166,44 @@
       </div>
       <p class="login-foot" id="sbLoginForgotMsg"></p>
     </div>
+
+    <!-- ── О ЗАМКЕ ГОВОРЯТ ПРИ ЗНАКОМСТВЕ · решение D-171 ────────────────────
+         Основатель: «Я считаю, что про замок нужно говорить на этапе
+         регистрации. А во время регистрации нужно очень интеллектуально,
+         концептуально, гениально, запоминающися описать, что эта функция
+         доступна для любого пользователя — активация во время регистрации или
+         после».
+         ПОЧЕМУ ИМЕННО ЗДЕСЬ. Замок — единственная вещь в системе, которую
+         нельзя доделать задним числом ЛЕГКО: тот, кто узнал о нём через
+         полгода, полгода писал в открытую. Про такое говорят при знакомстве,
+         а не в справке.
+         И ПОЧЕМУ НЕ ТРЕБОВАНИЕМ. Заставить человека завести второй пароль в
+         ту же минуту, когда он завёл первый, значит почти наверняка получить
+         тот же пароль дважды — и это хуже, чем никакого замка. Поэтому здесь
+         не шаг, который надо пройти, а ДВЕРЬ, которую показали: «сейчас» или
+         «потом, из верхней панели». Второе — не отказ, а срок. -->
+    <div id="sbLoginStep3" hidden>
+      <div class="login-iris" aria-hidden="true">
+        <svg class="iris" viewBox="0 0 24 24">
+          <g class="iris-seams">
+            <line x1="12" y1="12" x2="22.2" y2="12"/>
+            <line x1="12" y1="12" x2="17.1" y2="20.833"/>
+            <line x1="12" y1="12" x2="6.9" y2="20.833"/>
+            <line x1="12" y1="12" x2="1.8" y2="12"/>
+            <line x1="12" y1="12" x2="6.9" y2="3.167"/>
+            <line x1="12" y1="12" x2="17.1" y2="3.167"/>
+          </g>
+          <polygon class="iris-eye" points="21,12 16.5,19.794 7.5,19.794 3,12 7.5,4.206 16.5,4.206"/>
+          <circle class="iris-rim" cx="12" cy="12" r="10.2"/>
+        </svg>
+      </div>
+      <h1 class="login-title" id="sbLockOfferTitle">All of this can be closed with one word</h1>
+      <p class="login-sub" id="sbLockOfferBody"></p>
+      <button class="btn primary wide" type="button" id="sbLockOfferNow">Set it now</button>
+      <div class="login-row">
+        <button class="btn link" type="button" id="sbLockOfferLater">Later, from the top bar</button>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -229,15 +267,62 @@
   <div class="tb-right">
     <!-- All that is left of the tips up here is the switch that asks for one.
          What the desktop has to say, it says down on the desktop. -->
-<!-- ── ТУРБО НА МЕСТЕ ЛАМПОЧКИ (v47.3) ──────────────────────────────────
-         Основатель: «нужно вернуть turbo режим и он должен находиться вместо
-         иконки лампочки в верхней панели». Турбо — рукоятка цены картинки:
-         одно нажатие снимает всё, что стоит кадров (поле обоев, размытие,
-         долгие переходы). Нажимают её на слабом телефоне или на последних
-         процентах батареи — поэтому она в панели, а не в глубине настроек.
-         Лампочка подсказок не умерла — переехала в Центр управления ниже. -->
-    <button class="tb-btn turbo-btn" id="sbTurboBtn" type="button" aria-pressed="false" aria-label="Turbo — give every frame to the work" data-i18n-aria="aria.turbo">
+<!-- ── ЧТО СТОИТ В ПАНЕЛИ, А ЧТО НЕТ · решение D-167 ────────────────────
+         Основатель спросил дословно 27.08.2026: «прошу совет также решить
+         стоит ли обе эти функции размещать в верхней панели? я про шифрование
+         и турбо, либо их оттуда вообще убрать? Либо сделать так: Как только
+         человек первый раз нажмёшь после этого они переезжают в быструю
+         панель и настройки?»
+         ОТВЕТ СОВЕТА. Разница между этими двумя предметами не в важности, а в
+         том, ЧТО они такое.
+           ЗАМОК — ДЕЙСТВИЕ. Его совершают в ту секунду, когда к столу
+           подошли; кнопка, до которой надо добраться через две панели, в эту
+           секунду бесполезна. И состояние замка — часть комнаты: заперто или
+           нет, видно всегда. Поэтому он здесь, и здесь всегда.
+           ТУРБО — НАСТРОЙКА. Её выбирают один раз: слабый телефон, последние
+           проценты батареи. Настройке не нужна вечная кнопка — ей нужно
+           место, где настройки ищут. Турбо переехал в быструю панель и в
+           Настройки, где он и так уже был.
+         Третий путь основателя («после первого нажатия переезжают») отвергнут,
+         и вот почему: предмет, исчезающий после использования, нельзя найти
+         второй раз, а панель, переставляющая себя за спиной человека, —
+         обратное доверию. Но верное чутьё в нём есть, и оно взято целиком:
+         ПАНЕЛЬ ПОКАЗЫВАЕТ НЕ ТО, ЧТО ДОСТУПНО, А ТО, ЧТО В СИЛЕ. Турбо
+         выключен — в панели пусто. Турбо включён — знак горит и снимается
+         нажатием: то, что меняет вид всей системы, обязано быть видно.
+         Одно слово основателя возвращает кнопку на место. -->
+    <button class="tb-btn turbo-mark" id="sbTurboMark" type="button" hidden aria-pressed="true" aria-label="Turbo is on — tap to give the frames back" data-i18n-aria="aria.turboOn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11L9.8 22 19.5 9.5H13L13 2z"/></svg>
+    </button>
+    <!-- ── ДИАФРАГМА · решение D-165 ────────────────────────────────────────
+         Основатель: «также нужно поставить иконку замка на верхнюю панель
+         рядом с иконкой турбо режима. Или вместо замка возьмите нечто более
+         концептуальное и гениальное. если замок, то найдите самый необычный».
+         ВЗЯТО НЕ ЗАМОК. Висячий замок — предмет чужого мира: он про дверь,
+         сундук и ключ на поясе. Эта система сделана из СВЕТА: комната дышит
+         светом, панель написана светом, поле стола — свет. И спрашивают её не
+         «заперто ли», а «ВИДНО ЛИ». Прибор, который решает, сколько света
+         пройдёт, называется диафрагмой, и он закрывается лепестками до точки.
+         Открытая диафрагма — смотри что хочешь, ничего не спрятано. Сжатая до
+         зрачка — свет перекрыт, снаружи не видно ничего. Это ровно то, что
+         основатель просил словами «чтобы не возможно было вообще ничего
+         увидеть», только сказанное формой, а не подписью.
+         Шесть лепестков — настоящая геометрия шестилепестковой диафрагмы:
+         отверстие шестиугольное, швы расходятся из его углов к оправе. Цвет
+         берётся из света комнаты, как у всего в этой панели. -->
+    <button class="tb-btn iris-btn" id="sbIrisBtn" type="button" aria-haspopup="dialog" data-state="none" aria-label="Lock" data-i18n-aria="aria.lock">
+      <svg class="iris" viewBox="0 0 24 24" aria-hidden="true">
+        <g class="iris-seams">
+          <line x1="12" y1="12" x2="22.2" y2="12"/>
+          <line x1="12" y1="12" x2="17.1" y2="20.833"/>
+          <line x1="12" y1="12" x2="6.9" y2="20.833"/>
+          <line x1="12" y1="12" x2="1.8" y2="12"/>
+          <line x1="12" y1="12" x2="6.9" y2="3.167"/>
+          <line x1="12" y1="12" x2="17.1" y2="3.167"/>
+        </g>
+        <polygon class="iris-eye" points="21,12 16.5,19.794 7.5,19.794 3,12 7.5,4.206 16.5,4.206"/>
+        <circle class="iris-rim" cx="12" cy="12" r="10.2"/>
+      </svg>
     </button>
     <button class="tb-btn cc-trigger" id="sbCcTrigger" type="button" aria-label="Control Center" data-i18n-aria="aria.cc">
       <span class="pw-glyph" id="sbPowerGlyph" role="img" aria-label="Power"><i class="pw-off"></i><i class="pw-on"></i></span>
@@ -278,6 +363,9 @@
       <!-- Полный экран (D-163): по прямой просьбе основателя он стоит здесь,
            рядом с остальными переключателями вида, а не прячется в жесте. -->
       <button class="cc-toggle" type="button" id="sbCcFullscreen" aria-pressed="false"><span data-i18n="cc.fullscreen">Full screen</span></button>
+      <!-- Турбо приехал сюда из верхней панели (D-167): это настройка, а
+           настройки живут там, где их ищут. -->
+      <button class="cc-toggle" type="button" id="sbCcTurbo" aria-pressed="false"><span data-i18n="cc.turbo">Turbo</span></button>
     </div>
 
     <!-- ── ПОЛЗУНКИ СОБСТВЕННОЙ ПОСТРОЙКИ (D-162) ────────────────────────
@@ -294,17 +382,20 @@
     <label class="cc-select"><span data-i18n="cc.language">Language</span>
       <select id="sbCcLang"></select></label>
 
-    <div class="cc-block">
-      <span class="cc-k" data-i18n="cc.appearance">Appearance</span>
-      <div class="cc-chips">
-        <!-- Светлая тема снята с интерфейса вместе с сегментом в Настройках:
-             приложения написаны под тёмное поле (313 зашитых светлых цветов в
-             десяти таблицах стилей), и на светлой панели получался белый текст
-             по белому. Возврат — вместе с переведёнными приложениями; закон
-             os-settings-sync это стережёт с обеих сторон. -->
-        <button class="chip theme-btn" type="button" data-theme-chip="dark" data-i18n="theme.dark">Dark</button>
-      </div>
-    </div>
+    <!-- ── ЗДЕСЬ БЫЛ «APPEARANCE» · решение D-168 ─────────────────────────
+         Основатель прислал снимок этой панели с одним словом: «Здесь бардак.
+         Appearance временно убрать. из настроек тоже».
+         Он прав, и разобрать причину стоит вслух. Светлая тема снята с
+         интерфейса ещё раньше — приложения написаны под тёмное поле. Но
+         ЗАГОЛОВОК остался, и под ним осталась ровно одна кнопка «Dark»,
+         которая уже нажата. Получился орган управления, у которого одно
+         положение: нажать его нельзя ни во что новое, а место он занимает и
+         глаз останавливает. Выбор из одного — не выбор, а вид выбора; это
+         та же ошибка, что и утверждение, которое не может провалиться.
+         ВРЕМЕННО, дословно по его слову: заголовок и кнопка вернутся вместе
+         со светлой темой — то есть тогда, когда выбирать станет из чего.
+         Так же снят ряд «тема» в Настройках: он был тем же самым сегментом
+         из одного положения. Охраняется tools/one-choice-check.mjs. -->
 
     <div class="cc-block">
       <span class="cc-k" data-i18n="cc.wallpaper">Wallpaper</span>
@@ -341,15 +432,14 @@
       <button class="btn ghost" type="button" data-panel="sbDiagOverlay" data-i18n="cc.health">Health</button>
     </div>
 
-    <!-- ── ЗАМОК (D-161) ─────────────────────────────────────────────────
-         Одно нажатие, как и просил основатель. Цена названа ЗДЕСЬ, до поворота
-         ключа, а не в справке: восстановления нет. -->
-    <div class="cc-block" id="sbCcLockBlock">
-      <span class="cc-k" data-i18n="lock.title">Lock what you have written</span>
-      <p class="cc-note" data-i18n="lock.sub">Notes, letters, conversations and the Vault.</p>
-      <p class="cc-warn" data-i18n="lock.warn">There is no way back.</p>
-      <button class="btn ghost" type="button" id="sbCcLock" data-i18n="lock.locking">Lock</button>
-    </div>
+    <!-- ── ЗАМОК ПЕРЕЕХАЛ В СВОЁ ОКНО (D-165) ────────────────────────────
+         Здесь стоял блок с кнопкой «Запереть», а пароль спрашивался через
+         window.prompt браузера. Две беды сразу: пароль в такой рамке набирают
+         ОТКРЫТЫМ ТЕКСТОМ (браузер не знает, что это пароль, и не прячет его
+         за точками), и рядом с ним нельзя сказать ни слова правды — рамка
+         показывает одну строку. Теперь у замка своё окно, вызываемое
+         диафрагмой в верхней панели: там поле именно для пароля, там сказано,
+         что закрывается, чем закрывается и что бывает при потере слова. -->
 
     <div class="cc-buttons">
       <button class="btn ghost" type="button" id="sbCcExport" data-i18n="cc.export">Export profile</button>
@@ -522,35 +612,50 @@
   </div>
 </div>
 
+<!-- ── ОКНО ЗАМКА · решение D-165 ─────────────────────────────────────────
+     Основатель: «При нажатии на замок, должно открываться окно как у
+     календаря (только окно должно быть идеально по центру…)». Окно — то же
+     самое: тот же .panel-overlay, тот же заголовок, та же кнопка закрытия.
+     Про «идеально по центру» см. решение D-169 в core.css: календарь стоял не
+     по центру не потому, что окна не центруются, а потому что ОДНО окно
+     назначило себе ширину другой линейкой, чем та, которой отмерена комната. -->
+<div class="panel-overlay" id="sbLockOverlay" hidden>
+  <div class="panel panel-lock" role="dialog" aria-modal="true" aria-labelledby="sbLockTitle">
+    <header class="panel-head"><h3 id="sbLockTitle" data-i18n="panel.lock">Lock</h3>
+      <button class="panel-close" id="sbLockClose" type="button" aria-label="Close" data-i18n-aria="aria.close">✕</button></header>
+    <div class="panel-body"></div>
+  </div>
+</div>
+
 
 
 <!-- ================================================================== scripts -->
-<script src="os/core/shell.js?b=v84"></script>
-<script src="os/core/panels.js?b=v84"></script>
-<script src="os/core/palette.js?b=v84"></script>
-<script src="os/core/desktop.js?b=v84"></script>
-<script src="os/core/topbar.js?b=v84"></script>
-<script src="os/core/terminal.js?b=v84"></script>
-<script src="os/core/links.js?b=v84"></script>
-<script src="os/core/field.js?b=v84"></script>
+<script src="os/core/shell.js?b=v85"></script>
+<script src="os/core/panels.js?b=v85"></script>
+<script src="os/core/palette.js?b=v85"></script>
+<script src="os/core/desktop.js?b=v85"></script>
+<script src="os/core/topbar.js?b=v85"></script>
+<script src="os/core/terminal.js?b=v85"></script>
+<script src="os/core/links.js?b=v85"></script>
+<script src="os/core/field.js?b=v85"></script>
 
-<script src="shared/portfolio.data.js?b=v84"></script>
-<script src="shared/portfolio.strings.js?b=v84"></script>
-<script src="shared/pricing.data.js?b=v84"></script>
+<script src="shared/portfolio.data.js?b=v85"></script>
+<script src="shared/portfolio.strings.js?b=v85"></script>
+<script src="shared/pricing.data.js?b=v85"></script>
 
-<script src="os/apps/files/files.js?b=v84"></script>
-<script src="os/apps/browser/browser.js?b=v84"></script>
-<script src="os/apps/player/player.js?b=v84"></script>
-<script src="os/apps/viewer/viewer.js?b=v84"></script>
-<script src="os/apps/notes/notes.js?b=v84"></script>
-<script src="os/apps/mail/mail.js?b=v84"></script>
-<script src="os/apps/messenger/messenger.js?b=v84"></script>
-<script src="os/apps/search/search.js?b=v84"></script>
-<script src="shared/portfolio.view.js?b=v84"></script>
-<script src="os/apps/project/project.js?b=v84"></script>
-<script src="os/apps/settings/settings.js?b=v84"></script>
-<script src="os/apps/echoes/echoes.js?b=v84"></script>
-<script src="os/apps/build/build.js?b=v84"></script>
+<script src="os/apps/files/files.js?b=v85"></script>
+<script src="os/apps/browser/browser.js?b=v85"></script>
+<script src="os/apps/player/player.js?b=v85"></script>
+<script src="os/apps/viewer/viewer.js?b=v85"></script>
+<script src="os/apps/notes/notes.js?b=v85"></script>
+<script src="os/apps/mail/mail.js?b=v85"></script>
+<script src="os/apps/messenger/messenger.js?b=v85"></script>
+<script src="os/apps/search/search.js?b=v85"></script>
+<script src="shared/portfolio.view.js?b=v85"></script>
+<script src="os/apps/project/project.js?b=v85"></script>
+<script src="os/apps/settings/settings.js?b=v85"></script>
+<script src="os/apps/echoes/echoes.js?b=v85"></script>
+<script src="os/apps/build/build.js?b=v85"></script>
 <!-- Скамейка (Experimental/Phosphor) выведена из клиентской витрины v20.9:
      витрина продаёт сданные системы, а самое интригующее имя на столе
      конкурировало с подсказкой №1 за первое касание. Папка приложения

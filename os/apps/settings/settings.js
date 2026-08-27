@@ -205,10 +205,17 @@
        закон, меряющий контраст в обеих темах на каждом экране. До тех пор
        строка ниже говорит, как есть. */
     return '<h2 class="st-title">' + esc(t("set.tab.appearance")) + "</h2>" +
-      rowMarkup(esc(t("set.appearance.theme")), esc(t("set.appearance.themeSub")),
-        '<span class="st-segment" data-theme-state="dark">' +
-          '<button type="button" class="st-seg active" data-theme="dark">' + esc(t("set.appearance.themeDark")) + "</button>" +
-        "</span>") +
+      /* ── РЯД «ТЕМА» СНЯТ · решение D-168 ────────────────────────────────
+         Основатель, со снимком быстрой панели: «Здесь бардак. Appearance
+         временно убрать. из настроек тоже».
+         Здесь стоял сегмент из ОДНОЙ кнопки «Dark», уже нажатой. Светлая тема
+         снята с интерфейса раньше — приложения написаны под тёмное поле.
+         Осталась подпись, объясняющая, почему выбирать не из чего, и орган
+         управления, который нельзя перевести никуда. Выбор из одного — не
+         выбор, а его вид; это та же ошибка, что и утверждение, которое не
+         может провалиться. ВРЕМЕННО, по слову основателя: ряд вернётся вместе
+         со светлой темой, то есть когда выбирать станет из чего.
+         Охраняется tools/one-choice-check.mjs. */
       rowMarkup(esc(t("set.appearance.mood")),
         esc(t("set.appearance.moodSub")),
         '<span class="st-chips">' + (moodChips || '<span class="st-muted">' + esc(t("set.appearance.moodNone")) + "</span>") + "</span>") +
@@ -489,7 +496,7 @@
    * source of that very event), and repaints collapse to one per frame. */
   var SECTION_KINDS = {
     general: { lang: 1 },
-    appearance: { theme: 1, mood: 1, brightness: 1, toggle: 1, side: 1, fullscreen: 1 },
+    appearance: { mood: 1, brightness: 1, toggle: 1, side: 1, fullscreen: 1 },
     sound: { toggle: 1, volume: 1 },
     desktop: { toggle: 1 },
     privacy: {},

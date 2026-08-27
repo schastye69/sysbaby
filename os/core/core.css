@@ -2051,6 +2051,88 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 #sbControlCenter .tip-bulb { display: flex; align-items: center; }
 #sbControlCenter .tip-bulb.retired { display: none; }
 
+/* ── ДИАФРАГМА · решение D-165 ─────────────────────────────────────────────
+   Замок этой системы — не дужка и не скоба, а прибор, который решает,
+   СКОЛЬКО СВЕТА ПРОЙДЁТ. Отверстие шестиугольное, как у настоящей
+   шестилепестковой диафрагмы; швы расходятся из его углов к оправе и
+   открываются ровно настолько, насколько закрылось отверстие.
+   Три состояния, и каждое читается без подписи:
+     data-state="none" — замка нет вовсе: зрачок раскрыт во всю оправу,
+                         цвет приглушён. Прятать нечего, и это видно;
+     data-state="open" — замок поставлен, сеанс открыт: диафрагма зажата до
+                         зрачка, оправа горит светом комнаты;
+     data-state="shut" — заперто: отверстие сведено в точку.
+   Цвет берётся из --accent, то есть из света комнаты, как у всего в панели:
+   знак живёт вместе с обоями, а не своей отдельной жизнью. */
+.iris-btn svg.iris { width: 16px; height: 16px; overflow: visible; }
+.iris-btn .iris-rim {
+  fill: none; stroke: currentColor; stroke-width: 1.3; opacity: .55;
+  transition: stroke var(--t-move) ease, opacity var(--t-move) ease;
+}
+.iris-btn .iris-seams line {
+  stroke: currentColor; stroke-width: 1.1; opacity: .38;
+  transition: opacity var(--t-move) ease;
+}
+.iris-btn .iris-eye {
+  fill: currentColor; opacity: .5;
+  transform-box: view-box; transform-origin: 12px 12px;
+  transform: scale(.92);
+  transition: transform var(--t-move) cubic-bezier(.16, 1, .3, 1), opacity var(--t-move) ease, fill var(--t-move) ease;
+}
+.iris-btn[data-state="open"] { color: var(--accent); }
+.iris-btn[data-state="open"] .iris-eye { transform: scale(.34); opacity: .95; }
+.iris-btn[data-state="open"] .iris-rim { opacity: .9; }
+.iris-btn[data-state="open"] .iris-seams line { opacity: .5; }
+.iris-btn[data-state="shut"] { color: var(--accent); }
+.iris-btn[data-state="shut"] .iris-eye { transform: scale(.1); opacity: 1; }
+.iris-btn[data-state="shut"] .iris-rim { opacity: 1; }
+.iris-btn[data-state="shut"] .iris-seams line { opacity: .62; }
+/* Знак «турбо в силе» (D-167): в панели он есть только пока турбо включён. */
+.turbo-mark svg { width: 15px; height: 15px; }
+.turbo-mark { color: var(--accent); }
+.turbo-mark svg { fill: var(--accent); stroke: var(--accent); }
+
+/* Знак замка на знакомстве (D-171): та же диафрагма, только крупно и
+   раскрытая — человеку показывают ОТКРЫТУЮ систему и объясняют, как её
+   закрыть, а не пугают запертой. */
+.login-iris { display: grid; place-items: center; margin: 0 0 14px; }
+.login-iris svg.iris { width: 54px; height: 54px; color: var(--accent); }
+.login-iris .iris-rim { fill: none; stroke: currentColor; stroke-width: 1.2; opacity: .8; }
+.login-iris .iris-seams line { stroke: currentColor; stroke-width: 1; opacity: .4; }
+.login-iris .iris-eye {
+  fill: currentColor; opacity: .85;
+  transform-box: view-box; transform-origin: 12px 12px; transform: scale(.62);
+}
+
+/* ── ОКНО ЗАМКА · решение D-165 ───────────────────────────────────────────── */
+.panel-lock { width: min(420px, 100%); }
+.lock-state {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 4px;
+  border-radius: var(--r-ctrl); background: var(--accent-soft); border: 1px solid var(--accent-ring);
+  font-size: 13px; color: var(--ink);
+}
+.lock-state .lk-dot { width: 8px; height: 8px; border-radius: var(--r-round); background: var(--accent); flex: none; }
+.lock-state.off { background: rgba(255, 255, 255, .03); border-color: var(--line); color: var(--ink-2); }
+.lock-state.off .lk-dot { background: var(--ink-3); }
+.lock-cipher {
+  font-family: var(--mono); font-size: 11px; line-height: 1.7; color: var(--ink-3);
+  padding: 9px 11px; border-radius: var(--r-ctrl); background: rgba(255, 255, 255, .028);
+  border: 1px solid var(--line); overflow-wrap: anywhere;
+}
+.lock-field { display: flex; flex-direction: column; gap: 7px; }
+.lock-field input {
+  width: 100%; padding: 11px 12px; font-size: 14px; border-radius: var(--r-ctrl);
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
+}
+.lock-field input:focus { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
+.lock-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.lock-acts .btn { flex: 1 1 140px; }
+.lock-warn {
+  font-size: 12.5px; line-height: 1.55; color: var(--danger);
+  padding: 9px 11px; border-radius: var(--r-ctrl);
+  background: rgba(255, 69, 58, .07); border: 1px solid rgba(255, 69, 58, .22);
+}
+
 /* ================================================================= panels §6 */
 .panel-overlay {
   position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 20px;
@@ -2508,7 +2590,22 @@ html[data-motion="reduced"] .echo-catch { animation: none; }
 }
 @media (hover: hover) { .tb-clock-btn:hover { background: rgba(255, 255, 255, .06); border-color: var(--line); } }
 .tb-clock-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.panel-time { width: min(360px, calc(100vw - 24px)); }
+/* ── ОДНА ЛИНЕЙКА НА КОМНАТУ И НА ОКНО · решение D-169 ────────────────────
+   ПОВОД: снимок основателя с календарём и слова «окно должно быть идеально по
+   центру, а не как сейчас».
+   ЗАМЕРЕНО (телефонный вид 360×780, окно времени открыто): слева 20.0 px,
+   справа 4.0 px. Не «почти по центру» — на 16 px мимо.
+   ПРИЧИНА. Комнату отмеряет .panel-overlay: padding 20px с каждой стороны,
+   то есть окну оставлено 320 px. А это окно назначало ширину САМО и ДРУГОЙ
+   линейкой: calc(100vw - 24px) = 336 px. Окно шире отведённого ему места, и
+   grid, чтобы не срезать содержимое, прижимает его к началу строки — левое
+   поле 20, правое 4. Центровка была исправна всё это время; неисправно было
+   то, что две стороны меряли комнату разными линейками.
+   ЛЕЧЕНИЕ — не подпорка в 8 px, а отмена второй линейки: ширина считается в
+   процентах ОТ ОТВЕДЁННОГО МЕСТА, и поле остаётся ровно одно — то, что задала
+   комната. Охраняется tools/panel-center-check.mjs: у каждой панели левое
+   поле равно правому. */
+.panel-time { width: min(360px, 100%); }
 .time-big { display: flex; align-items: center; justify-content: center; gap: 3px; padding: 12px 0 4px; color: var(--ink); }
 .time-cell { display: inline-flex; align-items: center; }
 .time-cell .clock-glyph { height: 44px; width: 28px; }
