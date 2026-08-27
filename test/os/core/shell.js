@@ -254,44 +254,70 @@
         on: true,
         was: {
           motion: window.sbGetControlToggle("motion"),
-          transparency: window.sbGetControlToggle("transparency"),
           field: window.sbField ? window.sbField.level() : "live"
         }
       };
       window.sbSetControlToggle("motion", true);
-      window.sbSetControlToggle("transparency", true);
+      /* ── ТУРБО БОЛЬШЕ НЕ СНИМАЕТ СТЕКЛО (D-148) ───────────────────────
+         Здесь стояло sbSetControlToggle("transparency", true) — то есть
+         Турбо ВКЛЮЧАЛ человеку режим доступности «меньше прозрачности» и
+         тем убирал стекло со всей системы. Основатель, со снимком: «верхняя
+         панель - единственный чужеродный элемент», «фон окон тоже сделать
+         более прозрачным». Причина, по которой у него всё было плитой, —
+         вот эта строка.
+         ЗАМЕРЕНО, А НЕ ПРЕДПОЛОЖЕНО (открытие окна, телефонный кадр,
+         медиана из 18 открытий): стекло 26px — 34.1 мс, стекло 10px —
+         26.7 мс, БЕЗ СТЕКЛА ВООБЩЕ — 26.0 мс. То есть вся экономия сидела
+         в РАДИУСЕ размытия, а не в наличии стекла: убрав стекло целиком,
+         Турбо выигрывал 0.7 мс сверх того, что даёт меньший радиус, — и
+         платил за них внешностью всей системы. Теперь Турбо уменьшает
+         радиус (html.sb-turbo в core.css), а стекло остаётся.
+         И отдельно: «меньше прозрачности» — это ВЫБОР ЧЕЛОВЕКА, режим
+         доступности. Скоростной режим не имеет права его за него делать. */
       if (window.sbField) window.sbField.setLevel("off");
+      /* Комната замирает такой, какая она сейчас: ни одного хода, но и ни
+         одного погашенного цвета. Основатель: «accent colors обязательно
+         должны быть живыми и только в turbo такими». */
+      if (window.sbRoomFreeze) window.sbRoomFreeze();
     } else {
       var was = cur.was || {};
       cur = { on: false };
       window.sbSetControlToggle("motion", !!was.motion);
-      window.sbSetControlToggle("transparency", !!was.transparency);
+      /* Прозрачность Турбо не трогал — возвращать нечего (D-148). */
       if (window.sbField) window.sbField.setLevel(was.field === "off" || was.field === "quiet" ? was.field : "live");
+      if (window.sbRoomThaw) window.sbRoomThaw();
     }
     writeJSON(TURBO_KEY, cur);
     root.classList.toggle("sb-turbo", on);
-    var btn = $("#sbTurboBtn");
-    if (btn) {
-      btn.setAttribute("aria-pressed", on ? "true" : "false");
-      btn.classList.toggle("on", on);
+    /* ── ПАНЕЛЬ ПОКАЗЫВАЕТ ТО, ЧТО В СИЛЕ (D-167) ─────────────────────────
+       Кнопки Турбо в полосе больше нет — она переехала в быструю панель и
+       Настройки. Осталось то, без чего нельзя: ЗНАК. Пока Турбо выключен, в
+       полосе пусто; включён — знак горит, и нажатие его снимает. Режим,
+       который меняет вид всей системы и при этом ничем себя не выдаёт, —
+       ловушка: человек видит замершие обои и решает, что система сломалась. */
+    var mark = $("#sbTurboMark");
+    if (mark) {
+      mark.hidden = !on;
+      mark.setAttribute("aria-pressed", on ? "true" : "false");
+      mark.classList.toggle("on", on);
     }
     sbBus.emit("turbo:change", { on: on });
     return on;
   };
   function wireTurbo() {
-    var btn = $("#sbTurboBtn");
-    if (!btn) return;
-    btn.addEventListener("click", function () { window.sbTurbo(!window.sbTurbo()); });
+    var mark = $("#sbTurboMark");
+    if (mark) mark.addEventListener("click", function () { window.sbTurbo(false); });
     /* Пережить перезагрузку: включённый Турбо восстанавливается ДО первого
        кадра стола — иначе поле успеет запуститься и тут же остановиться. */
     if (turboOn()) {
       root.classList.add("sb-turbo");
-      btn.setAttribute("aria-pressed", "true");
-      btn.classList.add("on");
+      if (mark) { mark.hidden = false; mark.setAttribute("aria-pressed", "true"); mark.classList.add("on"); }
       window.sbSetControlToggle("motion", true);
-      window.sbSetControlToggle("transparency", true);
       if (window.sbField) window.sbField.setLevel("off");
       else doc.addEventListener("DOMContentLoaded", function () { if (window.sbField) window.sbField.setLevel("off"); });
+      /* Турбо, переживший перезагрузку, замораживает комнату после того, как
+         она встала: applyMood зовут позже, значит и заморозка позже. */
+      setTimeout(function () { if (window.sbRoomFreeze) window.sbRoomFreeze(); }, 0);
     }
   }
 
@@ -383,38 +409,27 @@
     return { a1: a1, a2: a2, hue: hue };
   };
 
-  var driftTimer = null, driftLastHue = null;
-  function driftTick(force) {
-    var now = window.sbAccentForTime();
-    var rounded = Math.round(now.hue);
-    if (!force && rounded === driftLastHue) return;   /* тот же градус — не трогаем документ */
-    driftLastHue = rounded;
-    applyAccent(now.a1, now.a2);
-  }
-  function driftStart() {
-    driftStop();
-    driftTick(true);
-    driftTimer = setInterval(function () { driftTick(false); }, 60000);
-  }
-  function driftStop() { if (driftTimer) { clearInterval(driftTimer); driftTimer = null; } driftLastHue = null; }
-  window.sbAccentDrifting = function () { return !!driftTimer; };
+  /* Отдельного хода у краски больше нет: комната и шов идут одной пружиной
+     (wpTick). sbAccentDrifting отвечает про неё же — снаружи это по-прежнему
+     один вопрос «идёт ли ход». */
+  window.sbAccentDrifting = function () { return !!(window.sbRoomDrifting && window.sbRoomDrifting()); };
 
-  window.sbGetAccentSwatches = function () {
-    var list = ACCENTS.map(function (a) { return { id: a.id, name: a.name, a1: a.a1, a2: a.a2 }; });
-    var now = window.sbAccentForTime();
-    list.push({ id: DRIFT_ID, name: "Daylight", a1: now.a1, a2: now.a2, drift: true });
-    return list;
-  };
+  /* ── ОТДЕЛЬНОГО ВЫБОРА КРАСКИ БОЛЬШЕ НЕТ (D-141) ──────────────────────
+     Здесь стоял список из шести красок и функция sbSetAccent. Они сняты не
+     ради простоты: пока выбор был отдельным, шов и комната могли встать в
+     ссору, и вставали. Шов — это свет комнаты, увиденный на кромке; выбирать
+     его отдельно значит выбирать второй источник света в той же комнате.
+     Кто ставит шов теперь: wpTick, из sbRoomLight текущего настроения. */
   window.sbGetCurrentAccent = function () {
-    var v = readJSON(ACCENT_KEY, null);
-    if (v && v.mode === DRIFT_ID) {
-      var now = window.sbAccentForTime();
-      return { a1: now.a1, a2: now.a2, mode: DRIFT_ID };
-    }
-    if (v && v.a1) return { a1: v.a1, a2: v.a2 || deriveSecond(v.a1) };
-    return { a1: ACCENTS[0].a1, a2: ACCENTS[0].a2 };
+    /* НАПИСАННЫЙ свет, а не пересчитанный: пока комната заморожена, шов
+       обязан стоять вместе с ней (D-143). Пересчёт остаётся запасным путём
+       для мига до первого хода пружины. */
+    var w = (window.sbRoomNow && window.sbRoomNow()) || window.sbRoomLight();
+    /* НАДЕТЫЙ шов, если он уже надет. Пересчёт — только для мига до первого
+       хода пружины, когда надевать ещё нечего. */
+    var seam = wpSeam || window.sbSeamForRoom(w);
+    return { a1: seam.a1, a2: seam.a2, mode: w.mood };
   };
-
   function hexToRgb(hex) {
     var h = String(hex || "").replace("#", "");
     if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
@@ -422,46 +437,14 @@
     if (!isFinite(n)) return { r: 91, g: 124, b: 255 };
     return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
   }
-  function rgbToHsl(r, g, b) {
-    r /= 255; g /= 255; b /= 255;
-    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), h = 0, s = 0, l = (mx + mn) / 2, d = mx - mn;
-    if (d) {
-      s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
-      if (mx === r) h = ((g - b) / d + (g < b ? 6 : 0));
-      else if (mx === g) h = (b - r) / d + 2;
-      else h = (r - g) / d + 4;
-      h *= 60;
-    }
-    return { h: h, s: s, l: l };
-  }
-  function deriveSecond(hex) {
-    var c = hexToRgb(hex), hsl = rgbToHsl(c.r, c.g, c.b);
-    return "hsl(" + Math.round((hsl.h + 28) % 360) + "," + Math.round(hsl.s * 100) + "%," + Math.round(clamp(hsl.l * 100 + 10, 0, 92)) + "%)";
-  }
-
-  window.sbSetAccent = function (hex, second) {
-    /* Ход — не цвет, а режим, и приходит он тем же входом: приложение
-       настроек передаёт сюда либо шестнадцатеричный цвет, либо это имя. */
-    if (String(hex) === DRIFT_ID) {
-      writeJSON(ACCENT_KEY, { mode: DRIFT_ID });
-      driftStart();
-      var cur = window.sbAccentForTime();
-      announceSetting("accent", { a1: cur.a1, a2: cur.a2, mode: DRIFT_ID });
-      return { a1: cur.a1, a2: cur.a2, mode: DRIFT_ID };
-    }
-    driftStop();
-    var a1 = String(hex || ACCENTS[0].a1);
-    var a2 = second || null;
-    if (!a2) {
-      for (var i = 0; i < ACCENTS.length; i++) if (ACCENTS[i].a1.toLowerCase() === a1.toLowerCase()) a2 = ACCENTS[i].a2;
-    }
-    if (!a2) a2 = deriveSecond(a1);
-    applyAccent(a1, a2);
-    writeJSON(ACCENT_KEY, { a1: a1, a2: a2 });
-    announceSetting("accent", { a1: a1, a2: a2 });
-    return { a1: a1, a2: a2 };
-  };
+  /* Шов, КОТОРЫЙ СЕЙЧАС НАДЕТ. Не «какой был бы по часам», а какой написан:
+     он ступенчатый (округлён до четырёх градусов), и читатели обязаны видеть
+     ту же ступеньку, иначе у них заведётся своя, более частая жизнь. Именно
+     это и случилось с часами: шов на кромке менялся раз в девять секунд, а
+     свет часов пересчитывался непрерывно и писал в корень куда чаще (D-143). */
+  var wpSeam = null;
   function applyAccent(a1, a2) {
+    wpSeam = { a1: a1, a2: a2 };
     var c = hexToRgb(a1), st = root.style;
     st.setProperty("--accent", a1);
     st.setProperty("--accent-2", a2);
@@ -470,19 +453,456 @@
     st.setProperty("--accent-ring", "rgba(" + c.r + "," + c.g + "," + c.b + ",.55)");
   }
 
+  /* ═══════════════ КОМНАТА И ШОВ — ОДНО (D-141) ═══════════════════════════
+
+     ПОВОД, дословно от основателя 26.08.2026: «убрать accent color и сделать
+     их частью wallpapers (они должны менять в зависимости от выбранной темы)
+     и accent colors обязательно должны быть живыми и только в turbo такими».
+
+     ЧТО БЫЛО НЕ ТАК, ЕСЛИ НАЗЫВАТЬ КОРЕНЬ. Шов и комната были ДВУМЯ
+     НЕЗАВИСИМЫМИ ПРИБОРАМИ: краску выбирали отдельно, обои отдельно. Значит
+     их можно было поставить в ссору — и они ссорились. На снимке основателя
+     оранжевый шов стоял посреди зелёной комнаты светотерапии, и оба были
+     «правильные». Двух источников света в одной комнате не бывает.
+
+     РЕШЕНИЕ ОСНОВАТЕЛЯ И ЕСТЬ ЛЕКАРСТВО: выбор один. Человек выбирает
+     КОМНАТУ, а шов — это её свет, увиденный на кромке. Поссориться им больше
+     нечем: источник один. Это пятый раз за неделю, когда лекарство одно и то
+     же — одно знание, одно имя (D-114, D-127, D-129, D-136).
+
+     И ВТОРОЕ: ЖИВЫ ВСЕ. Раньше жило одно настроение из семи. Теперь у
+     каждого своё кольцо и свой ПОЯС — узкий у спокойных, широкий у
+     деятельных. «Живой» не значит «любой»: Ocean дышит в холодном поясе и
+     оранжевым не станет, иначе выбор комнаты ничего бы не значил.
+
+     hue  — середина пояса;  span — ширина пояса;  cycle — за сколько кольцо;
+     room — сколько света в комнате (от … до);  sat — насыщенность краски. */
   var MOODS = [
-    { id: "studio", name: "Studio" },
-    { id: "ocean", name: "Ocean" },
-    { id: "aurora", name: "Aurora" },
-    { id: "sunset", name: "Sunset" },
-    { id: "mono", name: "Mono" }
+    { id: "studio", name: "Studio", hue: 22, span: 16, cycle: 40 * 60000, room: [0.30, 0.46], sat: 68 },
+    { id: "ocean", name: "Ocean", hue: 196, span: 30, cycle: 34 * 60000, room: [0.26, 0.44], sat: 70 },
+    { id: "aurora", name: "Aurora", hue: 152, span: 74, cycle: 26 * 60000, room: [0.24, 0.46], sat: 72 },
+    { id: "sunset", name: "Sunset", hue: 12, span: 46, cycle: 30 * 60000, room: [0.28, 0.50], sat: 76 },
+    { id: "mono", name: "Mono", hue: 218, span: 8, cycle: 48 * 60000, room: [0.20, 0.36], sat: 14 },
+    { id: "daylight", name: "Daylight", drift: true, day: true, cycle: 24 * 3600000, room: null, sat: 73 },
+    { id: "therapy", name: "Light therapy", drift: true, session: true, span: 360,
+      cycle: 14 * 60000, room: [0.62, 1.0], sat: 78 },
+    /* ── ПРАЗДНИК: ГОД СВЕТА ЗА ДВЕ МИНУТЫ, НАЧИНАЯ С СЕГОДНЯ (D-150) ─────
+       ПОВОД, дословно от основателя 26.08.2026: «нужно ещё придумать третью
+       экстра тему, например, праздник (только более гениально) и тогда
+       светотерапия в ускоренном темпе + какой-то гениальный и концептуальный
+       трюк», «всё максимально интеллектуально и дорого».
+       ЧТО ЗДЕСЬ ЗА ТРЮК И ПОЧЕМУ ОН НЕ УКРАШЕНИЕ. Ускоренная светотерапия
+       сама по себе — это «то же, но быстрее»; праздником её делает не
+       скорость. Круг цвета и круг года — ОДНА И ТА ЖЕ ОКРУЖНОСТЬ: 365 дней
+       ложатся на 360 градусов почти один в один. Поэтому у праздника есть
+       НАЧАЛО, и оно не в нуле — оно СЕГОДНЯ: тон стартует с угла текущего дня
+       года, комната проходит весь год за две минуты и возвращается ровно в
+       тот день, в котором человек сидит. 26 августа — 238-й день, то есть
+       235°: синева. Первое января — красное. Праздник у каждой даты свой — и
+       свой БЕЗ ЕДИНОЙ ЗАПИСАННОЙ ДАТЫ: система не знает ни одного праздника
+       по имени и ничего не празднует за человека. Она показывает ему его
+       собственный год.
+       ЦЕНА НАЗВАНА ВСЛУХ. Шов ступает раз в четыре градуса; круг за две
+       минуты — это ступенька каждые 1.3 с, всемеро чаще светотерапии.
+       Праздник — комната на минуты, а не на день. */
+    { id: "feast", name: "Feast", drift: true, session: true, feast: true, span: 360,
+      cycle: 4 * 60000, room: [0.58, 1.0], sat: 94 }
   ];
-  window.sbWallpaperMoods = MOODS.map(function (m) { return { id: m.id, name: m.name }; });
-  window.sbGetWallpaperMood = function () { return (window.sbDB && window.sbDB.get(MOOD_KEY)) || "studio"; };
-  window.sbSetWallpaperMood = function (id) {
-    var valid = MOODS.some(function (m) { return m.id === id; }) ? id : "studio";
+  function moodDef(id) {
+    for (var i = 0; i < MOODS.length; i++) if (MOODS[i].id === id) return MOODS[i];
+    return MOODS[0];
+  }
+  window.sbMoodCycle = function (id) { return moodDef(id).cycle; };
+
+  /* СВЕТ КОМНАТЫ В ДАННЫЙ МИГ — одна функция на все настроения.
+     Для суточных часы берутся от полуночи (комната равна часу); для
+     остальных — от начала их собственного кольца, чтобы закон мог пройти
+     кольцо, не переводя часов машины. */
+  /* Угол сегодняшнего дня на круге года. 365 дней ложатся на 360 градусов
+     почти один в один — это не натяжка, а совпадение, которым и стоит
+     воспользоваться. Первое января — 0°, 26 августа — около 235°. */
+  function dayAngle(t) {
+    var d = new Date(t);
+    var start = new Date(d.getFullYear(), 0, 0);
+    var day = Math.floor((d - start) / 86400000);
+    return (day / 365) * 360;
+  }
+  window.sbDayAngle = function (t) { return dayAngle(typeof t === "number" ? t : Date.now()); };
+
+  window.sbRoomLight = function (ms, moodId) {
+    var m = moodDef(moodId || (window.sbGetWallpaperMood ? window.sbGetWallpaperMood() : "studio"));
+    var t = (typeof ms === "number" ? ms : Date.now());
+    if (m.day) {
+      var d = new Date(t);
+      var minutes = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+      var pos = minutes / 60;
+      var i = Math.floor(pos) % 24, j = (i + 1) % 24, f = pos - Math.floor(pos);
+      var lvl = ROOM[i] + (ROOM[j] - ROOM[i]) * f;
+      return { hue: Math.round(minutes / 1440 * 360 * 10) / 10,
+               level: Math.round(lvl * 1000) / 1000, sat: m.sat, mood: m.id };
+    }
+    var phase = (t % m.cycle) / m.cycle;
+    var hue, level;
+    if (m.span >= 360) {                       /* сеанс: полный круг */
+      hue = Math.round(phase * 360 * 10) / 10;
+      /* Праздник начинает круг с сегодняшнего дня года (D-150). Смещение
+         считается от той же метки времени, что и фаза, — иначе в полночь
+         комната и календарь разошлись бы. */
+      if (m.feast) hue = Math.round((((hue + dayAngle(t)) % 360) + 360) % 360 * 10) / 10;
+      /* ── ВДОХ ДЛИТСЯ ДВЕ МИНУТЫ, А НЕ «СЕДЬМУЮ ЧАСТЬ КОЛЬЦА» (D-158) ────
+         Здесь стояла семёрка: «семь вдохов за кольцо». Она была верна ровно
+         для одной комнаты — светотерапии с кольцом в четырнадцать минут, где
+         седьмая часть и есть две минуты. Праздник проходит кольцо за две
+         минуты, и та же семёрка дала вдох раз в семнадцать секунд — то есть
+         пульсацию, которую основатель и увидел: «свет переключается».
+         Семёрка никогда не была постоянной величиной. Она была ВРЕМЕНЕМ
+         ОДНОГО ВДОХА, записанным числом для одной комнаты. Записываем время:
+         у светотерапии по-прежнему ровно семь вдохов (840/120), у праздника —
+         один медленный на всё кольцо. Ни одно прежнее значение не сдвинуто. */
+      var breaths = Math.max(1, Math.round(m.cycle / 120000));
+      var breath = (1 - Math.cos(phase * breaths * 2 * Math.PI)) / 2;
+      level = m.room[0] + (m.room[1] - m.room[0]) * breath;
+    } else {                                   /* спокойное: дыхание в поясе */
+      var w = Math.sin(phase * 2 * Math.PI);
+      hue = m.hue + (m.span / 2) * w;
+      /* Свет дышит со сдвигом в четверть: комната не бледнеет и не
+         разгорается ровно вместе с тоном — так дышит настоящий свет. */
+      var w2 = Math.sin(phase * 2 * Math.PI + Math.PI / 2);
+      level = m.room[0] + (m.room[1] - m.room[0]) * (w2 + 1) / 2;
+    }
+    return { hue: Math.round(((hue % 360) + 360) % 360 * 10) / 10,
+             level: Math.round(level * 1000) / 1000, sat: m.sat, mood: m.id };
+  };
+
+  /* ШОВ ИЗ СВЕТА КОМНАТЫ. Светлота берётся выверенной кривой LIGHT — той
+     самой, которая держит контраст ровным по всему кругу (D-107). Поэтому
+     шов читается в любой комнате по построению, а не по удаче. */
+  /* ── ПАЛИТРА ЖИВОГО ФОНА — ТОЖЕ ИЗ СВЕТА КОМНАТЫ (D-159) ─────────────────
+     ПОВОД, дословно от основателя 26.08.2026: «в feast не меняется цвет
+     анимации фона рабочего стола, а должен».
+     ОН ПРАВ, И ПРИЧИНА ТА ЖЕ, ЧТО В D-152: у поля своя таблица из пяти
+     троек — studio, ocean, aurora, sunset, mono. Суточная, светотерапия и
+     праздник в ней не значатся, а неизвестное имя молча падает на studio.
+     Поэтому во ВСЕХ ТРЁХ живых комнатах фон оставался графитовым и не менялся
+     никогда. Восьмое раздвоение знания в проекте, и опять по той же схеме:
+     список, написанный отдельно от объявления системы.
+     Цвет здесь и считается — там же, где живёт свет (D-141). Поле не знает ни
+     градусов, ни насыщенности: оно спрашивает три тройки и красит. */
+  window.sbRoomPalette = function (moodId) {
+    var w = (window.sbRoomNow && window.sbRoomNow()) || window.sbRoomLight(Date.now(), moodId);
+    /* Насыщенность взята НИЖЕ комнатной: обои — мягкая накладка поверх стола,
+       а поле — сам стол, во весь экран и непрозрачное. Тот же тон в полную
+       силу на всей площади читается как заливка, а не как свет. Множитель
+       выбран по образцу неподвижных комнат ниже в таблице поля: у Океана
+       тройка держится около семидесяти процентов насыщенности. */
+    var sat = Math.max(10, Math.min(88, w.sat * 0.72));
+    var rgb = function (h, lAdd) {
+      var c = hexToRgb(hslHex(h, sat, Math.max(10, Math.min(90, driftLight(h) + (lAdd || 0)))));
+      return [c.r, c.g, c.b];
+    };
+    /* Три тела света: сам тон, холодное плечо и тёплое. Те же 28° в сторону,
+       что и у краски обоев, — комната и фон дышат одним разворотом. */
+    return [rgb(w.hue, -10), rgb(w.hue - 24, -22), rgb(w.hue + 28, 6)];
+  };
+
+  window.sbSeamForRoom = function (w) {
+    var sat = (w && w.sat) || 73;
+    var hue = (w && w.hue) || 0;
+    return {
+      a1: hslHex(hue, sat, driftLight(hue)),
+      a2: hslHex(hue + 28, sat, Math.min(92, driftLight(hue + 28) + 10)),
+      hue: hue
+    };
+  };
+
+  /* ============================================ суточная комната (D-127) §
+
+     ПОВОД: «прошу совет сделать отдельную цветовую гамму, которая будет
+     работать как светотерапия чередуя все наши цвета (я про wallpaper)».
+
+     ДВА РАЗНЫХ ВОПРОСА, И У НИХ РАЗНЫЕ ОТВЕТЫ.
+
+     ТОН — «чередуя все наши цвета». Тот же круг, что у шва: минута суток,
+     переведённая в градус. Комната и шов идут по одним часам и в одном
+     градусе — это один свет в двух местах, а не два прибора, которые
+     когда-нибудь разойдутся.
+
+     СВЕТЛОТА КРАСКИ — оставлена от шва (LIGHT): это выверенная поправка на
+     то, что синий читается тусклее жёлтого при равной светлоте. Не путать
+     её с количеством света: это «сколько весит ЭТОТ тон», а не «сколько
+     света в комнате».
+
+     КОЛИЧЕСТВО СВЕТА — «светотерапия», и это новая кривая, ROOM. Она
+     привязана к ЧАСУ, а не к тону: в четыре утра комната почти погасшая, к
+     полудню разгорается, к ночи гаснет обратно. Именно это и есть терапия
+     — свет, который живёт по суткам, а не краска, которая едет по кругу.
+
+     ЦЕНА. Пишется не в корень, а в один элемент #sbMoodTint: запись
+     свойства в корень объявляет устаревшим стиль ВСЕГО документа (D-093,
+     D-112), а inline-стиль одного элемента — нет. Пишем, только когда
+     изменился округлённый градус или округлённая доля света: около
+     семисот записей в сутки в один элемент. */
+  var ROOM = [
+    0.10, 0.07, 0.05, 0.04, 0.05, 0.09, 0.18, 0.32, 0.48, 0.62, 0.74, 0.84,
+    0.92, 1.00, 0.97, 0.90, 0.80, 0.68, 0.55, 0.43, 0.34, 0.27, 0.20, 0.15
+  ];
+  var WP_A1 = [0.13, 0.44];   /* верхний свет: тихо … ярко */
+  var WP_A2 = [0.08, 0.29];   /* нижний свет */
+  /* ТРЕТИЙ СЛОЙ — И ЭТО ГЛАВНЫЙ ИЗ ТРЁХ.
+     Первая редакция двигала только два цветных пятна, и закон её отверг:
+     на настоящих пикселях полдень оказался НЕ СВЕТЛЕЕ трёх часов ночи
+     (0.0145 против 0.0151). Причина простая и её стоит записать: два
+     насыщенных пятна, накрывающих меньше половины стола, меняют СРЕДНЮЮ
+     яркость почти никак — они меняют цвет, а не количество света. А
+     «светотерапия» — это именно количество.
+     Значит нужен слой во весь стол: мягкий, почти белый свет часа. Он
+     ненасыщенный (WP_WASH_SAT) — потому что дневной свет в комнате белый, а
+     не бирюзовый, и потому что зелёный канал, который и решает яркость,
+     у ненасыщенного цвета сильнее. Ночью его нет вовсе. */
+  /* ЗАЛИВКА УБАВЛЕНА, ЦВЕТНЫЕ ПЯТНА ПРИБАВЛЕНЫ (v78). Пока заливкой
+     пользовалась одна суточная комната, её потолок в 0.46 всплывал редко — на
+     час в сутки. Светотерапия держится высоко ВСЁ ВРЕМЯ, и на снимке
+     основателя стол оказался залит молоком: цвет комнаты был, но он потонул в
+     белизне, и смена тона переставала читаться. Отсюда и слова «цвета
+     меняются слишком медленно либо не меняются совсем» — они менялись, но их
+     не было видно. Комнату надо ОСВЕЩАТЬ, а не заволакивать. */
+  var WP_WASH = [0.00, 0.30];
+  var WP_WASH_SAT = 26, WP_WASH_LIGHT = 66;
+
+  window.sbWallpaperForTime = function (ms) {
+    var d = new Date(typeof ms === "number" ? ms : Date.now());
+    var minutes = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+    var hue = Math.round(minutes / 1440 * 360 * 10) / 10;
+    var pos = minutes / 60;
+    var i = Math.floor(pos) % 24, j = (i + 1) % 24, f = pos - Math.floor(pos);
+    var lvl = ROOM[i] + (ROOM[j] - ROOM[i]) * f;
+    lvl = Math.round(lvl * 1000) / 1000;
+    var r2 = function (v) { return Math.round(v * 1000) / 1000; };
+    return {
+      hue: hue,
+      level: lvl,
+      c1: hslHex(hue, DRIFT_SAT, driftLight(hue)),
+      c2: hslHex(hue + 28, DRIFT_SAT, Math.min(92, driftLight(hue + 28) + 10)),
+      c3: hslHex(hue, WP_WASH_SAT, WP_WASH_LIGHT),
+      a1: r2(WP_A1[0] + (WP_A1[1] - WP_A1[0]) * lvl),
+      a2: r2(WP_A2[0] + (WP_A2[1] - WP_A2[0]) * lvl),
+      a3: r2(WP_WASH[0] + (WP_WASH[1] - WP_WASH[0]) * lvl)
+    };
+  };
+
+  /* ============================================ светотерапия (D-131) §
+
+     ПОВОД: «в wallpaper должен быть режим светотерапия концептуально
+     оформленный и с такой же красивой иконкой как у daylight, но только в
+     тематике светотерапии».
+
+     ЭТО ДРУГОЙ ПРЕДМЕТ, А НЕ ВТОРАЯ КРАСКА. Daylight следует ЧАСАМ: комната
+     равна часу, круг занимает сутки, ход принципиально незаметен — он и не
+     должен быть заметен, часы не показывают. Светотерапия ничего не
+     показывает: она РАБОТАЕТ. У неё есть длительность сеанса, и за этот сеанс
+     через комнату проходят все наши цвета — каждый успевает побыть и уйти.
+     Ход виден, если посмотреть. Не виден — значит это не терапия.
+
+     ДЛИТЕЛЬНОСТЬ. Двадцать восемь минут: семь цветов по четыре минуты —
+     столько держат цвет в цветотерапии, и столько же длится обычный сеанс
+     световой лампы. Число взято оттуда, а не выбрано на глаз.
+
+     ЯРКОСТЬ. Лампа не гаснет: свет держится высоко весь сеанс и лишь дышит
+     вместе с цветом — каждый цвет приходит, разгорается и уходит. Комната при
+     этом остаётся тёмной ровно настолько, чтобы подписи читались: это
+     стережёт тот же закон, что и у Daylight.
+
+     ЦЕНА. Пишется в один элемент, как и Daylight. Тон округляется до градуса,
+     градус меняется раз в 4.7 секунды — двенадцать записей в минуту в один
+     #sbMoodTint, без единой записи в корень документа. */
+  var SESSION_MS = 28 * 60 * 1000;
+  var TH_LEVEL = [0.62, 1.00];
+  var TH_A1 = [0.26, 0.44], TH_A2 = [0.16, 0.28], TH_WASH = [0.22, 0.40];
+
+  window.sbTherapyForTime = function (ms) {
+    var t = (typeof ms === "number" ? ms : Date.now());
+    var phase = (t % SESSION_MS) / SESSION_MS;          /* 0..1 — место в сеансе */
+    var hue = Math.round(phase * 360 * 10) / 10;
+    /* Дыхание цвета: семь вдохов за круг — по одному на цвет. */
+    var breath = (1 - Math.cos(phase * 7 * 2 * Math.PI)) / 2;
+    var lvl = Math.round((TH_LEVEL[0] + (TH_LEVEL[1] - TH_LEVEL[0]) * breath) * 1000) / 1000;
+    var r2 = function (v) { return Math.round(v * 1000) / 1000; };
+    var mix = function (p) { return r2(p[0] + (p[1] - p[0]) * lvl); };
+    return {
+      hue: hue, level: lvl,
+      c1: hslHex(hue, DRIFT_SAT, driftLight(hue)),
+      c2: hslHex(hue + 28, DRIFT_SAT, Math.min(92, driftLight(hue + 28) + 10)),
+      c3: hslHex(hue, WP_WASH_SAT, WP_WASH_LIGHT),
+      a1: mix(TH_A1), a2: mix(TH_A2), a3: mix(TH_WASH)
+    };
+  };
+
+  function tintRgba(hex, a) {
+    var c = hexToRgb(hex);
+    return "rgba(" + c.r + "," + c.g + "," + c.b + "," + a + ")";
+  }
+  /* Вынесено наружу ровно затем, чтобы закон мог сфотографировать любой час,
+     не переводя часов машины, и фотографировал при этом НАСТОЯЩИЙ красящий
+     ход, а не свою копию его замысла. */
+  function paintTint(w) {
+    var el = doc.getElementById("sbMoodTint");
+    if (el) {
+      el.style.backgroundImage =
+        "radial-gradient(900px 640px at 76% 16%, " + tintRgba(w.c1, w.a1) + ", transparent 64%)," +
+        "radial-gradient(760px 580px at 16% 84%, " + tintRgba(w.c2, w.a2) + ", transparent 62%)," +
+        "linear-gradient(" + tintRgba(w.c3, w.a3) + ", " + tintRgba(w.c3, w.a3) + ")";
+    }
+    return w;
+  }
+  window.sbTherapyApply = function (ms) { return paintTint(window.sbTherapyForTime(ms)); };
+  /* Из света комнаты — её краска: два пятна и мягкая заливка во весь стол. */
+  function tintOf(w) {
+    var r2 = function (v) { return Math.round(v * 1000) / 1000; };
+    var lvl = w.level;
+    var mix = function (p) { return r2(p[0] + (p[1] - p[0]) * lvl); };
+    return {
+      hue: w.hue, level: lvl,
+      c1: hslHex(w.hue, w.sat, driftLight(w.hue)),
+      c2: hslHex(w.hue + 28, w.sat, Math.min(92, driftLight(w.hue + 28) + 10)),
+      c3: hslHex(w.hue, WP_WASH_SAT, WP_WASH_LIGHT),
+      a1: mix(WP_A1), a2: mix(WP_A2), a3: mix(WP_WASH)
+    };
+  }
+  window.sbRoomTint = tintOf;
+  window.sbWallpaperApply = function (ms) {
+    var w = window.sbWallpaperForTime(ms);
+    var el = doc.getElementById("sbMoodTint");
+    if (el) {
+      el.style.backgroundImage =
+        "radial-gradient(900px 640px at 76% 16%, " + tintRgba(w.c1, w.a1) + ", transparent 64%)," +
+        "radial-gradient(760px 580px at 16% 84%, " + tintRgba(w.c2, w.a2) + ", transparent 62%)," +
+        "linear-gradient(" + tintRgba(w.c3, w.a3) + ", " + tintRgba(w.c3, w.a3) + ")";
+    }
+    return w;
+  };
+  function wpClear() {
+    var el = doc.getElementById("sbMoodTint");
+    if (el) el.style.backgroundImage = "";
+  }
+
+  var wpTimer = null, wpLastHue = null, wpLastLvl = null, wpMode = null;
+  /* ОДИН ХОД НА КОМНАТУ И ШОВ. Раньше их было два: свой таймер у обоев и
+     свой у краски. Два хода об одном и том же однажды разошлись бы — как
+     разошлись сами комната и шов. Теперь пружина одна. */
+  /* ── У КОМНАТЫ И ШВА РАЗНОЕ РАЗРЕШЕНИЕ, И ЭТО ИЗМЕРЕНО ────────────────
+     Комната — большое мягкое поле на ОДНОМ элементе: писать его часто дёшево,
+     и градус за градусом там читается как плавность.
+     Шов — тонкая линия, и живёт он в КОРНЕ документа, а запись в корень
+     объявляет устаревшим стиль всего документа (D-093, D-112). Прибор
+     показал: при кольце в четырнадцать минут выходило 29 записей в корень за
+     пять секунд — шесть в секунду. Это много.
+     Поэтому шов округляется до четырёх градусов. На тонкой линии четыре
+     градуса не различить, а записей в корень становится вчетверо меньше.
+     Разные поверхности — разное разрешение, и каждое оправдано тем, что на
+     этой поверхности видно. */
+  var wpLastSeam = null;
+  /* ── ЧТО НАПИСАНО, А НЕ ЧТО «БЫЛО БЫ» (D-143) ──────────────────────────
+     Замер клиники: замороженная комната (Турбо) продолжала двигаться для
+     ЧИТАТЕЛЕЙ — часы за четыре секунды покоя трижды писали в корень. Причина
+     — раздвоение знания, шестой случай в этом проекте: пружина хранила
+     надетый свет в wpLastHue/wpLastLvl, а sbGetCurrentAccent каждый раз
+     ВЫЧИСЛЯЛ свет заново от Date.now(). Заморозка останавливала перо, но не
+     часы, по которым читают, — и «замерла» было неправдой.
+     Теперь надетый свет лежит в ОДНОМ месте. Заморозка оставляет его
+     написанным, и все читатели видят то же самое, что видит глаз. */
+  var wpNow = null;
+  function wpTick(force) {
+    var w = window.sbRoomLight(Date.now(), wpMode);
+    wpNow = w;
+    var hue = Math.round(w.hue), lvl = Math.round(w.level * 200);
+    if (!force && hue === wpLastHue && lvl === wpLastLvl) return;
+    wpLastHue = hue; wpLastLvl = lvl;
+    paintTint(tintOf(w));
+    var step = Math.round(w.hue / 4);
+    if (force || step !== wpLastSeam) {
+      wpLastSeam = step;
+      var seam = window.sbSeamForRoom(w);
+      applyAccent(seam.a1, seam.a2);
+      if (window.sbClockLight) window.sbClockLight();
+      /* И живой фон: его палитра — тот же свет (D-159). Зовём на шаге ШВА, а
+         не на каждом такте пружины: поле само доводит цвет плавно, и чаще
+         ему незачем. */
+      if (window.sbField && typeof window.sbField.mood === "function") {
+        try { window.sbField.mood(wpMode); } catch (e) { /* ignore */ }
+      }
+    }
+  }
+  /* Шаг подобран под кольцо: у сеанса в четырнадцать минут округлённый
+     градус меняется каждые 2.3 с, у суточного — раз в четыре минуты. Спим
+     ровно столько, сколько нужно этому кольцу, и ни секундой чаще. */
+  function wpStart(mode) {
+    wpStop();
+    wpMode = mode;
+    wpTick(true);
+    /* Турбо не спрашивают здесь: он замораживает явно (sbRoomFreeze). Иначе
+       порядок записи в хранилище решал бы, оживёт комната или нет, — а это
+       ровно тот вид скрытой связи, из-за которого шов и комната когда-то
+       разошлись. */
+    var cyc = window.sbMoodCycle(mode);
+    /* ── ШАГ ПРУЖИНЫ: МЕЛКО И ЧАСТО, А НЕ РЕДКО И КРУПНО (D-158) ──────────
+       ПОВОД, дословно от основателя: «в feast видно слишком сильно за счёт
+       мерцания, что цветовая гамма или свет или и то, и другое переключаются
+       (это слишком сильно заметно на телефоне)».
+       ЗАМЕР НА ТЕЛЕФОННОМ КАДРЕ, пять секунд праздника, средний цвет куска
+       стола: средний шаг 0.19, а НАИБОЛЬШИЙ 6.49 — при том что за все пять
+       секунд свет прошёл 5.85. То есть одна ступенька несла больше, чем весь
+       путь: свет не тёк, он щёлкал. Причина — нижний порог в одну секунду:
+       праздник проходит 6° в секунду и вываливал их одним прыжком.
+       Порог опущен до четверти секунды. Меняется от этого ТОЛЬКО быстрая
+       комната: у светотерапии шаг 1166 мс, у Студии 3333 — оба выше порога и
+       остаются прежними. Дороже это не стало: краска пишется на ОДИН элемент,
+       а дорогая запись в корень (шов) по-прежнему случается раз в четыре
+       градуса, то есть с той же частотой, что и раньше. */
+    var step = Math.max(250, Math.min(60000, Math.round(cyc / 720)));
+    wpTimer = setInterval(function () { wpTick(false); }, step);
+  }
+  /* ОСТАНОВИТЬ ХОД — НЕ ЗНАЧИТ ПОГАСИТЬ СВЕТ. Турбо замораживает комнату
+     такой, какая она сейчас: краска остаётся, идёт только пружина. Гасить
+     краску нужно лишь при полной разборке. */
+  function wpFreeze() {
+    if (wpTimer) { clearInterval(wpTimer); wpTimer = null; }
+  }
+  function wpStop() {
+    wpFreeze();
+    wpLastHue = null; wpLastLvl = null; wpLastSeam = null; wpMode = null;
+    wpNow = null; wpSeam = null;        /* света нет — и читатели это видят */
+    wpClear();
+  }
+  window.sbWallpaperDrifting = function () { return !!wpTimer; };
+  window.sbRoomDrifting = function () { return !!wpTimer; };
+  window.sbRoomFreeze = function () { wpFreeze(); };
+  /* Свет, который СЕЙЧАС НАПИСАН на комнате. Читают отсюда все, кому нужен
+     её цвет: иначе замороженная комната продолжала бы плыть у них в руках. */
+  window.sbRoomNow = function () { return wpNow; };
+  window.sbRoomThaw = function () { if (!wpTimer) wpStart(window.sbGetWallpaperMood()); };
+
+  /* Надеть настроение умеет ОДНА функция. Раньше это знали в двух местах —
+     здесь и в boot, — места разошлись, и выбранный Ocean не переживал
+     перезагрузку: boot восстанавливал всё, кроме него, по строке, оставшейся
+     с тех пор, когда Ocean был значением по умолчанию. Чинится не строка, а
+     раздвоение. */
+  function applyMood(valid) {
     if (valid === "studio") root.removeAttribute("data-wp-mood");
     else root.setAttribute("data-wp-mood", valid);
+    /* Живы ВСЕ комнаты, а не одна: ход идёт при любом настроении. */
+    wpStart(valid);
+  }
+
+  window.sbWallpaperMoods = MOODS.map(function (m) {
+    return { id: m.id, name: m.name, drift: !!m.drift, session: !!m.session };
+  });
+  window.sbGetWallpaperMood = function () {
+    var v = (window.sbDB && window.sbDB.get(MOOD_KEY)) || "studio";
+    return MOODS.some(function (m) { return m.id === v; }) ? v : "studio";
+  };
+  window.sbSetWallpaperMood = function (id) {
+    var valid = MOODS.some(function (m) { return m.id === id; }) ? id : "studio";
+    applyMood(valid);
     if (window.sbDB) window.sbDB.set(MOOD_KEY, valid);
     $$('[data-mood]').forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-mood") === valid); });
     sbBus.emit("mood:change", { id: valid });
@@ -524,10 +944,30 @@
        самопришедшая подсказка уступает ему. Вызванная лампочкой — нет. */
     if (window.sbDeskHintYield) window.sbDeskHintYield();
     host.appendChild(t);
-    requestAnimationFrame(function () { t.classList.add("in"); });
+    /* ── ПОКОЙ — БАЗА, ДВИЖЕНИЕ — ИСКЛЮЧЕНИЕ (D-176) ──────────────────────
+       Извещение уже стоит на своём месте и видимо: так объявлен сам класс
+       .toast. Анимация прихода навешивается ТОЛЬКО ВНУТРИ КАДРА — значит
+       только там, где кадры вообще идут. Нет кадров (фоновая вкладка, слабый
+       телефон, полсекунды счёта растяжки пароля) — нет и анимации, а
+       извещение всё равно на месте и видно.
+       Прежние две редакции ошибались одинаково: сначала класс ставился через
+       кадр, потом через кадр ИЛИ срок — но и переход, и анимация всё равно
+       требуют кадров, чтобы ДОЕХАТЬ, и замороженные держали извещение в своём
+       первом кадре: невидимым и на 14 точек ниже места. Доска ловила это
+       дважды, а закон при этом мерил чужой предмет в движении. */
+    requestAnimationFrame(function () {
+      t.classList.add("enter");
+      /* И СНИМАЕТСЯ ПО СРОКУ, А НЕ ПО КОНЦУ АНИМАЦИИ. Доска показала четвёртый
+         оборот той же ошибки: кадр случился (класс встал), но часы анимации не
+         пошли — браузер душит их в невидимой вкладке, — и класс держал
+         извещение в первом кадре анимации целых три секунды. Украшение не
+         имеет права держать предмет дольше своего срока: класс снимается сам,
+         и с этого мига положение задаёт только база. */
+      setTimeout(function () { t.classList.remove("enter"); }, 700);
+    });
     var kill = function () {
       if (!t.parentNode) return;
-      t.classList.remove("in");
+      t.classList.add("out");
       setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 240);
     };
     t.addEventListener("click", function (ev) {
@@ -555,7 +995,7 @@
     if (!host) return 0;
     var list = $$(".toast", host);
     list.forEach(function (t) {
-      t.classList.remove("in");
+      t.classList.add("out");
       setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 240);
     });
     return list.length;
@@ -606,6 +1046,163 @@
      and forgot themselves on reload, and neither had a reader another surface
      could ask. Now both persist through sbDB, both have get/set contracts,
      and both announce — so Pulse and the Control Center stay in step live. */
+  /* ═══════════════ СТОРОНА УПРАВЛЯЮЩИХ КНОПОК (D-153) ═════════════════════
+     ПОВОД, дословно от основателя 26.08.2026: «у заметок точно также должны
+     кнопки закрыть и свернуть располагаться слева стороны, а не справа… И
+     прошу совет внедрить в панель управления окон ещё одну кнопку, которая
+     будет позволять переключать между левым и правым режимом расположения
+     кнопок управления абсолютно всех окон».
+     ДВА ТРЕБОВАНИЯ, И ВТОРОЕ СИЛЬНЕЕ. «Слева» — предпочтение; «АБСОЛЮТНО
+     ВСЕХ ОКОН» — правило. Поэтому сторона объявляется ОДИН раз на документе,
+     а не расставляется по местам: окна приложений и заметки на столе (те же
+     окна, только маленькие) читают одно и то же слово и разъехаться не могут
+     по построению. Знание одно — значит и спорить нечему.
+     По умолчанию слева: так стоят кнопки у окон приложений с самого начала,
+     и заметки теперь встают в тот же ряд. */
+  var SIDE_KEY = "sysbaby.controls.side";
+  function sideOf(v) { return v === "right" ? "right" : "left"; }
+  window.sbGetControlSide = function () {
+    var raw = window.sbDB ? window.sbDB.get(SIDE_KEY) : null;
+    return sideOf(raw);
+  };
+  window.sbSetControlSide = function (side) {
+    var v = sideOf(side);
+    root.setAttribute("data-controls", v);
+    /* Та же причина, что у яркости (D-170): загрузка ставит то же значение,
+       что уже стоит, и не должна заводить ключ, которого человек не заводил. */
+    if (window.sbDB && window.sbDB.get(SIDE_KEY) !== v) window.sbDB.set(SIDE_KEY, v);
+    if (window.sbBus && window.sbBus.emit) window.sbBus.emit("setting:change", { kind: "side", value: v });
+    try {
+      doc.dispatchEvent(new CustomEvent("sysbaby:setting-changed", { detail: { kind: "side", value: v } }));
+    } catch (e) { /* ignore */ }
+    return v;
+  };
+
+  /* ── ЗАПОЛНЕНИЕ ПОЛЗУНКА ЗНАЕТ ОДИН СЛУШАТЕЛЬ (D-156) ────────────────────
+     У WebKit нет ::progress: пройденную часть рисует фон дорожки, а её длину
+     приходится сообщать переменной. Слушатель стоит на ДОКУМЕНТЕ, а не на
+     каждом ползунке: ползунки рождаются вместе с панелями, и новый получит
+     заполнение сам, без единой правки в том месте, где его завели. */
+  function paintRangeFill(el) {
+    if (!el || el.type !== "range") return;
+    var min = Number(el.min || 0), max = Number(el.max || 100), val = Number(el.value || 0);
+    var span = max - min;
+    var pct = span > 0 ? ((val - min) / span) * 100 : 0;
+    el.style.setProperty("--fill", (Math.round(pct * 10) / 10) + "%");
+  }
+  window.sbPaintRangeFill = paintRangeFill;
+  doc.addEventListener("input", function (ev) {
+    if (ev.target && ev.target.type === "range") paintRangeFill(ev.target);
+  }, true);
+  /* И при появлении новых: панели рисуются разметкой, событие «input» до
+     первого касания не приходит. Один проход по видимым — дёшево и без
+     наблюдателей за деревом. */
+  window.sbPaintAllRanges = function (host) {
+    var list = (host || doc).querySelectorAll('input[type="range"]');
+    for (var i = 0; i < list.length; i++) paintRangeFill(list[i]);
+  };
+
+
+  /* ═══════════════ ПОЛЗУНОК СОБСТВЕННОЙ ПОСТРОЙКИ · D-162 ═════════════════
+     ПОВОД, дословно от основателя 27.08.2026, со снимком: «абсолютно не
+     нравятся эти синие ползунки и ещё больше не нравится, что они не меняют
+     цвет. прошу совет сделать их концептуальными, гениальными,
+     интеллектуальными и дорогими, либо вообще их убрать».
+
+     ЧТО ВЫЯСНИЛОСЬ ЗАМЕРОМ. В D-156 дорожку удалось одеть, а РУЧКУ — нет:
+     снимок полосы ползунка показал 178 синих точек, то есть родной кружок
+     браузера рисовался поверх нашей дорожки. Правило для ::-webkit-slider-
+     thumb до него не доходило. Спорить с чужим псевдоэлементом — значит
+     чинить то, чего не видишь: у него нет ни коробки, ни цвета, которые можно
+     спросить (проверено в D-156: getComputedStyle отдаёт коробку самого поля).
+
+     РЕШЕНИЕ — НЕ УПРЯМСТВО, А СМЕНА ОСНОВАНИЯ. Ползунок собирается из наших
+     же узлов: дорожка, заполнение, палочка. Тогда нечему быть «синим»: цвет
+     берётся оттуда же, откуда его берут часы, и меняется вместе с комнатой
+     по построению, а не по правилу, которое браузер может не применить.
+
+     ЧТО СОХРАНЕНО ОТ РОДНОГО ПОЛЯ, потому что терять это нельзя: роль
+     «slider» и три числа для читалки экрана, работа с клавиатуры (стрелки,
+     Home/End) и оба конца жеста — pointerup И pointercancel (D-144).
+     ═══════════════════════════════════════════════════════════════════════ */
+  window.sbSlider = function (host, opts) {
+    if (!host) return null;
+    var o = opts || {};
+    var min = typeof o.min === "number" ? o.min : 0;
+    var max = typeof o.max === "number" ? o.max : 100;
+    var step = typeof o.step === "number" ? o.step : 1;
+    var val = typeof o.value === "number" ? o.value : min;
+
+    var el = doc.createElement("div");
+    el.className = "sb-range";
+    el.setAttribute("role", "slider");
+    el.setAttribute("tabindex", "0");
+    el.setAttribute("aria-valuemin", String(min));
+    el.setAttribute("aria-valuemax", String(max));
+    if (o.label) el.setAttribute("aria-label", String(o.label));
+    el.innerHTML =
+      '<span class="sb-range-track"><span class="sb-range-fill"></span></span>' +
+      '<span class="sb-range-stick"></span>';
+    var fill = el.querySelector(".sb-range-fill");
+    var stick = el.querySelector(".sb-range-stick");
+
+    function clamp(v) { return Math.max(min, Math.min(max, v)); }
+    function snap(v) { return Math.round((v - min) / step) * step + min; }
+    function paint() {
+      var pct = max > min ? ((val - min) / (max - min)) * 100 : 0;
+      fill.style.width = pct + "%";
+      stick.style.left = pct + "%";
+      el.setAttribute("aria-valuenow", String(Math.round(val)));
+    }
+    function put(v, tell) {
+      var next = clamp(snap(v));
+      if (next === val) return;
+      val = next;
+      paint();
+      if (tell && typeof o.onInput === "function") o.onInput(val);
+    }
+    function fromX(x) {
+      var r = el.getBoundingClientRect();
+      if (!r.width) return val;
+      return min + ((x - r.left) / r.width) * (max - min);
+    }
+
+    var dragging = false;
+    function move(ev) { if (dragging) put(fromX(ev.clientX), true); }
+    function end() {
+      dragging = false;
+      el.classList.remove("held");
+      doc.removeEventListener("pointermove", move);
+      doc.removeEventListener("pointerup", end);
+      doc.removeEventListener("pointercancel", end);
+    }
+    el.addEventListener("pointerdown", function (ev) {
+      dragging = true;
+      el.classList.add("held");
+      put(fromX(ev.clientX), true);
+      doc.addEventListener("pointermove", move);
+      doc.addEventListener("pointerup", end);
+      /* Второй конец жеста — у пальца его забирают (D-144). */
+      doc.addEventListener("pointercancel", end);
+      ev.preventDefault();
+    });
+    el.addEventListener("keydown", function (ev) {
+      var k = ev.key;
+      if (k === "ArrowLeft" || k === "ArrowDown") { put(val - step, true); ev.preventDefault(); }
+      else if (k === "ArrowRight" || k === "ArrowUp") { put(val + step, true); ev.preventDefault(); }
+      else if (k === "Home") { put(min, true); ev.preventDefault(); }
+      else if (k === "End") { put(max, true); ev.preventDefault(); }
+    });
+
+    host.appendChild(el);
+    paint();
+    return {
+      el: el,
+      get: function () { return val; },
+      set: function (v) { put(v, false); }
+    };
+  };
+
   var VOLUME_KEY = "sysbaby.sound.volume";
   var BRIGHT_KEY = "sysbaby.display.brightness";
 
@@ -630,7 +1227,16 @@
   window.sbSetBrightness = function (v) {
     var val = clamp(num(v, 100), 0, 100);
     applyBrightness(val);
-    if (window.sbDB) window.sbDB.set(BRIGHT_KEY, String(val));
+    /* ── ПИШЕТСЯ ТОЛЬКО ИЗМЕНЁННОЕ (D-170, нашла доска) ──────────────────
+       Загрузка зовёт sbSetBrightness(sbGetBrightness()) — то есть ставит то
+       же значение, что уже стоит. Прежняя редакция писала его в хранилище
+       каждый раз, и в свежем профиле заводился ключ, которого человек не
+       заводил: закон smoke-shell показал его как ключ без хозяина. Настройка,
+       которой никто не касался, не должна появляться в хранилище сама. */
+    if (window.sbDB) {
+      var was = window.sbDB.get(BRIGHT_KEY);
+      if (was !== String(val)) window.sbDB.set(BRIGHT_KEY, String(val));
+    }
     announceSetting("brightness", { value: val });
     return val;
   };
@@ -715,7 +1321,19 @@
   /* ============================================================ window mgr §3 */
   var openWindows = Object.create(null);
   var openOrder = [];              /* ids in open order (topbar app sequence) */
-  var zCounter = 40;
+  /* ── ОКНА СЧИТАЮТСЯ ОТ СТУПЕНИ ШКАЛЫ, А НЕ ОТ ЧИСЛА (D-184) ──────────────
+     Здесь стояло 40 — число, о котором этот файл договорился сам с собой,
+     ровно как когда-то высота полосы (D-170). Теперь оно берётся у той же
+     лестницы, что и все прочие слои: подвинется ступень — подвинутся окна, и
+     ни одно из них не окажется под полкой или над панелью по недосмотру. */
+  function depthOf(name, fallback) {
+    try {
+      var v = parseFloat(window.getComputedStyle(root).getPropertyValue(name));
+      if (isFinite(v)) return v;
+    } catch (e) { /* ignore */ }
+    return fallback;
+  }
+  var zCounter = depthOf("--z-window", 42);
   var cascade = 0;
   var focusedId = null;
   var pendingClose = Object.create(null);
@@ -1101,11 +1719,12 @@
     var r0 = fly ? el.getBoundingClientRect() : null;
     var y = Math.round(rect.y);
     var h = Math.round(rect.h);
-    if (!el.classList.contains("fullscreen") && y < TOPBAR_H) {
+    var bar = topbarBox();
+    if (!el.classList.contains("fullscreen") && y < bar) {
       /* Высоту укорачиваем на то же, на что опустили верх: иначе окно, сдвинутое
          вниз, вылезет нижним краем за экран — починили бы одно, сломали другое. */
-      h = Math.max(160, h - (TOPBAR_H - y));
-      y = TOPBAR_H;
+      h = Math.max(160, h - (bar - y));
+      y = bar;
     }
     win.x = Math.round(rect.x); win.y = y;
     win.w = Math.round(rect.w); win.h = h;
@@ -1150,9 +1769,46 @@
     });
   };
 
-  /* The system bar's height. Maximize is measured against it rather than
-     against the viewport, so it has to be a number this file agrees on. */
-  var TOPBAR_H = 44;
+  /* ── ВЫСОТА ПОЛОСЫ СПРАШИВАЕТСЯ У ПОЛОСЫ · решение D-170 ──────────────────
+   *
+   * ПОВОД, дословно от основателя 27.08.2026, со снимками Музыки и Настроек:
+   * «в режиме full screen не видно верхню чась окна. не возможно передвинуть
+   * и так далее».
+   *
+   * ЗДЕСЬ СТОЯЛО `var TOPBAR_H = 44`, и рядом честная подпись: «это должно
+   * быть число, о котором этот файл договорился сам с собой». Ровно в ней и
+   * была ошибка. Полоса в core.css высотой НЕ 44:
+   *     --topbar-box: calc(var(--topbar-h) + var(--safe-top));
+   *     --safe-top:   env(safe-area-inset-top, 0px);
+   * На обычной вкладке вырез экрана не отдаёт ничего, safe-top = 0, и оба
+   * числа совпадают — потому дефект и не показывался ни на одном стенде и ни
+   * на одном телефоне в обычном режиме. Но В ПОЛНОМ ЭКРАНЕ Android отдаёт
+   * странице вырез: safe-top становится 24–48 px, полоса вырастает — а окна
+   * этот файл по-прежнему ставит на 44. Шапка окна высотой 42 px целиком
+   * уходит ПОД полосу (у окна z-index 42, у полосы 60), и человек остаётся
+   * без единственной ручки: ни передвинуть, ни свернуть, ни закрыть.
+   *
+   * ДВОЙНОЕ ЗНАНИЕ, ДЕВЯТЫЙ СЛУЧАЙ — и второй раз подряд именно про высоту
+   * верхней полосы. Лечение всегда одно: не помнить чужое число, а спросить
+   * у того, кто им владеет. Спрашиваем сперва саму полосу (её измеренная
+   * высота — последняя правда), и лишь если её ещё нет в разметке — счётные
+   * свойства комнаты. Числа 44 в этом файле больше нет. */
+  function topbarBox() {
+    var el = doc.getElementById("topbar");
+    if (el) {
+      /* Именно height, а не bottom: убранная полоса (translateY) сохраняет
+         высоту, и место под неё резервируется всё равно — она вернётся. */
+      var r = el.getBoundingClientRect();
+      if (r && r.height > 0) return Math.round(r.height);
+    }
+    var cs = window.getComputedStyle(root);
+    var h = parseFloat(cs.getPropertyValue("--topbar-h"));
+    var s = parseFloat(cs.getPropertyValue("--safe-top"));
+    if (!isFinite(h)) h = 44;
+    if (!isFinite(s)) s = 0;
+    return Math.round(h + s);
+  }
+  window.sbTopbarBox = topbarBox;
 
   /* ── ПРЯМОУГОЛЬНИК КОМПАКТНОГО ОКНА: МЕЖДУ ПАНЕЛЬЮ И ПОЛКОЙ (v48) ───────
    *
@@ -1178,14 +1834,14 @@
          ±12px (значок пришёл, подпись мигнула), и окна ездили за этим
          дребезгом. На узком экране полка фиксирована правилами §14
          core.css (плитка 38 + поля 6), итого 62 — берём её как константу
-         той же природы, что TOPBAR_H, плюс 22 воздуха. */
+         той же природы, что высота полосы, плюс 22 воздуха. */
     return 84;
   }
   function compactRect() {
     return {
-      x: 0, y: TOPBAR_H,
+      x: 0, y: topbarBox(),
       w: window.innerWidth,
-      h: Math.max(220, window.innerHeight - TOPBAR_H - dockAllowance())
+      h: Math.max(220, window.innerHeight - topbarBox() - dockAllowance())
     };
   }
   /* Отдельного слушателя resize здесь НЕТ намеренно: подгонкой окон под
@@ -1213,7 +1869,7 @@
       win.maximized = true; win.snapped = null;
       win.el.classList.add("maximized");
       win.el.classList.remove("snapped");
-      /* WHY y = TOPBAR_H AND NOT 0
+      /* WHY y = topbarBox() AND NOT 0
          A maximized window used to be placed at the very top of the viewport,
          directly underneath the system bar — which is fixed at z-index 60
          while the window layer is 20. The titlebar was never removed and was
@@ -1307,9 +1963,9 @@
      функция, и разойтись им негде. */
   function maximizedRect() {
     return {
-      x: 0, y: TOPBAR_H,
+      x: 0, y: topbarBox(),
       w: window.innerWidth,
-      h: Math.max(160, window.innerHeight - TOPBAR_H)
+      h: Math.max(160, window.innerHeight - topbarBox())
     };
   }
 
@@ -1540,7 +2196,7 @@
         } else {
           applyRect(w, {
             x: clamp(w.x, -(w.w - 160), Math.max(14, window.innerWidth - 160)),
-            y: clamp(w.y, 44, Math.max(44, window.innerHeight - 40)),
+            y: clamp(w.y, topbarBox(), Math.max(topbarBox(), window.innerHeight - 40)),
             w: Math.min(w.w, window.innerWidth - 28), h: Math.min(w.h, window.innerHeight - 60)
           }, false);
         }
@@ -1548,6 +2204,31 @@
       layoutIcons();
     }, 150);
   });
+
+  /* ── КОМНАТА ПОМЕНЯЛА РАЗМЕР — ОКНА ПЕРЕСТАВЛЯЮТСЯ (D-170) ───────────────
+     Вход в полный экран и выход из него меняют НЕ ТОЛЬКО высоту вида: Android
+     отдаёт странице вырез, safe-top скачет с нуля до 24–48 px, и вместе с ним
+     меняется высота верхней полосы. Событие resize при этом приходит не
+     всегда и не сразу — а окно, оставшееся стоять по старой мерке, прячет
+     свою шапку под полосу. Поэтому переклад считается и по самому событию
+     полного экрана: ровно тот случай, о котором написал основатель.
+     Два кадра ожидания — не суеверие: env(safe-area-inset-*) обновляется
+     после смены режима, и мерить раньше значит мерить прошлую комнату. */
+  function refitWindows() {
+    Object.keys(openWindows).forEach(function (id) {
+      var w = openWindows[id];
+      if (w.el.classList.contains("fullscreen")) return;
+      if (compact()) { applyRect(w, compactRect(), false); return; }
+      if (w.maximized) { applyRect(w, { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight }, false); return; }
+      applyRect(w, { x: w.x, y: w.y, w: w.w, h: w.h }, false);
+    });
+  }
+  window.sbRefitWindows = refitWindows;
+  function onFullscreenChange() {
+    requestAnimationFrame(function () { requestAnimationFrame(function () { refitWindows(); layoutIcons(); }); });
+  }
+  doc.addEventListener("fullscreenchange", onFullscreenChange);
+  doc.addEventListener("webkitfullscreenchange", onFullscreenChange);
 
   /* topbar auto-hide while a window is maximized (desktop only) */
   var peekTimer = null;
@@ -1952,21 +2633,70 @@
    * ПОЧЕМУ ЭТО НЕ «ПРОСТО НАСТРОЙКА». Стол — вещь человека. Система не
    * переставляет на нём предметы без его слова; вернуть всё в сетку можно,
    * но по команде (sbTidyDesk), а не самой собой. */
+  /* ── МЕСТО ЗНАЧКА — ЭТО КЛЕТКА, А НЕ ДОЛЯ ЭКРАНА (D-130) ────────────────
+     ПОВОД, дословно от основателя 26.08.2026, с четырьмя снимками:
+     «полноэкранный режим меняет расположение иконок и затем при переходе
+     обратно они ещё сильнее разбрасываются… и вот что происходит с иконками,
+     когда я поворачиваю экран телефона».
+
+     ЧТО БЫЛО. Место хранилось долей ширины и долей высоты: fx = x/W, fy = y/H.
+     При повороте W и H не просто меняются — они МЕНЯЮТСЯ МЕСТАМИ. Два значка,
+     стоявших рядом в одной клетке друг от друга, после поворота расходились
+     на произвольное расстояние: доля сохраняет отношение к краю, но не
+     сохраняет РАССТАНОВКУ. Это и есть «разбрасываются».
+
+     И ВТОРОЕ, отчего «ещё сильнее». Сетка обходит клетки, занятые рукой
+     («как вода вокруг камня»). Камни, поставленные долями, после поворота
+     оказывались в других местах — и поток обтекал их иначе. Съезжали не
+     только переставленные значки, а ВЕСЬ верхний ряд, которого человек вообще
+     не трогал. Прибор показал: messenger [44,104] → [278,14], и следом за ним
+     все остальные.
+
+     ЧТО СТАЛО. Место — это КЛЕТКА стола: столбец и строка. Рука и так кладёт
+     значок в клетку (freeCellNear возвращает выровненную по сетке точку) —
+     значит доля была лишь неточной записью того, что уже было клеткой.
+     Клетка переживает поворот, потому что она не про пиксели.
+
+     И ТРЕТЬЕ, без чего первые два не работают: геометрия сетки считается
+     теперь по ВСЕМ значкам, а не по одним свободным. Раньше стоило унести
+     один значок рукой — и сетка для остальных пересчитывалась и съезжала:
+     клетка означала бы разное в зависимости от того, сколько значков успели
+     передвинуть. Сетка — свойство СТОЛА и экрана, а не того, кого двигали. */
   var iconPlaces = null;
   function getIconPlaces() {
     if (!iconPlaces) {
       var v = readJSON("sysbaby.icons.pos", {});
       iconPlaces = (v && typeof v === "object" && !Array.isArray(v)) ? v : {};
+      /* Записи прошлых версий (доли) переводятся в клетки ОДИН РАЗ, при
+         чтении: у кого стол уже расставлен, тот не должен ничего чинить
+         руками. Тот же приём, что у места кнопки действия (v54). */
+      var host = $("#sbIconLayer"), g = window.sbDesktopGrid;
+      var moved = false;
+      if (host && g && g.stepX) {
+        Object.keys(iconPlaces).forEach(function (k) {
+          var v2 = iconPlaces[k];
+          if (!v2 || typeof v2.c === "number") return;
+          if (typeof v2.fx !== "number") { delete iconPlaces[k]; moved = true; return; }
+          var W = host.clientWidth || 1, H = host.clientHeight || 1;
+          iconPlaces[k] = {
+            c: Math.max(0, Math.round((v2.fx * W - g.originX) / g.stepX)),
+            r: Math.max(0, Math.round((v2.fy * H - g.originY) / g.stepY))
+          };
+          moved = true;
+        });
+        if (moved) writeJSON("sysbaby.icons.pos", iconPlaces);
+      }
     }
     return iconPlaces;
   }
   function rememberIconPlace(id, x, y) {
-    var host = $("#sbIconLayer");
-    if (!host) return;
-    var W = host.clientWidth, H = host.clientHeight;
-    if (!W || !H) return;
+    var g = window.sbDesktopGrid;
+    if (!g || !g.stepX || !g.stepY) return;
     var places = getIconPlaces();
-    places[id] = { fx: x / W, fy: y / H };
+    places[id] = {
+      c: Math.max(0, Math.round((x - g.originX) / g.stepX)),
+      r: Math.max(0, Math.round((y - g.originY) / g.stepY))
+    };
     iconPlaces = places;
     writeJSON("sysbaby.icons.pos", places);
   }
@@ -2041,7 +2771,11 @@
     var places = getIconPlaces();
     var placed = all.filter(function (n) { return !!places[n.getAttribute("data-app")]; });
     var nodes = all.filter(function (n) { return !places[n.getAttribute("data-app")]; });
-    var count = nodes.length || all.length;
+    /* Геометрия сетки считается по ВСЕМ значкам. Раньше — только по
+       свободным, и тогда стоило унести один рукой, как сетка для остальных
+       пересчитывалась и съезжала. Клетка обязана означать одно и то же
+       независимо от того, сколько значков передвинуто. */
+    var count = all.length;
     if (!count) { window.sbDesktopGrid = { originX: 0, originY: 0, cellW: 80, cellH: 92, cols: 0, rows: 0, gapX: 16, gapY: 12, stepX: 96, stepY: 104 }; return; }
 
     /* §4.2, ПЕРЕСЧИТАНО В v47.
@@ -2085,31 +2819,37 @@
        Теперь клетка, пересекающаяся с поставленным вручную значком,
        пропускается, и ряд течёт дальше — как вода вокруг камня. */
     var HH0 = host.clientHeight || (cellH * 2);
-    var stones = placed.map(function (n) {
-      var pos = places[n.getAttribute("data-app")];
-      if (!pos) return null;
-      return { x: clamp(pos.fx * W, 2, Math.max(2, W - cellW - 2)),
-               y: clamp(pos.fy * HH0, 2, Math.max(2, HH0 - cellH - 2)) };
-    }).filter(Boolean);
-    function cellFree(x, y) {
-      for (var k = 0; k < stones.length; k++) {
-        var st = stones[k];
-        if (!(x + cellW <= st.x || st.x + cellW <= x || y + cellH <= st.y || st.y + cellH <= y)) return false;
-      }
-      return true;
-    }
+    var stepX = cellW + gapX, stepY = cellH + gapY;
+    var maxRow = Math.max(0, Math.floor((HH0 - originY - cellH) / stepY));
+    /* Камни — клетки, занятые рукой. Столбец зажимается в нынешнюю ширину
+       стола, строка — в его высоту: на повёрнутом экране столбцов больше, а
+       строк меньше, и клетка, которой там нет, обязана всё-таки где-то стоять.
+       Зажим — ТОЛЬКО ДЛЯ ПОКАЗА: в хранилище остаётся то, что назвал человек,
+       поэтому возврат в прежнюю сторону возвращает и прежнюю расстановку. */
+    var taken = Object.create(null);
+    var stoneOf = Object.create(null);
+    placed.forEach(function (n) {
+      var id = n.getAttribute("data-app"), pos = places[id];
+      if (!pos) return;
+      var c = clamp(pos.c | 0, 0, Math.max(0, cols - 1));
+      var r = clamp(pos.r | 0, 0, maxRow);
+      /* Две разные клетки могли сойтись в одну после зажима — расходятся по
+         одному и тому же правилу всегда, иначе показ был бы случайным. */
+      var guard = 0;
+      while (taken[c + "," + r] && guard++ < 400) { c++; if (c >= cols) { c = 0; r++; } }
+      taken[c + "," + r] = 1;
+      stoneOf[id] = { c: c, r: r };
+    });
     var slot = 0;
     nodes.forEach(function (n) {
       if (n.getAttribute("data-dragged") === "1") return;   /* палец ещё держит — не вырывать */
-      var x, y;
+      var c, r, guard = 0;
       do {
-        var c = slot % cols, r = Math.floor(slot / cols);
-        x = originX + c * (cellW + gapX);
-        y = originY + r * (cellH + gapY);
-        slot++;
-      } while (!cellFree(x, y) && slot < 400);
-      n.style.left = x + "px";
-      n.style.top = y + "px";
+        c = slot % cols; r = Math.floor(slot / cols); slot++;
+      } while (taken[c + "," + r] && guard++ < 400);
+      taken[c + "," + r] = 1;
+      n.style.left = (originX + c * stepX) + "px";
+      n.style.top = (originY + r * stepY) + "px";
       n.style.width = cellW + "px";
       n.style.height = cellH + "px";
     });
@@ -2117,15 +2857,14 @@
     /* Запомненные ставятся по своей доле — и зажимаются в границы стола:
        доля записана на другом экране, и без этой строки значок мог бы
        оказаться за краем после поворота телефона. */
-    var HH = host.clientHeight || (cellH * 2);
     placed.forEach(function (n) {
-      var pos = places[n.getAttribute("data-app")];
-      if (!pos) return;
+      var st = stoneOf[n.getAttribute("data-app")];
+      if (!st) return;
       n.style.width = cellW + "px";
       n.style.height = cellH + "px";
       if (n.getAttribute("data-dragged") === "1") return;
-      n.style.left = Math.round(clamp(pos.fx * W, 2, Math.max(2, W - cellW - 2))) + "px";
-      n.style.top = Math.round(clamp(pos.fy * HH, 2, Math.max(2, HH - cellH - 2))) + "px";
+      n.style.left = (originX + st.c * stepX) + "px";
+      n.style.top = (originY + st.r * stepY) + "px";
     });
     $$(".desk-icon", host).forEach(function (n) { n.removeAttribute("data-dragged"); });
 
@@ -2167,11 +2906,38 @@
   }
   window.sbDesktopObstacles = obstacles;
 
+  /* ── КЛЕТКА, НАЗВАННАЯ ЧЕЛОВЕКОМ, ДОСТАЁТСЯ ЧЕЛОВЕКУ (D-130) ────────────
+     ПОВОД, дословно: «в некоторые места нет возможности их перемещать -
+     просто не возможно оставить иконку на определенном месте».
+     Прибор подтвердил: просили клетку (1,1) — система давала (0,2). Причина
+     была в том, что помехой считался ЛЮБОЙ значок. Но значки из общего ряда
+     не стоят на своих местах — они их лишь занимают до тех пор, пока никто не
+     попросил: весь ряд и так смыкается вокруг переставленных рукой. Значит
+     помеха не они.
+     ПРАВИЛО. Помеха — только то, что поставлено ЧЕЛОВЕКОМ: другой
+     переставленный значок и заметка. Против них ищется ближайшая свободная
+     клетка — спорить с чужим решением система не вправе. Всё остальное
+     уступает дорогу и смыкает ряды. */
+  function handObstacles(exceptEl) {
+    var out = [];
+    var places = getIconPlaces();
+    $$("#sbIconLayer .desk-icon").forEach(function (n) {
+      if (n === exceptEl || n.classList.contains("hidden-icon")) return;
+      if (!places[n.getAttribute("data-app")]) return;   /* из общего ряда — уступит */
+      out.push({ x: n.offsetLeft, y: n.offsetTop, w: n.offsetWidth, h: n.offsetHeight });
+    });
+    $$("#sbNoteLayer .sticky-note").forEach(function (n) {
+      if (n === exceptEl) return;
+      out.push({ x: n.offsetLeft, y: n.offsetTop, w: n.offsetWidth, h: n.offsetHeight });
+    });
+    return out;
+  }
+
   function freeCellNear(x, y, w, h, exceptEl) {
     var g = window.sbDesktopGrid;
     if (!g || !g.cols) return { x: x, y: y };
     var col = Math.round((x - g.originX) / g.stepX), row = Math.round((y - g.originY) / g.stepY);
-    var others = obstacles(exceptEl);
+    var others = handObstacles(exceptEl);
     for (var rad = 0; rad <= 6; rad++) {
       for (var dc = -rad; dc <= rad; dc++) {
         for (var dr = -rad; dr <= rad; dr++) {
@@ -2280,6 +3046,7 @@
       if (over && id !== "echoes") {
         /* Унесённый со стола забывает своё место: вернувшись, он должен
            встать в ряд, а не в точку, из которой его когда-то унесли. */
+        if (window.sbFlyToEchoes) { try { window.sbFlyToEchoes(node); } catch (e) { } }
         forgetIconPlace(id);
         window.sbSetIconHidden(id, true);
         window.showToast(tr("toast.toEchoes", { app: appTitle("echoes") }), tr("toast.toEchoesIcon"), ICONS.note);
@@ -2295,6 +3062,19 @@
          о ней, иначе значок вернётся в сетку — ровно тот дефект, о котором
          написал основатель. */
       rememberIconPlace(id, snap.x, snap.y);
+      /* РЯДЫ СМЫКАЮТСЯ СРАЗУ, А НЕ ПОТОМ (D-130).
+         Здесь перекладки не было — и стол оставался в противоречии с самим
+         собой: значок уже унесён, а клетка, где он стоял, ещё считалась
+         занятой. Первое же событие, вызывающее перекладку — поворот телефона,
+         полноэкранный режим, даже адресная строка, — смыкало ряды разом, и со
+         стороны человека это выглядело так, будто расположение меняет
+         полноэкранный режим. Дословно из повода: «полноэкранный режим меняет
+         расположение иконок». Менял не он: он лишь первым показывал то, что
+         уже было решено переносом.
+         Теперь ряды смыкаются в тот же миг, под рукой человека, как следствие
+         его собственного движения. Перенесённый значок при этом не двинется:
+         он уже камень на своей клетке. */
+      layoutIcons();
       setTimeout(function () { node.classList.remove("settling"); }, 320);
     }
     node.addEventListener("pointerup", endIconDrag);
@@ -2345,6 +3125,155 @@
     }
     return null;
   }
+  /* ============================================ ПОЛЁТ В ЭХО (D-132) §
+
+     ПОВОД: «нам нужна гениальная и концептуальная анимация во время удаления
+     любого элемента на рабочем столе (например, улетает в приложение echo)».
+
+     ЧТО ЭТО ЗА ДВИЖЕНИЕ. В sys.baby ничего не пропадает: удалённое лежит в
+     Эхе, пока человек сам не скажет иначе, — так и написано в самом
+     приложении: «Убрано с рабочего стола — не удалено». Но человек этого НЕ
+     ВИДИТ: предмет исчезает, и обещание приходится принимать на слово. Полёт
+     — не украшение. Это единственный миг, когда обещание системы можно
+     увидеть глазами: предмет не пропал, он УШЁЛ, и видно куда.
+
+     ЧЕТЫРЕ ПРАВИЛА, БЕЗ КОТОРЫХ ЭТО БЫЛО БЫ УКРАШЕНИЕМ.
+     1. Данные не ждут картинки: предмет удаляют сразу, полёт идёт следом.
+        Закрыл вкладку посреди движения — ничего не воскресло.
+     2. Двойник висит поверх (position: fixed) и в раскладке не участвует:
+        соседи не дёргаются оттого, что что-то улетает.
+     3. Летит по ДУГЕ, а не по прямой: прямая читается как рывок, дуга — как
+        «отпустили, и оно пошло». Дуга сделана offset-path, одним свойством,
+        которое композитор считает сам.
+     4. Выключил движение — полёта нет, но Эхо всё равно отзывается:
+        обещание важнее картинки.
+
+     КУДА ЛЕТИТ, ЕСЛИ ЭХА НЕ ВИДНО. К значку Эха; если его нет на столе — к
+     плитке в доке; если и её нет — к нижнему краю у дока, туда, где Эхо
+     живёт. Молча никуда не летим. */
+  function echoTarget() {
+    var icon = $('.desk-icon[data-app="echoes"]:not(.hidden-icon)');
+    if (icon) return { el: icon, r: icon.getBoundingClientRect() };
+    var tile = $('#dock [data-app="echoes"]');
+    if (tile) return { el: tile, r: tile.getBoundingClientRect() };
+    var dock = $("#dock");
+    if (dock) { var d = dock.getBoundingClientRect(); return { el: null, r: { left: d.left + d.width / 2 - 20, top: d.top, width: 40, height: 40 } }; }
+    return { el: null, r: { left: window.innerWidth / 2 - 20, top: window.innerHeight - 60, width: 40, height: 40 } };
+  }
+  function echoCatch() {
+    var t = echoTarget();
+    if (!t.el) return;
+    t.el.classList.add("echo-catch");
+    setTimeout(function () { t.el.classList.remove("echo-catch"); }, 620);
+  }
+  window.sbFlyToEchoes = function (el) {
+    var reduced = false;
+    try { reduced = !!window.sbGetControlToggle("motion") ||
+      (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) { }
+    /* Эхо отзывается НА ПРИЛЁТЕ, а не на отлёте: отклик — это «поймал», а не
+       «отпустили». Первая редакция звала echoCatch() в начале, и значок
+       вздрагивал раньше, чем к нему что-то прилетело: движение читалось как
+       два несвязанных события вместо одного. Без движения отклик идёт сразу —
+       лететь нечему, а сказать «принято» всё равно надо. */
+    if (reduced || !el || !el.getBoundingClientRect) { echoCatch(); return Promise.resolve(); }
+    var from = el.getBoundingClientRect();
+    if (!from.width || !from.height) { echoCatch(); return Promise.resolve(); }
+    var to = echoTarget().r;
+    var fly = doc.createElement("div");
+    fly.className = "sb-flyer";
+    fly.setAttribute("aria-hidden", "true");
+    fly.style.left = from.left + "px";
+    fly.style.top = from.top + "px";
+    fly.style.width = from.width + "px";
+    fly.style.height = from.height + "px";
+    /* ── ДВОЙНИК — КАРТИНКА, И ОН НЕ ОТЗЫВАЕТСЯ НА ИМЯ ПРЕДМЕТА ──────────
+       Первая редакция копировала узел как есть — вместе с id и data-id. И
+       пока картинка летела, в документе полсекунды жило ВТОРОЕ существо с тем
+       же именем: запрос .sticky-note[data-id="…"] находил его и отвечал «она
+       всё ещё на столе». Поймала это доска (note-window-check), и жалоба была
+       по существу, а не придиркой: код продукта тоже спрашивает про
+       .sticky-note.full, и удаление развёрнутой заметки нашло бы двойника.
+       Имя и состояние с картинки сняты: у неё остаётся только вид. */
+    var shot = el.cloneNode(true);
+    (function strip(node) {
+      if (node.nodeType !== 1) return;
+      node.removeAttribute("id");
+      var at = node.attributes, kill = [];
+      for (var i = 0; i < at.length; i++) if (at[i].name.indexOf("data-") === 0) kill.push(at[i].name);
+      kill.forEach(function (n) { node.removeAttribute(n); });
+      node.setAttribute("tabindex", "-1");
+      for (var c = 0; c < node.children.length; c++) strip(node.children[c]);
+    })(shot);
+    /* Состояния — это про живой предмет, а не про его вид. */
+    ["full", "focused", "dragging", "armed", "settling", "lights-held", "editing"]
+      .forEach(function (c) { shot.classList.remove(c); });
+    shot.setAttribute("aria-hidden", "true");
+    shot.style.margin = "0"; shot.style.left = "0"; shot.style.top = "0";
+    shot.style.width = "100%"; shot.style.height = "100%"; shot.style.position = "static";
+    shot.style.transform = "none";
+    fly.appendChild(shot);
+    doc.body.appendChild(fly);
+
+    var dx = (to.left + to.width / 2) - (from.left + from.width / 2);
+    var dy = (to.top + to.height / 2) - (from.top + from.height / 2);
+    /* Дуга: точка отрыва идёт вверх и вбок, потом падает в цель. Подъём —
+       четверть расстояния, но не больше 120 точек: на длинном столе иначе
+       предмет улетал бы за верхний край. */
+    var lift = Math.min(120, Math.max(28, Math.hypot(dx, dy) * 0.25));
+    var path = "path('M 0 0 C " + Math.round(dx * 0.25) + " " + Math.round(-lift) +
+               ", " + Math.round(dx * 0.7) + " " + Math.round(dy * 0.35 - lift * 0.4) +
+               ", " + Math.round(dx) + " " + Math.round(dy) + "')";
+    fly.style.offsetPath = path;
+    fly.style.offsetRotate = "0deg";
+    var DUR = 640;
+    var anim = fly.animate(
+      [{ offsetDistance: "0%", opacity: 1, scale: "1" },
+       { offsetDistance: "62%", opacity: .95, scale: ".62", offset: .62 },
+       { offsetDistance: "100%", opacity: 0, scale: ".16" }],
+      { duration: DUR, easing: "cubic-bezier(.34,.02,.28,1)", fill: "forwards" });
+    /* Отклик встречает предмет чуть раньше касания — так две части движения
+       читаются как одно: значок уже подался навстречу, когда предмет входит. */
+    var meet = setTimeout(echoCatch, Math.round(DUR * 0.78));
+    return anim.finished.catch(function () { }).then(function () {
+      clearTimeout(meet); echoCatch();
+      if (fly.parentNode) fly.parentNode.removeChild(fly);
+    });
+  };
+
+  /* ── ЧАСТИ СТОЛА, КОТОРЫЕ МОЖНО УБРАТЬ (D-133) ─────────────────────────
+     Кнопка действия — не приложение, и в списке приложений ей места нет. Но
+     убирается она туда же, куда и всё остальное: в Эхо, откуда её видно и
+     откуда её можно вернуть. Иначе это была бы не уборка, а потеря.
+     Список назван здесь один раз; Эхо читает его, а не знает о кнопке само. */
+  var PARTS_KEY = "sysbaby.desk.parts.hidden";
+  var PART_DEFS = [{ id: "fab", key: "part.fab" }];
+  function hiddenParts() {
+    var v = readJSON(PARTS_KEY, []);
+    return Array.isArray(v) ? v : [];
+  }
+  window.sbDeskParts = function () {
+    var hid = hiddenParts();
+    return PART_DEFS.map(function (d) {
+      return { id: d.id, title: tr(d.key), hidden: hid.indexOf(d.id) !== -1 };
+    });
+  };
+  function applyParts() {
+    var hid = hiddenParts();
+    PART_DEFS.forEach(function (d) {
+      var el = d.id === "fab" ? $("#sbFab") : null;
+      if (el) el.classList.toggle("part-hidden", hid.indexOf(d.id) !== -1);
+    });
+  }
+  window.sbSetDeskPartHidden = function (id, hidden) {
+    if (!PART_DEFS.some(function (d) { return d.id === id; })) return;
+    var hid = hiddenParts().filter(function (x) { return x !== id; });
+    if (hidden) hid.push(id);
+    writeJSON(PARTS_KEY, hid);
+    applyParts();
+    sbBus.emit("part:visibility", { id: id, hidden: !!hidden });
+  };
+  window.sbApplyDeskParts = applyParts;
+
   window.sbEchoesHighlight = function (active) {
     var icon = $('.desk-icon[data-app="echoes"]');
     if (icon) icon.classList.toggle("drop-target", !!active);
@@ -2359,6 +3288,7 @@
     var id = ghostNode.getAttribute("data-id");
     var over = echoesDropTarget(ev.clientX, ev.clientY);
     if (over && id && window.sbNotesStore) {
+      if (window.sbFlyToEchoes) { try { window.sbFlyToEchoes(ghostNode); } catch (e) { } }
       window.sbNotesStore.softDelete(id);
       window.showToast(tr("toast.toEchoes", { app: appTitle("echoes") }), tr("toast.toEchoesNote"), ICONS.note);
     }
@@ -2769,8 +3699,137 @@
     requestAnimationFrame(next);
   }
 
+  /* ── ЗАМОК СПРАШИВАЮТ ДО ЗАНАВЕСА (D-161) ────────────────────────────────
+     Экран замка стоит ПЕРЕД занавесом, а не после: занавес — это уже показ
+     системы, и открывать его человеку, который ещё не назвал пароль, значило
+     бы показать ему пустой дом и заставить гадать, куда делись его слова.
+     Экран говорит ровно то, что происходит, и ровно то, чего не будет:
+     восстановления нет. Ошибся — говорим об этом и остаёмся на месте, ничего
+     не портя: замок не имеет права наказывать за опечатку. */
+  /* Экран замка говорит на языке, который берётся у САМОГО БРАУЗЕРА: язык
+     системы теперь тоже заперт (D-164), и спрашивать его до пароля неоткуда.
+     Настройка браузера — не сведения о человеке: её видно любому сайту. */
+  function gateLang() {
+    try {
+      var l = String((navigator.languages && navigator.languages[0]) || navigator.language || "en").toLowerCase();
+      if (l.indexOf("ru") === 0) return "ru";
+      if (l.indexOf("et") === 0 || l.indexOf("ee") === 0) return "ee";
+    } catch (e) { /* ignore */ }
+    return "en";
+  }
+  function gateText(key) {
+    if (typeof window.sbTIn === "function") {
+      try { return window.sbTIn(gateLang(), key); } catch (e) { /* ignore */ }
+    }
+    return tr(key);
+  }
+
+  var IRIS_SVG = '<svg viewBox="0 0 200 200" aria-hidden="true"><circle class="vgi-glow" cx="100" cy="100" r="58"/><g class="vgi-blades"><path class="vgi-blade" d="M196.0,100.0 A96,96 0 0 1 148.0,183.1 L145.0,126.0 Z"/><path class="vgi-blade" d="M148.0,183.1 A96,96 0 0 1 52.0,183.1 L100.0,152.0 Z"/><path class="vgi-blade" d="M52.0,183.1 A96,96 0 0 1 4.0,100.0 L55.0,126.0 Z"/><path class="vgi-blade" d="M4.0,100.0 A96,96 0 0 1 52.0,16.9 L55.0,74.0 Z"/><path class="vgi-blade" d="M52.0,16.9 A96,96 0 0 1 148.0,16.9 L100.0,48.0 Z"/><path class="vgi-blade" d="M148.0,16.9 A96,96 0 0 1 196.0,100.0 L145.0,74.0 Z"/></g><circle class="vgi-rim" cx="100" cy="100" r="97"/></svg>';
+  function runVaultGate(onDone) {
+    if (!window.sbVault || !window.sbVault.isLocked() || !window.sbVault.available()) { onDone(); return; }
+    var gate = doc.createElement("div");
+    gate.id = "sbVaultGate";
+    gate.setAttribute("role", "dialog");
+    gate.setAttribute("aria-modal", "true");
+    gate.classList.add("vg-shut");
+    gate.innerHTML =
+      '<div class="vg-box">' +
+        /* ── ДВЕРЬ — ЭТО ДИАФРАГМА (D-182) ────────────────────────────────
+           Тот же прибор, что в полосе размером в шестнадцать точек, здесь во
+           весь экран и закрыт. Ни одного слова не нужно, чтобы понять, что
+           закрыто и чем открывается. Геометрия честная: шесть лепестков с
+           дуговой внешней кромкой, повёрнутые вокруг центра; закрытие — это
+           поворот, как у настоящей диафрагмы, а не изменение размера. */
+        '<div class="vg-iris" aria-hidden="true">' + IRIS_SVG + "</div>" +
+        '<h1 class="vg-title">' + escapeHtml(gateText("lock.locked")) + "</h1>" +
+        '<p class="vg-sub">' + escapeHtml(gateText("lock.sub")) + "</p>" +
+        '<input type="password" id="sbVaultPass" autocomplete="current-password" ' +
+          'aria-label="' + escapeHtml(gateText("lock.ask")) + '" placeholder="' + escapeHtml(gateText("lock.ask")) + '">' +
+        '<button type="button" class="btn primary" id="sbVaultOpen">' + escapeHtml(gateText("lock.open")) + "</button>" +
+        '<p class="vg-err" id="sbVaultErr" role="alert" hidden></p>' +
+      "</div>";
+    doc.body.appendChild(gate);
+    var field = gate.querySelector("#sbVaultPass");
+    var errEl = gate.querySelector("#sbVaultErr");
+    var busy = false;
+    function tryOpen() {
+      if (busy) return;
+      busy = true;
+      errEl.hidden = true;
+      /* ── ЗАДЕРЖКА ПОКАЗАНА ТЕМ, ЧЕМ ОНА ЕСТЬ (D-182) ────────────────────
+         Растяжка пароля считается от полусекунды до двух с половиной — это
+         цена, которую платит тот, кто станет пароль угадывать. Обычная
+         система прячет её под вертящимся кружком и врёт «загрузка». Здесь
+         поворачиваются ЛЕПЕСТКИ: человек видит, как поворачивается ключ. */
+      gate.classList.remove("vg-wrong");
+      gate.classList.add("vg-work");
+      window.sbVault.unlock(field.value).then(function (okp) {
+        busy = false;
+        gate.classList.remove("vg-work");
+        if (!okp) {
+          gate.classList.add("vg-wrong");
+          errEl.textContent = gateText("lock.wrong");
+          errEl.hidden = false;
+          field.value = "";
+          field.focus();
+          return;
+        }
+        /* Верный пароль: диафрагма расходится, и сквозь неё проступает свет
+           комнаты. Дверь снимается ПОСЛЕ того, как она открылась, — иначе
+           открылась бы не дверь, а пустота на её месте. */
+        gate.classList.add("vg-open");
+        var go = function () { if (gate.parentNode) gate.remove(); onDone(); };
+        var done = false;
+        var once = function () { if (done) return; done = true; go(); };
+        setTimeout(once, 980);
+        gate.addEventListener("transitionend", function (ev) {
+          if (ev.propertyName === "transform") once();
+        });
+      }, function () {
+        busy = false;
+        gate.classList.remove("vg-work");
+        gate.classList.add("vg-wrong");
+        errEl.textContent = gateText("lock.wrong");
+        errEl.hidden = false;
+      });
+    }
+    gate.querySelector("#sbVaultOpen").addEventListener("click", tryOpen);
+    field.addEventListener("keydown", function (ev) { if (ev.key === "Enter") tryOpen(); });
+    setTimeout(function () { try { field.focus(); } catch (e) { /* ignore */ } }, 60);
+  }
+
+  /* ── ВИД СИСТЕМЫ ВОССТАНАВЛИВАЕТСЯ ОДНОЙ ФУНКЦИЕЙ (D-164) ────────────────
+     Раньше это делал только загрузчик, и одного раза хватало: настройки
+     лежали открыто и были доступны с первого мига. С поправкой основателя
+     («абсолютно все данные должны быть не видны!») они лежат в конверте, и до
+     пароля система не знает ни обоев, ни языка. Значит восстановление вида
+     случается ДВАЖДЫ — при загрузке и при открытии замка, — а раз так, оно
+     обязано быть ОДНОЙ функцией: два места разошлись бы в первый же выпуск.
+     Тот же довод, по которому applyMood когда-то свели в одну (D-127). */
+  window.sbApplyStoredAppearance = function () {
+    var savedTheme = window.sbDB ? window.sbDB.get(THEME_KEY) : null;
+    root.setAttribute("data-theme", window.sbIncognitoActive ? "dark" : (savedTheme === "light" ? "light" : "dark"));
+    /* Шов ставит сама комната: applyMood → wpStart → wpTick. */
+    applyMood(window.sbGetWallpaperMood());
+    ["motion", "dnd", "autohide", "transparency"].forEach(function (k) { applyControl(k, window.sbGetControlToggle(k)); });
+    /* Сторона кнопок — до первого показа окон, иначе они успели бы встать
+       слева и переехать на глазах (D-153). */
+    window.sbSetControlSide(window.sbGetControlSide());
+    if (typeof window.sbSetBrightness === "function" && typeof window.sbGetBrightness === "function") {
+      try { window.sbSetBrightness(window.sbGetBrightness()); } catch (e) { /* ignore */ }
+    }
+    if (typeof window.sbApplyLang === "function") { try { window.sbApplyLang(); } catch (e) { /* ignore */ } }
+  };
+
   /* ---- cinematic curtain ---- */
   function runCurtain(onDone) {
+    var gated = runCurtain._gated;
+    if (!gated) {
+      runCurtain._gated = true;
+      var again = function () { runCurtain(onDone); };
+      runVaultGate(again);
+      return;
+    }
     var curtain = $("#sbCurtain");
     if (!curtain) { onDone(); return; }
     var cellHost = $("#sbCurtainCells"), logHost = $("#sbCurtainLog");
@@ -3134,6 +4193,27 @@
     }
     if (pwInput) pwInput.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); if (cont) cont.click(); } });
 
+    /* Показать дверь замка и дождаться ответа. Если криптографии браузера
+       нет — двери нет тоже: нарисованный замок хуже отсутствующего. */
+    function offerLock(done) {
+      var step3 = $("#sbLoginStep3", card);
+      if (!step3 || !window.sbVault || !window.sbVault.available()) { done(false); return; }
+      if (step1) step1.hidden = true;
+      if (step2) step2.hidden = true;
+      step3.hidden = false;
+      var t = $("#sbLockOfferTitle", step3), b = $("#sbLockOfferBody", step3);
+      var now = $("#sbLockOfferNow", step3), later = $("#sbLockOfferLater", step3);
+      if (t) t.textContent = gateText("auth.lock.title");
+      if (b) b.textContent = gateText("auth.lock.body");
+      if (now) now.textContent = gateText("auth.lock.now");
+      if (later) later.textContent = gateText("auth.lock.later");
+      var answered = false;
+      function answer(v) { if (answered) return; answered = true; done(v); }
+      if (now) now.addEventListener("click", function () { answer(true); });
+      if (later) later.addEventListener("click", function () { answer(false); });
+      if (later) setTimeout(function () { later.focus(); }, 120);
+    }
+
     function finish(profileId, username) {
       rawSet("sysbaby.authed", "1");
       try { sessionStorage.setItem("sysbaby.session.active", "1"); } catch (e) { /* ignore */ }
@@ -3169,7 +4249,15 @@
         if (registering) {
           if (pw.length < 4) { refuse("At least 4 characters."); return; }
           window.sbAuth.register(chosen, pw).then(function (prof) {
-            finish(prof ? prof.id : null, chosen);
+            /* ── О ЗАМКЕ ГОВОРЯТ ПРИ ЗНАКОМСТВЕ (D-171) ────────────────────
+               Не требование, а дверь, которую показали: «сейчас» или «потом».
+               Заставить человека завести второй пароль в ту же минуту, когда
+               он завёл первый, — почти наверняка получить тот же пароль
+               дважды, а это хуже, чем никакого замка. */
+            offerLock(function (wantsNow) {
+              if (wantsNow) window.sbWantsLockNow = true;
+              finish(prof ? prof.id : null, chosen);
+            });
           })["catch"](function (err) {
             refuse(err && err.message === "exists" ? "That name is taken on this device." : "Could not create the account here.");
           });
@@ -3219,6 +4307,144 @@
     }, 2400);
   };
 
+  /* ═══════════════ УЙТИ, НЕ ОСТАВИВ СЛЕДОВ · решение D-174 ════════════════
+     ПОВОД, дословно от основателя 27.08.2026: «в окне обязательно должна быть
+     кнопка быстрого закрытия сессии и сайта sys.baby и чтобы одновременно
+     стёрлась история и кэш (чтобы в истории не было видно что человек сидел на
+     этом сайте) и все остальные функции зачистки следов используйте».
+
+     ЧТО СТРАНИЦА МОЖЕТ, И ЭТО ДЕЛАЕТСЯ ВСЁ, ДО ПОСЛЕДНЕГО:
+       · снимается признак входа и метка сеанса;
+       · снимаются с учёта служебные работники (service workers) — иначе
+         следующий вход поднимет прежний кэш из могилы;
+       · стираются ВСЕ хранилища кэша этого адреса;
+       · гасятся все cookie этого адреса, по всем путям от корня до текущего;
+       · чистится sessionStorage;
+       · при глубоком уходе — ещё и localStorage с базами IndexedDB;
+       · подменяются АДРЕС и ЗАГОЛОВОК текущей записи истории, после чего
+         страница уходит на about:blank ЗАМЕНОЙ записи, а не переходом:
+         «назад» больше не приводит сюда;
+       · делается попытка закрыть вкладку.
+
+     ЧЕГО СТРАНИЦА НЕ МОЖЕТ, И СОВЕТ НЕ СТАНЕТ ЭТО ИЗОБРАЖАТЬ. Список
+     посещений браузера — НЕ ПАМЯТЬ СТРАНИЦЫ. Ни один сайт не имеет права его
+     читать и стирать, и это правильно: сайт, умеющий стереть из вашей истории
+     себя, умеет стереть и всё остальное. Мы подменяем запись, до которой
+     дотягиваемся, и говорим об остальном прямо — в самом окне, до нажатия.
+     Обещать «сотрём историю» значило бы продать ложное чувство безопасности —
+     ровно ту ошибку, от которой предостерегает раздел входа.
+
+     ПОРЯДОК ШАГОВ ВЫБРАН, А НЕ СЛУЧАЕН. Сперва работники и кэш — их отмена
+     асинхронна и может не успеть, если сперва снести хранилище и уйти. Затем
+     cookie и хранилища. Затем — и только затем — подмена записи и уход.
+     Охраняется tools/vanish-check.mjs. */
+  window.sbVanish = function (opts) {
+    var deep = !!(opts && opts.deep);
+    var quiet = !!(opts && opts.quiet);          /* закон смотрит, не уходя */
+    var report = { deep: deep, workers: 0, caches: 0, cookies: 0, idb: 0, local: 0, session: 0, url: null, title: null, left: false };
+
+    /* С этого мига система не пишет НИЧЕГО: у неё есть отложенные записи и
+       таймеры, и любой из них воскресил бы стёртое через миг после уборки. */
+    window.sbVanishing = true;
+
+    function killWorkers() {
+      if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return Promise.resolve();
+      return navigator.serviceWorker.getRegistrations().then(function (regs) {
+        report.workers = regs.length;
+        return Promise.all(regs.map(function (r) { return r.unregister()["catch"](function () { return false; }); }));
+      })["catch"](function () { return null; });
+    }
+    function killCaches() {
+      if (!window.caches || !window.caches.keys) return Promise.resolve();
+      return window.caches.keys().then(function (names) {
+        report.caches = names.length;
+        return Promise.all(names.map(function (n) { return window.caches["delete"](n); }));
+      })["catch"](function () { return null; });
+    }
+    function killCookies() {
+      var raw = "";
+      try { raw = doc.cookie || ""; } catch (e) { raw = ""; }
+      if (!raw) return;
+      var names = raw.split(";").map(function (c) { return c.split("=")[0].trim(); }).filter(Boolean);
+      report.cookies = names.length;
+      /* Пути перебираются от корня до текущего: cookie, поставленная на
+         вложенном пути, из корня не гасится — это не тонкость, а причина,
+         по которой «мы всё стёрли» бывает неправдой. */
+      var parts = String(location.pathname || "/").split("/");
+      var paths = ["/"], acc = "";
+      for (var i = 0; i < parts.length; i++) {
+        if (!parts[i]) continue;
+        acc += "/" + parts[i];
+        paths.push(acc);
+        paths.push(acc + "/");
+      }
+      var host = location.hostname;
+      var domains = ["", host, "." + host];
+      names.forEach(function (n) {
+        paths.forEach(function (pth) {
+          domains.forEach(function (dm) {
+            try {
+              doc.cookie = n + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=" + pth + (dm ? "; domain=" + dm : "");
+            } catch (e) { /* ignore */ }
+          });
+        });
+      });
+    }
+    function killIdb() {
+      if (!window.indexedDB) return Promise.resolve();
+      var wipe = function (names) {
+        report.idb = names.length;
+        return Promise.all(names.map(function (n) {
+          return new Promise(function (res) {
+            var req;
+            try { req = window.indexedDB.deleteDatabase(n); } catch (e) { res(false); return; }
+            req.onsuccess = function () { res(true); };
+            req.onerror = function () { res(false); };
+            req.onblocked = function () { res(false); };
+            setTimeout(function () { res(false); }, 1500);
+          });
+        }));
+      };
+      if (window.indexedDB.databases) {
+        return window.indexedDB.databases().then(function (list) {
+          return wipe((list || []).map(function (d) { return d && d.name; }).filter(Boolean));
+        })["catch"](function () { return wipe(["sysbaby"]); });
+      }
+      return wipe(["sysbaby"]);
+    }
+
+    return killWorkers().then(killCaches).then(function () {
+      killCookies();
+      try {
+        report.session = window.sessionStorage.length;
+        window.sessionStorage.clear();
+      } catch (e) { /* ignore */ }
+      try { localStorage.removeItem("sysbaby.authed"); } catch (e) { /* ignore */ }
+      if (!deep) return null;
+      try {
+        report.local = window.localStorage.length;
+        window.localStorage.clear();
+      } catch (e) { /* ignore */ }
+      return killIdb();
+    }).then(function () {
+      /* Подмена записи, до которой мы дотягиваемся. Заголовок браузер держит
+         вместе с адресом, и он тоже наш до последнего кадра. */
+      try {
+        doc.title = " ";
+        report.title = doc.title;
+        history.replaceState(null, "", "/");
+        report.url = location.pathname;
+      } catch (e) { /* ignore */ }
+      if (quiet) return report;
+      report.left = true;
+      try { location.replace("about:blank"); } catch (e) { /* ignore */ }
+      /* Закрыть вкладку удаётся только той, которую открыл скрипт. Пробуем —
+         и не изображаем успеха, если браузер откажет. */
+      setTimeout(function () { try { window.close(); } catch (e) { /* ignore */ } }, 60);
+      return report;
+    });
+  };
+
   /* deep link ?open=<appId> */
   function deepLinkOpen() {
     var m = /[?&]open=([a-z]+)/.exec(entrySearch());
@@ -3230,18 +4456,8 @@
   /* =============================================================== bootstrap */
   function boot() {
     applyFlags();
-    /* restore persisted appearance before first reveal */
-    var savedTheme = window.sbDB ? window.sbDB.get(THEME_KEY) : null;
-    root.setAttribute("data-theme", window.sbIncognitoActive ? "dark" : (savedTheme === "light" ? "light" : "dark"));
-    var acc = window.sbGetCurrentAccent();
-    applyAccent(acc.a1, acc.a2);
-    /* Ход переживает перезагрузку: режим сохранён, часы идут дальше — значит
-       и цвет продолжается с того места, где человек его оставил, а не
-       начинается заново. То же правило, что у обоев (D-095). */
-    if (acc.mode === DRIFT_ID) driftStart();
-    var mood = window.sbGetWallpaperMood();
-    if (mood && mood !== "ocean") root.setAttribute("data-wp-mood", mood);
-    ["motion", "dnd", "autohide", "transparency"].forEach(function (k) { applyControl(k, window.sbGetControlToggle(k)); });
+    window.sbApplyStoredAppearance();
+    applyParts();
     wireTurbo();
     /* volume and brightness come back exactly as they were left */
     var savedVol = window.sbDB ? window.sbDB.get(VOLUME_KEY) : null;

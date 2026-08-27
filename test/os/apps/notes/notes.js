@@ -269,11 +269,23 @@
     if (!rows.length) return '<div class="notes-empty-list">' + esc(t("nt.emptyList")) + "</div>";
     return rows.map(function (n) {
       var preview = previewOf(n.text);
-      return '<div class="notes-row' + (n.id === activeId ? " active" : "") + '" data-id="' + esc(n.id) + '">' +
+      /* ── СРОК ВИДЕН И В СПИСКЕ (v71) ────────────────────────────────────
+         Срок читается из слов самой заметки (sbNoteDue в desktop.js) — тем
+         же разбором, что и на столе. Отдельного приложения «Сегодня» Совет
+         не строил: стол показывает наступившее, а этот список — все дела
+         разом, и обе поверхности читают ОДНО И ТО ЖЕ, а не свои копии.
+         Охраняется tools/note-due-check.mjs. */
+      var due = window.sbNoteDue ? window.sbNoteDue(n.text, n.updatedAt) : null;
+      var dueMark = due
+        ? '<span class="notes-row-due' + (due.late ? " late" : (due.today ? " now" : "")) + '">' +
+            esc(window.sbNoteDueLabel ? window.sbNoteDueLabel(due) : "") + "</span>"
+        : "";
+      return '<div class="notes-row' + (n.id === activeId ? " active" : "") +
+        (due && due.late ? " is-late" : (due && due.today ? " is-due" : "")) + '" data-id="' + esc(n.id) + '">' +
         /* Название и начало заметки — то, что написал сам посетитель. */
         '<div class="notes-row-title" data-sb-userdata>' + esc(titleOf(n.text)) + "</div>" +
         (preview ? '<div class="notes-row-prev" data-sb-userdata>' + esc(preview) + "</div>" : "") +
-        '<div class="notes-row-time">' + esc(timeAgo(n.updatedAt)) + "</div>" +
+        '<div class="notes-row-time">' + dueMark + esc(timeAgo(n.updatedAt)) + "</div>" +
         "</div>";
     }).join("");
   }
@@ -459,9 +471,17 @@
       ghost.classList.toggle("armed", isEchoesTarget(ev.clientX, ev.clientY));
     }
 
+    /* ── У ЖЕСТА ДВА КОНЦА (D-144) ─────────────────────────────────────
+       Второй — pointercancel: браузер забирает указатель себе, решив, что
+       человек ЛИСТАЕТ, а не тащит. На телефоне в этом списке так и есть
+       почти всегда. Пока конец был один, отобранный жест не заканчивался
+       никогда: pointermove оставался на документе, а призрак карточки
+       ездил за пальцем до перезагрузки. Ядро этот конец знает у окон и
+       значков — здесь его забыли. */
     function up() {
       document.removeEventListener("pointermove", move);
       document.removeEventListener("pointerup", up);
+      document.removeEventListener("pointercancel", up);
       if (typeof window.sbEchoesHighlight === "function") {
         try { window.sbEchoesHighlight(false); } catch (err) { console.error("[notes] echoes highlight failed", err); }
       }
@@ -480,6 +500,7 @@
 
     document.addEventListener("pointermove", move);
     document.addEventListener("pointerup", up);
+    document.addEventListener("pointercancel", up);
   }
 
   /* ------------------------------------------------------- live refresh */

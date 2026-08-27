@@ -129,14 +129,17 @@
       '<div class="st-note"><p>' + esc(t("set.general.note")) + "</p></div>";
   }
 
-  function accentSwatches() {
-    if (typeof window.sbGetAccentSwatches !== "function") return [];
-    try { return window.sbGetAccentSwatches() || []; } catch (err) { console.error("[settings] accent swatches failed", err); return []; }
-  }
+  /* ── РЯД КРАСОК СНЯТ ЦЕЛИКОМ (D-141) ───────────────────────────────────
+     Основатель: «убрать accent color и сделать их частью wallpapers (они
+     должны меняться в зависимости от выбранной темы)». Здесь стояли
+     accentSwatches() и currentAccent() — две двери к отдельному выбору
+     цвета. Дверей больше нет: цвет приходит от комнаты, и выбор комнаты
+     ниже — единственный выбор цвета в системе. Читатели сняты вместе с
+     рядом, иначе приложение продолжало бы звать из ядра то, чего там нет. */
 
-  function currentAccent() {
-    if (typeof window.sbGetCurrentAccent !== "function") return "";
-    try { return window.sbGetCurrentAccent() || ""; } catch (err) { console.error("[settings] accent read failed", err); return ""; }
+  function controlSide() {
+    if (typeof window.sbGetControlSide !== "function") return "left";
+    try { return window.sbGetControlSide(); } catch (err) { console.error("[settings] side read failed", err); return "left"; }
   }
 
   function wallpaperMoods() {
@@ -151,25 +154,9 @@
 
   function appearanceMarkup() {
     var theme = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
-    /* The shell's accent contract is {a1, a2, name} — this used to read a
-       `.hex` field that never existed, so no swatch ever showed as active and
-       the colour picker opened on a garbage value. Read the real field. */
-    var accentObj = currentAccent();
-    var accent = String((accentObj && accentObj.a1) || accentObj || "").toLowerCase();
-    var accentMode = (accentObj && accentObj.mode) || "";
-
-    /* ── ХОД ВЫБИРАЕТСЯ ТЕМ ЖЕ РЯДОМ, ЧТО И КРАСКИ (v62) ─────────────────
-       Он стоит среди них последним и выглядит как они — но передаётся не
-       цветом, а именем: цвет у него меняется сам, и запомнить его как
-       «вот этот шестнадцатеричный» было бы неправдой уже через четыре
-       минуты. Отмечен он тоже по имени, а не по совпадению цвета. */
-    var swatches = accentSwatches().map(function (sw) {
-      var hex = String(sw.a1 || sw.hex || "");
-      var token = sw.drift ? String(sw.id) : hex;
-      var on = sw.drift ? (accentMode === String(sw.id)) : (hex.toLowerCase() === accent && !accentMode);
-      return '<button type="button" class="st-swatch' + (on ? " active" : "") + (sw.drift ? " is-drift" : "") + '" ' +
-        'style="background:' + esc(hex) + '" data-accent="' + esc(token) + '" title="' + esc(sw.name || sw.title || hex) + '" aria-label="' + esc(sw.name || sw.title || hex) + '"></button>';
-    }).join("");
+    /* РЯДА КРАСОК ЗДЕСЬ БОЛЬШЕ НЕТ (D-141). Шов приходит от обоев: выбор
+       комнаты и есть выбор цвета. Пока выборов было два, они могли встать в
+       ссору — и вставали. */
 
     var moods = wallpaperMoods();
     var mood = currentMood();
@@ -177,10 +164,24 @@
       /* Имена настроений обоев уже переведены в ядре (ключи mood.*) — тот же
          список показывает Центр управления. Приложение берёт их оттуда, а не
          печатает английское m.name, иначе два места назвали бы одно разными
-         словами. */
+         словами. Выбор обоев теперь — единственный выбор цвета в системе:
+         шов приходит отсюда же (D-141). */
       var moodName = t("mood." + m.id);
       if (moodName === "mood." + m.id) moodName = m.name || m.label || m.id;
-      return '<button type="button" class="st-chip' + (m.id === mood ? " active" : "") + '" data-mood="' + esc(m.id) + '">' + esc(moodName) + "</button>";
+      /* Суточное настроение помечено тем же знаком, что и суточная краска:
+         дуга, обошедшая круг. Человек, однажды узнавший этот знак на шве,
+         узнаёт его и здесь — и не читает второго пояснения. И оно светится
+         цветом ТЕКУЩЕГО часа: среди пяти ровных чипов один живой. */
+      var live = "";
+      var read = m.session ? window.sbTherapyForTime : window.sbWallpaperForTime;
+      if (m.drift && typeof read === "function") {
+        try {
+          var w = read();
+          live = ' style="background:linear-gradient(135deg,' + esc(w.c1) + ',' + esc(w.c2) + ');border-color:transparent;color:#fff"';
+        } catch (err) { console.error("[settings] mood preview failed", err); }
+      }
+      var mk = m.session ? " is-session" : (m.drift ? " is-drift" : "");
+      return '<button type="button" class="st-chip' + (m.id === mood ? " active" : "") + mk + '" data-mood="' + esc(m.id) + '"' + live + ">" + esc(moodName) + "</button>";
     }).join("");
 
     var brightness = typeof window.sbGetBrightness === "function" ? window.sbGetBrightness() : 100;
@@ -204,19 +205,41 @@
        закон, меряющий контраст в обеих темах на каждом экране. До тех пор
        строка ниже говорит, как есть. */
     return '<h2 class="st-title">' + esc(t("set.tab.appearance")) + "</h2>" +
-      rowMarkup(esc(t("set.appearance.theme")), esc(t("set.appearance.themeSub")),
-        '<span class="st-segment" data-theme-state="dark">' +
-          '<button type="button" class="st-seg active" data-theme="dark">' + esc(t("set.appearance.themeDark")) + "</button>" +
-        "</span>") +
-      rowMarkup(esc(t("set.appearance.accent")),
-        esc(t("set.appearance.accentSub")),
-        /* см. примечание о нативном выборе цвета в core/topbar.js */
-        '<span class="st-swatches">' + swatches + "</span>") +
+      /* ── РЯД «ТЕМА» СНЯТ · решение D-168 ────────────────────────────────
+         Основатель, со снимком быстрой панели: «Здесь бардак. Appearance
+         временно убрать. из настроек тоже».
+         Здесь стоял сегмент из ОДНОЙ кнопки «Dark», уже нажатой. Светлая тема
+         снята с интерфейса раньше — приложения написаны под тёмное поле.
+         Осталась подпись, объясняющая, почему выбирать не из чего, и орган
+         управления, который нельзя перевести никуда. Выбор из одного — не
+         выбор, а его вид; это та же ошибка, что и утверждение, которое не
+         может провалиться. ВРЕМЕННО, по слову основателя: ряд вернётся вместе
+         со светлой темой, то есть когда выбирать станет из чего.
+         Охраняется tools/one-choice-check.mjs. */
       rowMarkup(esc(t("set.appearance.mood")),
         esc(t("set.appearance.moodSub")),
         '<span class="st-chips">' + (moodChips || '<span class="st-muted">' + esc(t("set.appearance.moodNone")) + "</span>") + "</span>") +
       rowMarkup(esc(t("set.appearance.brightness")), esc(t("set.appearance.brightnessSub")),
-        '<input type="range" class="st-range" id="stBrightness" min="0" max="100" value="' + brightness + '" aria-label="' + esc(t("set.appearance.brightness")) + '">') +
+        /* Ползунок собственной постройки (D-162): здесь только место под него,
+           узлы строит sbSlider при разводке — родного поля в системе больше нет. */
+        '<span class="st-range-host" id="stBrightness" data-range="brightness" data-value="' + brightness + '"></span>') +
+      /* Сторона кнопок окон (D-153): основатель просил переключатель в панели
+         управления, а паритет требует, чтобы всё, что умеет панель, умел и
+         Pulse. Один и тот же выбор, две двери — но знание одно, на документе. */
+      rowMarkup(esc(t("set.appearance.controls")), esc(t("set.appearance.controlsSub")),
+        '<span class="st-segment">' +
+          '<button type="button" class="st-seg' + (controlSide() === "left" ? " active" : "") + '" data-side="left">' + esc(t("cc.controls.left")) + "</button>" +
+          '<button type="button" class="st-seg' + (controlSide() === "right" ? " active" : "") + '" data-side="right">' + esc(t("cc.controls.right")) + "</button>" +
+        "</span>") +
+      /* Полный экран (D-163): та же дверь, что и в быстрой панели. Кнопка
+         рисуется только там, где полный экран вообще существует. */
+      (typeof window.sbFullscreenSupported === "function" && window.sbFullscreenSupported()
+        ? rowMarkup(esc(t("set.appearance.fullscreen")), esc(t("set.appearance.fullscreenSub")),
+            '<button type="button" class="st-btn" id="stFullscreen" aria-pressed="' +
+            (window.sbIsFullscreen && window.sbIsFullscreen() ? "true" : "false") + '">' +
+            esc(window.sbIsFullscreen && window.sbIsFullscreen() ? t("set.appearance.fullscreenOff") : t("set.appearance.fullscreenOn")) +
+            "</button>")
+        : "") +
       rowMarkup(esc(t("set.appearance.turbo")), esc(t("set.appearance.turboSub")), switchMarkup("motion")) +
       rowMarkup(esc(t("set.appearance.transparency")), esc(t("set.appearance.transparencySub")), switchMarkup("transparency"));
   }
@@ -228,7 +251,7 @@
     return '<h2 class="st-title">' + esc(t("set.tab.sound")) + "</h2>" +
       rowMarkup(esc(t("set.sound.system")), esc(t("set.sound.systemSub")), switchMarkup("sound")) +
       rowMarkup(esc(t("set.sound.volume")), esc(t("set.sound.volumeSub")),
-        '<input type="range" class="st-range" id="stVolume" min="0" max="100" value="' + volume + '" aria-label="' + esc(t("set.sound.volume")) + '">') +
+        '<span class="st-range-host" id="stVolume" data-range="volume" data-value="' + volume + '"></span>') +
       rowMarkup(esc(t("set.sound.dnd")), esc(t("set.sound.dndSub")), switchMarkup("dnd"));
   }
 
@@ -335,9 +358,29 @@
       return '<div class="st-spec"><span>' + esc(pair[0]) + "</span><span>" + pair[1] + "</span></div>";
     }).join("");
 
+    /* Длинное имя системы стоит ЗДЕСЬ — там, куда приходят спросить «что это
+       такое». Оно не набирается шрифтом и не копируется сюда контуром: берётся
+       из единственного экземпляра в документе (<template id="sbWordmarkFull">).
+       Второй экземпляр однажды разошёлся бы с первым молча. Если шаблона нет —
+       остаётся прежний значок, приложение не падает. */
+    var wordmark = "";
+    try {
+      var tpl = document.getElementById("sbWordmarkFull");
+      if (tpl && tpl.content && tpl.content.firstElementChild) {
+        wordmark = tpl.content.firstElementChild.outerHTML;
+      }
+    } catch (err) { console.error("[settings] wordmark read failed", err); }
+
     return '<h2 class="st-title">' + esc(t("set.tab.about")) + "</h2>" +
-      '<div class="st-hero"><div class="st-hero-logo">' + ICON + "</div>" +
-        '<div class="st-hero-name">sys.baby</div><div class="st-hero-version">' + esc(build) + "</div></div>" +
+      '<div class="st-hero' + (wordmark ? " has-wordmark" : "") + '">' +
+        (wordmark
+          ? '<div class="st-hero-word" role="img" aria-label="sys.baby">' + wordmark + "</div>"
+          : '<div class="st-hero-logo">' + ICON + "</div><div class=\"st-hero-name\">sys.baby</div>") +
+        /* Строка сборки под знаком СНЯТА: ровно та же строка стоит первой же
+           строкой таблицы ниже, в тридцати точках отсюда. Пока в шапке стояло
+           слово «sys.baby», повтора не было; со знаком он стал очевиден.
+           Дефект внесён этой же правкой и ею же убран. */
+        (wordmark ? "" : '<div class="st-hero-version">' + esc(build) + "</div>") + "</div>" +
       '<div class="st-specs">' + rows + "</div>" +
       '<div class="st-card">' +
         "<h3>" + esc(t("set.about.whatTitle")) + "</h3>" +
@@ -410,6 +453,9 @@
     if (_sbKeep) _sbKeep();
 
     wire(win, host);
+    /* Заполнение ползунков (D-156): разметка приходит готовой, а «input» до
+       первого касания не случается. */
+    if (window.sbPaintAllRanges) window.sbPaintAllRanges(host);
     if (section === "privacy") measureStorage(win, "#stStorage");
     if (section === "about") measureStorage(win, "#stAboutStorage");
   }
@@ -450,7 +496,7 @@
    * source of that very event), and repaints collapse to one per frame. */
   var SECTION_KINDS = {
     general: { lang: 1 },
-    appearance: { theme: 1, accent: 1, mood: 1, brightness: 1, toggle: 1 },
+    appearance: { mood: 1, brightness: 1, toggle: 1, side: 1, fullscreen: 1 },
     sound: { toggle: 1, volume: 1 },
     desktop: { toggle: 1 },
     privacy: {},
@@ -471,7 +517,7 @@
     /* A slider mid-drag re-rendering itself would fight the pointer. */
     var active = document.activeElement;
     if (active && bodyOf(win).contains(active) && (active.type === "range" || active.type === "color" || active.tagName === "INPUT")) {
-      if (kind === "volume" || kind === "brightness" || kind === "accent") return;
+      if (kind === "volume" || kind === "brightness") return;
     }
 
     if (syncScheduled) return;
@@ -538,15 +584,37 @@
       });
     });
 
-    host.querySelectorAll("[data-accent]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        if (typeof window.sbSetAccent !== "function") return;
-        try { window.sbSetAccent(btn.getAttribute("data-accent")); }
-        catch (err) { console.error("[settings] setAccent failed", err); }
-        render(win);
+    /* Ползунки Pulse — те же наши узлы (D-162). Строятся при каждой разводке,
+       потому что раздел перерисовывается целиком. */
+    var fsBtn = host.querySelector("#stFullscreen");
+    if (fsBtn) {
+      fsBtn.addEventListener("click", function () {
+        if (typeof window.sbToggleFullscreen === "function") window.sbToggleFullscreen();
+      });
+    }
+
+    host.querySelectorAll("[data-range]").forEach(function (slot) {
+      if (typeof window.sbSlider !== "function" || slot.firstChild) return;
+      var kind = slot.getAttribute("data-range");
+      var start = parseInt(slot.getAttribute("data-value"), 10) || 0;
+      window.sbSlider(slot, {
+        min: 0, max: 100, value: start,
+        label: kind === "volume" ? t("set.sound.volume") : t("set.appearance.brightness"),
+        onInput: function (v) {
+          if (kind === "volume") { if (window.sbSetNotifVolume) window.sbSetNotifVolume(v / 100); }
+          else if (window.sbSetBrightness) window.sbSetBrightness(v);
+        }
       });
     });
 
+    host.querySelectorAll("[data-side]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (typeof window.sbSetControlSide !== "function") return;
+        try { window.sbSetControlSide(btn.getAttribute("data-side")); }
+        catch (err) { console.error("[settings] side set failed", err); }
+        render(win);
+      });
+    });
 
     host.querySelectorAll("[data-mood]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -606,9 +674,9 @@
     var reset = host.querySelector("#stResetAppearance");
     if (reset) {
       reset.addEventListener("click", function () {
-        if (typeof window.sbSetAccent === "function") {
-          try { window.sbSetAccent("#e0663c"); } catch (err) { console.error("[settings] accent reset failed", err); }
-        }
+        /* Сброс возвращает КОМНАТУ — вместе с ней возвращается и цвет
+           (D-141): отдельного цвета, который можно было бы сбросить, в
+           системе больше нет. */
         if (typeof window.sbSetWallpaperMood === "function") {
           try { window.sbSetWallpaperMood("studio"); } catch (err) { console.error("[settings] mood reset failed", err); }
         }

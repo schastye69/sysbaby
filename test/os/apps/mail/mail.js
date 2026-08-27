@@ -43,16 +43,17 @@
   function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
   function appName(id) { return window.sbAppTitle ? window.sbAppTitle(id) : id; }
 
-  var SEED = {
-    nextId: 6,
-    data: [
-      { id: 5, from: "The studio · sys.baby", fromAddr: STUDIO_ADDR, to: "you", subject: "This mailbox has a real door", snippet: "Letters to the studio actually arrive.", body: "Hello,\n\nMost of this desktop deliberately stays inside your browser — that is the point of it.\n\nThis app is the one exception, and only in one direction: write a letter to the studio and it is truly sent, through the same relay as the order form on the site, into the same inbox we actually read.\n\nPress Reply, or Compose → To the studio. Tell us how you would like to be answered — email, phone, Telegram, whatever suits you — and that preference arrives with your words, exactly as you typed it.\n\nEverything else you write in Letters stays on your device, and the interface will always tell you which of the two is happening.\n\n— the studio", unread: true, folder: "inbox", starred: false, tsOffsetDays: 0.05 },
-      { id: 1, from: "Sample Client · Logistics", fromAddr: "client@sample.demo", to: "you", subject: "Order-routing automation — go-live results", snippet: "Dispatch time down ~40% on day one.", body: "Hi,\n\nThe order-routing automation went live this morning and dispatch time is already down about 40%. The team is impressed.\n\nCould we scope the supplier-invoice flow for next sprint?\n\nBest,\nSample Client", unread: true, folder: "inbox", starred: true, tsOffsetDays: 0.4 },
-      { id: 2, from: "Sample Client · Retail", fromAddr: "client2@sample.demo", to: "you", subject: "Signed SoW — kickoff Monday?", snippet: "SoW signed and returned.", body: "Hi,\n\nWe've signed the Statement of Work and sent it back. Are we good to kick off Monday?\n\nThanks,\nMarco", unread: true, folder: "inbox", starred: false, tsOffsetDays: 1.2 },
-      { id: 3, from: "Sample Lead · Food & Beverage", fromAddr: "lead@sample.demo", to: "you", subject: "Interested in automating our invoicing", snippet: "Saw your work — can we talk?", body: "Hello,\n\nWe came across sys.baby and we're looking to automate invoicing and supplier onboarding. Could we set up an intro call this week?\n\nRegards,\nSample Lead", unread: true, folder: "inbox", starred: false, tsOffsetDays: 2.5 },
-      { id: 4, from: "Delivery · sys.baby", fromAddr: "delivery@sys.baby", to: "you", subject: "Sample rollout — staging passed", snippet: "All checks green. Demo Thursday.", body: "Staging passed all checks for the the sample rollout. Client demo is scheduled for Thursday 14:00.\n\n— Delivery", unread: false, folder: "inbox", starred: false, tsOffsetDays: 0.2 }
-    ]
-  };
+  /* ── СИСТЕМА ПРИХОДИТ ПУСТОЙ (D-142) ────────────────────────────────────
+     ПОВОД, дословно от основателя 26.08.2026: «прошу полностью очистить
+     содержимое приложений от всяких примеров и мусора. Система должна
+     выглядеть чистой».
+     Засеянные примеры были нужны, пока систему показывали. Теперь ею
+     пользуются — и чужие письма, чужие папки и чужие разговоры в своей
+     системе выглядят ровно тем, чем являются: мусором. Приложение, которому
+     нечего показать, теперь ГОВОРИТ с человеком (D-140), а не притворяется
+     занятым. */
+  var SEED = { nextId: 1, data: [] };
+
 
   var FOLDERS = [
     { id: "inbox", labelKey: "ml.folder.inbox", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13.5 6.2 6.2A1.4 1.4 0 0 1 7.5 5.2h9a1.4 1.4 0 0 1 1.3 1L20 13.5v4.3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4.3Z"/><path d="M4 13.5h4l1.2 2.2h5.6l1.2-2.2h4"/></svg>' },
@@ -1078,6 +1079,16 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("mail", {
+      /* ── ВРЕМЕННО УБРАНО СО СТОЛА · решение D-186 ──────────────────────
+         Основатель 27.08.2026: «прошу временно убрать те приложения, которые
+         не несут пользы на данном этапе».
+         ПРИЧИНА ИМЕННО ЗДЕСЬ: Письма без сервера некуда отправить и неоткуда получить: приложение показывает, КАК БЫЛО БЫ, а не делает работу.
+         ПРАВИЛО, ПО КОТОРОМУ ВЫБИРАЛИ: приложение, которое не может делать
+         свою работу, — не приложение, а КАРТИНКА приложения. Такие сняты со
+         стола, из полки и из палитры.
+         УБРАНО, А НЕ УДАЛЕНО: код на месте, законы его по-прежнему проверяют,
+         открыть по имени можно. Возврат — снятием одной строки. */
+      hidden: true,
       title: "Letters",
       i18n: {
         ru: { title: "Письма", label: "Письма" },

@@ -29,7 +29,14 @@
   --ink-3: rgba(242, 242, 240, .36);
   --line: rgba(242, 242, 240, .09);
   --line-2: rgba(242, 242, 240, .16);
-  --glass: rgba(242, 242, 240, .055);
+  /* ── СТЕКЛО ТОНЬШЕ, И В НЁМ ЕСТЬ КОМНАТА (D-147) ────────────────────────
+     Основатель: «фон окон тоже сделать более прозрачным». Плёнка утоньшена,
+     а рядом появился второй слой — свет комнаты. Раздельно, а не одним
+     цветом, потому что --glass во многих местах уже стоит последним слоем
+     многослойного фона: сделай его сам многослойным — и те места сломались
+     бы молча. Один рецепт, два слоя, оба объявлены здесь. */
+  --glass: rgba(242, 242, 240, .04);
+  --glass-tint: rgba(var(--accent-rgb), .07);
   --glass-2: rgba(242, 242, 240, .10);
   --glass-blur: 26px;
   /* The seam. One colour, one meaning: here you can act, or here something is
@@ -88,7 +95,84 @@
   --spring: cubic-bezier(.34, 1.56, .64, 1);
   --font: system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  /* Цвет бренда. Неподвижен: им красится знак, и только он. Шов (--accent)
+     живёт вместе с комнатой — это разные вещи, и у них разные имена. */
+  --brand: #e0663c;
   --topbar-h: 44px;
+  /* ── ВЫРЕЗ СЧИТАЕТСЯ ТОЛЬКО ТАМ, ГДЕ ОН НАШ · решение D-177 ───────────────
+     Вырез телефона — ОДНО объявление на всю систему (D-129). Всё, что о нём
+     знает, читает эту переменную; закон может подменить её и посмотреть, что
+     станет с панелью, не имея настоящего телефона под рукой.
+
+     ПОВОД, дословно от основателя 27.08.2026, со снимком из другого браузера:
+     «в другом браузере слишком высокий отступ сверху». На снимке над полосой
+     стоит пустая полоса в полсотни точек — а страница и без того начинается
+     ПОД адресной строкой браузера.
+
+     ПРИЧИНА. env(safe-area-inset-top) отвечает на вопрос «сколько сверху
+     занято системой». Пока страница — обычная вкладка, за это отвечает САМ
+     БРАУЗЕР: он рисует свою полосу и отдаёт странице уже свободное место.
+     Но некоторые браузеры Android всё равно сообщают вырез — и мы отступали
+     второй раз от того, от чего уже отступил браузер. Место резервировалось
+     дважды.
+
+     ПРАВИЛО. Страница резервирует место под вырез ТОЛЬКО когда она сама и
+     есть весь экран: установленное приложение (standalone) или полный экран.
+     В обычной вкладке — ноль, и за верх отвечает тот, кто рисует свою полосу.
+     Это же правило само собой включает вырез обратно, когда основатель
+     нажимает «во весь экран» (D-163), — и высота полосы там измеряется, а не
+     помнится (D-170).
+     Охраняется tools/safe-top-check.mjs. */
+  --safe-top: 0px;
+  /* Сколько места панель занимает НА САМОМ ДЕЛЕ. Раньше этого числа не было
+     нигде: три места ставили содержимое под панель по 44 точкам, как будто
+     выреза не существует, а сама панель прятала вырез внутрь своей высоты и
+     ряд управления съезжал вниз. Теперь имя одно и читают его все. */
+  --topbar-box: calc(var(--topbar-h) + var(--safe-top));
+
+  /* ══════════════ ШКАЛА ГЛУБИНЫ · решение D-184 ═══════════════════════════
+     ПОВОД: давняя просьба основателя, повторённая 27.08.2026 в списке работ —
+     «шкала глубины».
+     ЧТО БЫЛО. Сорок голых чисел по всей таблице, от 0 до 9000, и ещё пять в
+     приложениях — включая два по 9999 у вещей, которые летают над всей
+     системой. Порядок слоёв нигде не был записан: он существовал только в
+     голове того, кто в последний раз подбирал число. Каждое новое «поверх
+     всего» решалось прибавлением нулей — так и появляются 9999.
+     ЧТО СТАЛО. Лестница объявлена ОДИН РАЗ, здесь, снизу вверх, и у каждой
+     ступени есть имя того, что на ней живёт. Числа сохранены прежние: шкала
+     наводит порядок в НАЗВАНИЯХ и делает порядок видимым, а не переставляет
+     систему — переставить слои значило бы починить одно и сломать другое.
+     Ступеней много, и это честно: в системе действительно два десятка слоёв.
+     Шкала не обязана быть короткой — она обязана быть ЕДИНСТВЕННОЙ.
+     Охраняется tools/depth-scale-check.mjs: голых чисел выше девяти в стилях
+     нет, у фиксированных вещей глубина только со шкалы, и ступени идут строго
+     по возрастанию без повторов. */
+  --z-under: -1;        /* под содержимым: подложки, тени под вещью */
+  --z-flat: 0;          /* само содержимое */
+  --z-inside: 1;        /* внутри вещи: полоски, метки, углы */
+  --z-lift: 5;          /* приподнятое внутри вещи */
+  --z-desk: 20;         /* вещи стола: значки, заметки */
+  --z-guide: 40;        /* направляющие выравнивания */
+  --z-window: 42;       /* окна; выше этого числа их считает сама оболочка */
+  --z-shelf: 55;        /* полка */
+  --z-float: 56;        /* плавающая вещь над столом */
+  --z-topbar: 60;       /* верхняя полоса */
+  --z-fullwin: 70;      /* окно во весь экран и меню полосы */
+  --z-menu: 80;         /* выпадающее меню */
+  --z-veil: 88;         /* затемнение под чем-то важным */
+  --z-speech: 90;       /* речь стола */
+  --z-badge: 92;        /* закреплённая метка */
+  --z-hint: 95;         /* подсказка */
+  --z-panel: 100;       /* окна панелей */
+  --z-palette: 110;     /* палитра команд */
+  --z-curtain: 120;     /* занавес */
+  --z-scene: 200;       /* сцена входа */
+  --z-login: 300;       /* вход */
+  --z-blackout: 400;    /* аварийный экран */
+  --z-playerbed: 480;   /* подложка полосы проигрывателя */
+  --z-player: 500;      /* полоса проигрывателя */
+  --z-door: 900;        /* дверь замка */
+  --z-above: 9000;      /* поверх всего: прощание, перенос вещи */
 
   /* ── НИЖНИЙ РЯД СТОЛА: ОДНО ЧИСЛО НА ДВОИХ (v54) ────────────────────────
      Повод от основателя 21.08.2026: «бывший плюсик ... должен быть
@@ -110,8 +194,31 @@
   --fab-size: 42px;
   --fab-inset: 18px;
   --desk-row-gap: 10px;
-  --desk-row-b: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 90px) + 12px);
+  /* Сколько места занимает полоса проигрывателя вместе с зазором над ней.
+     Ноль, пока музыки нет. Объявлено ЗДЕСЬ, рядом с высотой дока, потому что
+     это того же рода: «сколько места занято внизу», и весь ряд читает одно
+     выражение. */
+  --player-row: 0px;
+  /* ДВА ИМЕНИ, И КАЖДОЕ ЗНАЧИТ РОВНО ОДНО.
+     --row-base — линия нижнего ряда САМА ПО СЕБЕ: над полкой, с зазором.
+     --desk-row-b — где стоит РЕЧЬ: та же линия плюс место, занятое полосой
+     проигрывателя.
+     Полоса встаёт на --row-base, речь на --desk-row-b. Без первого имени
+     полосе пришлось бы повторить выражение у себя — и это было бы третье
+     место, знающее одно и то же, ровно та ошибка, которую Совет чинил сегодня
+     трижды (D-114, D-127, D-129). */
+  --row-base: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 90px) + 12px);
+  --desk-row-b: calc(var(--row-base) + var(--player-row, 0px));
 }
+
+/* Здесь страница И ЕСТЬ весь экран — значит вырез её, и место под него
+   резервирует она (D-177). Отдельными блоками, а не внутри :root: @media
+   внутри блока объявлений не работает, а класс на корне ставится по событию
+   полного экрана (topbar.js). */
+@media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  :root { --safe-top: env(safe-area-inset-top, 0px); }
+}
+html.sb-fullscreen { --safe-top: env(safe-area-inset-top, 0px); }
 
 html[data-theme="light"] {
   --bg: #eef0f5;
@@ -143,6 +250,15 @@ html.sb-incognito {
   --line: rgba(255, 255, 255, .18);
   --glass: rgba(255, 255, 255, .05);
 }
+
+/* ── ТУРБО УДЕШЕВЛЯЕТ СТЕКЛО, А НЕ ОТМЕНЯЕТ ЕГО (D-148) ────────────────────
+   Замер (открытие окна, телефонный кадр, медиана из 18 открытий):
+       стекло 26px — 34.1 мс
+       стекло 10px — 26.7 мс
+       без стекла  — 26.0 мс
+   Вся экономия сидит в РАДИУСЕ. Снятие стекла целиком приносит сверх того
+   0.7 мс — и стоит системе всей её внешности. Турбо берёт радиус. */
+html.sb-turbo { --glass-blur: 10px; }
 
 /* reduce transparency: a real accessibility mode (spec addition §7) */
 html[data-transparency="reduced"] {
@@ -271,7 +387,7 @@ kbd { font-family: var(--mono); font-size: 12px; }
    navy default this replaced was the reference's, not this brand's. Ocean is
    still one chip away. */
 .wp-layer {
-  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  position: absolute; inset: 0; z-index: var(--z-flat); pointer-events: none;
   background:
     radial-gradient(900px 620px at 78% 18%, rgba(224, 102, 60, .09), transparent 62%),
     radial-gradient(760px 560px at 14% 82%, rgba(242, 242, 240, .05), transparent 60%),
@@ -316,7 +432,7 @@ html.sb-incognito .wp-layer {
    reduced motion, in the light theme, in incognito, or with the level set to
    off. Everything here is scoped to an id inside .wp-layer and reaches
    nothing else on the page. */
-.wp-layer > * { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.wp-layer > * { position: absolute; inset: 0; z-index: var(--z-flat); pointer-events: none; }
 #sbField { width: 100%; height: 100%; display: block; }
 #sbField.off, #sbBreath.off { display: none !important; }
 
@@ -328,8 +444,111 @@ html.sb-incognito .wp-layer {
    coloured lights screened over the plasma, so choosing one changes the room's
    colour and not just a number in a palette. It never animates, so it costs
    nothing to keep on screen. */
+/* ── ЭКРАН ЗАМКА (D-161) ──────────────────────────────────────────────────
+   Он стоит поверх всего и до занавеса. Ничего лишнего: знак, одна строка о
+   том, что заперто, поле и кнопка. Комната за ним уже своя — обои не
+   прячутся, — поэтому фон честно тёмный: человек должен узнать свою систему
+   ещё до того, как назовёт пароль. */
+/* Пояснение и предупреждение в блоке замка (D-161): цена названа рядом с
+   кнопкой, а не в справке, — читать её будут только здесь. */
+.cc-note { font-size: 12px; line-height: 1.45; color: var(--ink-2); margin: 2px 0 0; }
+.cc-warn { font-size: 12px; line-height: 1.45; color: #ffb4a6; margin: 4px 0 8px; }
+
+#sbVaultGate {
+  position: fixed; inset: 0; z-index: var(--z-door);
+  display: grid; place-items: center; padding: 24px;
+  background: rgba(6, 7, 10, .92);
+  backdrop-filter: blur(calc(var(--glass-blur) * 1.2));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.2));
+}
+.vg-box {
+  width: min(360px, 100%); display: flex; flex-direction: column; gap: 12px;
+  text-align: center;
+}
+/* ── ДВЕРЬ — ЭТО ДИАФРАГМА · решение D-182 ────────────────────────────────
+   ПОВОД, дословно от основателя 27.08.2026, со снимком экрана замка: «прошу
+   совет сделать эту страницу более концептуальной, дорогой, гениальной,
+   красивой и высокоинтеллектуальной. используйте какой-нибудь сверхновый
+   дизайнерский эффект, который люди заполнять навсегда».
+   ЗДЕСЬ СТОЯЛ ГРАДИЕНТНЫЙ КВАДРАТИК 34×34 — знак ради знака. Между тем у этой
+   страницы есть собственный смысл, и он крупнее любого украшения: это ДВЕРЬ, и
+   дверь этой системы — диафрагма (D-165, D-181). Тот же прибор, что в полосе
+   размером в шестнадцать точек, здесь во весь экран и ЗАКРЫТ.
+   ТРЮК, РАДИ КОТОРОГО ВСЁ. Растяжка пароля считается от полусекунды до двух с
+   половиной — это цена, которую платит тот, кто станет пароль угадывать
+   (D-166). Обычная система прячет такую задержку под вертящимся кружком и
+   врёт: «загрузка». Здесь задержка ПОКАЗАНА ТЕМ, ЧЕМ ОНА ЕСТЬ: пока считается
+   ключ, лепестки МЕДЛЕННО ПОВОРАЧИВАЮТСЯ. Человек видит, как поворачивается
+   ключ, и ждёт не зря — он смотрит на работу, а не на ожидание.
+   Верный пароль — лепестки расходятся, и сквозь них проступает свет комнаты.
+   Неверный — сжимаются ещё на волос и один раз холодеют. Ни одного слова не
+   нужно, чтобы понять, что произошло. */
+.vg-iris { width: min(58vw, 232px); height: min(58vw, 232px); margin: 0 auto 6px; display: block; }
+.vg-iris svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.vg-iris .vgi-glow {
+  fill: var(--accent);
+  opacity: 0;
+  transition: opacity var(--t-scene) ease;
+}
+.vg-iris .vgi-rim {
+  fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: .5;
+  transition: stroke var(--t-move) ease, opacity var(--t-move) ease;
+}
+.vg-iris .vgi-blades {
+  transform-box: view-box; transform-origin: 100px 100px;
+  transform: rotate(var(--vg-turn, 0deg));
+}
+.vg-iris .vgi-blade {
+  fill: rgba(255, 255, 255, .045);
+  stroke: rgba(var(--accent-rgb), .5);
+  stroke-width: .8;
+  transform-box: view-box; transform-origin: 100px 100px;
+  transform: rotate(var(--vg-close, 27deg));
+  transition: transform var(--t-rise) cubic-bezier(.16, 1, .3, 1), fill var(--t-scene) ease, stroke var(--t-scene) ease;
+}
+/* Ключ поворачивается — и это видно. Оборот медленный: он показывает работу,
+   а не торопит. */
+#sbVaultGate.vg-work .vgi-blades { animation: vgTurn 3.6s linear infinite; }
+#sbVaultGate.vg-work .vgi-blade { fill: rgba(var(--accent-rgb), .1); }
+#sbVaultGate.vg-work .vgi-rim { opacity: .85; }
+#sbVaultGate.vg-work .vgi-glow { opacity: .1; }
+@keyframes vgTurn { to { transform: rotate(360deg); } }
+/* Верный пароль: лепестки расходятся, свет проступает. */
+#sbVaultGate.vg-open .vgi-blade { --vg-close: -34deg; fill: rgba(255, 255, 255, .02); stroke: rgba(var(--accent-rgb), .16); }
+#sbVaultGate.vg-open .vgi-glow { opacity: .5; }
+#sbVaultGate.vg-open .vgi-rim { opacity: .18; }
+/* Неверный: сжимается на волос и один раз холодеет. */
+#sbVaultGate.vg-wrong .vgi-blade { --vg-close: 33deg; }
+#sbVaultGate.vg-wrong .vgi-rim { animation: vgCold var(--t-scene) ease; }
+@keyframes vgCold { 50% { stroke: #8fb6ff; opacity: 1; } }
+/* Турбо и снятое движение своё возьмут сами: html.sb-turbo * уже снимает и
+   длительности переходов, и анимации (см. раздел Турбо). Повторять это здесь
+   значило бы завести второе знание об одном правиле — и, как показала доска,
+   ещё и голую длительность мимо шкалы. */
+html[data-motion="reduced"] #sbVaultGate.vg-work .vgi-blades { animation: none; }
+.vg-title { font-size: 19px; font-weight: 700; letter-spacing: -.01em; margin: 0; }
+.vg-sub { font-size: 13px; line-height: 1.5; color: var(--ink-2); margin: 0; }
+#sbVaultPass {
+  width: 100%; height: 44px; padding: 0 14px;
+  border-radius: var(--r-ctrl); border: 1px solid var(--line);
+  background: var(--glass); color: var(--ink); font: inherit; font-size: 15px;
+}
+#sbVaultPass:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.vg-err { font-size: 12.5px; color: #ff8a8a; margin: 0; }
+
 #sbMoodTint {
   mix-blend-mode: screen; opacity: .55;
+  /* ── ЗДЕСЬ СТОЯЛ ПЕРЕХОД, И ОН НЕ РАБОТАЛ (D-158) ──────────────────────
+     Первым лекарством от мерцания Совет поставил transition: background-image
+     — расчёт был на то, что браузер сам пройдёт промежуточные цвета между
+     двумя перерисовками. ЗАМЕР СКАЗАЛ ОБРАТНОЕ: сорок снимков вычисленного
+     стиля за шесть секунд дали шесть РАЗНЫХ значений, а не сорок, — то есть
+     промежуточных кадров не было вовсе. Многослойный градиент из трёх
+     радиальных заливок браузер не интерполирует.
+     Строка снята, а не оставлена «на всякий случай»: мёртвое правило с
+     объяснением, как оно помогает, — это комментарий, который врёт.
+     Настоящее лекарство оказалось не в CSS, а в шаге пружины (см. wpStart в
+     os/core/shell.js): мелкие шаги вместо редких больших. */
   /* studio: clay ember low, neutral light high — the room is warm, not painted */
   background:
     radial-gradient(900px 640px at 76% 16%, rgba(224, 102, 60, .16), transparent 64%),
@@ -353,6 +572,40 @@ html[data-wp-mood="sunset"] #sbMoodTint {
 html[data-wp-mood="mono"] #sbMoodTint {
   opacity: .34;
   background: radial-gradient(920px 660px at 74% 18%, rgba(206, 212, 226, .26), transparent 64%);
+}
+
+/* Daylight — суточная комната (D-127).
+   Единственное настроение, чей рисунок пишет не эта таблица, а часы: два
+   света в #sbMoodTint получают тон и силу от sbWallpaperApply. Здесь
+   объявлен только запасной вид — на тот случай, если стиль ещё не написан
+   (первые миги загрузки, выключенный скрипт): пусть это будет Studio, а не
+   пустота. */
+html[data-wp-mood="daylight"] #sbMoodTint {
+  opacity: .82;
+  background:
+    radial-gradient(900px 640px at 76% 16%, rgba(224, 102, 60, .16), transparent 64%),
+    radial-gradient(760px 580px at 16% 84%, rgba(242, 242, 240, .09), transparent 62%);
+}
+/* ПЕРЕХОДА ЗДЕСЬ НЕТ, И ЭТО РЕШЕНИЕ. Совет сперва приписал сюда плавный
+   переход — рефлексом, а не мыслью, — и duration-scale-check его отверг за
+   голую длительность. Проверка правила показала, что дело не в записи числа:
+   переход — это ОТВЕТ НА ДЕЙСТВИЕ человека, а суточный свет никому не
+   отвечает. Шаг у него — одна триста шестидесятая круга; его не видно и без
+   всякого перехода, а полноэкранная анимация градиента стоила бы кадров на
+   слабом телефоне. Правило убрано целиком, а не переписано в токен. */
+/* Светотерапия — сеанс (D-131). Рисунок так же пишут часы, здесь только
+   запасной вид и общая яркость: лампа светлее, чем комната по часам. */
+html[data-wp-mood="therapy"] #sbMoodTint {
+  opacity: .9;
+  background:
+    radial-gradient(900px 640px at 76% 16%, rgba(224, 102, 60, .3), transparent 64%),
+    radial-gradient(760px 580px at 16% 84%, rgba(242, 242, 240, .18), transparent 62%);
+}
+html[data-wp-mood="therapy"] .wp-layer,
+html[data-wp-mood="daylight"] .wp-layer {
+  background:
+    radial-gradient(760px 560px at 14% 82%, rgba(242, 242, 240, .04), transparent 60%),
+    linear-gradient(168deg, #101013 0%, #0a0a0c 52%, #070708 100%);
 }
 
 /* Плёночное зерно: бесшовная плитка 180px серой турбулентности.
@@ -403,10 +656,13 @@ html.sb-incognito .wp-layer > * { display: none !important; }
 
 /* ============================================================== login §2.1 */
 #sbLogin {
-  position: fixed; inset: 0; z-index: 300;
+  position: fixed; inset: 0; z-index: var(--z-login);
   display: grid; place-items: center;
   background: radial-gradient(1000px 700px at 50% 20%, rgba(var(--accent-rgb), .12), transparent 60%), var(--bg);
-  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  /* Вырез читается через общее имя, а не напрямую (D-129, уточнено D-177):
+     экран входа — обычная страница во вкладке, и резервировать там место под
+     вырез значило бы делать это второй раз за браузером. */
+  padding: max(16px, var(--safe-top)) 16px max(16px, env(safe-area-inset-bottom));
   transition: opacity var(--t-scene) ease;
 }
 #sbLogin.out { opacity: 0; pointer-events: none; }
@@ -473,7 +729,7 @@ html.sb-has-session #sbLogin { display: none; }
    the same near-black the desktop resolves to, and the handoff is a single
    opacity transition, never a cut. */
 #sbCurtain {
-  position: fixed; inset: 0; z-index: 200;
+  position: fixed; inset: 0; z-index: var(--z-scene);
   display: grid; place-items: center;
   background: radial-gradient(120% 90% at 50% 40%, #0b0c11 0%, #020203 70%);
   transition: opacity var(--t-rise) var(--ease);
@@ -483,7 +739,7 @@ html.sb-has-session #sbLogin { display: none; }
 /* the drifting network, capped well below device resolution: a hairline at
    1.25x is a hairline, and it costs four fifths less to draw */
 #sbCurtainNet {
-  position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0;
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: var(--z-flat);
   opacity: 0; transition: opacity var(--t-rise) ease; pointer-events: none;
 }
 #sbCurtainNet.on { opacity: 1; }
@@ -508,7 +764,7 @@ html[data-motion="reduced"] .cur-log { display: none; }
 /* the mark is lifted out of flow so the SENTENCE, not the logo and sentence
    together, sits on the optical centre — which is also what lets the residue
    land in exactly the place the sentence just left */
-.cur-stage { position: relative; text-align: center; z-index: 1; }
+.cur-stage { position: relative; text-align: center; z-index: var(--z-inside); }
 /* Занавес показывает ТОТ ЖЕ знак, что стоит потом в углу и в значке вкладки.
    Раньше здесь была цветная плитка с галочкой — предмет, который нигде больше
    не встречался, то есть обещание, которого система не сдерживала.
@@ -556,7 +812,7 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
    Nobody is meant to consciously read it — it is meant to still be true when
    they look away. */
 #sbGhostLine {
-  position: fixed; inset: 0; z-index: 5;
+  position: fixed; inset: 0; z-index: var(--z-lift);
   display: flex; align-items: center; justify-content: center;
   font-family: var(--mono); font-size: clamp(8.5px, 2.85vw, 15px); font-weight: 600;
   letter-spacing: .03em; white-space: pre; line-height: 1.5;
@@ -566,7 +822,7 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
 
 /* farewell + failure surfaces */
 #sbFarewell {
-  position: fixed; inset: 0; z-index: 400; background: #000; color: rgba(255, 255, 255, .9);
+  position: fixed; inset: 0; z-index: var(--z-blackout); background: #000; color: rgba(255, 255, 255, .9);
   display: grid; place-items: center; gap: 20px; grid-auto-flow: row;
   opacity: 0; transition: opacity var(--t-scene) ease;
 }
@@ -577,13 +833,13 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
 .farewell-mark svg { width: 100%; height: 100%; display: block; }
 .farewell-line { font-family: var(--mono); font-size: 14px; letter-spacing: .02em; }
 #sbBootFail {
-  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 500;
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: var(--z-player);
   padding: 14px 16px; border-radius: var(--r-card); white-space: pre-wrap;
   background: rgba(60, 10, 12, .94); border: 1px solid rgba(255, 69, 58, .5);
   color: #ffd9d6; font-family: var(--mono); font-size: 12px; line-height: 1.6;
 }
 #sbQuotaBanner {
-  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 480;
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: var(--z-playerbed);
   padding: 12px 14px; border-radius: var(--r-card);
   background: rgba(70, 40, 0, .94); border: 1px solid rgba(255, 214, 10, .45);
   color: #ffe9b0; font-family: var(--mono); font-size: 12px;
@@ -591,14 +847,62 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
 
 /* =============================================================== topbar §5 */
 #topbar {
-  position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h); z-index: 60;
+  position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-box); z-index: var(--z-topbar);
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 0 12px; padding-top: env(safe-area-inset-top);
-  background: linear-gradient(180deg, rgba(10, 11, 15, .82), rgba(10, 11, 15, .52));
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
-  border-bottom: 1px solid var(--line);
+  padding: 0 12px; padding-top: var(--safe-top);
+  /* ── ПОЛОСА — ВОЗДУХ, А НЕ ПЛИТА (D-147) ────────────────────────────────
+     ПОВОД, дословно от основателя 26.08.2026, со снимком зелёной комнаты:
+     «верхняя панель - единственный чужеродный элемент и он фиксится большей
+     прозрачностью и гениальностью», «необходимо сделать верхнюю панель более
+     прозрачной. интеллектуально и концептуально по дизайну», «и очень дорого».
+     ЧТО БЫЛО НЕ ТАК, ЕСЛИ НАЗЫВАТЬ КОРЕНЬ. Здесь стояла почти чёрная плита:
+     rgba(10,11,15,.82) → .52, то есть цвет, НЕ ИМЕЮЩИЙ К КОМНАТЕ ОТНОШЕНИЯ.
+     На снимке это видно без прибора: комната бирюзовая, значки, заметка и
+     подсказка — стеклянные и подкрашены ею, а полоса чёрная. Она была
+     единственной поверхностью системы, которая не знала, в какой комнате
+     висит. С D-141 у системы один источник света; полоса из него не пила.
+     ЧТО СТАЛО, И ПОЧЕМУ ИМЕННО ТАК.
+     · Вещество полосы — СВЕТ КОМНАТЫ, а не чернила: --accent-rgb на очень
+       малой доле. В бирюзовой комнате полоса бирюзовая, в Studio — тёплая.
+     · Чернила остались только НАВЕРХУ и только затем, чтобы читались знаки
+       под строкой состояния телефона. Книзу они уходят в ноль — поэтому у
+       полосы нет «низа»: она не кончается, она растворяется.
+     · Сплошной линии снизу больше нет. Вместо неё волосок, который ярче в
+       середине и исчезает к краям: это то, чем дорогое стекло отличается от
+       нарисованной панели — у него нет обрубленного края.
+     · Размытие выше прежнего: чем меньше вещества, тем больше работы у
+       стекла. Прозрачность без размытия — это не воздух, а дырка.
+     Охраняется tools/air-check.mjs: комната обязана просвечивать
+     (полоса меняет цвет вместе с комнатой), шва внизу быть не должно, а
+     часы — читаться. */
+  background:
+    linear-gradient(180deg, rgba(var(--accent-rgb), .10), rgba(var(--accent-rgb), .02) 62%, transparent),
+    linear-gradient(180deg, rgba(8, 9, 12, .42), rgba(8, 9, 12, .14) 58%, transparent);
+  backdrop-filter: blur(calc(var(--glass-blur) * 1.35)) saturate(1.7);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.35)) saturate(1.7);
+  border-bottom: 0;
   opacity: 0; transform: translateY(-8px);
   transition: opacity var(--t-scene) ease, transform var(--t-scene) var(--ease);
+}
+/* Волосок вместо шва: ярче в середине, в ноль к краям. Он не отделяет полосу
+   от стола — он лишь намекает, где кончается стекло, и на телефоне его почти
+   не видно. Поверх содержимого он не ложится: pointer-events сняты. */
+#topbar::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    transparent, rgba(var(--accent-rgb), .16) 22%, rgba(255, 255, 255, .10) 50%,
+    rgba(var(--accent-rgb), .16) 78%, transparent);
+}
+/* Без размытия прозрачность превращается в дырку: там, где стекло не
+   поддержано, вещества добавляют. Это не «запасной вид», это тот же замысел
+   на устройстве, которое не умеет размывать. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  #topbar {
+    background:
+      linear-gradient(180deg, rgba(var(--accent-rgb), .16), rgba(var(--accent-rgb), .04) 62%, transparent),
+      linear-gradient(180deg, rgba(8, 9, 12, .72), rgba(8, 9, 12, .34) 58%, rgba(8, 9, 12, .12));
+  }
 }
 html.rv-topbar #topbar { opacity: 1; transform: none; }
 html.topbar-hidden #topbar { transform: translateY(-100%); }
@@ -641,9 +945,32 @@ html[data-motion="reduced"] .tb-mark { transition: none; }
    последний оставшийся масштаб. */
 .sb-wm { display: inline-flex; align-items: center; white-space: nowrap; }
 .sb-lock { height: 16px; width: auto; display: block; animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both; }
-.sb-min { display: none; }
+/* В панели — только знак, на любой ширине (D-128). Раньше здесь стояло
+   обратное: длинное слово везде и знак только на телефоне. */
+.sb-min { display: block; width: 17px; height: 17px; animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both; }
 .sb-ls, .sb-hs { fill: var(--ink); }
-.sb-lb, .sb-hb { fill: var(--accent); }
+/* ── ЗНАК НЕ ДРЕЙФУЕТ (D-141) ───────────────────────────────────────────
+   Крюк брал цвет у шва — и это было верно, пока шов был неподвижной краской
+   бренда. С D-141 шов живёт вместе с комнатой, и знак поехал за ним: доска
+   поймала расхождение с лендингом (224,102,60 против 219,104,67).
+   Решение: ЖИВЁТ ШОВ, А НЕ ЗНАК. Логотип, меняющий цвет, — не логотип.
+   Основатель просил живых акцентов; про знак он этого не просил, и закон о
+   знаке существует ровно затем, чтобы такое не проходило молча.
+   У бренда своё имя, и оно неподвижно на обеих поверхностях. */
+.sb-lb, .sb-hb { fill: var(--brand, #e0663c); }
+/* ── ЗНАК В ПОЛОСЕ ЖИВЁТ ВМЕСТЕ С КОМНАТОЙ (D-149) ────────────────────────
+   Основатель: «иконка логотипа должна тоже меняться в зависимости от
+   wallpaper». Выше записано обратное — и записано честно: тогда он этого
+   НЕ просил, и закон о знаке стоял затем, чтобы самовольный дрейф не прошёл
+   молча. Теперь просит; решение меняется по его слову, а не по нашему.
+   ГДЕ ИМЕННО. Только знак в верхней полосе — там, где система стоит в СВОЕЙ
+   комнате. Знак бренда на витрине, длинное написание в «О системе» и значок
+   вкладки остаются неподвижными: имя бренда не может зависеть от того, какие
+   сегодня обои. Так живое и неподвижное не спорят — у них разные места.
+   ЧТО ИМЕННО МЕНЯЕТСЯ. Крюк берёт свет комнаты, вторая половина остаётся
+   белой. Знак всегда двухцветный, и читается он одинаково в любой комнате —
+   а был бы одноцветным, в тёплой комнате слился бы сам с собой. */
+#topbar .sb-lb, #topbar .sb-hb { fill: var(--accent); }
 .sb-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @keyframes markIn { from { opacity: 0; transform: translate3d(-8%, -8%, 0) scale(.82) } to { opacity: 1; transform: none } }
 @media (prefers-reduced-motion: reduce) { .sb-lock { animation: none } }
@@ -704,27 +1031,90 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 .tip-bulb { color: var(--ink-3); }
 .tip-bulb.retired { display: none; }
 .wx-place { color: var(--ink-3); }
-.tb-clock { display: flex; font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); white-space: pre; }
+.tb-clock { display: flex; align-items: center; font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); white-space: pre; }
 .clock-cell { display: inline-block; min-width: .62ch; text-align: center; }
+/* ── ЦИФРА ОТКРЫТА ТАК ЖЕ, КАК ЗНАК (D-135, переписано в v77) ────────────
+   Сперва у цифры была та же ДОЛЯ ТОЛЩИНЫ, что у перекладины крюка: 20 из ста.
+   Проверку она проходила и была уродлива — основатель сказал прямо: «цифры на
+   большом экране просто ужасные».
+   Ошибка была в том, что списано ЧИСЛО, а не КАЧЕСТВО. У знака один штрих на
+   всю коробку; у цифры в той же коробке три столбца и пять строк штрихов, и
+   при равной толщине просвет между ними схлопывается — выходит плита. «Похоже
+   на знак» — это ОТКРЫТОСТЬ: перекладина 19.88 охватывает просвет 36.12, то
+   есть просвет вдвое шире штриха. У прежней цифры это отношение было 0.90 —
+   вдвое теснее знака. Штрих 13.5 даёт 1.81, ровно знак.
+
+   РАЗМЕР В ОДИН РЯД С СОСЕДЯМИ. Цифра была выше строчных букв рядом и
+   выбивалась. Высота глифа приравнена к высоте прописной буквы соседнего
+   шрифта (.72em), и часы встают в ту же оптическую полосу, что «RU» и дата.
+
+   СВЕТ. Погашенные стержни почти не видны: цифра должна читаться как цифра, а
+   не как сломанный индикатор. А горящие ЛОВЯТ СВЕТ КОМНАТЫ — цвет и сила
+   ореола приходят снаружи, из --lit. Часы показывают время дважды: цифрами и
+   тем, каким светом они освещены. */
+.clock-cell.digit { display: inline-flex; align-items: center; min-width: .58em; }
+.clock-glyph { height: .72em; width: .46em; display: block; overflow: visible; }
+.clock-glyph line {
+  stroke: currentColor; stroke-width: 13.5; stroke-linecap: round;
+  opacity: .035;
+  transition: opacity var(--t-touch) ease;
+}
+/* ИМЯ --lit В СИСТЕМЕ УЖЕ ЗАНЯТО: так называется освещённость вещества
+   заметок. Свет часов назван --lit-ink, чтобы два разных знания не делили
+   одно имя — на этом столкновении заметка внутри часов (или наоборот) начала
+   бы красить себя чужим числом, и найти это было бы тяжело. */
+.clock-glyph line.on { opacity: 1; stroke: var(--lit-ink, currentColor); }
+/* Ореол растёт вместе с цифрой: в полосе он едва заметен, в панели — виден.
+   Множитель один, число одно. */
+.tb-clock { filter: drop-shadow(0 0 var(--lit-blur, 0px) var(--lit-glow, transparent)); }
+.pl-time { filter: drop-shadow(0 0 calc(var(--lit-blur, 0px) * 1.2) var(--lit-glow, transparent)); }
+.time-big { filter: drop-shadow(0 0 calc(var(--lit-blur, 0px) * 2.6) var(--lit-glow, transparent)); }
+html[data-motion="reduced"] .clock-glyph line { transition: none; }
 .clock-cell.roll { animation: cellRoll .32s var(--ease); }
 @keyframes cellRoll { from { transform: translateY(-45%); opacity: .2; } to { transform: none; opacity: 1; } }
 .cc-trigger { width: auto; gap: 5px; padding: 0 7px; display: inline-flex; }
-.net-glyph { width: 13px; height: 13px; border-radius: 50%; border: 2px solid currentColor; opacity: .8; }
-.net-glyph.offline { opacity: .35; background: linear-gradient(45deg, transparent 44%, currentColor 44%, currentColor 56%, transparent 56%); }
-.bat-glyph {
-  position: relative; width: 22px; height: 11px; border: 1px solid currentColor; border-radius: 3px; opacity: .8;
+/* ── ПИТАНИЕ И СЕТЬ — ОДИН ЗНАК ИЗ НАШЕГО ЖЕ МАТЕРИАЛА (D-139) ───────────
+   ПОВОД: «прошу заменить иконку кольца с батарейкой на более концептуальный,
+   интеллектуальный и гениальный вариант и без кружочка».
+
+   ЧТО БЫЛО. Кольцо (сеть) и прямоугольник с заливкой (заряд) — две картинки
+   из чужого языка: обведённое кольцо и нарисованная батарейка. Ни то ни
+   другое не сделано из того, из чего сделана эта система.
+
+   ЧТО СТАЛО. ОДИН СТЕРЖЕНЬ — та же деталь, из которой собраны цифры часов:
+   тот же штрих, те же круглые концы, та же открытость. Погашенная часть едва
+   видна (как погашенный сегмент цифры), горящая слева — это и есть заряд.
+   Смотришь на часы и на питание — видишь одну вещь, сделанную из одного.
+
+   СЕТЬ БЕЗ ВТОРОЙ КАРТИНКИ. Нет связи — стержень становится ПРЕРЫВИСТЫМ.
+   Разорванная линия и значит разрыв; кружок для этого не нужен. Оба факта
+   названы словами в подписи знака, поэтому ни один не потерян для того, кто
+   не различает тонкостей рисунка. */
+.pw-glyph {
+  position: relative; display: inline-block; width: 26px; height: 4px; flex: none;
+  opacity: .85;
 }
-.bat-glyph::before {
-  content: ""; position: absolute; left: 1px; top: 1px; bottom: 1px; width: var(--fill, 60%);
-  max-width: calc(100% - 2px); background: currentColor; border-radius: 1px;
+.pw-glyph i { position: absolute; left: 0; top: 0; height: 100%; border-radius: var(--r-pill); display: block; }
+.pw-off { width: 100%; background: currentColor; opacity: .12; }
+.pw-on {
+  width: var(--fill, 60%); max-width: 100%; background: currentColor;
+  transition: width var(--t-move) var(--ease);
 }
-.bat-glyph.charging { color: var(--good); }
-.bat-glyph.warn { color: var(--warn); }
-.bat-glyph.danger { color: var(--danger); }
-.bat-glyph.neutral::before { width: 0; }
+.pw-glyph.charging .pw-on { background: var(--good); }
+.pw-glyph.warn .pw-on { background: var(--warn); }
+.pw-glyph.danger .pw-on { background: var(--danger); }
+.pw-glyph.neutral .pw-on { width: 0; }
+/* Разрыв связи — разорванная линия. */
+.pw-glyph.offline .pw-off,
+.pw-glyph.offline .pw-on {
+  -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 4px, transparent 4px 7px);
+  mask-image: repeating-linear-gradient(90deg, #000 0 4px, transparent 4px 7px);
+}
+.pw-glyph.offline { opacity: .5; }
+html[data-motion="reduced"] .pw-on { transition: none; }
 .tb-timer-wrap { position: relative; }
 .pop {
-  position: absolute; right: 0; top: calc(100% + 8px); width: 232px; padding: 14px; z-index: 70;
+  position: absolute; right: 0; top: calc(100% + 8px); width: 232px; padding: 14px; z-index: var(--z-fullwin);
   background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-card);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow);
 }
@@ -732,7 +1122,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 
 /* ====================================================== control center §7 */
 #sbControlCenter {
-  position: fixed; top: calc(var(--topbar-h) + 6px); right: 10px; z-index: 95;
+  position: fixed; top: calc(var(--topbar-box) + 6px); right: 10px; z-index: var(--z-hint);
   width: min(340px, calc(100vw - 20px));
   max-height: min(78vh, 640px); overflow: auto;
   padding: 14px;
@@ -758,7 +1148,48 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 }
 .cc-toggle.on { background: var(--accent-soft); border-color: var(--accent-ring); color: var(--ink); }
 .cc-slider, .cc-select { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--ink-2); }
-.cc-slider input[type="range"] { width: 100%; accent-color: var(--accent); }
+/* ═══════════════ ПОЛЗУНОК — ЭТО СВЕТ, КОТОРЫЙ ПРИБАВЛЯЮТ (D-156, D-162) ═══
+   Основатель: «ползунки volume и brightness как-будто с другой вселенной» —
+   а затем, увидев следующую сборку: «абсолютно не нравятся эти синие ползунки
+   и ещё больше не нравится, что они не меняют цвет».
+   ОН БЫЛ ПРАВ ОБА РАЗА, И ВТОРОЙ РАЗ — ПРО НАШУ НЕДОДЕЛКУ. В D-156 удалось
+   одеть дорожку, но не ручку: снимок полосы показал 178 синих точек — родной
+   кружок браузера рисовался поверх. Правило для ::-webkit-slider-thumb до
+   него не доходило, а спорить с чужим псевдоэлементом нельзя: у него нет ни
+   коробки, ни цвета, которые можно спросить.
+   Поэтому родного поля здесь больше нет вовсе. Ползунок собран из наших узлов
+   (см. sbSlider в os/core/shell.js): дорожка, заполнение, палочка. Цвет берётся
+   оттуда же, откуда его берут часы, — и меняется вместе с комнатой по
+   ПОСТРОЕНИЮ, а не по правилу, которое браузер может не применить.
+   Палочка — тот же штрих, что у цифр часов; под пальцем она не толстеет, а
+   вытягивается: толщина у штриха постоянная, она и делает его штрихом. */
+/* Место под ползунок: и в панели, и в Настройках он занимает свою строку. */
+.cc-slider-host, .st-range-host { display: block; width: 100%; }
+.sb-range {
+  position: relative; display: block; width: 100%; height: 34px;
+  cursor: pointer; touch-action: none; outline: none;
+}
+.sb-range-track {
+  position: absolute; left: 0; right: 0; top: 50%; height: 3px;
+  transform: translateY(-50%);
+  border-radius: var(--r-pill); background: rgba(255, 255, 255, .10);
+  overflow: hidden; display: block;
+}
+.sb-range-fill {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 50%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+}
+.sb-range-stick {
+  position: absolute; top: 50%; left: 50%; width: 3px; height: 20px;
+  transform: translate(-50%, -50%);
+  border-radius: var(--r-pill); background: var(--lit-ink, var(--ink));
+  filter: drop-shadow(0 0 var(--lit-blur, 0px) var(--lit-glow, transparent));
+  transition: height var(--t-touch) var(--ease);
+}
+.sb-range.held .sb-range-stick, .sb-range:focus-visible .sb-range-stick { height: 26px; }
+.sb-range:focus-visible .sb-range-stick { background: var(--accent); }
+html[data-motion="reduced"] .sb-range-stick { transition: none; }
 .cc-select select { padding: 8px 10px; border-radius: var(--r-ctrl); background: rgba(255, 255, 255, .04); border: 1px solid var(--line); }
 .cc-block { display: flex; flex-direction: column; gap: 7px; }
 .cc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -775,15 +1206,15 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 .cc-buttons .btn { text-align: left; }
 
 /* ============================================================== desktop §4 */
-#desktop { position: fixed; inset: 0; z-index: 1; opacity: 0; transition: opacity var(--t-scene) ease; }
+#desktop { position: fixed; inset: 0; z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) ease; }
 html.rv-scene #desktop { opacity: 1; }
-#sbIconLayer, #sbWidgetLayer, #sbNoteLayer { position: absolute; inset: var(--topbar-h) 0 0 0; }
-#sbIconLayer { z-index: 2; opacity: 0; transition: opacity var(--t-scene) ease; }
+#sbIconLayer, #sbWidgetLayer, #sbNoteLayer { position: absolute; inset: var(--topbar-box) 0 0 0; }
+#sbIconLayer { z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) ease; }
 html.rv-icons #sbIconLayer { opacity: 1; }
-#sbWidgetLayer { z-index: 3; opacity: 0; transition: opacity var(--t-scene) ease; pointer-events: none; }
+#sbWidgetLayer { z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) ease; pointer-events: none; }
 html.rv-widgets #sbWidgetLayer { opacity: 1; }
 #sbWidgetLayer > * { pointer-events: auto; }
-#sbNoteLayer { z-index: 4; pointer-events: none; }
+#sbNoteLayer { z-index: var(--z-inside); pointer-events: none; }
 #sbNoteLayer > * { pointer-events: auto; }
 
 /* desktop icons */
@@ -801,7 +1232,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
   .desk-icon:hover { background: rgba(255, 255, 255, .06); }
 }
 .desk-icon.selected { background: var(--accent-soft); outline: 1px solid var(--accent-ring); }
-.desk-icon.dragging { opacity: .85; transition: none; z-index: 9; }
+.desk-icon.dragging { opacity: .85; transition: none; z-index: var(--z-lift); }
 .desk-icon.settling { transition: left var(--t-move) var(--spring), top var(--t-move) var(--spring); }
 .desk-icon.hidden-icon { display: none; }
 .desk-icon.drop-target, .desk-icon.armed { outline: 2px solid var(--accent); }
@@ -862,7 +1293,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
 .icon-spark svg { width: 12px; height: 12px; }
 .icon-capsule {
   position: absolute; top: calc(100% - 4px); left: 50%; transform: translateX(-50%) scaleY(.9);
-  transform-origin: top center; width: 200px; z-index: 12; opacity: 0; pointer-events: none;
+  transform-origin: top center; width: 200px; z-index: var(--z-desk); opacity: 0; pointer-events: none;
   transition: opacity var(--t-touch) ease, transform var(--t-touch) var(--ease);
 }
 .desk-icon.capsule-open .icon-capsule { opacity: 1; pointer-events: auto; transform: translateX(-50%) scaleY(1); }
@@ -897,7 +1328,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
      corner, a third of it at the opposite one */
   --lit: calc(.34 + (var(--nx) * .42) + ((1 - var(--ny)) * .24));
 
-  position: absolute; width: 196px; padding: 11px 11px 9px;
+  position: absolute; width: 196px; padding: 11px;
   border-radius: var(--r-card);
   color: var(--ink);
   background:
@@ -943,11 +1374,24 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
 .sticky-note.focused .note-text { touch-action: auto; -webkit-user-select: text; user-select: text; cursor: text; }
 /* Ширину заметке ставит замер текста (autoGrow в os/core/desktop.js): короткая
    заметка маленькая с первого слова. Здесь остаётся только предел. */
-.sticky-note { min-width: 118px; max-width: 320px; }
+.sticky-note { min-width: 118px; max-width: 320px; padding: 11px; }
 .sticky-note .note-text { min-height: 20px; }
+/* ── ОБЛАЧКО: ПОЛЕ ОДИНАКОВО СО ВСЕХ СТОРОН ────────────────────────────────
+   Здесь стояло «справа и снизу отступов нет» — и это была ошибка Совета,
+   а не решение. Основатель сказал: «не должно быть никаких отступов справа и
+   снизу от текста», Совет понял буквально и снял поля. Основатель поправил:
+   «отступ от текста заметок по всем сторонам должен быть одинаковый.
+   Представим, что это облачки с текстом внутри», — и, увидев, что не сделано,
+   в третий раз: «снизу от текста заметки должен быть такой же отступ, как
+   сверху и по горизонтали».
+   Ширину заметке по-прежнему ставит замер текста (autoGrow), и поле он берёт
+   ИЗМЕРЕНИЕМ (offsetWidth заметки минус offsetWidth текста), а не числом —
+   поэтому смена поля здесь не требует правки там. Зазор охраняется
+   tools/note-window-check.mjs с четырёх сторон. */
 .note-text {
-  width: 100%; min-height: 52px; max-height: 260px; resize: none; border: 0; outline: none;
+  width: 100%; min-height: 20px; max-height: 260px; resize: none; border: 0; outline: none;
   background: none; color: var(--ink); font-size: 13px; line-height: 1.45;
+  padding: 0; margin: 0; display: block;
 }
 .note-del { position: absolute; top: 4px; right: 6px; color: var(--ink-3); font-size: 12px; padding: 4px; }
 .note-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
@@ -978,15 +1422,20 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
   --ny: .5;
   --lit: calc(.34 + (var(--nx) * .42) + ((1 - var(--ny)) * .24));
 
-  position: fixed; z-index: 30; display: flex; align-items: center; gap: 9px;
-  width: 196px; padding: 11px 11px 9px;
+  position: fixed; z-index: var(--z-desk); display: flex; align-items: center; gap: 9px;
+  width: 196px; padding: 10px 11px 9px 11px;
   border-radius: var(--r-card);
   font-size: 13px; line-height: 1.45; color: var(--ink-2);
   background:
     radial-gradient(140% 120% at calc(var(--nx) * 100%) -30%,
       rgba(var(--wp-light-rgb, 91, 124, 255), calc(.10 * var(--lit))), transparent 62%),
     var(--glass);
-  border: 1px dashed rgba(var(--wp-light-rgb, 91, 124, 255), calc(.20 + .26 * var(--lit)));
+  /* ТОЧНАЯ КОПИЯ ЗАМЕТКИ, А НЕ НАМЁК НА НЕЁ. Кромка была пунктирной —
+     «здесь будет заметка». Основатель сказал прямо: приглашение должно быть
+     точной копией заметки на столе. Пунктир — это чужой язык черновика; в
+     этой системе приглашение сделано из того же вещества и той же кромкой,
+     что и настоящая заметка, и отличается только словами внутри. */
+  border: 1px solid rgba(var(--wp-light-rgb, 91, 124, 255), calc(.16 + .22 * var(--lit)));
   backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
   box-shadow:
@@ -1037,12 +1486,39 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
    заметки. Место резервировать не нужно, ничего не прыгает при появлении.
    У заметки, прижатой к верху экрана, ряд переворачивается вниз — иначе он
    ушёл бы под полосу (класс ставит lightNote в desktop.js). */
+/* ── СТОРОНА КНОПОК ОДНА НА ВСЕ ОКНА (D-153) ──────────────────────────────
+   Основатель: «у заметок точно также должны кнопки закрыть и свернуть
+   располагаться слева… переключать между левым и правым режимом расположения
+   кнопок управления АБСОЛЮТНО ВСЕХ ОКОН». Слово стоит одно — на документе, —
+   и его читают обе поверхности. Заметка тоже окно, только маленькое. */
 .note-lights {
-  position: absolute; bottom: calc(100% + 5px); right: 0; z-index: 2;
+  position: absolute; bottom: calc(100% + 5px); left: 0; z-index: var(--z-inside);
   opacity: 0; pointer-events: none;
   transition: opacity var(--t-touch) var(--ease);
 }
 .sticky-note.lights-below .note-lights { bottom: auto; top: calc(100% + 5px); }
+html[data-controls="right"] .note-lights { left: auto; right: 0; }
+/* У окна приложения ряд огней стоит первым в шапке; вправо он уходит
+   порядком, а не переносом узла: перенос сбил бы фокус и порядок обхода
+   с клавиатуры, а порядок — только рисование. */
+html[data-controls="right"] .titlebar .lights { order: 3; }
+html[data-controls="right"] .titlebar .win-title { order: 1; }
+html[data-controls="right"] .titlebar .tb-right { order: 2; }
+/* ── НА ВЕСЬ ЭКРАН ЗАМЕТКУ МОЖНО ТОЛЬКО СВЕРНУТЬ (v67) ────────────────────
+   ПРЕДЛОЖЕНИЕ ОСНОВАТЕЛЯ, дословно 25.08.2026: «когда заметка развёрнута на
+   весь экран - её можно только свернуть - для удобства и для того, чтобы
+   было меньше инцидентов, когда пользователь её просто навсего закрывает».
+
+   Совет принял и договаривает, почему это правило, а не удобство. РАЗРУШАЮЩЕЕ
+   ДЕЙСТВИЕ ПРИНАДЛЕЖИТ ТОМУ СОСТОЯНИЮ, ГДЕ ПРЕДМЕТ — ОДИН ИЗ МНОГИХ. На столе
+   заметка стоит среди других: там «убрать» — обычный выбор, и цена ошибки
+   видна сразу, потому что рядом лежат соседи. На весь экран заметка — всё,
+   что есть на экране; человек внутри неё и занят её телом. Закрыть то, внутри
+   чего находишься, — это не «убрать заметку», это выйти и сжечь за собой.
+
+   Побочно и приятно: единственной кнопке достаётся весь угол, и попасть в неё
+   пальцем легче, чем в одну из двух. */
+.sticky-note.full .note-lights .light.close { display: none; }
 /* Качель растянуть/вернуть: обе картинки в одной кнопке, показывается та,
    которую выбирает состояние заметки. */
 .note-lights .light.max .ic-min { display: none; }
@@ -1090,28 +1566,46 @@ html[data-motion="reduced"] .note-lights { transition: none; }
 .sticky-note.full {
   position: fixed;
   left: 12px; right: 12px;
-  top: calc(var(--topbar-h) + 12px);
+  top: calc(var(--topbar-box) + 12px);
   bottom: calc(12px + var(--kb-inset, 0px) + max(0px, env(safe-area-inset-bottom)));
   width: auto; max-width: none; min-width: 0;
-  z-index: 120;
+  z-index: var(--z-curtain);
   display: flex; flex-direction: column; gap: 8px;
   padding: 16px 18px 14px;
   transition: none;
 }
 .sticky-note.full .note-text {
   font-size: 20px; font-weight: 600; letter-spacing: -.2px; line-height: 1.3;
-  min-height: 0; max-height: none; padding-right: 78px;
+  min-height: 0; max-height: none;
+  /* Место под кнопки резервируется С ТОЙ СТОРОНЫ, ГДЕ ОНИ СТОЯТ (D-155).
+     Здесь стояло глухое padding-right: 78px — оно было верным, пока кнопки
+     были только справа. */
+  padding-left: 78px; padding-right: 0;
 }
+html[data-controls="right"] .sticky-note.full .note-text { padding-left: 0; padding-right: 78px; }
 .sticky-note.full .note-body {
   display: block; flex: 1; min-height: 0;
   width: 100%; resize: none; border: 0; outline: none; background: none;
   color: var(--ink-2); font-size: 14.5px; line-height: 1.55;
   overflow: auto;
 }
-.sticky-note.full .note-lights { bottom: auto; top: 14px; right: 14px; }
+/* ── РАЗВЁРНУТУЮ ЗАМЕТКУ НАДО МОЧЬ СВЕРНУТЬ (D-155) ───────────────────────
+   ПОВОД, дословно от основателя 26.08.2026, со снимком: «в полной версии не
+   могу свернуть».
+   ЧТО БЫЛО НЕ ТАК. Строка задавала right, но не снимала left — а с D-153 у
+   ряда огней появился left: 0 по умолчанию. Заданные ОБА края растягивают
+   абсолютный элемент во всю ширину: ряд стал полосой в 380 точек, кнопка
+   осталась у левого края, и поверх неё лёг заголовок, который берёт всю
+   ширину. Нарисовано было всё правильно; палец до кнопки не доходил.
+   Замер (телефонный кадр 420×880): ряд 13…393, кнопка 16…38, заголовок
+   начинается с 31 — elementFromPoint в центре кнопки возвращал не кнопку.
+   Правило теперь снимает противоположный край явно, а не надеется на то,
+   что его никто не задал. */
+.sticky-note.full .note-lights { bottom: auto; top: 14px; left: 14px; right: auto; }
+html[data-controls="right"] .sticky-note.full .note-lights { left: auto; right: 14px; }
 /* Пока заметка на весь экран, стол за ней притушен — но не спрятан: это
    по-прежнему тот же стол, просто сейчас говорят не с ним. */
-html.sb-note-full #sbNoteLayer { z-index: 120; }
+html.sb-note-full #sbNoteLayer { z-index: var(--z-curtain); }
 html.sb-note-full #sbIconLayer,
 html.sb-note-full #sbDeskHint { opacity: .28; transition: opacity var(--t-touch) var(--ease); }
 html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
@@ -1131,7 +1625,7 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
 .sb-widget-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
 .sb-widget-resize { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; }
 .sb-widget-resize::after { content: ""; position: absolute; right: 4px; bottom: 4px; width: 7px; height: 7px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); }
-.align-guide { position: fixed; z-index: 40; background: var(--accent); opacity: .55; pointer-events: none; }
+.align-guide { position: fixed; z-index: var(--z-guide); background: var(--accent); opacity: .55; pointer-events: none; }
 .align-guide.v { top: 0; bottom: 0; width: 1px; }
 .align-guide.h { left: 0; right: 0; height: 1px; }
 .cap-form input {
@@ -1141,16 +1635,21 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
 .cap-recent { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
 .cap-recent li { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.marquee { position: fixed; z-index: 25; border: 1px solid var(--accent-ring); background: var(--accent-soft); pointer-events: none; border-radius: var(--r-tag); }
+.marquee { position: fixed; z-index: var(--z-desk); border: 1px solid var(--accent-ring); background: var(--accent-soft); pointer-events: none; border-radius: var(--r-tag); }
 
 /* ================================================================ windows §3 */
-#windowLayer { position: fixed; inset: 0; z-index: 20; isolation: isolate; pointer-events: none; }
+#windowLayer { position: fixed; inset: 0; z-index: var(--z-desk); isolation: isolate; pointer-events: none; }
 .window {
   position: absolute; pointer-events: auto; display: flex; flex-direction: column; overflow: hidden;
   min-width: 340px; min-height: 280px;
-  border-radius: var(--r-window); background: var(--glass);
+  border-radius: var(--r-window);
+  /* Окно сделано из комнаты: сверху её свет, книзу он сходит на нет, и под
+     всем этим тончайшая плёнка. Плита превращается в воздух, но край и блик
+     остаются — иначе окно перестанет читаться как предмет. */
+  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--glass);
   border: 1px solid var(--line); box-shadow: var(--shadow);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
 }
 .window::before {
   content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: rgba(255, 255, 255, .16); pointer-events: none;
@@ -1186,7 +1685,7 @@ html[data-theme="light"] .window::before { background: rgba(12, 14, 20, .08); }
 /* Полный экран обязан быть полным: rect максимизации ставится инлайном с
    отступом под верхнюю панель, а второй нажим прячет панель — и сверху
    оставалась её тень пустоты. !important здесь бьёт инлайн-стили осознанно. */
-.window.fullscreen { top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 70; }
+.window.fullscreen { top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: var(--z-fullwin); }
 /* Fullscreen is a contract, not a costume (v21, закон window-controls):
    the window fills the glass to y:0 — so the bar RETREATS instead of
    parking itself over the window's own close/minimise/maximise keys.
@@ -1248,13 +1747,32 @@ html.dragging .window { backdrop-filter: blur(6px); }
 .win-chip svg { width: 10px; height: 10px; }
 .win-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .win-brand { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
-.tb-right .win-kbd, .win-kbd { color: var(--ink-3); font-size: 11px; }
+/* ── КЛАВИША ПОКАЗЫВАЕТСЯ ТАМ, ГДЕ ЕЁ МОЖНО НАЖАТЬ (v70) ──────────────────
+   ПОВОД — снимок основателя 25.08.2026 с телефона: в правом углу полосы окна
+   «Настройки» стоит «⌃,». Клавиши Ctrl на этом устройстве нет и не будет —
+   система обещала действие, которого человек совершить не может.
+
+   Правило в системе уже было и сюда не дошло: подсказки стола давно не
+   предлагают телефону наведение и правый щелчок, подсказка про ⌘K под доком
+   давно убрана — и в стилях об этом написано прямо, «клавиш тут нет».
+   Подпись в полосе окна осталась, потому что правило жило словами в трёх
+   местах, а не одним прибором.
+
+   Спрашивается САМО УСТРОЙСТВО, а не ширина экрана: узкое окно на настольной
+   машине клавиши имеет, широкий планшет — нет. (pointer: fine) — тот же
+   вопрос, которым система решает про наведение (D-113).
+
+   Охраняется tools/keys-where-keys-are-check.mjs. */
+.tb-right .win-kbd, .win-kbd { display: none; }
+@media (pointer: fine) {
+  .tb-right .win-kbd, .win-kbd { display: inline; color: var(--ink-3); font-size: 11px; }
+}
 .window-body { flex: 1; min-height: 0; overflow: auto; }
 .app-fail { padding: 22px; color: var(--ink-2); font-size: 13px; }
 .resize-handle { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize; }
 .resize-handle::after { content: ""; position: absolute; right: 5px; bottom: 5px; width: 7px; height: 7px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); }
 #sbSnapGhost {
-  position: fixed; z-index: 19; border-radius: var(--r-window); pointer-events: none; opacity: 0;
+  position: fixed; z-index: var(--z-desk); border-radius: var(--r-window); pointer-events: none; opacity: 0;
   background: var(--accent-soft); border: 1px solid var(--accent-ring);
   backdrop-filter: blur(8px);
   transition: opacity var(--t-touch) ease, left var(--t-touch) var(--ease), top var(--t-touch) var(--ease), width var(--t-touch) var(--ease), height var(--t-touch) var(--ease);
@@ -1263,7 +1781,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
 
 /* Exposé */
 #sbExpose {
-  position: fixed; inset: 0; z-index: 88; display: grid; place-items: center; padding: 60px 24px;
+  position: fixed; inset: 0; z-index: var(--z-veil); display: grid; place-items: center; padding: 60px 24px;
   background: rgba(4, 5, 8, .72); backdrop-filter: blur(14px);
 }
 .expose-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
@@ -1299,7 +1817,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
      because of where it is in the document — not because of a number that has
      to be kept ahead of the hint's own. The reported bug was the opposite
      arrangement: a fixed element at z-index 54 painting over every window. */
-  position: absolute; left: 50%; z-index: 5;
+  position: absolute; left: 50%; z-index: var(--z-lift);
   /* clear of the dock by measurement, not by a number that ages badly:
      the shell publishes --dock-h from the dock's real height. Само
      выражение переехало в --desk-row-b (§1): на этой линии стоит не одна
@@ -1373,7 +1891,7 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); t
    его настоящей высоте, как и на широком экране. */
 @media (max-width: 620px) {
   /* на телефоне полка ниже — запас до первой публикации --dock-h тоже */
-  :root { --desk-row-b: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 62px) + 12px); }
+  :root { --row-base: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 62px) + 12px); }
   .dh-text { white-space: normal; font-size: 12px; line-height: 1.4; }
 
   /* ── ПОДСКАЗКА ВСТАЁТ В ОДИН РЯД С ПЛЮСОМ (v53) ──────────────────────
@@ -1422,14 +1940,14 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); t
   /* Нет дока — весь ряд опускается к самому низу. --desk-row-b общее, и
      кнопка идёт вниз вместе с подсказкой, а не отдельным числом. */
   html.dock-empty {
-    --desk-row-b: 22px;
+    --row-base: 22px;
   }
 }
 
 /* =================================================================== dock §4.1 */
 #dock {
   position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%);
-  z-index: 55; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  z-index: var(--z-shelf); display: flex; flex-direction: column; align-items: center; gap: 6px;
   transition: transform var(--t-move) var(--ease), opacity var(--t-move) ease;
 }
 /* Док не уходит за кромку — он затихает. То же решение, что на лендинге:
@@ -1567,7 +2085,7 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
    что у подсказки, и именно оно делает их родственниками. */
 #sbFab {
   transition: opacity var(--t-move) ease, transform var(--t-move) ease, border-color var(--t-drift) ease, background var(--t-drift) ease;
-  position: fixed; z-index: 56; border-radius: var(--r-card);
+  position: fixed; z-index: var(--z-float); border-radius: var(--r-card);
   /* ── КНОПКА СТОИТ В РЯДУ, А НЕ ГДЕ ПРИДЁТСЯ (v54) ────────────────────
      Все четыре числа — из §1, оттуда же их читает подсказка. Своих чисел
      у кнопки больше нет: 96px и 22px убраны, потому что были ВТОРЫМ
@@ -1614,7 +2132,7 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
 #toastLayer {
   position: fixed; left: 50%; transform: translateX(-50%);
   top: auto; bottom: var(--desk-row-b);
-  z-index: 90; display: flex; flex-direction: column-reverse; gap: 8px;
+  z-index: var(--z-speech); display: flex; flex-direction: column-reverse; gap: 8px;
   width: min(560px, calc(100vw - 32px));
   pointer-events: none;
 }
@@ -1633,11 +2151,30 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
     inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), .20),
     0 16px 40px -20px rgba(0, 0, 0, .74),
     0 2px 12px -7px rgba(var(--wp-light-rgb, 91, 124, 255), .22);
-  /* Приходит снизу, из полки, — тем же движением, что подсказка. */
+  /* ── ПРАВИЛЬНОЕ МЕСТО НЕ ЗАВИСИТ ОТ ТОГО, БЫЛ ЛИ КАДР · решение D-176 ────
+     Здесь стояло opacity: 0; transform: translateY(14px), а прийти на место
+     извещение должно было по классу .in, который ставился через кадр.
+     Доска показала дважды: кадров может НЕ БЫТЬ — фоновая вкладка, слабый
+     телефон, полсекунды счёта растяжки пароля, — и тогда извещение навсегда
+     оставалось невидимым и на 14 точек ниже своего места, садясь на полосу
+     проигрывателя. Первая починка добавила второй путь (кадр ИЛИ срок) и
+     ставила класс — но переход всё равно требует кадров, чтобы доехать.
+     ЛЕЧЕНИЕ ГЛУБЖЕ: покой стал БАЗОЙ, а приход — анимацией. Не было кадров —
+     извещение просто стоит там, где должно, без движения. Были — оно
+     приезжает снизу, как и раньше. Правильное место больше не зависит от
+     того, успел ли браузер что-нибудь нарисовать. */
+  opacity: 1; transform: none;
+}
+/* Анимация НАВЕШИВАЕТСЯ ТОЛЬКО ВНУТРИ КАДРА (D-176, shell.js): пока кадров
+   нет, класса нет, и извещение просто стоит на своём месте видимым. Замороженная
+   анимация иначе держала бы его в своём первом кадре — невидимым и на 14 точек
+   ниже, — и это ровно то, что доска ловила дважды. */
+.toast.enter { animation: toastIn var(--t-move) var(--ease); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(14px); } }
+.toast.out {
   opacity: 0; transform: translateY(14px);
   transition: opacity var(--t-move) ease, transform var(--t-move) var(--ease);
 }
-.toast.in { opacity: 1; transform: none; }
 /* Извещений на экране не больше трёх: четвёртое не информирует, а заслоняет.
    Правило стоит в вёрстке, а не в скрипте, — оно про место, а не про смысл. */
 #toastLayer .toast:nth-child(n + 4) { display: none; }
@@ -1650,6 +2187,10 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
   font-size: 12px; background: var(--accent-soft); border: 1px solid var(--accent-ring); color: var(--ink);
 }
 .toast-warn { border-color: rgba(255, 214, 10, .45); }
+/* Спокойное извещение (D-183): им говорится то, что НЕ является бедой. Потеря
+   сети для этой системы — родное состояние, и цвет тревоги здесь был бы
+   враньём вида. Оно берёт свет комнаты, а не жёлтый цвет предупреждения. */
+.toast-calm { border-color: var(--accent-ring); background: var(--accent-soft); }
 
 /* ── ТУРБО (v47.3) ────────────────────────────────────────────────────────
    Кнопка в панели показывает состояние собой: включённая горит акцентом.
@@ -1666,9 +2207,128 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 #sbControlCenter .tip-bulb { display: flex; align-items: center; }
 #sbControlCenter .tip-bulb.retired { display: none; }
 
+/* ── ЗНАК АККАУНТА — ДИАФРАГМА СО ЗРАЧКОМ · решения D-165, D-181 ───────────
+   Замок этой системы — не дужка и не скоба, а прибор, который решает, СКОЛЬКО
+   СВЕТА ПРОЙДЁТ. Отверстие шестиугольное, как у настоящей шестилепестковой
+   диафрагмы; швы расходятся из его углов к оправе.
+   Зрачок — это ЧЕЛОВЕК: та самая точка, которой знак аккаунта был раньше. Она
+   на месте всегда, и вокруг неё сходятся лепестки.
+     data-state="none" — замка нет: лепестки раскрыты у самой оправы, точка
+                         видна целиком, цвет приглушён. Прятать нечего;
+     data-state="open" — замок стоит, сеанс открыт: лепестки сомкнулись вокруг
+                         точки, оправа горит светом комнаты. Человек внутри;
+     data-state="shut" — заперто: лепестки почти сошлись.
+   Цвет берётся из --accent, то есть из света комнаты: знак живёт вместе с
+   обоями, а не своей отдельной жизнью. */
+.id-mark { display: inline-flex; align-items: center; }
+.id-mark svg.iris { width: 18px; height: 18px; overflow: visible; display: block; }
+.tb-identity .iris-rim {
+  fill: none; stroke: currentColor; stroke-width: 1.2; opacity: .38;
+  transition: stroke var(--t-move) ease, opacity var(--t-move) ease;
+}
+.tb-identity .iris-seams line {
+  stroke: currentColor; stroke-width: 1; opacity: .22;
+  transition: opacity var(--t-move) ease;
+}
+.tb-identity .iris-blades {
+  fill: none; stroke: currentColor; stroke-width: 1.5; opacity: .45;
+  transform-box: view-box; transform-origin: 12px 12px;
+  transform: scale(.95);
+  transition: transform var(--t-scene) cubic-bezier(.16, 1, .3, 1), opacity var(--t-move) ease, stroke-width var(--t-move) ease;
+}
+.tb-identity .iris-pupil { fill: var(--accent); transition: fill var(--t-move) ease; }
+.tb-identity[data-state="open"] { color: var(--accent); }
+.tb-identity[data-state="open"] .iris-blades { transform: scale(.44); opacity: .95; stroke-width: 2.1; }
+.tb-identity[data-state="open"] .iris-rim { opacity: .8; }
+.tb-identity[data-state="open"] .iris-seams line { opacity: .45; }
+.tb-identity[data-state="shut"] { color: var(--accent); }
+.tb-identity[data-state="shut"] .iris-blades { transform: scale(.3); opacity: 1; stroke-width: 2.4; }
+.tb-identity[data-state="shut"] .iris-rim { opacity: 1; }
+.tb-identity[data-state="shut"] .iris-seams line { opacity: .6; }
+/* Знак «турбо в силе» (D-167): в панели он есть только пока турбо включён. */
+.turbo-mark svg { width: 15px; height: 15px; }
+.turbo-mark { color: var(--accent); }
+.turbo-mark svg { fill: var(--accent); stroke: var(--accent); }
+
+/* Знак замка на знакомстве (D-171): та же диафрагма, только крупно и
+   раскрытая — человеку показывают ОТКРЫТУЮ систему и объясняют, как её
+   закрыть, а не пугают запертой. */
+.login-iris { display: grid; place-items: center; margin: 0 0 14px; }
+.login-iris svg.iris { width: 54px; height: 54px; color: var(--accent); }
+.login-iris .iris-rim { fill: none; stroke: currentColor; stroke-width: 1.2; opacity: .8; }
+.login-iris .iris-seams line { stroke: currentColor; stroke-width: 1; opacity: .4; }
+.login-iris .iris-eye {
+  fill: currentColor; opacity: .85;
+  transform-box: view-box; transform-origin: 12px 12px; transform: scale(.62);
+}
+
+/* ── ОКНО АККАУНТА · решения D-173, D-174 ────────────────────────────────── */
+.panel-account { width: min(460px, 100%); }
+.acc-sec { margin-top: 6px; }
+.acc-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; }
+.acc-row .acc-k { font-size: 13px; color: var(--ink-2); }
+.acc-row .acc-v { font-size: 12.5px; color: var(--ink-3); text-align: right; overflow-wrap: anywhere; }
+.acc-hint { font-size: 12px; color: var(--ink-3); line-height: 1.55; margin: 2px 0 6px; }
+.acc-who { display: flex; align-items: center; gap: 10px; padding: 4px 2px 12px; }
+.acc-dot { width: 10px; height: 10px; border-radius: var(--r-round); background: var(--accent); flex: none; }
+.acc-who-text { display: flex; flex-direction: column; min-width: 0; font-size: 14px; }
+.acc-who-sub { font-size: 11.5px; color: var(--ink-3); }
+.acc-field { display: flex; flex-direction: column; gap: 6px; }
+.acc-label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
+.acc-field input {
+  width: 100%; padding: 10px 12px; font-size: 14px; border-radius: var(--r-ctrl);
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
+}
+.acc-field input:focus { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
+.acc-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 2px; }
+.acc-acts .btn { flex: 1 1 150px; }
+.acc-profiles { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Взведённая кнопка сообщает о себе цветом, а не только словом: тот, кто
+   нажал случайно, должен УВИДЕТЬ, что дальше произойдёт непоправимое. */
+.btn.danger.armed { border-color: rgba(255, 69, 58, .8); background: rgba(255, 69, 58, .16); color: #fff; }
+.acc-truth {
+  font-size: 11.5px; line-height: 1.6; color: var(--ink-3);
+  padding: 10px 11px; border-radius: var(--r-ctrl);
+  background: rgba(255, 255, 255, .028); border: 1px solid var(--line);
+}
+
+/* ── ОКНО ЗАМКА · решение D-165 ───────────────────────────────────────────── */
+.panel-lock { width: min(420px, 100%); }
+.lock-state {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 4px;
+  border-radius: var(--r-ctrl); background: var(--accent-soft); border: 1px solid var(--accent-ring);
+  font-size: 13px; color: var(--ink);
+}
+.lock-state .lk-dot { width: 8px; height: 8px; border-radius: var(--r-round); background: var(--accent); flex: none; }
+.lock-state.off { background: rgba(255, 255, 255, .03); border-color: var(--line); color: var(--ink-2); }
+.lock-state.off .lk-dot { background: var(--ink-3); }
+.lock-cipher {
+  font-family: var(--mono); font-size: 11px; line-height: 1.7; color: var(--ink-3);
+  padding: 9px 11px; border-radius: var(--r-ctrl); background: rgba(255, 255, 255, .028);
+  border: 1px solid var(--line); overflow-wrap: anywhere;
+  /* <pre> по умолчанию НЕ переносит строк: на телефоне имя шифра уезжало за
+     правый край окна и обрывалось на PBKDF2-SHA256:60000 (снимок основателя).
+     overflow-wrap здесь бессилен — переносить нечего, пока белое пространство
+     не разрешено переносить. */
+  white-space: pre-wrap; word-break: break-word; margin: 0;
+}
+.lock-field { display: flex; flex-direction: column; gap: 7px; }
+.lock-field input {
+  width: 100%; padding: 11px 12px; font-size: 14px; border-radius: var(--r-ctrl);
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
+}
+.lock-field input:focus { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
+.lock-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.lock-acts .btn { flex: 1 1 140px; }
+.lock-warn {
+  font-size: 12.5px; line-height: 1.55; color: var(--danger);
+  padding: 9px 11px; border-radius: var(--r-ctrl);
+  background: rgba(255, 69, 58, .07); border: 1px solid rgba(255, 69, 58, .22);
+}
+
 /* ================================================================= panels §6 */
 .panel-overlay {
-  position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 20px;
+  position: fixed; inset: 0; z-index: var(--z-panel); display: none; place-items: center; padding: 20px;
   background: rgba(4, 5, 8, .55); backdrop-filter: blur(8px);
 }
 .panel-overlay.open { display: grid; }
@@ -1682,7 +2342,24 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .panel-head h3 { margin: 0; font-size: 14px; font-weight: 600; }
 .panel-close { color: var(--ink-3); padding: 4px 6px; border-radius: var(--r-ctrl); }
-.panel-body { padding: 12px 16px 16px; overflow: hidden; display: flex; flex-direction: column; gap: 8px; }
+/* ── СОДЕРЖИМОЕ ОКНА ОБЯЗАНО БЫТЬ ДОСТИЖИМО · решение D-175 ───────────────
+   ПОВОД, дословно от основателя 27.08.2026, со снимком окна замка на телефоне:
+   «не полностью можно увидеть содержимое окна и не работает скролл».
+   ЗДЕСЬ СТОЯЛО overflow: hidden. Пока в окнах жили короткие списки, обёрнутые
+   в .panel-scroll, это не было видно: свой скролл был у списка. Первое же
+   окно, где содержимое ДЛИННОЕ САМО ПО СЕБЕ (замок: состояние, что закрыто,
+   чем закрыто, цена, поле пароля, три кнопки), упёрлось в 84vh и было
+   срезано — без единого способа доскроллить.
+   Правило перевёрнуто: тело окна прокручивается САМО, когда не помещается.
+   min-height: 0 здесь не украшение — без него колонка flex отказывается
+   сжиматься ниже содержимого, и overflow: auto не получает во что скроллить.
+   Охраняется tools/panel-reach-check.mjs: у КАЖДОГО окна последняя строка
+   содержимого достижима. */
+.panel-body {
+  padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 8px;
+  overflow-y: auto; overflow-x: hidden; min-height: 0;
+  overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+}
 /* REQUIRED cap: panel lists always stay reachable (§6.0) */
 .panel-scroll { max-height: min(56vh, 420px); overflow: auto; padding-right: 4px; }
 .panel-sub { margin: 12px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
@@ -1721,7 +2398,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .clip-text { flex: 1; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clip-row.copied { border-color: var(--accent-ring); background: var(--accent-soft); }
 .fixed-badge {
-  position: fixed; right: 14px; bottom: 150px; z-index: 92; padding: 6px 12px; border-radius: var(--r-pill);
+  position: fixed; right: 14px; bottom: 150px; z-index: var(--z-badge); padding: 6px 12px; border-radius: var(--r-pill);
   font-family: var(--mono); font-size: 12px; color: var(--ink-2);
   background: var(--glass-2); border: 1px solid var(--line); backdrop-filter: blur(var(--glass-blur));
 }
@@ -1730,7 +2407,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 
 /* ================================================================ palette §8 */
 #sbCmdk {
-  position: fixed; inset: 0; z-index: 110; display: none; justify-content: center; align-items: flex-start;
+  position: fixed; inset: 0; z-index: var(--z-palette); display: none; justify-content: center; align-items: flex-start;
   padding: 14vh 20px 20px; background: rgba(4, 5, 8, .5); backdrop-filter: blur(8px);
 }
 #sbCmdk.open { display: flex; }
@@ -1753,7 +2430,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 
 /* =========================================================== context menu */
 #sbCtxMenu {
-  position: fixed; z-index: 120; min-width: 208px; padding: 6px;
+  position: fixed; z-index: var(--z-curtain); min-width: 208px; padding: 6px;
   border-radius: var(--r-card); background: var(--glass-2); border: 1px solid var(--line);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow);
 }
@@ -1854,7 +2531,12 @@ html.icons-small .icon-label { font-size: 10.5px; }
     .dock-tile { width: 38px; height: 38px; border-radius: var(--r-card); }
   .dock-tile svg { width: 18px; height: 18px; }
   .id-name { display: none; }
-  .tb-identity::after { content: ""; width: 8px; height: 8px; border-radius: var(--r-round); background: var(--accent); display: block; }
+  /* ── КРУЖОК — ЭТО ДВЕРЬ, И В НЕЁ ДОЛЖЕН ПОПАДАТЬ ПАЛЕЦ (D-173) ───────────
+     Знак виден восьмью точками, но нажимают не знак, а кнопку: на телефоне у
+     неё было 26×18, то есть по высоте меньше суставa пальца. Пока кружок
+     ничего не открывал, это было незаметно; теперь за ним окно аккаунта, и
+     промах стоит человеку попытки. Знак остаётся мелким — площадь растёт. */
+  .tb-identity { min-width: 34px; min-height: 34px; justify-content: center; padding: 5px 8px; }
 }
 @media (max-width: 560px) {
   .tb-seq { display: none; }
@@ -1862,8 +2544,7 @@ html.icons-small .icon-label { font-size: 10.5px; }
      Правило системы: словесный знак сжимается ДО СВОЕЙ ТОЧКИ, а не исчезает.
      Литеры уходят, фигура остаётся и вырастает до размера, который читается
      сама по себе. Это тот же объект, просто последний оставшийся масштаб. */
-  .sb-lock { display: none; }
-  .sb-min { display: block; width: 17px; height: 17px; }
+  /* правило переехало наверх: знак теперь везде, а не только здесь */
 }
 /* ── ИЗВЕЩЕНИЕ НЕ НАКРЫВАЕТ ПОЛЕ ЗНАЧКОВ (v47.1) ─────────────────────────
    На широком экране извещения живут в правом верхнем углу — там пусто. На
@@ -1980,7 +2661,7 @@ html.is-compact .titlebar { cursor: default; }
 .tb-lang-now.is-partial { opacity: .78; }
 
 .tb-lang-menu {
-  position: absolute; top: calc(100% + 6px); right: 0; z-index: 80;
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: var(--z-menu);
   min-width: 132px; padding: 5px; border-radius: var(--r-card);
   background: var(--glass); border: 1px solid var(--line);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow);
@@ -2056,3 +2737,116 @@ button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset:
 .desk-icon.running.is-min::after { background: transparent; box-shadow: inset 0 0 0 1px var(--ink-3); }
 .desk-icon.active-app::after { background: var(--accent); }
 .desk-icon.active-app.is-min::after { background: transparent; box-shadow: inset 0 0 0 1px var(--accent); }
+
+/* ── СРОК НА ЗАМЕТКЕ (v71) ────────────────────────────────────────────────
+   Срок читается в словах самой заметки (см. sbNoteDue в desktop.js) и
+   показывается меткой: человек видит, что именно вычитала система. Молча
+   угаданный срок хуже отсутствующего.
+
+   Заметка при этом НЕ ДВИГАЕТСЯ: место заметки — решение человека (D-098,
+   D-109). Меняется вид, а не положение. Наступивший срок греет кромку;
+   просроченный говорит об этом цветом тревоги — но не кричит, потому что
+   стол принадлежит человеку, а не его делам.
+   Охраняется tools/note-due-check.mjs. */
+.note-due {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px; border-radius: var(--r-pill);
+  font-size: 11px; color: var(--ink-2);
+  background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+}
+.note-due svg { width: 11px; height: 11px; flex: none; }
+.note-due.now { color: var(--ink); border-color: var(--accent-ring); background: var(--accent-soft); }
+.note-due.late { color: #ff9b8f; border-color: rgba(255, 69, 58, .42); background: rgba(255, 69, 58, .12); }
+.sticky-note.is-due { border-color: rgba(var(--accent-rgb), .48); }
+.sticky-note.is-late { border-color: rgba(255, 69, 58, .40); }
+
+/* Те же два знака в Центре управления — один рисунок на оба места. */
+.chip.is-drift, .chip.is-session { display: inline-flex; align-items: center; }
+.chip.is-drift::before {
+  content: ""; width: 9px; height: 9px; border-radius: var(--r-round); flex: none;
+  border: 1px solid currentColor; margin-right: 7px;
+  background: linear-gradient(90deg, currentColor 0 50%, transparent 50% 100%);
+}
+.chip.is-session::before {
+  content: ""; width: 5px; height: 5px; border-radius: var(--r-round); flex: none;
+  background: currentColor; margin: 0 9px 0 3px;
+  outline: 1px solid currentColor; outline-offset: 2.5px;
+}
+
+
+/* Двойник, улетающий в Эхо (D-132). Висит поверх всего и ни к чему не
+   принадлежит: раскладка о нём не знает, попасть в него пальцем нельзя. */
+.sb-flyer {
+  position: fixed; z-index: var(--z-above); pointer-events: none;
+  will-change: offset-distance, opacity, scale;
+}
+.sb-flyer > * { pointer-events: none; }
+/* Эхо принимает: короткий вдох значка. Не пульс без конца — один ответ. */
+.echo-catch { animation: echoCatch .62s cubic-bezier(.2, .8, .3, 1) both; }
+@keyframes echoCatch {
+  0%   { transform: scale(1); }
+  38%  { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+html[data-motion="reduced"] .echo-catch { animation: none; }
+@media (prefers-reduced-motion: reduce) { .echo-catch { animation: none; } }
+
+/* Часть стола, убранная в Эхо (D-133). Не display:none у самой кнопки — она
+   ещё может улетать в этот миг; убирается только со стола. */
+.part-hidden { display: none !important; }
+
+/* ── Время и календарь (D-135). Стекло не своё: панель наследует материал и
+   поведение всех остальных. Своего здесь — крупное время теми же стержнями и
+   сетка месяца. */
+.tb-clock-btn {
+  display: inline-flex; align-items: center; height: 26px; padding: 0 6px;
+  border-radius: var(--r-ctrl); border: 1px solid transparent; background: transparent;
+  color: inherit; transition: background var(--t-touch) ease, border-color var(--t-touch) ease;
+}
+@media (hover: hover) { .tb-clock-btn:hover { background: rgba(255, 255, 255, .06); border-color: var(--line); } }
+.tb-clock-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* ── ОДНА ЛИНЕЙКА НА КОМНАТУ И НА ОКНО · решение D-169 ────────────────────
+   ПОВОД: снимок основателя с календарём и слова «окно должно быть идеально по
+   центру, а не как сейчас».
+   ЗАМЕРЕНО (телефонный вид 360×780, окно времени открыто): слева 20.0 px,
+   справа 4.0 px. Не «почти по центру» — на 16 px мимо.
+   ПРИЧИНА. Комнату отмеряет .panel-overlay: padding 20px с каждой стороны,
+   то есть окну оставлено 320 px. А это окно назначало ширину САМО и ДРУГОЙ
+   линейкой: calc(100vw - 24px) = 336 px. Окно шире отведённого ему места, и
+   grid, чтобы не срезать содержимое, прижимает его к началу строки — левое
+   поле 20, правое 4. Центровка была исправна всё это время; неисправно было
+   то, что две стороны меряли комнату разными линейками.
+   ЛЕЧЕНИЕ — не подпорка в 8 px, а отмена второй линейки: ширина считается в
+   процентах ОТ ОТВЕДЁННОГО МЕСТА, и поле остаётся ровно одно — то, что задала
+   комната. Охраняется tools/panel-center-check.mjs: у каждой панели левое
+   поле равно правому. */
+.panel-time { width: min(360px, 100%); }
+.time-big { display: flex; align-items: center; justify-content: center; gap: 3px; padding: 12px 0 4px; color: var(--ink); }
+.time-cell { display: inline-flex; align-items: center; }
+.time-cell .clock-glyph { height: 44px; width: 28px; }
+.time-cell.colon { font-family: var(--mono); font-size: 34px; line-height: 1; opacity: .32; padding: 0 2px; }
+.time-sub { text-align: center; font-size: 12.5px; color: var(--ink-3); padding-bottom: 14px; }
+.cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 2px 10px; }
+.cal-title { font-size: 13px; font-weight: 600; color: var(--ink-2); text-transform: capitalize; }
+.cal-step {
+  width: 30px; height: 30px; display: grid; place-items: center; font-size: 17px;
+  border-radius: var(--r-ctrl); border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .04); color: var(--ink-2);
+}
+@media (hover: hover) { .cal-step:hover { background: var(--glass); color: var(--ink); } }
+.cal-head, .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-head { padding-bottom: 5px; }
+.cal-head span {
+  text-align: center; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.cal-day, .cal-pad {
+  aspect-ratio: 1; display: grid; place-items: center;
+  font-family: var(--mono); font-size: 12.5px; color: var(--ink-2);
+  border-radius: var(--r-ctrl);
+}
+.cal-day.today {
+  color: #fff; font-weight: 700;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}

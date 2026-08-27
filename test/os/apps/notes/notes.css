@@ -203,7 +203,7 @@
 /* Cursor-following drag chip. Class + data-id are the shell drop contract. */
 .notes-row-ghost {
   position: fixed;
-  z-index: 9999;
+  z-index: var(--z-above);
   pointer-events: none;
   max-width: 240px;
   padding: 8px 11px;
@@ -235,3 +235,12 @@
   .app-notes { flex-direction: column; }
   .notes-side { width: auto; flex: 0 0 auto; max-height: 44%; border-right: 0; border-bottom: 1px solid rgba(255, 255, 255, .09); }
 }
+
+/* Срок в списке записей — тот же разбор, что на столе (см. notes.js). */
+.notes-row-due {
+  display: inline-block; margin-right: 7px; padding: 2px 7px;
+  border-radius: var(--r-pill); font-size: 10.5px; color: var(--ink-2);
+  background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+}
+.notes-row-due.now { color: var(--ink); border-color: var(--accent-ring); background: var(--accent-soft); }
+.notes-row-due.late { color: #ff9b8f; border-color: rgba(255, 69, 58, .42); background: rgba(255, 69, 58, .12); }

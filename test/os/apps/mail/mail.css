@@ -315,7 +315,7 @@
 .ml-compose {
   position: absolute;
   inset: 12px 12px 12px 40px;
-  z-index: 5;
+  z-index: var(--z-lift);
   display: flex;
   flex-direction: column;
   gap: 8px;

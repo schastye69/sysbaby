@@ -10,97 +10,40 @@
 (function () {
   "use strict";
 
+  var doc = document;
   var KEY = "sysbaby.files.v1";
   var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.2a1.2 1.2 0 0 1 1.2-1.2h4l1.8 2h8.3a1.2 1.2 0 0 1 1.2 1.2v8.6a1.2 1.2 0 0 1-1.2 1.2H4.7a1.2 1.2 0 0 1-1.2-1.2V7.2Z"/></svg>';
   var FOLDER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.2a1.2 1.2 0 0 1 1.2-1.2h4l1.8 2h8.3a1.2 1.2 0 0 1 1.2 1.2v8.6a1.2 1.2 0 0 1-1.2 1.2H4.7a1.2 1.2 0 0 1-1.2-1.2V7.2Z"/></svg>';
+  var THING_SVG = {
+    image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></svg>',
+    doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/><path d="M8 12.5h7M8 15.5h7M8 18h4"/></svg>',
+    sound: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.5h3l4-3v11l-4-3H5z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.8a7.5 7.5 0 0 1 0 10.4"/></svg>',
+    film: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M10 9.5l5 2.5-5 2.5z"/></svg>',
+    thing: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/></svg>'
+  };
   var FILE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/></svg>';
 
   /* ------------------------------------------------------------ seed data */
 
-  var SEED_TREE = {
-    name: "Home",
-    type: "folder",
-    children: [
-      {
-        name: "Demo Workspace",
-        type: "folder",
-        children: [
-          {
-            name: "Sample Client · Logistics",
-            type: "folder",
-            children: [
-              { name: "SoW (Sample).md", type: "file", content: "# Statement of Work — Sample Client · Logistics\n\nSAMPLE DATA — illustrates CRM functionality, not a real client.\n\nScope: order-routing automation, supplier-invoice flow (phase 2).\nTimeline: 6 weeks." },
-              { name: "Automation-Spec (Sample).md", type: "file", content: "# Order-Routing Automation (Sample)\n\nSAMPLE DATA — for demonstration only.\n\n- Ingest orders from the dispatch queue\n- Route by zone + carrier SLA\n- Auto-notify warehouse on assignment" },
-              { name: "Invoice (Sample).txt", type: "file", content: "SAMPLE INVOICE — demonstration only\nInvoice #S-0142\nClient: Sample Client · Logistics\nAmount: €1,490.00\nStatus: Paid" }
-            ]
-          },
-          {
-            name: "Sample Client · Retail",
-            type: "folder",
-            children: [
-              { name: "SoW (Sample).md", type: "file", content: "# Statement of Work — Sample Client · Retail\n\nSAMPLE DATA — illustrates CRM functionality, not a real client.\n\nScope: inventory sync + reorder automation.\nTimeline: 4 weeks." },
-              { name: "Kickoff Notes (Sample).txt", type: "file", content: "SAMPLE DATA — demonstration only.\nKickoff — Sample Client · Retail:\n- Confirmed integrations (POS, warehouse)\n- Weekly sync agreed\n- First milestone: inventory sync" }
-            ]
-          },
-          {
-            name: "Proposals (Sample)",
-            type: "folder",
-            children: [
-              { name: "Sample Lead · Food & Beverage.md", type: "file", content: "# Proposal — Sample Lead · Food & Beverage\n\nSAMPLE DATA — demonstration only, not a real prospect.\n\nInterest: invoicing + supplier-onboarding automation.\nStage: intro call." }
-            ]
-          }
-        ]
-      },
-      {
-        name: "Templates",
-        type: "folder",
-        children: [
-          { name: "Statement-of-Work.md", type: "file", content: "# Statement of Work (template)\n\n## Scope\n## Timeline\n## Deliverables\n## Acceptance criteria" }
-        ]
-      }
-    ]
-  };
+  /* ── СИСТЕМА ПРИХОДИТ ПУСТОЙ (D-142) ────────────────────────────────────
+     ПОВОД, дословно от основателя 26.08.2026: «прошу полностью очистить
+     содержимое приложений от всяких примеров и мусора. Система должна
+     выглядеть чистой».
+     Засеянные примеры были нужны, пока систему показывали. Теперь ею
+     пользуются — и чужие письма, чужие папки и чужие разговоры в своей
+     системе выглядят ровно тем, чем являются: мусором. Приложение, которому
+     нечего показать, теперь ГОВОРИТ с человеком (D-140), а не притворяется
+     занятым. */
+  var SEED_TREE = { name: "Home", type: "folder", children: [] };
+
 
   /* ABOUT_PORTFOLIO снят вместе с выведенной папкой (v48, D-066):
      Хранилище принадлежит человеку, витринное живёт в build. */
 
-  /* The Journal: the system's own memory, planted once (guard key below) so
-   * the desktop feels like it lived before you arrived — because it did.
-   * Everything in these files is true and checkable; the same history answers
-   * to `log` in the Terminal. Delete the folder and it stays deleted:
-   * memory offered, never forced. */
-  var JOURNAL_GUARD = "sysbaby.journal.files.v1";
-  var JOURNAL_FOLDER = {
-    name: "Journal",
-    type: "folder",
-    children: [
-      {
-        name: "Read me first.txt",
-        type: "file",
-        content: "This folder is the system's own memory.\n\nEvery system we hand over keeps a record of how it came to be — decisions, dead ends, repairs. This desktop is no exception, because it is the same kind of thing: a working system, built by hand, owned by the person in front of it.\n\nThe short version lives in the Terminal — open it and type `log`.\n\nEvery entry is true. That is the entire trick."
-      },
-      {
-        name: "How the door got its light.txt",
-        type: "file",
-        content: "aug 2026\n\nThe landing page used to say the word 'applications' at the bottom of the screen, once, to tell you a dock was hiding there.\n\nFirst we made the word assemble itself out of glyphs. Then we made it speak three languages. Then we deleted it.\n\nWhat stayed is a thin line of warm light at the bottom edge — the light under a door. Move toward it and the door opens; the dock's tiles gather to your touch and settle into place.\n\nA label explains. Light invites. We keep choosing the second one.\n"
-      },
-      {
-        name: "The day the mail worked.txt",
-        type: "file",
-        content: "10 aug 2026\n\nThe order form on the landing page looked finished for weeks. It was not — the chain behind it was broken in three places, and nobody knew, because everything LOOKED fine.\n\nDNS pointed one way, the mail routing another, and the form's endpoint was never activated. We untangled it link by link: registrar → DNS → mail routing → inbox. Then we sent a real letter through the real form and watched it arrive.\n\nThat evening the project's counter of PROVEN things moved off zero. Everything before that had been opinion.\n\nRule kept since: a feature exists when it is observed working, not when its code reads well.\n"
-      },
-      {
-        name: "Where your work is kept.txt",
-        type: "file",
-        content: "Everything you do in this desktop is stored in this browser and nowhere else. No account, no server, no copy taken.\n\nThat is easy to claim and easy to check: turn off your network and keep working. Nothing will stop.\n\nClose the tab and it is all still here when you come back. Clear your browser data and it is all genuinely gone — including this file."
-      },
-      {
-        name: "Rules the house keeps.txt",
-        type: "file",
-        content: "Collected from the build journal, in force everywhere in this desktop:\n\n1. You own the system. Your data lives in your browser; export it whole any time. Nothing phones home.\n\n2. Nothing is deleted casually. Removed things wait in Echoes until you decide — certainty is not demanded at the worst moment.\n\n3. The machine speaks in labels, people speak in sentences. When this desktop talks like a person, a person wrote those words.\n\n4. Nothing pretends. Sample data says so on its face. Nothing simulates a delivery, a reply, or a presence that is not there.\n\n5. Evidence over opinion. When two designs argued, we built both and let the runtime decide.\n"
-      }
-    ]
-  };
+  /* Журнала в Хранилище тоже больше нет (D-142): система приходит пустой.
+     История сборки жива и доступна там, где ей место, — команда `log` в
+     Терминале; в чужой папке она была бы тем же мусором. */
+
 
   /* -------------------------------------------------------------- helpers */
 
@@ -196,16 +139,8 @@
       return true;
     });
 
-    /* The Journal is planted exactly once — including into trees stored
-     * before it existed. If the visitor deletes it, the guard key remembers
-     * and it never comes back on its own: offered memory, not forced. */
-    if (dbGet(JOURNAL_GUARD) !== "1") {
-      var hasJournal = tree.children.some(function (node) {
-        return node && node.type === "folder" && node.name === "Journal";
-      });
-      if (!hasJournal) tree.children.push(clone(JOURNAL_FOLDER));
-      dbSet(JOURNAL_GUARD, "1");
-    }
+    /* Журнал больше не сажается (D-142): система приходит пустой. Тем, у кого
+       он уже вырос, он остаётся — свои папки система не трогает. */
 
     persist();
     pathStack = [tree];
@@ -246,6 +181,105 @@
     return candidate;
   }
 
+  /* ── ВЕЩИ (v69) ───────────────────────────────────────────────────────────
+     ПОВОД — просьба основателя развивать приложения; Совет назвал первым
+     пробелом то, что Хранилище умело только текст, набранный в нём самом.
+     Снимок с телефона, договор, счёт внести было нельзя.
+
+     У вещи ДВА МЕСТА. В описи (дереве) лежит запись — имя, род, вес, номер;
+     содержимое живёт на складе (window.sbThings, IndexedDB). Дерево — один
+     документ JSON, переписываемый целиком при каждой правке; вещь в нём
+     переписывалась бы вместе с ним и упёрлась бы в квоту с первого снимка.
+
+     Охраняется tools/vault-things-check.mjs. */
+
+  var THING_CAP = 25 * 1024 * 1024;   /* предел на одну вещь: см. запись ниже */
+
+  function kindOf(mime, name) {
+    var m = String(mime || "").toLowerCase();
+    var n = String(name || "").toLowerCase();
+    if (m.indexOf("image/") === 0) return "image";
+    if (m.indexOf("audio/") === 0) return "sound";
+    if (m.indexOf("video/") === 0) return "film";
+    if (m.indexOf("pdf") !== -1 || /\.(pdf|docx?|odt|rtf|pages|xlsx?|pptx?)$/.test(n)) return "doc";
+    return "thing";
+  }
+  function kindWord(kind) {
+    return t("fv.kind" + kind.charAt(0).toUpperCase() + kind.slice(1));
+  }
+  /* Вес говорится на языке стола: «Б/КБ/МБ» — такие же слова, как «картинка»
+     и «документ», и переводятся вместе с ними. */
+  function weigh(bytes) {
+    var b = Number(bytes) || 0;
+    if (b < 1024) return b + " " + t("fv.unitB");
+    if (b < 1024 * 1024) return Math.round(b / 1024) + " " + t("fv.unitKB");
+    return (Math.round(b / 104857.6) / 10) + " " + t("fv.unitMB");
+  }
+
+  /* Ссылки на вещи, выданные браузеру. Держатся, пока окно живо, и
+     отзываются при перерисовке: иначе каждая перерисовка оставляла бы за
+     собой ещё одну ссылку на мегабайты. */
+  var thingUrls = [];
+  function releaseThingUrls() {
+    thingUrls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) { /* ignore */ } });
+    thingUrls = [];
+  }
+  function thingUrl(blob) {
+    var u = URL.createObjectURL(blob);
+    thingUrls.push(u);
+    return u;
+  }
+
+  /* ── ПРИЁМ ВЕЩЕЙ ──────────────────────────────────────────────────────────
+     Отказ здесь всегда произносится. Молчаливый отказ хуже отказа: человек
+     решит, что вещь внесена, закроет окно — и узнает о потере тогда, когда
+     вещи уже нет нигде. */
+  window.sbVaultBring = function (files) {
+    var list = Array.prototype.slice.call(files || []);
+    if (!list.length) return Promise.resolve([]);
+    if (!window.sbThings) { toast(t("fv.noBring"), t("fv.noBringNote")); return Promise.resolve([]); }
+    ensureLoaded();
+    var folder = currentFolder();
+    var done = [];
+    return list.reduce(function (chain, file) {
+      return chain.then(function () {
+        if (file.size > THING_CAP) {
+          toast(t("fv.tooBig", { name: file.name }), t("fv.tooBigNote", { limit: weigh(THING_CAP) }));
+          return null;
+        }
+        return window.sbThings.put(file, { name: file.name, mime: file.type }).then(function (id) {
+          if (!id) { toast(t("fv.noBring"), t("fv.noBringNote")); return null; }
+          var node = {
+            name: uniqueName(folder, file.name || "вещь", false),
+            type: "file",
+            thingId: id,
+            kind: kindOf(file.type, file.name),
+            mime: file.type || "",
+            size: file.size || 0
+          };
+          folder.children = folder.children || [];
+          folder.children.push(node);
+          done.push(node.name);
+          persist();
+          toast(t("fv.brought", { name: node.name }), t("fv.broughtNote"));
+          return node;
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      openWindows_render();
+      return done;
+    });
+  };
+
+  /* Перерисовать все открытые окна Хранилища — приём вещи мог случиться и
+     не из окна (перетаскиванием на стол в будущем). */
+  function openWindows_render() {
+    var wins = (window.openWindows || {});
+    Object.keys(wins).forEach(function (id) {
+      if (id === "files" && wins[id] && wins[id].el) render(wins[id]);
+    });
+  }
+
   /* -------------------------------------------------------------- markup */
 
   function breadcrumbMarkup() {
@@ -259,9 +293,14 @@
 
   function itemMarkup(node, idx) {
     var isFolder = node.type === "folder";
+    var isThing = !isFolder && !!node.thingId;
+    /* Вещь показывает свой род прямо на плитке: род и вес — это и есть то,
+       что человек о ней знает до открытия. */
+    var tile = isFolder ? FOLDER_SVG : (isThing ? THING_SVG[node.kind || "thing"] || FILE_SVG : FILE_SVG);
     return '<div class="fv-item' + (idx === selectedIndex ? " selected" : "") + '" data-index="' + idx + '" tabindex="0">' +
-      '<div class="fv-tile ' + (isFolder ? "folder" : "file") + '">' + (isFolder ? FOLDER_SVG : FILE_SVG) + "</div>" +
+      '<div class="fv-tile ' + (isFolder ? "folder" : "file") + (isThing ? " thing kind-" + esc(node.kind || "thing") : "") + '">' + tile + "</div>" +
       '<div class="fv-name" data-sb-userdata data-name-for="' + idx + '">' + esc(node.name) + "</div>" +
+      (isThing ? '<div class="fv-thing-note">' + esc(t("fv.thingKind", { kind: kindWord(node.kind || "thing"), size: weigh(node.size) })) + "</div>" : "") +
       '<div class="fv-mini">' +
         '<button type="button" class="fv-mini-btn" data-rename="' + idx + '" title="' + esc(t("fv.rename")) + '" aria-label="' + esc(t("fv.rename")) + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 19.5h4l10-10a1.6 1.6 0 0 0 0-2.3l-1.7-1.7a1.6 1.6 0 0 0-2.3 0l-10 10v4Z"/></svg>' +
@@ -277,8 +316,36 @@
      предпросмотре работала только для брифов витрины — их в Хранилище
      больше нет, и файл человека система за витринный не выдаёт. */
 
+  /* ── ПРОСМОТР ВЕЩИ (v69) ──────────────────────────────────────────────────
+     Картинку система ПОКАЗЫВАЕТ. Про всё прочее говорит честно: род, вес,
+     имя — и предлагает сохранить к себе. Обещать «просмотр документа» и
+     показать пустоту было бы хуже, чем сказать словами: система никогда не
+     заявляет о том, чего не сделала. */
+  function thingPreviewMarkup(node) {
+    var kind = node.kind || "thing";
+    var head = '<div class="fv-preview-head">' +
+      '<span class="fv-preview-name" data-sb-userdata>' + esc(node.name) + "</span>" +
+      '<span class="fv-preview-actions">' +
+        '<button type="button" class="fv-edit" id="fvThingOpen" title="' + esc(t("fv.thingOpen")) + '" aria-label="' + esc(t("fv.thingOpen")) + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>' +
+        "</button>" +
+        '<button type="button" class="fv-edit" id="fvThingSave" title="' + esc(t("fv.thingSave")) + '" aria-label="' + esc(t("fv.thingSave")) + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v10M8.2 11l3.8 3.8L15.8 11M5 18.5h14"/></svg>' +
+        "</button>" +
+      "</span></div>";
+    var body = kind === "image"
+      ? '<div class="fv-thing-view"><img id="fvThingImg" alt="' + esc(node.name) + '"></div>'
+      : '<div class="fv-thing-view fv-thing-said">' +
+          '<div class="fv-thing-icon">' + (THING_SVG[kind] || FILE_SVG) + "</div>" +
+          '<div class="fv-thing-said-text">' +
+            esc(t("fv.thingKind", { kind: kindWord(kind), size: weigh(node.size) })) +
+          "</div></div>";
+    return '<div class="fv-preview" data-thing="' + esc(node.thingId) + '">' + head + body + "</div>";
+  }
+
   function previewMarkup(node) {
     if (!node) return "";
+    if (node.thingId) return thingPreviewMarkup(node);
     return '<div class="fv-preview">' +
       '<div class="fv-preview-head">' +
         '<span class="fv-preview-name" data-sb-userdata>' + esc(node.name) + "</span>" +
@@ -307,6 +374,9 @@
     var children = folder.children || [];
     var previewNode = previewIndex >= 0 && children[previewIndex] && children[previewIndex].type === "file"
       ? children[previewIndex] : null;
+    /* Ссылки прошлой перерисовки отзываются здесь: держать их дольше значит
+       держать мегабайты за уже стёртой картинкой. */
+    releaseThingUrls();
 
     /* Прокрутка человека переживает перерисовку — средство оболочки,
      общее для всех приложений (D-099). */
@@ -322,6 +392,9 @@
             '<button type="button" class="fv-tool" id="fvNewFile" title="' + esc(t("fv.newFile")) + '">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/><path d="M11.5 12v5M9 14.5h5"/></svg>' +
               "<span>" + esc(t("fv.newFile")) + "</span></button>" +
+            '<button type="button" class="fv-tool" id="fvBring" title="' + esc(t("fv.bring")) + '">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16.5v-10M8.2 10L12 6.2 15.8 10M5 19.5h14"/></svg>' +
+              "<span>" + esc(t("fv.bring")) + "</span></button>" +
           "</div>" +
         "</div>" +
         '<div class="fv-grid" id="fvGrid">' +
@@ -330,6 +403,7 @@
             : '<div class="fv-empty">' + esc(t("fv.empty")) + "</div>") +
         "</div>" +
         (previewNode ? previewMarkup(previewNode) : "") +
+        '<div class="fv-catch">' + esc(t("fv.bringDrop")) + "</div>" +
       "</div>";
     if (_sbKeep) _sbKeep();
 
@@ -339,6 +413,72 @@
   /* --------------------------------------------------------------- wiring */
 
   function wire(win, host) {
+    /* ── ВЕЩЬ ПОКАЗЫВАЕТСЯ ПОСЛЕ ТОГО, КАК ЕЁ ДОСТАЛИ СО СКЛАДА ──────────────
+       Склад отвечает не сразу (IndexedDB — обещание), поэтому картинка
+       вставляется, когда пришла, а не когда нарисовали разметку. */
+    var thingBox = host.querySelector(".fv-preview[data-thing]");
+    if (thingBox && window.sbThings) {
+      var tid = thingBox.getAttribute("data-thing");
+      window.sbThings.get(tid).then(function (rec) {
+        if (!rec || !rec.blob || !thingBox.isConnected) return;
+        var img = thingBox.querySelector("#fvThingImg");
+        if (img) img.src = thingUrl(rec.blob);
+        var open = thingBox.querySelector("#fvThingOpen");
+        if (open) open.addEventListener("click", function () {
+          if (window.sbView) window.sbView(tid);
+        });
+        var save = thingBox.querySelector("#fvThingSave");
+        if (save) save.addEventListener("click", function () {
+          var a = doc.createElement("a");
+          a.href = thingUrl(rec.blob);
+          a.download = rec.name || "thing";
+          doc.body.appendChild(a);
+          a.click();
+          doc.body.removeChild(a);
+        });
+      });
+    }
+
+    /* ── ПРИНЕСТИ ВЕЩЬ: КНОПКА И ОТПУСКАНИЕ НА ОКНО ─────────────────────── */
+    var bring = host.querySelector("#fvBring");
+    if (bring) {
+      bring.addEventListener("click", function () {
+        var inp = doc.createElement("input");
+        inp.type = "file";
+        inp.multiple = true;
+        inp.style.cssText = "position:fixed;left:-9999px;width:1px;height:1px";
+        doc.body.appendChild(inp);
+        inp.addEventListener("change", function () {
+          var files = inp.files;
+          doc.body.removeChild(inp);
+          if (files && files.length) window.sbVaultBring(files);
+        });
+        inp.click();
+      });
+    }
+    var shell = host.querySelector(".app-files");
+    if (shell) {
+      ["dragenter", "dragover"].forEach(function (ev) {
+        shell.addEventListener(ev, function (e) {
+          if (!e.dataTransfer || Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") === -1) return;
+          e.preventDefault();
+          shell.classList.add("catching");
+        });
+      });
+      ["dragleave", "dragend"].forEach(function (ev) {
+        shell.addEventListener(ev, function (e) {
+          if (e.target !== shell) return;
+          shell.classList.remove("catching");
+        });
+      });
+      shell.addEventListener("drop", function (e) {
+        if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
+        e.preventDefault();
+        shell.classList.remove("catching");
+        window.sbVaultBring(e.dataTransfer.files);
+      });
+    }
+
     host.querySelectorAll(".fv-crumb").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var idx = parseInt(btn.getAttribute("data-crumb"), 10);
@@ -370,7 +510,12 @@
           previewIndex = -1;
           editing = false;
           render(win);
+          return;
         }
+        /* Вещь открывается в смотровой — одной на всю систему (D-124).
+           Хранилище показывает вещь мельком в своей полосе просмотра; чтобы
+           посмотреть по-настоящему, её отдают тому, чьё это дело. */
+        if (node && node.thingId && window.sbView) window.sbView(node.thingId);
       });
     });
 
@@ -488,6 +633,17 @@
     input.addEventListener("blur", commit);
   }
 
+  /* Все номера вещей внутри узла — сам узел и всё, что под ним. */
+  function collectThings(node) {
+    var out = [];
+    (function walk(n) {
+      if (!n) return;
+      if (n.thingId) out.push(n.thingId);
+      (n.children || []).forEach(walk);
+    })(node);
+    return out;
+  }
+
   function removeNode(win, idx) {
     var folder = currentFolder();
     var node = (folder.children || [])[idx];
@@ -497,6 +653,13 @@
       : t("fv.confirm.file", { name: node.name });
     var extra = (node.type === "folder" && (node.children || []).length) ? t("fv.confirm.nested") : "";
     if (!window.confirm(question + extra)) return;
+    /* ── ВЫНУТАЯ ИЗ ОПИСИ ВЕЩЬ УХОДИТ СО СКЛАДА (v69) ──────────────────────
+       Иначе Хранилище копило бы навсегда то, что человек уже выбросил, и
+       узнать об этом было бы неоткуда: в описи вещи нет, а место занято.
+       Собирается и то, что лежит внутри выброшенной папки. */
+    collectThings(node).forEach(function (id) {
+      if (window.sbThings) window.sbThings.del(id);
+    });
     folder.children.splice(idx, 1);
     persist();
     selectedIndex = -1;

@@ -1,0 +1,96 @@
+/* Браузер (D-134). Полоса адреса — сверху на широком столе, снизу под палец
+   на телефоне: там, где рука, а не там, где привычка настольных браузеров. */
+/* Тело окна — флекс-строка; приложение обязано СКАЗАТЬ, что занимает его
+   целиком, иначе оно встаёт по ширине своего содержимого и половина окна
+   остаётся пустой. Поймано снимком, а не прибором: закон мерил кнопки и
+   рамку, а не то, что вокруг них. */
+.app-browser {
+  display: flex; flex-direction: column;
+  flex: 1 1 auto; width: 100%; min-width: 0;
+  height: 100%; min-height: 0;
+}
+.br-bar {
+  display: flex; align-items: center; gap: 6px; flex: none;
+  padding: 8px 10px; border-bottom: 1px solid var(--line);
+}
+.br-btn {
+  width: 38px; height: 38px; flex: none; display: grid; place-items: center;
+  border-radius: var(--r-ctrl); border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .04); color: var(--ink-2);
+  transition: background var(--t-touch) ease, color var(--t-touch) ease;
+}
+.br-btn svg { width: 18px; height: 18px; }
+.br-btn[disabled] { opacity: .35; pointer-events: none; }
+@media (hover: hover) { .br-btn:hover { background: var(--glass); color: var(--ink); } }
+.br-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.br-out { text-decoration: none; }
+.br-url {
+  flex: 1; min-width: 0; height: 38px; padding: 0 12px;
+  border-radius: var(--r-pill); border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .05); color: var(--ink);
+  font-family: var(--mono); font-size: 13px;
+}
+.br-url:focus { outline: none; border-color: var(--accent); }
+.br-stage { flex: 1; min-height: 0; position: relative; background: #fff; }
+.br-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; z-index: var(--z-inside); }
+.br-empty {
+  position: absolute; inset: 0; z-index: var(--z-inside); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px; padding: 24px;
+  background: var(--bg); text-align: center;
+}
+.br-empty-glyph { width: 44px; height: 44px; color: var(--ink-3); opacity: .7; }
+.br-empty-glyph svg { width: 100%; height: 100%; }
+.br-empty-title { font-size: 15px; font-weight: 600; color: var(--ink); margin: 6px 0 0; }
+.br-empty-sub { font-size: 12.5px; color: var(--ink-3); margin: 0; max-width: 44ch; line-height: 1.5; }
+.br-marks { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 52ch; }
+.br-marks-head { width: 100%; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 2px; }
+.br-mark-item {
+  padding: 7px 12px; border-radius: var(--r-pill); border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .04); color: var(--ink-2); font-size: 12.5px;
+  max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media (hover: hover) { .br-mark-item:hover { background: var(--glass); color: var(--ink); } }
+
+/* Телефон: адрес под палец, внизу. */
+@media (max-width: 560px) {
+  .app-browser { flex-direction: column-reverse; }
+  .br-bar { border-bottom: 0; border-top: 1px solid var(--line); flex-wrap: wrap; row-gap: 6px; }
+  .br-url { order: -1; width: 100%; flex-basis: 100%; }
+}
+
+/* ── «Пусто?» — единственный вопрос, который браузер задаёт человеку (D-138).
+   Полоска висит поверх нижнего края страницы и не мешает ей: если страница
+   появилась, человек её просто не замечает; если нет — это единственное, что
+   он видит на сером листе. */
+.br-blank {
+  position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: var(--z-inside);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 8px 12px; border-radius: var(--r-pill);
+  background: rgba(12, 12, 14, .82); border: 1px solid var(--line);
+  backdrop-filter: blur(var(--glass-blur));
+  color: var(--ink-3); font-size: 12px; text-align: center;
+}
+.br-blank-go {
+  padding: 6px 12px; border-radius: var(--r-pill); border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .06); color: var(--ink); font-size: 12px; flex: none;
+}
+@media (hover: hover) { .br-blank-go:hover { background: var(--glass); } }
+
+/* Карточка хозяина, о котором человек уже сказал «пусто». Наша, тёмная, с
+   именем сайта — вместо чужого серого листа. */
+.br-shut {
+  position: absolute; inset: 0; z-index: var(--z-inside);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: 28px; text-align: center; background: var(--bg);
+}
+.br-shut-host { font-family: var(--mono); font-size: 17px; color: var(--ink); word-break: break-all; }
+.br-shut-sub { margin: 0; font-size: 12.5px; color: var(--ink-3); max-width: 40ch; line-height: 1.5; }
+.br-shut-acts { display: flex; align-items: center; gap: 8px; margin-top: 14px; flex-wrap: wrap; justify-content: center; }
+.br-shut-go, .br-shut-retry {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px; border-radius: var(--r-pill); border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .05); color: var(--ink); font-size: 13px; text-decoration: none;
+}
+.br-shut-go svg { width: 15px; height: 15px; }
+.br-shut-retry { color: var(--ink-3); }
+@media (hover: hover) { .br-shut-go:hover, .br-shut-retry:hover { background: var(--glass); } }

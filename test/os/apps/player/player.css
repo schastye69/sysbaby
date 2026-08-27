@@ -1,0 +1,95 @@
+/* Проигрыватель (D-136). Полоса стоит НА линии нижнего ряда; речь стола
+   поднимается над ней сама, потому что --desk-row-b читает --player-h. */
+.pl-bar {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  /* Полоса стоит на линии ряда САМОЙ ПО СЕБЕ; речь — на той же линии плюс
+     место полосы. Выражение линии живёт в одном месте (core.css §1). */
+  bottom: var(--row-base);
+  /* ── ГДЕ ПОЛОСА ЖИВЁТ ПО ВЫСОТЕ, И ПОЧЕМУ НЕ ТАМ, ГДЕ РЕЧЬ ───────────────
+     Подсказка и извещение стоят ПОД окнами намеренно: слой окон 20, а речь
+     живёт внутри стола, и это уже чинилось однажды — «fixed на z-index 54,
+     закрашивающий каждое окно», было отмеченным дефектом.
+     Полоса стоит на ТОЙ ЖЕ ЛИНИИ, но не на том же слое, и это не
+     непоследовательность, а различие в природе. Речь — о столе: закрылось
+     окно, речь и видна. Полоса — мебель, как док: до кнопки «пауза» надо
+     дотянуться, не закрывая того, что открыто. Поэтому слой у неё докa (55),
+     на единицу ниже самого дока — док главнее.
+     Найдено снимком: закон мерил положение и зазор до речи, и всё было
+     зелёным, пока на снимке полоса не оказалась спрятанной за окном build. */
+  z-index: var(--z-float);
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  max-width: min(560px, calc(100vw - 24px));
+  border-radius: var(--r-card);
+  border: 1px solid var(--line);
+  background: var(--glass);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  color: var(--ink-2);
+}
+/* Спектр — узкая полоска слева, как у Winamp, и ровно того же цвета, что шов:
+   он не гость на столе, он часть его. */
+.pl-spec { width: 56px; height: 18px; flex: none; color: var(--accent); display: block; }
+.pl-time { display: inline-flex; align-items: center; gap: 1px; flex: none; color: var(--ink); }
+.pl-t { display: inline-flex; align-items: center; }
+.pl-t .clock-glyph { height: 15px; width: 9px; }
+.pl-t.colon { font-family: var(--mono); font-size: 12px; opacity: .3; padding: 0 1px; }
+.pl-title {
+  flex: 1; min-width: 60px; overflow: hidden; white-space: nowrap;
+  font-size: 12.5px; color: var(--ink-2); mask-image: linear-gradient(90deg, #000 88%, transparent);
+}
+.pl-title-in { display: inline-block; }
+.pl-title.runs .pl-title-in { animation: plRun 12s linear infinite; }
+@keyframes plRun { 0%, 8% { transform: none; } 92%, 100% { transform: translateX(calc(-100% + 60px)); } }
+html[data-motion="reduced"] .pl-title.runs .pl-title-in { animation: none; }
+@media (prefers-reduced-motion: reduce) { .pl-title.runs .pl-title-in { animation: none; } }
+.pl-b {
+  width: 36px; height: 36px; flex: none; display: grid; place-items: center;
+  border-radius: var(--r-ctrl); border: 1px solid transparent;
+  background: transparent; color: var(--ink-2);
+  transition: background var(--t-touch) ease, color var(--t-touch) ease;
+}
+.pl-b svg { width: 15px; height: 15px; }
+@media (hover: hover) { .pl-b:hover { background: rgba(255, 255, 255, .08); color: var(--ink); } }
+.pl-b:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pl-seek {
+  position: absolute; left: 10px; right: 10px; top: -1px; height: 3px;
+  -webkit-appearance: none; appearance: none; background: transparent; margin: 0;
+}
+.pl-seek::-webkit-slider-runnable-track { height: 3px; border-radius: var(--r-pill); background: rgba(255, 255, 255, .14); }
+.pl-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; margin-top: -3.5px; border-radius: var(--r-round); background: var(--accent); }
+.pl-seek::-moz-range-track { height: 3px; border-radius: var(--r-pill); background: rgba(255, 255, 255, .14); }
+.pl-seek::-moz-range-thumb { width: 10px; height: 10px; border: 0; border-radius: var(--r-round); background: var(--accent); }
+
+/* Окно — список дорожек. */
+.app-player { display: flex; flex-direction: column; flex: 1 1 auto; width: 100%; min-width: 0; height: 100%; min-height: 0; }
+.pl-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--ink-3); }
+.pl-list { flex: 1; min-height: 0; overflow: auto; padding: 6px; }
+.pl-row {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 10px; border-radius: var(--r-ctrl); border: 1px solid transparent;
+  background: transparent; color: var(--ink-2); text-align: left; font-size: 13px;
+}
+.pl-row .pl-n { font-family: var(--mono); font-size: 11px; color: var(--ink-3); min-width: 2ch; }
+.pl-row .pl-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (hover: hover) { .pl-row:hover { background: rgba(255, 255, 255, .05); color: var(--ink); } }
+.pl-row.on { background: rgba(255, 255, 255, .07); color: var(--ink); border-color: var(--line); }
+.pl-row.on .pl-n { color: var(--accent); }
+.pl-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 26px; text-align: center; }
+.pl-empty-glyph { width: 42px; height: 42px; color: var(--ink-3); opacity: .7; }
+.pl-empty-glyph svg { width: 100%; height: 100%; }
+.pl-empty-title { font-size: 15px; font-weight: 600; color: var(--ink); margin: 6px 0 0; }
+.pl-empty-sub { font-size: 12.5px; color: var(--ink-3); margin: 0; max-width: 42ch; line-height: 1.5; }
+.pl-pick {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 12px;
+  padding: 10px 16px; border-radius: var(--r-pill); border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .05); color: var(--ink); font-size: 13px;
+}
+.pl-pick.small { margin-top: 0; padding: 7px 12px; font-size: 12px; }
+.pl-pick svg { width: 16px; height: 16px; }
+@media (hover: hover) { .pl-pick:hover { background: var(--glass); } }
+
+@media (max-width: 560px) {
+  .pl-bar { gap: 5px; padding: 6px 8px; }
+  .pl-spec { width: 34px; }
+  .pl-title { min-width: 40px; font-size: 12px; }
+}

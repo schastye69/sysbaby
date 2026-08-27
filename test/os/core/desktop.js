@@ -386,6 +386,145 @@
 
   function notesLayer() { return noteLayer || (noteLayer = $("#sbNoteLayer")); }
 
+  /* ── СРОК ЗАМЕТКИ — ЭТО ЕЁ СОБСТВЕННЫЕ СЛОВА (v71) ────────────────────────
+     ПОВОД — просьба основателя развивать приложения. В очереди стояли «Срок
+     на заметках» и «Сегодня»; дойдя до них, Совет пересмотрел собственное
+     предложение и не стал строить ни поля даты, ни приложения.
+
+     Заголовок заметки уже оказался её первой строкой — не заведённым полем,
+     а ПРОЧИТАННЫМ (D-111). Срок устроен так же: дата читается в самом
+     тексте. «Позвонить завтра», «сдать 1 сентября», «через 3 дня» — человек
+     и так пишет это, когда пишет о деле; заводить рядом поле значило бы
+     просить сказать одно и то же дважды. Отсюда то, чего у поля не бывает:
+     срок появляется у ВСЕХ уже написанных заметок без переноса данных,
+     меняется правкой текста, и хранить его не нужно — в записи по-прежнему
+     одна строка.
+
+     ГРАНИЦЫ, И ОНИ ЗДЕСЬ ГЛАВНОЕ:
+       · Прошедшая дата сроком НЕ становится. «Встретились 20 мая» — рассказ
+         о прошлом, а не дело.
+       · Понятое ПОКАЗЫВАЕТСЯ меткой: человек видит, что именно вычитала
+         система. Молча угаданный срок — худший из всех.
+       · Относительное («через 3 дня») считается от времени ЗАПИСИ, а не от
+         мига, когда на заметку посмотрели: иначе срок уезжал бы каждый день.
+       · Заметка НЕ ДВИГАЕТСЯ. Место заметки — решение человека (D-098,
+         D-109): меняется вид, а не положение.
+
+     Охраняется tools/note-due-check.mjs. */
+
+  var MONTHS = ["январ", "феврал", "март", "апрел", "ма", "июн", "июл", "август", "сентябр", "октябр", "ноябр", "декабр"];
+  var WEEKDAYS = ["воскресен", "понедельник", "вторник", "сред", "четверг", "пятниц", "суббот"];
+  var DAY = 86400000;
+
+  function startOfDay(ms) { var d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); }
+
+  /* Ближайшая НЕ прошедшая дата, названная в тексте. writtenAt — когда
+     заметку записали: от него считается всё относительное. */
+  /* Чистая функция: и «когда записали», и «когда смотрим» приходят снаружи.
+     Так закон может пройти любой день, не трогая часов машины, — тем же
+     приёмом, которым проверяется ход краски (D-107). */
+  window.sbNoteDue = function (text, writtenAt, nowAt) {
+    var src = String(text == null ? "" : text).toLowerCase();
+    if (!src) return null;
+    var from = startOfDay(typeof writtenAt === "number" ? writtenAt : Date.now());
+    var todayAt = startOfDay(typeof nowAt === "number" ? nowAt : Date.now());
+    var found = [];
+
+    if (/(^|[^а-яё])сегодня([^а-яё]|$)/.test(src)) found.push({ at: from, said: "today" });
+    if (/(^|[^а-яё])завтра([^а-яё]|$)/.test(src)) found.push({ at: from + DAY, said: "tomorrow" });
+    if (/(^|[^а-яё])послезавтра([^а-яё]|$)/.test(src)) found.push({ at: from + 2 * DAY, said: "after" });
+
+    var rel = src.match(/через\s+(\d{1,3})\s*(дн|недел|месяц)/);
+    if (rel) {
+      var n = parseInt(rel[1], 10);
+      var mult = rel[2] === "недел" ? 7 : (rel[2] === "месяц" ? 30 : 1);
+      found.push({ at: from + n * mult * DAY, said: "in" });
+    }
+
+    /* «1 сентября», «1 сент», «15 марта» */
+    var named = src.match(/(\d{1,2})\s+([а-яё]{3,})/);
+    if (named) {
+      var mi = -1;
+      for (var i = 0; i < MONTHS.length; i++) {
+        if (named[2].indexOf(MONTHS[i]) === 0) { mi = i; break; }
+      }
+      if (mi >= 0) {
+        var dd = parseInt(named[1], 10);
+        var y = new Date(from).getFullYear();
+        var at = startOfDay(new Date(y, mi, dd, 12).getTime());
+        /* ── ГОД ПЕРЕНОСИТСЯ ТОЛЬКО ЧЕРЕЗ ГРАНИЦУ ГОДА ────────────────────
+           «1 сентября», написанное в июне, — сентябрь этого года. «20 мая»,
+           написанное в июне, — рассказ о прошлом, а не дело: переносить его
+           на будущий май значило бы придумать человеку намерение. А вот «5
+           января», написанное 30 декабря, отстоит почти на год назад — так
+           далеко назад пишут только про следующий год. Отсюда правило:
+           перенос ТОЛЬКО если названная дата отстала больше чем на 300
+           дней. Это не подгонка, а единственный случай, который иначе не
+           различить. */
+        if (at < from && (from - at) > 300 * DAY) at = startOfDay(new Date(y + 1, mi, dd, 12).getTime());
+        found.push({ at: at, said: "date" });
+      }
+    }
+
+    /* «25.12» и «25.12.2026» */
+    var dot = src.match(/(^|[^\d])(\d{1,2})[.\/](\d{1,2})(?:[.\/](\d{2,4}))?([^\d]|$)/);
+    if (dot) {
+      var d2 = parseInt(dot[2], 10), m2 = parseInt(dot[3], 10) - 1;
+      var y2 = dot[4] ? parseInt(dot[4].length === 2 ? "20" + dot[4] : dot[4], 10) : new Date(from).getFullYear();
+      if (d2 >= 1 && d2 <= 31 && m2 >= 0 && m2 <= 11) {
+        var at2 = startOfDay(new Date(y2, m2, d2, 12).getTime());
+        if (!dot[4] && at2 < from && (from - at2) > 300 * DAY) at2 = startOfDay(new Date(y2 + 1, m2, d2, 12).getTime());
+        found.push({ at: at2, said: "date" });
+      }
+    }
+
+    /* «в пятницу» — ближайший такой день, начиная с завтрашнего. */
+    var wd = src.match(/в[оо]?\s+([а-яё]{4,})/);
+    if (wd) {
+      for (var w = 0; w < WEEKDAYS.length; w++) {
+        if (wd[1].indexOf(WEEKDAYS[w]) === 0) {
+          var cur = new Date(from).getDay();
+          var delta = (w - cur + 7) % 7;
+          if (delta === 0) delta = 7;
+          found.push({ at: from + delta * DAY, said: "weekday" });
+          break;
+        }
+      }
+    }
+
+    /* ── ЧТО ОТСЕИВАЕТСЯ, И ЭТО ДВА РАЗНЫХ ПРОШЛОГО ──────────────────────
+       Дата, которая была в прошлом УЖЕ КОГДА ЗАМЕТКУ ПИСАЛИ, — рассказ, а
+       не дело: «встретились 20 мая», написанное в июне. Такое отсеивается.
+       Дата, которая была впереди в миг записи, но с тех пор прошла, — это
+       ПРОСРОЧЕННОЕ ДЕЛО, и его нельзя прятать: именно о нём человеку нужно
+       знать больше всего. Поэтому отбор идёт по времени ЗАПИСИ, а «поздно
+       или нет» считается по сегодняшнему дню. */
+    var live = found.filter(function (f) { return f.at >= from; });
+    if (!live.length) return null;
+    live.sort(function (a, b) { return a.at - b.at; });
+    var best = live[0];
+    return {
+      at: best.at,
+      said: best.said,
+      late: best.at < todayAt,
+      today: best.at === todayAt,
+      days: Math.round((best.at - todayAt) / DAY)
+    };
+  };
+
+  /* Как срок называется человеку. Метка обязана СКАЗАТЬ понятое: молча
+     угаданный срок хуже отсутствующего. */
+  window.sbNoteDueLabel = function (due) { return dueLabel(due); };
+
+  function dueLabel(due) {
+    if (!due) return "";
+    if (due.late) return tr("note.due.late");
+    if (due.today) return tr("note.due.today");
+    if (due.days === 1) return tr("note.due.tomorrow");
+    var d = new Date(due.at);
+    return tr("note.due.on", { date: d.getDate() + "." + String(d.getMonth() + 1).padStart(2, "0") });
+  }
+
   function appMentionChips(text) {
     var reg = (window.SysBaby && window.SysBaby.apps) || {};
     var low = String(text || "").toLowerCase();
@@ -541,13 +680,22 @@
     host.appendChild(el);
     autoGrow(ta);
     lightNote(el);
-    paintChips(el, wholeText());
+    paintChips(el, wholeText(), rec);
 
     function wholeText() { return joinNote(ta.value, bodyEl.value); }
 
     var lastNonEmpty = wholeText();
 
     function persist() {
+      /* ── УБРАННАЯ ЗАМЕТКА НЕ ВОСКРЕСАЕТ (v78) ──────────────────────────
+         Ниже есть строка «не нашли в живых — добавим». Она нужна, пока
+         заметка живая: хранилище могло не успеть узнать о ней. Но после
+         удаления заметки в живых её и НЕ ДОЛЖНО быть, и та же строка
+         возвращала её обратно — потому что blur от закрытия вызывает
+         сохранение уже ПОСЛЕ softDelete. Прибор показал это в лоб: заметка
+         оставалась в живых и не попадала в Эхо.
+         Метка ставится в самом начале удаления, до всякого blur. */
+      if (el._sbRemoved) return;
       var live = window.sbNotesStore ? window.sbNotesStore.load() : [];
       var found = false;
       var value = wholeText();
@@ -594,7 +742,7 @@
       el.title = p.body.trim() ? tr("note.more") : "";
       autoGrow(ta);
       lightNote(el);
-      paintChips(el, next.text || "");
+      paintChips(el, next.text || "", next);
     };
 
     function noteChanged() {
@@ -603,7 +751,7 @@
       el.classList.toggle("has-body", !!bodyEl.value.trim());
       el.title = bodyEl.value.trim() ? tr("note.more") : "";
       autoGrow(ta);
-      paintChips(el, whole);
+      paintChips(el, whole, rec);
       if (saveTimers[rec.id]) clearTimeout(saveTimers[rec.id]);
       saveTimers[rec.id] = setTimeout(function () { persist(); if (window.sbNotesStore) window.sbNotesStore.notify(); }, 250);
     }
@@ -680,11 +828,16 @@
 
        Признак «dragging» кончается в миг отпускания — а разговор с заметкой
        в этот миг не кончается: рука ещё над ней и тянется к кнопке. Поэтому
-       после переноса заметка остаётся В РУКАХ ещё четыре секунды: столько
-       нужно, чтобы поднять палец, увидеть ряд и попасть в кнопку, и мало,
-       чтобы стол успел засориться. Задержка снимается сама и снимается
-       заново при каждом новом касании этой заметки — держат её не часы, а
-       внимание. */
+       после переноса заметка остаётся В РУКАХ ещё немного: столько, чтобы
+       поднять палец, увидеть ряд и попасть в кнопку, и мало, чтобы стол
+       успел засориться. Задержка снимается сама и снимается заново при каждом
+       новом касании этой заметки — держат её не часы, а внимание.
+
+       СРОК УКОРОЧЕН ПО СЛОВУ ОСНОВАТЕЛЯ 27.08.2026 (D-176): «кнопки закрытия
+       и развертывания у заметок должны исчезать через 1-2 секунды, а не через
+       5». Было четыре секунды и они читались как пять. Стало полторы: этого
+       хватает на движение руки к кнопке, которая уже под пальцем, и не хватает,
+       чтобы ряд начал жить своей жизнью поверх стола. */
     var holdTimer = 0;
     function holdLights(ms) {
       if (holdTimer) clearTimeout(holdTimer);
@@ -692,7 +845,7 @@
       holdTimer = setTimeout(function () {
         holdTimer = 0;
         el.classList.remove("lights-held");
-      }, ms || 4000);
+      }, ms || 1500);
     }
     function dropHold() {
       if (holdTimer) { clearTimeout(holdTimer); holdTimer = 0; }
@@ -705,6 +858,27 @@
       var b = el.querySelector(".light.max");
       if (b) b.setAttribute("aria-label", esc(tr(el.classList.contains("full") ? "note.minimize" : "note.maximize")));
     }
+    /* ── РЯД ОГНЕЙ НЕ ОТБИРАЕТ НАВОДКУ (v67) ────────────────────────────────
+       ПОВОД, дословно от основателя 25.08.2026: «во время редактирования
+       заметок, я не могу нажать на кнопку развернуть и закрыть».
+
+       ЧТО ПРОИСХОДИЛО, и это цепочка, а не один промах. Палец опускается на
+       кнопку → текстовое поле теряет наводку → уходит клавиатура → слой
+       заметок едет обратно вниз (это его работа: см. «клавиатура не двигает
+       заметку») → а вместе со слоем едет и кнопка. К мигу, когда палец
+       поднимается, её под пальцем уже нет: нажатие достаётся пустому месту.
+       Кнопка убегала ровно от того, кто в неё целился.
+
+       ЛЕЧЕНИЕ В ОДНУ СТРОКУ, И ОНО В КОРНЕ ЦЕПОЧКИ: preventDefault на
+       pointerdown не даёт наводке уйти вовсе. Клавиатура остаётся, слой не
+       едет, кнопка стоит на месте — и обычный click срабатывает как везде.
+       Чинить хвост (ловить палец, откладывать спуск слоя) значило бы
+       городить сторожей над дефектом, которого не должно быть. */
+    el.querySelector(".note-lights").addEventListener("pointerdown", function (ev) {
+      if (!ev.target || !ev.target.closest(".light")) return;
+      try { ev.preventDefault(); } catch (e) { /* ignore */ }
+    });
+
     el.querySelector(".light.close").addEventListener("click", function (ev) {
       ev.stopPropagation();
       setFull(false);
@@ -800,10 +974,21 @@
     return el;
   }
 
-  function paintChips(el, text) {
+  function paintChips(el, text, rec) {
     var host = el.querySelector(".note-chip-host");
     if (!host) return;
-    host.innerHTML = appMentionChips(text);
+    /* Срок читается из тех же слов и показывается рядом с упоминаниями
+       приложений: и то и другое — то, что система ВЫЧИТАЛА в заметке, а не
+       завела отдельно. */
+    var due = window.sbNoteDue(text, rec && rec.updatedAt);
+    el.classList.toggle("is-due", !!due && due.today);
+    el.classList.toggle("is-late", !!due && due.late);
+    var dueMark = due
+      ? '<span class="note-due' + (due.late ? " late" : (due.today ? " now" : "")) + '">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12.5" r="7.5"/><path d="M12 8.5v4.2l2.6 1.6"/></svg>' +
+        esc(dueLabel(due)) + "</span>"
+      : "";
+    host.innerHTML = dueMark + appMentionChips(text);
     $$(".note-chip", host).forEach(function (b) {
       b.addEventListener("click", function (ev) {
         ev.stopPropagation();
@@ -842,7 +1027,17 @@
       for (i = 0; i < lines.length; i++) widest = Math.max(widest, textWidth(ta, lines[i]));
       var pad = el.offsetWidth - ta.offsetWidth + 2;           /* поля самой заметки */
       if (!(pad > 0)) pad = 24;
-      var want = Math.ceil(widest) + pad + 18;                  /* 18 — место под крестик */
+      /* ── МЕСТА ПОД КРЕСТИК БОЛЬШЕ НЕ НУЖНО (D-146) ────────────────────
+         Здесь к ширине прибавлялось 18 пикселей «под крестик». Крестика
+         внутри заметки давно нет: огни переехали НАРУЖУ, они висят над
+         заметкой (.note-lights, bottom: 100% + 5px). Прибавка осталась и
+         легла целиком на правую сторону — поэтому справа поле было на 18
+         пикселей шире, чем слева, и основатель говорил об этом ЧЕТЫРЕЖДЫ.
+         Ошибка держалась не потому, что её не видели, а потому, что закон о
+         поле сверял только верх, лево и низ, а про право был написан
+         ОПРАВДАНИЕМ в комментарии вместо замера. Оправдание снято, замер
+         добавлен, прибавка убрана. */
+      var want = Math.ceil(widest) + pad;
       el.style.width = Math.round(Math.min(NOTE_MAX_W, Math.max(NOTE_MIN_W, want))) + "px";
     }
     ta.style.height = "auto";
@@ -931,7 +1126,33 @@
   }
 
   function removeNote(el, id, soft) {
-    if (el && el.parentNode) el.parentNode.removeChild(el);
+    /* ── ПОРЯДОК ЗДЕСЬ И ЕСТЬ ВСЁ ЛЕКАРСТВО (v78) ───────────────────────
+       На телефоне основателя система переставала запускаться с сообщением,
+       которое само назвало причину: «The node to be removed is no longer a
+       child of this node. Perhaps it was moved in a "blur" event handler?»
+       Так и было. Удаление заметки, в которой стоит курсор, синхронно вызывает
+       blur; обработчик blur сохраняет текст, хранилище оповещает, слой заметок
+       пересобирается — и к моменту, когда исходное removeChild доходит до
+       дела, его узла в слое уже нет. Проверка el.parentNode от этого не
+       спасала: она сделана ДО того, как всё это случилось.
+
+       ПЕРВАЯ ПОПЫТКА чинила это так: снять фокус, а потом убрать узел. Падение
+       ушло — и заметка ВОСКРЕСАЛА: пересборка после blur успевала создать
+       новый узел, а убирался старый, уже отцепленный. Лечить надо было не
+       момент, а порядок.
+
+       ПОРЯДОК ТАКОЙ. Сперва снимок для полёта — он рисуется с живого. Потом
+       снимаем фокус, чтобы blur отработал сейчас, а не посреди уборки. Потом
+       меняем ДАННЫЕ — и слой пересобирается сам, уже без этой заметки. И
+       только в конце убираем то, что могло остаться: el.remove() к
+       отцепленному узлу равнодушен. Данные ведут, картинка идёт следом
+       (D-132). */
+    if (el) el._sbRemoved = true;      /* с этой метки сохранения молчат */
+    if (soft && el && window.sbFlyToEchoes) { try { window.sbFlyToEchoes(el); } catch (e) { } }
+    if (el) {
+      try { var ae = doc.activeElement; if (ae && el.contains(ae) && ae.blur) ae.blur(); }
+      catch (e) { /* ignore */ }
+    }
     if (soft && window.sbNotesStore) {
       window.sbNotesStore.softDelete(id);
       if (window.showToast) window.showToast(tr("toast.toEchoes", { app: appTitleOf("echoes") }), tr("toast.toEchoesNote"), "");
@@ -939,8 +1160,11 @@
       /* empty note: never persist an invisible ghost */
       var live = window.sbNotesStore.load().filter(function (n) { return n.id !== id; });
       window.sbNotesStore.save(live);
+      window.sbNotesStore.notify();
     }
+    if (el) { try { el.remove(); } catch (e) { /* узла уже нет — это и требовалось */ } }
   }
+
 
   /* ПЕРЕСБОРКА СЛОЯ НЕ ОТМЕНЯЕТ ТОГО, ЧТО СДЕЛАЛ ЧЕЛОВЕК (v64).
      Слой заметок пересобирается целиком на каждое изменение хранилища — а
@@ -1194,9 +1418,13 @@
             o.n.style.top = Math.round(o.y + dy) + "px";
           });
         }
+        /* Второй конец жеста — pointercancel (D-144). Без него оборванный
+           групповой перенос продолжал ехать за указателем: замер поймал
+           274 пикселя ПОСЛЕ того, как жест забрали. */
         function up() {
           doc.removeEventListener("pointermove", move);
           doc.removeEventListener("pointerup", up);
+          doc.removeEventListener("pointercancel", up);
           origins.forEach(function (o) {
             if (o.n.classList.contains("sticky-note") && window.sbPersistNotePosition) {
               window.sbPersistNotePosition(o.n.getAttribute("data-id"), o.n.offsetLeft, o.n.offsetTop);
@@ -1206,6 +1434,7 @@
         }
         doc.addEventListener("pointermove", move);
         doc.addEventListener("pointerup", up);
+        doc.addEventListener("pointercancel", up);
       }, true);
     });
   }
@@ -1249,23 +1478,81 @@
     });
   }
 
+  /* ── МЕНЮ КНОПКИ ОТВЕЧАЕТ ЗА ЭТОТ СТОЛ, А НЕ ЗА СПИСОК ПАНЕЛЕЙ (D-133) ──
+     ПОВОД, дословно: «меню бывшего плюсика нужно переработать концептуально».
+
+     ЧТО БЫЛО. Шесть пунктов, всегда одни и те же. Это список ПАНЕЛЕЙ, которые
+     в системе существуют, а не список того, что человек может сделать здесь и
+     сейчас. «Переключить окна» при одном окне ничего не сделает. «Горячие
+     клавиши» на телефоне некому нажать. «Выровнять виджеты», когда виджетов не
+     трогали, — работа без повода.
+
+     ПРАВИЛО. Кнопка — рука самого стола: на телефоне другого пути к его
+     действиям нет. Она отвечает на один вопрос — «что я могу сделать с этим
+     столом прямо сейчас» — и молчит обо всём, что сейчас ничего не сделает.
+     Меню от этого КОРОЧЕ прежнего, а не длиннее: пункт, появившийся по поводу,
+     стоит больше трёх, висящих всегда.
+
+     ПОРЯДОК ТОЖЕ СМЫСЛОВОЙ, а не алфавитный: сперва то, что кладут НА стол,
+     потом то, что делают СО столом, потом всё остальное, и последней —
+     уборка самой кнопки. */
+  function panel(name) { if (window.sbPanels && window.sbPanels[name]) window.sbPanels[name].open(); }
+  function openWindowCount() {
+    return doc.querySelectorAll(".window:not(.minimized)").length;
+  }
   function desktopMenuItems(x, y) {
     var items = [
-      { label: tr("menu.newNote"), run: function () { createNoteAt(x, y); } },        /* FIX: really creates one */
-      { label: tr("menu.tidyWidgets"), run: function () { if (window.sbTidyWidgets) window.sbTidyWidgets(); } },
-      { label: tr("menu.saveWidgets"), run: function () {
+      /* НА СТОЛ. Единственное, что стол умеет без всякого повода, и ради чего
+         кнопку чаще всего и нажимают. */
+      { label: tr("menu.newNote"), run: function () { createNoteAt(x, y); } }
+    ];
+    if (typeof window.sbVaultBring === "function") {
+      items.push({ label: tr("menu.bringThing"), run: function () {
+        var inp = doc.createElement("input");
+        inp.type = "file"; inp.multiple = true;
+        inp.addEventListener("change", function () { window.sbVaultBring(inp.files); });
+        inp.click();
+      } });
+    }
+
+    /* СО СТОЛОМ. Каждый пункт — по поводу. */
+    var deskBits = [];
+    if (window.sbIconPlaces && Object.keys(window.sbIconPlaces()).length) {
+      deskBits.push({ label: tr("menu.tidyDesk"), run: function () { if (window.sbTidyDesk) window.sbTidyDesk(); } });
+    }
+    /* «Виджеты трогали» — это ровно то, что записано в раскладке: пусто
+       значит нечего выравнивать и нечего сохранять. Отдельного признака не
+       заводим: он был бы вторым знанием об одном и том же (урок D-127). */
+    var wl = layoutAll();
+    if (Object.keys(wl).filter(function (k) { return k !== "__v"; }).length) {
+      deskBits.push({ label: tr("menu.tidyWidgets"), run: function () { if (window.sbTidyWidgets) window.sbTidyWidgets(); } });
+      deskBits.push({ label: tr("menu.saveWidgets"), run: function () {
         var nm = window.prompt(tr("menu.nameLayout"));
         if (nm && window.sbSaveCurrentWidgetLayout) window.sbSaveCurrentWidgetLayout(nm);
-      } }
-    ];
+      } });
+    }
     (window.sbGetSavedWidgetLayouts ? window.sbGetSavedWidgetLayouts() : []).forEach(function (L) {
-      items.push({ label: tr("menu.restoreLayout", { name: L.name }), run: function () { if (window.sbApplyNamedLayout) window.sbApplyNamedLayout(L.snap); } });
+      deskBits.push({ label: tr("menu.restoreLayout", { name: L.name }),
+        run: function () { if (window.sbApplyNamedLayout) window.sbApplyNamedLayout(L.snap); } });
     });
-    items.push("-");
-    [["menu.clipboard", "sbClipOverlay"], ["menu.switchWindows", "sbTaskOverlay"],
-     ["menu.shortcuts", "sbShortcutsOverlay"]].forEach(function (p) {
-      items.push({ label: tr(p[0]), run: function () { if (window.sbPanels && window.sbPanels[p[1]]) window.sbPanels[p[1]].open(); } });
-    });
+    if (openWindowCount() >= 2) {
+      deskBits.push({ label: tr("menu.switchWindows"), run: function () { panel("sbTaskOverlay"); } });
+    }
+    if (deskBits.length) { items.push("-"); deskBits.forEach(function (b) { items.push(b); }); }
+
+    /* И ЕЩЁ. Только то, чему есть чем воспользоваться. */
+    var rest = [];
+    rest.push({ label: tr("menu.clipboard"), run: function () { panel("sbClipOverlay"); } });
+    /* Клавиши — там, где есть клавиши. Тот же приём, что у подсказки .win-kbd. */
+    if (window.matchMedia && window.matchMedia("(pointer: fine)").matches) {
+      rest.push({ label: tr("menu.shortcuts"), run: function () { panel("sbShortcutsOverlay"); } });
+    }
+    rest.push({ label: tr("menu.hideFab"), run: function () {
+      var fab = $("#sbFab");
+      if (fab && window.sbFlyToEchoes) { try { window.sbFlyToEchoes(fab); } catch (e) { } }
+      if (window.sbSetDeskPartHidden) window.sbSetDeskPartHidden("fab", true);
+    } });
+    if (rest.length) { items.push("-"); rest.forEach(function (b) { items.push(b); }); }
     return items;
   }
 

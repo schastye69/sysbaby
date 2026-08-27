@@ -27,13 +27,17 @@
   /* Тексты засеянных эх живут в STRINGS ядра (ключи ec.seed.*): это голос
      студии, и он должен звучать на языке того, кто открыл систему. После
      засева это обычные данные профиля — перевод к ним больше не возвращается. */
-  var TRACE_NOTES = [
-    { id: "trace-echo-0", key: "ec.seed.0", ageDays: 9 },
-    { id: "trace-echo-1", key: "ec.seed.1", ageDays: 4 },
-    { id: "trace-echo-2", key: "ec.seed.2", ageDays: 21 },
-    { id: "trace-echo-3", key: "ec.seed.3", ageDays: 2 },
-    { id: "trace-echo-4", key: "ec.seed.4", ageDays: 1 }
-  ];
+  /* ── СИСТЕМА ПРИХОДИТ ПУСТОЙ (D-142) ────────────────────────────────────
+     ПОВОД, дословно от основателя 26.08.2026: «прошу полностью очистить
+     содержимое приложений от всяких примеров и мусора. Система должна
+     выглядеть чистой».
+     Засеянные примеры были нужны, пока систему показывали. Теперь ею
+     пользуются — и чужие письма, чужие папки и чужие разговоры в своей
+     системе выглядят ровно тем, чем являются: мусором. Приложение, которому
+     нечего показать, теперь ГОВОРИТ с человеком (D-140), а не притворяется
+     занятым. */
+  var TRACE_NOTES = [];
+
   /* (The former TRACE_DOCUMENTS file moved to the Vault's Journal folder in
    * v21 — documents belong with documents; echoes hold what was let go.) */
 
@@ -74,14 +78,9 @@
           deletedAt: now - Math.round(trace.ageDays * 86400000)
         });
       });
-      if (!have["trace-scribble-journal"]) {
-        batch.unshift({
-          id: "trace-scribble-journal",
-          text: journalNote(),
-          pinned: true,
-          updatedAt: now - 3 * 86400000
-        });
-      }
+      /* Приколотой заметки-путеводителя тоже больше нет (D-142): система
+         приходит пустой, и первая заметка на столе — та, которую напишет
+         человек, а не мы. */
       s.save(batch);
       db.set(TRACE_GUARD, "1");
       s.notify();
@@ -210,14 +209,36 @@
     "</div>";
   }
 
+  /* Части стола — не приложения (кнопка действия и всё, что появится дальше).
+     Список читается у оболочки: Эхо не знает, из чего стол состоит, оно знает
+     только, что убранное лежит здесь. */
+  function hiddenParts() {
+    if (typeof window.sbDeskParts !== "function") return [];
+    try { return window.sbDeskParts().filter(function (p) { return p.hidden; }); }
+    catch (err) { console.error("[echoes] desk parts failed", err); return []; }
+  }
+  function partRowMarkup(part) {
+    return '<div class="ec-row app">' +
+      '<span class="ec-app-tile part">' + ICON + "</span>" +
+      '<span class="ec-row-text">' +
+        '<span class="ec-snippet">' + esc(part.title) + "</span>" +
+        '<span class="ec-time">' + esc(t("ec.appRemoved")) + "</span>" +
+      "</span>" +
+      '<span class="ec-actions">' +
+        '<button type="button" class="ec-btn" data-restore-part="' + esc(part.id) + '">' + esc(t("ec.restore")) + "</button>" +
+      "</span>" +
+    "</div>";
+  }
+
   function render(win) {
     var host = bodyOf(win);
     if (!host) return;
     var echoes = deletedNotes();
     var apps = hiddenApps();
+    var parts = hiddenParts();
 
     var markup;
-    if (!echoes.length && !apps.length) {
+    if (!echoes.length && !apps.length && !parts.length) {
       markup = '<div class="ec-empty">' +
         '<div class="ec-empty-glyph">' + ICON + "</div>" +
         '<p class="ec-empty-title">' + esc(t("ec.empty.title")) + "</p>" +
@@ -231,9 +252,10 @@
           '<button type="button" class="ec-btn quiet" id="ecSilenceAll">' + esc(t("ec.silenceAll")) + "</button>" +
         "</div>" + echoes.map(echoRowMarkup).join("");
       }
-      if (apps.length) {
-        markup += '<div class="ec-head second"><span>' + esc(t(apps.length === 1 ? "ec.apps.one" : "ec.apps.many", { n: apps.length })) + "</span></div>" +
-          apps.map(appRowMarkup).join("");
+      if (apps.length || parts.length) {
+        var n = apps.length + parts.length;
+        markup += '<div class="ec-head second"><span>' + esc(t(n === 1 ? "ec.apps.one" : "ec.apps.many", { n: n })) + "</span></div>" +
+          apps.map(appRowMarkup).join("") + parts.map(partRowMarkup).join("");
       }
     }
 
@@ -282,6 +304,15 @@
       });
     }
 
+    host.querySelectorAll("[data-restore-part]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (typeof window.sbSetDeskPartHidden !== "function") return;
+        try { window.sbSetDeskPartHidden(btn.getAttribute("data-restore-part"), false); }
+        catch (err) { console.error("[echoes] part restore failed", err); return; }
+        render(win);
+      });
+    });
+
     host.querySelectorAll("[data-restore-app]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         if (typeof window.sbSetIconHidden !== "function") return;
@@ -307,6 +338,7 @@
   }
   if (window.sbBus && typeof window.sbBus.on === "function") {
     window.sbBus.on("icon:visibility", refreshOpen);
+    window.sbBus.on("part:visibility", refreshOpen);
   }
 
   /* ------------------------------------------------- opt-in trace seeding */

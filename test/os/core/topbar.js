@@ -28,7 +28,7 @@
       "cc.sound": "Sound", "cc.dnd": "Do Not Disturb", "cc.autohide": "Dim Dock",
       "cc.motion": "Turbo", "cc.transparency": "Reduce transparency",
       "cc.volume": "Volume", "cc.brightness": "Brightness", "cc.language": "Language",
-      "cc.wallpaper": "Wallpaper", "cc.accent": "Accent color", "cc.appearance": "Appearance",
+      "cc.fullscreen": "Full screen", "cc.wallpaper": "Wallpaper", "cc.controls": "Window controls", "cc.controls.left": "Left", "cc.controls.right": "Right", "cc.appearance": "Appearance",
       "cc.shortcuts": "Keyboard Shortcuts", "cc.layouts": "Workspace Layouts",
       "cc.desktop": "Manage Desktop", "cc.health": "Health", "cc.incognito": "Incognito Desktop",
       "cc.exit": "Exit Incognito", "cc.signout": "Sign out, softly",
@@ -76,13 +76,15 @@
       "note.delete": "Delete note",
       "note.placeholder": "Write something…",
       "note.aria": "Note",
-      "note.invite": "Leave a note here?",
+      "note.invite": "Leave a note?",
       "note.inviteAria": "Leave a note here",
       "note.minimize": "Back to the desktop",
       "note.maximize": "Open full screen",
       "note.body": "The rest of the note",
       "note.bodyPlaceholder": "The rest — only here",
       "note.more": "This note has more inside",
+      "note.due.today": "today", "note.due.tomorrow": "tomorrow",
+      "note.due.late": "overdue", "note.due.on": "by {date}",
       "tip.notefull": "Enter in a note's first line opens it full screen — the body is written only there.",
       "widget.quote": "Quote",
       "widget.payback": "Payback",
@@ -140,8 +142,7 @@
       "k.shortcuts": "Keyboard shortcuts", "k.windows": "Open windows", "k.clipboard": "Clipboard history",
       "k.layouts": "Workspace layouts", "k.manageDesktop": "Manage desktop", "k.health": "System health",
       /* --- chrome labels reached through data-i18n-aria / -ph (§14) --- */
-      "aria.identity": "Click to set your username",
-      "aria.notifications": "Notifications", "aria.appSeq": "Open windows",
+            "aria.notifications": "Notifications", "aria.appSeq": "Open windows",
       "aria.minimizeAll": "sys.baby OS — clear the desk: minimise every window",
       "aria.tip": "Show a tip", "cc.tip": "Show a tip",
       "aria.turbo": "Turbo — give every frame to the work", "aria.cc": "Control Center",
@@ -151,13 +152,13 @@
       "aria.icons": "Desktop icons", "aria.notes": "Desktop notes",
       "aria.dock": "Dock", "aria.fab": "Quick actions", "aria.cmdk": "Command palette", "aria.close": "Close",
       "cmdk.placeholder": "Search apps and actions…",
-      "cc.connection": "Connection", "cc.online": "Online", "cc.offline": "Offline",
+      "net.gone": "No internet", "net.nothingChanged": "Nothing has changed. Everything you have written is here, because it was always here. Only Browser needs the network — other people's pages are not ours to keep.", "net.stillHere": "No network — the system is here", "cc.connection": "Connection", "cc.online": "Online", "cc.offline": "Offline",
       "cc.offlineLong": "Offline — no network connection",
       "cc.battery": "Battery", "cc.batteryNA": "Battery status unavailable",
       "cc.charging": "Charging", "cc.onBattery": "On battery",
       "cc.merge": "Merge instead of replace",
       "theme.dark": "Dark", "theme.light": "Light",
-      "mood.studio": "Studio", "mood.aurora": "Aurora", "mood.sunset": "Sunset", "mood.ocean": "Ocean", "mood.mono": "Mono",
+      "mood.studio": "Studio", "mood.aurora": "Aurora", "mood.sunset": "Sunset", "mood.ocean": "Ocean", "mood.mono": "Mono", "mood.daylight": "Daylight", "mood.therapy": "Light therapy", "mood.feast": "Feast", "menu.tidyDesk": "Tidy desk", "menu.bringThing": "Bring a thing\u2026", "menu.hideFab": "Remove this button", "part.fab": "Quick actions button", "br.back": "Back", "br.fwd": "Forward", "br.again": "Reload", "br.bookmark": "Save this page", "br.bookmarked": "Saved", "br.openTab": "Open in a real tab", "br.placeholder": "Address, or something to look up", "br.frameTitle": "Page", "br.saved": "Saved", "br.recent": "Recent", "br.empty.title": "Nothing open yet", "br.empty.sub": "Type an address and press Enter. Many sites refuse to be shown inside another page \u2014 the arrow at the right opens the current address in a real tab, always.", "note.day.title": "That day is yours", "note.day.body": "The date is written down \u2014 keep typing what happens on it.", "lock.again": "Repeat the password", "lock.mismatch": "The two do not match \u2014 nothing was locked.", "lock.done": "Locked. Your words are in envelopes now.", "lock.failed": "Could not lock \u2014 nothing was changed.", "lock.remove": "Remove the lock", "lock.removed": "The lock is off. Your words lie open again.", "lock.warn": "There is no way back: if you forget this password, what you have written cannot be recovered. No server holds a copy \u2014 that is the whole point.", "lock.ask": "Password", "lock.open": "Open", "lock.locking": "Lock", "lock.wrong": "That password does not open this.", "lock.locked": "Locked", "lock.sub": "Everything here — notes, letters, conversations, the Vault, and the room itself: wallpaper, language, names. From this side nothing of yours can be seen.", "lock.title": "Lock everything", "lock.insecure": "The lock cannot work at this address. A browser gives a page real cryptography only over a protected connection (https). Open sys.baby over https and the lock appears — nothing else changes.", "panel.lock": "Lock", "aria.lock": "Lock — the aperture of this system", "aria.turboOn": "Turbo is on — tap to give the frames back", "cc.turbo": "Turbo", "lock.state.none": "Not locked", "lock.state.armed": "Locked — open for this session", "lock.what": "One password closes the whole system: every note, every letter, every conversation, the Vault, and the look of the room. On disk nothing readable is left — not even the names of the things you keep.", "lock.accounts": "Several accounts? One password opens all of them on this device. The lock stands in front of the storage, not in front of one account — and while it is shut, even the number of your accounts is invisible.", "lock.new": "Password", "lock.set": "Lock everything", "lock.now": "Lock now", "lock.change": "Change the password", "lock.changed": "The password is changed. Nothing was re-encrypted — only the envelope that holds the key.", "lock.old": "Current password", "lock.cipher": "What it is closed with", "lock.short": "At least four characters.", "lock.busy": "Working — this takes a second on purpose.", "auth.lock.title": "All of this can be closed with one word", "auth.lock.body": "sys.baby has no server. What you write stays on this device — which means nobody can read it for you, and nobody can read it instead of you. One turn of the key and the whole system goes into envelopes: notes, letters, conversations, even the colour of your walls. There is no recovery, because there is nobody to recover it from. You can do it now, or on any later day — the aperture in the top bar is always there.", "auth.lock.now": "Set it now", "auth.lock.later": "Later, from the top bar", "bk.title": "Copies", "bk.folder": "Folder", "bk.noFolder": "not chosen", "bk.last": "Last copy", "bk.never": "none yet", "bk.sealed": "sealed", "bk.choose": "Choose a folder", "bk.change": "Change the folder", "bk.on": "On", "bk.off": "Off", "bk.saveNow": "Save a copy now", "bk.exportNow": "Download a copy as a file", "bk.err": "Error:", "bk.what": "The system puts a copy of your profile into a folder you choose — every time something changed, and at the moment you leave the page. Three generations are kept: trouble noticed a day later can only be undone with yesterday's copy. While the lock is on, the copy goes into the folder SEALED and opens with the same password.", "bk.needFolder": "Without a real folder the synchronisation does not switch on. A copy living in the same browser as the original is not a copy: one clearing of the browser takes both.", "bk.unsupported": "This browser does not let a page write into a folder on your device, so there is no synchronisation here — and the Council will not pretend otherwise. Saving copies into the same browser would be easy and would be a lie: a copy living in the same browser as the original is not a copy, because one clearing of the browser takes both. What remains is a file you download yourself, with the button below. On desktop Chrome or Edge the synchronisation switches on by itself.", "bk.permission": "The browser wants you to confirm access to the folder. Press “Save a copy now” once more and allow it.", "panel.account": "Account", "aria.identity": "Account and leaving", "acc.you": "You are", "acc.guest": "a guest on this machine", "acc.name": "Name in the system", "acc.nameSub": "Shown in the top bar and on what you send. Two characters at least.", "acc.save": "Save", "acc.saved": "Saved.", "acc.profile": "Profile", "acc.switch": "Switch", "acc.export": "Export the profile first", "acc.signout": "Sign out, softly", "acc.leave": "Leave now", "acc.leaveSub": "One tap: the session closes, every cache and service copy is erased, the address and title of this history entry are replaced, and the tab tries to close. What you have written stays where it is — and stays sealed if the lock is on.", "acc.wipe": "Erase everything and leave", "acc.wipeSub": "All of the above, plus everything you have written: notes, letters, conversations, the Vault, profiles. Nothing of yours is left on this device. There is no undo.", "acc.wipeAsk": "Press once more to erase everything. This cannot be undone.", "acc.truth": "What a page cannot do, and the Council will not pretend otherwise: the browser's list of visits is not this page's memory, and no site may read or erase it — a site that could erase itself from your history could erase anything else too. This page replaces the entry it can reach, so Back will not lead here, and erases everything of its own. If you need visits not to be recorded at all, use a private window; to remove what is already recorded, clear it in the browser itself.", "panel.time": "Time & calendar", "aria.time": "Time and calendar", "pl.prev": "Previous", "pl.next": "Next", "pl.play": "Play", "pl.pause": "Pause", "pl.seek": "Position", "pl.pick": "Choose a folder", "pl.count": "{n} tracks", "pl.brought": "Music", "pl.broughtN": "{n} tracks brought in", "pl.none": "No audio files in that folder", "pl.empty.title": "No music yet", "pl.empty.sub": "A browser cannot look through your device on its own. Choose ONE folder \u2014 Music or Download, for example. Android refuses the storage root itself: if it says \u201cCan\u2019t use this folder\u201d, step into a folder and choose that.", "br.blank": "Page blank?", "br.blank.go": "Open in a tab", "br.shut.sub": "You told the system this site refuses to be shown inside another page. It opens in a real tab from now on \u2014 and this can be undone.", "br.shut.retry": "Try here again",
       /* ================================================== Pulse / Настройки
          Приложения больше не пишут строки литералами. Ключ живёт здесь,
          рядом с остальными двумя языками, чтобы перевод нельзя было забыть:
@@ -174,14 +175,12 @@
       "set.appearance.theme": "Theme",
       "set.appearance.themeSub": "Dark is the only theme this release ships. A light theme that half the apps do not honour would look broken, and shipping it broken is worse than not having it.",
       "set.appearance.themeDark": "DARK",
-      "set.appearance.accent": "Accent color",
-      "set.appearance.accentSub": "Recolors the dock highlight, toggles, focus rings and more, everywhere at once",
       "set.appearance.mood": "Wallpaper mood",
       "set.appearance.moodSub": "Recolors the background scenery — everything else stays the same",
       "set.appearance.moodNone": "No moods available",
       "set.appearance.brightness": "Brightness",
       "set.appearance.brightnessSub": "Dims the whole desktop — the same slider as the Control Center",
-      "set.appearance.turbo": "Turbo",
+      "set.appearance.fullscreenOn": "Take the whole screen", "set.appearance.fullscreenOff": "Give the screen back", "set.appearance.fullscreen": "Full screen", "set.appearance.fullscreenSub": "The system takes the whole screen \u2014 the same switch as in the quick panel", "set.appearance.controls": "Window controls", "set.appearance.controlsSub": "Which side the close, minimise and maximise keys sit on \u2014 in every window and on every note", "set.appearance.turbo": "Turbo",
       "set.appearance.turboSub": "Skips the long animations — everything happens instantly",
       "set.appearance.transparency": "Reduce transparency",
       "set.appearance.transparencySub": "Solid panels instead of glass",
@@ -241,10 +240,10 @@
       "set.advanced.diagSub": "Live FPS, memory, storage and session errors",
       "set.advanced.diagBtn": "Open",
       "set.advanced.reset": "Reset appearance",
-      "set.advanced.resetSub": "Accent color and wallpaper mood only — nothing else is touched",
+      "set.advanced.resetSub": "Your room and its light — nothing else is touched",
       "set.advanced.resetBtn": "Reset",
       "set.advanced.resetDoneTitle": "Appearance reset",
-      "set.advanced.resetDoneBody": "Accent color and wallpaper mood are back to default.",
+      "set.advanced.resetDoneBody": "Your desk is back in Studio, and its light with it.",
       "set.about.build": "Build",
       "set.about.apps": "Applications",
       "set.about.appsValue": "{registered} registered · {launchable} in the dock",
@@ -256,7 +255,7 @@
       "set.about.data": "Your data",
       "set.about.dataValue": "{count} local keys",
       "set.about.network": "Network",
-      "set.about.networkValue": "none — no analytics, no tracking, no calls home",
+      "set.about.networkValue": "the system itself makes none — no analytics, no tracking, no calls home. Pages you open in Browser talk to their own sites.",
       "set.about.languages": "Languages",
       "set.about.whatTitle": "What this desktop is",
       "set.about.whatBody": "A working answer to one question: what does it feel like when your business software belongs to you? Every app here is real — the notes keep, the files move, the terminal answers — and every word of it runs on your device. The client systems in {portfolio} are the same idea, built for real companies.",
@@ -401,8 +400,19 @@
       "fv.home": "Home",
       "fv.rename": "Rename", "fv.delete": "Delete", "fv.edit": "Edit",
       "fv.newFolder": "New Folder", "fv.newFile": "New File",
+      "fv.bring": "Bring a thing", "fv.bringDrop": "Let it go — it stays here",
+      "fv.brought": "Brought in: {name}", "fv.broughtNote": "It lives in this browser and goes nowhere else.",
+      "fv.noBring": "Incognito keeps nothing", "fv.noBringNote": "A thing brought here would have to be written down. Incognito writes nothing — so it was not taken in.",
+      "fv.tooBig": "Too heavy: {name}", "fv.tooBigNote": "The limit is {limit}. Nothing was written.",
+      "fv.thingSave": "Save to yourself", "fv.thingKind": "{kind} · {size}",
+      "fv.thingOpen": "Open in Viewer",
+      "fv.kindImage": "image", "fv.kindDoc": "document", "fv.kindSound": "sound", "fv.kindFilm": "film", "fv.kindThing": "file",
+      "fv.unitB": "B", "fv.unitKB": "KB", "fv.unitMB": "MB",
+      "vw.title": "Viewer", "vw.empty": "Nothing to look at yet. Bring a thing into the Vault \u2014 then open it here.",
+      "vw.notShown": "This one is not shown here — it is kept whole. Save it to yourself and open it where it belongs.",
+      "vw.gone": "The thing is gone", "vw.goneNote": "Its record points at nothing on the shelf. Nothing was changed.",
       "fv.newFolder.name": "New Folder", "fv.newFile.name": "Untitled.txt",
-      "fv.empty": "This folder is empty. Anything you add stays in this browser.",
+      "fv.empty": "Empty here. Whatever you bring in stays, and never leaves this browser: only you and your system.",
       "fv.confirm.folder": "Delete the folder \"{name}\"?",
       "fv.confirm.file": "Delete the file \"{name}\"?",
       "fv.confirm.nested": " Everything inside it will be deleted too.",
@@ -452,13 +462,13 @@
       "nt.ph.title": "Title", "nt.ph.body": "Start typing…",
       "nt.ph.search": "Search notes", "nt.new": "New note",
       "nt.emptyList": "Nothing found",
-      "nt.empty": "No notes yet. Anything you write is kept in this browser.",
+      "nt.empty": "No notes yet. Write one and it stays with you \u2014 not a line of it leaves.",
       "nt.newNote": "New note",
       "ec.restore": "Restore",
       "ec.silenceTitle": "Delete forever — cannot be undone", "ec.silenceAria": "Delete forever",
       "ec.appRemoved": "Removed from desktop — never deleted",
-      "ec.empty.title": "Nothing echoes here yet",
-      "ec.empty.sub": "Deleted notes and apps you’ve removed from the desktop settle here first — nothing disappears without a second chance. Drag anything onto {echoes} to send it here.",
+      "ec.empty.title": "Quiet in here",
+      "ec.empty.sub": "Everything you clear off the desk settles here first. Nothing disappears until you say so. Drag anything onto {echoes} and it lands here.",
       "ec.count.one": "{n} echo", "ec.count.many": "{n} echoes",
       "ec.apps.one": "{n} hidden app", "ec.apps.many": "{n} hidden apps",
       "ec.silenceAll": "Silence all",
@@ -500,7 +510,7 @@
       "cc.sound": "Звук", "cc.dnd": "Не беспокоить", "cc.autohide": "Приглушать док",
       "cc.motion": "Турбо", "cc.transparency": "Меньше прозрачности",
       "cc.volume": "Громкость", "cc.brightness": "Яркость", "cc.language": "Язык",
-      "cc.wallpaper": "Обои", "cc.accent": "Акцент", "cc.appearance": "Оформление",
+      "cc.fullscreen": "\u0412\u043e \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d", "cc.wallpaper": "Обои", "cc.controls": "Кнопки окон", "cc.controls.left": "Слева", "cc.controls.right": "Справа", "cc.appearance": "Оформление",
       "cc.shortcuts": "Горячие клавиши", "cc.layouts": "Раскладки окон",
       "cc.desktop": "Рабочий стол", "cc.health": "Диагностика", "cc.incognito": "Скрытый рабочий стол",
       "cc.exit": "Выйти из инкогнито", "cc.signout": "Выйти, тихо",
@@ -545,13 +555,15 @@
       "note.delete": "Удалить заметку",
       "note.placeholder": "Напишите что-нибудь…",
       "note.aria": "Заметка",
-      "note.invite": "Оставить заметку здесь?",
+      "note.invite": "Оставишь заметку?",
       "note.inviteAria": "Оставить заметку здесь",
       "note.minimize": "Вернуть на стол",
       "note.maximize": "Открыть на весь экран",
       "note.body": "Тело заметки",
       "note.bodyPlaceholder": "Остальное — только здесь",
       "note.more": "В этой заметке есть продолжение",
+      "note.due.today": "сегодня", "note.due.tomorrow": "завтра",
+      "note.due.late": "просрочено", "note.due.on": "к {date}",
       "tip.notefull": "Enter в первой строке заметки открывает её на весь экран — тело пишется только там.",
       "widget.quote": "Смета",
       "widget.payback": "Окупаемость",
@@ -604,8 +616,7 @@
       "k.empty": "Совпадений не найдено",
       "k.shortcuts": "Горячие клавиши", "k.windows": "Открытые окна", "k.clipboard": "История копирования",
       "k.layouts": "Раскладки окон", "k.manageDesktop": "Настроить рабочий стол", "k.health": "Состояние системы",
-      "aria.identity": "Нажмите, чтобы задать имя пользователя",
-      "aria.notifications": "Уведомления", "aria.appSeq": "Открытые окна",
+            "aria.notifications": "Уведомления", "aria.appSeq": "Открытые окна",
       "aria.minimizeAll": "sys.baby OS — убрать со стола: свернуть все окна",
       "aria.tip": "Показать подсказку", "cc.tip": "Показать подсказку",
       "aria.turbo": "Турбо — отдать все кадры работе", "aria.cc": "Центр управления",
@@ -615,13 +626,13 @@
       "aria.icons": "Значки рабочего стола", "aria.notes": "Заметки на столе",
       "aria.dock": "Док", "aria.fab": "Быстрые действия", "aria.cmdk": "Командная палитра", "aria.close": "Закрыть",
       "cmdk.placeholder": "Поиск приложений и действий…",
-      "cc.connection": "Соединение", "cc.online": "В сети", "cc.offline": "Не в сети",
+      "net.gone": "Интернета нет", "net.nothingChanged": "Ничего не изменилось. Всё написанное здесь, потому что оно всегда было здесь. Сеть нужна только Браузеру — чужие страницы не наши, чтобы их хранить.", "net.stillHere": "Сети нет — система на месте", "cc.connection": "Соединение", "cc.online": "В сети", "cc.offline": "Не в сети",
       "cc.offlineLong": "Не в сети — нет подключения",
       "cc.battery": "Батарея", "cc.batteryNA": "Состояние батареи недоступно",
       "cc.charging": "Зарядка", "cc.onBattery": "От батареи",
       "cc.merge": "Объединить, а не заменить",
       "theme.dark": "Тёмное", "theme.light": "Светлое",
-      "mood.studio": "Студия", "mood.aurora": "Аврора", "mood.sunset": "Закат", "mood.ocean": "Океан", "mood.mono": "Моно",
+      "mood.studio": "Студия", "mood.aurora": "Аврора", "mood.sunset": "Закат", "mood.ocean": "Океан", "mood.mono": "Моно", "mood.daylight": "Дневной свет", "mood.therapy": "Светотерапия", "mood.feast": "Праздник", "menu.tidyDesk": "\u041f\u0440\u0438\u0431\u0440\u0430\u0442\u044c \u0441\u0442\u043e\u043b", "menu.bringThing": "\u041f\u0440\u0438\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0449\u044c\u2026", "menu.hideFab": "\u0423\u0431\u0440\u0430\u0442\u044c \u044d\u0442\u0443 \u043a\u043d\u043e\u043f\u043a\u0443", "part.fab": "\u041a\u043d\u043e\u043f\u043a\u0430 \u0431\u044b\u0441\u0442\u0440\u044b\u0445 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0439", "br.back": "\u041d\u0430\u0437\u0430\u0434", "br.fwd": "\u0412\u043f\u0435\u0440\u0451\u0434", "br.again": "\u041e\u0431\u043d\u043e\u0432\u0438\u0442\u044c", "br.bookmark": "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443", "br.bookmarked": "\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043e", "br.openTab": "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0439 \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439", "br.placeholder": "\u0410\u0434\u0440\u0435\u0441 \u0438\u043b\u0438 \u0447\u0442\u043e \u043d\u0430\u0439\u0442\u0438", "br.frameTitle": "\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430", "br.saved": "\u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0435", "br.recent": "\u041d\u0435\u0434\u0430\u0432\u043d\u0435\u0435", "br.empty.title": "\u041f\u043e\u043a\u0430 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u043e\u0442\u043a\u0440\u044b\u0442\u043e", "br.empty.sub": "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0430\u0434\u0440\u0435\u0441 \u0438 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u0412\u0432\u043e\u0434. \u041c\u043d\u043e\u0433\u0438\u0435 \u0441\u0430\u0439\u0442\u044b \u0437\u0430\u043f\u0440\u0435\u0449\u0430\u044e\u0442 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0441\u0435\u0431\u044f \u0432\u043d\u0443\u0442\u0440\u0438 \u0434\u0440\u0443\u0433\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b \u2014 \u0441\u0442\u0440\u0435\u043b\u043a\u0430 \u0441\u043f\u0440\u0430\u0432\u0430 \u0432\u0441\u0435\u0433\u0434\u0430 \u043e\u0442\u043a\u0440\u043e\u0435\u0442 \u0430\u0434\u0440\u0435\u0441 \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0439 \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439.", "note.day.title": "\u042d\u0442\u043e\u0442 \u0434\u0435\u043d\u044c \u2014 \u0432\u0430\u0448", "note.day.body": "\u0414\u0430\u0442\u0430 \u0443\u0436\u0435 \u0437\u0430\u043f\u0438\u0441\u0430\u043d\u0430 \u2014 \u043f\u0438\u0448\u0438\u0442\u0435 \u0434\u0430\u043b\u044c\u0448\u0435, \u0447\u0442\u043e \u0432 \u044d\u0442\u043e\u0442 \u0434\u0435\u043d\u044c \u0431\u0443\u0434\u0435\u0442.", "lock.again": "\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u0435 \u043f\u0430\u0440\u043e\u043b\u044c", "lock.mismatch": "\u041f\u0430\u0440\u043e\u043b\u0438 \u043d\u0435 \u0441\u043e\u0432\u043f\u0430\u043b\u0438 \u2014 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u0437\u0430\u043f\u0435\u0440\u0442\u043e.", "lock.done": "\u0417\u0430\u043f\u0435\u0440\u0442\u043e. \u0412\u0430\u0448\u0438 \u0441\u043b\u043e\u0432\u0430 \u0442\u0435\u043f\u0435\u0440\u044c \u0432 \u043a\u043e\u043d\u0432\u0435\u0440\u0442\u0430\u0445.", "lock.failed": "\u0417\u0430\u043f\u0435\u0440\u0435\u0442\u044c \u043d\u0435 \u0432\u044b\u0448\u043b\u043e \u2014 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u043e.", "lock.remove": "\u0421\u043d\u044f\u0442\u044c \u0437\u0430\u043c\u043e\u043a", "lock.removed": "\u0417\u0430\u043c\u043e\u043a \u0441\u043d\u044f\u0442. \u0421\u043b\u043e\u0432\u0430 \u0441\u043d\u043e\u0432\u0430 \u043b\u0435\u0436\u0430\u0442 \u043e\u0442\u043a\u0440\u044b\u0442\u043e.", "lock.warn": "\u041f\u0443\u0442\u0438 \u043d\u0430\u0437\u0430\u0434 \u043d\u0435\u0442: \u0435\u0441\u043b\u0438 \u0432\u044b \u0437\u0430\u0431\u0443\u0434\u0435\u0442\u0435 \u044d\u0442\u043e\u0442 \u043f\u0430\u0440\u043e\u043b\u044c, \u043d\u0430\u043f\u0438\u0441\u0430\u043d\u043d\u043e\u0435 \u0432\u0435\u0440\u043d\u0443\u0442\u044c \u0431\u0443\u0434\u0435\u0442 \u043d\u0435\u043b\u044c\u0437\u044f. \u041a\u043e\u043f\u0438\u0438 \u043d\u0435\u0442 \u043d\u0438 \u043d\u0430 \u043e\u0434\u043d\u043e\u043c \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u2014 \u0440\u0430\u0434\u0438 \u044d\u0442\u043e\u0433\u043e \u0432\u0441\u0451 \u0438 \u0437\u0430\u0442\u0435\u044f\u043d\u043e.", "lock.ask": "\u041f\u0430\u0440\u043e\u043b\u044c", "lock.open": "\u041e\u0442\u043a\u0440\u044b\u0442\u044c", "lock.locking": "\u0417\u0430\u043f\u0435\u0440\u0435\u0442\u044c", "lock.wrong": "\u042d\u0442\u043e\u0442 \u043f\u0430\u0440\u043e\u043b\u044c \u043d\u0435 \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442.", "lock.locked": "\u0417\u0430\u043f\u0435\u0440\u0442\u043e", "lock.sub": "Всё, что здесь есть, — заметки, письма, разговоры, Хранилище и сама комната: обои, язык, имена. С этой стороны о вас не видно ничего.", "lock.title": "Запереть всё", "lock.insecure": "На этом адресе замок работать не может. Настоящую криптографию браузер даёт странице только по защищённому соединению (https). Откройте sys.baby по https — замок появится, и больше ничего не изменится.", "panel.lock": "Замок", "aria.lock": "Замок — диафрагма этой системы", "aria.turboOn": "Турбо включён — нажмите, чтобы вернуть кадры", "cc.turbo": "Турбо", "lock.state.none": "Не заперто", "lock.state.armed": "Заперто — открыто на этот сеанс", "lock.what": "Один пароль закрывает всю систему: каждую заметку, каждое письмо, каждый разговор, Хранилище и вид комнаты. На диске не остаётся ничего читаемого — даже имён того, что вы храните.", "lock.accounts": "Несколько аккаунтов? Один пароль открывает их все на этом устройстве. Замок стоит перед хранилищем, а не перед одним аккаунтом, — и пока он заперт, не видно даже, сколько у вас аккаунтов.", "lock.new": "Пароль", "lock.set": "Запереть всё", "lock.now": "Запереть сейчас", "lock.change": "Сменить пароль", "lock.changed": "Пароль сменён. Ничего не перешифровывалось — переклеен конверт с ключом.", "lock.old": "Текущий пароль", "lock.cipher": "Чем заперто", "lock.short": "Не короче четырёх знаков.", "lock.busy": "Считаю — эта задержка здесь нарочно.", "auth.lock.title": "Всё это можно закрыть одним словом", "auth.lock.body": "У sys.baby нет сервера. Написанное остаётся на этом устройстве — значит, никто не прочтёт его за вас и никто не прочтёт его вместо вас. Один поворот ключа — и вся система уходит в конверты: заметки, письма, разговоры, даже цвет ваших стен. Восстановления нет, потому что восстанавливать некому. Это можно сделать сейчас, а можно в любой другой день — диафрагма в верхней панели стоит там всегда.", "auth.lock.now": "Поставить сейчас", "auth.lock.later": "Потом, из верхней панели", "bk.title": "Копии", "bk.folder": "Папка", "bk.noFolder": "не выбрана", "bk.last": "Последняя копия", "bk.never": "ещё не было", "bk.sealed": "заперта", "bk.choose": "Выбрать папку", "bk.change": "Сменить папку", "bk.on": "Включена", "bk.off": "Выключена", "bk.saveNow": "Сохранить сейчас", "bk.exportNow": "Скачать копию файлом", "bk.err": "Ошибка:", "bk.what": "Система сама кладёт копию профиля в выбранную вами папку — каждый раз, когда что-то изменилось, и в тот миг, когда вы уходите со страницы. Хранятся три поколения: беда, замеченная на другой день, лечится только вчерашним снимком. Пока стоит замок, копия уходит в папку ЗАПЕРТОЙ и открывается тем же паролем.", "bk.needFolder": "Без настоящей папки синхронизация не включается. Копия, лежащая в том же браузере, что и оригинал, — не копия: одна чистка браузера унесёт обе.", "bk.unsupported": "Этот браузер не даёт странице писать в папку на устройстве, поэтому синхронизации здесь нет — и Совет не станет её изображать. Складывать копии в тот же браузер было бы просто и было бы ложью: копия, лежащая в том же браузере, что и оригинал, — не копия, потому что одна чистка браузера унесёт обе. Остаётся выгрузка файлом: кнопка ниже. На настольном Chrome или Edge синхронизация включится сама.", "bk.permission": "Браузер просит подтвердить доступ к папке. Нажмите «Сохранить сейчас» ещё раз и разрешите.", "panel.account": "Аккаунт", "aria.identity": "Аккаунт и уход", "acc.you": "Вы", "acc.guest": "гость на этой машине", "acc.name": "Имя в системе", "acc.nameSub": "Видно в верхней полосе и на том, что вы отправляете. Не короче двух знаков.", "acc.save": "Сохранить", "acc.saved": "Сохранено.", "acc.profile": "Профиль", "acc.switch": "Сменить", "acc.export": "Сначала выгрузить профиль", "acc.signout": "Выйти, мягко", "acc.leave": "Уйти сейчас", "acc.leaveSub": "Одно нажатие: сеанс закрыт, все кэши и служебные копии стёрты, адрес и заголовок этой записи истории подменены, вкладка пытается закрыться. Написанное остаётся на месте — и остаётся запертым, если замок стоит.", "acc.wipe": "Стереть всё и уйти", "acc.wipeSub": "То же самое плюс всё написанное: заметки, письма, разговоры, Хранилище, профили. На этом устройстве от вас не остаётся ничего. Отменить нельзя.", "acc.wipeAsk": "Нажмите ещё раз, чтобы стереть всё. Это не отменяется.", "acc.truth": "Чего страница не может, и Совет не станет это изображать: список посещений браузера — не её память, и ни один сайт не вправе его читать и стирать. Сайт, умеющий стереть себя из вашей истории, умеет стереть и всё остальное. Эта страница подменяет ту запись, до которой дотягивается, — «назад» сюда не приведёт, — и стирает всё своё. Если нужно, чтобы посещения не записывались вовсе, — приватное окно браузера; убрать уже записанное можно только в самом браузере.", "panel.time": "\u0412\u0440\u0435\u043c\u044f \u0438 \u043a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c", "aria.time": "\u0412\u0440\u0435\u043c\u044f \u0438 \u043a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c", "pl.prev": "\u041d\u0430\u0437\u0430\u0434", "pl.next": "\u0412\u043f\u0435\u0440\u0451\u0434", "pl.play": "\u0418\u0433\u0440\u0430\u0442\u044c", "pl.pause": "\u041f\u0430\u0443\u0437\u0430", "pl.seek": "\u041f\u043e\u043b\u043e\u0436\u0435\u043d\u0438\u0435", "pl.pick": "\u0423\u043a\u0430\u0437\u0430\u0442\u044c \u043f\u0430\u043f\u043a\u0443", "pl.count": "\u0414\u043e\u0440\u043e\u0436\u0435\u043a: {n}", "pl.brought": "\u041c\u0443\u0437\u044b\u043a\u0430", "pl.broughtN": "\u041f\u0440\u0438\u043d\u0435\u0441\u0435\u043d\u043e \u0434\u043e\u0440\u043e\u0436\u0435\u043a: {n}", "pl.none": "\u0412 \u044d\u0442\u043e\u0439 \u043f\u0430\u043f\u043a\u0435 \u043d\u0435\u0442 \u0437\u0432\u0443\u043a\u043e\u0432\u044b\u0445 \u0444\u0430\u0439\u043b\u043e\u0432", "pl.empty.title": "\u041c\u0443\u0437\u044b\u043a\u0438 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442", "pl.empty.sub": "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043d\u0435 \u043c\u043e\u0436\u0435\u0442 \u0441\u0430\u043c \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0432\u0430\u0448\u0435 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e. \u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u041e\u0414\u041d\u0423 \u043f\u0430\u043f\u043a\u0443 \u2014 \u043d\u0430\u043f\u0440\u0438\u043c\u0435\u0440, Music \u0438\u043b\u0438 Download. \u041a\u043e\u0440\u0435\u043d\u044c \u043f\u0430\u043c\u044f\u0442\u0438 Android \u0432\u044b\u0431\u0440\u0430\u0442\u044c \u043d\u0435 \u0434\u0430\u0451\u0442: \u0435\u0441\u043b\u0438 \u043f\u0438\u0448\u0435\u0442 \u00abCan\u2019t use this folder\u00bb \u2014 \u0437\u0430\u0439\u0434\u0438\u0442\u0435 \u0432\u043d\u0443\u0442\u0440\u044c \u043f\u0430\u043f\u043a\u0438 \u0438 \u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0435\u0451.", "br.blank": "\u041f\u0443\u0441\u0442\u043e?", "br.blank.go": "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439", "br.shut.sub": "\u0412\u044b \u0441\u043a\u0430\u0437\u0430\u043b\u0438 \u0441\u0438\u0441\u0442\u0435\u043c\u0435, \u0447\u0442\u043e \u044d\u0442\u043e\u0442 \u0441\u0430\u0439\u0442 \u043d\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0430\u0435\u0442 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0441\u0435\u0431\u044f \u0432\u043d\u0443\u0442\u0440\u0438 \u0434\u0440\u0443\u0433\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b. \u0422\u0435\u043f\u0435\u0440\u044c \u043e\u043d \u0441\u0440\u0430\u0437\u0443 \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439 \u2014 \u0438 \u044d\u0442\u043e \u043c\u043e\u0436\u043d\u043e \u043e\u0442\u043c\u0435\u043d\u0438\u0442\u044c.", "br.shut.retry": "\u041f\u043e\u043f\u0440\u043e\u0431\u043e\u0432\u0430\u0442\u044c \u0441\u043d\u043e\u0432\u0430 \u0437\u0434\u0435\u0441\u044c",
       /* ============================================================ Настройки */
       "set.tab.general": "Общее", "set.tab.appearance": "Оформление",
       "set.tab.sound": "Звук и фокус", "set.tab.desktop": "Док и рабочий стол",
@@ -635,14 +646,12 @@
       "set.appearance.theme": "Тема",
       "set.appearance.themeSub": "В этом выпуске есть только тёмная тема. Светлая, которую половина приложений не соблюдает, выглядела бы поломкой, а выпустить поломанным хуже, чем не выпускать вовсе.",
       "set.appearance.themeDark": "ТЁМНАЯ",
-      "set.appearance.accent": "Акцентный цвет",
-      "set.appearance.accentSub": "Перекрашивает подсветку дока, переключатели, кольца фокуса и остальное — сразу везде",
       "set.appearance.mood": "Настроение обоев",
       "set.appearance.moodSub": "Перекрашивает фоновый пейзаж — всё остальное остаётся прежним",
       "set.appearance.moodNone": "Настроений нет",
       "set.appearance.brightness": "Яркость",
       "set.appearance.brightnessSub": "Приглушает весь рабочий стол — тот же ползунок, что в Центре управления",
-      "set.appearance.turbo": "Турбо",
+      "set.appearance.fullscreenOn": "\u0417\u0430\u043d\u044f\u0442\u044c \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d", "set.appearance.fullscreenOff": "\u0412\u0435\u0440\u043d\u0443\u0442\u044c \u044d\u043a\u0440\u0430\u043d", "set.appearance.fullscreen": "\u0412\u043e \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d", "set.appearance.fullscreenSub": "\u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u0437\u0430\u043d\u0438\u043c\u0430\u0435\u0442 \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d \u2014 \u0442\u043e\u0442 \u0436\u0435 \u043f\u0435\u0440\u0435\u043a\u043b\u044e\u0447\u0430\u0442\u0435\u043b\u044c, \u0447\u0442\u043e \u0438 \u0432 \u0431\u044b\u0441\u0442\u0440\u043e\u0439 \u043f\u0430\u043d\u0435\u043b\u0438", "set.appearance.controls": "\u041a\u043d\u043e\u043f\u043a\u0438 \u043e\u043a\u043e\u043d", "set.appearance.controlsSub": "\u0421 \u043a\u0430\u043a\u043e\u0439 \u0441\u0442\u043e\u0440\u043e\u043d\u044b \u0441\u0442\u043e\u044f\u0442 \u0437\u0430\u043a\u0440\u044b\u0442\u044c, \u0441\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u0438 \u0440\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u2014 \u0432 \u043a\u0430\u0436\u0434\u043e\u043c \u043e\u043a\u043d\u0435 \u0438 \u043d\u0430 \u043a\u0430\u0436\u0434\u043e\u0439 \u0437\u0430\u043c\u0435\u0442\u043a\u0435", "set.appearance.turbo": "Турбо",
       "set.appearance.turboSub": "Пропускает долгие анимации — всё происходит мгновенно",
       "set.appearance.transparency": "Меньше прозрачности",
       "set.appearance.transparencySub": "Плотные панели вместо стекла",
@@ -702,10 +711,10 @@
       "set.advanced.diagSub": "Живые FPS, память, хранилище и ошибки сессии",
       "set.advanced.diagBtn": "Открыть",
       "set.advanced.reset": "Сбросить оформление",
-      "set.advanced.resetSub": "Только акцентный цвет и настроение обоев — остальное не трогается",
+      "set.advanced.resetSub": "Только комната и её свет — остальное не трогается",
       "set.advanced.resetBtn": "Сбросить",
       "set.advanced.resetDoneTitle": "Оформление сброшено",
-      "set.advanced.resetDoneBody": "Акцентный цвет и настроение обоев вернулись к исходным.",
+      "set.advanced.resetDoneBody": "Ваш стол снова в Studio, и свет вернулся вместе с ним.",
       "set.about.build": "Сборка",
       "set.about.apps": "Приложения",
       "set.about.appsValue": "{registered} зарегистрировано · {launchable} в доке",
@@ -717,7 +726,7 @@
       "set.about.data": "Ваши данные",
       "set.about.dataValue": "{count} локальных ключей",
       "set.about.network": "Сеть",
-      "set.about.networkValue": "нет — ни аналитики, ни слежения, ни обращений наружу",
+      "set.about.networkValue": "сама система — никаких: ни аналитики, ни слежения, ни обращений наружу. Страницы, открытые в Браузере, говорят со своими сайтами.",
       "set.about.languages": "Языки",
       "set.about.whatTitle": "Что это за рабочий стол",
       "set.about.whatBody": "Работающий ответ на один вопрос: каково это, когда рабочая программа принадлежит вам? Каждое приложение здесь настоящее — заметки хранятся, файлы двигаются, терминал отвечает — и всё это работает на вашем устройстве. Клиентские системы в разделе {portfolio} — та же мысль, собранная для реальных компаний.",
@@ -857,8 +866,19 @@
       "fv.home": "Начало",
       "fv.rename": "Переименовать", "fv.delete": "Удалить", "fv.edit": "Править",
       "fv.newFolder": "Новая папка", "fv.newFile": "Новый файл",
+      "fv.bring": "Принести вещь", "fv.bringDrop": "Отпустите — она останется здесь",
+      "fv.brought": "Принесено: {name}", "fv.broughtNote": "Вещь лежит в этом браузере и никуда не уходит.",
+      "fv.noBring": "Инкогнито ничего не хранит", "fv.noBringNote": "Принесённую вещь пришлось бы записать. Инкогнито не пишет ничего — поэтому вещь не принята.",
+      "fv.tooBig": "Слишком тяжёлая: {name}", "fv.tooBigNote": "Предел — {limit}. Ничего не записано.",
+      "fv.thingSave": "Сохранить к себе", "fv.thingKind": "{kind} · {size}",
+      "fv.thingOpen": "Открыть в Просмотре",
+      "fv.kindImage": "картинка", "fv.kindDoc": "документ", "fv.kindSound": "звук", "fv.kindFilm": "видео", "fv.kindThing": "файл",
+      "fv.unitB": "Б", "fv.unitKB": "КБ", "fv.unitMB": "МБ",
+      "vw.title": "Просмотр", "vw.empty": "Пока смотреть нечего. Принеси вещь в Хранилище — и открой её здесь.",
+      "vw.notShown": "Эту вещь здесь не показывают — она хранится целиком. Сохраните к себе и откройте там, где ей место.",
+      "vw.gone": "Вещи больше нет", "vw.goneNote": "Запись о ней указывает в пустоту. Ничего не изменено.",
       "fv.newFolder.name": "Новая папка", "fv.newFile.name": "Без имени.txt",
-      "fv.empty": "Папка пуста. Всё, что вы добавите, остаётся в этом браузере.",
+      "fv.empty": "Здесь пусто. Что принесёшь — то и будет лежать, и никуда отсюда не уйдёт: только ты и твоя система.",
       "fv.confirm.folder": "Удалить папку «{name}»?",
       "fv.confirm.file": "Удалить файл «{name}»?",
       "fv.confirm.nested": " Всё, что внутри, будет удалено тоже.",
@@ -903,13 +923,13 @@
       "nt.ph.title": "Название", "nt.ph.body": "Начните писать…",
       "nt.ph.search": "Поиск по заметкам", "nt.new": "Новая заметка",
       "nt.emptyList": "Ничего не найдено",
-      "nt.empty": "Заметок пока нет. Всё, что вы напишете, хранится в этом браузере.",
+      "nt.empty": "Заметок пока нет. Напишешь — останется у тебя: ни одна строка отсюда не уходит.",
       "nt.newNote": "Новая заметка",
       "ec.restore": "Вернуть",
       "ec.silenceTitle": "Удалить навсегда — это не отменить", "ec.silenceAria": "Удалить навсегда",
       "ec.appRemoved": "Убрано с рабочего стола — не удалено",
-      "ec.empty.title": "Здесь пока не эхо",
-      "ec.empty.sub": "Удалённые заметки и приложения, убранные с рабочего стола, сначала оседают здесь — ничего не исчезает без второго шанса. Перетащите что угодно на {echoes}, чтобы отправить сюда.",
+      "ec.empty.title": "Здесь пока тихо",
+      "ec.empty.sub": "Всё, что ты уберёшь со стола, сначала осядет здесь. Ничего не исчезает, пока ты сам не скажешь. Перетащи что угодно на {echoes} — и оно окажется тут.",
       "ec.count.one": "Эхо: {n}", "ec.count.many": "Эхо: {n}",
       "ec.apps.one": "Скрытых приложений: {n}", "ec.apps.many": "Скрытых приложений: {n}",
       "ec.silenceAll": "Заглушить всё",
@@ -948,7 +968,7 @@
       "cc.sound": "Heli", "cc.dnd": "Mitte segada", "cc.autohide": "Tumenda dokk",
       "cc.motion": "Turbo", "cc.transparency": "Vähem läbipaistvust",
       "cc.volume": "Helitugevus", "cc.brightness": "Heledus", "cc.language": "Keel",
-      "cc.wallpaper": "Taust", "cc.accent": "Aktsentvärv", "cc.appearance": "Välimus",
+      "cc.fullscreen": "T\u00e4isekraan", "cc.wallpaper": "Taust", "cc.controls": "Akna nupud", "cc.controls.left": "Vasakul", "cc.controls.right": "Paremal", "cc.appearance": "Välimus",
       "cc.shortcuts": "Klaviatuuri otseteed", "cc.layouts": "Akende paigutused",
       "cc.desktop": "Töölaua haldus", "cc.health": "Seisund", "cc.incognito": "Peidetud töölaud",
       "cc.exit": "Välju inkognitost", "cc.signout": "Logi välja, vaikselt",
@@ -993,13 +1013,15 @@
       "note.delete": "Kustuta märge",
       "note.placeholder": "Kirjuta midagi…",
       "note.aria": "Märge",
-      "note.invite": "Jätta siia märge?",
+      "note.invite": "Jätad märkme?",
       "note.inviteAria": "Jäta siia märge",
       "note.minimize": "Tagasi töölauale",
       "note.maximize": "Ava üle ekraani",
       "note.body": "Märkme sisu",
       "note.bodyPlaceholder": "Ülejäänu — ainult siin",
       "note.more": "Sellel märkmel on jätk",
+      "note.due.today": "täna", "note.due.tomorrow": "homme",
+      "note.due.late": "tähtaeg möödas", "note.due.on": "{date}-ks",
       "tip.notefull": "Enter märkme esimesel real avab selle üle ekraani — sisu kirjutatakse ainult seal.",
       "widget.quote": "Pakkumine",
       "widget.payback": "Tasuvus",
@@ -1052,8 +1074,7 @@
       "k.empty": "Vasteid ei leitud",
       "k.shortcuts": "Klaviatuuri otseteed", "k.windows": "Avatud aknad", "k.clipboard": "Kopeerimisajalugu",
       "k.layouts": "Akende paigutused", "k.manageDesktop": "Halda töölauda", "k.health": "Süsteemi seisund",
-      "aria.identity": "Klõpsa, et määrata kasutajanimi",
-      "aria.notifications": "Teated", "aria.appSeq": "Avatud aknad",
+            "aria.notifications": "Teated", "aria.appSeq": "Avatud aknad",
       "aria.minimizeAll": "sys.baby OS — puhasta laud: ahenda kõik aknad",
       "aria.tip": "Näita vihjet", "cc.tip": "Näita vihjet",
       "aria.turbo": "Turbo — anna kõik kaadrid tööle", "aria.cc": "Juhtimiskeskus",
@@ -1063,13 +1084,13 @@
       "aria.icons": "Töölaua ikoonid", "aria.notes": "Töölaua märkmed",
       "aria.dock": "Dokk", "aria.fab": "Kiirtoimingud", "aria.cmdk": "Käsupalett", "aria.close": "Sulge",
       "cmdk.placeholder": "Otsi rakendusi ja toiminguid…",
-      "cc.connection": "Ühendus", "cc.online": "Võrgus", "cc.offline": "Võrguühenduseta",
+      "net.gone": "Internetti pole", "net.nothingChanged": "Midagi ei muutunud. Kõik kirjutatu on siin, sest see oli alati siin. Võrku vajab ainult Brauser — teiste lehed ei ole meie omad, et neid hoida.", "net.stillHere": "Võrku pole — süsteem on siin", "cc.connection": "Ühendus", "cc.online": "Võrgus", "cc.offline": "Võrguühenduseta",
       "cc.offlineLong": "Võrguühenduseta — võrku pole",
       "cc.battery": "Aku", "cc.batteryNA": "Aku olek pole saadaval",
       "cc.charging": "Laeb", "cc.onBattery": "Akutoitel",
       "cc.merge": "Liida, ära asenda",
       "theme.dark": "Tume", "theme.light": "Hele",
-      "mood.studio": "Stuudio", "mood.aurora": "Virmalised", "mood.sunset": "Loojang", "mood.ocean": "Ookean", "mood.mono": "Mono",
+      "mood.studio": "Stuudio", "mood.aurora": "Virmalised", "mood.sunset": "Loojang", "mood.ocean": "Ookean", "mood.mono": "Mono", "mood.daylight": "Päevavalgus", "mood.therapy": "Valgusteraapia", "mood.feast": "Pidu", "menu.tidyDesk": "Korista laud", "menu.bringThing": "Too asi\u2026", "menu.hideFab": "Eemalda see nupp", "part.fab": "Kiirtegevuste nupp", "br.back": "Tagasi", "br.fwd": "Edasi", "br.again": "V\u00e4rskenda", "br.bookmark": "Salvesta leht", "br.bookmarked": "Salvestatud", "br.openTab": "Ava p\u00e4ris kaardil", "br.placeholder": "Aadress v\u00f5i otsing", "br.frameTitle": "Leht", "br.saved": "Salvestatud", "br.recent": "Hiljutine", "br.empty.title": "Midagi pole veel avatud", "br.empty.sub": "Sisesta aadress ja vajuta Enter. Paljud saidid keelavad end teise lehe sees n\u00e4idata \u2014 parempoolne nool avab aadressi alati p\u00e4ris kaardil.", "note.day.title": "See p\u00e4ev on sinu", "note.day.body": "Kuup\u00e4ev on kirjas \u2014 kirjuta edasi, mis sel p\u00e4eval juhtub.", "lock.again": "Korda parooli", "lock.mismatch": "Paroolid ei kattu \u2014 midagi ei lukustatud.", "lock.done": "Lukus. Sinu s\u00f5nad on n\u00fc\u00fcd \u00fcmbrikes.", "lock.failed": "Lukustada ei \u00f5nnestunud \u2014 midagi ei muudetud.", "lock.remove": "Eemalda lukk", "lock.removed": "Lukk on eemaldatud. S\u00f5nad on taas lahti.", "lock.warn": "Tagasiteed pole: kui unustad selle parooli, ei saa kirjutatut taastada. Koopiat pole \u00fchelgi serveril \u2014 selle nimel k\u00f5ik ongi.", "lock.ask": "Parool", "lock.open": "Ava", "lock.locking": "Lukusta", "lock.wrong": "See parool ei ava.", "lock.locked": "Lukus", "lock.sub": "Kõik, mis siin on — märkmed, kirjad, vestlused, Hoidla ja tuba ise: taust, keel, nimed. Siitpoolt ei ole sinust näha midagi.", "lock.title": "Lukusta kõik", "lock.insecure": "Sellel aadressil lukk ei tööta. Päris krüptograafia annab brauser lehele ainult turvalise ühenduse (https) kaudu. Ava sys.baby üle https-i — lukk ilmub ja midagi muud ei muutu.", "panel.lock": "Lukk", "aria.lock": "Lukk — selle süsteemi ava", "aria.turboOn": "Turbo on sees — puuduta, et kaadrid tagasi anda", "cc.turbo": "Turbo", "lock.state.none": "Ei ole lukus", "lock.state.armed": "Lukus — avatud selleks seansiks", "lock.what": "Üks parool sulgeb kogu süsteemi: iga märkme, iga kirja, iga vestluse, Hoidla ja toa välimuse. Kettale ei jää midagi loetavat — isegi mitte hoitavate asjade nimesid.", "lock.accounts": "Mitu kontot? Üks parool avab need kõik selles seadmes. Lukk seisab hoidla ees, mitte ühe konto ees — ja kuni ta on kinni, ei paista isegi see, mitu kontot sul on.", "lock.new": "Parool", "lock.set": "Lukusta kõik", "lock.now": "Lukusta kohe", "lock.change": "Muuda parooli", "lock.changed": "Parool on muudetud. Midagi ei krüpteeritud uuesti — vahetati vaid võtit hoidev ümbrik.", "lock.old": "Praegune parool", "lock.cipher": "Millega on suletud", "lock.short": "Vähemalt neli märki.", "lock.busy": "Arvutan — see viivitus on siin meelega.", "auth.lock.title": "Kõik selle saab sulgeda ühe sõnaga", "auth.lock.body": "sys.baby'l ei ole serverit. Kirjutatu jääb sellesse seadmesse — see tähendab, et keegi ei loe seda sinu eest ega sinu asemel. Üks võtmekeeramine ja kogu süsteem läheb ümbrikesse: märkmed, kirjad, vestlused, isegi sinu seinte värv. Taastamist ei ole, sest ei ole kelleltki taastada. Seda saab teha kohe või ükskõik millisel hilisemal päeval — ava ülaribal on alati olemas.", "auth.lock.now": "Sea kohe", "auth.lock.later": "Hiljem, ülaribalt", "bk.title": "Koopiad", "bk.folder": "Kaust", "bk.noFolder": "pole valitud", "bk.last": "Viimane koopia", "bk.never": "veel pole", "bk.sealed": "lukus", "bk.choose": "Vali kaust", "bk.change": "Vaheta kausta", "bk.on": "Sees", "bk.off": "Väljas", "bk.saveNow": "Salvesta kohe", "bk.exportNow": "Laadi koopia failina alla", "bk.err": "Viga:", "bk.what": "Süsteem paneb sinu profiili koopia sinu valitud kausta — iga kord, kui midagi muutus, ja sel hetkel, kui lehelt lahkud. Hoitakse kolme põlvkonda: päev hiljem märgatud häda saab parandada ainult eilse koopiaga. Kui lukk on peal, läheb koopia kausta LUKUSTATULT ja avaneb sama parooliga.", "bk.needFolder": "Ilma päris kaustata sünkroonimine sisse ei lülitu. Koopia, mis elab samas brauseris kui originaal, ei ole koopia: üks brauseri puhastus viib mõlemad.", "bk.unsupported": "See brauser ei luba lehel seadme kausta kirjutada, seega sünkroonimist siin ei ole — ja nõukogu seda teesklema ei hakka. Koopiate panek samasse brauserisse oleks lihtne ja oleks vale: koopia, mis elab samas brauseris kui originaal, ei ole koopia, sest üks brauseri puhastus viib mõlemad. Jääb fail, mille laadid ise alla nupuga allpool. Töölaua Chrome'is või Edge'is lülitub sünkroonimine ise sisse.", "bk.permission": "Brauser palub kausta juurdepääsu kinnitada. Vajuta «Salvesta kohe» veel kord ja luba.", "panel.account": "Konto", "aria.identity": "Konto ja lahkumine", "acc.you": "Sina oled", "acc.guest": "külaline selles masinas", "acc.name": "Nimi süsteemis", "acc.nameSub": "Näha ülaribal ja sellel, mida saadad. Vähemalt kaks märki.", "acc.save": "Salvesta", "acc.saved": "Salvestatud.", "acc.profile": "Profiil", "acc.switch": "Vaheta", "acc.export": "Ekspordi enne profiil", "acc.signout": "Logi välja, pehmelt", "acc.leave": "Lahku kohe", "acc.leaveSub": "Üks puudutus: seanss suletakse, kõik vahemälud ja teeninduskoopiad kustutatakse, selle ajalookirje aadress ja pealkiri asendatakse ning kaart üritab sulguda. Kirjutatu jääb paigale — ja jääb lukku, kui lukk on peal.", "acc.wipe": "Kustuta kõik ja lahku", "acc.wipeSub": "Kõik eelnev pluss kõik kirjutatu: märkmed, kirjad, vestlused, Hoidla, profiilid. Selles seadmes ei jää sinust midagi. Tagasi ei saa.", "acc.wipeAsk": "Vajuta veel kord, et kõik kustutada. Seda ei saa tagasi võtta.", "acc.truth": "Mida leht ei saa teha ja mida nõukogu teesklema ei hakka: brauseri külastuste loend ei ole selle lehe mälu ja ükski sait ei tohi seda lugeda ega kustutada. Sait, mis oskaks end sinu ajaloost kustutada, oskaks kustutada ka kõike muud. See leht asendab kirje, milleni ta ulatub — «tagasi» siia ei too — ja kustutab kõik omast. Kui on vaja, et külastusi üldse ei salvestataks, kasuta privaatakent; juba salvestatu saab eemaldada ainult brauseris endas.", "panel.time": "Aeg ja kalender", "aria.time": "Aeg ja kalender", "pl.prev": "Eelmine", "pl.next": "J\u00e4rgmine", "pl.play": "Esita", "pl.pause": "Paus", "pl.seek": "Asukoht", "pl.pick": "Vali kaust", "pl.count": "Lugusid: {n}", "pl.brought": "Muusika", "pl.broughtN": "Toodud lugusid: {n}", "pl.none": "Selles kaustas pole helifaile", "pl.empty.title": "Muusikat veel pole", "pl.empty.sub": "Brauser ei saa ise sinu seadet l\u00e4bi vaadata. Vali \u00dcKS kaust \u2014 n\u00e4iteks Music v\u00f5i Download. Androidi m\u00e4lu juurt valida ei saa: kui \u00fctleb \u201cCan\u2019t use this folder\u201d, mine kausta sisse ja vali see.", "br.blank": "T\u00fchi?", "br.blank.go": "Ava kaardil", "br.shut.sub": "Sa \u00fctlesid s\u00fcsteemile, et see sait ei luba end teise lehe sees n\u00e4idata. Nutu avaneb ta alati p\u00e4ris kaardil \u2014 ja selle saab tagasi v\u00f5tta.", "br.shut.retry": "Proovi siin uuesti",
       /* ============================================================== Seaded
          Обращение к посетителю — teie (мн. вежливое), как на лендинге. */
       "set.tab.general": "Üldine", "set.tab.appearance": "Välimus",
@@ -1084,14 +1105,12 @@
       "set.appearance.theme": "Teema",
       "set.appearance.themeSub": "See väljalase tuleb ainult tumeda teemaga. Hele teema, mida pooled rakendused ei järgi, näeks katkine välja, ja katkisena välja anda on halvem kui üldse mitte anda.",
       "set.appearance.themeDark": "TUME",
-      "set.appearance.accent": "Rõhuvärv",
-      "set.appearance.accentSub": "Värvib korraga üle doki esiletõste, lülitid, fookusrõngad ja muu",
       "set.appearance.mood": "Tausta meeleolu",
       "set.appearance.moodSub": "Värvib ümber taustamaastiku — kõik muu jääb samaks",
       "set.appearance.moodNone": "Meeleolusid pole saadaval",
       "set.appearance.brightness": "Heledus",
       "set.appearance.brightnessSub": "Tumendab kogu töölauda — sama liugur mis juhtimiskeskuses",
-      "set.appearance.turbo": "Turbo",
+      "set.appearance.fullscreenOn": "V\u00f5ta kogu ekraan", "set.appearance.fullscreenOff": "Anna ekraan tagasi", "set.appearance.fullscreen": "T\u00e4isekraan", "set.appearance.fullscreenSub": "S\u00fcsteem v\u00f5tab kogu ekraani \u2014 sama l\u00fcliti mis kiirpaneelis", "set.appearance.controls": "Akna nupud", "set.appearance.controlsSub": "Kummal pool on sulge, peida ja suurenda \u2014 igas aknas ja igal m\u00e4rkmel", "set.appearance.turbo": "Turbo",
       "set.appearance.turboSub": "Jätab pikad animatsioonid vahele — kõik juhtub kohe",
       "set.appearance.transparency": "Vähenda läbipaistvust",
       "set.appearance.transparencySub": "Klaasi asemel läbipaistmatud paneelid",
@@ -1151,10 +1170,10 @@
       "set.advanced.diagSub": "Reaalajas FPS, mälu, salvestusruum ja sessiooni vead",
       "set.advanced.diagBtn": "Ava",
       "set.advanced.reset": "Lähtesta välimus",
-      "set.advanced.resetSub": "Ainult rõhuvärv ja tausta meeleolu — muud ei puudutata",
+      "set.advanced.resetSub": "Ainult sinu tuba ja selle valgus — muud ei puudutata",
       "set.advanced.resetBtn": "Lähtesta",
       "set.advanced.resetDoneTitle": "Välimus lähtestatud",
-      "set.advanced.resetDoneBody": "Rõhuvärv ja tausta meeleolu on tagasi vaikeväärtustel.",
+      "set.advanced.resetDoneBody": "Sinu laud on taas Studios, ja valgus koos sellega.",
       "set.about.build": "Versioon",
       "set.about.apps": "Rakendused",
       "set.about.appsValue": "{registered} registreeritud · {launchable} dokis",
@@ -1166,7 +1185,7 @@
       "set.about.data": "Teie andmed",
       "set.about.dataValue": "{count} kohalikku võtit",
       "set.about.network": "Võrk",
-      "set.about.networkValue": "puudub — ei analüütikat, ei jälgimist, ei ühtegi kõnet koju",
+      "set.about.networkValue": "süsteem ise ei tee ühtegi — ei analüütikat, ei jälgimist, ei kõnet koju. Brauseris avatud lehed suhtlevad oma saitidega.",
       "set.about.languages": "Keeled",
       "set.about.whatTitle": "Mis see töölaud on",
       "set.about.whatBody": "Töötav vastus ühele küsimusele: milline on tunne, kui teie äritarkvara kuulub teile? Iga rakendus siin on päris — märkmed püsivad, failid liiguvad, terminal vastab — ja iga sõna sellest töötab teie seadmes. Kliendisüsteemid jaotises {portfolio} on sama mõte, ehitatud päris ettevõtetele.",
@@ -1306,8 +1325,19 @@
       "fv.home": "Algus",
       "fv.rename": "Nimeta ümber", "fv.delete": "Kustuta", "fv.edit": "Muuda",
       "fv.newFolder": "Uus kaust", "fv.newFile": "Uus fail",
+      "fv.bring": "Too asi siia", "fv.bringDrop": "Lase lahti — see jääb siia",
+      "fv.brought": "Toodud: {name}", "fv.broughtNote": "Asi on selles brauseris ega lähe kuhugi mujale.",
+      "fv.noBring": "Inkognito ei hoia midagi", "fv.noBringNote": "Siia toodud asi tuleks kirja panna. Inkognito ei kirjuta midagi — seepärast asja vastu ei võetud.",
+      "fv.tooBig": "Liiga raske: {name}", "fv.tooBigNote": "Piir on {limit}. Midagi ei kirjutatud.",
+      "fv.thingSave": "Salvesta endale", "fv.thingKind": "{kind} · {size}",
+      "fv.thingOpen": "Ava Vaates",
+      "fv.kindImage": "pilt", "fv.kindDoc": "dokument", "fv.kindSound": "heli", "fv.kindFilm": "video", "fv.kindThing": "fail",
+      "fv.unitB": "B", "fv.unitKB": "KB", "fv.unitMB": "MB",
+      "vw.title": "Vaade", "vw.empty": "Vaadata pole veel midagi. Too asi Hoidlasse — ja ava see siin.",
+      "vw.notShown": "Seda siin ei näidata — see hoitakse tervikuna. Salvesta endale ja ava seal, kus tema koht on.",
+      "vw.gone": "Asja enam ei ole", "vw.goneNote": "Kirje osutab tühjusesse. Midagi ei muudetud.",
       "fv.newFolder.name": "Uus kaust", "fv.newFile.name": "Nimetu.txt",
-      "fv.empty": "Kaust on tühi. Kõik, mille lisate, jääb sellesse brauserisse.",
+      "fv.empty": "Siin on tühi. Mille sa siia tood, see jääb ega lahku siit kunagi: ainult sina ja sinu süsteem.",
       "fv.confirm.folder": "Kas kustutada kaust „{name}“?",
       "fv.confirm.file": "Kas kustutada fail „{name}“?",
       "fv.confirm.nested": " Kustutatakse ka kõik, mis selle sees on.",
@@ -1352,13 +1382,13 @@
       "nt.ph.title": "Pealkiri", "nt.ph.body": "Alustage kirjutamist…",
       "nt.ph.search": "Otsi märkmetest", "nt.new": "Uus märge",
       "nt.emptyList": "Midagi ei leitud",
-      "nt.empty": "Märkmeid veel pole. Kõik, mida kirjutate, hoitakse selles brauseris.",
+      "nt.empty": "Märkmeid veel pole. Kirjuta — ja see jääb sinu juurde: ükski rida siit ei lahku.",
       "nt.newNote": "Uus märge",
       "ec.restore": "Taasta",
       "ec.silenceTitle": "Kustuta jäädavalt — seda ei saa tagasi võtta", "ec.silenceAria": "Kustuta jäädavalt",
       "ec.appRemoved": "Töölaualt eemaldatud — mitte kustutatud",
-      "ec.empty.title": "Siin ei kaja veel miski",
-      "ec.empty.sub": "Kustutatud märkmed ja töölaualt eemaldatud rakendused settivad kõigepealt siia — miski ei kao ilma teise võimaluseta. Lohistage midagi {echoes} peale, et see siia saata.",
+      "ec.empty.title": "Siin on vaikne",
+      "ec.empty.sub": "Kõik, mille sa laualt ära koristad, settib kõigepealt siia. Miski ei kao enne, kui sa ise ütled. Lohista ükskõik mis {echoes} peale — ja see maandub siia.",
       "ec.count.one": "{n} kaja", "ec.count.many": "{n} kaja",
       "ec.apps.one": "{n} peidetud rakendus", "ec.apps.many": "{n} peidetud rakendust",
       "ec.silenceAll": "Vaigista kõik",
@@ -1430,6 +1460,14 @@
       return Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : m;
     });
   };
+  /* Строка на ЗАДАННОМ языке, а не на текущем. Понадобилось экрану замка
+     (D-164): язык системы теперь заперт, и до пароля он берёт язык у самого
+     браузера. Отдельная дверь, а не второй словарь: словарь один. */
+  window.sbTIn = function (code, key) {
+    var L = STRINGS[code] || STRINGS.en;
+    return (L && L[key]) || STRINGS.en[key] || key;
+  };
+
   /* The document's own language, not just its visible text. A screen reader
      picks its voice from this and the browser hyphenates from it, so a page
      full of Russian still labelled lang="en" is read out in an English accent.
@@ -1573,6 +1611,9 @@
     paintNet();
     if (window.sbBus) window.sbBus.emit("translate:done", { to: code });
   }
+  /* Наружу — чтобы восстановление вида после открытия замка (D-164) могло
+     позвать перевод той же дверью, что и всё остальное. */
+  window.sbApplyLang = applyLang;
   window.sbSetLang = function (code) {
     var known = LANGS.some(function (l) { return l.code === code; });
     var c = known ? code : "en";
@@ -1687,7 +1728,28 @@
   }
   function syncFullscreenClass() {
     doc.documentElement.classList.toggle("sb-fullscreen", !!fsElement());
+    /* ── ПОЛНЫЙ ЭКРАН — В ПАНЕЛИ И В НАСТРОЙКАХ (D-163) ─────────────────
+       Просьба основателя 27.08.2026: «Fullscreen on off нужно добавить в
+       панель быстрого управления и в настройки».
+       Признак берётся у ТОГО, КТО ИМ ВЛАДЕЕТ: выйти из полного экрана можно
+       клавишей Esc и средствами браузера, мимо любой нашей кнопки. Поэтому
+       обе поверхности перекрашиваются по СОБЫТИЮ, а не по нашему намерению. */
+    var b = $("#sbCcFullscreen");
+    if (b) {
+      b.setAttribute("aria-pressed", fsElement() ? "true" : "false");
+      b.classList.toggle("on", !!fsElement());
+    }
+    if (window.sbBus && window.sbBus.emit) window.sbBus.emit("fullscreen:change", { on: !!fsElement() });
+    try {
+      doc.dispatchEvent(new CustomEvent("sysbaby:setting-changed", { detail: { kind: "fullscreen" } }));
+    } catch (e) { /* ignore */ }
   }
+  /* Наружу — одной парой: обе поверхности зовут ОДНУ дверь, и спорить им не о
+     чем. sbFullscreenSupported честно отвечает «нет» там, где полного экрана
+     не существует (Safari на iPhone), — кнопка тогда не рисуется вовсе. */
+  window.sbToggleFullscreen = function () { toggleFullscreen(); return !!fsElement(); };
+  window.sbIsFullscreen = function () { return !!fsElement(); };
+  window.sbFullscreenSupported = fsSupported;
 
   function wireMark() {
     var mark = $("#sbTopMark");
@@ -1718,40 +1780,160 @@
     if (!host || !el) return;
     paintIdentity();
     host.title = window.sbT("aria.identity");
+    /* ── КРУЖОК ОТКРЫВАЕТ ОКНО АККАУНТА · решение D-173 ─────────────────────
+       Здесь стояла правка имени прямо в полосе: нажатие делало #sbIdentityName
+       правимым. На широком экране это работало. На телефоне же .id-name скрыт
+       вовсе (core.css, §responsive), и от кнопки остаётся один кружок из
+       ::after — то есть палец делал правимым НЕВИДИМОЕ поле, и человек,
+       нажавший кружок, не видел ровно ничего. Основатель попросил на этом
+       месте окно настроек аккаунта; оно же лечит и эту немоту: поле имени
+       теперь в окне и видно на любом экране. */
     host.addEventListener("click", function () {
-      if (el.isContentEditable) return;
-      var before = el.textContent;
-      el.contentEditable = "true";
-      el.focus();
-      try {
-        var r = doc.createRange();
-        r.selectNodeContents(el);
-        var s = window.getSelection();
-        s.removeAllRanges(); s.addRange(r);
-      } catch (e) { /* ignore */ }
-      function commit(save) {
-        el.contentEditable = "false";
-        if (save) window.sbSetUsername(el.textContent);
-        else el.textContent = before;
-        el.removeEventListener("keydown", onKey);
-        el.removeEventListener("blur", onBlur);
-      }
-      function onKey(ev) {
-        if (ev.key === "Enter") { ev.preventDefault(); commit(true); }
-        else if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); commit(false); }
-      }
-      function onBlur() { commit(true); }
-      el.addEventListener("keydown", onKey);
-      el.addEventListener("blur", onBlur);
-    });
-    el.addEventListener("paste", function (ev) {
-      ev.preventDefault();
-      var text = (ev.clipboardData || window.clipboardData).getData("text");
-      doc.execCommand("insertText", false, sanitize(text));
+      if (typeof window.sbOpenAccountPanel === "function") { window.sbOpenAccountPanel(); return; }
+      /* Панели ещё нет (ранний кадр) — не изображаем действия молча. */
+      if (window.console) console.warn("[identity] account panel is not ready yet");
     });
   }
 
-  /* ============================================================== clock (§5) */
+  /* ============================================================== clock (§5)
+
+     ── ЦИФРЫ ИЗ ТОГО ЖЕ МАТЕРИАЛА, ЧТО И ЗНАК (D-135) ────────────────────
+     ПОВОД, дословно: «время должно быть более концептуальным и цифры должны
+     быть похожи на палочки иконки и на буквы y в логотипе».
+
+     ИЗ ЧЕГО СДЕЛАН ЗНАК, ЕСЛИ ИЗМЕРИТЬ, А НЕ ОПИСАТЬ. В контуре крюка на
+     коробке сто на сто перекладина имеет толщину 19.88 и скругление 16
+     снаружи, 7 внутри. Язык знака — СТЕРЖЕНЬ примерно в пятую часть коробки
+     с круглыми концами. Цифра собрана ровно из этого: семь стержней той же
+     относительной толщины, круглые концы, ни одной засечки. Коробка 62×100,
+     стержень 20 — те же 20%, что у знака.
+
+     ПОЧЕМУ СТЕРЖНИ, А НЕ ШРИФТ. Шрифтом это было бы ПОХОЖЕ; стержнями это
+     то же самое. И цена та же: цифра — семь неподвижных отрезков, у которых
+     раз в секунду меняется только признак «горит». Ни одного нового узла,
+     ни одной записи в корень — а часы идут круглые сутки, и любая ошибка
+     здесь умножается на восемьдесят шесть тысяч.  */
+  var SEGS = ["A", "B", "C", "D", "E", "F", "G"];
+  var SEG_XY = {
+    A: [17, 12, 45, 12], B: [50, 17, 50, 45], C: [50, 55, 50, 83],
+    D: [17, 88, 45, 88], E: [12, 55, 12, 83], F: [12, 17, 12, 45], G: [17, 50, 45, 50]
+  };
+  var DIGIT = {
+    "0": "ABCDEF", "1": "BC", "2": "ABGED", "3": "ABGCD", "4": "FGBC",
+    "5": "AFGCD", "6": "AFGEDC", "7": "ABC", "8": "ABCDEFG", "9": "ABCDFG"
+  };
+  function makeGlyph() {
+    var svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "clock-glyph");
+    svg.setAttribute("viewBox", "0 0 62 100");
+    svg.setAttribute("aria-hidden", "true");
+    SEGS.forEach(function (k) {
+      var xy = SEG_XY[k];
+      var ln = doc.createElementNS("http://www.w3.org/2000/svg", "line");
+      ln.setAttribute("x1", xy[0]); ln.setAttribute("y1", xy[1]);
+      ln.setAttribute("x2", xy[2]); ln.setAttribute("y2", xy[3]);
+      ln.setAttribute("data-seg", k);
+      svg.appendChild(ln);
+    });
+    return svg;
+  }
+  function setGlyph(svg, ch) {
+    var on = DIGIT[ch] || "";
+    if (svg._sbCh === ch) return;
+    svg._sbCh = ch;
+    var lines = svg.childNodes;
+    for (var i = 0; i < lines.length; i++) {
+      var k = lines[i].getAttribute("data-seg");
+      var want = on.indexOf(k) !== -1;
+      /* Признак переставляется, только если он ДЕЙСТВИТЕЛЬНО меняется:
+         иначе каждая секунда просила бы пересчитать стили ни за чем. */
+      if ((lines[i].getAttribute("class") === "on") !== want) {
+        if (want) lines[i].setAttribute("class", "on");
+        else lines[i].removeAttribute("class");
+      }
+    }
+  }
+  window.sbClockGlyph = function (ch) { var g = makeGlyph(); setGlyph(g, ch); return g; };
+
+  /* ── ЧАСЫ ЛОВЯТ СВЕТ КОМНАТЫ (D-137) ──────────────────────────────────
+     ПОВОД: «нужно часы сделать гармоничными и максимально концептуальными
+     (сейчас концептуальность есть, но недостаточно какого-то уникального
+     эффекта связанного со светом)».
+
+     ЧТО ЗДЕСЬ УНИКАЛЬНОГО, И ПОЧЕМУ ЭТО НЕ УКРАШЕНИЕ. Часы не светятся сами —
+     они ОСВЕЩЕНЫ той же комнатой, что и всё вокруг. Если выбраны суточные
+     обои, свет идёт по кругу суток вместе с ними: в три часа ночи цифры почти
+     без ореола, к полудню он ясно виден. Если обои обычные — светит шов.
+     Значит часы показывают время ДВАЖДЫ: цифрами и тем, каким светом они
+     освещены. Такого эффекта не может быть ни у кого другого — он вырастает
+     из того, что в этой системе уже есть.
+
+     ЦЕНА. Свойство пишется на ОДИН элемент (сами часы), а не в корень: запись
+     в корень объявляет устаревшим стиль всего документа (D-093, D-112). И
+     пишется, только когда округлённый цвет изменился, — не чаще раза в
+     несколько минут. */
+  var litLast = "";
+  function roomLight() {
+    /* ── ОДИН СВЕТ НА ВСЮ КОМНАТУ (D-143) ──────────────────────────────────
+       Здесь стояли три ветки: у светотерапии спрашивали её обои, у суточного
+       — свои, у остальных брали шов. Это было раздвоением дважды: часы сами
+       выводили цвет комнаты по её имени (хотя с D-141 шов И ЕСТЬ её свет,
+       увиденный на кромке), и вдобавок читали ВЫЧИСЛЕННЫЙ свет вместо
+       НАПИСАННОГО — поэтому в замороженной комнате часы продолжали писать.
+       Спрашиваем один раз и у одного: что на комнате надето сейчас. */
+    try {
+      var now = window.sbRoomNow ? window.sbRoomNow() : null;
+      var acc = window.sbGetCurrentAccent ? window.sbGetCurrentAccent() : null;
+      if (acc && acc.a1) {
+        return { c1: acc.a1, level: (now && typeof now.level === "number") ? now.level : 0.5 };
+      }
+    } catch (err) { console.error("[clock] light read failed", err); }
+    return null;
+  }
+  function paintLight() {
+    var w = roomLight();
+    if (!w || !w.c1) return;
+    var lvl = typeof w.level === "number" ? w.level : 0.5;
+    /* Ореол мал даже в самый светлый час: часы — не лампа, они лишь ловят
+       свет. Цифра остаётся белой, цветным становится только сияние вокруг. */
+    var blur = Math.round((1.4 + lvl * 4.2) * 10) / 10;
+    var alpha = Math.round((0.16 + lvl * 0.34) * 100) / 100;
+    var key = w.c1 + "|" + blur + "|" + alpha;
+    if (key === litLast) return;
+    litLast = key;
+    var n = parseInt(String(w.c1).slice(1), 16);
+    var rgba = "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + alpha + ")";
+    /* СВЕТ ОБЪЯВЛЕН В ОДНОМ МЕСТЕ, потому что читают его трое: часы в полосе,
+       крупное время в панели и время в проигрывателе. Три копии одного знания
+       разошлись бы — этот урок в проекте оплачен четырежды.
+       ЗАПИСЬ В КОРЕНЬ ЗДЕСЬ ОПРАВДАНА ЦЕНОЙ: она объявляет устаревшим стиль
+       всего документа (D-093, D-112), но случается, только когда изменился
+       ОКРУГЛЁННЫЙ цвет света — то есть раз в несколько минут, а не раз в
+       секунду. Закон это и стережёт: за четыре секунды хода — ни одной. */
+    /* КАЖДОЕ СВОЙСТВО — СО СВОИМ ВОПРОСОМ (D-143). Ключ общий на троих, но
+       меняются они врозь: цвет плывёт непрерывно, а размытие держится
+       ступенькой. Писать все три потому, что изменилось одно, значит дважды
+       объявить устаревшим стиль всего документа НИ ЗА ЧТО. Замер клиники
+       поймал это в лоб: --lit-blur переписан тем же значением, которое уже
+       стояло. Спрашиваем у корня, что там сейчас, и пишем только новое. */
+    var root = doc.documentElement, st = root.style;
+    var ink = "color-mix(in oklab, var(--ink) 88%, " + w.c1 + ")";
+    setIfNew(st, "--lit-glow", rgba);
+    setIfNew(st, "--lit-blur", blur + "px");
+    /* Сам штрих — чуть тёплее белого в сторону света, но остаётся белым:
+       цветные цифры в рабочей полосе кричали бы. */
+    setIfNew(st, "--lit-ink", ink);
+  }
+  function setIfNew(st, key, value) {
+    if (st.getPropertyValue(key) === value) return;
+    st.setProperty(key, value);
+  }
+  window.sbClockLight = paintLight;
+  if (window.sbBus && typeof window.sbBus.on === "function") {
+    window.sbBus.on("mood:change", function () { litLast = ""; paintLight(); });
+    window.sbBus.on("accent:change", function () { litLast = ""; paintLight(); });
+  }
+
   var clockCells = null, lastClock = "";
   function localeFor() { var l = lang(); return l === "ru" ? "ru-RU" : (l === "ee" ? "et-EE" : "en-GB"); }
 
@@ -1773,51 +1955,139 @@
     var whole = narrow ? timeStr : dateStr + "  " + timeStr;
     if (whole === lastClock && !force) return;
 
-    if (!clockCells || clockCells.length !== whole.length || force) {
+    /* Пересборка нужна, только когда СОСТАВ строки изменился — например,
+       окно сузилось и секунды ушли. Обычная секунда состава не меняет. */
+    var shape = whole.replace(/\d/g, "#");
+    if (!clockCells || clockCells.length !== whole.length || clockCells._shape !== shape || force) {
       host.innerHTML = "";
       clockCells = [];
+      clockCells._shape = shape;
       for (var i = 0; i < whole.length; i++) {
         var s = doc.createElement("span");
         s.className = "clock-cell";
-        s.textContent = whole[i];
+        if (DIGIT[whole[i]] !== undefined) {
+          s.className += " digit";
+          var g = makeGlyph();
+          setGlyph(g, whole[i]);
+          s.appendChild(g);
+          s._sbGlyph = g;
+        } else {
+          s.textContent = whole[i];
+        }
         host.appendChild(s);
         clockCells.push(s);
       }
     } else {
       for (var j = 0; j < whole.length; j++) {
-        if (clockCells[j].textContent !== whole[j]) {
-          clockCells[j].textContent = whole[j];
-          if (!reduced()) {
-            clockCells[j].classList.remove("roll");
-            void clockCells[j].offsetWidth;
-            clockCells[j].classList.add("roll");
-          }
+        var cell = clockCells[j];
+        var cur = cell._sbGlyph ? cell._sbGlyph._sbCh : cell.textContent;
+        if (cur === whole[j]) continue;
+        if (cell._sbGlyph) setGlyph(cell._sbGlyph, whole[j]);
+        else cell.textContent = whole[j];
+        if (!reduced()) {
+          cell.classList.remove("roll");
+          void cell.offsetWidth;
+          cell.classList.add("roll");
         }
       }
     }
+    /* ── СВЕТ НЕ ПРИВЯЗАН К МИНУТЕ (D-143) ────────────────────────────────
+       Здесь стоял вызов paintLight(). Ход часов — это МИНУТА: раньше цифры
+       не меняются, и до сюда мы доходим раз в минуту. Свет комнаты за это
+       время успевает уйти далеко, и минутная стрелка догоняла его одним
+       рывком — в замершей комнате это выглядело как запись в корень «сама
+       по себе», и закон root-restyle-check ловил её то в одном прогоне, то
+       в другом. Причина не в пороге и не в удаче: у света и у цифр РАЗНЫЙ
+       ход, и связывать их нельзя. Свет ставит комната — wpTick зовёт
+       sbClockLight ровно тогда, когда шов ступил (D-141). Часы рисуют
+       цифры. Каждый прибор при своём предмете. */
+    host.setAttribute("data-whole", whole);
+    host.setAttribute("aria-label", whole);
     lastClock = whole;
   }
+  /* Полная пересборка часов вынесена наружу — не ради красоты, а чтобы закон
+     мог ИЗМЕРИТЬ, сколько она стоит, и сравнить с ценой обычного хода. Порог,
+     назначенный на глаз, оказался бы внутри разброса. */
+  window.sbRepaintClock = function () { paintClock(true); };
   doc.addEventListener("visibilitychange", function () { if (doc.visibilityState === "visible") paintClock(true); });
 
-  /* ====================================================== connectivity (§5) */
+  /* ОБА ФАКТА НАЗВАНЫ СЛОВАМИ. Знак один, но заряд и связь — разные вещи, и
+     ни одна не должна пропасть для того, кто читает подпись, а не рисунок. */
+  function sayPower() {
+    var el = $("#sbPowerGlyph");
+    if (!el) return;
+    var bits = [el.getAttribute("data-bat"), el.getAttribute("data-net")].filter(Boolean);
+    if (!bits.length) return;
+    el.setAttribute("aria-label", bits.join(" · "));
+    el.title = bits.join(" · ");
+  }
+
+  /* ═══════ СВЯЗЬ · «ИНТЕРНЕТА НЕТ. НИЧЕГО НЕ ИЗМЕНИЛОСЬ» · решение D-183 ═════
+     ПОВОД, дословно от основателя 27.08.2026: «нужно написать где-то как-то
+     гениально и концептуально — твоя система остаётся с тобой даже тогда,
+     когда нет интернета».
+
+     ПОЧЕМУ НЕ ЛОЗУНГ, А ПОВЕДЕНИЕ. Написать эту фразу на витрине может кто
+     угодно; доказать её может только тот, у кого она правда. Поэтому она
+     сказана не там, где её читают, а ТАМ, ГДЕ ОНА СЛУЧАЕТСЯ: в тот самый миг,
+     когда связь пропала.
+
+     ВСЯ ПРОЧАЯ ПРОГРАММА встречает потерю сети как АВАРИЮ: красная полоса,
+     «нет подключения», «повторить попытку». Для них это правда авария — их
+     работа на чужом сервере. Здесь всё наоборот: сервера нет вовсе, и потеря
+     сети НЕ МЕНЯЕТ РОВНО НИЧЕГО. Отсутствие сети — не поломка, а РОДНОЕ
+     СОСТОЯНИЕ этой системы; подключение — исключение, а не условие.
+     Поэтому система не предупреждает — она ЗДОРОВАЕТСЯ. Одной строкой, один
+     раз, и никогда больше: «Интернета нет. Ничего не изменилось».
+
+     ЧЕСТНАЯ ОГОВОРКА СТОИТ РЯДОМ, а не спрятана: Браузер без сети чужих
+     страниц не покажет — они не наши. Всё остальное на месте, потому что
+     всегда было здесь.
+
+     ПОЧЕМУ ОДИН РАЗ И С ЗАДЕРЖКОЙ. Связь на телефоне мигает: в лифте, в
+     метро, на краю соты. Извещение на каждое мигание — та самая тревога, от
+     которой мы отказываемся. Ждём три секунды непрерывного молчания сети и
+     говорим ОДИН раз за сеанс. Возвращение сети не объявляется вовсе: раз
+     ничего не менялось, то и возвращаться нечему.
+     Охраняется tools/offline-voice-check.mjs. */
+  var netSaid = false;
+  var netTimer = null;
   function paintNet() {
-    var el = $("#sbNetGlyph");
+    var el = $("#sbPowerGlyph");
     var online = navigator.onLine !== false;
     if (el) {
       el.classList.toggle("offline", !online);
-      el.title = online ? window.sbT("cc.online") : window.sbT("cc.offlineLong");
+      el.setAttribute("data-net", online ? window.sbT("cc.online") : window.sbT("cc.offlineLong"));
+      sayPower();
     }
     var row = $("#sbCcNet");
-    if (row) row.textContent = online ? window.sbT("cc.online") : window.sbT("cc.offline");
+    if (row) row.textContent = online ? window.sbT("cc.online") : window.sbT("net.stillHere");
   }
-  window.addEventListener("online", paintNet);
-  window.addEventListener("offline", paintNet);
+  function greetOffline() {
+    if (netSaid) return;
+    netSaid = true;
+    if (window.showToast) {
+      try { window.showToast(window.sbT("net.gone"), window.sbT("net.nothingChanged"), "", false, "toast-calm", "event"); }
+      catch (e) { /* ignore */ }
+    }
+  }
+  function onNetChange() {
+    paintNet();
+    if (netTimer) { clearTimeout(netTimer); netTimer = null; }
+    if (navigator.onLine === false) netTimer = setTimeout(greetOffline, 3000);
+  }
+  window.addEventListener("online", onNetChange);
+  window.addEventListener("offline", onNetChange);
+  /* Загрузка без сети — тот же случай: система уже работает, и сказать об этом
+     надо ровно так же спокойно. */
+  if (navigator.onLine === false) netTimer = setTimeout(greetOffline, 3000);
+  window.sbNetGreeted = function () { return netSaid; };
 
   /* ========================================================== battery (§5) */
   function paintBattery(bat) {
-    var el = $("#sbBatteryGlyph"), row = $("#sbCcBattery"), line = $("#sbCcBatteryLine");
+    var el = $("#sbPowerGlyph"), row = $("#sbCcBattery"), line = $("#sbCcBatteryLine");
     if (!bat) {
-      if (el) { el.classList.add("neutral"); el.title = window.sbT("cc.batteryNA"); }
+      if (el) { el.classList.add("neutral"); el.setAttribute("data-bat", window.sbT("cc.batteryNA")); sayPower(); }
       if (row) row.textContent = "—";
       if (line) line.textContent = window.sbT("cc.battery");
       return;
@@ -1828,7 +2098,8 @@
       el.classList.toggle("charging", !!bat.charging);
       el.classList.toggle("warn", pct <= 20 && pct > 10);
       el.classList.toggle("danger", pct <= 10);
-      el.title = pct + "% — " + (bat.charging ? window.sbT("cc.charging") : window.sbT("cc.onBattery"));
+      el.setAttribute("data-bat", pct + "% — " + (bat.charging ? window.sbT("cc.charging") : window.sbT("cc.onBattery")));
+      sayPower();
     }
     if (row) {
       if (window.sbAnimateFigure) window.sbAnimateFigure(row, pct, function (n) { return Math.round(n) + "%"; });
@@ -2075,6 +2346,7 @@
     paintCc();
   }
 
+  var ccVol = null, ccBright = null;
   function paintCc() {
     ["sound", "dnd", "autohide", "motion", "transparency"].forEach(function (k) {
       var on = window.sbGetControlToggle ? window.sbGetControlToggle(k) : false;
@@ -2088,19 +2360,68 @@
     var accent = window.sbGetCurrentAccent ? window.sbGetCurrentAccent() : { a1: "#5b7cff" };
     $$("[data-accent]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-accent").toLowerCase() === String(accent.a1).toLowerCase()); });
     var mood = window.sbGetWallpaperMood ? window.sbGetWallpaperMood() : "studio";
-    $$("[data-mood]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-mood") === mood); });
+    /* Ряд обоев строится из живого объявления системы (D-152): в разметке его
+       больше нет, и разойтись с Настройками ему негде. Перерисовывается он
+       только когда состав ИЗМЕНИЛСЯ — иначе каждое открытие панели переписывало
+       бы десяток узлов ни за что. */
+    /* Заполнение ползунков — при каждой отрисовке панели: разметка приходит
+       готовой, а событие «input» до первого касания не случается (D-156). */
+    if (window.sbPaintAllRanges) window.sbPaintAllRanges($("#sbControlCenter"));
+    var ccTurbo = $("#sbCcTurbo");
+    if (ccTurbo && window.sbTurbo) {
+      var tOn = !!window.sbTurbo();
+      ccTurbo.setAttribute("aria-pressed", tOn ? "true" : "false");
+      ccTurbo.classList.toggle("on", tOn);
+    }
+    if (window.sbPaintIris) window.sbPaintIris();
+    var side = window.sbGetControlSide ? window.sbGetControlSide() : "left";
+    $$("[data-side]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-side") === side); });
+    var moodHost = $("#sbCcMoods");
+    if (moodHost) {
+      var ids = (window.sbWallpaperMoods || []).map(function (m) { return m.id; }).join(",");
+      if (moodHost.getAttribute("data-built") !== ids) {
+        moodHost.setAttribute("data-built", ids);
+        moodHost.innerHTML = (window.sbWallpaperMoods || []).map(function (m) {
+          var name = window.sbT("mood." + m.id);
+          if (name === "mood." + m.id) name = m.name || m.id;
+          return '<button class="chip" type="button" data-mood="' + esc(m.id) +
+            '" data-i18n="mood.' + esc(m.id) + '">' + esc(name) + "</button>";
+        }).join("");
+      }
+    }
+    var drifty = {};
+    (window.sbWallpaperMoods || []).forEach(function (m) { if (m.drift) drifty[m.id] = m.session ? "session" : "drift"; });
+    $$("[data-mood]").forEach(function (b) {
+      var id = b.getAttribute("data-mood");
+      b.classList.toggle("on", id === mood);
+      /* Суточное настроение показывает цвет своего часа прямо на чипе —
+         иначе оно ничем не отличается от пяти неподвижных и его снова никто
+         не найдёт. Тот же знак-дуга, что у суточной краски. */
+      if (!drifty[id]) return;
+      b.classList.toggle("is-session", drifty[id] === "session");
+      b.classList.toggle("is-drift", drifty[id] === "drift");
+      var read = drifty[id] === "session" ? window.sbTherapyForTime : window.sbWallpaperForTime;
+      if (typeof read !== "function") return;
+      try {
+        var w = read();
+        b.style.background = "linear-gradient(135deg," + w.c1 + "," + w.c2 + ")";
+        b.style.borderColor = "transparent";
+        b.style.color = "#fff";
+      } catch (err) { console.error("[cc] mood preview failed", err); }
+    });
     var themeNow = window.sbGetTheme ? window.sbGetTheme() : "dark";
     $$("[data-theme-chip]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-theme-chip") === themeNow); });
     /* Sliders and the language selector are settings too — they repaint from
        the same stored truth as the toggles, or the panel shows stale values
        after Pulse moves them. */
-    var vol = $("#sbCcVolume");
-    if (vol && doc.activeElement !== vol) {
-      vol.value = String(Math.round((window.sbGetNotifVolume ? window.sbGetNotifVolume() : num(window.sbNotifVolume, 0.6)) * 100));
+    /* Ползунки наши (D-162): значение ставится через их же ручку, а не через
+       .value чужого поля. Пока палец держит ползунок, его не трогают — иначе
+       панель спорила бы с рукой. */
+    if (ccVol && !ccVol.el.classList.contains("held")) {
+      ccVol.set(Math.round((window.sbGetNotifVolume ? window.sbGetNotifVolume() : num(window.sbNotifVolume, 0.6)) * 100));
     }
-    var bright = $("#sbCcBrightness");
-    if (bright && doc.activeElement !== bright && window.sbGetBrightness) {
-      bright.value = String(window.sbGetBrightness());
+    if (ccBright && !ccBright.el.classList.contains("held") && window.sbGetBrightness) {
+      ccBright.set(window.sbGetBrightness());
     }
     var langSel = $("#sbCcLang");
     if (langSel && langSel.options && langSel.options.length && langSel.value !== lang()) langSel.value = lang();
@@ -2132,22 +2453,29 @@
       });
     });
 
-    var vol = $("#sbCcVolume");
-    if (vol) {
-      vol.value = String(Math.round((window.sbGetNotifVolume ? window.sbGetNotifVolume() : num(window.sbNotifVolume, 0.6)) * 100));
-      vol.addEventListener("input", function () {
-        /* through the shell setter: persisted + announced, not a session-only global */
-        if (window.sbSetNotifVolume) window.sbSetNotifVolume(num(vol.value, 60) / 100);
-        else window.sbNotifVolume = clamp(num(vol.value, 60) / 100, 0, 1);
+    /* Ползунки строятся один раз, здесь же, где панель заводят (D-162). */
+    var volHost = $("#sbCcVolumeHost", cc);
+    if (volHost && window.sbSlider && !ccVol) {
+      ccVol = window.sbSlider(volHost, {
+        min: 0, max: 100, value: Math.round((window.sbGetNotifVolume ? window.sbGetNotifVolume() : num(window.sbNotifVolume, 0.6)) * 100),
+        label: window.sbT("cc.volume"),
+        onInput: function (v) {
+          /* через сеттер оболочки: сохраняется и объявляется, а не живёт
+             глобальной переменной на один сеанс */
+          if (window.sbSetNotifVolume) window.sbSetNotifVolume(v / 100);
+          else window.sbNotifVolume = clamp(v / 100, 0, 1);
+        }
       });
-      vol.addEventListener("change", function () { if (window.SysBaby && window.SysBaby.playNotifSound) window.SysBaby.playNotifSound(); });
     }
-    var bright = $("#sbCcBrightness");
-    if (bright) {
-      if (window.sbGetBrightness) bright.value = String(window.sbGetBrightness());
-      bright.addEventListener("input", function () {
-        if (window.sbSetBrightness) window.sbSetBrightness(num(bright.value, 100));
-        else doc.body.style.filter = "brightness(" + (0.72 + (clamp(num(bright.value, 100), 0, 100) / 100) * 0.34).toFixed(3) + ")";
+    var brightHost = $("#sbCcBrightnessHost", cc);
+    if (brightHost && window.sbSlider && !ccBright) {
+      ccBright = window.sbSlider(brightHost, {
+        min: 0, max: 100, value: window.sbGetBrightness ? window.sbGetBrightness() : 100,
+        label: window.sbT("cc.brightness"),
+        onInput: function (v) {
+          if (window.sbSetBrightness) window.sbSetBrightness(v);
+          else doc.body.style.filter = "brightness(" + (0.72 + (clamp(v, 0, 100) / 100) * 0.34).toFixed(3) + ")";
+        }
       });
     }
     var langSel = $("#sbCcLang");
@@ -2157,9 +2485,47 @@
       }).join("");
       langSel.addEventListener("change", function () { window.sbSetLang(langSel.value); });
     }
-    $$("[data-mood]", cc).forEach(function (b) {
-      b.addEventListener("click", function () { if (window.sbSetWallpaperMood) window.sbSetWallpaperMood(b.getAttribute("data-mood")); paintCc(); });
-    });
+    /* Кнопки ряда обоев рождаются позже самой панели, поэтому слушатель
+       стоит на РЯДУ, а не на каждой кнопке: иначе новая комната приходила бы
+       без нажатия (D-152). */
+    /* ── ЗАМОК: ОДНО НАЖАТИЕ (D-161) ──────────────────────────────────────
+       Пароль спрашивается дважды: опечатка в единственном поле — это потеря
+       всего написанного, и переспросить дешевле, чем объяснять потом. Если
+       криптографии браузера нет, кнопка не изображает работу, а исчезает:
+       нарисованный замок хуже отсутствующего. */
+    var fsBtn = $("#sbCcFullscreen", cc);
+    if (fsBtn) {
+      if (!fsSupported()) fsBtn.hidden = true;
+      fsBtn.addEventListener("click", function () { toggleFullscreen(); });
+    }
+    /* Турбо здесь, а не в полосе (D-167). Кнопка одна, состояние читает
+       сама система: sbTurbo — единственный владелец этого знания. */
+    var ccTurboBtn = $("#sbCcTurbo", cc);
+    if (ccTurboBtn) {
+      ccTurboBtn.addEventListener("click", function () {
+        if (!window.sbTurbo) return;
+        window.sbTurbo(!window.sbTurbo());
+        paintCc();
+      });
+    }
+    var sideRow = $("#sbCcSide", cc);
+    if (sideRow) {
+      sideRow.addEventListener("click", function (ev) {
+        var b = ev.target && ev.target.closest ? ev.target.closest("[data-side]") : null;
+        if (!b || !window.sbSetControlSide) return;
+        window.sbSetControlSide(b.getAttribute("data-side"));
+        paintCc();
+      });
+    }
+    var moodRow = $("#sbCcMoods", cc);
+    if (moodRow) {
+      moodRow.addEventListener("click", function (ev) {
+        var b = ev.target && ev.target.closest ? ev.target.closest("[data-mood]") : null;
+        if (!b) return;
+        if (window.sbSetWallpaperMood) window.sbSetWallpaperMood(b.getAttribute("data-mood"));
+        paintCc();
+      });
+    }
     $$("[data-theme-chip]", cc).forEach(function (b) {
       b.addEventListener("click", function () { if (window.setTheme) window.setTheme(b.getAttribute("data-theme-chip")); paintCc(); });
     });
@@ -2172,16 +2538,8 @@
    поверхность, выданная за свою. Плюс на телефоне он занимает пол-экрана ради
    выбора оттенка, который всё равно должен лежать в палитре проекта.
    Остаются готовые оттенки — свои, названные, в языке системы. */
-    var swHost = $("#sbCcAccents");
-    if (swHost && window.sbGetAccentSwatches) {
-      swHost.innerHTML = window.sbGetAccentSwatches().map(function (a) {
-        return '<button class="accent-sw" type="button" data-accent="' + esc(a.a1) + '" title="' + esc(a.name) + '" ' +
-          'style="background:linear-gradient(135deg,' + esc(a.a1) + "," + esc(a.a2) + ')"></button>';
-      }).join("");
-      $$("[data-accent]", swHost).forEach(function (b) {
-        b.addEventListener("click", function () { window.sbSetAccent(b.getAttribute("data-accent")); paintCc(); });
-      });
-    }
+    /* Ряда красок в Центре управления больше нет: шов приходит от обоев,
+       и ряд обоев ниже — единственный выбор цвета (D-141). */
 
     var incogBtn = $("#sbCcIncog");
     if (incogBtn) {
