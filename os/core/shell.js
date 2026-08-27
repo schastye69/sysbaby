@@ -1075,6 +1075,107 @@
     for (var i = 0; i < list.length; i++) paintRangeFill(list[i]);
   };
 
+
+  /* ═══════════════ ПОЛЗУНОК СОБСТВЕННОЙ ПОСТРОЙКИ · D-162 ═════════════════
+     ПОВОД, дословно от основателя 27.08.2026, со снимком: «абсолютно не
+     нравятся эти синие ползунки и ещё больше не нравится, что они не меняют
+     цвет. прошу совет сделать их концептуальными, гениальными,
+     интеллектуальными и дорогими, либо вообще их убрать».
+
+     ЧТО ВЫЯСНИЛОСЬ ЗАМЕРОМ. В D-156 дорожку удалось одеть, а РУЧКУ — нет:
+     снимок полосы ползунка показал 178 синих точек, то есть родной кружок
+     браузера рисовался поверх нашей дорожки. Правило для ::-webkit-slider-
+     thumb до него не доходило. Спорить с чужим псевдоэлементом — значит
+     чинить то, чего не видишь: у него нет ни коробки, ни цвета, которые можно
+     спросить (проверено в D-156: getComputedStyle отдаёт коробку самого поля).
+
+     РЕШЕНИЕ — НЕ УПРЯМСТВО, А СМЕНА ОСНОВАНИЯ. Ползунок собирается из наших
+     же узлов: дорожка, заполнение, палочка. Тогда нечему быть «синим»: цвет
+     берётся оттуда же, откуда его берут часы, и меняется вместе с комнатой
+     по построению, а не по правилу, которое браузер может не применить.
+
+     ЧТО СОХРАНЕНО ОТ РОДНОГО ПОЛЯ, потому что терять это нельзя: роль
+     «slider» и три числа для читалки экрана, работа с клавиатуры (стрелки,
+     Home/End) и оба конца жеста — pointerup И pointercancel (D-144).
+     ═══════════════════════════════════════════════════════════════════════ */
+  window.sbSlider = function (host, opts) {
+    if (!host) return null;
+    var o = opts || {};
+    var min = typeof o.min === "number" ? o.min : 0;
+    var max = typeof o.max === "number" ? o.max : 100;
+    var step = typeof o.step === "number" ? o.step : 1;
+    var val = typeof o.value === "number" ? o.value : min;
+
+    var el = doc.createElement("div");
+    el.className = "sb-range";
+    el.setAttribute("role", "slider");
+    el.setAttribute("tabindex", "0");
+    el.setAttribute("aria-valuemin", String(min));
+    el.setAttribute("aria-valuemax", String(max));
+    if (o.label) el.setAttribute("aria-label", String(o.label));
+    el.innerHTML =
+      '<span class="sb-range-track"><span class="sb-range-fill"></span></span>' +
+      '<span class="sb-range-stick"></span>';
+    var fill = el.querySelector(".sb-range-fill");
+    var stick = el.querySelector(".sb-range-stick");
+
+    function clamp(v) { return Math.max(min, Math.min(max, v)); }
+    function snap(v) { return Math.round((v - min) / step) * step + min; }
+    function paint() {
+      var pct = max > min ? ((val - min) / (max - min)) * 100 : 0;
+      fill.style.width = pct + "%";
+      stick.style.left = pct + "%";
+      el.setAttribute("aria-valuenow", String(Math.round(val)));
+    }
+    function put(v, tell) {
+      var next = clamp(snap(v));
+      if (next === val) return;
+      val = next;
+      paint();
+      if (tell && typeof o.onInput === "function") o.onInput(val);
+    }
+    function fromX(x) {
+      var r = el.getBoundingClientRect();
+      if (!r.width) return val;
+      return min + ((x - r.left) / r.width) * (max - min);
+    }
+
+    var dragging = false;
+    function move(ev) { if (dragging) put(fromX(ev.clientX), true); }
+    function end() {
+      dragging = false;
+      el.classList.remove("held");
+      doc.removeEventListener("pointermove", move);
+      doc.removeEventListener("pointerup", end);
+      doc.removeEventListener("pointercancel", end);
+    }
+    el.addEventListener("pointerdown", function (ev) {
+      dragging = true;
+      el.classList.add("held");
+      put(fromX(ev.clientX), true);
+      doc.addEventListener("pointermove", move);
+      doc.addEventListener("pointerup", end);
+      /* Второй конец жеста — у пальца его забирают (D-144). */
+      doc.addEventListener("pointercancel", end);
+      ev.preventDefault();
+    });
+    el.addEventListener("keydown", function (ev) {
+      var k = ev.key;
+      if (k === "ArrowLeft" || k === "ArrowDown") { put(val - step, true); ev.preventDefault(); }
+      else if (k === "ArrowRight" || k === "ArrowUp") { put(val + step, true); ev.preventDefault(); }
+      else if (k === "Home") { put(min, true); ev.preventDefault(); }
+      else if (k === "End") { put(max, true); ev.preventDefault(); }
+    });
+
+    host.appendChild(el);
+    paint();
+    return {
+      el: el,
+      get: function () { return val; },
+      set: function (v) { put(v, false); }
+    };
+  };
+
   var VOLUME_KEY = "sysbaby.sound.volume";
   var BRIGHT_KEY = "sysbaby.display.brightness";
 
@@ -3487,8 +3588,68 @@
     requestAnimationFrame(next);
   }
 
+  /* ── ЗАМОК СПРАШИВАЮТ ДО ЗАНАВЕСА (D-161) ────────────────────────────────
+     Экран замка стоит ПЕРЕД занавесом, а не после: занавес — это уже показ
+     системы, и открывать его человеку, который ещё не назвал пароль, значило
+     бы показать ему пустой дом и заставить гадать, куда делись его слова.
+     Экран говорит ровно то, что происходит, и ровно то, чего не будет:
+     восстановления нет. Ошибся — говорим об этом и остаёмся на месте, ничего
+     не портя: замок не имеет права наказывать за опечатку. */
+  function runVaultGate(onDone) {
+    if (!window.sbVault || !window.sbVault.isLocked() || !window.sbVault.available()) { onDone(); return; }
+    var gate = doc.createElement("div");
+    gate.id = "sbVaultGate";
+    gate.setAttribute("role", "dialog");
+    gate.setAttribute("aria-modal", "true");
+    gate.innerHTML =
+      '<div class="vg-box">' +
+        '<div class="vg-mark" aria-hidden="true"></div>' +
+        '<h1 class="vg-title">' + escapeHtml(tr("lock.locked")) + "</h1>" +
+        '<p class="vg-sub">' + escapeHtml(tr("lock.sub")) + "</p>" +
+        '<input type="password" id="sbVaultPass" autocomplete="current-password" ' +
+          'aria-label="' + escapeHtml(tr("lock.ask")) + '" placeholder="' + escapeHtml(tr("lock.ask")) + '">' +
+        '<button type="button" class="btn primary" id="sbVaultOpen">' + escapeHtml(tr("lock.open")) + "</button>" +
+        '<p class="vg-err" id="sbVaultErr" role="alert" hidden></p>' +
+      "</div>";
+    doc.body.appendChild(gate);
+    var field = gate.querySelector("#sbVaultPass");
+    var errEl = gate.querySelector("#sbVaultErr");
+    var busy = false;
+    function tryOpen() {
+      if (busy) return;
+      busy = true;
+      errEl.hidden = true;
+      window.sbVault.unlock(field.value).then(function (okp) {
+        busy = false;
+        if (!okp) {
+          errEl.textContent = tr("lock.wrong");
+          errEl.hidden = false;
+          field.value = "";
+          field.focus();
+          return;
+        }
+        gate.remove();
+        onDone();
+      }, function () {
+        busy = false;
+        errEl.textContent = tr("lock.wrong");
+        errEl.hidden = false;
+      });
+    }
+    gate.querySelector("#sbVaultOpen").addEventListener("click", tryOpen);
+    field.addEventListener("keydown", function (ev) { if (ev.key === "Enter") tryOpen(); });
+    setTimeout(function () { try { field.focus(); } catch (e) { /* ignore */ } }, 60);
+  }
+
   /* ---- cinematic curtain ---- */
   function runCurtain(onDone) {
+    var gated = runCurtain._gated;
+    if (!gated) {
+      runCurtain._gated = true;
+      var again = function () { runCurtain(onDone); };
+      runVaultGate(again);
+      return;
+    }
     var curtain = $("#sbCurtain");
     if (!curtain) { onDone(); return; }
     var cellHost = $("#sbCurtainCells"), logHost = $("#sbCurtainLog");

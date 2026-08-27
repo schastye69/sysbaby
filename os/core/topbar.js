@@ -28,7 +28,7 @@
       "cc.sound": "Sound", "cc.dnd": "Do Not Disturb", "cc.autohide": "Dim Dock",
       "cc.motion": "Turbo", "cc.transparency": "Reduce transparency",
       "cc.volume": "Volume", "cc.brightness": "Brightness", "cc.language": "Language",
-      "cc.wallpaper": "Wallpaper", "cc.controls": "Window controls", "cc.controls.left": "Left", "cc.controls.right": "Right", "cc.appearance": "Appearance",
+      "cc.fullscreen": "Full screen", "cc.wallpaper": "Wallpaper", "cc.controls": "Window controls", "cc.controls.left": "Left", "cc.controls.right": "Right", "cc.appearance": "Appearance",
       "cc.shortcuts": "Keyboard Shortcuts", "cc.layouts": "Workspace Layouts",
       "cc.desktop": "Manage Desktop", "cc.health": "Health", "cc.incognito": "Incognito Desktop",
       "cc.exit": "Exit Incognito", "cc.signout": "Sign out, softly",
@@ -159,7 +159,7 @@
       "cc.charging": "Charging", "cc.onBattery": "On battery",
       "cc.merge": "Merge instead of replace",
       "theme.dark": "Dark", "theme.light": "Light",
-      "mood.studio": "Studio", "mood.aurora": "Aurora", "mood.sunset": "Sunset", "mood.ocean": "Ocean", "mood.mono": "Mono", "mood.daylight": "Daylight", "mood.therapy": "Light therapy", "mood.feast": "Feast", "menu.tidyDesk": "Tidy desk", "menu.bringThing": "Bring a thing\u2026", "menu.hideFab": "Remove this button", "part.fab": "Quick actions button", "br.back": "Back", "br.fwd": "Forward", "br.again": "Reload", "br.bookmark": "Save this page", "br.bookmarked": "Saved", "br.openTab": "Open in a real tab", "br.placeholder": "Address, or something to look up", "br.frameTitle": "Page", "br.saved": "Saved", "br.recent": "Recent", "br.empty.title": "Nothing open yet", "br.empty.sub": "Type an address and press Enter. Many sites refuse to be shown inside another page \u2014 the arrow at the right opens the current address in a real tab, always.", "note.day.title": "That day is yours", "note.day.body": "The date is written down \u2014 keep typing what happens on it.", "panel.time": "Time & calendar", "aria.time": "Time and calendar", "pl.prev": "Previous", "pl.next": "Next", "pl.play": "Play", "pl.pause": "Pause", "pl.seek": "Position", "pl.pick": "Choose a folder", "pl.count": "{n} tracks", "pl.brought": "Music", "pl.broughtN": "{n} tracks brought in", "pl.none": "No audio files in that folder", "pl.empty.title": "No music yet", "pl.empty.sub": "A browser cannot look through your device on its own. Choose ONE folder \u2014 Music or Download, for example. Android refuses the storage root itself: if it says \u201cCan\u2019t use this folder\u201d, step into a folder and choose that.", "br.blank": "Page blank?", "br.blank.go": "Open in a tab", "br.shut.sub": "You told the system this site refuses to be shown inside another page. It opens in a real tab from now on \u2014 and this can be undone.", "br.shut.retry": "Try here again",
+      "mood.studio": "Studio", "mood.aurora": "Aurora", "mood.sunset": "Sunset", "mood.ocean": "Ocean", "mood.mono": "Mono", "mood.daylight": "Daylight", "mood.therapy": "Light therapy", "mood.feast": "Feast", "menu.tidyDesk": "Tidy desk", "menu.bringThing": "Bring a thing\u2026", "menu.hideFab": "Remove this button", "part.fab": "Quick actions button", "br.back": "Back", "br.fwd": "Forward", "br.again": "Reload", "br.bookmark": "Save this page", "br.bookmarked": "Saved", "br.openTab": "Open in a real tab", "br.placeholder": "Address, or something to look up", "br.frameTitle": "Page", "br.saved": "Saved", "br.recent": "Recent", "br.empty.title": "Nothing open yet", "br.empty.sub": "Type an address and press Enter. Many sites refuse to be shown inside another page \u2014 the arrow at the right opens the current address in a real tab, always.", "note.day.title": "That day is yours", "note.day.body": "The date is written down \u2014 keep typing what happens on it.", "lock.again": "Repeat the password", "lock.mismatch": "The two do not match \u2014 nothing was locked.", "lock.done": "Locked. Your words are in envelopes now.", "lock.failed": "Could not lock \u2014 nothing was changed.", "lock.remove": "Remove the lock", "lock.removed": "The lock is off. Your words lie open again.", "lock.warn": "There is no way back: if you forget this password, what you have written cannot be recovered. No server holds a copy \u2014 that is the whole point.", "lock.title": "Lock what you have written", "lock.ask": "Password", "lock.open": "Open", "lock.locking": "Lock", "lock.wrong": "That password does not open this.", "lock.locked": "Locked", "lock.sub": "Notes, letters, conversations and the Vault. Wallpaper and language stay visible.", "panel.time": "Time & calendar", "aria.time": "Time and calendar", "pl.prev": "Previous", "pl.next": "Next", "pl.play": "Play", "pl.pause": "Pause", "pl.seek": "Position", "pl.pick": "Choose a folder", "pl.count": "{n} tracks", "pl.brought": "Music", "pl.broughtN": "{n} tracks brought in", "pl.none": "No audio files in that folder", "pl.empty.title": "No music yet", "pl.empty.sub": "A browser cannot look through your device on its own. Choose ONE folder \u2014 Music or Download, for example. Android refuses the storage root itself: if it says \u201cCan\u2019t use this folder\u201d, step into a folder and choose that.", "br.blank": "Page blank?", "br.blank.go": "Open in a tab", "br.shut.sub": "You told the system this site refuses to be shown inside another page. It opens in a real tab from now on \u2014 and this can be undone.", "br.shut.retry": "Try here again",
       /* ================================================== Pulse / Настройки
          Приложения больше не пишут строки литералами. Ключ живёт здесь,
          рядом с остальными двумя языками, чтобы перевод нельзя было забыть:
@@ -181,7 +181,7 @@
       "set.appearance.moodNone": "No moods available",
       "set.appearance.brightness": "Brightness",
       "set.appearance.brightnessSub": "Dims the whole desktop — the same slider as the Control Center",
-      "set.appearance.controls": "Window controls", "set.appearance.controlsSub": "Which side the close, minimise and maximise keys sit on \u2014 in every window and on every note", "set.appearance.turbo": "Turbo",
+      "set.appearance.fullscreenOn": "Take the whole screen", "set.appearance.fullscreenOff": "Give the screen back", "set.appearance.fullscreen": "Full screen", "set.appearance.fullscreenSub": "The system takes the whole screen \u2014 the same switch as in the quick panel", "set.appearance.controls": "Window controls", "set.appearance.controlsSub": "Which side the close, minimise and maximise keys sit on \u2014 in every window and on every note", "set.appearance.turbo": "Turbo",
       "set.appearance.turboSub": "Skips the long animations — everything happens instantly",
       "set.appearance.transparency": "Reduce transparency",
       "set.appearance.transparencySub": "Solid panels instead of glass",
@@ -511,7 +511,7 @@
       "cc.sound": "Звук", "cc.dnd": "Не беспокоить", "cc.autohide": "Приглушать док",
       "cc.motion": "Турбо", "cc.transparency": "Меньше прозрачности",
       "cc.volume": "Громкость", "cc.brightness": "Яркость", "cc.language": "Язык",
-      "cc.wallpaper": "Обои", "cc.controls": "Кнопки окон", "cc.controls.left": "Слева", "cc.controls.right": "Справа", "cc.appearance": "Оформление",
+      "cc.fullscreen": "\u0412\u043e \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d", "cc.wallpaper": "Обои", "cc.controls": "Кнопки окон", "cc.controls.left": "Слева", "cc.controls.right": "Справа", "cc.appearance": "Оформление",
       "cc.shortcuts": "Горячие клавиши", "cc.layouts": "Раскладки окон",
       "cc.desktop": "Рабочий стол", "cc.health": "Диагностика", "cc.incognito": "Скрытый рабочий стол",
       "cc.exit": "Выйти из инкогнито", "cc.signout": "Выйти, тихо",
@@ -634,7 +634,7 @@
       "cc.charging": "Зарядка", "cc.onBattery": "От батареи",
       "cc.merge": "Объединить, а не заменить",
       "theme.dark": "Тёмное", "theme.light": "Светлое",
-      "mood.studio": "Студия", "mood.aurora": "Аврора", "mood.sunset": "Закат", "mood.ocean": "Океан", "mood.mono": "Моно", "mood.daylight": "Дневной свет", "mood.therapy": "Светотерапия", "mood.feast": "Праздник", "menu.tidyDesk": "\u041f\u0440\u0438\u0431\u0440\u0430\u0442\u044c \u0441\u0442\u043e\u043b", "menu.bringThing": "\u041f\u0440\u0438\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0449\u044c\u2026", "menu.hideFab": "\u0423\u0431\u0440\u0430\u0442\u044c \u044d\u0442\u0443 \u043a\u043d\u043e\u043f\u043a\u0443", "part.fab": "\u041a\u043d\u043e\u043f\u043a\u0430 \u0431\u044b\u0441\u0442\u0440\u044b\u0445 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0439", "br.back": "\u041d\u0430\u0437\u0430\u0434", "br.fwd": "\u0412\u043f\u0435\u0440\u0451\u0434", "br.again": "\u041e\u0431\u043d\u043e\u0432\u0438\u0442\u044c", "br.bookmark": "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443", "br.bookmarked": "\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043e", "br.openTab": "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0439 \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439", "br.placeholder": "\u0410\u0434\u0440\u0435\u0441 \u0438\u043b\u0438 \u0447\u0442\u043e \u043d\u0430\u0439\u0442\u0438", "br.frameTitle": "\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430", "br.saved": "\u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0435", "br.recent": "\u041d\u0435\u0434\u0430\u0432\u043d\u0435\u0435", "br.empty.title": "\u041f\u043e\u043a\u0430 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u043e\u0442\u043a\u0440\u044b\u0442\u043e", "br.empty.sub": "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0430\u0434\u0440\u0435\u0441 \u0438 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u0412\u0432\u043e\u0434. \u041c\u043d\u043e\u0433\u0438\u0435 \u0441\u0430\u0439\u0442\u044b \u0437\u0430\u043f\u0440\u0435\u0449\u0430\u044e\u0442 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0441\u0435\u0431\u044f \u0432\u043d\u0443\u0442\u0440\u0438 \u0434\u0440\u0443\u0433\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b \u2014 \u0441\u0442\u0440\u0435\u043b\u043a\u0430 \u0441\u043f\u0440\u0430\u0432\u0430 \u0432\u0441\u0435\u0433\u0434\u0430 \u043e\u0442\u043a\u0440\u043e\u0435\u0442 \u0430\u0434\u0440\u0435\u0441 \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0439 \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439.", "note.day.title": "\u042d\u0442\u043e\u0442 \u0434\u0435\u043d\u044c \u2014 \u0432\u0430\u0448", "note.day.body": "\u0414\u0430\u0442\u0430 \u0443\u0436\u0435 \u0437\u0430\u043f\u0438\u0441\u0430\u043d\u0430 \u2014 \u043f\u0438\u0448\u0438\u0442\u0435 \u0434\u0430\u043b\u044c\u0448\u0435, \u0447\u0442\u043e \u0432 \u044d\u0442\u043e\u0442 \u0434\u0435\u043d\u044c \u0431\u0443\u0434\u0435\u0442.", "panel.time": "\u0412\u0440\u0435\u043c\u044f \u0438 \u043a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c", "aria.time": "\u0412\u0440\u0435\u043c\u044f \u0438 \u043a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c", "pl.prev": "\u041d\u0430\u0437\u0430\u0434", "pl.next": "\u0412\u043f\u0435\u0440\u0451\u0434", "pl.play": "\u0418\u0433\u0440\u0430\u0442\u044c", "pl.pause": "\u041f\u0430\u0443\u0437\u0430", "pl.seek": "\u041f\u043e\u043b\u043e\u0436\u0435\u043d\u0438\u0435", "pl.pick": "\u0423\u043a\u0430\u0437\u0430\u0442\u044c \u043f\u0430\u043f\u043a\u0443", "pl.count": "\u0414\u043e\u0440\u043e\u0436\u0435\u043a: {n}", "pl.brought": "\u041c\u0443\u0437\u044b\u043a\u0430", "pl.broughtN": "\u041f\u0440\u0438\u043d\u0435\u0441\u0435\u043d\u043e \u0434\u043e\u0440\u043e\u0436\u0435\u043a: {n}", "pl.none": "\u0412 \u044d\u0442\u043e\u0439 \u043f\u0430\u043f\u043a\u0435 \u043d\u0435\u0442 \u0437\u0432\u0443\u043a\u043e\u0432\u044b\u0445 \u0444\u0430\u0439\u043b\u043e\u0432", "pl.empty.title": "\u041c\u0443\u0437\u044b\u043a\u0438 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442", "pl.empty.sub": "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043d\u0435 \u043c\u043e\u0436\u0435\u0442 \u0441\u0430\u043c \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0432\u0430\u0448\u0435 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e. \u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u041e\u0414\u041d\u0423 \u043f\u0430\u043f\u043a\u0443 \u2014 \u043d\u0430\u043f\u0440\u0438\u043c\u0435\u0440, Music \u0438\u043b\u0438 Download. \u041a\u043e\u0440\u0435\u043d\u044c \u043f\u0430\u043c\u044f\u0442\u0438 Android \u0432\u044b\u0431\u0440\u0430\u0442\u044c \u043d\u0435 \u0434\u0430\u0451\u0442: \u0435\u0441\u043b\u0438 \u043f\u0438\u0448\u0435\u0442 \u00abCan\u2019t use this folder\u00bb \u2014 \u0437\u0430\u0439\u0434\u0438\u0442\u0435 \u0432\u043d\u0443\u0442\u0440\u044c \u043f\u0430\u043f\u043a\u0438 \u0438 \u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0435\u0451.", "br.blank": "\u041f\u0443\u0441\u0442\u043e?", "br.blank.go": "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439", "br.shut.sub": "\u0412\u044b \u0441\u043a\u0430\u0437\u0430\u043b\u0438 \u0441\u0438\u0441\u0442\u0435\u043c\u0435, \u0447\u0442\u043e \u044d\u0442\u043e\u0442 \u0441\u0430\u0439\u0442 \u043d\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0430\u0435\u0442 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0441\u0435\u0431\u044f \u0432\u043d\u0443\u0442\u0440\u0438 \u0434\u0440\u0443\u0433\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b. \u0422\u0435\u043f\u0435\u0440\u044c \u043e\u043d \u0441\u0440\u0430\u0437\u0443 \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439 \u2014 \u0438 \u044d\u0442\u043e \u043c\u043e\u0436\u043d\u043e \u043e\u0442\u043c\u0435\u043d\u0438\u0442\u044c.", "br.shut.retry": "\u041f\u043e\u043f\u0440\u043e\u0431\u043e\u0432\u0430\u0442\u044c \u0441\u043d\u043e\u0432\u0430 \u0437\u0434\u0435\u0441\u044c",
+      "mood.studio": "Студия", "mood.aurora": "Аврора", "mood.sunset": "Закат", "mood.ocean": "Океан", "mood.mono": "Моно", "mood.daylight": "Дневной свет", "mood.therapy": "Светотерапия", "mood.feast": "Праздник", "menu.tidyDesk": "\u041f\u0440\u0438\u0431\u0440\u0430\u0442\u044c \u0441\u0442\u043e\u043b", "menu.bringThing": "\u041f\u0440\u0438\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0449\u044c\u2026", "menu.hideFab": "\u0423\u0431\u0440\u0430\u0442\u044c \u044d\u0442\u0443 \u043a\u043d\u043e\u043f\u043a\u0443", "part.fab": "\u041a\u043d\u043e\u043f\u043a\u0430 \u0431\u044b\u0441\u0442\u0440\u044b\u0445 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0439", "br.back": "\u041d\u0430\u0437\u0430\u0434", "br.fwd": "\u0412\u043f\u0435\u0440\u0451\u0434", "br.again": "\u041e\u0431\u043d\u043e\u0432\u0438\u0442\u044c", "br.bookmark": "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443", "br.bookmarked": "\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043e", "br.openTab": "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0439 \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439", "br.placeholder": "\u0410\u0434\u0440\u0435\u0441 \u0438\u043b\u0438 \u0447\u0442\u043e \u043d\u0430\u0439\u0442\u0438", "br.frameTitle": "\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430", "br.saved": "\u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0435", "br.recent": "\u041d\u0435\u0434\u0430\u0432\u043d\u0435\u0435", "br.empty.title": "\u041f\u043e\u043a\u0430 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u043e\u0442\u043a\u0440\u044b\u0442\u043e", "br.empty.sub": "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0430\u0434\u0440\u0435\u0441 \u0438 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u0412\u0432\u043e\u0434. \u041c\u043d\u043e\u0433\u0438\u0435 \u0441\u0430\u0439\u0442\u044b \u0437\u0430\u043f\u0440\u0435\u0449\u0430\u044e\u0442 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0441\u0435\u0431\u044f \u0432\u043d\u0443\u0442\u0440\u0438 \u0434\u0440\u0443\u0433\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b \u2014 \u0441\u0442\u0440\u0435\u043b\u043a\u0430 \u0441\u043f\u0440\u0430\u0432\u0430 \u0432\u0441\u0435\u0433\u0434\u0430 \u043e\u0442\u043a\u0440\u043e\u0435\u0442 \u0430\u0434\u0440\u0435\u0441 \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0439 \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439.", "note.day.title": "\u042d\u0442\u043e\u0442 \u0434\u0435\u043d\u044c \u2014 \u0432\u0430\u0448", "note.day.body": "\u0414\u0430\u0442\u0430 \u0443\u0436\u0435 \u0437\u0430\u043f\u0438\u0441\u0430\u043d\u0430 \u2014 \u043f\u0438\u0448\u0438\u0442\u0435 \u0434\u0430\u043b\u044c\u0448\u0435, \u0447\u0442\u043e \u0432 \u044d\u0442\u043e\u0442 \u0434\u0435\u043d\u044c \u0431\u0443\u0434\u0435\u0442.", "lock.again": "\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u0435 \u043f\u0430\u0440\u043e\u043b\u044c", "lock.mismatch": "\u041f\u0430\u0440\u043e\u043b\u0438 \u043d\u0435 \u0441\u043e\u0432\u043f\u0430\u043b\u0438 \u2014 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u0437\u0430\u043f\u0435\u0440\u0442\u043e.", "lock.done": "\u0417\u0430\u043f\u0435\u0440\u0442\u043e. \u0412\u0430\u0448\u0438 \u0441\u043b\u043e\u0432\u0430 \u0442\u0435\u043f\u0435\u0440\u044c \u0432 \u043a\u043e\u043d\u0432\u0435\u0440\u0442\u0430\u0445.", "lock.failed": "\u0417\u0430\u043f\u0435\u0440\u0435\u0442\u044c \u043d\u0435 \u0432\u044b\u0448\u043b\u043e \u2014 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u043e.", "lock.remove": "\u0421\u043d\u044f\u0442\u044c \u0437\u0430\u043c\u043e\u043a", "lock.removed": "\u0417\u0430\u043c\u043e\u043a \u0441\u043d\u044f\u0442. \u0421\u043b\u043e\u0432\u0430 \u0441\u043d\u043e\u0432\u0430 \u043b\u0435\u0436\u0430\u0442 \u043e\u0442\u043a\u0440\u044b\u0442\u043e.", "lock.warn": "\u041f\u0443\u0442\u0438 \u043d\u0430\u0437\u0430\u0434 \u043d\u0435\u0442: \u0435\u0441\u043b\u0438 \u0432\u044b \u0437\u0430\u0431\u0443\u0434\u0435\u0442\u0435 \u044d\u0442\u043e\u0442 \u043f\u0430\u0440\u043e\u043b\u044c, \u043d\u0430\u043f\u0438\u0441\u0430\u043d\u043d\u043e\u0435 \u0432\u0435\u0440\u043d\u0443\u0442\u044c \u0431\u0443\u0434\u0435\u0442 \u043d\u0435\u043b\u044c\u0437\u044f. \u041a\u043e\u043f\u0438\u0438 \u043d\u0435\u0442 \u043d\u0438 \u043d\u0430 \u043e\u0434\u043d\u043e\u043c \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u2014 \u0440\u0430\u0434\u0438 \u044d\u0442\u043e\u0433\u043e \u0432\u0441\u0451 \u0438 \u0437\u0430\u0442\u0435\u044f\u043d\u043e.", "lock.title": "\u0417\u0430\u043f\u0435\u0440\u0435\u0442\u044c \u043d\u0430\u043f\u0438\u0441\u0430\u043d\u043d\u043e\u0435", "lock.ask": "\u041f\u0430\u0440\u043e\u043b\u044c", "lock.open": "\u041e\u0442\u043a\u0440\u044b\u0442\u044c", "lock.locking": "\u0417\u0430\u043f\u0435\u0440\u0435\u0442\u044c", "lock.wrong": "\u042d\u0442\u043e\u0442 \u043f\u0430\u0440\u043e\u043b\u044c \u043d\u0435 \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442.", "lock.locked": "\u0417\u0430\u043f\u0435\u0440\u0442\u043e", "lock.sub": "\u0417\u0430\u043c\u0435\u0442\u043a\u0438, \u043f\u0438\u0441\u044c\u043c\u0430, \u0440\u0430\u0437\u0433\u043e\u0432\u043e\u0440\u044b \u0438 \u0425\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0435. \u041e\u0431\u043e\u0438 \u0438 \u044f\u0437\u044b\u043a \u043e\u0441\u0442\u0430\u044e\u0442\u0441\u044f \u0432\u0438\u0434\u043d\u044b.", "panel.time": "\u0412\u0440\u0435\u043c\u044f \u0438 \u043a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c", "aria.time": "\u0412\u0440\u0435\u043c\u044f \u0438 \u043a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c", "pl.prev": "\u041d\u0430\u0437\u0430\u0434", "pl.next": "\u0412\u043f\u0435\u0440\u0451\u0434", "pl.play": "\u0418\u0433\u0440\u0430\u0442\u044c", "pl.pause": "\u041f\u0430\u0443\u0437\u0430", "pl.seek": "\u041f\u043e\u043b\u043e\u0436\u0435\u043d\u0438\u0435", "pl.pick": "\u0423\u043a\u0430\u0437\u0430\u0442\u044c \u043f\u0430\u043f\u043a\u0443", "pl.count": "\u0414\u043e\u0440\u043e\u0436\u0435\u043a: {n}", "pl.brought": "\u041c\u0443\u0437\u044b\u043a\u0430", "pl.broughtN": "\u041f\u0440\u0438\u043d\u0435\u0441\u0435\u043d\u043e \u0434\u043e\u0440\u043e\u0436\u0435\u043a: {n}", "pl.none": "\u0412 \u044d\u0442\u043e\u0439 \u043f\u0430\u043f\u043a\u0435 \u043d\u0435\u0442 \u0437\u0432\u0443\u043a\u043e\u0432\u044b\u0445 \u0444\u0430\u0439\u043b\u043e\u0432", "pl.empty.title": "\u041c\u0443\u0437\u044b\u043a\u0438 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442", "pl.empty.sub": "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043d\u0435 \u043c\u043e\u0436\u0435\u0442 \u0441\u0430\u043c \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0432\u0430\u0448\u0435 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e. \u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u041e\u0414\u041d\u0423 \u043f\u0430\u043f\u043a\u0443 \u2014 \u043d\u0430\u043f\u0440\u0438\u043c\u0435\u0440, Music \u0438\u043b\u0438 Download. \u041a\u043e\u0440\u0435\u043d\u044c \u043f\u0430\u043c\u044f\u0442\u0438 Android \u0432\u044b\u0431\u0440\u0430\u0442\u044c \u043d\u0435 \u0434\u0430\u0451\u0442: \u0435\u0441\u043b\u0438 \u043f\u0438\u0448\u0435\u0442 \u00abCan\u2019t use this folder\u00bb \u2014 \u0437\u0430\u0439\u0434\u0438\u0442\u0435 \u0432\u043d\u0443\u0442\u0440\u044c \u043f\u0430\u043f\u043a\u0438 \u0438 \u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0435\u0451.", "br.blank": "\u041f\u0443\u0441\u0442\u043e?", "br.blank.go": "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439", "br.shut.sub": "\u0412\u044b \u0441\u043a\u0430\u0437\u0430\u043b\u0438 \u0441\u0438\u0441\u0442\u0435\u043c\u0435, \u0447\u0442\u043e \u044d\u0442\u043e\u0442 \u0441\u0430\u0439\u0442 \u043d\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0430\u0435\u0442 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0441\u0435\u0431\u044f \u0432\u043d\u0443\u0442\u0440\u0438 \u0434\u0440\u0443\u0433\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b. \u0422\u0435\u043f\u0435\u0440\u044c \u043e\u043d \u0441\u0440\u0430\u0437\u0443 \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0432\u043a\u043b\u0430\u0434\u043a\u043e\u0439 \u2014 \u0438 \u044d\u0442\u043e \u043c\u043e\u0436\u043d\u043e \u043e\u0442\u043c\u0435\u043d\u0438\u0442\u044c.", "br.shut.retry": "\u041f\u043e\u043f\u0440\u043e\u0431\u043e\u0432\u0430\u0442\u044c \u0441\u043d\u043e\u0432\u0430 \u0437\u0434\u0435\u0441\u044c",
       /* ============================================================ Настройки */
       "set.tab.general": "Общее", "set.tab.appearance": "Оформление",
       "set.tab.sound": "Звук и фокус", "set.tab.desktop": "Док и рабочий стол",
@@ -653,7 +653,7 @@
       "set.appearance.moodNone": "Настроений нет",
       "set.appearance.brightness": "Яркость",
       "set.appearance.brightnessSub": "Приглушает весь рабочий стол — тот же ползунок, что в Центре управления",
-      "set.appearance.controls": "\u041a\u043d\u043e\u043f\u043a\u0438 \u043e\u043a\u043e\u043d", "set.appearance.controlsSub": "\u0421 \u043a\u0430\u043a\u043e\u0439 \u0441\u0442\u043e\u0440\u043e\u043d\u044b \u0441\u0442\u043e\u044f\u0442 \u0437\u0430\u043a\u0440\u044b\u0442\u044c, \u0441\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u0438 \u0440\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u2014 \u0432 \u043a\u0430\u0436\u0434\u043e\u043c \u043e\u043a\u043d\u0435 \u0438 \u043d\u0430 \u043a\u0430\u0436\u0434\u043e\u0439 \u0437\u0430\u043c\u0435\u0442\u043a\u0435", "set.appearance.turbo": "Турбо",
+      "set.appearance.fullscreenOn": "\u0417\u0430\u043d\u044f\u0442\u044c \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d", "set.appearance.fullscreenOff": "\u0412\u0435\u0440\u043d\u0443\u0442\u044c \u044d\u043a\u0440\u0430\u043d", "set.appearance.fullscreen": "\u0412\u043e \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d", "set.appearance.fullscreenSub": "\u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u0437\u0430\u043d\u0438\u043c\u0430\u0435\u0442 \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d \u2014 \u0442\u043e\u0442 \u0436\u0435 \u043f\u0435\u0440\u0435\u043a\u043b\u044e\u0447\u0430\u0442\u0435\u043b\u044c, \u0447\u0442\u043e \u0438 \u0432 \u0431\u044b\u0441\u0442\u0440\u043e\u0439 \u043f\u0430\u043d\u0435\u043b\u0438", "set.appearance.controls": "\u041a\u043d\u043e\u043f\u043a\u0438 \u043e\u043a\u043e\u043d", "set.appearance.controlsSub": "\u0421 \u043a\u0430\u043a\u043e\u0439 \u0441\u0442\u043e\u0440\u043e\u043d\u044b \u0441\u0442\u043e\u044f\u0442 \u0437\u0430\u043a\u0440\u044b\u0442\u044c, \u0441\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u0438 \u0440\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u2014 \u0432 \u043a\u0430\u0436\u0434\u043e\u043c \u043e\u043a\u043d\u0435 \u0438 \u043d\u0430 \u043a\u0430\u0436\u0434\u043e\u0439 \u0437\u0430\u043c\u0435\u0442\u043a\u0435", "set.appearance.turbo": "Турбо",
       "set.appearance.turboSub": "Пропускает долгие анимации — всё происходит мгновенно",
       "set.appearance.transparency": "Меньше прозрачности",
       "set.appearance.transparencySub": "Плотные панели вместо стекла",
@@ -970,7 +970,7 @@
       "cc.sound": "Heli", "cc.dnd": "Mitte segada", "cc.autohide": "Tumenda dokk",
       "cc.motion": "Turbo", "cc.transparency": "Vähem läbipaistvust",
       "cc.volume": "Helitugevus", "cc.brightness": "Heledus", "cc.language": "Keel",
-      "cc.wallpaper": "Taust", "cc.controls": "Akna nupud", "cc.controls.left": "Vasakul", "cc.controls.right": "Paremal", "cc.appearance": "Välimus",
+      "cc.fullscreen": "T\u00e4isekraan", "cc.wallpaper": "Taust", "cc.controls": "Akna nupud", "cc.controls.left": "Vasakul", "cc.controls.right": "Paremal", "cc.appearance": "Välimus",
       "cc.shortcuts": "Klaviatuuri otseteed", "cc.layouts": "Akende paigutused",
       "cc.desktop": "Töölaua haldus", "cc.health": "Seisund", "cc.incognito": "Peidetud töölaud",
       "cc.exit": "Välju inkognitost", "cc.signout": "Logi välja, vaikselt",
@@ -1093,7 +1093,7 @@
       "cc.charging": "Laeb", "cc.onBattery": "Akutoitel",
       "cc.merge": "Liida, ära asenda",
       "theme.dark": "Tume", "theme.light": "Hele",
-      "mood.studio": "Stuudio", "mood.aurora": "Virmalised", "mood.sunset": "Loojang", "mood.ocean": "Ookean", "mood.mono": "Mono", "mood.daylight": "Päevavalgus", "mood.therapy": "Valgusteraapia", "mood.feast": "Pidu", "menu.tidyDesk": "Korista laud", "menu.bringThing": "Too asi\u2026", "menu.hideFab": "Eemalda see nupp", "part.fab": "Kiirtegevuste nupp", "br.back": "Tagasi", "br.fwd": "Edasi", "br.again": "V\u00e4rskenda", "br.bookmark": "Salvesta leht", "br.bookmarked": "Salvestatud", "br.openTab": "Ava p\u00e4ris kaardil", "br.placeholder": "Aadress v\u00f5i otsing", "br.frameTitle": "Leht", "br.saved": "Salvestatud", "br.recent": "Hiljutine", "br.empty.title": "Midagi pole veel avatud", "br.empty.sub": "Sisesta aadress ja vajuta Enter. Paljud saidid keelavad end teise lehe sees n\u00e4idata \u2014 parempoolne nool avab aadressi alati p\u00e4ris kaardil.", "note.day.title": "See p\u00e4ev on sinu", "note.day.body": "Kuup\u00e4ev on kirjas \u2014 kirjuta edasi, mis sel p\u00e4eval juhtub.", "panel.time": "Aeg ja kalender", "aria.time": "Aeg ja kalender", "pl.prev": "Eelmine", "pl.next": "J\u00e4rgmine", "pl.play": "Esita", "pl.pause": "Paus", "pl.seek": "Asukoht", "pl.pick": "Vali kaust", "pl.count": "Lugusid: {n}", "pl.brought": "Muusika", "pl.broughtN": "Toodud lugusid: {n}", "pl.none": "Selles kaustas pole helifaile", "pl.empty.title": "Muusikat veel pole", "pl.empty.sub": "Brauser ei saa ise sinu seadet l\u00e4bi vaadata. Vali \u00dcKS kaust \u2014 n\u00e4iteks Music v\u00f5i Download. Androidi m\u00e4lu juurt valida ei saa: kui \u00fctleb \u201cCan\u2019t use this folder\u201d, mine kausta sisse ja vali see.", "br.blank": "T\u00fchi?", "br.blank.go": "Ava kaardil", "br.shut.sub": "Sa \u00fctlesid s\u00fcsteemile, et see sait ei luba end teise lehe sees n\u00e4idata. Nutu avaneb ta alati p\u00e4ris kaardil \u2014 ja selle saab tagasi v\u00f5tta.", "br.shut.retry": "Proovi siin uuesti",
+      "mood.studio": "Stuudio", "mood.aurora": "Virmalised", "mood.sunset": "Loojang", "mood.ocean": "Ookean", "mood.mono": "Mono", "mood.daylight": "Päevavalgus", "mood.therapy": "Valgusteraapia", "mood.feast": "Pidu", "menu.tidyDesk": "Korista laud", "menu.bringThing": "Too asi\u2026", "menu.hideFab": "Eemalda see nupp", "part.fab": "Kiirtegevuste nupp", "br.back": "Tagasi", "br.fwd": "Edasi", "br.again": "V\u00e4rskenda", "br.bookmark": "Salvesta leht", "br.bookmarked": "Salvestatud", "br.openTab": "Ava p\u00e4ris kaardil", "br.placeholder": "Aadress v\u00f5i otsing", "br.frameTitle": "Leht", "br.saved": "Salvestatud", "br.recent": "Hiljutine", "br.empty.title": "Midagi pole veel avatud", "br.empty.sub": "Sisesta aadress ja vajuta Enter. Paljud saidid keelavad end teise lehe sees n\u00e4idata \u2014 parempoolne nool avab aadressi alati p\u00e4ris kaardil.", "note.day.title": "See p\u00e4ev on sinu", "note.day.body": "Kuup\u00e4ev on kirjas \u2014 kirjuta edasi, mis sel p\u00e4eval juhtub.", "lock.again": "Korda parooli", "lock.mismatch": "Paroolid ei kattu \u2014 midagi ei lukustatud.", "lock.done": "Lukus. Sinu s\u00f5nad on n\u00fc\u00fcd \u00fcmbrikes.", "lock.failed": "Lukustada ei \u00f5nnestunud \u2014 midagi ei muudetud.", "lock.remove": "Eemalda lukk", "lock.removed": "Lukk on eemaldatud. S\u00f5nad on taas lahti.", "lock.warn": "Tagasiteed pole: kui unustad selle parooli, ei saa kirjutatut taastada. Koopiat pole \u00fchelgi serveril \u2014 selle nimel k\u00f5ik ongi.", "lock.title": "Lukusta kirjutatu", "lock.ask": "Parool", "lock.open": "Ava", "lock.locking": "Lukusta", "lock.wrong": "See parool ei ava.", "lock.locked": "Lukus", "lock.sub": "M\u00e4rkmed, kirjad, vestlused ja Hoidla. Taust ja keel j\u00e4\u00e4vad n\u00e4htavaks.", "panel.time": "Aeg ja kalender", "aria.time": "Aeg ja kalender", "pl.prev": "Eelmine", "pl.next": "J\u00e4rgmine", "pl.play": "Esita", "pl.pause": "Paus", "pl.seek": "Asukoht", "pl.pick": "Vali kaust", "pl.count": "Lugusid: {n}", "pl.brought": "Muusika", "pl.broughtN": "Toodud lugusid: {n}", "pl.none": "Selles kaustas pole helifaile", "pl.empty.title": "Muusikat veel pole", "pl.empty.sub": "Brauser ei saa ise sinu seadet l\u00e4bi vaadata. Vali \u00dcKS kaust \u2014 n\u00e4iteks Music v\u00f5i Download. Androidi m\u00e4lu juurt valida ei saa: kui \u00fctleb \u201cCan\u2019t use this folder\u201d, mine kausta sisse ja vali see.", "br.blank": "T\u00fchi?", "br.blank.go": "Ava kaardil", "br.shut.sub": "Sa \u00fctlesid s\u00fcsteemile, et see sait ei luba end teise lehe sees n\u00e4idata. Nutu avaneb ta alati p\u00e4ris kaardil \u2014 ja selle saab tagasi v\u00f5tta.", "br.shut.retry": "Proovi siin uuesti",
       /* ============================================================== Seaded
          Обращение к посетителю — teie (мн. вежливое), как на лендинге. */
       "set.tab.general": "Üldine", "set.tab.appearance": "Välimus",
@@ -1113,7 +1113,7 @@
       "set.appearance.moodNone": "Meeleolusid pole saadaval",
       "set.appearance.brightness": "Heledus",
       "set.appearance.brightnessSub": "Tumendab kogu töölauda — sama liugur mis juhtimiskeskuses",
-      "set.appearance.controls": "Akna nupud", "set.appearance.controlsSub": "Kummal pool on sulge, peida ja suurenda \u2014 igas aknas ja igal m\u00e4rkmel", "set.appearance.turbo": "Turbo",
+      "set.appearance.fullscreenOn": "V\u00f5ta kogu ekraan", "set.appearance.fullscreenOff": "Anna ekraan tagasi", "set.appearance.fullscreen": "T\u00e4isekraan", "set.appearance.fullscreenSub": "S\u00fcsteem v\u00f5tab kogu ekraani \u2014 sama l\u00fcliti mis kiirpaneelis", "set.appearance.controls": "Akna nupud", "set.appearance.controlsSub": "Kummal pool on sulge, peida ja suurenda \u2014 igas aknas ja igal m\u00e4rkmel", "set.appearance.turbo": "Turbo",
       "set.appearance.turboSub": "Jätab pikad animatsioonid vahele — kõik juhtub kohe",
       "set.appearance.transparency": "Vähenda läbipaistvust",
       "set.appearance.transparencySub": "Klaasi asemel läbipaistmatud paneelid",
@@ -1720,7 +1720,28 @@
   }
   function syncFullscreenClass() {
     doc.documentElement.classList.toggle("sb-fullscreen", !!fsElement());
+    /* ── ПОЛНЫЙ ЭКРАН — В ПАНЕЛИ И В НАСТРОЙКАХ (D-163) ─────────────────
+       Просьба основателя 27.08.2026: «Fullscreen on off нужно добавить в
+       панель быстрого управления и в настройки».
+       Признак берётся у ТОГО, КТО ИМ ВЛАДЕЕТ: выйти из полного экрана можно
+       клавишей Esc и средствами браузера, мимо любой нашей кнопки. Поэтому
+       обе поверхности перекрашиваются по СОБЫТИЮ, а не по нашему намерению. */
+    var b = $("#sbCcFullscreen");
+    if (b) {
+      b.setAttribute("aria-pressed", fsElement() ? "true" : "false");
+      b.classList.toggle("on", !!fsElement());
+    }
+    if (window.sbBus && window.sbBus.emit) window.sbBus.emit("fullscreen:change", { on: !!fsElement() });
+    try {
+      doc.dispatchEvent(new CustomEvent("sysbaby:setting-changed", { detail: { kind: "fullscreen" } }));
+    } catch (e) { /* ignore */ }
   }
+  /* Наружу — одной парой: обе поверхности зовут ОДНУ дверь, и спорить им не о
+     чем. sbFullscreenSupported честно отвечает «нет» там, где полного экрана
+     не существует (Safari на iPhone), — кнопка тогда не рисуется вовсе. */
+  window.sbToggleFullscreen = function () { toggleFullscreen(); return !!fsElement(); };
+  window.sbIsFullscreen = function () { return !!fsElement(); };
+  window.sbFullscreenSupported = fsSupported;
 
   function wireMark() {
     var mark = $("#sbTopMark");
@@ -2289,6 +2310,7 @@
     paintCc();
   }
 
+  var ccVol = null, ccBright = null;
   function paintCc() {
     ["sound", "dnd", "autohide", "motion", "transparency"].forEach(function (k) {
       var on = window.sbGetControlToggle ? window.sbGetControlToggle(k) : false;
@@ -2309,6 +2331,10 @@
     /* Заполнение ползунков — при каждой отрисовке панели: разметка приходит
        готовой, а событие «input» до первого касания не случается (D-156). */
     if (window.sbPaintAllRanges) window.sbPaintAllRanges($("#sbControlCenter"));
+    var lockNow = $("#sbCcLock");
+    if (lockNow && window.sbVault) {
+      lockNow.textContent = window.sbVault.isLocked() ? window.sbT("lock.remove") : window.sbT("lock.locking");
+    }
     var side = window.sbGetControlSide ? window.sbGetControlSide() : "left";
     $$("[data-side]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-side") === side); });
     var moodHost = $("#sbCcMoods");
@@ -2349,13 +2375,14 @@
     /* Sliders and the language selector are settings too — they repaint from
        the same stored truth as the toggles, or the panel shows stale values
        after Pulse moves them. */
-    var vol = $("#sbCcVolume");
-    if (vol && doc.activeElement !== vol) {
-      vol.value = String(Math.round((window.sbGetNotifVolume ? window.sbGetNotifVolume() : num(window.sbNotifVolume, 0.6)) * 100));
+    /* Ползунки наши (D-162): значение ставится через их же ручку, а не через
+       .value чужого поля. Пока палец держит ползунок, его не трогают — иначе
+       панель спорила бы с рукой. */
+    if (ccVol && !ccVol.el.classList.contains("held")) {
+      ccVol.set(Math.round((window.sbGetNotifVolume ? window.sbGetNotifVolume() : num(window.sbNotifVolume, 0.6)) * 100));
     }
-    var bright = $("#sbCcBrightness");
-    if (bright && doc.activeElement !== bright && window.sbGetBrightness) {
-      bright.value = String(window.sbGetBrightness());
+    if (ccBright && !ccBright.el.classList.contains("held") && window.sbGetBrightness) {
+      ccBright.set(window.sbGetBrightness());
     }
     var langSel = $("#sbCcLang");
     if (langSel && langSel.options && langSel.options.length && langSel.value !== lang()) langSel.value = lang();
@@ -2387,22 +2414,29 @@
       });
     });
 
-    var vol = $("#sbCcVolume");
-    if (vol) {
-      vol.value = String(Math.round((window.sbGetNotifVolume ? window.sbGetNotifVolume() : num(window.sbNotifVolume, 0.6)) * 100));
-      vol.addEventListener("input", function () {
-        /* through the shell setter: persisted + announced, not a session-only global */
-        if (window.sbSetNotifVolume) window.sbSetNotifVolume(num(vol.value, 60) / 100);
-        else window.sbNotifVolume = clamp(num(vol.value, 60) / 100, 0, 1);
+    /* Ползунки строятся один раз, здесь же, где панель заводят (D-162). */
+    var volHost = $("#sbCcVolumeHost", cc);
+    if (volHost && window.sbSlider && !ccVol) {
+      ccVol = window.sbSlider(volHost, {
+        min: 0, max: 100, value: Math.round((window.sbGetNotifVolume ? window.sbGetNotifVolume() : num(window.sbNotifVolume, 0.6)) * 100),
+        label: window.sbT("cc.volume"),
+        onInput: function (v) {
+          /* через сеттер оболочки: сохраняется и объявляется, а не живёт
+             глобальной переменной на один сеанс */
+          if (window.sbSetNotifVolume) window.sbSetNotifVolume(v / 100);
+          else window.sbNotifVolume = clamp(v / 100, 0, 1);
+        }
       });
-      vol.addEventListener("change", function () { if (window.SysBaby && window.SysBaby.playNotifSound) window.SysBaby.playNotifSound(); });
     }
-    var bright = $("#sbCcBrightness");
-    if (bright) {
-      if (window.sbGetBrightness) bright.value = String(window.sbGetBrightness());
-      bright.addEventListener("input", function () {
-        if (window.sbSetBrightness) window.sbSetBrightness(num(bright.value, 100));
-        else doc.body.style.filter = "brightness(" + (0.72 + (clamp(num(bright.value, 100), 0, 100) / 100) * 0.34).toFixed(3) + ")";
+    var brightHost = $("#sbCcBrightnessHost", cc);
+    if (brightHost && window.sbSlider && !ccBright) {
+      ccBright = window.sbSlider(brightHost, {
+        min: 0, max: 100, value: window.sbGetBrightness ? window.sbGetBrightness() : 100,
+        label: window.sbT("cc.brightness"),
+        onInput: function (v) {
+          if (window.sbSetBrightness) window.sbSetBrightness(v);
+          else doc.body.style.filter = "brightness(" + (0.72 + (clamp(v, 0, 100) / 100) * 0.34).toFixed(3) + ")";
+        }
       });
     }
     var langSel = $("#sbCcLang");
@@ -2415,6 +2449,49 @@
     /* Кнопки ряда обоев рождаются позже самой панели, поэтому слушатель
        стоит на РЯДУ, а не на каждой кнопке: иначе новая комната приходила бы
        без нажатия (D-152). */
+    /* ── ЗАМОК: ОДНО НАЖАТИЕ (D-161) ──────────────────────────────────────
+       Пароль спрашивается дважды: опечатка в единственном поле — это потеря
+       всего написанного, и переспросить дешевле, чем объяснять потом. Если
+       криптографии браузера нет, кнопка не изображает работу, а исчезает:
+       нарисованный замок хуже отсутствующего. */
+    var fsBtn = $("#sbCcFullscreen", cc);
+    if (fsBtn) {
+      if (!fsSupported()) fsBtn.hidden = true;
+      fsBtn.addEventListener("click", function () { toggleFullscreen(); });
+    }
+    var lockBtn = $("#sbCcLock", cc);
+    var lockBlock = $("#sbCcLockBlock", cc);
+    if (lockBtn && lockBlock) {
+      if (!window.sbVault || !window.sbVault.available()) lockBlock.hidden = true;
+      lockBtn.addEventListener("click", function () {
+        if (!window.sbVault) return;
+        if (window.sbVault.isLocked()) {
+          var openPass = window.prompt(window.sbT("lock.ask"));
+          if (openPass == null) return;
+          window.sbVault.remove(openPass).then(function (okp) {
+            if (window.showToast) {
+              window.showToast(window.sbT("lock.title"),
+                okp ? window.sbT("lock.removed") : window.sbT("lock.wrong"), "");
+            }
+            paintCc();
+          });
+          return;
+        }
+        var p1 = window.prompt(window.sbT("lock.warn") + "\n\n" + window.sbT("lock.ask"));
+        if (p1 == null || String(p1).length < 4) return;
+        var p2 = window.prompt(window.sbT("lock.again"));
+        if (p2 !== p1) {
+          if (window.showToast) window.showToast(window.sbT("lock.title"), window.sbT("lock.mismatch"), "");
+          return;
+        }
+        window.sbVault.lock(p1).then(function () {
+          if (window.showToast) window.showToast(window.sbT("lock.title"), window.sbT("lock.done"), "");
+          paintCc();
+        }, function () {
+          if (window.showToast) window.showToast(window.sbT("lock.title"), window.sbT("lock.failed"), "");
+        });
+      });
+    }
     var sideRow = $("#sbCcSide", cc);
     if (sideRow) {
       sideRow.addEventListener("click", function (ev) {

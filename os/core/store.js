@@ -179,6 +179,10 @@
     dirty.clear();
     for (var i = 0; i < keys.length; i++) {
       var k = keys[i], v = cache.has(k) ? cache.get(k) : null, ok;
+      /* ЗАПЕРТОЕ УХОДИТ НА ДИСК ТОЛЬКО В КОНВЕРТЕ (D-161). Проверка стоит
+         здесь, в единственном месте, где система вообще что-то записывает:
+         поставь её выше — и любой новый путь записи прошёл бы мимо. */
+      if (vaultOpen && PROTECTED.indexOf(k) !== -1) { persistSealed(k); continue; }
       if (v == null) ok = lsDel(nsKeyFor(profile, k));
       else ok = lsSet(nsKeyFor(profile, k), v);
       if (!ok) {
@@ -832,6 +836,211 @@
     if (hit) writeAll(all);
     return hit;
   };
+
+
+  /* ═══════════════════ ЗАМОК · решение D-161 ══════════════════════════════
+     ПОВОД. Основатель давно просил «шифрование в одно нажатие». Выше, в
+     разделе входа, стоит честное признание, что этого НЕТ: «пароль решает,
+     КТО ВОШЁЛ, а не кто может прочитать файлы… Обещать иное значило бы
+     продавать ложное чувство безопасности». Это — то самое обещание, которое
+     там отказывались дать, и теперь его можно дать.
+
+     ЧТО ЗАКРЫВАЕТСЯ. Только НАПИСАННОЕ ЧЕЛОВЕКОМ: заметки, письма, разговоры,
+     Хранилище, буфер, журнал событий. Обои, язык, громкость — НЕ закрываются,
+     и это решение, а не недоделка: человек должен узнать свою систему ещё до
+     того, как назовёт пароль. Комната — не тайна.
+
+     ЧТО ИМЕННО ПРОИСХОДИТ. AES-GCM на ключе из PBKDF2-SHA-256 (те же сто
+     пятьдесят тысяч проходов, что у входа), у каждого значения своя случайная
+     соль поездки. Ничего самодельного: нет crypto.subtle — замок объявляет
+     себя недоступным, а не изображает шифр слабым хешем.
+
+     ЧЕГО ЗДЕСЬ НЕТ, И ЭТО СКАЗАНО ЧЕЛОВЕКУ ДО ПОВОРОТА КЛЮЧА:
+       · восстановления пароля нет. Сервера нет — восстанавливать некому;
+       · пока система открыта в этой вкладке, слова лежат в памяти
+         расшифрованными. Замок бережёт ПОКОЙ, а не работающий сеанс: тот,
+         кто взял разблокированный телефон из рук, прочтёт всё и так.
+     Обещать больше значило бы повторить ровно ту ошибку, от которой
+     предостерегает раздел входа.
+
+     Охраняется tools/vault-lock-check.mjs.
+     ═══════════════════════════════════════════════════════════════════════ */
+  var LOCK_KEY = "sysbaby.lock.v1";
+  var VAULT_ITER = 150000;
+  /* Ключи, в которых лежат СЛОВА. Список именной: закрывать всё подряд значило
+     бы закрыть и вид системы, а его закрывать нельзя (см. выше). */
+  var PROTECTED = [
+    "sysbaby.notes.v2",
+    "sysbaby.mail.v2",
+    "sysbaby.messenger.v3",
+    "sysbaby.files.v1",
+    "sysbaby.clipboard.history",
+    "sysbaby.capture.recent",
+    "sysbaby.notifications"
+  ];
+
+  var vaultKey = null;          /* CryptoKey текущего сеанса — только в памяти */
+  var vaultOpen = false;
+
+  function vaultAvailable() { return subtleOk(); }
+  function lockRecord() {
+    try { return JSON.parse(lsGet(LOCK_KEY) || "null"); } catch (e) { return null; }
+  }
+  function vaultLocked() { return !!lockRecord(); }
+
+  function b64(buf) {
+    var b = new Uint8Array(buf), s = "", i;
+    for (i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return btoa(s);
+  }
+  function unb64(str) {
+    var s = atob(String(str)), a = new Uint8Array(s.length), i;
+    for (i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
+    return a;
+  }
+
+  function deriveVaultKey(password, saltHex) {
+    var enc = new TextEncoder();
+    return window.crypto.subtle
+      .importKey("raw", enc.encode(String(password)), { name: "PBKDF2" }, false, ["deriveKey"])
+      .then(function (base) {
+        return window.crypto.subtle.deriveKey({
+          name: "PBKDF2", salt: enc.encode(saltHex), iterations: VAULT_ITER, hash: "SHA-256"
+        }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+      });
+  }
+
+  function sealText(key, text) {
+    var iv = new Uint8Array(12);
+    window.crypto.getRandomValues(iv);
+    return window.crypto.subtle
+      .encrypt({ name: "AES-GCM", iv: iv }, key, new TextEncoder().encode(String(text)))
+      .then(function (ct) { return JSON.stringify({ v: 1, iv: b64(iv.buffer), ct: b64(ct) }); });
+  }
+  function openText(key, envelope) {
+    var box;
+    try { box = JSON.parse(envelope); } catch (e) { return Promise.reject(new Error("shape")); }
+    if (!box || box.v !== 1 || !box.iv || !box.ct) return Promise.reject(new Error("shape"));
+    return window.crypto.subtle
+      .decrypt({ name: "AES-GCM", iv: unb64(box.iv) }, key, unb64(box.ct))
+      .then(function (buf) { return new TextDecoder().decode(buf); });
+  }
+
+  window.sbVault = {
+    available: vaultAvailable,
+    isLocked: vaultLocked,
+    isOpen: function () { return vaultOpen; },
+    protectedKeys: function () { return PROTECTED.slice(); },
+
+    /* Повернуть ключ. Слова уходят в конверты, открытые значения стираются из
+       хранилища и из памяти разом: оставить их «на всякий случай» значило бы
+       не запереть ничего. */
+    lock: function (password) {
+      if (!vaultAvailable()) return Promise.reject(new Error("no-subtle"));
+      if (String(password || "").length < 4) return Promise.reject(new Error("short"));
+      if (vaultLocked()) return Promise.reject(new Error("already"));
+      flush();
+      var salt = randomSaltHex();
+      return deriveVaultKey(password, salt).then(function (key) {
+        var jobs = PROTECTED.map(function (k) {
+          var raw = lsGet(nsKey(k));
+          if (raw == null) return Promise.resolve(null);
+          return sealText(key, raw).then(function (env) { return { k: k, env: env }; });
+        });
+        /* Проверочное слово — им и узнаётся верный пароль: пробовать
+           расшифровать сами данные ради проверки значило бы читать их лишний
+           раз и падать на первом же испорченном байте. */
+        return Promise.all(jobs.concat([sealText(key, "sys.baby")])).then(function (res) {
+          var check = res[res.length - 1];
+          for (var i = 0; i < res.length - 1; i++) {
+            var it = res[i];
+            if (!it) continue;
+            lsSet(nsKey(it.k), it.env);
+            cache.delete(it.k);
+          }
+          lsSet(LOCK_KEY, JSON.stringify({
+            v: 1, algo: "AES-GCM", kdf: "PBKDF2-SHA256", iterations: VAULT_ITER, salt: salt, check: check
+          }));
+          vaultKey = key;
+          vaultOpen = true;
+          if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: true });
+          return true;
+        });
+      });
+    },
+
+    /* Открыть на сеанс. Расшифрованное кладётся в ПАМЯТЬ (кэш sbDB), а не
+       обратно в хранилище: иначе первое же открытие отменило бы замок. */
+    unlock: function (password) {
+      var rec = lockRecord();
+      if (!rec) return Promise.resolve(true);
+      if (!vaultAvailable()) return Promise.resolve(false);
+      return deriveVaultKey(password, rec.salt).then(function (key) {
+        return openText(key, rec.check).then(function (word) {
+          if (word !== "sys.baby") return false;
+          var jobs = PROTECTED.map(function (k) {
+            var raw = lsGet(nsKey(k));
+            if (raw == null) return Promise.resolve(null);
+            return openText(key, raw).then(function (txt) { return { k: k, txt: txt }; },
+              function () { return { k: k, txt: null, broken: true }; });
+          });
+          return Promise.all(jobs).then(function (res) {
+            for (var i = 0; i < res.length; i++) {
+              var it = res[i];
+              if (!it || it.txt == null) continue;
+              cache.set(it.k, it.txt);
+            }
+            vaultKey = key;
+            vaultOpen = true;
+            if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: true, open: true });
+            if (typeof window.sbNotesStore === "object" && window.sbNotesStore.notify) {
+              try { window.sbNotesStore.notify(); } catch (e) { /* ignore */ }
+            }
+            return true;
+          });
+        }, function () { return false; });
+      });
+    },
+
+    /* Снять замок совсем: слова возвращаются в хранилище открытыми. Требует
+       пароля — снять замок должен тот, кто его ставил. */
+    remove: function (password) {
+      var rec = lockRecord();
+      if (!rec) return Promise.resolve(true);
+      return window.sbVault.unlock(password).then(function (okp) {
+        if (!okp) return false;
+        for (var i = 0; i < PROTECTED.length; i++) {
+          var k = PROTECTED[i];
+          if (cache.has(k) && cache.get(k) != null) lsSet(nsKey(k), cache.get(k));
+        }
+        lsDel(LOCK_KEY);
+        vaultOpen = false;
+        vaultKey = null;
+        if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: false });
+        return true;
+      });
+    }
+  };
+
+  /* ── ЗАПЕРТОЕ ПИШЕТСЯ ЗАПЕРТЫМ ────────────────────────────────────────────
+     Пока сеанс открыт, слова лежат в памяти расшифрованными — на этом стоит
+     весь синхронный sbDB.get, которым пользуются все приложения. А на диск
+     они обязаны уходить в конверте. Шифрование асинхронно, поэтому запись
+     идёт через очередь: в хранилище всегда лежит последний ГОТОВЫЙ конверт.
+     Цена названа: изменение, сделанное за миллисекунды до закрытия вкладки,
+     может не успеть попасть в конверт и останется незаписанным. Потерять
+     последний символ хуже, чем ничего, — но записать его открытым было бы
+     хуже вдвое, а это и есть выбор между двумя бедами. */
+  var sealQueue = Promise.resolve();
+  function persistSealed(key) {
+    if (!vaultOpen || !vaultKey) return;
+    var val = cache.has(key) ? cache.get(key) : null;
+    sealQueue = sealQueue.then(function () {
+      if (val == null) { lsDel(nsKey(key)); return null; }
+      return sealText(vaultKey, val).then(function (env) { lsSet(nsKey(key), env); });
+    }).catch(function (e) { if (window.console) console.error("[vault] seal failed", e); });
+  }
+  window.sbVaultSettled = function () { return sealQueue; };
 
   /* ═══════════════════════════════════════════════════════════════════════
      РАЗОВАЯ УБОРКА ЗАВОДСКИХ ПРИМЕРОВ · решение D-147

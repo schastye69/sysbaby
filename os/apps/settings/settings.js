@@ -213,7 +213,9 @@
         esc(t("set.appearance.moodSub")),
         '<span class="st-chips">' + (moodChips || '<span class="st-muted">' + esc(t("set.appearance.moodNone")) + "</span>") + "</span>") +
       rowMarkup(esc(t("set.appearance.brightness")), esc(t("set.appearance.brightnessSub")),
-        '<input type="range" class="st-range" id="stBrightness" min="0" max="100" value="' + brightness + '" aria-label="' + esc(t("set.appearance.brightness")) + '">') +
+        /* Ползунок собственной постройки (D-162): здесь только место под него,
+           узлы строит sbSlider при разводке — родного поля в системе больше нет. */
+        '<span class="st-range-host" id="stBrightness" data-range="brightness" data-value="' + brightness + '"></span>') +
       /* Сторона кнопок окон (D-153): основатель просил переключатель в панели
          управления, а паритет требует, чтобы всё, что умеет панель, умел и
          Pulse. Один и тот же выбор, две двери — но знание одно, на документе. */
@@ -222,6 +224,15 @@
           '<button type="button" class="st-seg' + (controlSide() === "left" ? " active" : "") + '" data-side="left">' + esc(t("cc.controls.left")) + "</button>" +
           '<button type="button" class="st-seg' + (controlSide() === "right" ? " active" : "") + '" data-side="right">' + esc(t("cc.controls.right")) + "</button>" +
         "</span>") +
+      /* Полный экран (D-163): та же дверь, что и в быстрой панели. Кнопка
+         рисуется только там, где полный экран вообще существует. */
+      (typeof window.sbFullscreenSupported === "function" && window.sbFullscreenSupported()
+        ? rowMarkup(esc(t("set.appearance.fullscreen")), esc(t("set.appearance.fullscreenSub")),
+            '<button type="button" class="st-btn" id="stFullscreen" aria-pressed="' +
+            (window.sbIsFullscreen && window.sbIsFullscreen() ? "true" : "false") + '">' +
+            esc(window.sbIsFullscreen && window.sbIsFullscreen() ? t("set.appearance.fullscreenOff") : t("set.appearance.fullscreenOn")) +
+            "</button>")
+        : "") +
       rowMarkup(esc(t("set.appearance.turbo")), esc(t("set.appearance.turboSub")), switchMarkup("motion")) +
       rowMarkup(esc(t("set.appearance.transparency")), esc(t("set.appearance.transparencySub")), switchMarkup("transparency"));
   }
@@ -233,7 +244,7 @@
     return '<h2 class="st-title">' + esc(t("set.tab.sound")) + "</h2>" +
       rowMarkup(esc(t("set.sound.system")), esc(t("set.sound.systemSub")), switchMarkup("sound")) +
       rowMarkup(esc(t("set.sound.volume")), esc(t("set.sound.volumeSub")),
-        '<input type="range" class="st-range" id="stVolume" min="0" max="100" value="' + volume + '" aria-label="' + esc(t("set.sound.volume")) + '">') +
+        '<span class="st-range-host" id="stVolume" data-range="volume" data-value="' + volume + '"></span>') +
       rowMarkup(esc(t("set.sound.dnd")), esc(t("set.sound.dndSub")), switchMarkup("dnd"));
   }
 
@@ -478,7 +489,7 @@
    * source of that very event), and repaints collapse to one per frame. */
   var SECTION_KINDS = {
     general: { lang: 1 },
-    appearance: { theme: 1, mood: 1, brightness: 1, toggle: 1, side: 1 },
+    appearance: { theme: 1, mood: 1, brightness: 1, toggle: 1, side: 1, fullscreen: 1 },
     sound: { toggle: 1, volume: 1 },
     desktop: { toggle: 1 },
     privacy: {},
@@ -563,6 +574,29 @@
         try { window.setTheme(btn.getAttribute("data-theme")); }
         catch (err) { console.error("[settings] setTheme failed", err); }
         render(win);
+      });
+    });
+
+    /* Ползунки Pulse — те же наши узлы (D-162). Строятся при каждой разводке,
+       потому что раздел перерисовывается целиком. */
+    var fsBtn = host.querySelector("#stFullscreen");
+    if (fsBtn) {
+      fsBtn.addEventListener("click", function () {
+        if (typeof window.sbToggleFullscreen === "function") window.sbToggleFullscreen();
+      });
+    }
+
+    host.querySelectorAll("[data-range]").forEach(function (slot) {
+      if (typeof window.sbSlider !== "function" || slot.firstChild) return;
+      var kind = slot.getAttribute("data-range");
+      var start = parseInt(slot.getAttribute("data-value"), 10) || 0;
+      window.sbSlider(slot, {
+        min: 0, max: 100, value: start,
+        label: kind === "volume" ? t("set.sound.volume") : t("set.appearance.brightness"),
+        onInput: function (v) {
+          if (kind === "volume") { if (window.sbSetNotifVolume) window.sbSetNotifVolume(v / 100); }
+          else if (window.sbSetBrightness) window.sbSetBrightness(v);
+        }
       });
     });
 

@@ -370,6 +370,42 @@ html.sb-incognito .wp-layer {
    coloured lights screened over the plasma, so choosing one changes the room's
    colour and not just a number in a palette. It never animates, so it costs
    nothing to keep on screen. */
+/* ── ЭКРАН ЗАМКА (D-161) ──────────────────────────────────────────────────
+   Он стоит поверх всего и до занавеса. Ничего лишнего: знак, одна строка о
+   том, что заперто, поле и кнопка. Комната за ним уже своя — обои не
+   прячутся, — поэтому фон честно тёмный: человек должен узнать свою систему
+   ещё до того, как назовёт пароль. */
+/* Пояснение и предупреждение в блоке замка (D-161): цена названа рядом с
+   кнопкой, а не в справке, — читать её будут только здесь. */
+.cc-note { font-size: 12px; line-height: 1.45; color: var(--ink-2); margin: 2px 0 0; }
+.cc-warn { font-size: 12px; line-height: 1.45; color: #ffb4a6; margin: 4px 0 8px; }
+
+#sbVaultGate {
+  position: fixed; inset: 0; z-index: 900;
+  display: grid; place-items: center; padding: 24px;
+  background: rgba(6, 7, 10, .92);
+  backdrop-filter: blur(calc(var(--glass-blur) * 1.2));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.2));
+}
+.vg-box {
+  width: min(360px, 100%); display: flex; flex-direction: column; gap: 12px;
+  text-align: center;
+}
+.vg-mark {
+  width: 34px; height: 34px; margin: 0 auto 4px; border-radius: var(--r-card);
+  background: linear-gradient(140deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 var(--lit-blur, 12px) var(--lit-glow, transparent);
+}
+.vg-title { font-size: 19px; font-weight: 700; letter-spacing: -.01em; margin: 0; }
+.vg-sub { font-size: 13px; line-height: 1.5; color: var(--ink-2); margin: 0; }
+#sbVaultPass {
+  width: 100%; height: 44px; padding: 0 14px;
+  border-radius: var(--r-ctrl); border: 1px solid var(--line);
+  background: var(--glass); color: var(--ink); font: inherit; font-size: 15px;
+}
+#sbVaultPass:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.vg-err { font-size: 12.5px; color: #ff8a8a; margin: 0; }
+
 #sbMoodTint {
   mix-blend-mode: screen; opacity: .55;
   /* ── ЗДЕСЬ СТОЯЛ ПЕРЕХОД, И ОН НЕ РАБОТАЛ (D-158) ──────────────────────
@@ -979,72 +1015,48 @@ html[data-motion="reduced"] .pw-on { transition: none; }
 }
 .cc-toggle.on { background: var(--accent-soft); border-color: var(--accent-ring); color: var(--ink); }
 .cc-slider, .cc-select { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--ink-2); }
-/* ═══════════════ ПОЛЗУНОК — ЭТО СВЕТ, КОТОРЫЙ ПРИБАВЛЯЮТ (D-156) ═════════
-   ПОВОД, дословно от основателя 26.08.2026, со снимком панели: «ползунки
-   volume и brightness как-будто с другой вселенной. они должны быть
-   красивыми, концептуальными, уникальными и интеллектуальными».
-   ОН ПРАВ БУКВАЛЬНО: здесь стояло только accent-color, то есть ползунки были
-   РОДНЫМИ ПОЛЗУНКАМИ БРАУЗЕРА — чужая деталь Android посреди нашего стекла.
-   ЧТО СДЕЛАНО И ПОЧЕМУ ИМЕННО ТАК. Громкость и яркость — это «сколько
-   света», и рисуются они тем же светом, что и часы: пройденная часть несёт
-   шов комнаты и светится теми же --lit-glow / --lit-blur, которыми светятся
-   цифры. Ручка — не шарик, а ПАЛОЧКА: тот самый штрих, из которого сложены
-   цифры часов и буква y в знаке. Так ползунок оказывается членом одной семьи
-   с часами, а не гостем из чужой системы.
-   Заполнение считается переменной --fill: у WebKit нет ::progress, и без неё
-   пройденную часть пришлось бы рисовать вторым элементом. Ставит её один
-   слушатель на весь документ (shell.js) — значит и будущие ползунки получат
-   её сами, без единой правки. */
-.cc-slider input[type="range"],
-input.st-range[type="range"] {
-  -webkit-appearance: none; appearance: none;
-  width: 100%; height: 34px; background: transparent; cursor: pointer;
-  --fill: 50%;
+/* ═══════════════ ПОЛЗУНОК — ЭТО СВЕТ, КОТОРЫЙ ПРИБАВЛЯЮТ (D-156, D-162) ═══
+   Основатель: «ползунки volume и brightness как-будто с другой вселенной» —
+   а затем, увидев следующую сборку: «абсолютно не нравятся эти синие ползунки
+   и ещё больше не нравится, что они не меняют цвет».
+   ОН БЫЛ ПРАВ ОБА РАЗА, И ВТОРОЙ РАЗ — ПРО НАШУ НЕДОДЕЛКУ. В D-156 удалось
+   одеть дорожку, но не ручку: снимок полосы показал 178 синих точек — родной
+   кружок браузера рисовался поверх. Правило для ::-webkit-slider-thumb до
+   него не доходило, а спорить с чужим псевдоэлементом нельзя: у него нет ни
+   коробки, ни цвета, которые можно спросить.
+   Поэтому родного поля здесь больше нет вовсе. Ползунок собран из наших узлов
+   (см. sbSlider в os/core/shell.js): дорожка, заполнение, палочка. Цвет берётся
+   оттуда же, откуда его берут часы, — и меняется вместе с комнатой по
+   ПОСТРОЕНИЮ, а не по правилу, которое браузер может не применить.
+   Палочка — тот же штрих, что у цифр часов; под пальцем она не толстеет, а
+   вытягивается: толщина у штриха постоянная, она и делает его штрихом. */
+/* Место под ползунок: и в панели, и в Настройках он занимает свою строку. */
+.cc-slider-host, .st-range-host { display: block; width: 100%; }
+.sb-range {
+  position: relative; display: block; width: 100%; height: 34px;
+  cursor: pointer; touch-action: none; outline: none;
 }
-.cc-slider input[type="range"]::-webkit-slider-runnable-track,
-input.st-range[type="range"]::-webkit-slider-runnable-track {
-  height: 3px; border-radius: var(--r-pill);
-  background:
-    linear-gradient(90deg, var(--accent-2), var(--accent)) 0 / var(--fill) 100% no-repeat,
-    rgba(255, 255, 255, .10);
+.sb-range-track {
+  position: absolute; left: 0; right: 0; top: 50%; height: 3px;
+  transform: translateY(-50%);
+  border-radius: var(--r-pill); background: rgba(255, 255, 255, .10);
+  overflow: hidden; display: block;
 }
-.cc-slider input[type="range"]::-moz-range-track,
-input.st-range[type="range"]::-moz-range-track {
-  height: 3px; border-radius: var(--r-pill); background: rgba(255, 255, 255, .10);
-}
-.cc-slider input[type="range"]::-moz-range-progress,
-input.st-range[type="range"]::-moz-range-progress {
-  height: 3px; border-radius: var(--r-pill);
+.sb-range-fill {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 50%;
+  border-radius: var(--r-pill);
   background: linear-gradient(90deg, var(--accent-2), var(--accent));
 }
-/* Палочка. Ширина в три точки — тот же штрих, что у цифр; высота двадцать —
-   чтобы её было видно и чтобы палец знал, за что берётся.
-   СКРУГЛЕНИЕ — --r-pill, а не число: у трёхточечного штриха «шесть точек»
-   со шкалы дали бы кляксу, а таблетка в этой шкале и объявлена ФОРМОЙ —
-   полностью круглые торцы. Так штрих остаётся на шкале, а не рядом с ней.
-.cc-slider input[type="range"]::-webkit-slider-thumb,
-input.st-range[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; appearance: none;
-  width: 3px; height: 20px; border-radius: var(--r-pill); border: 0;
-  background: var(--lit-ink, var(--ink));
-  margin-top: -8.5px;
+.sb-range-stick {
+  position: absolute; top: 50%; left: 50%; width: 3px; height: 20px;
+  transform: translate(-50%, -50%);
+  border-radius: var(--r-pill); background: var(--lit-ink, var(--ink));
   filter: drop-shadow(0 0 var(--lit-blur, 0px) var(--lit-glow, transparent));
-  transition: height var(--t-touch) var(--ease), background var(--t-touch) ease;
+  transition: height var(--t-touch) var(--ease);
 }
-.cc-slider input[type="range"]::-moz-range-thumb,
-input.st-range[type="range"]::-moz-range-thumb {
-  width: 3px; height: 20px; border-radius: var(--r-pill); border: 0;
-  background: var(--lit-ink, var(--ink));
-  filter: drop-shadow(0 0 var(--lit-blur, 0px) var(--lit-glow, transparent));
-}
-/* Под пальцем палочка не толстеет, а ВЫТЯГИВАЕТСЯ — как загорающийся сегмент.
-   Толщина у этого штриха постоянная: она и делает его штрихом. */
-.cc-slider input[type="range"]:active::-webkit-slider-thumb,
-input.st-range[type="range"]:active::-webkit-slider-thumb { height: 26px; margin-top: -11.5px; }
-.cc-slider input[type="range"]:focus-visible::-webkit-slider-thumb,
-input.st-range[type="range"]:focus-visible::-webkit-slider-thumb { background: var(--accent); height: 26px; margin-top: -11.5px; }
-html[data-motion="reduced"] .cc-slider input[type="range"]::-webkit-slider-thumb,
-html[data-motion="reduced"] input.st-range[type="range"]::-webkit-slider-thumb { transition: none; }
+.sb-range.held .sb-range-stick, .sb-range:focus-visible .sb-range-stick { height: 26px; }
+.sb-range:focus-visible .sb-range-stick { background: var(--accent); }
+html[data-motion="reduced"] .sb-range-stick { transition: none; }
 .cc-select select { padding: 8px 10px; border-radius: var(--r-ctrl); background: rgba(255, 255, 255, .04); border: 1px solid var(--line); }
 .cc-block { display: flex; flex-direction: column; gap: 7px; }
 .cc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
