@@ -490,42 +490,51 @@ html.sb-incognito .wp-layer {
   opacity: 0;
   transition: opacity var(--t-scene) ease;
 }
+/* ── ДИАФРАГМА ЕСТЬ ДИСК С ОТВЕРСТИЕМ, А НЕ ШЕСТЬ ОСТРИЁВ · D-190 ──────────
+   Первая редакция рисовала шесть лепестков-секторов, повёрнутых вокруг
+   центра. Закон мерил УГОЛ поворота и был зелен; человек увидел
+   ШЕСТИКОНЕЧНУЮ ЗВЕЗДУ — силуэт, о котором прибор не спрашивал вовсе и
+   которого Совет не имел в виду.
+   Теперь построение другое и звезды в нём быть не может: сплошной диск, в
+   котором маской вырезано шестиугольное ОТВЕРСТИЕ. Закрытие — сжатие
+   отверстия, то есть буквально «сколько света пройдёт». Швы лежат ПОД диском
+   и видны ровно настолько, насколько отверстие открылось. */
+.vg-iris .vgi-disc { fill: rgba(255, 255, 255, .05); }
+.vg-iris .vgi-hole {
+  transform-box: view-box; transform-origin: 100px 100px;
+  transform: scale(var(--vg-open, .08));
+  transition: transform var(--t-rise) cubic-bezier(.16, 1, .3, 1);
+}
+.vg-iris .vgi-seams line { stroke: rgba(var(--accent-rgb), .35); stroke-width: 1; }
+.vg-claim {
+  margin: 2px 0 4px; font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
+  color: var(--ink-2); letter-spacing: .01em;
+}
 .vg-iris .vgi-rim {
   fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: .5;
   transition: stroke var(--t-move) ease, opacity var(--t-move) ease;
 }
-.vg-iris .vgi-blades {
-  transform-box: view-box; transform-origin: 100px 100px;
-  transform: rotate(var(--vg-turn, 0deg));
-}
-.vg-iris .vgi-blade {
-  fill: rgba(255, 255, 255, .045);
-  stroke: rgba(var(--accent-rgb), .5);
-  stroke-width: .8;
-  transform-box: view-box; transform-origin: 100px 100px;
-  transform: rotate(var(--vg-close, 27deg));
-  transition: transform var(--t-rise) cubic-bezier(.16, 1, .3, 1), fill var(--t-scene) ease, stroke var(--t-scene) ease;
-}
 /* Ключ поворачивается — и это видно. Оборот медленный: он показывает работу,
    а не торопит. */
-#sbVaultGate.vg-work .vgi-blades { animation: vgTurn 3.6s linear infinite; }
-#sbVaultGate.vg-work .vgi-blade { fill: rgba(var(--accent-rgb), .1); }
+#sbVaultGate.vg-work .vgi-seams { animation: vgTurn 3.6s linear infinite; transform-box: view-box; transform-origin: 100px 100px; }
+#sbVaultGate.vg-work .vgi-disc { fill: rgba(var(--accent-rgb), .09); }
 #sbVaultGate.vg-work .vgi-rim { opacity: .85; }
 #sbVaultGate.vg-work .vgi-glow { opacity: .1; }
 @keyframes vgTurn { to { transform: rotate(360deg); } }
 /* Верный пароль: лепестки расходятся, свет проступает. */
-#sbVaultGate.vg-open .vgi-blade { --vg-close: -34deg; fill: rgba(255, 255, 255, .02); stroke: rgba(var(--accent-rgb), .16); }
+#sbVaultGate.vg-open .vgi-hole { --vg-open: 1; }
+#sbVaultGate.vg-open .vgi-disc { fill: rgba(255, 255, 255, .02); }
 #sbVaultGate.vg-open .vgi-glow { opacity: .5; }
 #sbVaultGate.vg-open .vgi-rim { opacity: .18; }
 /* Неверный: сжимается на волос и один раз холодеет. */
-#sbVaultGate.vg-wrong .vgi-blade { --vg-close: 33deg; }
+#sbVaultGate.vg-wrong .vgi-hole { --vg-open: .03; }
 #sbVaultGate.vg-wrong .vgi-rim { animation: vgCold var(--t-scene) ease; }
 @keyframes vgCold { 50% { stroke: #8fb6ff; opacity: 1; } }
 /* Турбо и снятое движение своё возьмут сами: html.sb-turbo * уже снимает и
    длительности переходов, и анимации (см. раздел Турбо). Повторять это здесь
    значило бы завести второе знание об одном правиле — и, как показала доска,
    ещё и голую длительность мимо шкалы. */
-html[data-motion="reduced"] #sbVaultGate.vg-work .vgi-blades { animation: none; }
+html[data-motion="reduced"] #sbVaultGate.vg-work .vgi-seams { animation: none; }
 .vg-title { font-size: 19px; font-weight: 700; letter-spacing: -.01em; margin: 0; }
 .vg-sub { font-size: 13px; line-height: 1.5; color: var(--ink-2); margin: 0; }
 #sbVaultPass {
@@ -977,7 +986,16 @@ html[data-motion="reduced"] .tb-mark { transition: none; }
 html[data-motion="reduced"] .sb-lock { animation: none }
 .mark-word { color: var(--ink); white-space: nowrap; }
 
-.tb-identity { display: inline-flex; align-items: baseline; gap: 1px; padding: 5px 9px; border-radius: var(--r-pill); font-size: 13px; }
+/* ── ЗНАК СТОИТ НА ОДНОЙ ЛИНИИ С СОСЕДЯМИ · решение D-189 ──────────────────
+   Основатель, со снимком: «иконка аккаунта и шифрования должна быть по
+   вертикали на том же уровне, что и иконки-соседи».
+   Здесь стояло align-items: baseline. Пока внутри кнопки жил ОДИН ТЕКСТ, это
+   было верно: базовая линия имени совпадала с базовой линией соседних
+   надписей. С D-181 внутрь встал ЗНАК — а у рисунка базовой линии нет, и
+   браузер кладёт его на линию текста нижним краем. Знак всплывал вверх ровно
+   на разницу между низом строки и её серединой.
+   Кнопка с картинкой выравнивается по СЕРЕДИНЕ, как все прочие кнопки полосы. */
+.tb-identity { display: inline-flex; align-items: center; gap: 1px; padding: 5px 9px; border-radius: var(--r-pill); font-size: 13px; }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал. Повод — снимок основателя
