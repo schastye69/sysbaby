@@ -2775,6 +2775,10 @@ button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset:
 .note-due svg { width: 11px; height: 11px; flex: none; }
 .note-due.now { color: var(--ink); border-color: var(--accent-ring); background: var(--accent-soft); }
 .note-due.late { color: #ff9b8f; border-color: rgba(255, 69, 58, .42); background: rgba(255, 69, 58, .12); }
+/* Последний час до названной минуты и сама минута. Цифры не прыгают:
+   метка считает минуты, и ширина не должна дышать вместе со счётом. */
+.note-due.soon { color: var(--ink); border-color: var(--accent-ring); background: var(--accent-soft); font-variant-numeric: tabular-nums; }
+.note-due.strike { color: var(--ink); border-color: var(--accent-ring); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent-ring) inset; }
 .sticky-note.is-due { border-color: rgba(var(--accent-rgb), .48); }
 .sticky-note.is-late { border-color: rgba(255, 69, 58, .40); }
 

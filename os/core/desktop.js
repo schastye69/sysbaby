@@ -525,6 +525,94 @@
     return tr("note.due.on", { date: d.getDate() + "." + String(d.getMonth() + 1).padStart(2, "0") });
   }
 
+  /* ─────────────────────── ЧАС ЧИТАЕТСЯ В ТЕХ ЖЕ СЛОВАХ (v93) ──────────
+     ПОВОД, дословно от основателя 29.08.2026: «если пользователь пишет
+     время формата 24:00 в заметках и только на рабочем столе и расширь и
+     сделай максимально гениально и концептуально».
+
+     ЭТО ПРОДОЛЖЕНИЕ ОДНОЙ МЫСЛИ, А НЕ НОВАЯ ФУНКЦИЯ. Срок в этой системе
+     не заводят полем, его ЧИТАЮТ в написанном (D-111, D-158). День уже
+     читается. Час — то же самое, только точнее: «19:30 позвонить» человек
+     пишет и так, когда пишет о деле.
+
+     И ГЛАВНОЕ — 24:00. Основатель назвал именно этот формат, и он не
+     случайный: по ISO 8601 «24:00» существует и означает НЕ то же, что
+     «00:00». 00:00 — начало суток. 24:00 — их КОНЕЦ. Один и тот же миг,
+     разный смысл: «сдать к 24:00» значит «до конца сегодня», а «встреча в
+     00:00» значит «в полночь, которая открывает завтра». Почти ни одна
+     система этого не различает. Эта — различает, и говорит вслух, что
+     поняла: метка показывает «до конца сегодня», а не «сегодня 24:00».
+
+     ГРАНИЦЫ, И ОНИ ЗДЕСЬ ГЛАВНОЕ:
+       · Минуты обязаны быть ДВУЗНАЧНЫМИ. Так «19:30» — час, а «3:2» — счёт
+         матча, «4:3» — соотношение сторон. Одно правило снимает почти все
+         ложные срабатывания.
+       · Часы 0–24, минуты 00–59. «24:30» не существует и отвергается.
+       · Голый час без дня: если названная минута в день записи уже прошла,
+         человек говорил про завтра. Догадка ОБЪЯВЛЯЕТСЯ меткой — молча
+         угаданный срок хуже отсутствующего.
+       · Час НЕ ЗВЕНИТ. Система не будит, не шлёт уведомлений и не просит
+         разрешений. Последний час метка считает минуты, в названную минуту
+         говорит «сейчас», потом — «просрочено». Приближение вместо звонка.
+       · Только на рабочем столе: в окне приложения «Заметки» этого нет.
+       · Заметка НЕ ДВИГАЕТСЯ (D-098, D-109): меняется вид, а не место.
+
+     Охраняется tools/note-hour-check.mjs. */
+
+  var MIN = 60000, HOUR = 3600000;
+
+  /* Первый настоящий час в тексте. Чистая функция — ни часов машины, ни
+     хранилища; закон может прогнать любую строку. */
+  window.sbNoteHour = function (text) {
+    var src = String(text == null ? "" : text);
+    var re = /(^|[^\d.,:])([01]?\d|2[0-4]):([0-5]\d)(?![\d.,:])/g;
+    var m;
+    while ((m = re.exec(src))) {
+      var h = parseInt(m[2], 10), mi = parseInt(m[3], 10);
+      if (h === 24 && mi !== 0) continue;   /* 24:30 не существует */
+      return { h: h, m: mi, endOfDay: h === 24, raw: m[2] + ":" + m[3] };
+    }
+    return null;
+  };
+
+  /* День (sbNoteDue) плюс час (sbNoteHour) — названный МИГ. */
+  window.sbNoteMoment = function (text, writtenAt, nowAt) {
+    var hour = window.sbNoteHour(text);
+    if (!hour) return null;
+    var wrote = typeof writtenAt === "number" ? writtenAt : Date.now();
+    var now = typeof nowAt === "number" ? nowAt : Date.now();
+    var due = window.sbNoteDue(text, wrote, now);
+    var base = due ? due.at : startOfDay(wrote);
+    var said = due ? due.said : "bare";
+    var at = hour.endOfDay ? base + DAY - 1 : base + hour.h * HOUR + hour.m * MIN;
+    if (!due && at < wrote) { at += DAY; base += DAY; said = "next"; }
+    var left = at - now;
+    return {
+      at: at, h: hour.h, m: hour.m, endOfDay: hour.endOfDay, said: said,
+      dayOffset: Math.round((base - startOfDay(now)) / DAY),
+      late: left < 0,
+      strike: left >= 0 && left < MIN,
+      soonMin: (left >= MIN && left < HOUR) ? Math.floor(left / MIN) : null
+    };
+  };
+
+  window.sbNoteMomentLabel = function (mo) { return momentLabel(mo); };
+
+  function two(n) { return (n < 10 ? "0" : "") + n; }
+
+  function momentLabel(mo) {
+    if (!mo) return "";
+    if (mo.late) return tr("note.due.late");
+    if (mo.strike) return tr("note.due.rightNow");
+    if (mo.soonMin !== null) return tr("note.due.inMin", { n: mo.soonMin });
+    var d = new Date(mo.at);
+    var day = mo.dayOffset === 0 ? tr("note.due.today")
+            : mo.dayOffset === 1 ? tr("note.due.tomorrow")
+            : (d.getDate() + "." + two(d.getMonth() + 1));
+    if (mo.endOfDay) return tr("note.due.endOf", { day: day });
+    return day + " " + two(mo.h) + ":" + two(mo.m);
+  }
+
   function appMentionChips(text) {
     var reg = (window.SysBaby && window.SysBaby.apps) || {};
     var low = String(text || "").toLowerCase();
@@ -981,12 +1069,18 @@
        приложений: и то и другое — то, что система ВЫЧИТАЛА в заметке, а не
        завела отдельно. */
     var due = window.sbNoteDue(text, rec && rec.updatedAt);
-    el.classList.toggle("is-due", !!due && due.today);
-    el.classList.toggle("is-late", !!due && due.late);
-    var dueMark = due
-      ? '<span class="note-due' + (due.late ? " late" : (due.today ? " now" : "")) + '">' +
+    var mo = window.sbNoteMoment(text, rec && rec.updatedAt);
+    el.classList.toggle("is-due", mo ? (mo.dayOffset === 0 && !mo.late) : (!!due && due.today));
+    el.classList.toggle("is-late", mo ? mo.late : (!!due && due.late));
+    /* Час живёт: тик ниже пересчитывает метку по этим двум полям. */
+    el._sbChipText = text; el._sbChipRec = rec;
+    var state = mo
+      ? (mo.late ? " late" : (mo.strike ? " strike" : (mo.soonMin !== null ? " soon" : (mo.dayOffset === 0 ? " now" : ""))))
+      : (due ? (due.late ? " late" : (due.today ? " now" : "")) : "");
+    var dueMark = (mo || due)
+      ? '<span class="note-due' + state + '">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12.5" r="7.5"/><path d="M12 8.5v4.2l2.6 1.6"/></svg>' +
-        esc(dueLabel(due)) + "</span>"
+        esc(mo ? momentLabel(mo) : dueLabel(due)) + "</span>"
       : "";
     host.innerHTML = dueMark + appMentionChips(text);
     $$(".note-chip", host).forEach(function (b) {
@@ -996,6 +1090,17 @@
       });
     });
   }
+
+  /* ЧАС ПРИБЛИЖАЕТСЯ САМ. Полминуты — шаг, при котором «через 12 мин»
+     не врёт больше чем на полминуты, а стол не пересчитывается зря:
+     трогаются только те заметки, в которых час вообще написан. */
+  setInterval(function () {
+    $$(".sticky-note").forEach(function (el) {
+      if (el._sbChipText == null) return;
+      if (!window.sbNoteHour(el._sbChipText)) return;
+      paintChips(el, el._sbChipText, el._sbChipRec);
+    });
+  }, 30000);
 
   /* РАЗМЕР ЗАМЕТКИ ИДЁТ ЗА ТЕКСТОМ С ПЕРВОГО СЛОВА (v47).
    *
