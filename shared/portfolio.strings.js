@@ -149,6 +149,9 @@
       var viaShell = window.sbT(key);
       if (viaShell && viaShell !== key) return viaShell;
     }
+    /* ОТКАТ: перевода на этот язык нет — честно падаем на английский.
+     Это объявленный договор перевода, а не подмена: неполный язык
+     система показывает человеку отдельной меткой в полосе языков. */
     var L = window.sbPortfolioStrings[lang] || window.sbPortfolioStrings.en;
     return (L && L[key]) || window.sbPortfolioStrings.en[key] || key;
   };

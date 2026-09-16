@@ -1,0 +1,79 @@
+/* Ключи — пароль, которого нигде нет (D-209).
+   Вид подчинён одному: человек открывает это на бегу, между делом, и должен
+   за секунду найти место и забрать пароль. Никакого декора между глазом и
+   кнопкой «копировать». */
+.ky-wrap { padding: 4px 2px 18px; display: flex; flex-direction: column; gap: 12px; }
+.ky-head { padding: 2px 2px 2px; }
+.ky-title { margin: 0 0 6px; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+.ky-lead { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
+.ky-need {
+  margin: 10px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--ink);
+  padding: 10px 12px; border-radius: var(--r-ctrl);
+  background: var(--accent-soft); border: 1px solid var(--accent-ring);
+}
+
+.ky-bar { display: flex; gap: 8px; align-items: center; }
+.ky-search {
+  flex: 1 1 auto; min-width: 0; font: inherit; font-size: 14px;
+  padding: 9px 12px; color: var(--ink);
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); border-radius: var(--r-ctrl);
+}
+.ky-add, .ky-save, .ky-cancel {
+  font: inherit; font-size: 13px; padding: 9px 14px; cursor: pointer; white-space: nowrap;
+  color: var(--ink); background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--line); border-radius: var(--r-ctrl);
+}
+.ky-add, .ky-save { background: var(--accent-soft); border-color: var(--accent-ring); }
+
+.ky-form { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-card); }
+.ky-form input[type="text"], .ky-form input[type="password"] {
+  font: inherit; font-size: 14px; padding: 9px 12px; color: var(--ink);
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); border-radius: var(--r-ctrl);
+}
+.ky-mode { font-size: 13px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
+.ky-form-acts { display: flex; gap: 8px; margin-top: 4px; }
+
+.ky-list { display: flex; flex-direction: column; gap: 10px; }
+.ky-row { padding: 13px 14px; border-radius: var(--r-card); background: rgba(255, 255, 255, .028); border: 1px solid var(--line); }
+.ky-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.ky-place { margin: 0; font-size: 16px; font-weight: 650; color: var(--ink); overflow-wrap: anywhere; }
+.ky-kind { font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.ky-kind.derived { color: var(--accent); }
+.ky-login { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-2); overflow-wrap: anywhere; }
+/* Пароль показывается ТОЛЬКО через набор моноширинных знаков: так глаз
+   отличает единицу от «эль», а ноль от «о» — в пароле это решает всё. */
+.ky-secret {
+  margin: 8px 0 0; font-family: var(--mono, ui-monospace, monospace); font-size: 15px;
+  letter-spacing: .04em; color: var(--ink-3); overflow-wrap: anywhere; min-height: 1.4em;
+}
+.ky-secret.open { color: var(--ink); }
+.ky-note { margin: 6px 0 0; font-size: 12px; color: var(--ink-3); }
+.ky-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.ky-acts button {
+  font: inherit; font-size: 12px; padding: 6px 11px; cursor: pointer;
+  color: var(--ink-2); background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--line); border-radius: var(--r-ctrl);
+}
+.ky-acts .ky-del { color: #ff9b8f; border-color: rgba(255, 69, 58, .28); }
+@media (hover: hover) {
+  .ky-acts button:hover { border-color: var(--accent-ring); color: var(--ink); }
+}
+.ky-empty { margin: 8px 2px; font-size: 13.5px; color: var(--ink-3); }
+.ky-honest {
+  margin: 6px 0 0; font-size: 12px; line-height: 1.6; color: var(--ink-3);
+  padding: 11px 13px; border-radius: var(--r-ctrl);
+  border: 1px solid var(--line); background: rgba(255, 255, 255, .02);
+}
+.ky-say { margin: 0; font-size: 12.5px; color: var(--accent); min-height: 1.3em; }
+
+/* Цена одной попытки — измеренная, а не обещанная. */
+.ky-cost { padding: 13px 14px; border-radius: var(--r-card); border: 1px solid var(--accent-ring); background: var(--accent-soft); }
+.ky-cost h3 { margin: 0 0 7px; font-size: 14px; font-weight: 650; color: var(--ink); }
+.ky-cost-line { margin: 0; font-size: 13px; line-height: 1.6; color: var(--ink); min-height: 1.5em; }
+.ky-cost-line button {
+  font: inherit; font-size: 12.5px; padding: 7px 13px; cursor: pointer;
+  color: var(--ink); background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--accent-ring); border-radius: var(--r-ctrl);
+}
+.ky-cost-line button[disabled] { opacity: .55; cursor: default; }
+.ky-cost-honest { margin: 9px 0 0; font-size: 12px; line-height: 1.6; color: var(--ink-2); }

@@ -510,6 +510,21 @@ html.sb-incognito .wp-layer {
   margin: 2px 0 4px; font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
   color: var(--ink-2); letter-spacing: .01em;
 }
+/* Второй ключ у двери. Поле стоит рядом со словом и выглядит частью замка,
+   а не дополнением: без файла ключ не выводится вовсе. */
+.vg-key {
+  display: flex; flex-direction: column; gap: 6px; width: 100%;
+  font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+}
+.vg-key input[type="file"] {
+  font: inherit; font-size: 12.5px; text-transform: none; letter-spacing: 0;
+  color: var(--ink-2); padding: 9px 10px;
+  background: rgba(255, 255, 255, .03);
+  border: 1px dashed rgba(var(--accent-rgb), .45); border-radius: var(--r-ctrl);
+}
+.vg-keynote {
+  margin: -2px 0 2px; font-size: 11.5px; line-height: 1.6; color: var(--ink-3); max-width: 44ch;
+}
 .vg-iris .vgi-rim {
   fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: .5;
   transition: stroke var(--t-move) ease, opacity var(--t-move) ease;
@@ -2871,4 +2886,66 @@ html[data-motion="reduced"] .echo-catch { animation: none; }
   color: #fff; font-weight: 700;
   background: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
+}
+
+
+/* ── БУДИЛЬНИК (D-198) ────────────────────────────────────────────────────
+   Комната вспыхивает один раз и коротко: это сообщение, а не эффект. Кто
+   выключил движение — видит ровно ту же вспышку без движения. */
+.note-due[data-arm] { cursor: pointer; font: inherit; border: 0; background: none; padding: 0; color: inherit; }
+.note-due .note-bell { width: 12px; height: 12px; margin-left: 3px; vertical-align: -2px; }
+.note-due.armed { color: var(--accent); }
+body.sb-alarm-flash::after {
+  content: ""; position: fixed; inset: 0; z-index: var(--z-veil); pointer-events: none;
+  background: radial-gradient(60% 50% at 50% 42%, rgba(var(--accent-rgb), .30), transparent 70%);
+  animation: sbAlarmFlash 1.4s ease-out both;
+}
+@keyframes sbAlarmFlash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
+.sticky-note.is-ringing { outline: 2px solid var(--accent); outline-offset: 3px; z-index: var(--z-float); }
+@media (prefers-reduced-motion: reduce) {
+  body.sb-alarm-flash::after { animation: none; opacity: .5; }
+}
+
+
+/* ── ПОЛЕ КОНВЕРТОВ ЗА ДВЕРЬЮ (D-216) ────────────────────────────────────
+   Не витрина и не заставка. Человек стоит снаружи своего хранилища и видит
+   ровно то, что видно снаружи: конверты лежат, их столько-то, и ни один из
+   них отсюда не читается. Поле нарочно тёмное — оно фон, а не сообщение;
+   пока считается ключ, оно оживает, потому что в этот миг работает машина. */
+#sbVaultGate .vg-field {
+  position: absolute; inset: 0; z-index: var(--z-under);
+  width: 100%; height: 100%; display: block;
+  opacity: .20; filter: blur(.3px);
+  transition: opacity var(--t-rise) ease, filter var(--t-rise) ease;
+  pointer-events: none;
+}
+/* Машина считает ключ — поле светлеет и дышит быстрее. Ровно столько, сколько
+   длится настоящая работа, и ни секундой дольше. */
+#sbVaultGate.vg-work .vg-field { opacity: .40; filter: blur(0); }
+#sbVaultGate.vg-open .vg-field { opacity: 0; }
+.vg-cost, .vg-sealed {
+  margin: 4px 0 0; font-family: var(--mono); font-size: 11px; line-height: 1.7;
+  color: var(--ink-3); letter-spacing: .01em; max-width: 46ch;
+}
+.vg-cost { color: var(--ink-2); }
+
+/* ── ПЕЧАТЬ НА ЗАМЕТКЕ (D-219) ────────────────────────────────────────────
+   Проступает на полторы секунды в миг, когда слова ушли в конверт, и гаснет.
+   Рисунок — лицо настоящего конверта; он другой каждый раз, потому что байты
+   другие каждый раз. */
+.note-seal {
+  position: absolute; right: 6px; bottom: 6px; width: 16px; height: 16px;
+  color: hsl(var(--h), 70%, 68%); opacity: 0; pointer-events: none;
+  animation: noteSeal 1.5s ease-out both;
+}
+.note-seal svg { display: block; width: 100%; height: 100%; }
+.note-seal path { fill: currentColor; }
+@keyframes noteSeal {
+  0%   { opacity: 0; transform: scale(.4) rotate(-18deg); }
+  18%  { opacity: 1; transform: scale(1.12) rotate(0deg); }
+  62%  { opacity: .9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .note-seal { animation: none; opacity: .85; }
 }

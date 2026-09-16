@@ -1,0 +1,74 @@
+/* Передать — запечатанная передача по ссылке (D-222).
+   Вид подчинён одному: человек должен за секунду понять, что он отправляет
+   тайну, и за ту же секунду — что ссылка И ЕСТЬ эта тайна. */
+
+.hf-wrap { padding: 4px 2px 18px; display: flex; flex-direction: column; gap: 12px; }
+.hf-head { padding: 2px 2px 0; }
+.hf-title { margin: 0 0 6px; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+.hf-lead { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink-2); max-width: 60ch; }
+
+.hf-in { display: block; }
+.hf-got, .hf-ask, .hf-bad {
+  padding: 14px 15px; border-radius: var(--r-card); border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .03); display: flex; flex-direction: column; gap: 8px;
+}
+.hf-got { border-left: 2px solid var(--accent-ring); }
+.hf-bad { border-left: 2px solid rgba(255, 150, 90, .55); }
+.hf-got h3, .hf-ask h3, .hf-bad h3 {
+  margin: 0; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 650;
+}
+.hf-got-text {
+  margin: 0; font: inherit; font-size: 14.5px; line-height: 1.6; color: var(--ink);
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.hf-ask p, .hf-bad p { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--ink-2); }
+
+.hf-out { display: flex; flex-direction: column; gap: 9px; }
+.hf-lab { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-weight: 650; }
+.hf-text, .hf-word, .hf-sendword {
+  font: inherit; font-size: 14px; padding: 10px 12px; color: var(--ink);
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); border-radius: var(--r-ctrl);
+  resize: vertical;
+}
+.hf-mode { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.hf-act {
+  align-self: flex-start; font: inherit; font-size: 13px; padding: 9px 15px; cursor: pointer;
+  color: var(--ink); background: var(--accent-soft); border: 1px solid var(--accent-ring);
+  border-radius: var(--r-ctrl);
+}
+.hf-act[disabled] { opacity: .5; cursor: default; }
+
+.hf-link {
+  display: flex; flex-direction: column; gap: 8px; padding: 12px 13px;
+  border-radius: var(--r-card); border: 1px dashed var(--accent-ring);
+  background: rgba(255, 255, 255, .02);
+}
+.hf-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; line-height: 1.6;
+  color: var(--ink-2); overflow-wrap: anywhere; max-height: 7.2em; overflow-y: auto;
+}
+.hf-len { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.hf-say:empty { display: none; }
+.hf-say { margin: 0; font-size: 12.5px; color: var(--ink-2); }
+
+.hf-honest {
+  margin: 2px 0 0; font-size: 12.5px; line-height: 1.7; color: var(--ink-2);
+  padding: 13px 15px; border-radius: var(--r-card);
+  border: 1px solid var(--line); border-left: 2px solid var(--accent-ring);
+  background: rgba(255, 255, 255, .018); max-width: 78ch;
+}
+
+/* Взять то, что уже есть в системе: система перестаёт быть набором окон там,
+   где одно окно умеет взять содержимое другого. */
+.hf-pick { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.hf-pick-l { font-size: 12.5px; color: var(--ink-3); }
+.hf-src {
+  font: inherit; font-size: 13px; padding: 7px 10px; color: var(--ink); min-width: 0; flex: 1 1 200px;
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); border-radius: var(--r-ctrl);
+}
+.hf-src[disabled] { opacity: .6; }
+.hf-got-name {
+  margin: 0; font-size: 13px; font-weight: 650; color: var(--ink-2);
+  overflow-wrap: anywhere;
+}

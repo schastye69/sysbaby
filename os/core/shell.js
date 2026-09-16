@@ -200,6 +200,16 @@
     if (key === "motion") return systemReduced();          /* default ON under reduce-motion */
     if (key === "autohide") return !isTouch();
     if (key === "sound") return true;
+    /* ── УМОЛЧАНИЕ ДВЕРИ НАРУЖУ БЕРЁТСЯ У ОПИСИ (D-221) ──────────────────
+       Не у этого файла: опись — единственный источник, и написать умолчание
+       второй раз здесь значило бы завести вторую правду, которая однажды
+       разойдётся с первой и обе будут называться умолчанием. */
+    try {
+      var doors = (window.SB_OUTWARD && window.SB_OUTWARD.doors) || [];
+      for (var i = 0; i < doors.length; i++) {
+        if (doors[i].toggle === key) return doors[i].default !== "off";
+      }
+    } catch (e) { /* ignore */ }
     return false;
   };
   window.sbSetControlToggle = function (key, on) {
@@ -3779,12 +3789,31 @@
   var IRIS_SVG = '<svg viewBox="0 0 200 200" aria-hidden="true"><defs><mask id="vgAperture" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200"><rect x="0" y="0" width="200" height="200" fill="#000"/><circle cx="100" cy="100" r="96" fill="#fff"/><polygon class="vgi-hole" points="188.0,100.0 144.0,176.2 56.0,176.2 12.0,100.0 56.0,23.8 144.0,23.8" fill="#000"/></mask></defs><circle class="vgi-glow" cx="100" cy="100" r="74"/><g mask="url(#vgAperture)"><circle class="vgi-disc" cx="100" cy="100" r="96"/><g class="vgi-seams"><line x1="145.0" y1="126.0" x2="184.0" y2="148.5"/><line x1="100.0" y1="152.0" x2="100.0" y2="197.0"/><line x1="55.0" y1="126.0" x2="16.0" y2="148.5"/><line x1="55.0" y1="74.0" x2="16.0" y2="51.5"/><line x1="100.0" y1="48.0" x2="100.0" y2="3.0"/><line x1="145.0" y1="74.0" x2="184.0" y2="51.5"/></g></g><circle class="vgi-rim" cx="100" cy="100" r="97"/></svg>';
   function runVaultGate(onDone) {
     if (!window.sbVault || !window.sbVault.isLocked() || !window.sbVault.available()) { onDone(); return; }
+    var needsKey = false;
+    try { needsKey = !!(window.sbVault.secondKey && window.sbVault.secondKey().on); } catch (e) { needsKey = false; }
     var gate = doc.createElement("div");
     gate.id = "sbVaultGate";
     gate.setAttribute("role", "dialog");
     gate.setAttribute("aria-modal", "true");
     gate.classList.add("vg-shut");
+    /* ── ЗА ДИАФРАГМОЙ — НАСТОЯЩЕЕ ПОЛЕ КОНВЕРТОВ (D-216) ──────────────────
+       До пароля система не знает о своих записях НИЧЕГО, кроме того, что они
+       лежат и сколько их. Ровно это и рисуется: каждая плитка — настоящий
+       конверт с этого диска, её лицо выведено из его байтов. Ни одного
+       открытого значения здесь нет и быть не может — ключа ещё нет.
+       Поле тёмное и почти неразличимое: это не витрина, а правда о том, где
+       человек стоит. */
+    var sealCount = 0;
+    var fieldHtml = "";
+    try {
+      if (window.sbSeals) {
+        sealCount = window.sbSeals.names().length;
+        if (sealCount) fieldHtml = '<canvas class="vg-field" id="sbVaultField" aria-hidden="true"></canvas>';
+      }
+    } catch (e) { fieldHtml = ""; sealCount = 0; }
+
     gate.innerHTML =
+      fieldHtml +
       '<div class="vg-box">' +
         /* ── ДВЕРЬ — ЭТО ДИАФРАГМА (D-182) ────────────────────────────────
            Тот же прибор, что в полосе размером в шестнадцать точек, здесь во
@@ -3809,10 +3838,37 @@
         '<p class="vg-claim">only you and your encrypted system, baby.<br>nothing can leave us.</p>' +
         '<input type="password" id="sbVaultPass" autocomplete="current-password" ' +
           'aria-label="' + escapeHtml(gateText("lock.ask")) + '" placeholder="' + escapeHtml(gateText("lock.ask")) + '">' +
+        /* ── ВТОРОЙ КЛЮЧ СПРАШИВАЕТСЯ ТАМ ЖЕ, ГДЕ СЛОВО (D-215) ────────────
+           Поле появляется только у замка, который его требует. Что такой
+           замок есть, видно на диске — и это сказано вслух в окне «Замок»:
+           посторонний узнаёт, что нужен файл, и ничего с этим сделать не
+           может, потому что ключ без файла не ВЫВОДИТСЯ, а не «не проходит
+           проверку». */
+        (needsKey
+          ? '<label class="vg-key"><span>' + escapeHtml(gateText("lock.key")) + '</span>' +
+            '<input type="file" id="sbVaultKey"></label>' +
+            '<p class="vg-keynote">' + escapeHtml(gateText("lock.keyNeed")) + '</p>'
+          : '') +
         '<button type="button" class="btn primary" id="sbVaultOpen">' + escapeHtml(gateText("lock.open")) + "</button>" +
         '<p class="vg-err" id="sbVaultErr" role="alert" hidden></p>' +
+        /* Цена попытки — не лозунг: число проходов берётся из записи замка,
+           а миллисекунды замеряются на этой попытке. Появляется ПОСЛЕ, а не
+           до: обещать цену заранее значило бы обещать. */
+        '<p class="vg-cost" id="sbVaultCost" hidden></p>' +
+        (sealCount ? '<p class="vg-sealed">' + escapeHtml(gateText("lock.sealed").replace("{n}", String(sealCount))) + "</p>" : "") +
       "</div>";
     doc.body.appendChild(gate);
+    /* Поле оживает СРАЗУ и живёт, пока стоит дверь: это не заставка, а
+       диск, который лежит за ней прямо сейчас. */
+    var fieldCanvas = gate.querySelector("#sbVaultField");
+    if (fieldCanvas && window.sbSeals) {
+      try {
+        window.sbSeals.paint(fieldCanvas, window.sbSeals.plan(), { phase: 0 });
+        window.sbSeals.animate(fieldCanvas, function () { return window.sbSeals.plan(); },
+          { every: gate.classList.contains("vg-work") ? 60 : 110 });
+      } catch (e) { /* ignore */ }
+    }
+
     var field = gate.querySelector("#sbVaultPass");
     var errEl = gate.querySelector("#sbVaultErr");
     var busy = false;
@@ -3827,7 +3883,10 @@
          поворачиваются ЛЕПЕСТКИ: человек видит, как поворачивается ключ. */
       gate.classList.remove("vg-wrong");
       gate.classList.add("vg-work");
-      window.sbVault.unlock(field.value).then(function (okp) {
+      keyBytes().then(function (bytes) {
+      var t0 = (window.performance || Date).now();
+      window.sbVault.unlock(field.value, bytes).then(function (okp) {
+        showCost((window.performance || Date).now() - t0);
         busy = false;
         gate.classList.remove("vg-work");
         if (!okp) {
@@ -3856,6 +3915,38 @@
         errEl.textContent = gateText("lock.wrong");
         errEl.hidden = false;
       });
+      });
+    }
+    /* Число проходов СПРАШИВАЕТСЯ у замка, а не помнится: у старого замка
+       оно другое, и написать здесь сегодняшнее значило бы соврать о нём. */
+    function roundsOfLock() {
+      try {
+        var rec = window.sbVault.cipher() || {};
+        var sum = 0;
+        (rec.kdf || []).forEach(function (line) {
+          var n = parseInt(String(line).split(":")[1], 10);
+          if (n > 0) sum += n;
+        });
+        return sum;
+      } catch (e) { return 0; }
+    }
+    function groups(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "\u2009"); }
+    function showCost(ms) {
+      var el = gate.querySelector("#sbVaultCost");
+      var rounds = roundsOfLock();
+      if (!el || !rounds) return;
+      el.textContent = gateText("lock.cost").replace("{n}", groups(rounds)).replace("{ms}", String(Math.round(ms)));
+      el.setAttribute("data-rounds", String(rounds));
+      el.setAttribute("data-ms", String(Math.round(ms)));
+      el.hidden = false;
+    }
+    /* Файл читается ДО замера: чтение с диска не должно попадать в цену
+       попытки, иначе время ответа начало бы рассказывать про файл. */
+    function keyBytes() {
+      var inp = gate.querySelector("#sbVaultKey");
+      var f = inp && inp.files && inp.files[0];
+      if (!f) return Promise.resolve(null);
+      return f.arrayBuffer().then(function (b) { return new Uint8Array(b); }, function () { return null; });
     }
     gate.querySelector("#sbVaultOpen").addEventListener("click", tryOpen);
     field.addEventListener("keydown", function (ev) { if (ev.key === "Enter") tryOpen(); });

@@ -94,6 +94,7 @@
          показать пустоту хуже, чем сказать словами: система не заявляет о
          том, чего не сделала. */
       body = '<div class="vw-stage vw-said">' +
+        /* ОТКАТ: «thing» — общий значок предмета, а не значок чужого рода. */
         '<div class="vw-icon">' + (KIND_SVG[current.kind] || KIND_SVG.thing) + "</div>" +
         '<div class="vw-said-text">' + esc(t("vw.notShown")) + "</div></div>";
     }

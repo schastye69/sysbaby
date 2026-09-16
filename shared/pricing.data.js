@@ -101,6 +101,9 @@
     priceOf: function (id, lang) {
       var tier = tierById(id);
       if (!tier) return "";
+      /* ОТКАТ: перевода на этот язык нет — честно падаем на английский.
+     Это объявленный договор перевода, а не подмена: неполный язык
+     система показывает человеку отдельной меткой в полосе языков. */
       return tier.display[lang] || tier.display.en;
     },
     band: function (lang) {

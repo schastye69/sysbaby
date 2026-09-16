@@ -336,6 +336,8 @@
     var body = kind === "image"
       ? '<div class="fv-thing-view"><img id="fvThingImg" alt="' + esc(node.name) + '"></div>'
       : '<div class="fv-thing-view fv-thing-said">' +
+          /* ОТКАТ: неизвестный род получает ОБЩИЙ значок файла, а не значок
+     чужого рода. Это честный ответ «не знаю, что это». */
           '<div class="fv-thing-icon">' + (THING_SVG[kind] || FILE_SVG) + "</div>" +
           '<div class="fv-thing-said-text">' +
             esc(t("fv.thingKind", { kind: kindWord(kind), size: weigh(node.size) })) +

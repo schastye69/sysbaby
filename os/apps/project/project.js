@@ -85,6 +85,9 @@
   function startLabel(view) {
     var labels = view.startLabel || null;
     var lang = osLang();
+    /* ОТКАТ: перевода на этот язык нет — честно падаем на английский.
+     Это объявленный договор перевода, а не подмена: неполный язык
+     система показывает человеку отдельной меткой в полосе языков. */
     var text = (labels && (labels[lang] || labels.en)) || t("pj.start");
     return text + " →";
   }

@@ -90,6 +90,12 @@
       lead: "What is worth knowing exactly when there is no network. All of it lives on this device: no request goes out, and none has to.",
       warn: "This is a reference, not medicine, and it does not replace the emergency number. There is not a single medicine dose here, and there never will be. If you can call — call first, then read.",
       groups: { now: "When it is happening", numbers: "Numbers", dark: "When the lights go out", words: "Ten sentences" },
+            open: "Open", back: "Back", step: "Step", of: "of", next: "Next", done: "Done",
+      beatStart: "Start the beat", beatStop: "Stop", beatWhat: "110 a minute — press with the beat",
+      clockStart: "Start", clockStop: "Stop", clockReset: "Reset",
+      clockUp: "Time since you started", clockDown: "Keep cooling until zero",
+      torch: "Light", torchNight: "Night light", torchOff: "Tap anywhere to put it out",
+      tapNext: "Tap to go on",
       source: "Source", checked: "checked"
     },
     ru: {
@@ -97,6 +103,12 @@
       lead: "То, что стоит знать именно тогда, когда сети нет. Всё это лежит на устройстве: наружу не уходит ни одного запроса, и не должен.",
       warn: "Это справка, а не медицина, и она не заменяет экстренный номер. Здесь нет ни одной дозировки лекарства и не будет. Если можете позвонить — сперва звоните, потом читайте.",
       groups: { now: "Когда это происходит", numbers: "Номера", dark: "Когда погас свет", words: "Десять фраз" },
+            open: "Открыть", back: "Назад", step: "Шаг", of: "из", next: "Дальше", done: "Готово",
+      beatStart: "Включить ритм", beatStop: "Остановить", beatWhat: "110 в минуту — жмите в такт",
+      clockStart: "Пуск", clockStop: "Стоп", clockReset: "Сброс",
+      clockUp: "Прошло с начала", clockDown: "Охлаждать до нуля",
+      torch: "Свет", torchNight: "Ночной свет", torchOff: "Нажмите где угодно, чтобы погасить",
+      tapNext: "Нажмите, чтобы дальше",
       source: "Источник", checked: "сверено"
     },
     ee: {
@@ -104,6 +116,12 @@
       lead: "See, mida tasub teada just siis, kui võrku pole. Kõik see on selles seadmes: ükski päring ei lähe välja ega peagi minema.",
       warn: "See on teatmik, mitte meditsiin, ega asenda hädaabinumbrit. Siin ei ole ühtegi ravimiannust ega tule kunagi. Kui saad helistada — helista enne, loe pärast.",
       groups: { now: "Kui see juhtub", numbers: "Numbrid", dark: "Kui valgus kustub", words: "Kümme lauset" },
+            open: "Ava", back: "Tagasi", step: "Samm", of: "/", next: "Edasi", done: "Valmis",
+      beatStart: "Käivita rütm", beatStop: "Peata", beatWhat: "110 minutis — vajuta rütmis",
+      clockStart: "Käivita", clockStop: "Peata", clockReset: "Nulli",
+      clockUp: "Aega algusest", clockDown: "Jahuta nullini",
+      torch: "Valgus", torchNight: "Öövalgus", torchOff: "Kustutamiseks puuduta ükskõik kus",
+      tapNext: "Puuduta, et edasi",
       source: "Allikas", checked: "kontrollitud"
     }
   };
@@ -112,7 +130,7 @@
      где счёт на минуты, потом номера, потом долгие беды. ────────────────── */
   var CARDS = [
     {
-      id: "cpr", group: "now", src: "erc",
+      id: "cpr", group: "now", src: "erc", tool: { kind: "beat", bpm: 110 },
       en: { title: "Not breathing", steps: [
         "Call 112. Put the phone on speaker and keep it beside you.",
         "Lay them on their back on a hard surface. Heel of one hand in the middle of the chest, the other hand on top.",
@@ -163,7 +181,7 @@
       ] }
     },
     {
-      id: "bleed", group: "now", src: "common",
+      id: "bleed", group: "now", src: "common", tool: { kind: "clock", up: true },
       en: { title: "Heavy bleeding", steps: [
         "Call 112.",
         "Press hard straight onto the wound — cloth, clothing, your hand. Press and do not let go.",
@@ -244,7 +262,7 @@
       ] }
     },
     {
-      id: "burn", group: "now", src: "burn",
+      id: "burn", group: "now", src: "burn", tool: { kind: "clock", seconds: 1200 },
       en: { title: "Burn", steps: [
         "Under cool running water for 20 minutes. Not ice, not snow — cool running water.",
         "Twenty minutes is worth it even hours later. It is not a formality; it changes how deep the burn goes.",
@@ -412,46 +430,304 @@
   /* Оболочка передаёт ОКНО, а не место под содержимое: место приложение
      находит само (тот же договор, что у всех прочих). Первый прогон вернул
      пустое окно с верным заголовком — ровно потому, что здесь стоял host. */
-  function render(win) {
-    var host = (win && win.el) ? win.el.querySelector(".window-body") : win;
-    if (!host) return;
-    var L = lang();
-    var t = UI[L] || UI.en;
-    var out = '<div class="lt-wrap">';
-    out += '<header class="lt-head">' +
-      '<h1 class="lt-title">' + esc(t.title) + "</h1>" +
+  /* ─────────────────── ФОНАРЬ — ПРИБОР, А НЕ СПРАВОЧНИК (v100) ──────────
+     ПОВОД, дословно от основателя: «обработайте приложение lantern, он должен
+     быть волшебным и идеальным, а не как сейчас».
+
+     ЧТО БЫЛО. Одиннадцать карточек, развёрнутых разом в одну длинную стену
+     текста. Как СПРАВОЧНИК это верно. Как помощь — нет: человек, у которого
+     на руках перестал дышать другой человек, НЕ ЧИТАЕТ СПИСКОВ. Он держит
+     телефон одной рукой, у него трясутся пальцы, и ему нужно ОДНО действие,
+     а не одиннадцать заголовков.
+
+     ЧТО СТАЛО, и это одна мысль, а не четыре правки:
+       · НА ПОЛКЕ — только имена бед, крупно. Ни одного шага заранее.
+       · ОТКРЫЛ — ОДИН ШАГ ВО ВЕСЬ ЭКРАН. Крупно. Нажал куда угодно — дальше.
+         Внутри шага нечего прокручивать, потому что шаг один.
+       · ГДЕ МОЖНО ПОМОЧЬ РУКАМИ — ПОМОГАЕМ. У непрямого массажа сердца
+         бьётся МЕТРОНОМ на 110 в минуту: звук, вспышка и толчок в ладонь.
+         У ожога — обратный отсчёт двадцати минут охлаждения. У кровотечения —
+         часы, считающие время с наложения жгута. Это уже не слова о помощи,
+         а помощь.
+       · И ФОНАРЬ СВЕТИТ. Он так называется. Белый свет во весь экран — и
+         красный, который не сбивает привыкшие к темноте глаза.
+
+     ПОЧЕМУ ЭТО ВАЖНЕЕ КРАСОТЫ. Ритм 100–120 в минуту — то, что спасатели
+     называют первым, и то, что человек без подготовки держать не может:
+     без счёта руки уходят либо в 60, либо в 180. Телефон, который стучит
+     такт, делает больше, чем абзац, объясняющий, какой такт нужен.
+
+     ЧЕГО ФОНАРЬ ПО-ПРЕЖНЕМУ НЕ ДЕЛАЕТ, и это сказано в самой шапке: он не
+     лечит, не заменяет 112 и не назовёт ни одной дозировки. Прибор помогает
+     ДЕРЖАТЬ ритм и время — решения остаются на человеке и на враче.
+
+     Охраняется tools/lantern-check.mjs. */
+
+  var openId = null;       /* какая беда открыта */
+  var stepAt = 0;          /* какой шаг показан */
+  var beat = null;         /* метроном */
+  var clock = null;        /* часы */
+  var audio = null;
+
+  function calm() {
+    try { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+    catch (e) { return false; }
+  }
+
+  function stopTools() {
+    if (beat && beat.timer) { clearInterval(beat.timer); }
+    if (clock && clock.timer) { clearInterval(clock.timer); }
+    beat = null; clock = null;
+  }
+
+  /* Щелчок делается ЗВУКОМ, а не файлом: файл — это ещё одна вещь, которой
+     может не оказаться без сети, а Фонарь обязан работать без всего. */
+  function click() {
+    try {
+      if (!audio) {
+        var C = window.AudioContext || window.webkitAudioContext;
+        if (!C) return;
+        audio = new C();
+      }
+      if (audio.state === "suspended") audio.resume();
+      var o = audio.createOscillator(), g = audio.createGain();
+      o.type = "square"; o.frequency.value = 1050;
+      g.gain.setValueAtTime(0.0001, audio.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.22, audio.currentTime + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.055);
+      o.connect(g); g.connect(audio.destination);
+      o.start(); o.stop(audio.currentTime + 0.06);
+    } catch (e) { /* без звука — но с вспышкой и толчком */ }
+    try { if (navigator.vibrate) navigator.vibrate(18); } catch (e) { /* ignore */ }
+  }
+
+  function mmss(sec) {
+    var m = Math.floor(Math.abs(sec) / 60), s2 = Math.abs(sec) % 60;
+    return (m < 10 ? "0" : "") + m + ":" + (s2 < 10 ? "0" : "") + s2;
+  }
+
+  function findCard(id) {
+    for (var i = 0; i < CARDS.length; i++) if (CARDS[i].id === id) return CARDS[i];
+    return null;
+  }
+
+  /* ── ПОЛКА ─────────────────────────────────────────────────────────────── */
+  function shelfHtml(t, L) {
+    var out = '<header class="lt-head">' +
+      '<div class="lt-head-row">' +
+        '<h1 class="lt-title">' + esc(t.title) + "</h1>" +
+        '<div class="lt-torch-btns">' +
+          '<button type="button" class="lt-tb" data-torch="white">' + esc(t.torch) + "</button>" +
+          '<button type="button" class="lt-tb night" data-torch="red">' + esc(t.torchNight) + "</button>" +
+        "</div>" +
+      "</div>" +
       '<p class="lt-lead">' + esc(t.lead) + "</p>" +
       '<p class="lt-warn">' + esc(t.warn) + "</p>" +
       "</header>";
-
     GROUPS.forEach(function (g) {
       var mine = CARDS.filter(function (c) { return c.group === g; });
       if (!mine.length) return;
       out += '<h2 class="lt-group">' + esc(t.groups[g]) + "</h2>";
       out += '<div class="lt-cards">';
       mine.forEach(function (c) {
+        /* ОТКАТ: перевода на этот язык нет — честно падаем на английский.
+           Это объявленный договор перевода, а не подмена. */
         var body = c[L] || c.en;
-        var s = SOURCES[c.src];
-        out += '<article class="lt-card" data-card="' + esc(c.id) + '">' +
+        var s2 = SOURCES[c.src];
+        out += '<article class="lt-card" data-card="' + esc(c.id) + '" tabindex="0" role="button">' +
           '<h3 class="lt-card-title">' + esc(body.title) + "</h3>" +
-          "<ol class=\"lt-steps\">" +
-          body.steps.map(function (line) { return "<li>" + esc(line) + "</li>"; }).join("") +
-          "</ol>" +
+          '<p class="lt-card-hint">' + esc(t.step) + " 1 " + esc(t.of) + " " + body.steps.length +
+            (c.tool ? ' · <span class="lt-has-tool">' + esc(c.tool.kind === "beat" ? t.beatWhat : (c.tool.up ? t.clockUp : t.clockDown)) + "</span>" : "") +
+          "</p>" +
           '<p class="lt-src">' + esc(t.source) + ": " +
-            '<a href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer">' + esc(s.name) + "</a>" +
-            " · " + esc(t.checked) + " " + esc(s.checked) +
+            '<a href="' + esc(s2.url) + '" target="_blank" rel="noopener noreferrer">' + esc(s2.name) + "</a>" +
+            " · " + esc(t.checked) + " " + esc(s2.checked) +
           "</p>" +
           "</article>";
       });
       out += "</div>";
     });
-    out += "</div>";
-    /* Прокрутка человека переживает перерисовку — средство оболочки, общее для
-       всех приложений (D-099). Снимок берётся ВПЛОТНУЮ к подмене корпуса: между
-       снимком и подменой ничего не должно случиться, иначе он о другом. */
+    return out;
+  }
+
+  /* ── ОТКРЫТАЯ БЕДА: ОДИН ШАГ ──────────────────────────────────────────── */
+  function openHtml(c, t, L) {
+    /* ОТКАТ: перевода этой карточки на язык нет — честно падаем на английский.
+       Это объявленный договор перевода, а не подмена: неполный язык система
+       показывает человеку отдельной меткой в полосе языков. */
+    var body = c[L] || c.en;
+    var n = body.steps.length;
+    var i = Math.max(0, Math.min(stepAt, n - 1));
+    var last = i === n - 1;
+    var tool = "";
+    if (c.tool && c.tool.kind === "beat") {
+      tool = '<div class="lt-tool lt-beat" data-tool="beat">' +
+        '<div class="lt-pulse" id="ltPulse"><span>' + c.tool.bpm + "</span></div>" +
+        '<button type="button" class="lt-big" data-beat="toggle">' + esc(t.beatStart) + "</button>" +
+        '<p class="lt-tool-note">' + esc(t.beatWhat) + "</p>" +
+        "</div>";
+    } else if (c.tool && c.tool.kind === "clock") {
+      var startAt = c.tool.up ? 0 : c.tool.seconds;
+      tool = '<div class="lt-tool lt-clock" data-tool="clock" data-up="' + (c.tool.up ? "1" : "0") +
+             '" data-seconds="' + (c.tool.seconds || 0) + '">' +
+        '<div class="lt-time" id="ltTime">' + mmss(startAt) + "</div>" +
+        '<div class="lt-clock-btns">' +
+          '<button type="button" class="lt-big" data-clock="toggle">' + esc(t.clockStart) + "</button>" +
+          '<button type="button" class="lt-small" data-clock="reset">' + esc(t.clockReset) + "</button>" +
+        "</div>" +
+        '<p class="lt-tool-note">' + esc(c.tool.up ? t.clockUp : t.clockDown) + "</p>" +
+        "</div>";
+    }
+    return '<div class="lt-open" data-open="' + esc(c.id) + '">' +
+      '<div class="lt-top">' +
+        '<button type="button" class="lt-back" data-back="1">← ' + esc(t.back) + "</button>" +
+        '<span class="lt-count">' + esc(t.step) + " " + (i + 1) + " " + esc(t.of) + " " + n + "</span>" +
+      "</div>" +
+      '<h2 class="lt-open-title">' + esc(body.title) + "</h2>" +
+      '<p class="lt-step" id="ltStep">' + esc(body.steps[i]) + "</p>" +
+      tool +
+      '<div class="lt-nav">' +
+        (i > 0 ? '<button type="button" class="lt-small" data-step="prev">← ' + esc(t.back) + "</button>" : '<span></span>') +
+        '<button type="button" class="lt-big next" data-step="next">' + esc(last ? t.done : t.next) + " →</button>" +
+      "</div>" +
+      '<p class="lt-tap">' + esc(t.tapNext) + "</p>" +
+      "</div>";
+  }
+
+  function render(win) {
+    var host = (win && win.el) ? win.el.querySelector(".window-body") : win;
+    if (!host) return;
+    var L = lang();
+    /* ОТКАТ: перевода на этот язык нет — честно падаем на английский.
+       Это объявленный договор перевода, а не подмена. */
+    var t = UI[L] || UI.en;
+    stopTools();
+
+    var openCard = openId ? findCard(openId) : null;
+    /* Полка рисуется ВСЕГДА — и когда беда открыта. Так закон видит состав
+       свода, а человек, закрыв беду, оказывается там же, где был. */
+    var out = '<div class="lt-wrap' + (openCard ? " is-open" : "") + '">' +
+      shelfHtml(t, L) + (openCard ? openHtml(openCard, t, L) : "") +
+      '<div class="lt-torch" id="ltTorch" hidden><p>' + esc(t.torchOff) + "</p></div>" +
+      "</div>";
+
     var keep = window.sbKeepScroll ? window.sbKeepScroll(host) : null;
     host.innerHTML = out;
     if (keep) { try { keep(); } catch (e) { /* ignore */ } }
+    wire(host, win, t);
+  }
+
+  function wire(host, win, t) {
+    var wrap = host.querySelector(".lt-wrap");
+    if (!wrap) return;
+
+    /* Открыть беду */
+    host.querySelectorAll(".lt-card").forEach(function (el) {
+      var go = function () { openId = el.getAttribute("data-card"); stepAt = 0; render(win); };
+      el.addEventListener("click", go);
+      el.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); }
+      });
+    });
+
+    var back = host.querySelector("[data-back]");
+    if (back) back.addEventListener("click", function () { openId = null; stepAt = 0; render(win); });
+
+    var openEl = host.querySelector(".lt-open");
+    if (openEl) {
+      var card = findCard(openId);
+      var L = lang();
+      /* ОТКАТ: перевода на этот язык нет — честно падаем на английский. */
+      var body = card ? (card[L] || card.en) : null;
+      var total = body ? body.steps.length : 1;
+
+      var step = function (d) {
+        if (d > 0 && stepAt >= total - 1) { openId = null; stepAt = 0; render(win); return; }
+        stepAt = Math.max(0, Math.min(total - 1, stepAt + d));
+        render(win);
+      };
+      openEl.querySelectorAll("[data-step]").forEach(function (b) {
+        b.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          step(b.getAttribute("data-step") === "next" ? 1 : -1);
+        });
+      });
+      /* Нажатие КУДА УГОДНО ведёт дальше — кроме приборов и ссылок: там у
+         нажатия своё дело, и отнимать его было бы обманом. */
+      openEl.addEventListener("click", function (ev) {
+        if (ev.target.closest(".lt-tool, a, button")) return;
+        step(1);
+      });
+
+      var pulse = openEl.querySelector("#ltPulse");
+      var beatBtn = openEl.querySelector("[data-beat]");
+      if (beatBtn && card && card.tool) {
+        beatBtn.addEventListener("click", function () {
+          if (beat && beat.timer) {
+            clearInterval(beat.timer); beat = null;
+            beatBtn.textContent = t.beatStart;
+            openEl.classList.remove("beating");
+            return;
+          }
+          var ms = 60000 / card.tool.bpm;
+          click();
+          if (pulse && !calm()) { pulse.classList.remove("hit"); void pulse.offsetWidth; pulse.classList.add("hit"); }
+          beat = { timer: setInterval(function () {
+            click();
+            if (pulse && !calm()) { pulse.classList.remove("hit"); void pulse.offsetWidth; pulse.classList.add("hit"); }
+          }, ms) };
+          beatBtn.textContent = t.beatStop;
+          openEl.classList.add("beating");
+        });
+      }
+
+      var clockEl = openEl.querySelector("[data-tool='clock']");
+      if (clockEl) {
+        var up = clockEl.getAttribute("data-up") === "1";
+        var full = parseInt(clockEl.getAttribute("data-seconds"), 10) || 0;
+        var face = openEl.querySelector("#ltTime");
+        var cb = openEl.querySelector("[data-clock='toggle']");
+        var rb = openEl.querySelector("[data-clock='reset']");
+        var left = up ? 0 : full;
+        var paint = function () {
+          if (face) face.textContent = mmss(left);
+          if (!up && left <= 0) { clockEl.classList.add("done"); }
+        };
+        if (cb) cb.addEventListener("click", function () {
+          if (clock && clock.timer) {
+            clearInterval(clock.timer); clock = null; cb.textContent = t.clockStart; return;
+          }
+          clock = { timer: setInterval(function () {
+            left = up ? left + 1 : Math.max(0, left - 1);
+            paint();
+            if (!up && left === 0) { clearInterval(clock.timer); clock = null; cb.textContent = t.clockStart; click(); }
+          }, 1000) };
+          cb.textContent = t.clockStop;
+        });
+        if (rb) rb.addEventListener("click", function () {
+          if (clock && clock.timer) { clearInterval(clock.timer); clock = null; }
+          left = up ? 0 : full;
+          clockEl.classList.remove("done");
+          if (cb) cb.textContent = t.clockStart;
+          paint();
+        });
+        paint();
+      }
+    }
+
+    /* ── СВЕТ ─────────────────────────────────────────────────────────────
+       Фонарь так называется. Белый — чтобы видеть; красный — чтобы видеть и
+       НЕ ослепнуть: привыкшие к темноте глаза красный свет не сбивает. */
+    var torch = host.querySelector("#ltTorch");
+    host.querySelectorAll("[data-torch]").forEach(function (b) {
+      b.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        if (!torch) return;
+        torch.className = "lt-torch " + (b.getAttribute("data-torch") === "red" ? "red" : "white");
+        torch.hidden = false;
+      });
+    });
+    if (torch) torch.addEventListener("click", function () { torch.hidden = true; });
   }
 
   window.sbLanternCards = function () { return CARDS.slice(); };

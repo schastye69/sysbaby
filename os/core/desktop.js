@@ -158,6 +158,8 @@
   function placeWidget(n, forceShelf) {
     if (!n) return;
     var id = n.getAttribute("data-widget");
+    /* ОТКАТ: общая заготовка размеров для виджета, которому их не задали.
+       Чужих размеров здесь нет — это не подмена, а значение по умолчанию. */
     var def = WIDGET_DEFAULTS[id] || { w: 240, h: 200 };
     var saved = layoutAll()[id];
     var vw = window.innerWidth, vh = window.innerHeight;
@@ -643,6 +645,20 @@
   var DATE_LIT = /(^|[^\d])\d{1,2}[.\/]\d{1,2}(?:[.\/]\d{2,4})?(?!\d)/;
   var TIME_LIT = /(^|[^\d.,:])(?:[01]?\d|2[0-4]):[0-5]\d(?![\d.,:])/;
 
+  /* ГДЕ ЧИСТКА РАБОТАЕТ, А ГДЕ НЕТ (v95).
+     Основатель, дословно, со снимком развёрнутой заметки: «в полноэкранном
+     режиме время и дата не должны фиксироваться и исчезать. иначе будет не
+     возможно оставлять там текста».
+     Он прав, и причина глубже опечатки. НА СТОЛЕ заметка — предмет: её видно
+     целиком, место дорого, и метка говорит больше строки. РАЗВЁРНУТАЯ заметка
+     — ЛИСТ: человек пишет, перечитывает, ставит время внутри фразы.
+     Вычёркивать числа из-под руки пишущего — значит отнимать у него текст.
+     Чистка живёт только на столе. */
+  window.sbNoteStripOn = function (el) {
+    var host = el && el.closest ? el.closest(".sticky-note") : null;
+    return !!host && !host.classList.contains("full");
+  };
+
   window.sbNoteStrip = function (text) {
     var out = String(text == null ? "" : text);
     if (window.sbNoteHour(out)) out = out.replace(TIME_LIT, "$1");
@@ -884,6 +900,8 @@
       autoGrow(ta);
       paintChips(el, whole, rec);
       if (saveTimers[rec.id]) clearTimeout(saveTimers[rec.id]);
+      /* Кого штамповать, решает не догадка, а последнее касание руки. */
+      if (window.sbDeskTouched) window.sbDeskTouched(rec.id);
       saveTimers[rec.id] = setTimeout(function () { persist(); if (window.sbNotesStore) window.sbNotesStore.notify(); }, 250);
     }
     ta.addEventListener("input", noteChanged);
@@ -891,6 +909,7 @@
     /* Отпустили заметку — прочитанное число уходит из текста. */
     function stripOnLeave(el) {
       return function () {
+        if (!window.sbNoteStripOn(el)) return;
         var next = window.sbNoteStrip(el.value);
         if (next !== el.value) { el.value = next; noteChanged(); }
       };
@@ -1129,17 +1148,101 @@
     var state = mo
       ? (mo.late ? " late" : (mo.strike ? " strike" : (mo.soonMin !== null ? " soon" : (mo.dayOffset === 0 ? " now" : ""))))
       : (due ? (due.late ? " late" : (due.today ? " now" : "")) : "");
+    /* ── БУДИЛЬНИК СТАВИТСЯ НАЖАТИЕМ НА МЕТКУ ЧАСА (D-198) ─────────────────
+       Тем же жестом, каким открывается календарь на метке дня. Метка часа
+       становится кнопкой ТОЛЬКО когда час назван и миг ещё впереди: будить
+       в прошлое незачем, а кнопка, которая ничего не делает, врёт видом. */
+    var armed = (mo && window.sbAlarms && !mo.late)
+      ? !!window.sbAlarms.at(rec && rec.id, mo.at) : false;
+    var canArm = !!(mo && window.sbAlarms && !mo.late);
+    var bell = '<svg class="note-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M6.3 16.5V11a5.7 5.7 0 0 1 11.4 0v5.5M4.8 16.8h14.4M10.2 19.4a1.9 1.9 0 0 0 3.6 0"/></svg>';
     var dueMark = (mo || due)
-      ? '<span class="note-due' + state + '">' +
+      ? (canArm ? '<button type="button" class="note-due' + state + (armed ? " armed" : "") +
+                  '" data-arm="' + esc(String(mo.at)) + '" title="' + esc(tr("alarm.arm")) + '">'
+                : '<span class="note-due' + state + '">') +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12.5" r="7.5"/><path d="M12 8.5v4.2l2.6 1.6"/></svg>' +
-        esc(mo ? momentLabel(mo) : dueLabel(due)) + "</span>"
+        esc(mo ? momentLabel(mo) : dueLabel(due)) + (armed ? bell : "") +
+        (canArm ? "</button>" : "</span>")
       : "";
     host.innerHTML = dueMark + appMentionChips(text);
+    var armBtn = host.querySelector("[data-arm]");
+    if (armBtn) {
+      armBtn.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        var at = parseInt(armBtn.getAttribute("data-arm"), 10);
+        var id = rec && rec.id;
+        if (!window.sbAlarms || !id || !at) return;
+        if (window.sbAlarms.at(id, at)) {
+          window.sbAlarms.clear(id, at);
+          if (window.showToast) window.showToast(tr("alarm.title"), tr("alarm.off"), null, false, "", "confirm");
+        } else {
+          window.sbAlarms.set(id, at, String(text || "").slice(0, 60));
+          if (window.showToast) window.showToast(tr("alarm.title"), tr("alarm.set"), null, false, "", "confirm");
+        }
+        paintChips(el, text, rec);
+      });
+    }
     $$(".note-chip", host).forEach(function (b) {
       b.addEventListener("click", function (ev) {
         ev.stopPropagation();
         if (window.toggleApp) window.toggleApp(b.getAttribute("data-app"));
       });
+    });
+  }
+
+  /* ── ПЕЧАТЬ ВИДНА В МИГ, КОГДА ОНА СТАВИТСЯ (D-219) ──────────────────────
+   *
+   * ПОВОД. Основатель: «пользователи должны это понимать и осозновать».
+   * Понимать — это не прочитать абзац в окне, а увидеть своими глазами, что
+   * СЕЙЧАС произошло с твоими словами.
+   *
+   * ЧТО ПРОИСХОДИТ НА САМОМ ДЕЛЕ. Человек дописал строку, отпустил клавишу —
+   * и через мгновение заметки уходят в конверт: тот же самый, что лежит на
+   * диске, с новыми случайными числами. До сих пор это было СОВЕРШЕННО
+   * НЕВИДИМО. Система делала самое важное молча, и человеку оставалось
+   * верить на слово.
+   *
+   * ЧТО СДЕЛАНО. На заметке, которую правили последней, на полторы секунды
+   * проступает ПЕЧАТЬ — лицо того самого конверта, выведенное из его новых
+   * байтов. Не значок «сохранено»: значок нарисовал бы кто угодно. Рисунок
+   * меняется каждый раз, потому что меняются байты, и это видно глазом.
+   *
+   * ЧЕГО ЗДЕСЬ НЕТ. Печати нет, когда замка нет: тогда слова ложатся на диск
+   * открытыми, и рисовать печать было бы враньём. Молчание в этом случае —
+   * тоже сообщение, и оно правдивое.
+   *
+   * Охраняется tools/desk-seal-check.mjs.
+   */
+  var lastTouched = null;
+  var NOTES_KEY = "sysbaby.notes.v2";
+  window.sbDeskTouched = function (id) { lastTouched = id == null ? null : String(id); };
+
+  function stampSeal(env) {
+    if (!window.sbSeals || !lastTouched) return null;
+    var el = doc.querySelector('.sticky-note[data-id="' + String(lastTouched).replace(/"/g, '\\"') + '"]');
+    if (!el) return null;
+    var f = window.sbSeals.face(window.sbSeals.cipher(env));
+    var old = el.querySelector(".note-seal");
+    if (old) old.remove();
+    var box = doc.createElement("span");
+    box.className = "note-seal";
+    box.setAttribute("aria-hidden", "true");
+    box.setAttribute("data-face", f.d.length ? String(f.hue) : "0");
+    box.style.setProperty("--h", f.hue);
+    box.innerHTML = '<svg viewBox="0 0 24 24"><path d="' + f.d + '"/></svg>';
+    el.appendChild(box);
+    setTimeout(function () { if (box.parentNode) box.remove(); }, 1500);
+    return box;
+  }
+
+  if (window.sbBus && window.sbBus.on) {
+    window.sbBus.on("vault:sealed", function (d) {
+      if (!d || d.key !== NOTES_KEY) return;
+      try {
+        var env = window.sbSeals && window.sbSeals.bytes(d.name);
+        if (env) stampSeal(env);
+      } catch (e) { /* ignore */ }
     });
   }
 

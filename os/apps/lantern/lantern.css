@@ -40,3 +40,86 @@
   .lt-title { font-size: 20px; }
   .lt-steps li { font-size: 14.5px; }
 }
+
+/* ── ФОНАРЬ КАК ПРИБОР (v100, D-207) ────────────────────────────────────────
+   Полка показывает только имена бед. Открытая беда — ОДИН шаг во весь экран,
+   крупно: человек в плохую минуту держит телефон одной рукой и не читает
+   списков. Размеры здесь намеренно больше, чем везде в системе, — это не
+   рассогласование стиля, а требование задачи. */
+.lt-card { cursor: pointer; transition: border-color var(--t-rise), background var(--t-rise); }
+.lt-card:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
+@media (hover: hover) {
+  .lt-card:hover { border-color: var(--accent-ring); background: rgba(255, 255, 255, .05); }
+}
+.lt-card-hint { margin: 0 0 6px; font-size: 12px; color: var(--ink-3); }
+.lt-has-tool { color: var(--accent); }
+
+.lt-head-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.lt-torch-btns { display: flex; gap: 6px; }
+.lt-tb {
+  font: inherit; font-size: 11.5px; padding: 5px 10px; cursor: pointer;
+  color: var(--ink-2); background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--line); border-radius: var(--r-ctrl);
+}
+.lt-tb.night { color: #ff9b8f; border-color: rgba(255, 69, 58, .3); }
+
+/* Открытая беда ЗАМЕНЯЕТ полку, а не ложится поверх: никакой глубины здесь
+   не нужно, а полка остаётся в разметке — закрыл, и ты там же, где был. */
+.lt-wrap.is-open .lt-head,
+.lt-wrap.is-open .lt-group,
+.lt-wrap.is-open .lt-cards { display: none; }
+.lt-open {
+  display: flex; flex-direction: column; gap: 12px;
+  min-height: 68vh; padding: 2px 2px 8px; cursor: pointer;
+}
+.lt-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lt-back, .lt-small, .lt-big {
+  font: inherit; cursor: pointer; border-radius: var(--r-ctrl);
+  border: 1px solid var(--line); background: rgba(255, 255, 255, .04); color: var(--ink);
+}
+.lt-back, .lt-small { font-size: 13px; padding: 7px 12px; color: var(--ink-2); }
+.lt-count { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.lt-open-title { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink-3); letter-spacing: .04em; text-transform: uppercase; }
+/* Один шаг — и он крупный. Это главная строка приложения. */
+.lt-step { margin: 0; font-size: 25px; line-height: 1.38; font-weight: 500; color: var(--ink); text-wrap: pretty; }
+.lt-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; }
+.lt-big { font-size: 16px; font-weight: 600; padding: 13px 20px; }
+.lt-big.next { background: var(--accent-soft); border-color: var(--accent-ring); }
+.lt-tap { margin: 0; font-size: 11.5px; color: var(--ink-3); text-align: center; }
+
+/* ── ПРИБОРЫ ─────────────────────────────────────────────────────────────── */
+.lt-tool {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 14px; border-radius: var(--r-card);
+  border: 1px solid var(--line); background: rgba(255, 255, 255, .03); cursor: default;
+}
+.lt-tool-note { margin: 0; font-size: 12px; color: var(--ink-3); text-align: center; }
+.lt-pulse {
+  width: 92px; height: 92px; border-radius: var(--r-round);
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--accent-ring); background: var(--accent-soft);
+  font-size: 22px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.lt-pulse.hit { animation: lt-beat var(--t-rise); }
+@keyframes lt-beat { from { transform: scale(1.16); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .lt-pulse.hit { animation: none; } }
+.lt-time { font-size: 44px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.lt-clock.done .lt-time { color: #7ee081; }
+.lt-clock-btns { display: flex; gap: 8px; }
+
+/* ── СВЕТ ────────────────────────────────────────────────────────────────── */
+.lt-torch {
+  position: fixed; inset: 0; z-index: var(--z-above);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 8vh; cursor: pointer;
+}
+.lt-torch.white { background: #fff; }
+.lt-torch.red { background: #8b0000; }
+.lt-torch p { margin: 0; font-size: 13px; letter-spacing: .04em; }
+.lt-torch.white p { color: #555; }
+.lt-torch.red p { color: rgba(255, 255, 255, .72); }
+
+@media (max-width: 420px) {
+  .lt-step { font-size: 22px; }
+  .lt-time { font-size: 38px; }
+}

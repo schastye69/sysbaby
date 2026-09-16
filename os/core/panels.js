@@ -899,8 +899,18 @@
           '<input type="password" id="sbLockCur" autocomplete="current-password" placeholder="' + esc(tr("lock.old")) + '" aria-label="' + esc(tr("lock.old")) + '">' +
           '<input type="password" id="sbLockNew" autocomplete="new-password" hidden placeholder="' + esc(tr("lock.new")) + '" aria-label="' + esc(tr("lock.new")) + '">' +
         "</div>" +
+        '<div class="lock-field">' +
+          '<input type="password" id="sbLockDuress" autocomplete="new-password" hidden placeholder="' + esc(tr("lock.duressField")) + '" aria-label="' + esc(tr("lock.duressField")) + '">' +
+        "</div>" +
+        /* НИ ОДНОЙ НАДПИСИ О ТОМ, ЗАВЕДЕНО ЛИ ВТОРОЕ СЛОВО. Кнопки стоят
+           всегда и выглядят одинаково при любом состоянии замка: панель,
+           умеющая показать «тревожное слово установлено», сама и есть
+           утечка, ради предотвращения которой всё это построено. */
+        '<p class="panel-copy dim">' + esc(tr("lock.duressWhat")) + "</p>" +
         '<div class="lock-acts">' +
           '<button type="button" class="btn ghost" id="sbLockChange">' + esc(tr("lock.change")) + "</button>" +
+          '<button type="button" class="btn ghost" id="sbLockDuressSet">' + esc(tr("lock.duress")) + "</button>" +
+          '<button type="button" class="btn ghost" id="sbLockDuressOff">' + esc(tr("lock.duressOff")) + "</button>" +
           '<button type="button" class="btn ghost" id="sbLockRemove">' + esc(tr("lock.remove")) + "</button>" +
           '<button type="button" class="btn primary" id="sbLockNow">' + esc(tr("lock.now")) + "</button>" +
         "</div>"
@@ -949,6 +959,36 @@
         newField.value = ""; newField.hidden = true;
         body.querySelector("#sbLockCur").value = "";
         if (window.sbPaintIris) window.sbPaintIris();
+      }, function () { busy(false); say(tr("lock.failed")); });
+    });
+    var dField = body.querySelector("#sbLockDuress");
+    var dSet = body.querySelector("#sbLockDuressSet");
+    if (dSet && dField) dSet.addEventListener("click", function () {
+      if (dField.hidden) { dField.hidden = false; dField.focus(); say(""); return; }
+      var cur = body.querySelector("#sbLockCur").value;
+      var dw = dField.value;
+      if (String(dw).length < 4) { say(tr("lock.short")); return; }
+      if (dw === cur) { say(tr("lock.duressSame")); return; }
+      busy(true);
+      V.setDuress(cur, dw).then(function (okp) {
+        busy(false);
+        if (!okp) { say(tr("lock.wrong")); return; }
+        say(tr("lock.duressDone"));
+        dField.value = ""; dField.hidden = true;
+        body.querySelector("#sbLockCur").value = "";
+      }, function () { busy(false); say(tr("lock.failed")); });
+    });
+    var dOff = body.querySelector("#sbLockDuressOff");
+    if (dOff) dOff.addEventListener("click", function () {
+      var cur = body.querySelector("#sbLockCur").value;
+      busy(true);
+      V.clearDuress(cur).then(function (okp) {
+        busy(false);
+        if (!okp) { say(tr("lock.wrong")); return; }
+        /* Тот же ответ, что и при заведении: по надписи на экране нельзя
+           узнать, было ли что снимать. */
+        say(tr("lock.duressDone"));
+        body.querySelector("#sbLockCur").value = "";
       }, function () { busy(false); say(tr("lock.failed")); });
     });
     var removeBtn = body.querySelector("#sbLockRemove");

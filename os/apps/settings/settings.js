@@ -258,6 +258,10 @@
   function desktopMarkup() {
     return '<h2 class="st-title">' + esc(t("set.tab.desktop")) + "</h2>" +
       rowMarkup(esc(t("set.desktop.autohide")), esc(t("set.desktop.autohideSub")), switchMarkup("autohide")) +
+      /* Единственный выключатель системы, за которым стоит выход наружу
+         (D-198, слой 3). Он выключен по умолчанию, и подпись рядом говорит
+         ровно это, а не «улучшить уведомления». */
+      rowMarkup(esc(t("set.desktop.wake")), esc(t("set.desktop.wakeSub")), switchMarkup("wakeOutside")) +
       rowMarkup(esc(t("set.desktop.tidy")), esc(t("set.desktop.tidySub")),
         '<button type="button" class="st-btn" id="stTidy">' + esc(t("set.desktop.tidyBtn")) + "</button>");
   }

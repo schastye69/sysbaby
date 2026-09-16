@@ -944,8 +944,20 @@
      ═══════════════════════════════════════════════════════════════════════ */
   var LOCK_KEY = "sysbaby.lock.v1";
   var SEAL_PFX = "sysbaby.v.";        /* под этим именем лежат конверты */
-  var KDF1_ITER = 210000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
-  var KDF2_ITER = 600000;             /* PBKDF2-HMAC-SHA-256 — OWASP */
+  /* ── ЦЕНА ВЫВОДА КЛЮЧА, И ЭТО ЕДИНСТВЕННОЕ ИЗМЕРИМОЕ МЕСТО (D-205) ───────
+   Основатель требовал «в десять раз сильнее Signal». У ШИФРА такой величины
+   нет: AES-256 уже за пределами перебора, и умножать невозможность бессмысленно.
+   А вот у РАСТЯЖКИ ПАРОЛЯ она есть и меряется секундомером: во сколько раз
+   дороже обходится злоумышленнику одна попытка подбора.
+   Опорой взят не Signal и не наше вчера, а рекомендация OWASP на 2026 год —
+   PBKDF2-HMAC-SHA-256, 600 000 проходов. Наша цепочка обязана стоить НЕ МЕНЬШЕ
+   ДЕСЯТИ таких, и это не заявление в рекламе, а измерение: закон
+   tools/kdf-cost-check.mjs считает эталон на той же машине в ту же минуту и
+   сравнивает. На чужом железе число тоже сойдётся — меряется отношение.
+   ЦЕНА НАЗВАНА: открытие занимает секунды, а на медленном телефоне —
+   до десятка. Платится один раз за сеанс, а не на каждое чтение. */
+var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
+  var KDF2_ITER = 8000000;             /* PBKDF2-HMAC-SHA-256 — OWASP */
   var PAD_BLOCK = 256;                /* длина прячется: конверт кратен блоку */
   var VAULT_ITER = KDF2_ITER;         /* прежнее имя — для старых записей v1 */
 
@@ -985,6 +997,9 @@
 
   var vaultKeys = null;         /* набор ключей сеанса — только в памяти */
   var vaultMaster = null;       /* мастер-ключ сеанса: нужен для смены пароля */
+  /* Через какую дверь вошли. НАРУЖУ НЕ ОТДАЁТСЯ НИКОГДА: система,
+     умеющая ответить «ты в тревожном мире», не защищает ни от кого. */
+  var vaultDoor = -1;
   var vaultOpen = false;
 
   function vaultAvailable() { return subtleOk(); }
@@ -1015,13 +1030,25 @@
   }
 
   /* ── ПАРОЛЬ → KEK: две растяжки подряд, одна за другой ─────────────────── */
-  function deriveKEK(password, saltB64) {
+  /* Проходы приходят ДОВОДОМ, а не берутся из констант: замок, запертый
+     прежней ценой, обязан открываться прежней ценой. Иначе всякое усиление
+     растяжки стирало бы людям хранилище. */
+  /* ── ВТОРОЙ КЛЮЧ ВХОДИТ В ВЫВОД, А НЕ ПРОВЕРЯЕТСЯ ОТДЕЛЬНО (D-215) ──────
+     Самая частая ошибка «двухфакторных» хранилищ: второй фактор проверяют, а
+     ключ выводят по-прежнему из одного пароля. Тогда второй фактор — вахтёр:
+     он останавливает того, кто идёт через дверь, и ничего не значит для того,
+     у кого диск в руках. Здесь второй ключ ВХОДИТ В САМ ВЫВОД: без его байтов
+     из пароля не получается тот KEK, и обходить нечего — нечего обходить.
+     Приём стандартный, не самодельный: извлечение HKDF, где солью служит
+     тайна второго ключа (RFC 5869, шаг extract). */
+  function deriveKEK(password, saltB64, it1, it2, fsec) {
+    var n1 = it1 || KDF1_ITER, n2 = it2 || KDF2_ITER;
     var enc = new TextEncoder();
     var salt = unb64(saltB64);
     var subtle = window.crypto.subtle;
     return subtle.importKey("raw", enc.encode(String(password)), { name: "PBKDF2" }, false, ["deriveBits"])
       .then(function (base) {
-        return subtle.deriveBits({ name: "PBKDF2", salt: salt, iterations: KDF1_ITER, hash: "SHA-512" }, base, 512);
+        return subtle.deriveBits({ name: "PBKDF2", salt: salt, iterations: n1, hash: "SHA-512" }, base, 512);
       })
       .then(function (bits) {
         return subtle.importKey("raw", bits, { name: "PBKDF2" }, false, ["deriveBits"]);
@@ -1031,12 +1058,37 @@
            в один длинный, и второй ничего бы не добавил. */
         return subtle.deriveBits({
           name: "PBKDF2", salt: cat(salt, enc.encode("sys.baby/kek/v2")),
-          iterations: KDF2_ITER, hash: "SHA-256"
+          iterations: n2, hash: "SHA-256"
         }, mid, 256);
       })
       .then(function (bits) {
-        return subtle.importKey("raw", bits, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+        if (!fsec) return subtle.importKey("raw", bits, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+        return subtle.importKey("raw", fsec, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
+          .then(function (hk) { return subtle.sign("HMAC", hk, bits); })
+          .then(function (prk) {
+            return subtle.importKey("raw", prk, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+          });
       });
+  }
+
+  /* Тайна второго ключа — это НЕ сам файл: SHA-256 от его байтов вместе с
+     солью ЭТОГО замка. Один и тот же файл у двух хранилищ даёт разные тайны,
+     а на диске не лежит ничего, по чему файл можно было бы узнать. */
+  function factorSecret(fileBytes, saltB64) {
+    var body = new Uint8Array(fileBytes || new Uint8Array(0));
+    var salt = unb64(saltB64);
+    return window.crypto.subtle.digest("SHA-256", cat(body, salt))
+      .then(function (d) { return new Uint8Array(d); });
+  }
+  function factorOf(rec) { return (rec && rec.factor) || null; }
+  /* Второй ключ нужен ИЛИ нет — это свойство замка, и оно видно на диске.
+     Сказано вслух в окне: посторонний узнаёт, что второй ключ есть; узнать,
+     ЧТО ИМЕННО за файл, и тем более обойтись без него он не может. */
+  function factorFor(rec, fileBytes) {
+    var f = factorOf(rec);
+    if (!f) return Promise.resolve(null);
+    if (!fileBytes) return Promise.resolve(new Uint8Array(32));   /* заведомо не тот */
+    return factorSecret(fileBytes, f.salt);
   }
 
   /* ── МАСТЕР-КЛЮЧ → четыре ключа по HKDF ───────────────────────────────── */
@@ -1160,7 +1212,389 @@
   }
 
   /* ── СОБРАТЬ НОВЫЙ ЗАМОК ИЗ ПАРОЛЯ И ОТКРЫТЫХ ПАР ─────────────────────── */
-  function buildLock(password, pairs, keepMaster) {
+  /* ─────────────── ДВЕ ДВЕРИ, И ВТОРАЯ НЕОТЛИЧИМА ОТ ПЕРВОЙ (v98) ───────
+     ПОВОД. Основатель просил шифрование «в десять раз сильнее, чем у Signal».
+     Такой величины не существует: AES-256 уже за пределами перебора, и
+     умножить невозможность на десять нельзя. Зато можно уметь то, чего не
+     умеет ни Signal, ни кто-либо ещё из массовых: ТРЕВОЖНЫЙ ПАРОЛЬ.
+
+     КАК УСТРОЕНО. На диске ВСЕГДА лежат ровно две двери. Каждая — конверт с
+     мастер-ключом, завёрнутый в ключ, выведенный из своего пароля и своей
+     соли. Имена записей выводятся из мастера (HMAC), поэтому записи одного
+     мира для другого — неотличимый от шума набор конвертов.
+
+     ГЛАВНОЕ, И БЕЗ ЭТОГО ВСЁ БЕССМЫСЛЕННО: вторая дверь стоит ВСЕГДА, даже
+     когда тревожного пароля нет. Тогда в ней случайные байты, которые не
+     откроет никто и никогда. Выход AES-GCM от случайного шума неотличим, и
+     по диску НЕЛЬЗЯ узнать, настоящая вторая дверь или пустышка. Если бы
+     дверь появлялась только при заведённом тревожном пароле, само её
+     наличие и было бы признанием — и вся защита не стоила бы ничего.
+
+     ПРОВЕРЯЮТСЯ ВСЕГДА ОБЕ. Не «первая, а если не вышло — вторая»: иначе
+     время ответа говорило бы, какая дверь открылась. Обе растяжки считаются
+     всегда, и стоимость неверного пароля одинакова для любого.
+
+     ЧЕГО ЭТО НЕ ДАЁТ, и Совет говорит вслух: ЧИСЛО конвертов на диске видно.
+     Если в главном мире сорок записей, а в тревожном три, тот, кто считает
+     конверты, увидит сорок три. Скрыть это можно только подсыпая пустышки —
+     это отдельная работа и отдельное решение. Сегодня тревожный пароль
+     защищает от того, кто ЗАСТАВЛЯЕТ ОТКРЫТЬ, а не от того, кто месяцами
+     изучает диск.
+
+     Охраняется tools/two-doors-check.mjs. */
+
+  /* ── ИЗ БАЙТОВ В ПАРОЛЬ, БЕЗ ПЕРЕКОСА ────────────────────────────────────
+     Взять байт по остатку от деления на длину алфавита — обычная и тихая
+     ошибка: 256 не делится на 72, и первые сорок знаков алфавита выпадали бы
+     чаще прочих. Здесь байты, попавшие в неполный хвост, ОТБРАСЫВАЮТСЯ —
+     и распределение ровное. Из четырёх рядов знаков по одному ставится
+     обязательно, иначе иные места откажутся принимать пароль. */
+  var KEY_LOW = "abcdefghijkmnopqrstuvwxyz";
+  var KEY_UP = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  var KEY_NUM = "23456789";
+  var KEY_SYM = "!#$%&*+-=?";
+  var KEY_ALL = KEY_LOW + KEY_UP + KEY_NUM + KEY_SYM;
+
+  function shapeKey(bytes, want) {
+    var at = 0;
+    function draw(alpha) {
+      var limit = 256 - (256 % alpha.length);
+      while (at < bytes.length) {
+        var b = bytes[at++];
+        if (b < limit) return alpha.charAt(b % alpha.length);
+      }
+      return alpha.charAt(0);          /* байты кончились — такого не бывает при 256 */
+    }
+    var out = [draw(KEY_LOW), draw(KEY_UP), draw(KEY_NUM), draw(KEY_SYM)];
+    while (out.length < want) out.push(draw(KEY_ALL));
+    /* Перемешивание тоже выводится из тех же байтов: иначе обязательные знаки
+       всегда стояли бы первыми четырьмя, и это было бы видно. */
+    for (var i = out.length - 1; i > 0; i--) {
+      var limit = 256 - (256 % (i + 1));
+      var j = 0;
+      while (at < bytes.length) { var b2 = bytes[at++]; if (b2 < limit) { j = b2 % (i + 1); break; } }
+      var t = out[i]; out[i] = out[j]; out[j] = t;
+    }
+    return out.join("");
+  }
+
+  function randomDoor() {
+    var iv = new Uint8Array(12), wrap = new Uint8Array(48);
+    window.crypto.getRandomValues(iv);
+    window.crypto.getRandomValues(wrap);
+    return { wrapIv: b64(iv), wrap: b64(wrap) };
+  }
+
+  /* СОЛЬ У ЗАМКА ОДНА НА ОБЕ ДВЕРИ, и это не экономия на стойкости.
+     Соль мешает считать таблицы ЗАРАНЕЕ и СРАЗУ НА МНОГИХ; для двух дверей
+     одного человека на одном устройстве разные соли не добавляют ничего, а
+     стоят ровно вдвое: открытие считало бы растяжку дважды. С одной солью
+     растяжка считается ОДИН раз, а полученный ключ пробуется на обеих
+     дверях — это уже дешёвые действия. Заодно исчезает утечка временем:
+     стоимость попытки одинакова всегда. */
+  function makeDoor(password, master, saltB64, fsec) {
+    var iv = new Uint8Array(12);
+    window.crypto.getRandomValues(iv);
+    return deriveKEK(password, saltB64, null, null, fsec).then(function (kek) {
+      return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, kek, master);
+    }).then(function (w) { return { wrapIv: b64(iv), wrap: b64(w) }; });
+  }
+
+  /* Во сколько проходов заперт ЭТОТ замок. Старые записи несут это в kdf;
+     совсем древние — не несут, и тогда действует прежняя пара. */
+  function costOf(rec) {
+    var k = (rec && rec.kdf) || [];
+    var a = parseInt(String(k[0] || "").split(":")[1], 10);
+    var b = parseInt(String(k[1] || "").split(":")[1], 10);
+    return [a > 0 ? a : 210000, b > 0 ? b : 600000];
+  }
+
+  function saltOf(rec) {
+    if (rec && rec.salt) return rec.salt;
+    var d = doorsOf(rec)[0];
+    return d && d.salt;
+  }
+
+  function doorsOf(rec) {
+    if (rec && rec.doors && rec.doors.length) return rec.doors;
+    /* Замок прежнего образца: одна дверь. Открывается по-старому и при первом
+       же удачном открытии дописывается до двух — см. upgradeDoors. */
+    return [{ salt: rec.salt, wrapIv: rec.wrapIv, wrap: rec.wrap }];
+  }
+
+  function openDoors(rec, password, fsec) {
+    var doors = doorsOf(rec);
+    var cost = costOf(rec);
+    return deriveKEK(password, saltOf(rec), cost[0], cost[1], fsec).then(function (kek) {
+      var jobs = doors.map(function (d) {
+        var wrapped, iv;
+        try { wrapped = unb64(d.wrap); iv = unb64(d.wrapIv || d.iv); }
+        catch (e) { return Promise.resolve(null); }
+        return window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, kek, wrapped)
+          .then(function (buf) { return new Uint8Array(buf); }, function () { return null; });
+      });
+      /* Promise.all, а не гонка: обе двери пробуются до конца всегда. */
+      return Promise.all(jobs);
+    }).then(function (res) {
+      for (var i = 0; i < res.length; i++) if (res[i]) { vaultDoor = i; return res[i]; }
+      vaultDoor = -1;
+      return null;
+    });
+  }
+
+  /* Замок с одной дверью дописывается до двух молча, при первом открытии:
+     человек ничего не делал, а диск с этой минуты уже не говорит, есть ли
+     у него второй мир. */
+  function upgradeDoors(rec) {
+    if (rec && rec.doors && rec.doors.length >= 2) return;
+    var next = {};
+    var k; for (k in rec) if (Object.prototype.hasOwnProperty.call(rec, k)) next[k] = rec[k];
+    next.v = 3;
+    next.salt = saltOf(rec);
+    next.doors = doorsOf(rec).map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; })
+      .concat([randomDoor()]);
+    delete next.wrapIv; delete next.wrap;
+    lsSet(LOCK_KEY, JSON.stringify(next));
+  }
+
+  /* ─────────── ЧИСЛО КОНВЕРТОВ НА ДИСКЕ ТОЖЕ ПРЯЧЕТСЯ (v99) ──────────────
+     ПОВОД — предел, который Совет назвал сам, когда строил две двери (D-203):
+     «ЧИСЛО конвертов на диске видно. Если в главном мире сорок записей, а в
+     тревожном три, тот, кто считает конверты, увидит сорок три». Пока это
+     так, тревожное слово защищает наполовину: мир за второй дверью можно не
+     открыть, но можно ПОСЧИТАТЬ.
+
+     ЧТО СДЕЛАНО. К настоящим конвертам подсыпаются пустышки, и на диске
+     всегда лежит число, кратное тридцати двум. Пустышка неотличима от
+     конверта: то же имя в том же пространстве, тот же порядок частей, те же
+     длины, и внутри — случайные байты, которые не откроются никогда и ничем.
+     Размер тела берётся у УЖЕ ЛЕЖАЩИХ конвертов, а не выдумывается: иначе
+     пустышки выдала бы собственная ровность.
+
+     ПОДСЫПАТЬ МОЖНО, УБИРАТЬ НЕЛЬЗЯ. Система не знает, какие конверты
+     пустышки: под открытым ключом не открывается ни пустышка, ни ЧУЖОЙ МИР
+     за второй дверью. Убирать «лишнее» значило бы однажды стереть человеку
+     его второй мир. Поэтому число только растёт до следующей ступени.
+
+     ЧТО ЭТО ДАЁТ И ЧЕГО НЕ ДАЁТ, вслух. Считающий узнаёт СТУПЕНЬ, а не
+     число: «не больше тридцати двух» вместо «сорок три». Два мира на 43
+     записи и один мир на 20 выглядят одинаково. Но ступень видна, и при
+     двухстах записях в главном мире тревожный мир в трёх записях всё ещё
+     прячется, а вот при пустом главном — нет: у человека, который только
+     завёл систему, тридцать два конверта. Это цена ступени, и она названа.
+
+     Охраняется tools/decoy-count-check.mjs. */
+
+  var DECOY_STEP = 32;
+
+  function randBytes(n) { var u = new Uint8Array(n); window.crypto.getRandomValues(u); return u; }
+
+  /* Длины тел уже лежащих конвертов — чтобы пустышка была того же роста. */
+  function envelopeBodySizes() {
+    var out = [], names = sealedNamesNow(), i, v, p;
+    for (i = 0; i < names.length; i++) {
+      v = rawStore.get.call(window.localStorage, names[i]);
+      if (!v) continue;
+      p = String(v).split(".");
+      if (p.length !== 5 || p[0] !== "2") continue;
+      try { out.push(unb64(p[3]).length); } catch (e) { /* ignore */ }
+    }
+    return out;
+  }
+
+  function makeDecoy(sizes) {
+    var body = sizes.length
+      ? sizes[Math.floor(Math.random() * sizes.length)]
+      : PAD_BLOCK + 16;
+    return {
+      env: "2." + b64(randBytes(16)) + "." + b64(randBytes(12)) +
+           "." + b64(randBytes(body)) + "." + b64(randBytes(64))
+    };
+  }
+
+  /* ── ПУСТЫШКИ ИМЕНУЮТСЯ ТЕМ ЖЕ HMAC, ЧТО И ЗАПИСИ (v101) ───────────────
+     Снаружи имя пустышки неотличимо от имени записи: оба — отпечаток под
+     ключом имён. Изнутри же они ПЕРЕЧИСЛИМЫ, потому что выводятся из
+     служебного слова со счётчиком, а не из имени человеческого ключа.
+     ЗАЧЕМ ЭТО ПОНАДОБИЛОСЬ. Пока пустышки звались случайно, система не
+     могла отличить свою подсыпку от ЧУЖОГО МИРА за второй дверью и не
+     трогала ничего. Значит каждая новая запись выталкивала число за
+     ступень и стоила целых тридцати двух конвертов: доска поймала рост
+     64 → 160 на трёх записях подряд. Теперь новая запись СЪЕДАЕТ пустышку,
+     и число на диске стоит на месте.
+     Служебное слово начинается с нулевого знака: в ключах хранилища такого
+     знака не бывает, столкнуться не с чем. */
+  var DECOY_WORD = String.fromCharCode(0) + "sb/decoy/";
+
+  function decoyName(ks, i) { return sealedName(ks, DECOY_WORD + i); }
+
+  function decoyRoll(ks, upto) {
+    var jobs = [], i;
+    for (i = 0; i < upto; i++) jobs.push(decoyName(ks, i));
+    return Promise.all(jobs);
+  }
+
+  function levelDisk(ks) {
+    if (!vaultLocked() || !ks) return Promise.resolve();
+    var n = sealedNamesNow().length;
+    if (!n) return Promise.resolve();
+    var target = Math.max(DECOY_STEP, Math.ceil(n / DECOY_STEP) * DECOY_STEP);
+    if (n >= target) return Promise.resolve();
+    var need = target - n;
+    return decoyRoll(ks, target + DECOY_STEP).then(function (names) {
+      /* ЗАМОК ПРОВЕРЯЕТСЯ ЕЩЁ РАЗ, ПЕРЕД САМОЙ ЗАПИСЬЮ. Отпечатки имён
+         считаются не мгновенно, и за это время человек мог снять замок:
+         тогда подсыпка дописывала конверты в уже открытое хранилище —
+         доска поймала это строкой «после снятия замка конвертов не
+         осталось». Проверка в начале длинной работы ничего не значит. */
+      if (!vaultLocked()) return;
+      var sizes = envelopeBodySizes(), made = 0, i;
+      for (i = 0; i < names.length && made < need; i++) {
+        if (rawStore.get.call(window.localStorage, names[i]) != null) continue;
+        try { rawStore.set.call(window.localStorage, names[i], makeDecoy(sizes).env); made++; }
+        catch (e) { return; }             /* места нет — молча останавливаемся */
+      }
+    });
+  }
+
+  /* Вызывается ПЕРЕД записью нового конверта: снимает ОДНУ свою пустышку,
+     чтобы число на диске не шевельнулось. Чужие конверты не трогаются
+     никогда — под ними может лежать второй мир. */
+  function makeRoom(ks) {
+    if (!vaultLocked() || !ks) return Promise.resolve();
+    var n = sealedNamesNow().length;
+    var upto = Math.ceil(n / DECOY_STEP) * DECOY_STEP + DECOY_STEP;
+    return decoyRoll(ks, upto).then(function (names) {
+      if (!vaultLocked()) return;
+      var i;
+      for (i = names.length - 1; i >= 0; i--) {
+        if (rawStore.get.call(window.localStorage, names[i]) != null) {
+          rawStore.del.call(window.localStorage, names[i]);
+          return;
+        }
+      }
+    });
+  }
+
+
+  /* ── МЕДЛЕННЫЙ ОБОРОТ: ЧЕГО НЕ ВИДНО, ТОГО НЕ СРАВНИТЬ (v102) ──────────
+     ПОВОД, дословно от основателя: «сделайте шифрование ещё более
+     невообразимым. он должен постоянно меняться».
+
+     ЧТО ЗДЕСЬ БЫЛО ОТКРЫТО, ХОТЯ ВСЁ БЫЛО ЗАШИФРОВАНО. Конверт меняется на
+     диске ровно тогда, когда человек правит запись. Значит тот, у кого есть
+     ДВА СНИМКА диска — вчерашний и сегодняшний, — читает без всякого ключа:
+     какие именно записи человек трогал и когда. Содержание скрыто, а
+     ПОВЕДЕНИЕ видно насквозь. Это настоящая утечка, и до сегодня она была.
+
+     ЧТО СДЕЛАНО. Конверты переворачиваются сами, по нескольку за раз: запись
+     открывается и запечатывается заново со свежими случайными числами.
+     Содержимое то же, байты другие — целиком, до последнего. Пустышки
+     переворачиваются тем же порядком: им выдаётся новый случайный шум.
+     За несколько оборотов меняется ВЕСЬ диск, хотя человек не тронул ничего.
+
+     ПОЧЕМУ ЭТО НЕ УКРАШЕНИЕ. Два снимка диска теперь отличаются всегда и
+     везде. Сказать по ним, какую запись правили, нельзя: правленая ничем не
+     выделяется среди перевёрнутых.
+
+     ЧЕГО ОБОРОТ НЕ ДАЁТ, вслух: он НЕ защищает от того, кто получил диск и
+     узнал пароль. Ключ по-прежнему выводится из слова человека. Оборот
+     закрывает ровно одну щель — сравнение снимков — и не притворяется,
+     что закрывает другие.
+
+     ЧУЖОЕ НЕ ТРОГАЕТСЯ НИКОГДА. Конверт, который не открылся текущим ключом,
+     это либо своя пустышка (её имя перечислимо), либо запись ВТОРОГО МИРА.
+     Первую переворачиваем, вторую не касаемся.
+
+     Охраняется tools/roll-check.mjs. */
+
+  var ROLL_AT_ONCE = 4;
+  var ROLL_EVERY = 90000;
+  var rollTimer = null;
+
+  /* ── ОБОРОТ НАЗЫВАЕТ ИМЕНА, А НЕ ЧИСЛО (D-214) ─────────────────────────
+     Прежде оборот возвращал одно число. Числу можно нарисовать какую угодно
+     картинку: окно показало бы «перевернулось четыре» и мигнуло бы любыми
+     четырьмя ячейками. Теперь оборот отдаёт ИМЕНА перевёрнутых конвертов и
+     объявляет их шине. Окно не иллюстрирует оборот — оно его отражает, и
+     закон может сверить: ячейки, которые повернулись на экране, это ровно те
+     конверты, чьи байты на диске стали другими. */
+  function rollOnce(ks) {
+    if (!vaultLocked() || !ks) return Promise.resolve([]);
+    var names = sealedNamesNow();
+    if (!names.length) return Promise.resolve([]);
+    var upto = Math.ceil(names.length / DECOY_STEP) * DECOY_STEP + DECOY_STEP;
+    return decoyRoll(ks, upto).then(function (decoys) {
+      var mine = {}, i;
+      for (i = 0; i < decoys.length; i++) mine[decoys[i]] = true;
+      /* Кого переворачивать — решает случай, а не порядок в хранилище:
+         иначе сам оборот стал бы расписанием, читаемым со стороны. */
+      var pick = names.slice();
+      for (i = pick.length - 1; i > 0; i--) {
+        var j = randBytes(1)[0] % (i + 1);
+        var t = pick[i]; pick[i] = pick[j]; pick[j] = t;
+      }
+      pick = pick.slice(0, ROLL_AT_ONCE);
+      var sizes = envelopeBodySizes();
+      var jobs = pick.map(function (phys) {
+        var raw = rawStore.get.call(window.localStorage, phys);
+        if (raw == null) return Promise.resolve(null);
+        return openPair(ks, raw).then(function (p) {
+          return sealPair(ks, p.name, p.value).then(function (env) {
+            /* Замок мог быть снят, пока шифровали. Тогда писать некуда. */
+            if (!vaultLocked() || rawStore.get.call(window.localStorage, phys) == null) return null;
+            rawStore.set.call(window.localStorage, phys, env);
+            return phys;
+          });
+        }, function () {
+          if (!mine[phys]) return null;
+          if (!vaultLocked() || rawStore.get.call(window.localStorage, phys) == null) return null;
+          rawStore.set.call(window.localStorage, phys, makeDecoy(sizes).env);
+          return phys;
+        });
+      });
+      return Promise.all(jobs).then(function (r) {
+        var done = r.filter(function (x) { return !!x; });
+        if (done.length && window.sbBus && window.sbBus.emit) {
+          window.sbBus.emit("vault:roll", { names: done.slice(), turned: done.length, total: sealedNamesNow().length });
+        }
+        return done;
+      });
+    });
+  }
+
+  function rollKeep(ks) {
+    if (rollTimer) clearInterval(rollTimer);
+    rollTimer = setInterval(function () {
+      if (!vaultOpen || !vaultKeys) { clearInterval(rollTimer); rollTimer = null; return; }
+      rollOnce(vaultKeys);
+    }, ROLL_EVERY);
+  }
+
+  /* Наружу — чтобы окно аккаунта ПОКАЗЫВАЛО оборот настоящими числами,
+     а не рисовало его. */
+  window.sbVaultRoll = function () {
+    return rollOnce(vaultKeys).then(function (done) {
+      return { turned: done.length, names: done.slice(), total: sealedNamesNow().length };
+    });
+  };
+
+  /* ── ПЕРЕПИСЬ ДИСКА (D-214) ───────────────────────────────────────────
+     Сколько конвертов лежит, сколько из них настоящих и сколько пустышек —
+     это НЕ тайна от хозяина и полная тайна от всех прочих: снаружи конверты
+     неразличимы. Отдаётся наружу затем, чтобы окно СПРАШИВАЛО число, а не
+     помнило его, и чтобы закон мог сверить нарисованное с лежащим. */
+  window.sbVaultCensus = function () {
+    var total = sealedNamesNow().length;
+    var real = 0;
+    nameMap.forEach(function (phys) {
+      if (rawStore.get.call(window.localStorage, phys) != null) real++;
+    });
+    return { total: total, real: real, decoy: Math.max(0, total - real), step: DECOY_STEP,
+             at: ROLL_AT_ONCE, every: ROLL_EVERY };
+  };
+
+  function buildLock(password, pairs, keepMaster, duressPassword, factorFile) {
     var salt = new Uint8Array(32);
     var wrapIv = new Uint8Array(12);
     var master = keepMaster ? new Uint8Array(keepMaster) : new Uint8Array(32);
@@ -1168,8 +1602,17 @@
     window.crypto.getRandomValues(wrapIv);
     if (!keepMaster) window.crypto.getRandomValues(master);
     var saltB64 = b64(salt);
-    return deriveKEK(password, saltB64).then(function (kek) {
+    var fsalt = new Uint8Array(32);
+    window.crypto.getRandomValues(fsalt);
+    var fsaltB64 = b64(fsalt);
+    var factorRec = factorFile ? { kind: "file", salt: fsaltB64 } : null;
+    return (factorFile ? factorSecret(factorFile, fsaltB64) : Promise.resolve(null)).then(function (fsec) {
+    return deriveKEK(password, saltB64, null, null, fsec).then(function (kek) {
       return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: wrapIv }, kek, master).then(function (wrapped) {
+        var second = duressPassword
+          ? makeDoor(duressPassword, (function () { var m = new Uint8Array(32); window.crypto.getRandomValues(m); return m; })(), saltB64, fsec)
+          : Promise.resolve(randomDoor());
+        return second.then(function (door2) {
         return subkeys(master).then(function (ks) {
           var jobs = pairs.map(function (p) {
             return Promise.all([sealedName(ks, p.k), sealPair(ks, p.k, p.v)])
@@ -1181,24 +1624,27 @@
             /* Запись замка — ПОСЛЕДНЕЙ из создающих, но ДО стирания открытых:
                оборвись питание посередине, на диске лежат и конверты, и
                открытые копии, а замка нет — потерять нечего. */
-            lsSet(LOCK_KEY, JSON.stringify({
-              v: 2,
+            var body = {
+              v: factorRec ? 4 : 3,
               kdf: ["PBKDF2-SHA512:" + KDF1_ITER, "PBKDF2-SHA256:" + KDF2_ITER],
               ciphers: ["AES-256-CTR", "AES-256-GCM"],
               mac: "HMAC-SHA-512",
               names: "HMAC-SHA-256",
               pad: PAD_BLOCK,
               salt: saltB64,
-              wrapIv: b64(wrapIv),
-              wrap: b64(wrapped)
-            }));
+              doors: [{ wrapIv: b64(wrapIv), wrap: b64(wrapped) }, door2]
+            };
+            if (factorRec) body.factor = factorRec;
+            lsSet(LOCK_KEY, JSON.stringify(body));
             for (i = 0; i < rows.length; i++) rawStore.del.call(window.localStorage, rows[i].from);
             vaultMaster = new Uint8Array(master);
             master.fill(0);
-            return ks;
+            return levelDisk(ks).then(function () { return ks; });
           });
         });
+        });
       });
+    });
     });
   }
 
@@ -1235,7 +1681,7 @@
     /* Повернуть ключ. Слова уходят в конверты, открытые значения стираются из
        хранилища и из памяти разом: оставить их «на всякий случай» значило бы
        не запереть ничего. */
-    lock: function (password) {
+    lock: function (password, duressPassword, secondKeyFile) {
       if (!vaultAvailable()) return Promise.reject(new Error("no-subtle"));
       if (String(password || "").length < 4) return Promise.reject(new Error("short"));
       if (vaultLocked()) return Promise.reject(new Error("already"));
@@ -1247,19 +1693,36 @@
          записью замка система продолжает жить и писать. */
       sealing = true;
       pending.clear();
-      return buildLock(password, pairs).then(function (ks) {
+      var sealedWith = null;
+      return buildLock(password, pairs, null, duressPassword, secondKeyFile).then(function (ks) {
+        sealedWith = ks;
         /* Добираем то, что система записала, пока считался ключ. */
         var extra = [];
         pending.forEach(function (v, k) { extra.push({ k: k, v: v }); });
         pending.clear();
-        var jobs = extra.map(function (p) {
-          if (p.v == null) return Promise.resolve(null);
-          return Promise.all([sealedName(ks, p.k), sealPair(ks, p.k, p.v)]).then(function (r) {
-            rawStore.set.call(window.localStorage, r[0], r[1]);
-            rawStore.del.call(window.localStorage, p.k);
+        /* ПО ОДНОМУ, А НЕ ПАЧКОЙ: каждый доклеенный конверт обязан занять
+           место СВОЕЙ пустышки, иначе число на диске выходит за ступень —
+           доска поймала ровно это: тридцать три конверта вместо тридцати
+           двух после поворота ключа. */
+        return extra.reduce(function (chain, p) {
+          return chain.then(function () {
+            if (p.v == null) return null;
+            return Promise.all([sealedName(ks, p.k), sealPair(ks, p.k, p.v)]).then(function (r) {
+              var fresh = rawStore.get.call(window.localStorage, r[0]) == null;
+              return (fresh ? makeRoom(ks) : Promise.resolve()).then(function () {
+                rawStore.set.call(window.localStorage, r[0], r[1]);
+                rawStore.del.call(window.localStorage, p.k);
+              });
+            });
           });
-        });
-        return Promise.all(jobs);
+        }, Promise.resolve());
+      }).then(function () {
+        /* ВЫРАВНИВАНИЕ ПОСЛЕДНИМ, А НЕ В СЕРЕДИНЕ. buildLock уже подсыпал
+           пустышек, но сразу после него сюда доклеиваются записи, сделанные
+           ПОКА СЧИТАЛСЯ КЛЮЧ, — и число снова переставало быть круглым.
+           Прибор поймал это на первом же прогоне: тридцать шесть конвертов
+           вместо тридцати двух. Выравнивать надо там, где запись кончается. */
+        return levelDisk(sealedWith);
       }).then(function () {
         /* ── ЗАПЕР — ЗНАЧИТ ЗАПЕРТО, С ЭТОГО ЖЕ МИГА ────────────────────────
            Прежняя редакция оставляла сеанс ОТКРЫТЫМ после поворота ключа и
@@ -1286,21 +1749,20 @@
 
     /* Открыть на сеанс. Расшифрованное кладётся в ПАМЯТЬ (кэш sbDB), а не
        обратно в хранилище: иначе первое же открытие отменило бы замок. */
-    unlock: function (password) {
+    unlock: function (password, secondKeyFile) {
       var rec = lockRecord();
       if (!rec) return Promise.resolve(true);
       if (!vaultAvailable()) return Promise.resolve(false);
       if (rec.v === 1) return migrateV1(password, rec);
-      var wrapped, wrapIv;
-      try { wrapped = unb64(rec.wrap); wrapIv = unb64(rec.wrapIv); }
-      catch (e) { return Promise.resolve(false); }
-      return deriveKEK(password, rec.salt).then(function (kek) {
-        /* Верен ли пароль, отвечает сам AES-GCM: неверный ключ не даёт
-           подписи сойтись, и распаковка бросает. Отдельное «проверочное
-           слово» здесь не нужно — и хорошо: одним известным открытым
-           текстом на диске меньше. */
-        return window.crypto.subtle.decrypt({ name: "AES-GCM", iv: wrapIv }, kek, wrapped);
+      /* Верен ли пароль, отвечает сам AES-GCM: неверный ключ не даёт подписи
+         сойтись, и распаковка бросает. Отдельное «проверочное слово» здесь не
+         нужно — и хорошо: одним известным открытым текстом на диске меньше.
+         Дверей две, и считаются ОБЕ всегда — см. шапку про две двери. */
+      return factorFor(rec, secondKeyFile).then(function (fsec) {
+        return openDoors(rec, password, fsec);
       }).then(function (masterBuf) {
+        if (!masterBuf) throw new Error("wrong");
+        if (!factorOf(rec)) upgradeDoors(rec);
         var master = new Uint8Array(masterBuf);
         return subkeys(master).then(function (ks) {
           /* Мастер-ключ остаётся в памяти сеанса — ради смены пароля БЕЗ
@@ -1317,10 +1779,10 @@
 
     /* Снять замок совсем: слова возвращаются в хранилище открытыми. Требует
        пароля — снять замок должен тот, кто его ставил. */
-    remove: function (password) {
+    remove: function (password, secondKeyFile) {
       var rec = lockRecord();
       if (!rec) return Promise.resolve(true);
-      return window.sbVault.unlock(password).then(function (okp) {
+      return window.sbVault.unlock(password, secondKeyFile).then(function (okp) {
         if (!okp) return false;
         var names = sealedNamesNow(), i;
         mem.forEach(function (v, k) {
@@ -1330,9 +1792,219 @@
         lsDel(LOCK_KEY);
         vaultOpen = false;
         vaultKeys = null;
+        vaultDoor = -1;
         if (vaultMaster) { vaultMaster.fill(0); vaultMaster = null; }
         nameMap.clear();
         if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: false });
+        return true;
+      });
+    },
+
+    /* ── КЛЮЧ, КОТОРОГО НИГДЕ НЕТ ────────────────────────────────────────
+       Пароль для места не ХРАНИТСЯ, а ВЫВОДИТСЯ: HKDF от мастер-ключа
+       хранилища, именем места и счётчиком. Одно и то же место при одном и том
+       же счётчике всегда даёт один и тот же пароль — и ни одного байта этого
+       пароля нет ни на диске, ни в памяти дольше показа.
+
+       ЧТО ЭТО ДАЁТ. Красть нечего: в конвертах лежит имя места, а не пароль.
+       Терять нечего: новое устройство, то же слово — и все пароли вернулись.
+       Синхронизировать нечего: выводится на месте, одинаково везде.
+
+       ЧЕГО НЕ ДАЁТ, и это сказано человеку в самом приложении: пароли,
+       заведённые НЕ здесь, вывести нельзя — их приходится хранить, и для них
+       остаётся обычный конверт. И если мастер-слово утечёт, утечёт всё разом:
+       у выведенных ключей общий корень. Счётчик существует ровно для того,
+       чтобы сменить пароль одного места, не трогая остальные.
+
+       Охраняется tools/keys-check.mjs. */
+    /* Алфавит отдаётся наружу, чтобы закон СПРАШИВАЛ его, а не помнил:
+       список знаков — состав системы, и замораживать его в приборе нельзя. */
+    keyAlphabet: function () { return KEY_ALL; },
+
+    siteKey: function (place, counter, length) {
+      if (!vaultOpen || !vaultMaster) return Promise.reject(new Error("closed"));
+      var want = Math.max(10, Math.min(64, parseInt(length, 10) || 20));
+      var info = new TextEncoder().encode("sys.baby/site/v1/" + String(place) + "#" + (parseInt(counter, 10) || 0));
+      return window.crypto.subtle.importKey("raw", vaultMaster, "HKDF", false, ["deriveBits"])
+        .then(function (k) {
+          return window.crypto.subtle.deriveBits(
+            { name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info: info }, k, 8 * 256);
+        })
+        .then(function (bits) { return shapeKey(new Uint8Array(bits), want); });
+    },
+
+    /* ── ТРЕВОЖНЫЙ ПАРОЛЬ ──────────────────────────────────────────────────
+       Второе слово, открывающее ДРУГОЙ мир: свои записи, свой стол, свои
+       заметки. Ничто в системе не показывает, что второй мир существует, —
+       ни надписью, ни задержкой, ни лишней строкой на диске (см. шапку про
+       две двери).
+
+       ПОЧЕМУ ИЗ ТРЕВОЖНОГО МИРА ЭТО НЕ РАБОТАЕТ, И ПОЧЕМУ ОБ ЭТОМ НЕ
+       СООБЩАЕТСЯ. Тот, кто вошёл вторым словом, — это либо человек под
+       принуждением, либо тот, кто его принуждает. Дать ему переписать первую
+       дверь значило бы отдать ему главный мир. Поэтому вызов из тревожного
+       мира НИЧЕГО НЕ ПИШЕТ и отвечает «готово»: отказ был бы признанием, что
+       мир не первый, а признание здесь дороже любой потери. */
+    /* ── ВТОРОЙ КЛЮЧ: ТАЙНА, КОТОРОЙ НЕТ НА ЭТОМ ДИСКЕ (D-215) ────────────
+       ПОВОД, дословно от основателя: «прошу совет самым креативным,
+       интеллектуальным и гениальным способом сделать. шифрование ещё в разы
+       сильнее».
+
+       ПОЧЕМУ НЕ «УСИЛИТЬ ШИФР». Шифр не является слабым местом и усилению не
+       подлежит: перебор ключа AES-256 невозможен физически, а не трудно.
+       Слабое место ровно одно и всегда одно и то же — СЛОВО ЧЕЛОВЕКА, из
+       которого ключ выводится. Растяжка уже стоит двадцать один OWASP; сделать
+       её вдесятеро дороже значит заставить хозяина ждать двадцать секунд у
+       двери и получить множитель десять — против слова, которое подбирают за
+       миллионы попыток. Это не усиление, это обряд.
+
+       ЧТО ДЕЙСТВИТЕЛЬНО УМНОЖАЕТ СТОЙКОСТЬ. Тайна, которой НЕТ ни на диске,
+       ни в голове: файл, который человек держит отдельно. Его байты входят в
+       вывод ключа. Тот, кто унёс диск и узнал слово, не получает ничего —
+       не потому, что его остановила проверка, а потому, что ключ без файла
+       не выводится. Множитель здесь не «в разы»: перебор становится
+       бессмысленным до тех пор, пока файл не в руках.
+
+       ЦЕНА, КОТОРУЮ СОВЕТ ОБЯЗАН НАЗВАТЬ ПЕРВОЙ. Потерять файл — то же
+       самое, что забыть слово. Восстановления нет и здесь. Второй ключ
+       делает хранилище сильнее РОВНО НАСТОЛЬКО, насколько надёжно человек
+       хранит файл отдельно от машины. Поэтому он не включается сам и не
+       предлагается по умолчанию.
+
+       ЧЕГО ОН НЕ ДАЁТ: он не спасает от того, у кого И диск, И слово, И файл.
+       Он не делает шифр сильнее. Он убирает возможность подбирать слово,
+       имея один только диск.
+
+       Охраняется tools/second-key-check.mjs. */
+    secondKey: function () {
+      var f = factorOf(lockRecord());
+      return { on: !!f, kind: f ? f.kind : null };
+    },
+    /* Ключ рождается здесь, а не выбирается из своих файлов: чужой файл можно
+       случайно изменить, пересохранить или выложить, и он перестанет быть
+       ключом молча. Этот — случайные байты, у которых нет другой работы. */
+    newSecondKey: function () {
+      var b = new Uint8Array(512);
+      window.crypto.getRandomValues(b);
+      return b;
+    },
+    setSecondKey: function (password, fileBytes, duressPassword) {
+      var rec = lockRecord();
+      if (!rec) return Promise.reject(new Error("no-lock"));
+      if (factorOf(rec)) return Promise.reject(new Error("already"));
+      if (!fileBytes || !fileBytes.length) return Promise.reject(new Error("no-file"));
+      var saltB64 = saltOf(rec);
+      var fsalt = new Uint8Array(32);
+      window.crypto.getRandomValues(fsalt);
+      var fsaltB64 = b64(fsalt);
+      var master0 = null, master1 = null, fsec = null;
+      return openDoors(rec, password, null).then(function (m) {
+        if (!m) return false;
+        if (vaultDoor !== 0) return true;        /* из тревожного мира — молча «готово» */
+        master0 = m;
+        if (!duressPassword) return null;
+        return openDoors(rec, duressPassword, null).then(function (m2) { master1 = m2; return null; });
+      }).then(function (early) {
+        if (early === false || early === true) return early;
+        return factorSecret(fileBytes, fsaltB64).then(function (fs) {
+          fsec = fs;
+          return makeDoor(password, master0, saltB64, fsec);
+        }).then(function (door0) {
+          var second = master1 ? makeDoor(duressPassword, master1, saltB64, fsec) : Promise.resolve(randomDoor());
+          return second.then(function (door1) {
+            var next = lockRecord() || {};
+            next.v = 4;
+            next.salt = saltB64;
+            next.factor = { kind: "file", salt: fsaltB64 };
+            next.doors = [door0, door1];
+            delete next.wrapIv; delete next.wrap;
+            lsSet(LOCK_KEY, JSON.stringify(next));
+            vaultDoor = 0;
+            return true;
+          });
+        });
+      });
+    },
+    clearSecondKey: function (password, fileBytes, duressPassword) {
+      var rec = lockRecord();
+      if (!rec) return Promise.reject(new Error("no-lock"));
+      if (!factorOf(rec)) return Promise.resolve(true);
+      var saltB64 = saltOf(rec);
+      var master0 = null, master1 = null;
+      return factorFor(rec, fileBytes).then(function (fsec) {
+        return openDoors(rec, password, fsec).then(function (m) {
+          if (!m) return false;
+          if (vaultDoor !== 0) return true;
+          master0 = m;
+          if (!duressPassword) return null;
+          return openDoors(rec, duressPassword, fsec).then(function (m2) { master1 = m2; return null; });
+        });
+      }).then(function (early) {
+        if (early === false || early === true) return early;
+        return makeDoor(password, master0, saltB64, null).then(function (door0) {
+          var second = master1 ? makeDoor(duressPassword, master1, saltB64, null) : Promise.resolve(randomDoor());
+          return second.then(function (door1) {
+            var next = lockRecord() || {};
+            next.v = 3;
+            next.salt = saltB64;
+            delete next.factor;
+            next.doors = [door0, door1];
+            lsSet(LOCK_KEY, JSON.stringify(next));
+            vaultDoor = 0;
+            return true;
+          });
+        });
+      });
+    },
+
+    setDuress: function (mainPassword, duressPassword, secondKeyFile) {
+      var rec = lockRecord();
+      if (!rec) return Promise.reject(new Error("no-lock"));
+      if (String(duressPassword || "").length < 4) return Promise.reject(new Error("short"));
+      if (String(duressPassword) === String(mainPassword)) return Promise.reject(new Error("same"));
+      return window.sbVault.unlock(mainPassword, secondKeyFile).then(function (okp) {
+        if (!okp) return false;
+        if (vaultDoor !== 0) return true;          /* см. выше: молча и «готово» */
+        var m = new Uint8Array(32);
+        window.crypto.getRandomValues(m);
+        var next0 = lockRecord() || {};
+        return factorFor(next0, secondKeyFile).then(function (fsec) {
+        return makeDoor(duressPassword, m, saltOf(next0), fsec).then(function (door) {
+          var next = lockRecord() || {};
+          var doors = doorsOf(next).map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; });
+          while (doors.length < 2) doors.push(randomDoor());
+          doors[1] = door;
+          /* Замок со вторым ключом остаётся четвёртой редакцией: понизить его
+             здесь значило бы молча снять второй ключ вместе с тревожным. */
+          next.v = factorOf(next) ? 4 : 3;
+          next.salt = saltOf(next); next.doors = doors;
+          delete next.wrapIv; delete next.wrap;
+          lsSet(LOCK_KEY, JSON.stringify(next));
+          m.fill(0);
+          return true;
+        });
+        });
+      });
+    },
+
+    /* Снять тревожное слово: вторая дверь становится случайным шумом, и мир
+       за ней теряется навсегда — открыть его больше нечем. Записи того мира
+       остаются на диске неотличимым от шума набором конвертов, и это не
+       недосмотр: диск, с которого вдруг исчезла половина конвертов, сам
+       рассказывает, что там что-то было. */
+    clearDuress: function (mainPassword) {
+      var rec = lockRecord();
+      if (!rec) return Promise.reject(new Error("no-lock"));
+      return window.sbVault.unlock(mainPassword).then(function (okp) {
+        if (!okp) return false;
+        if (vaultDoor !== 0) return true;
+        var next = lockRecord() || {};
+        var doors = doorsOf(next).map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; });
+        while (doors.length < 2) doors.push(randomDoor());
+        doors[1] = randomDoor();
+        next.v = 3; next.salt = saltOf(next); next.doors = doors;
+        delete next.wrapIv; delete next.wrap;
+        lsSet(LOCK_KEY, JSON.stringify(next));
         return true;
       });
     },
@@ -1351,18 +2023,33 @@
       if (String(newPassword || "").length < 4) return Promise.reject(new Error("short"));
       return window.sbVault.unlock(oldPassword).then(function (okp) {
         if (!okp || !vaultMaster) return false;
-        var salt = new Uint8Array(32);
+        /* СОЛЬ ЗАМКА НЕ МЕНЯЕТСЯ ПРИ СМЕНЕ ПАРОЛЯ, и это выбор, а не небрежность.
+           Соль общая на обе двери; сменить её значило бы заново завернуть и
+           вторую дверь — а её пароль тому, кто меняет первый, неизвестен.
+           Смена соли молча убивала бы тревожный мир. Соль остаётся случайной,
+           уникальной для этого устройства и никогда не покидает его; её
+           задача — не дать считать таблицы заранее, и смена пароля этой
+           задачи не касается. */
         var wrapIv = new Uint8Array(12);
-        window.crypto.getRandomValues(salt);
         window.crypto.getRandomValues(wrapIv);
-        var saltB64 = b64(salt);
+        var saltB64 = saltOf(lockRecord() || {});
         return deriveKEK(newPassword, saltB64).then(function (kek) {
           return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: wrapIv }, kek, vaultMaster);
         }).then(function (wrapped) {
           var next = lockRecord() || {};
+          var doors = doorsOf(next).slice();
+          /* Переклеивается ТА дверь, через которую вошли: остальные остаются
+             байт в байт. Иначе смена главного пароля стирала бы тревожный —
+             молча и необратимо. Какая это дверь, знает только тот, кто вошёл:
+             наружу это число не отдаётся. */
+          var mine = (typeof vaultDoor === "number" && vaultDoor >= 0) ? vaultDoor : 0;
+          doors = doors.map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; });
+          doors[mine] = { wrapIv: b64(wrapIv), wrap: b64(wrapped) };
+          next.v = 3;
           next.salt = saltB64;
-          next.wrapIv = b64(wrapIv);
-          next.wrap = b64(wrapped);
+          next.kdf = ["PBKDF2-SHA512:" + KDF1_ITER, "PBKDF2-SHA256:" + KDF2_ITER];
+          next.doors = doors;
+          delete next.wrapIv; delete next.wrap;
           lsSet(LOCK_KEY, JSON.stringify(next));
           return true;
         });
@@ -1397,6 +2084,8 @@
       }
       vaultKeys = ks;
       vaultOpen = true;
+      levelDisk(ks).then(function () { return rollOnce(ks); });
+      rollKeep(ks);
       if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: true, open: true });
       /* Вид системы возвращается вместе со словами: до этого мига комната
          была не своя, потому что и её запирали (D-164). */
@@ -1496,8 +2185,25 @@
       return namePromise.then(function (phys) {
         nameMap.set(k, phys);
         if (val == null) { rawStore.del.call(window.localStorage, phys); return null; }
-        return sealPair(vaultKeys, k, val).then(function (env) {
-          rawStore.set.call(window.localStorage, phys, env);
+        var fresh = rawStore.get.call(window.localStorage, phys) == null;
+        var keys = vaultKeys;
+        return sealPair(keys, k, val).then(function (env) {
+          /* СРАЗУ, А НЕ ОТЛОЖЕННО. Отложенная подсыпка оставляла окно в
+             четыреста миллисекунд, в котором число конвертов не круглое —
+             и в это окно диск говорит правду. Окна быть не должно вовсе.
+             Новый конверт при этом занимает место СВОЕЙ пустышки. */
+          return (fresh ? makeRoom(keys) : Promise.resolve()).then(function () {
+            rawStore.set.call(window.localStorage, phys, env);
+            /* ── МИГ ЗАПЕЧАТЫВАНИЯ ОБЪЯВЛЯЕТСЯ НАРУЖУ (D-219) ─────────────
+               Человек дописал строку — и она ушла в конверт. До сих пор это
+               было совершенно невидимо: система делала самое важное молча.
+               Объявляется ИМЯ КЛЮЧА и ИМЯ КОНВЕРТА, чтобы стол показывал
+               настоящую печать этого конверта, а не рисовал похожую. */
+            if (window.sbBus && window.sbBus.emit) {
+              window.sbBus.emit("vault:sealed", { key: k, name: phys, at: Date.now() });
+            }
+            return levelDisk(keys);
+          });
         });
       });
     }).catch(function (e) { if (window.console) console.error("[vault] seal failed", e); });

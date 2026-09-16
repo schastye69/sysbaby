@@ -153,7 +153,39 @@
     }).join("");
   }
 
+  /* ── ВЫКЛЮЧАТЕЛЬ ИЗ ОПИСИ «НАРУЖУ» ИСПОЛНЯЕТСЯ ЗДЕСЬ (D-221) ───────────
+     Выключатель, который ничего не выключает, — ровно то враньё, ради
+     которого окно «Наружу» и заведено. Выключено — значит рамка не грузится
+     и проверка не идёт; карточка при этом НЕ говорит «не отвечает»: она не
+     говорит ничего. Отсутствие утверждения честнее ложного утверждения. */
+  function probeAllowed() {
+    /* ── ВИТРИНА ЧИТАЕТ ТОТ ЖЕ ВЫКЛЮЧАТЕЛЬ, ЧТО И СИСТЕМА ─────────────────
+       Этот модуль рисует и окно системы, и раздел витрины. В системе есть
+       sbGetControlToggle; на витрине его нет — оболочка там не грузится.
+       Прибор поймал это сразу: выключатель в системе стоял «выключено», а
+       витрина всё равно делала восемь запросов. Происхождение одно, хранилище
+       одно — значит и выключатель один; читаем его напрямую. */
+    /* ПОРЯДОК ВАЖЕН, И ЕГО ПОСТАВИЛ КРАСНЫЙ. Первая редакция спрашивала
+       оболочку первой — и на стенде приложений, где опись не загружена,
+       оболочка честно ответила «нет такого выключателя», то есть «выключено».
+       Живые предпросмотры исчезли, и закон стенда покраснел. Правда о
+       выключателе такая: сначала ЯВНЫЙ выбор человека, потом объявленное в
+       описи умолчание, и только потом — включено. Пропавшее описание не
+       имеет права выключать то, что человек не выключал. */
+    try {
+      var raw = window.localStorage.getItem("sysbaby.controlcenter.v1");
+      if (raw) {
+        var all = JSON.parse(raw);
+        if (all && Object.prototype.hasOwnProperty.call(all, "probeWorks")) return !!all.probeWorks;
+      }
+    } catch (e) { /* ignore */ }
+    var doors = (window.SB_OUTWARD && window.SB_OUTWARD.doors) || [];
+    for (var i = 0; i < doors.length; i++) if (doors[i].toggle === "probeWorks") return doors[i].default !== "off";
+    return true;
+  }
+
   function previewSrc(view) {
+    if (!probeAllowed()) return null;
     if (!view.explorePath) return null;
     var src = pathFor(view.explorePath);
     var lang = systemLang();
@@ -311,6 +343,7 @@
        a fetch of the same URL rather than a listener on the iframe: if the
        system answers, the card stays live; if it 404s or the host is gone, the
        card says it cannot be reached and stops claiming otherwise. */
+    if (!probeAllowed()) return;
     host.querySelectorAll(".pf-preview[data-src]").forEach(function (box) {
       var url = box.getAttribute("data-src");
       var card = box.closest ? box.closest(".pf-card") : null;
