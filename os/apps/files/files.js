@@ -646,6 +646,28 @@
     return out;
   }
 
+  /* ── ВЫБРОШЕННОЕ МОЖНО ВЕРНУТЬ (D-224) ──────────────────────────────────
+   *
+   * ЗДЕСЬ БЫЛО НАСТОЯЩЕЕ УДАЛЕНИЕ. Файл — или целая папка со всем, что
+   * внутри, — вырезался из дерева и переставал существовать. Один
+   * подтверждающий вопрос, одно нажатие мимо, и документ потерян навсегда.
+   * У ЗАМЕТОК этого не было никогда: удалённая заметка уходит в «Эхо» и
+   * возвращается оттуда сколько угодно времени спустя. Файлы — то есть
+   * ровно то, что человек считает документами, — были устроены хуже заметок.
+   * Совет нашёл это сам, обходя приложения без сторожа.
+   *
+   * ТЕПЕРЬ ОДИНАКОВО. Выброшенное ложится в __gone вместе со своим прежним
+   * путём и временем; в дереве и в поиске его нет, в «Эхе» оно есть.
+   * Возврат кладёт его туда, откуда взяли. Вещи склада при этом НЕ
+   * уничтожаются: они уходят только при «заглушить», когда человек сказал
+   * «навсегда» во второй раз. */
+  function goneList() {
+    ensureLoaded();
+    if (!Array.isArray(tree.__gone)) tree.__gone = [];
+    return tree.__gone;
+  }
+  function goneId() { return "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
   function removeNode(win, idx) {
     var folder = currentFolder();
     var node = (folder.children || [])[idx];
@@ -655,13 +677,11 @@
       : t("fv.confirm.file", { name: node.name });
     var extra = (node.type === "folder" && (node.children || []).length) ? t("fv.confirm.nested") : "";
     if (!window.confirm(question + extra)) return;
-    /* ── ВЫНУТАЯ ИЗ ОПИСИ ВЕЩЬ УХОДИТ СО СКЛАДА (v69) ──────────────────────
-       Иначе Хранилище копило бы навсегда то, что человек уже выбросил, и
-       узнать об этом было бы неоткуда: в описи вещи нет, а место занято.
-       Собирается и то, что лежит внутри выброшенной папки. */
-    collectThings(node).forEach(function (id) {
-      if (window.sbThings) window.sbThings.del(id);
-    });
+    /* Путь запоминается ИМЕНАМИ, а не ссылками: папку, в которой лежал файл,
+       к моменту возврата могут переименовать или выбросить, и держаться за
+       узел, которого может не быть, значило бы потерять вещь молча. */
+    var where = pathStack.slice(1).map(function (f) { return f.name; });
+    goneList().unshift({ id: goneId(), at: Date.now(), path: where, node: node });
     folder.children.splice(idx, 1);
     persist();
     selectedIndex = -1;
@@ -670,6 +690,48 @@
     render(win);
     toast(t("fv.toast.title"), t("fv.toast.deleted", { name: node.name }));
   }
+
+  /* Наружу — для «Эха», которое показывает выброшенное, и для закона. */
+  window.sbFilesDeleted = function () {
+    return goneList().map(function (g) {
+      return { id: g.id, name: g.node && g.node.name, type: g.node && g.node.type,
+               deletedAt: g.at, path: (g.path || []).slice() };
+    });
+  };
+  window.sbFilesRestore = function (id) {
+    var list = goneList(), i;
+    for (i = 0; i < list.length; i++) {
+      if (list[i].id !== id) continue;
+      var g = list.splice(i, 1)[0];
+      /* Куда класть: в ту же папку, если она ещё есть; иначе в корень, и это
+         честнее, чем воссоздавать чужую папку по имени. */
+      var host = tree;
+      (g.path || []).forEach(function (name) {
+        var next = (host.children || []).filter(function (c) { return c && c.type === "folder" && c.name === name; })[0];
+        if (next) host = next;
+      });
+      if (!Array.isArray(host.children)) host.children = [];
+      g.node.name = uniqueName(host, g.node.name, g.node.type === "folder", null);
+      host.children.push(g.node);
+      persist();
+      return true;
+    }
+    return false;
+  };
+  window.sbFilesSilence = function (id) {
+    var list = goneList(), i;
+    for (i = 0; i < list.length; i++) {
+      if (list[i].id !== id) continue;
+      var g = list.splice(i, 1)[0];
+      /* Вот ТЕПЕРЬ вещи склада уходят: человек сказал «навсегда» второй раз. */
+      collectThings(g.node).forEach(function (thing) {
+        if (window.sbThings) window.sbThings.del(thing);
+      });
+      persist();
+      return true;
+    }
+    return false;
+  };
 
   /* ------------------------------------------------------------ providers */
 

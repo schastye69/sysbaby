@@ -230,15 +230,40 @@
     "</div>";
   }
 
+  /* ── ВЫБРОШЕННЫЕ ФАЙЛЫ ОТДЫХАЮТ ЗДЕСЬ ЖЕ (D-224) ───────────────────────
+     «Эхо» задумано как место, где лежит удалённое. До сих пор в нём лежали
+     только заметки — а файлы, то есть ровно то, что человек считает
+     документами, удалялись насовсем. Теперь они здесь, и возвращаются тем же
+     жестом. Приложение по-прежнему не заводит своего хранилища: список
+     спрашивается у Файлов. */
+  function deletedFiles() {
+    try { return (window.sbFilesDeleted && window.sbFilesDeleted()) || []; }
+    catch (err) { console.error("[echoes] deleted files failed", err); return []; }
+  }
+  function fileRowMarkup(f) {
+    var where = (f.path || []).join(" / ");
+    return '<div class="ec-row" data-file="' + esc(f.id) + '">' +
+      '<span class="ec-row-bars" aria-hidden="true"></span>' +
+      '<span class="ec-row-text">' +
+        '<b>' + esc(f.name || "—") + "</b>" +
+        '<i>' + esc(f.type === "folder" ? t("ec.file.folder") : t("ec.file.file")) +
+          (where ? " · " + esc(where) : "") + " · " + esc(timeAgo(f.deletedAt)) + "</i>" +
+      "</span>" +
+      '<button type="button" class="ec-btn" data-restore-file="' + esc(f.id) + '">' + esc(t("ec.restore")) + "</button>" +
+      '<button type="button" class="ec-btn x" data-silence-file="' + esc(f.id) + '" title="' + esc(t("ec.silenceTitle")) + '" aria-label="' + esc(t("ec.silenceAria")) + '">✕</button>' +
+    "</div>";
+  }
+
   function render(win) {
     var host = bodyOf(win);
     if (!host) return;
     var echoes = deletedNotes();
     var apps = hiddenApps();
     var parts = hiddenParts();
+    var files = deletedFiles();
 
     var markup;
-    if (!echoes.length && !apps.length && !parts.length) {
+    if (!echoes.length && !apps.length && !parts.length && !files.length) {
       markup = '<div class="ec-empty">' +
         '<div class="ec-empty-glyph">' + ICON + "</div>" +
         '<p class="ec-empty-title">' + esc(t("ec.empty.title")) + "</p>" +
@@ -251,6 +276,11 @@
           "<span>" + esc(t(echoes.length === 1 ? "ec.count.one" : "ec.count.many", { n: echoes.length })) + "</span>" +
           '<button type="button" class="ec-btn quiet" id="ecSilenceAll">' + esc(t("ec.silenceAll")) + "</button>" +
         "</div>" + echoes.map(echoRowMarkup).join("");
+      }
+      if (files.length) {
+        markup += '<div class="ec-head second"><span>' +
+          esc(t(files.length === 1 ? "ec.files.one" : "ec.files.many", { n: files.length })) + "</span></div>" +
+          files.map(fileRowMarkup).join("");
       }
       if (apps.length || parts.length) {
         var n = apps.length + parts.length;
@@ -268,6 +298,23 @@
   }
 
   function wire(win, host, echoCount) {
+    host.querySelectorAll("[data-restore-file]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        try { if (window.sbFilesRestore) window.sbFilesRestore(btn.getAttribute("data-restore-file")); }
+        catch (err) { console.error("[echoes] file restore failed", err); return; }
+        toast(t("ec.toast.restoredTitle"), t("ec.toast.restoredBody"));
+        render(win);
+      });
+    });
+    host.querySelectorAll("[data-silence-file]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        /* «Навсегда» спрашивается второй раз: первый был при удалении. */
+        if (!window.confirm(t("ec.silenceAsk"))) return;
+        try { if (window.sbFilesSilence) window.sbFilesSilence(btn.getAttribute("data-silence-file")); }
+        catch (err) { console.error("[echoes] file silence failed", err); return; }
+        render(win);
+      });
+    });
     host.querySelectorAll("[data-restore]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var s = store();
