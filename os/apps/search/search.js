@@ -295,6 +295,10 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("search", {
+      /* ЧЕМ ЭТА КОМНАТА ОТКРЫВАЕТСЯ СНАРУЖИ (D-245). Дверь, о которой хозяин
+         не сказал, — незваная: ровно из таких выросли шестнадцать частных
+         ходов, каждый правый в свой день. Охраняется tools/hand-check.mjs. */
+      opens: ["sbSearchOpenQuery"],
       title: "Seek",
       i18n: {
         ru: { title: "Поиск", label: "Поиск" },

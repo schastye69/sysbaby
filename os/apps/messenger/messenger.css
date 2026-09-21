@@ -35,7 +35,7 @@
   background: rgba(255, 255, 255, .05);
   color: inherit;
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--f-ui);
   outline: none;
 }
 
@@ -94,9 +94,9 @@
   border-radius: var(--r-ctrl);
   border: 1px solid rgba(255, 255, 255, .1);
   background: transparent;
-  color: rgba(255, 255, 255, .65);
+  color: var(--ink-2);
   font: inherit;
-  font-size: 11.5px;
+  font-size: var(--f-meta);
   cursor: pointer;
 }
 
@@ -109,7 +109,7 @@
   background: var(--accent, #e0663c);
   color: #fff;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--f-ui);
   font-weight: 600;
   cursor: pointer;
 }
@@ -146,13 +146,13 @@
   border-radius: var(--r-pill);
   display: grid;
   place-items: center;
-  font-size: 11.5px;
+  font-size: var(--f-meta);
   font-weight: 700;
   color: #fff;
   letter-spacing: .02em;
 }
 
-.mg-avatar.big { width: 36px; height: 36px; font-size: 13px; }
+.mg-avatar.big { width: 36px; height: 36px; font-size: var(--f-read); }
 .mg-avatar svg { width: 17px; height: 17px; }
 
 .mg-presence {
@@ -169,8 +169,8 @@
 .mg-presence.on { background: var(--good, #30d158); }
 
 .mg-convo-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.mg-convo-name { font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mg-convo-last { font-size: 11px; color: rgba(255, 255, 255, .45); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mg-convo-name { font-size: var(--f-ui); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mg-convo-last { font-size: var(--f-meta); color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .mg-unread {
   flex: 0 0 auto;
@@ -198,7 +198,7 @@
   border-radius: var(--r-tag);
   border: 1px solid rgba(255, 255, 255, .14);
   background: rgba(12, 13, 16, .8);
-  color: rgba(255, 255, 255, .75);
+  color: var(--ink-2);
   cursor: pointer;
   padding: 0;
 }
@@ -225,8 +225,8 @@
 .mg-attach-empty {
   padding: 24px 12px;
   text-align: center;
-  font-size: 12px;
-  color: rgba(255, 255, 255, .42);
+  font-size: var(--f-ui);
+  color: var(--ink-3);
 }
 
 .mg-thread { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
@@ -247,7 +247,7 @@
   background: transparent;
   padding: 0;
   font: inherit;
-  font-size: 13.5px;
+  font-size: var(--f-read);
   font-weight: 650;
   color: inherit;
   text-align: left;
@@ -262,15 +262,15 @@
 @media (hover: hover) {
   .mg-head-name:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
-.mg-head-members { font-size: 11px; color: rgba(255, 255, 255, .45); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mg-head-members { font-size: var(--f-meta); color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .mg-messages { flex: 1; min-height: 0; overflow: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 
 .mg-day { text-align: center; margin: 6px 0 2px; }
 
 .mg-day span {
-  font-size: 10.5px;
-  color: rgba(255, 255, 255, .45);
+  font-size: var(--f-micro);
+  color: var(--ink-3);
   background: rgba(255, 255, 255, .07);
   padding: 2px 9px;
   border-radius: var(--r-pill);
@@ -279,13 +279,13 @@
 .mg-msg { display: flex; flex-direction: column; max-width: 74%; }
 .mg-msg.mine { align-self: flex-end; align-items: flex-end; }
 .mg-msg.theirs { align-self: flex-start; align-items: flex-start; }
-.mg-sender { font-size: 10.5px; color: rgba(255, 255, 255, .5); margin: 0 4px 2px; }
+.mg-sender { font-size: var(--f-micro); color: var(--ink-3); margin: 0 4px 2px; }
 
 .mg-bubble {
   position: relative;
   padding: 8px 11px;
   border-radius: var(--r-window);
-  font-size: 13px;
+  font-size: var(--f-read);
   line-height: 1.5;
   border: 1px solid rgba(255, 255, 255, .1);
   background: rgba(255, 255, 255, .07);
@@ -304,7 +304,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--f-ui);
   cursor: pointer;
   padding: 2px 4px;
   text-decoration: underline;
@@ -317,7 +317,7 @@
   position: absolute;
   right: -6px;
   bottom: -9px;
-  font-size: 12px;
+  font-size: var(--f-ui);
   background: rgba(20, 21, 26, .95);
   border: 1px solid rgba(255, 255, 255, .14);
   border-radius: var(--r-pill);
@@ -330,8 +330,8 @@
   align-items: center;
   gap: 6px;
   margin: 3px 4px 0;
-  font-size: 10px;
-  color: rgba(255, 255, 255, .38);
+  font-size: var(--f-micro);
+  color: var(--ink-3);
   opacity: 0;
   transition: opacity var(--t-touch) ease;
 }
@@ -350,7 +350,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 11px;
+  font-size: var(--f-meta);
   cursor: pointer;
   padding: 0 2px;
   line-height: 1;
@@ -362,7 +362,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .mg-meta-btn:hover { color: rgba(255, 255, 255, .85); }
+  .mg-meta-btn:hover { color: var(--ink); }
 }
 .mg-meta-btn svg { width: 12px; height: 12px; vertical-align: middle; }
 
@@ -370,9 +370,9 @@
 
 .mg-system span {
   display: inline-block;
-  font-size: 11.5px;
+  font-size: var(--f-meta);
   line-height: 1.5;
-  color: rgba(255, 255, 255, .58);
+  color: var(--ink-2);
   background: rgba(255, 255, 255, .05);
   border: 1px dashed rgba(255, 255, 255, .16);
   border-radius: var(--r-card);
@@ -387,7 +387,7 @@
   background: rgba(0, 0, 0, .25);
   color: inherit;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--f-read);
   border-radius: var(--r-ctrl);
   padding: 4px 6px;
   resize: none;
@@ -401,8 +401,8 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: rgba(255, 255, 255, .45);
-  font-size: 12.5px;
+  color: var(--ink-3);
+  font-size: var(--f-ui);
   text-align: center;
   padding: 24px;
 }
@@ -434,7 +434,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--f-ui);
   cursor: pointer;
 }
 
@@ -448,7 +448,7 @@
 }
 .mg-attach-item svg { width: 15px; height: 15px; flex: 0 0 auto; }
 .mg-attach-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mg-attach-path { font-size: 10.5px; color: rgba(255, 255, 255, .4); flex: 0 0 auto; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mg-attach-path { font-size: var(--f-micro); color: var(--ink-3); flex: 0 0 auto; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .mg-inputrow {
   display: flex;
@@ -474,7 +474,7 @@
 .mg-react-pop button {
   border: 0;
   background: transparent;
-  font-size: 16px;
+  font-size: var(--f-lead);
   line-height: 1;
   padding: 3px 4px;
   border-radius: var(--r-ctrl);
@@ -497,7 +497,7 @@
 
 /* v21 — the honest way out: thread → real studio letter */
 .mg-to-letter {
-  margin-left: auto; flex: none; font: inherit; font-size: 10.5px; letter-spacing: .03em;
+  margin-left: auto; flex: none; font: inherit; font-size: var(--f-micro); letter-spacing: .03em;
   padding: 5px 11px; border-radius: var(--r-pill); cursor: pointer;
   border: 1px solid var(--accent-soft, rgba(224, 102, 60, .35));
   background: transparent; color: var(--accent, #e0663c);

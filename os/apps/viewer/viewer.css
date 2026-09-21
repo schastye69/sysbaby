@@ -17,21 +17,27 @@
 .vw-said { grid-auto-flow: row; gap: 12px; text-align: center; }
 .vw-icon { color: var(--ink-3); }
 .vw-icon svg { width: 48px; height: 48px; display: block; margin: 0 auto; }
-.vw-said-text { font-size: 13px; color: var(--ink-2); max-width: 34ch; }
+.vw-said-text { font-size: var(--f-read); color: var(--ink-2); max-width: 34ch; }
+/* «ch» — ЭТО ШИРИНА НУЛЯ, А НЕ ШИРИНА БУКВЫ (D-234). Здесь стояло 34ch, и
+   автор имел в виду тридцать четыре знака. По-английски примерно так и
+   выходит; по-русски и по-эстонски буквы шире, и в строку помещался
+   ТРИДЦАТЬ ОДИН знак — ниже меры читаемости. Ловушка тихая: цифра в коде
+   выглядит достаточной, а проверить её можно только на языке, на котором
+   пишет человек. Охраняется tools/line-measure-check.mjs. */
 .vw-empty {
-  margin: auto; text-align: center; font-size: 13px; color: var(--ink-3);
-  max-width: 34ch; padding: 24px;
+  margin: auto; text-align: center; font-size: var(--f-read); color: var(--ink-3);
+  max-width: 42ch; padding: 24px;
 }
 .vw-bar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   flex: none;
 }
-.vw-what { font-size: 12px; color: var(--ink-3); }
+.vw-what { font-size: var(--f-ui); color: var(--ink-3); }
 .vw-save {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 7px 12px; border-radius: var(--r-ctrl);
   background: var(--glass); border: 1px solid var(--line); color: var(--ink);
-  font-size: 12.5px;
+  font-size: var(--f-ui);
   transition: background var(--t-touch) ease;
 }
 .vw-save svg { width: 15px; height: 15px; }

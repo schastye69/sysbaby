@@ -28,6 +28,27 @@
 (function () {
   "use strict";
 
+  /* ── ИМЕНА МЕСТ СТОЯТ ЗДЕСЬ, А НЕ НИЖЕ, И ЭТО НЕ ВКУС · D-242 ───────────
+     Совет объявил права этой комнаты, а сами имена оставил там, где они
+     лежали, — ПОСЛЕ registerApp. Объявление прочиталось в миг регистрации,
+     имён ещё не было, комната упала на загрузке и ИСЧЕЗЛА ИЗ РЕЕСТРА молча.
+     Закон прав поймал это первым же прогоном — витрина просто пропала из
+     его списка, — и заодно показал дыру в себе: комната, которой нет,
+     закону не видна. Теперь закон сверяет комнаты дерева с живым реестром.
+     Правило простое: то, чем комната объявляется, обязано существовать
+     РАНЬШЕ, чем комната объявляется. */
+  /* ТРИ СВОИХ МЕСТА И ОДНО ЧУЖОЕ (D-242). sysbaby.files.v1 — место
+     Хранилища; Витрина смотрит в него, чтобы понять, завёл ли человек своё
+     дело. Чтение осмысленное, и теперь оно ОБЪЯВЛЕНО (reads в registerApp),
+     а не спрятано в этой строке. Первое чужое чтение, которое система
+     назвала вслух. */
+  var OWN_KEYS = ["sysbaby.estimates", "sysbaby.templates", "sysbaby.promises"];
+  var FILES_KEY = "sysbaby.files.v1";
+  var USED_KEYS = OWN_KEYS.concat([FILES_KEY]);
+  /* Живёт посещение, а не диск: человек, закрывший витрину, сказал этим всё,
+     что нужно ДО конца посещения. Объявлено как visit (D-242). */
+  var CLOSED_KEY = "sysbaby.build.closed";
+
   var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">' +
     '<path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/></svg>';
 
@@ -129,6 +150,22 @@
 
   if (window.registerApp) {
     window.registerApp("build", {
+      /* ЧЕМ ЭТА КОМНАТА ОТКРЫВАЕТСЯ СНАРУЖИ (D-245). Дверь, о которой хозяин
+         не сказал, — незваная: ровно из таких выросли шестнадцать частных
+         ходов, каждый правый в свой день. Охраняется tools/hand-check.mjs. */
+      opens: ["sbOpenBuildAt"],
+      /* ЧТО НУЖНО, ЧТОБЫ ДЕЛАТЬ РАБОТУ (D-243). Комната НАЗЫВАЕТ нужду;
+         есть ли она — измеряет прибор, а не она сама.
+         Охраняется tools/alive-check.mjs. */
+      needs: ["диск"],
+      /* ПРАВА НА ДИСК (D-242). Три своих места, одно ЧУЖОЕ и одно на
+         посещение. sysbaby.files.v1 принадлежит Хранилищу: Витрина смотрит
+         в него, чтобы понять, завёл ли человек своё дело. Чужое читается,
+         но не пишется — так устроен ящик.
+         Охраняется tools/room-rights-check.mjs. */
+      keeps: OWN_KEYS.concat([CLOSED_KEY]),
+      reads: [FILES_KEY],
+      visit: [CLOSED_KEY],
       title: "build",
       label: "build",
       i18n: {
@@ -165,12 +202,22 @@
    * Закрытое окно не открывается заново в том же посещении: человек, закрывший
    * витрину, сказал этим всё, что нужно.
    */
-  var USED_KEYS = ["sysbaby.estimates", "sysbaby.templates", "sysbaby.promises", "sysbaby.files.v1"];
+
+  /* ── ХРАНИЛИЩЕ ЧЕРЕЗ СВОЙ ЯЩИК · D-242 ──────────────────────────────────
+     Ящик спрашивается, а не запоминается: комната объявляется раньше, чем
+     поднимается ядро прав. Что комнате можно — объявлено в registerApp
+     ниже и охраняется tools/room-rights-check.mjs. */
+  function box() {
+    return window.sbRights
+      ? window.sbRights.box("build")
+      : { get: function () { return null; }, set: function () { return false; },
+          remove: function () { return false; }, flush: function () { } };
+  }
 
   function personHasOwnWork() {
     try {
       for (var i = 0; i < USED_KEYS.length; i++) {
-        var v = window.sbDB ? window.sbDB.get(USED_KEYS[i]) : localStorage.getItem(USED_KEYS[i]);
+        var v = box().get(USED_KEYS[i]);
         if (v && String(v).length > 4 && v !== "[]" && v !== "{}") return true;
       }
     } catch (e) { /* хранилище закрыто — считаем, что своего дела ещё нет */ }
@@ -181,7 +228,7 @@
   document.addEventListener("sysbaby:desktop-ready", function () {
     if (!window.sbBuildAutoOpenStillOn()) return;
     try {
-      if (sessionStorage.getItem("sysbaby.build.closed") === "1") return;
+      if (box().get(CLOSED_KEY) === "1") return;
     } catch (e) { /* сессия закрыта — открываем */ }
     if (window.sbOpenApp) window.sbOpenApp("build");
   }, { once: true });
@@ -198,7 +245,7 @@
   if (window.sbBus && typeof window.sbBus.on === "function") {
     window.sbBus.on("window:closed", function (e) {
       if (e && e.id === "build") {
-        try { sessionStorage.setItem("sysbaby.build.closed", "1"); } catch (err) { /* не страшно */ }
+        try { box().set(CLOSED_KEY, "1"); } catch (err) { /* не страшно */ }
       }
     });
   }

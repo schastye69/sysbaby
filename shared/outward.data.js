@@ -198,22 +198,6 @@ window.SB_OUTWARD = {
       "who": "Тот, кто держит sys.baby."
     },
     {
-      "id": "experimental-frame",
-      "title": {
-        "ru": "Опыты — запущенный опыт",
-        "en": "Experiments — a running demo",
-        "ee": "Katsed — töötav katse"
-      },
-      "where": [
-        "os/apps/experimental/experimental.js:114"
-      ],
-      "side": "self",
-      "byHand": true,
-      "host": "",
-      "what": "Опыт открывается в рамке: программа с этого же сайта, запущенная по вашему нажатию.",
-      "who": "Тот, кто держит sys.baby."
-    },
-    {
       "id": "product-frame",
       "title": {
         "ru": "Витрина — товар в рамке",

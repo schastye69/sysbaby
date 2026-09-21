@@ -26,7 +26,14 @@
   --bg-elev: #121214;
   --ink: #f2f2f0;
   --ink-2: rgba(242, 242, 240, .62);
-  --ink-3: rgba(242, 242, 240, .36);
+  /* ТУСКЛЫЕ ЧЕРНИЛА ПОДНЯТЫ С .36 ДО .52 (D-233). Замер пикселями на
+     настоящем экране: ядро буквы 110 на фоне 40 — контраст 2.8–3.0 при
+     общепринятой мере 4.5. Этим цветом набраны не украшения, а ссылки на
+     источники в Фонаре, ярлыки описи «Наружу» («Что уходит», «Кто это
+     увидит») и «Здесь пока пусто» в Ключах. Иерархия сохранена: главные 1,
+     вторые .62, тусклые .52 — по-прежнему на убыль.
+     Охраняется tools/legible-check.mjs. */
+  --ink-3: rgba(242, 242, 240, .52);
   --line: rgba(242, 242, 240, .09);
   --line-2: rgba(242, 242, 240, .16);
   /* ── СТЕКЛО ТОНЬШЕ, И В НЁМ ЕСТЬ КОМНАТА (D-147) ────────────────────────
@@ -89,6 +96,47 @@
   --t-scene: .45s;
   --t-drift: .6s;
   --t-rise: 1s;
+  /* ─── ШКАЛА РАЗМЕРА БУКВЫ (v119, D-230) ──────────────────────────────
+     ПОВОД: «прошу совет довести дизайн каждого приложения до идеала».
+     Идеал здесь — НЕ «красивее», а ИЗ ОДНОГО ВЕЩЕСТВА. Перепись нашла 371
+     объявление font-size и НИ ОДНОГО через слово языка: 23 разных размера,
+     и два самых частых — 12px (66 раз) и 12.5px (66 раз). Ровно поровну:
+     это не два решения, это одно решение, принятое дважды и забытое.
+
+     Ступени выведены из того, ГДЕ размеры уже жили. Заголовок окна в пяти
+     приложениях уже был 22px — значит 22 и есть заголовок.
+
+     ПРЕФИКС --f-, А НЕ --t-: --t- в ОС уже значит ВРЕМЯ, а на витрине —
+     ТИП. Одна приставка с двумя значениями — ловушка, которая сработает.
+
+     --f-lead РОВНО 16px И НЕ НИЖЕ: Safari на iPhone увеличивает страницу
+     при наводке на поле мельче 16px. Это причина, а не вкус, и у неё есть
+     отдельная строка закона.
+
+     Охраняется tools/type-scale-check.mjs. */
+  /* ─── ОТСТУП КОМНАТЫ (v124, D-236) ───────────────────────────────────
+     ПОВОД, дословно от основателя 19.09.2026, со снимками с телефона:
+     «отступы в окнах всех приложений должны быть одинаковыми, как в seek,
+     например, а то сейчас у всех новых приложений отступов нет».
+
+     Так и было. Замер на телефоне 420px: у пяти новых комнат — Фонарь,
+     Ключи, Замок, Наружу, Передать — обёртка стояла на padding 4px 2px 18px.
+     ДВА ПИКСЕЛЯ по краям: текст лежал вплотную к рамке окна. У «Эха» 12,
+     у терминала 14, у Seek 15. Пять разных значений и ни одного слова.
+
+     Величина взята НЕ из вкуса Совета, а у Seek — потому что основатель
+     назвал именно его. Дальше она одна на всех.
+     Охраняется tools/room-padding-check.mjs. */
+  --pad-room: 15px;
+
+  --f-micro: 10px;
+  --f-meta: 11px;
+  --f-ui: 12.5px;
+  --f-read: 13.5px;
+  --f-lead: 16px;
+  --f-title: 22px;
+  --f-figure: 30px;
+  --f-hero: 40px;
   --shadow: 0 24px 60px rgba(0, 0, 0, .55), 0 4px 14px rgba(0, 0, 0, .4);
   --shadow-soft: 0 12px 34px rgba(0, 0, 0, .38);
   --ease: cubic-bezier(.16, 1, .3, 1);
@@ -342,14 +390,14 @@ html, body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font);
-  font-size: 14px;
+  font-size: var(--f-read);
   -webkit-font-smoothing: antialiased;
 }
 
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; background: none; border: 0; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-ctrl); }
-kbd { font-family: var(--mono); font-size: 12px; }
+kbd { font-family: var(--mono); font-size: var(--f-ui); }
 
 /* generic controls */
 .btn {
@@ -371,15 +419,15 @@ kbd { font-family: var(--mono); font-size: 12px; }
 .btn.link { background: none; border: 0; color: var(--ink-2); padding: 6px 2px; text-decoration: underline; text-underline-offset: 3px; }
 .btn.ghost { background: transparent; }
 .btn.danger { color: var(--danger); }
-.btn.tiny { padding: 5px 10px; font-size: 12px; border-radius: var(--r-ctrl); }
+.btn.tiny { padding: 5px 10px; font-size: var(--f-ui); border-radius: var(--r-ctrl); }
 
-.field { display: flex; flex-direction: column; gap: 5px; margin: 10px 0; font-size: 13px; color: var(--ink-2); }
+.field { display: flex; flex-direction: column; gap: 5px; margin: 10px 0; font-size: var(--f-read); color: var(--ink-2); }
 .field input, .field select {
   padding: 9px 11px; border-radius: var(--r-ctrl);
   background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink);
 }
-.check { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 13px; color: var(--ink-2); }
-.check.small { font-size: 12px; }
+.check { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: var(--f-read); color: var(--ink-2); }
+.check.small { font-size: var(--f-ui); }
 
 /* ================================================== wallpaper (static §12) */
 /* Default — STUDIO. The environment is achromatic graphite; the only light is
@@ -451,8 +499,8 @@ html.sb-incognito .wp-layer {
    ещё до того, как назовёт пароль. */
 /* Пояснение и предупреждение в блоке замка (D-161): цена названа рядом с
    кнопкой, а не в справке, — читать её будут только здесь. */
-.cc-note { font-size: 12px; line-height: 1.45; color: var(--ink-2); margin: 2px 0 0; }
-.cc-warn { font-size: 12px; line-height: 1.45; color: #ffb4a6; margin: 4px 0 8px; }
+.cc-note { font-size: var(--f-ui); line-height: 1.45; color: var(--ink-2); margin: 2px 0 0; }
+.cc-warn { font-size: var(--f-ui); line-height: 1.45; color: #ffb4a6; margin: 4px 0 8px; }
 
 #sbVaultGate {
   position: fixed; inset: 0; z-index: var(--z-door);
@@ -507,23 +555,23 @@ html.sb-incognito .wp-layer {
 }
 .vg-iris .vgi-seams line { stroke: rgba(var(--accent-rgb), .35); stroke-width: 1; }
 .vg-claim {
-  margin: 2px 0 4px; font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
+  margin: 2px 0 4px; font-family: var(--mono); font-size: var(--f-ui); line-height: 1.7;
   color: var(--ink-2); letter-spacing: .01em;
 }
 /* Второй ключ у двери. Поле стоит рядом со словом и выглядит частью замка,
    а не дополнением: без файла ключ не выводится вовсе. */
 .vg-key {
   display: flex; flex-direction: column; gap: 6px; width: 100%;
-  font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+  font-size: var(--f-meta); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
 }
 .vg-key input[type="file"] {
-  font: inherit; font-size: 12.5px; text-transform: none; letter-spacing: 0;
+  font: inherit; font-size: var(--f-ui); text-transform: none; letter-spacing: 0;
   color: var(--ink-2); padding: 9px 10px;
   background: rgba(255, 255, 255, .03);
   border: 1px dashed rgba(var(--accent-rgb), .45); border-radius: var(--r-ctrl);
 }
 .vg-keynote {
-  margin: -2px 0 2px; font-size: 11.5px; line-height: 1.6; color: var(--ink-3); max-width: 44ch;
+  margin: -2px 0 2px; font-size: var(--f-meta); line-height: 1.6; color: var(--ink-3); max-width: 44ch;
 }
 .vg-iris .vgi-rim {
   fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: .5;
@@ -550,15 +598,15 @@ html.sb-incognito .wp-layer {
    значило бы завести второе знание об одном правиле — и, как показала доска,
    ещё и голую длительность мимо шкалы. */
 html[data-motion="reduced"] #sbVaultGate.vg-work .vgi-seams { animation: none; }
-.vg-title { font-size: 19px; font-weight: 700; letter-spacing: -.01em; margin: 0; }
-.vg-sub { font-size: 13px; line-height: 1.5; color: var(--ink-2); margin: 0; }
+.vg-title { font-size: var(--f-title); font-weight: 700; letter-spacing: -.01em; margin: 0; }
+.vg-sub { font-size: var(--f-read); line-height: 1.5; color: var(--ink-2); margin: 0; }
 #sbVaultPass {
   width: 100%; height: 44px; padding: 0 14px;
   border-radius: var(--r-ctrl); border: 1px solid var(--line);
-  background: var(--glass); color: var(--ink); font: inherit; font-size: 15px;
+  background: var(--glass); color: var(--ink); font: inherit; font-size: var(--f-lead);
 }
 #sbVaultPass:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.vg-err { font-size: 12.5px; color: #ff8a8a; margin: 0; }
+.vg-err { font-size: var(--f-ui); color: #ff8a8a; margin: 0; }
 
 #sbMoodTint {
   mix-blend-mode: screen; opacity: .55;
@@ -715,24 +763,24 @@ html.sb-has-session #sbLogin { display: none; }
    называть себя одинаково. */
 .login-mark { width: 40px; height: 40px; margin-bottom: 18px; color: var(--accent); }
 .login-mark svg { width: 100%; height: 100%; display: block; }
-.login-title { margin: 0 0 6px; font-size: 22px; font-weight: 600; letter-spacing: -.2px; }
-.login-sub { margin: 0 0 20px; color: var(--ink-2); font-size: 14px; }
+.login-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: 600; letter-spacing: -.2px; }
+.login-sub { margin: 0 0 20px; color: var(--ink-2); font-size: var(--f-read); }
 .login-field { display: block; margin-bottom: 8px; }
-.login-label { display: block; font-size: 12px; color: var(--ink-3); margin-bottom: 6px; }
+.login-label { display: block; font-size: var(--f-ui); color: var(--ink-3); margin-bottom: 6px; }
 .login-input-wrap {
   display: flex; align-items: center; gap: 6px;
   border: 1px solid var(--line); border-radius: var(--r-ctrl);
   background: rgba(255, 255, 255, .04); padding: 0 12px;
 }
 .login-input-wrap:focus-within { border-color: var(--accent-ring); }
-.login-input-wrap input { flex: 1; min-width: 0; padding: 11px 0; background: none; border: 0; outline: none; font-size: 16px; }
-.login-suffix { color: var(--ink-3); font-family: var(--mono); font-size: 13px; }
+.login-input-wrap input { flex: 1; min-width: 0; padding: 11px 0; background: none; border: 0; outline: none; font-size: var(--f-lead); }
+.login-suffix { color: var(--ink-3); font-family: var(--mono); font-size: var(--f-read); }
 .login-eye { color: var(--ink-3); padding: 6px; }
-.login-err { min-height: 18px; margin: 4px 0 10px; color: var(--danger); font-size: 12.5px; }
-.login-foot { margin: 14px 0 6px; color: var(--ink-3); font-size: 12px; line-height: 1.5; }
+.login-err { min-height: 18px; margin: 4px 0 10px; color: var(--danger); font-size: var(--f-ui); }
+.login-foot { margin: 14px 0 6px; color: var(--ink-3); font-size: var(--f-ui); line-height: 1.5; }
 .login-row { display: flex; justify-content: space-between; margin-top: 8px; }
 .login-chip-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.login-chip { padding: 7px 12px; border-radius: var(--r-pill); background: var(--glass-2); font-family: var(--mono); font-size: 13px; }
+.login-chip { padding: 7px 12px; border-radius: var(--r-pill); background: var(--glass-2); font-family: var(--mono); font-size: var(--f-read); }
 
 /* ============================================ boot progress (engine kept) */
 #sbBoot { display: none; }
@@ -773,7 +821,7 @@ html[data-motion="reduced"] #sbCurtainNet { display: none; }
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   display: flex; flex-direction: column; gap: .42em;
   font-family: var(--mono);
-  font-size: clamp(7.5px, 2.1vw, 12px); line-height: 1.25; letter-spacing: .02em;
+  font-size: clamp(7.5px, 2.1vw, var(--f-ui)); line-height: 1.25; letter-spacing: .02em;
   white-space: pre; text-align: left; color: #e8967a;
   opacity: .30; transition: opacity var(--t-rise) var(--ease); pointer-events: none;
 }
@@ -811,7 +859,7 @@ html[data-motion="reduced"] .cur-mark { animation-duration: .4s !important; }
 
 .cur-cells {
   display: flex; justify-content: center;
-  font-family: var(--mono); font-size: clamp(8.5px, 2.85vw, 15px); font-weight: 600;
+  font-family: var(--mono); font-size: clamp(8.5px, 2.85vw, var(--f-lead)); font-weight: 600;
   letter-spacing: .03em; white-space: pre; line-height: 1.5;
   opacity: 0; animation: curRunIn .9s var(--ease) .12s forwards;
 }
@@ -838,7 +886,7 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
 #sbGhostLine {
   position: fixed; inset: 0; z-index: var(--z-lift);
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: clamp(8.5px, 2.85vw, 15px); font-weight: 600;
+  font-family: var(--mono); font-size: clamp(8.5px, 2.85vw, var(--f-lead)); font-weight: 600;
   letter-spacing: .03em; white-space: pre; line-height: 1.5;
   color: #fff; opacity: .13; pointer-events: none; transition: opacity var(--t-rise) var(--ease);
 }
@@ -846,7 +894,7 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
 
 /* farewell + failure surfaces */
 #sbFarewell {
-  position: fixed; inset: 0; z-index: var(--z-blackout); background: #000; color: rgba(255, 255, 255, .9);
+  position: fixed; inset: 0; z-index: var(--z-blackout); background: #000; color: var(--ink);
   display: grid; place-items: center; gap: 20px; grid-auto-flow: row;
   opacity: 0; transition: opacity var(--t-scene) ease;
 }
@@ -855,18 +903,18 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
    личности. То же правило, что у входа и занавеса: знак, акцент, без подложки. */
 .farewell-mark { width: 44px; height: 44px; color: var(--accent); }
 .farewell-mark svg { width: 100%; height: 100%; display: block; }
-.farewell-line { font-family: var(--mono); font-size: 14px; letter-spacing: .02em; }
+.farewell-line { font-family: var(--mono); font-size: var(--f-read); letter-spacing: .02em; }
 #sbBootFail {
   position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: var(--z-player);
   padding: 14px 16px; border-radius: var(--r-card); white-space: pre-wrap;
   background: rgba(60, 10, 12, .94); border: 1px solid rgba(255, 69, 58, .5);
-  color: #ffd9d6; font-family: var(--mono); font-size: 12px; line-height: 1.6;
+  color: #ffd9d6; font-family: var(--mono); font-size: var(--f-ui); line-height: 1.6;
 }
 #sbQuotaBanner {
   position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: var(--z-playerbed);
   padding: 12px 14px; border-radius: var(--r-card);
   background: rgba(70, 40, 0, .94); border: 1px solid rgba(255, 214, 10, .45);
-  color: #ffe9b0; font-family: var(--mono); font-size: 12px;
+  color: #ffe9b0; font-family: var(--mono); font-size: var(--f-ui);
 }
 
 /* =============================================================== topbar §5 */
@@ -1010,7 +1058,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
    браузер кладёт его на линию текста нижним краем. Знак всплывал вверх ровно
    на разницу между низом строки и её серединой.
    Кнопка с картинкой выравнивается по СЕРЕДИНЕ, как все прочие кнопки полосы. */
-.tb-identity { display: inline-flex; align-items: center; gap: 1px; padding: 5px 9px; border-radius: var(--r-pill); font-size: 13px; }
+.tb-identity { display: inline-flex; align-items: center; gap: 1px; padding: 5px 9px; border-radius: var(--r-pill); font-size: var(--f-read); }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал. Повод — снимок основателя
@@ -1036,7 +1084,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 .tb-btn.on, .tb-btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
 .tb-badge {
   position: absolute; top: 1px; right: 1px; min-width: 14px; height: 14px; padding: 0 3px;
-  border-radius: var(--r-pill); background: var(--danger); color: #fff; font-size: 9.5px;
+  border-radius: var(--r-pill); background: var(--danger); color: #fff; font-size: var(--f-micro);
   display: grid; place-items: center;
 }
 .tb-sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; }
@@ -1058,13 +1106,13 @@ html[data-motion="reduced"] .sb-lock { animation: none }
   background: var(--glass); border: 1px solid var(--line);
 }
 .seq-tile svg { width: 10px; height: 10px; }
-.seq-name { font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seq-name { font-size: var(--f-ui); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* All that survives of the tips in the bar is the switch that asks for one.
    It goes quiet once there is nothing left to teach. */
 .tip-bulb { color: var(--ink-3); }
 .tip-bulb.retired { display: none; }
 .wx-place { color: var(--ink-3); }
-.tb-clock { display: flex; align-items: center; font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); white-space: pre; }
+.tb-clock { display: flex; align-items: center; font-family: var(--mono); font-size: var(--f-ui); color: var(--ink-2); white-space: pre; }
 .clock-cell { display: inline-block; min-width: .62ch; text-align: center; }
 /* ── ЦИФРА ОТКРЫТА ТАК ЖЕ, КАК ЗНАК (D-135, переписано в v77) ────────────
    Сперва у цифры была та же ДОЛЯ ТОЛЩИНЫ, что у перекладины крюка: 20 из ста.
@@ -1151,7 +1199,7 @@ html[data-motion="reduced"] .pw-on { transition: none; }
   background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-card);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow);
 }
-.pop h4 { margin: 0 0 8px; font-size: 13px; }
+.pop h4 { margin: 0 0 8px; font-size: var(--f-read); }
 
 /* ====================================================== control center §7 */
 #sbControlCenter {
@@ -1171,16 +1219,16 @@ html[data-motion="reduced"] .pw-on { transition: none; }
   padding: 10px 12px; border-radius: var(--r-ctrl); background: rgba(255, 255, 255, .04); border: 1px solid var(--line);
   display: flex; flex-direction: column; gap: 2px;
 }
-.cc-k { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
-.cc-v { font-size: 17px; font-weight: 600; }
-.cc-line { font-size: 11.5px; color: var(--ink-3); }
+.cc-k { font-size: var(--f-meta); color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+.cc-v { font-size: var(--f-lead); font-weight: 600; }
+.cc-line { font-size: var(--f-meta); color: var(--ink-3); }
 .cc-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .cc-toggle {
-  padding: 10px 12px; border-radius: var(--r-ctrl); text-align: left; font-size: 12.5px;
+  padding: 10px 12px; border-radius: var(--r-ctrl); text-align: left; font-size: var(--f-ui);
   background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink-2);
 }
 .cc-toggle.on { background: var(--accent-soft); border-color: var(--accent-ring); color: var(--ink); }
-.cc-slider, .cc-select { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--ink-2); }
+.cc-slider, .cc-select { display: flex; flex-direction: column; gap: 6px; font-size: var(--f-ui); color: var(--ink-2); }
 /* ═══════════════ ПОЛЗУНОК — ЭТО СВЕТ, КОТОРЫЙ ПРИБАВЛЯЮТ (D-156, D-162) ═══
    Основатель: «ползунки volume и brightness как-будто с другой вселенной» —
    а затем, увидев следующую сборку: «абсолютно не нравятся эти синие ползунки
@@ -1227,7 +1275,7 @@ html[data-motion="reduced"] .sb-range-stick { transition: none; }
 .cc-block { display: flex; flex-direction: column; gap: 7px; }
 .cc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
-  padding: 6px 11px; border-radius: var(--r-pill); font-size: 12px; color: var(--ink-2);
+  padding: 6px 11px; border-radius: var(--r-pill); font-size: var(--f-ui); color: var(--ink-2);
   background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
 }
 .chip.on { background: var(--accent-soft); border-color: var(--accent-ring); color: var(--ink); }
@@ -1306,7 +1354,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
    в оранжевой полосе подпись пропадала совсем. Тень под текстом дешевле
    подложки и не добавляет ни слоя, ни прохода композитора. */
 .icon-label {
-  font-size: 11.5px; color: var(--ink-2); text-align: center; line-height: 1.25;
+  font-size: var(--f-meta); color: var(--ink-2); text-align: center; line-height: 1.25;
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   text-shadow: 0 1px 3px rgba(0, 0, 0, .55);
 }
@@ -1331,7 +1379,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
 }
 .desk-icon.capsule-open .icon-capsule { opacity: 1; pointer-events: auto; transform: translateX(-50%) scaleY(1); }
 .icon-capsule input {
-  width: 100%; padding: 9px 12px; border-radius: var(--r-pill); font-size: 13px;
+  width: 100%; padding: 9px 12px; border-radius: var(--r-pill); font-size: var(--f-read);
   background: var(--glass-2); border: 1px solid var(--line-2); color: var(--ink);
   backdrop-filter: blur(var(--glass-blur)); outline: none;
 }
@@ -1423,14 +1471,14 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
    tools/note-window-check.mjs с четырёх сторон. */
 .note-text {
   width: 100%; min-height: 20px; max-height: 260px; resize: none; border: 0; outline: none;
-  background: none; color: var(--ink); font-size: 13px; line-height: 1.45;
+  background: none; color: var(--ink); font-size: var(--f-read); line-height: 1.45;
   padding: 0; margin: 0; display: block;
 }
-.note-del { position: absolute; top: 4px; right: 6px; color: var(--ink-3); font-size: 12px; padding: 4px; }
+.note-del { position: absolute; top: 4px; right: 6px; color: var(--ink-3); font-size: var(--f-ui); padding: 4px; }
 .note-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .note-chip {
   display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: var(--r-pill);
-  font-size: 11px; color: var(--ink-2); background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+  font-size: var(--f-meta); color: var(--ink-2); background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
 }
 .note-chip.live { border-color: var(--accent-ring); }
 .chip-tile { width: 10px; height: 10px; border-radius: var(--r-tag); }
@@ -1458,7 +1506,7 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
   position: fixed; z-index: var(--z-desk); display: flex; align-items: center; gap: 9px;
   width: 196px; padding: 10px 11px 9px 11px;
   border-radius: var(--r-card);
-  font-size: 13px; line-height: 1.45; color: var(--ink-2);
+  font-size: var(--f-read); line-height: 1.45; color: var(--ink-2);
   background:
     radial-gradient(140% 120% at calc(var(--nx) * 100%) -30%,
       rgba(var(--wp-light-rgb, 91, 124, 255), calc(.10 * var(--lit))), transparent 62%),
@@ -1497,7 +1545,7 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
 }
 .invite-plus {
   width: 20px; height: 20px; flex: none; border-radius: var(--r-round); display: grid; place-items: center;
-  color: var(--accent); font-size: 15px; line-height: 1;
+  color: var(--accent); font-size: var(--f-lead); line-height: 1;
   border: 1px dashed rgba(var(--wp-light-rgb, 91, 124, 255), .42);
 }
 .invite-word { min-width: 0; }
@@ -1608,7 +1656,7 @@ html[data-motion="reduced"] .note-lights { transition: none; }
   transition: none;
 }
 .sticky-note.full .note-text {
-  font-size: 20px; font-weight: 600; letter-spacing: -.2px; line-height: 1.3;
+  font-size: var(--f-title); font-weight: 600; letter-spacing: -.2px; line-height: 1.3;
   min-height: 0; max-height: none;
   /* Место под кнопки резервируется С ТОЙ СТОРОНЫ, ГДЕ ОНИ СТОЯТ (D-155).
      Здесь стояло глухое padding-right: 78px — оно было верным, пока кнопки
@@ -1619,7 +1667,7 @@ html[data-controls="right"] .sticky-note.full .note-text { padding-left: 0; padd
 .sticky-note.full .note-body {
   display: block; flex: 1; min-height: 0;
   width: 100%; resize: none; border: 0; outline: none; background: none;
-  color: var(--ink-2); font-size: 14.5px; line-height: 1.55;
+  color: var(--ink-2); font-size: var(--f-read); line-height: 1.55;
   overflow: auto;
 }
 /* ── РАЗВЁРНУТУЮ ЗАМЕТКУ НАДО МОЧЬ СВЕРНУТЬ (D-155) ───────────────────────
@@ -1654,7 +1702,7 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 9px 12px; cursor: grab; border-bottom: 1px solid var(--line);
 }
-.sb-widget-title { font-size: 12px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .07em; }
+.sb-widget-title { font-size: var(--f-ui); color: var(--ink-3); text-transform: uppercase; letter-spacing: .07em; }
 .sb-widget-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
 .sb-widget-resize { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; }
 .sb-widget-resize::after { content: ""; position: absolute; right: 4px; bottom: 4px; width: 7px; height: 7px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); }
@@ -1662,16 +1710,21 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
 .align-guide.v { top: 0; bottom: 0; width: 1px; }
 .align-guide.h { left: 0; right: 0; height: 1px; }
 .cap-form input {
-  width: 100%; padding: 9px 11px; border-radius: var(--r-ctrl); font-size: 13px;
+  width: 100%; padding: 9px 11px; border-radius: var(--r-ctrl); font-size: var(--f-read);
   background: rgba(255, 255, 255, .05); border: 1px solid var(--line); color: var(--ink); outline: none;
 }
 .cap-recent { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
-.cap-recent li { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cap-recent li { font-size: var(--f-meta); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .marquee { position: fixed; z-index: var(--z-desk); border: 1px solid var(--accent-ring); background: var(--accent-soft); pointer-events: none; border-radius: var(--r-tag); }
 
 /* ================================================================ windows §3 */
 #windowLayer { position: fixed; inset: 0; z-index: var(--z-desk); isolation: isolate; pointer-events: none; }
+/* Окно принимает клавиатуру (D-232), но НЕ ЗАГОРАЕТСЯ от этого: горит
+   предмет, а не комната. Обводка остаётся у кнопок и полей, где она и
+   значит «ты здесь». Охраняется tools/keyboard-reach-check.mjs. */
+.window:focus { outline: none; }
+
 .window {
   position: absolute; pointer-events: auto; display: flex; flex-direction: column; overflow: hidden;
   min-width: 340px; min-height: 280px;
@@ -1778,8 +1831,8 @@ html.dragging .window { backdrop-filter: blur(6px); }
   background: var(--glass); border: 1px solid var(--line);
 }
 .win-chip svg { width: 10px; height: 10px; }
-.win-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.win-brand { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+.win-name { font-size: var(--f-read); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.win-brand { font-family: var(--mono); font-size: var(--f-meta); color: var(--ink-3); }
 /* ── КЛАВИША ПОКАЗЫВАЕТСЯ ТАМ, ГДЕ ЕЁ МОЖНО НАЖАТЬ (v70) ──────────────────
    ПОВОД — снимок основателя 25.08.2026 с телефона: в правом углу полосы окна
    «Настройки» стоит «⌃,». Клавиши Ctrl на этом устройстве нет и не будет —
@@ -1798,10 +1851,10 @@ html.dragging .window { backdrop-filter: blur(6px); }
    Охраняется tools/keys-where-keys-are-check.mjs. */
 .tb-right .win-kbd, .win-kbd { display: none; }
 @media (pointer: fine) {
-  .tb-right .win-kbd, .win-kbd { display: inline; color: var(--ink-3); font-size: 11px; }
+  .tb-right .win-kbd, .win-kbd { display: inline; color: var(--ink-3); font-size: var(--f-meta); }
 }
 .window-body { flex: 1; min-height: 0; overflow: auto; }
-.app-fail { padding: 22px; color: var(--ink-2); font-size: 13px; }
+.app-fail { padding: 22px; color: var(--ink-2); font-size: var(--f-read); }
 .resize-handle { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize; }
 .resize-handle::after { content: ""; position: absolute; right: 5px; bottom: 5px; width: 7px; height: 7px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); }
 #sbSnapGhost {
@@ -1828,7 +1881,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
   border: 1px solid var(--line);
 }
 .expose-tile svg { width: 20px; height: 20px; }
-.expose-name { font-size: 12.5px; color: var(--ink-2); }
+.expose-name { font-size: var(--f-ui); color: var(--ink-2); }
 .expose-empty { color: var(--ink-3); }
 
 /* ========================================================= desktop hint §8
@@ -1897,7 +1950,7 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); t
 }
 .dh-glyph svg { width: 17px; height: 17px; }
 .dh-text {
-  font-size: 12.5px; line-height: 1.45; color: var(--ink-2); min-width: 0;
+  font-size: var(--f-ui); line-height: 1.45; color: var(--ink-2); min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .dh-close {
@@ -1925,7 +1978,7 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); t
 @media (max-width: 620px) {
   /* на телефоне полка ниже — запас до первой публикации --dock-h тоже */
   :root { --row-base: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 62px) + 12px); }
-  .dh-text { white-space: normal; font-size: 12px; line-height: 1.4; }
+  .dh-text { white-space: normal; font-size: var(--f-ui); line-height: 1.4; }
 
   /* ── ПОДСКАЗКА ВСТАЁТ В ОДИН РЯД С ПЛЮСОМ (v53) ──────────────────────
      Повод от основателя 21.08.2026, со снимком: «подсказки должны быть на
@@ -2100,10 +2153,10 @@ html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within 
 @keyframes dockBounce { 0% { transform: translateY(0); } 40% { transform: translateY(-16px); } 100% { transform: translateY(0); } }
 .dock-badge {
   position: absolute; top: -3px; right: 2px; min-width: 17px; height: 17px; padding: 0 4px;
-  border-radius: var(--r-pill); background: var(--danger); color: #fff; font-size: 10.5px;
+  border-radius: var(--r-pill); background: var(--danger); color: #fff; font-size: var(--f-micro);
   display: grid; place-items: center;
 }
-#dockHint { font-size: 11.5px; color: var(--ink-3); }
+#dockHint { font-size: var(--f-meta); color: var(--ink-3); }
 /* Круглая кнопка — деталь рабочего стола. Открытое окно её убирает: класс
    ставит updateAppSequence() в os/core/shell.js. */
 html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translateY(8px); }
@@ -2213,11 +2266,11 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
 #toastLayer .toast:nth-child(n + 4) { display: none; }
 .toast-icon { color: var(--ink-2); }
 .toast-icon svg { width: 18px; height: 18px; }
-.toast-title { font-size: 13px; font-weight: 600; }
-.toast-text { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+.toast-title { font-size: var(--f-read); font-weight: 600; }
+.toast-text { font-size: var(--f-ui); color: var(--ink-2); margin-top: 2px; }
 .toast-action {
   grid-column: 2; justify-self: start; margin-top: 8px; padding: 5px 11px; border-radius: var(--r-ctrl);
-  font-size: 12px; background: var(--accent-soft); border: 1px solid var(--accent-ring); color: var(--ink);
+  font-size: var(--f-ui); background: var(--accent-soft); border: 1px solid var(--accent-ring); color: var(--ink);
 }
 .toast-warn { border-color: rgba(255, 214, 10, .45); }
 /* Спокойное извещение (D-183): им говорится то, что НЕ является бедой. Потеря
@@ -2299,17 +2352,17 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .panel-account { width: min(460px, 100%); }
 .acc-sec { margin-top: 6px; }
 .acc-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; }
-.acc-row .acc-k { font-size: 13px; color: var(--ink-2); }
-.acc-row .acc-v { font-size: 12.5px; color: var(--ink-3); text-align: right; overflow-wrap: anywhere; }
-.acc-hint { font-size: 12px; color: var(--ink-3); line-height: 1.55; margin: 2px 0 6px; }
+.acc-row .acc-k { font-size: var(--f-read); color: var(--ink-2); }
+.acc-row .acc-v { font-size: var(--f-ui); color: var(--ink-3); text-align: right; overflow-wrap: anywhere; }
+.acc-hint { font-size: var(--f-ui); color: var(--ink-3); line-height: 1.55; margin: 2px 0 6px; }
 .acc-who { display: flex; align-items: center; gap: 10px; padding: 4px 2px 12px; }
 .acc-dot { width: 10px; height: 10px; border-radius: var(--r-round); background: var(--accent); flex: none; }
-.acc-who-text { display: flex; flex-direction: column; min-width: 0; font-size: 14px; }
-.acc-who-sub { font-size: 11.5px; color: var(--ink-3); }
+.acc-who-text { display: flex; flex-direction: column; min-width: 0; font-size: var(--f-read); }
+.acc-who-sub { font-size: var(--f-meta); color: var(--ink-3); }
 .acc-field { display: flex; flex-direction: column; gap: 6px; }
-.acc-label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
+.acc-label { font-size: var(--f-meta); text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
 .acc-field input {
-  width: 100%; padding: 10px 12px; font-size: 14px; border-radius: var(--r-ctrl);
+  width: 100%; padding: 10px 12px; font-size: var(--f-read); border-radius: var(--r-ctrl);
   background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
 }
 .acc-field input:focus { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
@@ -2320,7 +2373,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
    нажал случайно, должен УВИДЕТЬ, что дальше произойдёт непоправимое. */
 .btn.danger.armed { border-color: rgba(255, 69, 58, .8); background: rgba(255, 69, 58, .16); color: #fff; }
 .acc-truth {
-  font-size: 11.5px; line-height: 1.6; color: var(--ink-3);
+  font-size: var(--f-meta); line-height: 1.6; color: var(--ink-3);
   padding: 10px 11px; border-radius: var(--r-ctrl);
   background: rgba(255, 255, 255, .028); border: 1px solid var(--line);
 }
@@ -2330,13 +2383,13 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .lock-state {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 4px;
   border-radius: var(--r-ctrl); background: var(--accent-soft); border: 1px solid var(--accent-ring);
-  font-size: 13px; color: var(--ink);
+  font-size: var(--f-read); color: var(--ink);
 }
 .lock-state .lk-dot { width: 8px; height: 8px; border-radius: var(--r-round); background: var(--accent); flex: none; }
 .lock-state.off { background: rgba(255, 255, 255, .03); border-color: var(--line); color: var(--ink-2); }
 .lock-state.off .lk-dot { background: var(--ink-3); }
 .lock-cipher {
-  font-family: var(--mono); font-size: 11px; line-height: 1.7; color: var(--ink-3);
+  font-family: var(--mono); font-size: var(--f-meta); line-height: 1.7; color: var(--ink-3);
   padding: 9px 11px; border-radius: var(--r-ctrl); background: rgba(255, 255, 255, .028);
   border: 1px solid var(--line); overflow-wrap: anywhere;
   /* <pre> по умолчанию НЕ переносит строк: на телефоне имя шифра уезжало за
@@ -2347,14 +2400,14 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 }
 .lock-field { display: flex; flex-direction: column; gap: 7px; }
 .lock-field input {
-  width: 100%; padding: 11px 12px; font-size: 14px; border-radius: var(--r-ctrl);
+  width: 100%; padding: 11px 12px; font-size: var(--f-read); border-radius: var(--r-ctrl);
   background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
 }
 .lock-field input:focus { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
 .lock-acts { display: flex; flex-wrap: wrap; gap: 8px; }
 .lock-acts .btn { flex: 1 1 140px; }
 .lock-warn {
-  font-size: 12.5px; line-height: 1.55; color: var(--danger);
+  font-size: var(--f-ui); line-height: 1.55; color: var(--danger);
   padding: 9px 11px; border-radius: var(--r-ctrl);
   background: rgba(255, 69, 58, .07); border: 1px solid rgba(255, 69, 58, .22);
 }
@@ -2373,7 +2426,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 }
 @keyframes panelIn { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: none; } }
 .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
-.panel-head h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.panel-head h3 { margin: 0; font-size: var(--f-read); font-weight: 600; }
 .panel-close { color: var(--ink-3); padding: 4px 6px; border-radius: var(--r-ctrl); }
 /* ── СОДЕРЖИМОЕ ОКНА ОБЯЗАНО БЫТЬ ДОСТИЖИМО · решение D-175 ───────────────
    ПОВОД, дословно от основателя 27.08.2026, со снимком окна замка на телефоне:
@@ -2395,19 +2448,19 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 }
 /* REQUIRED cap: panel lists always stay reachable (§6.0) */
 .panel-scroll { max-height: min(56vh, 420px); overflow: auto; padding-right: 4px; }
-.panel-sub { margin: 12px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
-.panel-empty { color: var(--ink-3); font-size: 13px; padding: 10px 2px; }
-.panel-copy { font-size: 13px; color: var(--ink-2); line-height: 1.55; margin: 0 0 10px; }
-.panel-copy.dim { color: var(--ink-3); font-size: 12px; }
-.panel-err { color: var(--danger); font-size: 12.5px; min-height: 16px; }
+.panel-sub { margin: 12px 0 6px; font-size: var(--f-meta); text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
+.panel-empty { color: var(--ink-3); font-size: var(--f-read); padding: 10px 2px; }
+.panel-copy { font-size: var(--f-read); color: var(--ink-2); line-height: 1.55; margin: 0 0 10px; }
+.panel-copy.dim { color: var(--ink-3); font-size: var(--f-ui); }
+.panel-err { color: var(--danger); font-size: var(--f-ui); min-height: 16px; }
 .panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
-.foot-note { font-size: 11.5px; color: var(--ink-3); }
-.kv-row { display: flex; align-items: center; gap: 12px; padding: 7px 2px; font-size: 13px; color: var(--ink-2); }
+.foot-note { font-size: var(--f-meta); color: var(--ink-3); }
+.kv-row { display: flex; align-items: center; gap: 12px; padding: 7px 2px; font-size: var(--f-read); color: var(--ink-2); }
 .kv-row kbd { min-width: 74px; padding: 3px 7px; border-radius: var(--r-tag); background: rgba(255, 255, 255, .07); border: 1px solid var(--line); text-align: center; }
 .kv-row.wide { justify-content: space-between; }
 .kv-k { color: var(--ink-3); }
 .kv-v { text-align: right; max-width: 62%; overflow-wrap: anywhere; }
-.diag-err { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); padding: 5px 2px; overflow-wrap: anywhere; }
+.diag-err { font-family: var(--mono); font-size: var(--f-meta); color: var(--ink-2); padding: 5px 2px; overflow-wrap: anywhere; }
 .notif-row, .task-row, .clip-row {
   display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--r-ctrl);
   background: rgba(255, 255, 255, .03); border: 1px solid var(--line); margin-bottom: 6px; cursor: pointer;
@@ -2421,18 +2474,18 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
   .notif-row:hover, .task-row:hover, .clip-row:hover { background: rgba(255, 255, 255, .06); }
 }
 .notif-main { flex: 1; min-width: 0; }
-.notif-title { font-size: 13px; }
-.notif-text, .task-sub, .notif-time, .clip-time { font-size: 11.5px; color: var(--ink-3); }
+.notif-title { font-size: var(--f-read); }
+.notif-text, .task-sub, .notif-time, .clip-time { font-size: var(--f-meta); color: var(--ink-3); }
 .notif-x, .task-x { color: var(--ink-3); padding: 3px 6px; }
 .task-tile, .lay-tile { width: 16px; height: 16px; border-radius: var(--r-tag); flex: none; }
 .widget-tile { background: linear-gradient(160deg, #7f8794, #40454f); }
 .lay-tiles { display: flex; gap: 3px; }
-.task-name { flex: 1; font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.clip-text { flex: 1; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.task-name { flex: 1; font-size: var(--f-read); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clip-text { flex: 1; font-size: var(--f-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clip-row.copied { border-color: var(--accent-ring); background: var(--accent-soft); }
 .fixed-badge {
   position: fixed; right: 14px; bottom: 150px; z-index: var(--z-badge); padding: 6px 12px; border-radius: var(--r-pill);
-  font-family: var(--mono); font-size: 12px; color: var(--ink-2);
+  font-family: var(--mono); font-size: var(--f-ui); color: var(--ink-2);
   background: var(--glass-2); border: 1px solid var(--line); backdrop-filter: blur(var(--glass-blur));
 }
 .fixed-badge.urgent { color: #fff; background: rgba(255, 69, 58, .8); border-color: rgba(255, 69, 58, .9); animation: pulseUrgent 1s infinite; }
@@ -2450,16 +2503,16 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
   backdrop-filter: blur(var(--glass-blur)) saturate(1.5); box-shadow: var(--shadow);
   animation: panelIn .18s var(--ease);
 }
-#sbCmdkInput { width: 100%; padding: 16px 18px; font-size: 15px; background: none; border: 0; border-bottom: 1px solid var(--line); outline: none; }
+#sbCmdkInput { width: 100%; padding: 16px 18px; font-size: var(--f-lead); background: none; border: 0; border-bottom: 1px solid var(--line); outline: none; }
 #sbCmdkList { list-style: none; margin: 0; padding: 6px; max-height: min(52vh, 400px); overflow: auto; }
 .cmdk-item { display: flex; align-items: center; gap: 11px; padding: 9px 11px; border-radius: var(--r-ctrl); cursor: pointer; }
 .cmdk-item.active { background: var(--accent-soft); }
-.cmdk-tile { width: 26px; height: 26px; border-radius: var(--r-ctrl); display: grid; place-items: center; flex: none; color: rgba(255, 255, 255, .92); }
+.cmdk-tile { width: 26px; height: 26px; border-radius: var(--r-ctrl); display: grid; place-items: center; flex: none; color: var(--ink); }
 .cmdk-tile svg { width: 15px; height: 15px; }
 .cmdk-text { display: flex; flex-direction: column; min-width: 0; }
-.cmdk-title { font-size: 13px; }
-.cmdk-sub { font-size: 11.5px; color: var(--ink-3); }
-.cmdk-empty { padding: 16px; color: var(--ink-3); font-size: 13px; }
+.cmdk-title { font-size: var(--f-read); }
+.cmdk-sub { font-size: var(--f-meta); color: var(--ink-3); }
+.cmdk-empty { padding: 16px; color: var(--ink-3); font-size: var(--f-read); }
 
 /* =========================================================== context menu */
 #sbCtxMenu {
@@ -2468,7 +2521,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4); box-shadow: var(--shadow);
 }
 #sbCtxMenu:not(.open) { display: none; }
-.ctx-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 8px 11px; border-radius: var(--r-ctrl); font-size: 13px; text-align: left; color: var(--ink); }
+.ctx-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 8px 11px; border-radius: var(--r-ctrl); font-size: var(--f-read); text-align: left; color: var(--ink); }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал. Повод — снимок основателя
@@ -2482,9 +2535,9 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 
 /* ================================================================= terminal */
 .term-host, .sb-terminal { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; }
-.sb-terminal { padding: 12px 14px; font-family: var(--mono); font-size: 12.5px; background: rgba(0, 0, 0, .28); }
+.sb-terminal { padding: 12px var(--pad-room); font-family: var(--mono); font-size: var(--f-ui); background: rgba(0, 0, 0, .28); }
 .term-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-.term-chip { padding: 3px 9px; border-radius: var(--r-pill); font-size: 11px; color: var(--ink-3); background: rgba(255, 255, 255, .05); border: 1px solid var(--line); }
+.term-chip { padding: 3px 9px; border-radius: var(--r-pill); font-size: var(--f-meta); color: var(--ink-3); background: rgba(255, 255, 255, .05); border: 1px solid var(--line); }
 .term-out { flex: 1; min-height: 0; overflow: auto; line-height: 1.55; }
 .term-row { white-space: pre-wrap; overflow-wrap: anywhere; }
 .term-echo { color: var(--ink-3); }
@@ -2492,7 +2545,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .term-welcome { color: var(--accent); }
 .term-line { display: flex; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 .term-prompt { color: var(--accent); }
-.term-input { flex: 1; background: none; border: 0; outline: none; font-family: var(--mono); font-size: 12.5px; }
+.term-input { flex: 1; background: none; border: 0; outline: none; font-family: var(--mono); font-size: var(--f-ui); }
 
 /* ================================================================= motion */
 html[data-motion="reduced"] *,
@@ -2536,7 +2589,7 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
 html.icons-small .desk-icon { width: 68px; height: 80px; }
 html.icons-small .icon-tile { width: 40px; height: 40px; border-radius: var(--r-card); }
 html.icons-small .icon-tile svg { width: 19px; height: 19px; }
-html.icons-small .icon-label { font-size: 10.5px; }
+html.icons-small .icon-label { font-size: var(--f-micro); }
 @media (max-width: 680px) {
   #sbWidgetLayer { display: none; }
   .window { border-radius: var(--r-window); }
@@ -2597,8 +2650,8 @@ html.icons-small .icon-label { font-size: 10.5px; }
      узком меняется только кегль и запас по бокам. */
   #toastLayer { gap: 6px; width: calc(100vw - 20px); }
   .toast { padding: 10px 12px; gap: 9px; }
-  .toast-title { font-size: 12.5px; }
-  .toast-text { font-size: 11.5px; }
+  .toast-title { font-size: var(--f-ui); }
+  .toast-text { font-size: var(--f-meta); }
   .toast-action { margin-top: 6px; padding: 4px 10px; }
   /* Круглая кнопка остаётся у правого края: полка стоит по центру и узкая,
      угол свободен. Спорить им не за что. */
@@ -2628,7 +2681,7 @@ html.icons-small .icon-label { font-size: 10.5px; }
 @media (max-width: 420px) {
   #sbControlCenter { right: 6px; left: 6px; width: auto; }
 }
-html.is-touch input, html.is-touch textarea, html.is-touch select { font-size: 16px; }
+html.is-touch input, html.is-touch textarea, html.is-touch select { font-size: var(--f-lead); }
 html.is-touch .icon-spark, html.is-touch .icon-capsule { display: none; }
 html.is-compact .titlebar { cursor: default; }
 
@@ -2640,7 +2693,7 @@ html.is-compact .titlebar { cursor: default; }
    (#sbBoot) скрыт стилями, и строка в нём не была бы видна никому. */
 .login-decoding {
   margin: 0 0 10px; font-family: var(--mono, ui-monospace, Menlo, monospace);
-  font-size: 11.5px; letter-spacing: .04em; color: var(--ink-3); text-align: center;
+  font-size: var(--f-meta); letter-spacing: .04em; color: var(--ink-3); text-align: center;
 }
 
 /* ── Язык: один код, который и есть кнопка (v47, вторая редакция) ─────────
@@ -2673,7 +2726,7 @@ html.is-compact .titlebar { cursor: default; }
    буквы, правый угол экрана. */
 .tb-lang-now {
   padding: 4px 7px; cursor: pointer;
-  font-family: var(--mono); font-size: 11px; letter-spacing: .06em; line-height: 1;
+  font-family: var(--mono); font-size: var(--f-meta); letter-spacing: .06em; line-height: 1;
   color: var(--ink-2, var(--ink));
   background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-tag);
   transition: color var(--t-touch) ease, background var(--t-touch) ease, border-color var(--t-touch) ease, transform var(--t-touch) var(--ease);
@@ -2703,7 +2756,7 @@ html.is-compact .titlebar { cursor: default; }
 .tb-lang-item {
   display: flex; align-items: center; gap: 9px; width: 100%;
   padding: 7px 9px; border: 0; border-radius: var(--r-ctrl); background: none; cursor: pointer;
-  color: var(--ink-2, var(--ink)); text-align: left; font-size: 12.5px; line-height: 1;
+  color: var(--ink-2, var(--ink)); text-align: left; font-size: var(--f-ui); line-height: 1;
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -2715,7 +2768,7 @@ html.is-compact .titlebar { cursor: default; }
 }
 .tb-lang-item.is-active { color: var(--ink); }
 .tb-lang-item.is-active .tb-lang-code { color: var(--accent); }
-.tb-lang-code { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; min-width: 20px; }
+.tb-lang-code { font-family: var(--mono); font-size: var(--f-meta); letter-spacing: .06em; min-width: 20px; }
 
 /* ── ЗНАЧОК СИСТЕМЫ — ВТОРАЯ РУКА «УБРАТЬ ВСЁ» (v47.1) ────────────────────
    Голосование выбрало пустое место стола, основатель поправил: выбирать
@@ -2784,7 +2837,7 @@ button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset:
 .note-due {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 8px; border-radius: var(--r-pill);
-  font-size: 11px; color: var(--ink-2);
+  font-size: var(--f-meta); color: var(--ink-2);
   background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
 }
 .note-due svg { width: 11px; height: 11px; flex: none; }
@@ -2861,12 +2914,12 @@ html[data-motion="reduced"] .echo-catch { animation: none; }
 .time-big { display: flex; align-items: center; justify-content: center; gap: 3px; padding: 12px 0 4px; color: var(--ink); }
 .time-cell { display: inline-flex; align-items: center; }
 .time-cell .clock-glyph { height: 44px; width: 28px; }
-.time-cell.colon { font-family: var(--mono); font-size: 34px; line-height: 1; opacity: .32; padding: 0 2px; }
-.time-sub { text-align: center; font-size: 12.5px; color: var(--ink-3); padding-bottom: 14px; }
+.time-cell.colon { font-family: var(--mono); font-size: var(--f-figure); line-height: 1; opacity: .32; padding: 0 2px; }
+.time-sub { text-align: center; font-size: var(--f-ui); color: var(--ink-3); padding-bottom: 14px; }
 .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 2px 10px; }
-.cal-title { font-size: 13px; font-weight: 600; color: var(--ink-2); text-transform: capitalize; }
+.cal-title { font-size: var(--f-read); font-weight: 600; color: var(--ink-2); text-transform: capitalize; }
 .cal-step {
-  width: 30px; height: 30px; display: grid; place-items: center; font-size: 17px;
+  width: 30px; height: 30px; display: grid; place-items: center; font-size: var(--f-lead);
   border-radius: var(--r-ctrl); border: 1px solid var(--line);
   background: rgba(255, 255, 255, .04); color: var(--ink-2);
 }
@@ -2874,12 +2927,12 @@ html[data-motion="reduced"] .echo-catch { animation: none; }
 .cal-head, .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
 .cal-head { padding-bottom: 5px; }
 .cal-head span {
-  text-align: center; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase;
+  text-align: center; font-size: var(--f-micro); letter-spacing: .05em; text-transform: uppercase;
   color: var(--ink-3);
 }
 .cal-day, .cal-pad {
   aspect-ratio: 1; display: grid; place-items: center;
-  font-family: var(--mono); font-size: 12.5px; color: var(--ink-2);
+  font-family: var(--mono); font-size: var(--f-ui); color: var(--ink-2);
   border-radius: var(--r-ctrl);
 }
 .cal-day.today {
@@ -2924,7 +2977,7 @@ body.sb-alarm-flash::after {
 #sbVaultGate.vg-work .vg-field { opacity: .40; filter: blur(0); }
 #sbVaultGate.vg-open .vg-field { opacity: 0; }
 .vg-cost, .vg-sealed {
-  margin: 4px 0 0; font-family: var(--mono); font-size: 11px; line-height: 1.7;
+  margin: 4px 0 0; font-family: var(--mono); font-size: var(--f-meta); line-height: 1.7;
   color: var(--ink-3); letter-spacing: .01em; max-width: 46ch;
 }
 .vg-cost { color: var(--ink-2); }
@@ -2948,4 +3001,59 @@ body.sb-alarm-flash::after {
 }
 @media (prefers-reduced-motion: reduce) {
   .note-seal { animation: none; opacity: .85; }
+}
+
+/* ── ПЕРЕДАТЬ В ДРУГУЮ КОМНАТУ — ОДНА КНОПКА НА ВСЕ КОМНАТЫ (D-241) ──────
+   Стили живут в ядре, потому что разметку отдаёт ядро: три комнаты с тремя
+   похожими кнопками — это обратно три частных хода, только с общим ядром
+   под ними. Список раскрывается вниз и закрывается выбором: меню, которое
+   надо закрывать отдельно, человек оставляет открытым.
+   Охраняется tools/hand-check.mjs. */
+.sb-hand { position: relative; }
+
+.sb-hand-btn {
+  border: 1px solid rgba(255, 255, 255, .14);
+  background: rgba(255, 255, 255, .05);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--f-meta);
+  padding: 5px 10px;
+  border-radius: var(--r-ctrl);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .sb-hand-btn:hover { background: rgba(255, 255, 255, .1); color: var(--ink); }
+}
+
+.sb-hand-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: var(--z-menu);
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  padding: 4px;
+  border-radius: var(--r-card);
+  border: 1px solid rgba(255, 255, 255, .12);
+  background: var(--glass-2, rgba(24, 24, 28, .96));
+  box-shadow: var(--shadow-soft);
+}
+
+.sb-hand-to {
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--f-ui);
+  text-align: left;
+  padding: 7px 9px;
+  border-radius: var(--r-ctrl);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .sb-hand-to:hover { background: rgba(255, 255, 255, .08); color: var(--ink); }
 }

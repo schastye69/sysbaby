@@ -3,13 +3,13 @@
    каждая строка отвечает на три вопроса и ничего не прячет за раскрывашкой:
    спрятанное в описи — то же, что отсутствующее. */
 
-.ow-wrap { padding: 4px 2px 18px; display: flex; flex-direction: column; gap: 12px; }
+.ow-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; }
 .ow-top { position: relative; padding: 2px 2px 0; }
-.ow-title { margin: 0 0 6px; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
-.ow-lead { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink-2); max-width: 62ch; }
+.ow-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: 700; letter-spacing: -.01em; }
+.ow-lead { margin: 0; font-size: var(--f-read); line-height: 1.6; color: var(--ink-2); max-width: 62ch; }
 .ow-count {
   position: absolute; top: 0; right: 4px; margin: 0;
-  font-size: 34px; font-weight: 700; line-height: 1; color: var(--ink-3);
+  font-size: var(--f-figure); font-weight: 700; line-height: 1; color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
 
@@ -22,21 +22,25 @@
    и он стоит только там, где данные уходят к посторонним. */
 .ow-row[data-side="third"] { border-left: 2px solid rgba(255, 150, 90, .55); }
 .ow-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.ow-head h3 { margin: 0; font-size: 15.5px; font-weight: 650; color: var(--ink); }
+.ow-head h3 { margin: 0; font-size: var(--f-lead); font-weight: 650; color: var(--ink); }
 .ow-side {
-  font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase;
+  font-size: var(--f-micro); letter-spacing: .07em; text-transform: uppercase;
   color: var(--ink-3); white-space: nowrap;
 }
 .ow-side.ow-third { color: rgb(255, 168, 112); }
-.ow-when { margin: 0; font-size: 12px; color: var(--ink-3); }
+/* «Только по вашей руке» и ярлыки описи — это ответ на вопрос «что уходит
+   и кто это увидит». Их читают, а не проглядывают. Тусклые чернила давали
+   2.79 и 3.32 на карточке описи, которая сама светлее стола (D-234).
+   Охраняется tools/legible-check.mjs. */
+.ow-when { margin: 0; font-size: var(--f-ui); color: var(--ink-2); }
 
 .ow-facts { margin: 2px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; }
 .ow-facts dt {
-  font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase;
-  color: var(--ink-3); padding-top: 3px; white-space: nowrap;
+  font-size: var(--f-micro); letter-spacing: .07em; text-transform: uppercase;
+  color: var(--ink-2); padding-top: 3px; white-space: nowrap;
 }
-.ow-facts dd { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--ink-2); }
-.ow-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; overflow-wrap: anywhere; }
+.ow-facts dd { margin: 0; font-size: var(--f-ui); line-height: 1.6; color: var(--ink-2); }
+.ow-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--f-meta); overflow-wrap: anywhere; }
 
 .ow-switch { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 2px; }
 .ow-sw {
@@ -51,18 +55,18 @@
 }
 .ow-sw.on { background: var(--accent-soft); border-color: var(--accent-ring); }
 .ow-sw.on i { transform: translateX(16px); background: var(--accent); }
-.ow-switch > span { font-size: 12.5px; color: var(--ink-2); }
-.ow-why { flex: 1 1 100%; font-size: 12px; line-height: 1.6; color: var(--ink-3); }
+.ow-switch > span { font-size: var(--f-ui); color: var(--ink-2); }
+.ow-why { flex: 1 1 100%; font-size: var(--f-ui); line-height: 1.6; color: var(--ink-3); }
 .ow-noswitch {
-  margin: 2px 0 0; font-size: 12px; line-height: 1.6; color: var(--ink-3);
+  margin: 2px 0 0; font-size: var(--f-ui); line-height: 1.6; color: var(--ink-3);
   padding: 10px 12px; border-radius: var(--r-ctrl);
   background: rgba(255, 255, 255, .02); border: 1px solid var(--line);
 }
 .ow-noswitch b { color: var(--ink-2); }
 
-.ow-none { margin: 0; font-size: 13px; color: var(--ink-2); }
+.ow-none { margin: 0; font-size: var(--f-read); color: var(--ink-2); }
 .ow-honest {
-  margin: 2px 0 0; font-size: 12.5px; line-height: 1.7; color: var(--ink-2);
+  margin: 2px 0 0; font-size: var(--f-ui); line-height: 1.7; color: var(--ink-2);
   padding: 13px 15px; border-radius: var(--r-card);
   border: 1px solid var(--line); border-left: 2px solid var(--accent-ring);
   background: rgba(255, 255, 255, .018); max-width: 78ch;

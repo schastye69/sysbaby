@@ -1454,6 +1454,13 @@
     el.setAttribute("data-app", id);
     el.setAttribute("role", "dialog");
     el.setAttribute("aria-label", appTitle(id));
+    /* ОКНО САМО МОЖЕТ ПРИНЯТЬ КЛАВИАТУРУ, НО НЕ СТОИТ В ОБХОДЕ (D-232).
+       tabindex="-1" — это «навестись на меня можно, но Tab меня не считает
+       остановкой». Нужен затем, чтобы точка отсчёта обхода переезжала В
+       ОКНО, которое человек открыл: без этого Tab начинал от начала стола и
+       доходил до окна с двадцать первого нажатия.
+       Охраняется tools/keyboard-reach-check.mjs. */
+    el.setAttribute("tabindex", "-1");
     el.style.left = x + "px"; el.style.top = y + "px";
     el.style.width = w + "px"; el.style.height = h + "px";
     var sc = window.sbAppShortcuts[id];
@@ -1596,6 +1603,21 @@
     win.el.style.zIndex = String(win.z);
     focusedId = id;
     $$(".window").forEach(function (w) { w.classList.toggle("focused", w === win.el); });
+    /* И КЛАВИАТУРА ТОЖЕ ПРИХОДИТ СЮДА (D-232). Замер до починки: человек
+       открыл «Записи», мыши не касался, нажал Tab — и попал в своё окно с
+       ДВАДЦАТЬ ПЕРВОГО раза, пройдя двенадцать плиток дока, полосу сверху и
+       значки стола. Мышью этого не видно никогда, клавиатурой — всякий раз.
+       Окно, которое человек открыл, и есть место, где он находится.
+
+       ТОЛЬКО ЕСЛИ ФОКУС НЕ ЗДЕСЬ. Иначе это отняло бы наведение у поля, на
+       которое приложение навелось само (Терминал, Поиск), и у кнопки,
+       которую только что нажали внутри окна. */
+    try {
+      var live = doc.activeElement;
+      if (!live || live === doc.body || !win.el.contains(live)) {
+        win.el.focus({ preventScroll: true });
+      }
+    } catch (e) { /* фокус — удобство, а не условие работы окна */ }
     updateAppSequence();
     buildDock();
     updateTopbarAutoHide();

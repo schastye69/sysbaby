@@ -36,10 +36,10 @@
   background: rgba(255, 255, 255, .05);
   color: inherit;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--f-read);
 }
 
-.notes-search::placeholder { color: rgba(255, 255, 255, .38); }
+.notes-search::placeholder { color: var(--ink-3); }
 
 .notes-add {
   width: 30px;
@@ -96,7 +96,7 @@
 .notes-row.dragging-source { opacity: .4; }
 
 .notes-row-title {
-  font-size: 13px;
+  font-size: var(--f-read);
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -105,20 +105,20 @@
 
 .notes-row-prev,
 .notes-row-time {
-  font-size: 11.5px;
-  color: rgba(255, 255, 255, .5);
+  font-size: var(--f-meta);
+  color: var(--ink-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.notes-row-time { margin-top: 2px; font-size: 11px; color: rgba(255, 255, 255, .38); }
+.notes-row-time { margin-top: 2px; font-size: var(--f-meta); color: var(--ink-3); }
 
 .notes-empty-list {
   padding: 22px 12px;
   text-align: center;
-  font-size: 12.5px;
-  color: rgba(255, 255, 255, .42);
+  font-size: var(--f-ui);
+  color: var(--ink-3);
 }
 
 .notes-editor {
@@ -144,7 +144,7 @@
   border-radius: var(--r-ctrl);
   border: 1px solid rgba(255, 255, 255, .1);
   background: transparent;
-  color: rgba(255, 255, 255, .62);
+  color: var(--ink-2);
   cursor: pointer;
 }
 
@@ -163,7 +163,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 20px;
+  font-size: var(--f-title);
   font-weight: 650;
   padding: 6px 0 8px;
   outline: none;
@@ -176,14 +176,14 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 13.5px;
+  font-size: var(--f-read);
   line-height: 1.6;
   resize: none;
   outline: none;
 }
 
 .notes-title::placeholder,
-.notes-body::placeholder { color: rgba(255, 255, 255, .3); }
+.notes-body::placeholder { color: var(--ink-3); }
 
 .notes-editor-empty {
   flex: 1;
@@ -193,8 +193,8 @@
   justify-content: center;
   gap: 12px;
   text-align: center;
-  color: rgba(255, 255, 255, .5);
-  font-size: 13px;
+  color: var(--ink-3);
+  font-size: var(--f-read);
   padding: 0 32px;
 }
 
@@ -211,16 +211,16 @@
   border: 1px solid rgba(255, 255, 255, .16);
   background: rgba(24, 25, 30, .92);
   box-shadow: 0 12px 34px rgba(0, 0, 0, .45);
-  font-size: 12.5px;
-  color: rgba(255, 255, 255, .9);
+  font-size: var(--f-ui);
+  color: var(--ink);
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
 .notes-row-ghost .ghost-prev {
-  font-size: 11px;
-  color: rgba(255, 255, 255, .5);
+  font-size: var(--f-meta);
+  color: var(--ink-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -239,7 +239,7 @@
 /* Срок в списке записей — тот же разбор, что на столе (см. notes.js). */
 .notes-row-due {
   display: inline-block; margin-right: 7px; padding: 2px 7px;
-  border-radius: var(--r-pill); font-size: 10.5px; color: var(--ink-2);
+  border-radius: var(--r-pill); font-size: var(--f-micro); color: var(--ink-2);
   background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
 }
 .notes-row-due.now { color: var(--ink); border-color: var(--accent-ring); background: var(--accent-soft); }

@@ -5,7 +5,7 @@
   min-width: 0;
   min-height: 0;
   overflow: auto;
-  padding: 12px 12px 18px;
+  padding: 12px var(--pad-room) 18px;
   color: var(--text, rgba(255, 255, 255, .92));
 }
 
@@ -15,7 +15,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 4px 6px 10px;
-  font-size: 12.5px;
+  font-size: var(--f-ui);
   font-weight: 650;
 }
 
@@ -70,8 +70,8 @@
 .ec-app-tile svg { width: 15px; height: 15px; }
 
 .ec-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.ec-snippet { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ec-time { font-size: 10.5px; color: rgba(255, 255, 255, .42); }
+.ec-snippet { font-size: var(--f-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ec-time { font-size: var(--f-micro); color: var(--ink-3); }
 
 .ec-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 5px; }
 
@@ -80,7 +80,7 @@
   background: rgba(255, 255, 255, .05);
   color: inherit;
   font: inherit;
-  font-size: 11.5px;
+  font-size: var(--f-meta);
   padding: 4px 9px;
   border-radius: var(--r-ctrl);
   cursor: pointer;
@@ -95,13 +95,13 @@
 @media (hover: hover) {
   .ec-btn:hover { background: rgba(255, 255, 255, .13); }
 }
-.ec-btn.quiet { font-size: 11px; color: rgba(255, 255, 255, .7); }
+.ec-btn.quiet { font-size: var(--f-meta); color: var(--ink-2); }
 
 .ec-btn.x {
   width: 24px;
   padding: 4px 0;
   text-align: center;
-  color: rgba(255, 255, 255, .55);
+  color: var(--ink-3);
 }
 
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
@@ -126,5 +126,5 @@
 
 .ec-empty-glyph { color: #a794ff; }
 .ec-empty-glyph svg { width: 38px; height: 38px; opacity: .55; }
-.ec-empty-title { margin: 0; font-size: 14px; font-weight: 650; }
-.ec-empty-sub { margin: 0; font-size: 12px; line-height: 1.6; color: rgba(255, 255, 255, .45); max-width: 300px; }
+.ec-empty-title { margin: 0; font-size: var(--f-read); font-weight: 650; }
+.ec-empty-sub { margin: 0; font-size: var(--f-ui); line-height: 1.6; color: var(--ink-3); max-width: 300px; }

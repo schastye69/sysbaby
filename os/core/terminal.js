@@ -1,6 +1,16 @@
 /* sys.baby OS — core/terminal.js
  * Terminal engine (sbMountTerminal(root), idempotent per root) + the Terminal
- * app window. Registers FIRST, before the app scripts load (§3.1). */
+ * app window. Registers FIRST, before the app scripts load (§3.1).
+ *
+ * ЭТО ЕДИНСТВЕННОЕ МЕСТО СИСТЕМЫ, КОТОРОЕ ГОВОРИТ О СЕБЕ ВСЛУХ. Оно печатает
+ * числа и заявления. И то и другое — показания системы о самой себе, а
+ * показания, которых никто не проверяет, живут ровно до первого дня, когда
+ * перестают быть правдой, и ни секунды меньше. Поэтому: числа СПРАШИВАЮТСЯ у
+ * системы, а не помнятся (D-200/D-201), обещания про «наружу» спрашиваются у
+ * описи (D-221), а под замком терминал не выдаёт ни человека, ни веса того,
+ * что замок прячет (D-228).
+ *
+ * Охраняется tools/terminal-truth-check.mjs. */
 (function () {
   "use strict";
 
@@ -82,7 +92,12 @@
      none of those places — a door you must try, not a menu item. */
   var COMMANDS = ["help", "version", "uptime", "status", "whoami", "clear", "date", "time",
     "calendar", "notes", "open", "theme", "calc", "echo", "seen", "who",
-    "apps", "log", "storage", "contracts", "errors", "lang", "history"];
+    "apps", "log", "storage", "contracts", "errors", "lang", "history",
+    /* floor, rights и alive стояли в help и НЕ стояли здесь: Tab их не
+       дополнял, «вы имели в виду» их не предлагал. Команда, названная в
+       справке и неизвестная дополнению, — маленький вариант двери, которая
+       не открывается (D-243). */
+    "floor", "rights", "alive"];
 
   function lang() { return window.sbLang ? window.sbLang() : "en"; }
   function localeFor() { var l = lang(); return l === "ru" ? "ru-RU" : (l === "ee" ? "et-EE" : "en-GB"); }
@@ -164,7 +179,7 @@
       switch (cmd) {
         case "help":
           writeLines([
-            "system     version · status · uptime · storage · contracts · errors · whoami · clear",
+            "system     version · status · alive · uptime · storage · floor · rights · contracts · errors · whoami · clear",
             "desktop    open <app> · apps · theme dark|light · notes · lang · tidy",
             "utility    date · time · calendar · calc <expr> · echo <text> · history",
             "journal    log · log all — this system's own build history",
@@ -234,6 +249,21 @@
           if (!all) write("every entry is true. that is the entire trick.", "term-dim");
           return;
         }
+        /* ── ХРАНИЛИЩЕ: СЧИТАЕТ, НО НЕ УТЕШАЕТ ─────────────────────────────
+           Здесь было запомненное обещание: «none of it has ever left». Оно
+           стояло рядом с описью, в которой в тот же день значились три двери
+           к чужим хозяевам, и через одну уходил весь текст письма открытым.
+           Обещание, которое никто не проверяет, живёт ровно до первого дня,
+           когда оно перестаёт быть правдой. Теперь терминал не обещает — он
+           СПРАШИВАЕТ У ОПИСИ и называет число.
+
+           И второе. Замок платит обманками за то, чтобы число ключей было
+           постоянным: 33 и при пустом профиле, и при сорока записях. А вес
+           обманками не замаскирован — 17 КБ пусто, 260 КБ полно. Печатать
+           его под замком значило отменять одной строкой всё, за что
+           заплачено. Под замком вес не называется, и СКАЗАНО ПОЧЕМУ:
+           пропавшее число неотличимо от сломанной команды.
+           Охраняется tools/terminal-truth-check.mjs (D-228). */
         case "storage": {
           var count = 0, bytes = 0;
           try {
@@ -245,10 +275,187 @@
               bytes += sk.length + (sv ? sv.length : 0);
             }
           } catch (e) { write("storage is not readable in this browser."); return; }
-          writeLines([
-            "sysbaby.* keys: " + count + " · ~" + (bytes >= 1024 ? Math.round(bytes / 1024) + " KB" : bytes + " B") + " of text",
-            "all of it lives in this browser. none of it has ever left."
-          ]);
+
+          var shut = !!(window.sbVault && typeof window.sbVault.isLocked === "function" && window.sbVault.isLocked());
+          if (shut) {
+            write("sysbaby.* keys: " + count + " — the same number whether this profile holds nothing or forty notes. the decoys see to that.");
+            write("the weight is not told while the lock is on: the count is camouflaged, the weight is not. saying it would undo what the decoys pay for.", "term-dim");
+          } else {
+            write("sysbaby.* keys: " + count + " · ~" + (bytes >= 1024 ? Math.round(bytes / 1024) + " KB" : bytes + " B") + " of text");
+          }
+
+          /* Опись — единственный источник (D-221). Числа здесь буквой нет. */
+          var od = (window.SB_OUTWARD && window.SB_OUTWARD.doors) || null;
+          if (!od) {
+            write("the outward inventory did not load. this terminal will not tell you where your words go until it can read it.", "term-echo");
+            return;
+          }
+          var third = od.filter(function (d) { return d.side === "third"; });
+          var hosts = [];
+          third.forEach(function (d) { if (d.host && hosts.indexOf(d.host) === -1) hosts.push(d.host); });
+          write(od.length + " doors lead outward from this system"
+            + (third.length
+              ? " — " + third.length + " of them reach machines that are not ours: " + hosts.join(", ") + "."
+              : ". not one of them reaches a machine that is not ours."));
+          var auto = third.filter(function (d) { return d.byHand === false; });
+          if (auto.length) {
+            write(auto.length + " of those stranger's doors open BY THEMSELVES. open outward and look now.", "term-echo");
+          } else {
+            write("not one of the stranger's doors opens by itself — each waits for your hand. 'open outward' shows what each carries and who receives it.", "term-dim");
+          }
+          return;
+        }
+        /* ── ПОЛ: ЧТО СИСТЕМА ДЕРЖИТ НА ВАШЕМ ДИСКЕ (D-239) ───────────────
+           Опись пола — единственный источник (shared/floor.data.js), тот же,
+           что читает закон floor-check. Числа здесь не помнятся: они
+           считаются по описи каждый раз. Охраняется tools/floor-check.mjs. */
+        case "floor": {
+          var fl = (window.SB_FLOOR && window.SB_FLOOR.places) || null;
+          if (!fl) { write("the floor inventory did not load. this terminal will not tell you what is kept until it can read it.", "term-echo"); return; }
+          var byKind = {};
+          fl.forEach(function (pl) { byKind[pl.kind] = (byKind[pl.kind] || 0) + 1; });
+          var want = String(rest || "").trim().toLowerCase();
+          if (want) {
+            var hits = fl.filter(function (pl) {
+              return pl.id.toLowerCase().indexOf(want) !== -1 ||
+                     (pl.rooms || []).join(" ").toLowerCase().indexOf(want) !== -1;
+            });
+            if (!hits.length) { write("nothing on the floor matches '" + want + "'."); return; }
+            hits.slice(0, 12).forEach(function (pl) {
+              write(pad(pl.kind, 11) + pl.id);
+              write("            " + pl.what, "term-dim");
+            });
+            if (hits.length > 12) write("…and " + (hits.length - 12) + " more.", "term-dim");
+            return;
+          }
+          write(fl.length + " places on this disk: " +
+            Object.keys(byKind).map(function (k) { return byKind[k] + " " + k; }).join(" · "));
+          write("'вещи' is what you made; 'выбор' is what you chose; 'служебное' is what the system remembers about itself.", "term-dim");
+          /* НЕ ОБЕЩАТЬ ТОГО, ЧЕГО САМ НЕ ПРОВЕРЯЛ (D-228). Терминал смотрит
+             на замок ПРЯМО СЕЙЧАС и говорит о том, что видит; а про то, что
+             прячется всё без исключения, он ссылается на закон, который это
+             меряет живым запиранием, — не выдавая чужое измерение за своё. */
+          var shutNow = !!(window.sbVault && typeof window.sbVault.isLocked === "function" && window.sbVault.isLocked());
+          if (shutNow) write("the lock is on right now: none of it is readable from this disk.", "term-dim");
+          else write("the lock is off right now. that every one of these hides when it goes on is measured by the system's own law at each board, not promised here.", "term-dim");
+          write("'floor <word>' looks up a place by name or by room.", "term-dim");
+          return;
+        }
+        /* ── ПРАВА КОМНАТ · D-242 ──────────────────────────────────────────
+           Опись прав СЧИТАЕТСЯ ЖИВЫМ РЕЕСТРОМ в миг вопроса, а не помнится
+           здесь списком: терминал спрашивает sbRights, тот спрашивает
+           комнаты. И ГЛАВНОЕ — терминал говорит вслух то же, что сказано в
+           шапке ядра прав: это замок на двери, а не стена вокруг дома.
+           Терминал, обещающий защиту крепче, чем она есть, опаснее молчания.
+           Охраняется tools/room-rights-check.mjs. */
+        case "rights": {
+          var R = window.sbRights;
+          if (!R) { write("the rights core did not load. this terminal will not tell you who owns what until it can ask.", "term-echo"); return; }
+          var mp = R.map() || {};
+          var names = Object.keys(mp).sort();
+          var want = String(rest || "").trim().toLowerCase();
+          /* Дверь, о которой сказано, обязана открываться (D-240/D-241). */
+          if (want === "denied") {
+            var jr = R.denials();
+            if (!jr.length) { write("no room has been refused this session."); return; }
+            jr.slice(-14).forEach(function (r) {
+              write(pad(r.room, 11) + r.key + "  " + r.how);
+            });
+            if (jr.length > 14) write("…" + (jr.length - 14) + " earlier refusals this session.", "term-dim");
+            write("the journal lives for this visit only: it exists so a refusal is visible now, not so refusals pile up on the disk as one more place with no owner.", "term-dim");
+            return;
+          }
+          if (want) {
+            var found = names.filter(function (k) {
+              return k.toLowerCase().indexOf(want) !== -1 ||
+                     String(mp[k].owner).toLowerCase().indexOf(want) !== -1;
+            });
+            if (!found.length) {
+              write("no declared place matches '" + want + "'. places nobody declared belong to the core.", "term-dim");
+              return;
+            }
+            found.slice(0, 14).forEach(function (k) {
+              write(pad(mp[k].owner, 11) + k);
+              if (mp[k].borrowers.length) write("            read by: " + mp[k].borrowers.join(", "), "term-dim");
+            });
+            if (found.length > 14) write("…and " + (found.length - 14) + " more.", "term-dim");
+            return;
+          }
+          var byRoom = {};
+          names.forEach(function (k) { byRoom[mp[k].owner] = (byRoom[mp[k].owner] || 0) + 1; });
+          var lent = names.filter(function (k) { return mp[k].borrowers.length; });
+          write(names.length + " places have a declared owner: " +
+            Object.keys(byRoom).sort().map(function (r) { return r + " " + byRoom[r]; }).join(" · "));
+          write("everything not declared belongs to the core. no list of the core's own places is kept anywhere — a second list would drift from the first.", "term-dim");
+          if (lent.length) {
+            write(lent.length + " of them are read by another room, declared:", "term-dim");
+            lent.slice(0, 6).forEach(function (k) {
+              write("  " + k + "  " + mp[k].owner + " → " + mp[k].borrowers.join(", "), "term-dim");
+            });
+          } else {
+            write("no room reads another room's place.", "term-dim");
+          }
+          var sw = R.sweepers();
+          if (sw.length) write("walks the whole disk by declaration: " + sw.join(", ") + ".", "term-dim");
+          var dn = R.denials();
+          write(dn.length ? dn.length + " refusals this session. 'rights denied' lists them."
+                          : "no room has been refused this session.", "term-dim");
+          write("THIS IS A LOCK ON A DOOR, NOT A WALL AROUND THE HOUSE: every room's code runs on one page, and a room written on purpose can go round it in one line. it catches a mistake, and makes a foreign read visible. it does not catch betrayal.", "term-dim");
+          write("'rights <word>' looks up a place by name or by owner.", "term-dim");
+          return;
+        }
+        /* ── ЧТО СЕЙЧАС ЖИВО · D-243 ───────────────────────────────────────
+           Ответ СЧИТАЕТСЯ ЖИВЫМИ ПРИБОРАМИ в миг вопроса: диск проверяется
+           письмом и чтением, сеть — у браузера, адрес почтальона — у описи
+           выходов. Ничего не помнится здесь списком.
+           И ПРЕДЕЛ ГОВОРИТСЯ ВМЕСТЕ С ОТВЕТОМ. «Сеть есть» значит, что
+           провод воткнут, а не что тот, кто нужен, отвечает; живого
+           собеседника машина не измеряет ничем. Терминал, назвавший первое
+           и умолчавший о втором, обманет вернее, чем если бы молчал.
+           Охраняется tools/alive-check.mjs. */
+        case "alive": {
+          var A = window.sbAlive;
+          if (!A) { write("the liveness core did not load. this terminal will not tell you what works until it can measure it.", "term-echo"); return; }
+          var all = A.all(), ids = Object.keys(all);
+          var want = String(rest || "").trim().toLowerCase();
+          if (want) {
+            var hit = ids.filter(function (id) {
+              return id.toLowerCase().indexOf(want) !== -1 ||
+                     String(all[id].title).toLowerCase().indexOf(want) !== -1;
+            });
+            if (!hit.length) { write("no room matches '" + want + "'."); return; }
+            hit.slice(0, 6).forEach(function (id) {
+              var r = all[id];
+              write(pad(r.state, 18) + r.title + (r.onDesk ? "" : "  (off the desk)"));
+              (r.needs || []).forEach(function (n) {
+                write("            " + pad(n.need, 14) + n.verdict + " — " + n.why, "term-dim");
+              });
+              if (r.why) write("            " + r.why, "term-dim");
+            });
+            return;
+          }
+          var tally = A.tally();
+          var waiting = ids.filter(function (id) { return all[id].state === "ждёт"; });
+          var unsure = ids.filter(function (id) { return all[id].state === "нечем проверить"; });
+          write(tally["всего"] + " rooms registered · " + (tally["живо"] || 0) + " doing their work · " +
+                (tally["ждёт"] || 0) + " waiting · " + (tally["нечем проверить"] || 0) + " nothing here can check.");
+          if (waiting.length) {
+            write("waiting on something:", "term-dim");
+            waiting.slice(0, 8).forEach(function (id) {
+              var miss = (all[id].needs || []).filter(function (n) { return n.verdict === "нет"; })
+                .map(function (n) { return n.need; }).join(", ");
+              write("  " + pad(all[id].title, 16) + "needs " + miss, "term-dim");
+            });
+          }
+          if (unsure.length) {
+            write("cannot be checked from in here:", "term-dim");
+            unsure.slice(0, 8).forEach(function (id) {
+              var q = (all[id].needs || []).filter(function (n) { return n.verdict === "нечем проверить"; });
+              write("  " + pad(all[id].title, 16) + (q[0] ? q[0].need + " — " + q[0].why : ""), "term-dim");
+            });
+          }
+          write("READ THIS BEFORE YOU RELY ON IT: a network answer means the cable is plugged in, not that whoever you need answers. a named postman means the address exists and there is only one of it, not that a letter arrives. a live person on the other end is measured by nothing here at all — silent and absent look the same from inside.", "term-dim");
+          write("'alive <word>' asks about one room and prints what was measured.", "term-dim");
           return;
         }
         case "contracts": {
@@ -452,7 +659,12 @@
       },
       color: "linear-gradient(160deg,#3ad0a8 0%,#22a884 55%,#128063 100%)",
       icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m7 9 3 3-3 3M13 15h4"/></svg>',
-      size: { w: 560, h: 400 },
+      /* ОКНО ШИРЕ СВОИХ ПЕРВЫХ СЛОВ (D-231). При 560 лента выходила 530px,
+         а собственная вторая строка приветствия — 71 знак моноширинного
+         набора, то есть ~533px, — переносилась на ТРИ строки в первый же
+         кадр. Окно, которое уже своей же первой строки, незакончено.
+         Охраняется tools/line-measure-check.mjs. */
+      size: { w: 660, h: 420 },
       deskPos: { x: 200, y: 320 },
       render: function (win) {
         var body = win.el.querySelector(".window-body");

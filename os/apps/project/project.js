@@ -15,7 +15,11 @@
 
   var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.6" width="17.6" height="13" rx="2"/><path d="M3.2 8.4h17.6"/><path d="M8.4 21h7.2"/><path d="M12 17.6V21"/></svg>';
 
-  var SEEN_KEY = "sysbaby.seen.systems";   // raw localStorage on purpose (landing reads it)
+  /* Оба места лежат на диске БЕЗ ПРИСТАВКИ ПРОФИЛЯ нарочно: их читает ещё и
+     витрина (index.php), которая про профили ОС не знает. Объявлено как
+     plain в registerApp; охраняется tools/room-rights-check.mjs. */
+  var SEEN_KEY = "sysbaby.seen.systems";
+  var LANG_KEY = "sysbaby.i18n.lang";
   var SEEN_CAP = 4;
 
   /* Строки живут в STRINGS ядра (core/topbar.js); здесь только ключи. */
@@ -36,9 +40,23 @@
 
   function bodyOf(win) { return win && win.el ? win.el.querySelector(".window-body") : null; }
 
+  /* ── ХРАНИЛИЩЕ ЧЕРЕЗ СВОЙ ЯЩИК · D-242 ──────────────────────────────────
+     Эта комната ходила на диск НАПРЯМУЮ, и в коде стояла приписка «raw
+     localStorage on purpose (landing reads it)». Приписка была правдой, но
+     жила в комментарии: ни система, ни Совет не могли её пересчитать.
+     Теперь это объявлено правом — plain, см. registerApp ниже, — и закон
+     проверяет само объявление: место, названное общим с витриной, обязано
+     встретиться в дереве за пределами ОС. */
+  function box() {
+    return window.sbRights
+      ? window.sbRights.box("project")
+      : { get: function () { return null; }, set: function () { return false; },
+          remove: function () { return false; }, flush: function () { } };
+  }
+
   function osLang() {
     var lang = "en";
-    try { lang = localStorage.getItem("sysbaby.i18n.lang") || "en"; }
+    try { lang = box().get(LANG_KEY) || "en"; }
     catch (err) { console.error("[project] language read failed", err); }
     return lang;
   }
@@ -108,7 +126,7 @@
     if (!id) return;
     var list = [];
     try {
-      var raw = localStorage.getItem(SEEN_KEY);
+      var raw = box().get(SEEN_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) list = parsed;
@@ -117,7 +135,7 @@
     list = list.filter(function (x) { return x !== id; });
     list.push(id);
     if (list.length > SEEN_CAP) list = list.slice(list.length - SEEN_CAP);
-    try { localStorage.setItem(SEEN_KEY, JSON.stringify(list)); }
+    try { box().set(SEEN_KEY, JSON.stringify(list)); }
     catch (err) { console.error("[project] seen.systems write failed", err); }
   }
 
@@ -257,6 +275,16 @@
      русскую рамку вокруг эстонской программы. */
   if (typeof window.registerApp === "function") {
     window.registerApp("project", {
+      /* ЧТО НУЖНО, ЧТОБЫ ДЕЛАТЬ РАБОТУ (D-243). Комната НАЗЫВАЕТ нужду;
+         есть ли она — измеряет прибор, а не она сама.
+         Охраняется tools/alive-check.mjs. */
+      needs: ["диск"],
+      /* ПРАВА НА ДИСК (D-242). Оба места лежат БЕЗ ПРИСТАВКИ ПРОФИЛЯ
+         нарочно: их читает ещё и витрина, которая про профили не знает.
+         Охраняется tools/room-rights-check.mjs. */
+      keeps: [SEEN_KEY],
+      reads: [LANG_KEY],
+      plain: [SEEN_KEY, LANG_KEY],
       title: "Real Project",
       retranslate: true,
       i18n: {
@@ -267,7 +295,13 @@
       color: "linear-gradient(160deg,#3ad0a8 0%,#22a884 55%,#128063 100%)",
       icon: ICON,
       size: { w: 920, h: 700 },
+      /* ПОЧЕМУ БЕЗ ЗНАЧКА — СИСТЕМЕ, А НЕ КОММЕНТАРИЮ (D-243). Здесь причина
+         не стояла ВООБЩЕ: она жила в шапке файла, и в системе её не было.
+         Эта комната не снята со стола за негодностью — она открывается из
+         другого места, и это разные вещи. */
+      why: "Живая система открывается не значком, а работой: карточкой в портфолио, связанным письмом или кратким описанием в Хранилище. Значок на столе вёл бы в пустую рамку.",
       deskPos: { x: 120, y: 120 },
+      offDesk: "открывается вещью",
       hidden: true,
       render: render
     });

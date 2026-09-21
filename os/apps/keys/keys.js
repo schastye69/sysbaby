@@ -98,15 +98,29 @@
   };
 
   /* ── записи ───────────────────────────────────────────────────────────── */
+  /* ── ХРАНИЛИЩЕ ЧЕРЕЗ СВОЙ ЯЩИК · D-242 ──────────────────────────────────
+     Здесь стояли свои обёртки над складом, и такие же были у каждой комнаты.
+     Комната ходила на диск прямо, и ни одна строка системы не говорила,
+     какие места ей принадлежат. Теперь диск виден через ящик, выданный по
+     объявлению keeps/reads (см. registerApp ниже), а защита от закрытого
+     хранилища живёт в ОДНОМ месте — os/core/rights.js.
+     ЯЩИК СПРАШИВАЕТСЯ, А НЕ ЗАПОМИНАЕТСЯ: комната объявляется раньше, чем
+     поднимается ядро прав. */
+  function box() {
+    return window.sbRights
+      ? window.sbRights.box("keys")
+      : { get: function () { return null; }, set: function () { return false; },
+          remove: function () { return false; }, flush: function () { } };
+  }
   function readAll() {
     try {
-      var raw = window.sbDB ? window.sbDB.get(STORE_KEY) : null;
+      var raw = box().get(STORE_KEY);
       var list = raw ? JSON.parse(raw) : [];
       return Array.isArray(list) ? list : [];
     } catch (e) { return []; }
   }
   function writeAll(list) {
-    try { if (window.sbDB) window.sbDB.set(STORE_KEY, JSON.stringify(list)); } catch (e) { /* ignore */ }
+    try { box().set(STORE_KEY, JSON.stringify(list)); } catch (e) { /* ignore */ }
   }
   window.sbKeysAll = function () { return readAll(); };
 
@@ -362,6 +376,12 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("keys", {
+      /* ЧТО НУЖНО, ЧТОБЫ ДЕЛАТЬ РАБОТУ (D-243). Комната НАЗЫВАЕТ нужду;
+         есть ли она — измеряет прибор, а не она сама.
+         Охраняется tools/alive-check.mjs. */
+      needs: ["диск"],
+      /* СВОЁ МЕСТО НА ДИСКЕ (D-242). Охраняется room-rights-check.mjs. */
+      keeps: [STORE_KEY],
       title: UI.en.title,
       label: UI.en.label,
       i18n: {

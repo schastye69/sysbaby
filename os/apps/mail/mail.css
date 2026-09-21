@@ -29,9 +29,9 @@
   border-radius: var(--r-ctrl);
   border: 1px solid transparent;
   background: transparent;
-  color: rgba(255, 255, 255, .74);
+  color: var(--ink-2);
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--f-ui);
   cursor: pointer;
   text-align: left;
 }
@@ -53,14 +53,14 @@
   min-width: 18px;
   padding: 1px 5px;
   border-radius: var(--r-pill);
-  font-size: 10.5px;
+  font-size: var(--f-micro);
   font-weight: 700;
   text-align: center;
   background: var(--accent, #e0663c);
   color: #fff;
 }
 
-.ml-badge.quiet { background: rgba(255, 255, 255, .16); color: rgba(255, 255, 255, .8); }
+.ml-badge.quiet { background: rgba(255, 255, 255, .16); color: var(--ink); }
 
 .ml-mid {
   width: 280px;
@@ -88,7 +88,7 @@
   background: rgba(255, 255, 255, .05);
   color: inherit;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--f-ui);
 }
 
 .ml-btn {
@@ -96,7 +96,7 @@
   background: rgba(255, 255, 255, .05);
   color: inherit;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--f-ui);
   padding: 6px 11px;
   border-radius: var(--r-ctrl);
   cursor: pointer;
@@ -111,7 +111,15 @@
 @media (hover: hover) {
   .ml-btn:hover { background: rgba(255, 255, 255, .12); }
 }
-.ml-btn.primary { background: var(--accent, #e0663c); border-color: transparent; color: #fff; font-weight: 600; }
+/* БЕЛЫМ ПО ФИРМЕННОМУ ОРАНЖЕВОМУ — 3.48 при мере 4.5 (D-234). Темнеет
+   ЗАЛИВКА КНОПКИ, а не фирменный цвет: знак остаётся собой, --brand не
+   тронут, и «Написать» становится читаемым. Это единственная главная
+   кнопка системы, набранная белым по заливке.
+   Охраняется tools/legible-check.mjs. */
+.ml-btn.primary {
+  background: color-mix(in srgb, var(--accent, #e0663c) 82%, #2a1206);
+  border-color: transparent; color: #fff; font-weight: 600;
+}
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал. Повод — снимок основателя
@@ -153,10 +161,10 @@
 .ml-row-main { flex: 1; min-width: 0; }
 
 .ml-row-top { display: flex; align-items: baseline; gap: 8px; }
-.ml-row-who { flex: 1; min-width: 0; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ml-row-who { flex: 1; min-width: 0; font-size: var(--f-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ml-row.unread .ml-row-who,
 .ml-row.unread .ml-row-subject { font-weight: 700; }
-.ml-row-time { font-size: 10.5px; color: rgba(255, 255, 255, .4); flex: 0 0 auto; }
+.ml-row-time { font-size: var(--f-micro); color: var(--ink-3); flex: 0 0 auto; }
 
 .ml-dot {
   display: inline-block;
@@ -170,17 +178,17 @@
 
 .ml-draft-tag {
   margin-left: 6px;
-  font-size: 9.5px;
+  font-size: var(--f-micro);
   text-transform: uppercase;
   letter-spacing: .04em;
   padding: 1px 5px;
   border-radius: var(--r-tag);
   background: rgba(255, 255, 255, .14);
-  color: rgba(255, 255, 255, .75);
+  color: var(--ink-2);
 }
 
-.ml-row-subject { font-size: 12px; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ml-row-snippet { font-size: 11px; color: rgba(255, 255, 255, .45); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ml-row-subject { font-size: var(--f-ui); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ml-row-snippet { font-size: var(--f-meta); color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .ml-star {
   flex: 0 0 auto;
@@ -190,7 +198,7 @@
   place-items: center;
   border: 0;
   background: transparent;
-  color: rgba(255, 255, 255, .3);
+  color: var(--ink-3);
   cursor: pointer;
   padding: 0;
 }
@@ -201,7 +209,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .ml-star:hover { color: rgba(255, 255, 255, .7); }
+  .ml-star:hover { color: var(--ink-2); }
 }
 .ml-star.on { color: var(--warn, #ffd60a); }
 .ml-star svg { width: 15px; height: 15px; }
@@ -218,15 +226,15 @@
   gap: 10px;
   text-align: center;
   padding: 30px 22px;
-  color: rgba(255, 255, 255, .45);
-  font-size: 12.5px;
+  color: var(--ink-3);
+  font-size: var(--f-ui);
 }
 
 .ml-empty-glyph svg { width: 30px; height: 30px; opacity: .4; }
 
 .ml-read { padding: 16px 18px 20px; }
-.ml-read-subject { margin: 0 0 6px; font-size: 17px; font-weight: 650; }
-.ml-read-meta { font-size: 12px; color: rgba(255, 255, 255, .55); }
+.ml-read-subject { margin: 0 0 6px; font-size: var(--f-lead); font-weight: 650; }
+.ml-read-meta { font-size: var(--f-ui); color: var(--ink-3); }
 .ml-sep { opacity: .5; }
 
 .ml-contact {
@@ -243,11 +251,11 @@
 .ml-read-actions { display: flex; align-items: center; gap: 7px; margin: 13px 0 14px; flex-wrap: wrap; }
 
 .ml-read-body {
-  font-size: 13px;
+  font-size: var(--f-read);
   line-height: 1.65;
   white-space: pre-wrap;
   word-break: break-word;
-  color: rgba(255, 255, 255, .85);
+  color: var(--ink);
 }
 
 .ml-connected {
@@ -258,8 +266,8 @@
   background: rgba(255, 255, 255, .04);
 }
 
-.ml-connected-head { font-size: 12.5px; font-weight: 700; letter-spacing: .01em; }
-.ml-connected-note { margin: 4px 0 10px; font-size: 11.5px; color: rgba(255, 255, 255, .5); }
+.ml-connected-head { font-size: var(--f-ui); font-weight: 700; letter-spacing: .01em; }
+.ml-connected-note { margin: 4px 0 10px; font-size: var(--f-meta); color: var(--ink-3); }
 .ml-links { display: flex; flex-direction: column; gap: 6px; }
 
 .ml-link {
@@ -289,19 +297,19 @@
 
 .ml-link-kind {
   flex: 0 0 auto;
-  font-size: 9.5px;
+  font-size: var(--f-micro);
   text-transform: uppercase;
   letter-spacing: .05em;
-  color: rgba(255, 255, 255, .55);
+  color: var(--ink-3);
   padding: 2px 6px;
   border-radius: var(--r-tag);
   background: rgba(255, 255, 255, .08);
 }
 
 .ml-link-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.ml-link-title { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ml-link-sub { font-size: 11px; color: rgba(255, 255, 255, .5); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ml-link-mark { flex: 0 0 auto; color: rgba(255, 255, 255, .5); font-size: 13px; }
+.ml-link-title { font-size: var(--f-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ml-link-sub { font-size: var(--f-meta); color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ml-link-mark { flex: 0 0 auto; color: var(--ink-3); font-size: 13px; }
 
 .ml-live-dot {
   display: inline-block;
@@ -330,8 +338,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12px;
-  color: rgba(255, 255, 255, .68);
+  font-size: var(--f-ui);
+  color: var(--ink-2);
 }
 
 .ml-compose-x {
@@ -341,7 +349,7 @@
   border: 1px solid rgba(255, 255, 255, .12);
   background: transparent;
   color: inherit;
-  font-size: 15px;
+  font-size: var(--f-lead);
   line-height: 1;
   cursor: pointer;
 }
@@ -362,7 +370,7 @@
   background: rgba(255, 255, 255, .05);
   color: inherit;
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--f-ui);
   outline: none;
 }
 
@@ -384,47 +392,47 @@
 /* v21 — the real door: studio/local compose modes, delivery truth-tags */
 .ml-mode { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; }
 .ml-mode-btn {
-  font: inherit; font-size: 11.5px; padding: 5px 12px; cursor: pointer;
+  font: inherit; font-size: var(--f-meta); padding: 5px 12px; cursor: pointer;
   border-radius: var(--r-pill); border: 1px solid rgba(255, 255, 255, .14);
-  background: transparent; color: rgba(255, 255, 255, .6);
+  background: transparent; color: var(--ink-2);
 }
 .ml-mode-btn.active {
   background: var(--accent-soft, rgba(224, 102, 60, .18));
   border-color: var(--accent, #e0663c); color: #fff;
 }
-.ml-mode-note { font-size: 10.5px; color: rgba(255, 255, 255, .42); margin-left: auto; }
+.ml-mode-note { font-size: var(--f-micro); color: var(--ink-3); margin-left: auto; }
 
-.ml-to-fixed { color: rgba(255, 255, 255, .72); font-size: 12px; }
+.ml-to-fixed { color: var(--ink-2); font-size: var(--f-ui); }
 .ml-to-fixed b { color: #fff; font-weight: 600; }
-.ml-to-fixed span { color: var(--accent, #e0663c); font-size: 11px; }
+.ml-to-fixed span { color: var(--accent, #e0663c); font-size: var(--f-meta); }
 
 .ml-reply-row { display: flex; gap: 6px; align-items: center; }
-.ml-reply-label { flex: none; font-size: 11px; color: rgba(255, 255, 255, .5); }
+.ml-reply-label { flex: none; font-size: var(--f-meta); color: var(--ink-3); }
 .ml-channel { flex: 0 0 110px; cursor: pointer; }
 .ml-channel option { background: #1c1d22; color: #fff; }
 .ml-contact { flex: 1; min-width: 0; }
 
-.ml-compose-status { margin: 2px 0 0; font-size: 11px; min-height: 14px; color: rgba(255, 255, 255, .5); }
+.ml-compose-status { margin: 2px 0 0; font-size: var(--f-meta); min-height: 14px; color: var(--ink-3); }
 .ml-compose-status.warn { color: #ffb46e; }
 
 .ml-compose-foot { display: flex; align-items: center; gap: 10px; }
-.ml-honest { flex: 1; font-size: 10.5px; line-height: 1.45; color: rgba(255, 255, 255, .4); }
+.ml-honest { flex: 1; font-size: var(--f-micro); line-height: 1.45; color: var(--ink-3); }
 
 .ml-btn.studio { border-color: var(--accent-soft, rgba(224, 102, 60, .3)); }
 
 .ml-tag {
   display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: var(--r-pill);
-  font-size: 9.5px; letter-spacing: .04em; vertical-align: 1px;
+  font-size: var(--f-micro); letter-spacing: .04em; vertical-align: 1px;
 }
 .ml-tag.delivered { color: #7de08a; border: 1px solid rgba(125, 224, 138, .35); }
-.ml-tag.local { color: rgba(255, 255, 255, .45); border: 1px solid rgba(255, 255, 255, .18); }
+.ml-tag.local { color: var(--ink-3); border: 1px solid rgba(255, 255, 255, .18); }
 .ml-tag.studio { color: var(--accent, #e0663c); border: 1px solid var(--accent-soft, rgba(224, 102, 60, .35)); }
 
 .ml-delivery {
-  margin: 8px 0 2px; padding: 7px 10px; border-radius: var(--r-ctrl); font-size: 11.5px; line-height: 1.5;
+  margin: 8px 0 2px; padding: 7px 10px; border-radius: var(--r-ctrl); font-size: var(--f-meta); line-height: 1.5;
 }
 .ml-delivery.ok { background: rgba(125, 224, 138, .08); border: 1px solid rgba(125, 224, 138, .22); color: #a9e8b1; }
-.ml-delivery.quiet { background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .1); color: rgba(255, 255, 255, .55); }
+.ml-delivery.quiet { background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .1); color: var(--ink-3); }
 
 html[data-theme="light"] .ml-mode-btn { border-color: rgba(0, 0, 0, .16); color: rgba(0, 0, 0, .55); }
 html[data-theme="light"] .ml-mode-btn.active { color: #16171a; }

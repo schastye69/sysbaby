@@ -20,6 +20,9 @@
 (function () {
   "use strict";
 
+  /* Вещь, принятая из другой комнаты, ждёт здесь до открытия окна (D-241). */
+  var incoming = null;
+
   var KEY_V2 = "sysbaby.mail.v2";
   var KEY_V1 = "sysbaby.mail.v1";
   var DOMAIN = "@sys.baby";
@@ -27,6 +30,14 @@
   /* Same relay, same inbox, same acceptance rule as the landing page's order
      form — the channel that was proven end-to-end on 10 aug 2026. */
   var RELAY = "https://formsubmit.co/ajax/build@sys.baby";
+  /* ИМЯ ЧУЖОЙ МАШИНЫ БЕРЁТСЯ ИЗ ТОГО САМОГО АДРЕСА, ПО КОТОРОМУ СТУЧИТСЯ
+     fetch, а не пишется буквой рядом (D-200/D-201, D-229). Сменится RELAY —
+     сменится надпись в окне сама. Здесь стояло «через тот же канал, что и
+     форма заказа на сайте»: круговая правда, отсылка к месту, которое молчит
+     ровно так же. Охраняется tools/relay-named-check.mjs. */
+  function relayHost() {
+    try { return new URL(RELAY).hostname; } catch (e) { return RELAY; }
+  }
   /* Значение канала (Email, Phone…) уезжает в письмо студии и обязано
      остаться английским — переводится только надпись в выпадающем списке,
      ключом ml.channel.<слаг>. Перевести значение значило бы прислать нам
@@ -72,30 +83,24 @@
     });
   }
 
-  function dbGet(key) {
-    try {
-      if (window.sbDB && typeof window.sbDB.get === "function") return window.sbDB.get(key);
-      return localStorage.getItem(key);
-    } catch (err) { console.error("[mail] read failed", err); return null; }
+  /* ── ХРАНИЛИЩЕ ЧЕРЕЗ СВОЙ ЯЩИК · D-242 ──────────────────────────────────
+     Здесь стояли свои обёртки над складом, и такие же были у каждой комнаты.
+     Комната ходила на диск прямо, и ни одна строка системы не говорила,
+     какие места ей принадлежат. Теперь диск виден через ящик, выданный по
+     объявлению keeps/reads (см. registerApp ниже), а защита от закрытого
+     хранилища живёт в ОДНОМ месте — os/core/rights.js.
+     ЯЩИК СПРАШИВАЕТСЯ, А НЕ ЗАПОМИНАЕТСЯ: комната объявляется раньше, чем
+     поднимается ядро прав. */
+  function box() {
+    return window.sbRights
+      ? window.sbRights.box("mail")
+      : { get: function () { return null; }, set: function () { return false; },
+          remove: function () { return false; }, flush: function () { } };
   }
-
-  function dbSet(key, value) {
-    if (window.sbDB && typeof window.sbDB.set === "function") return window.sbDB.set(key, value);
-    localStorage.setItem(key, value);
-    return true;
-  }
-
-  function dbRemove(key) {
-    try {
-      if (window.sbDB && typeof window.sbDB.remove === "function") { window.sbDB.remove(key); return; }
-      localStorage.removeItem(key);
-    } catch (err) { console.error("[mail] remove failed", err); }
-  }
-
-  function dbFlush() {
-    try { if (window.sbDB && typeof window.sbDB.flushSync === "function") window.sbDB.flushSync(); }
-    catch (err) { console.error("[mail] flush failed", err); }
-  }
+  function dbGet(key) { return box().get(key); }
+  function dbSet(key, value) { return box().set(key, value); }
+  function dbRemove(key) { box().remove(key); }
+  function dbFlush() { box().flush(); }
 
   function toast(title, text) {
     if (typeof window.showToast !== "function") return;
@@ -414,8 +419,11 @@
     } else {
       actions = '<button type="button" class="ml-btn" id="mlReply">' + esc(t("ml.act.reply")) + "</button>" +
         '<button type="button" class="ml-btn" id="mlForward">' + esc(t("ml.act.forward")) + "</button>" +
-        '<button type="button" class="ml-btn" id="mlToNote" title="' + esc(t("ml.act.toNoteTitle", { notes: appName("notes") })) + '">' +
-          esc(t("ml.act.toNote", { notes: appName("notes") })) + "</button>" +
+        /* ЧАСТНАЯ ДВЕРЬ «в Записи» ЗАМЕНЕНА ОБЩЕЙ ПЕРЕДАЧЕЙ (D-241). Она
+           делала ровно то же, только знала одну комнату из трёх и звала её
+           по имени. Шаг второй убирает частные ходы, а не ставит общий
+           рядом с ними. Охраняется tools/hand-check.mjs. */
+        (window.sbHand ? window.sbHand.menuHtml("письмо", "mail") : "") +
         starMarkup(m) +
         '<button type="button" class="ml-btn" id="mlDelete">' + esc(t("ml.act.delete")) + "</button>";
     }
@@ -480,7 +488,7 @@
         : "") +
       '<p class="ml-compose-status" id="mlComposeStatus" role="status"></p>' +
       '<div class="ml-compose-foot">' +
-        '<span class="ml-honest">' + esc(studio ? t("ml.compose.honestStudio") : t("ml.compose.honestLocal")) + "</span>" +
+        '<span class="ml-honest">' + esc(studio ? t("ml.compose.honestStudio", { host: relayHost() }) : t("ml.compose.honestLocal")) + "</span>" +
         '<button type="button" class="ml-btn primary" id="mlSend">' + esc(studio ? t("ml.compose.sendStudio") : t("ml.compose.sendLocal")) + "</button>" +
       "</div>" +
     "</div>";
@@ -499,6 +507,9 @@
   }
 
   function render(win) {
+    /* Окно, открытое ради принятой вещи, сразу показывает написание (D-241). */
+    if (incoming && win && !win._mailCompose) { if (takeIncoming(win)) return; }
+
     var host = bodyOf(win);
     if (!host) return;
     ensureLoaded();
@@ -625,14 +636,17 @@
       });
     }
 
-    var toNote = host.querySelector("#mlToNote");
-    if (toNote && m) {
-      toNote.addEventListener("click", function () {
-        if (typeof window.sbAddQuickNote !== "function") return;
-        var noteText = (m.subject ? m.subject + "\n\n" : "") + (m.body || "") +
-          "\n\n— from Letters · " + (m.from || m.to || "") + " · " + timeAgo(m.ts);
-        try { window.sbAddQuickNote(noteText); } catch (err) { console.error("[mail] to-note failed", err); return; }
-        toast(t("ml.toast.savedNoteTitle", { notes: appName("notes") }), t("ml.toast.savedNoteBody"));
+    /* Письмо уходит через общую передачу: комната говорит только, как
+       собрать вещь (D-241). */
+    if (window.sbHand) {
+      window.sbHand.wire(host, function () {
+        if (!m) return null;
+        return {
+          kind: "письмо",
+          name: String(m.subject || t("ml.noSubject")),
+          text: String(m.body || "") + "\n\n— " + appName("mail") + " · " +
+                String(m.from || m.to || "") + " · " + timeAgo(m.ts)
+        };
       });
     }
 
@@ -722,6 +736,16 @@
   }
 
   /* -------------------------------------------------------------- compose */
+
+  /* Принятое из другой комнаты открывает написание письма и забывается:
+     второй раз его никто не приносил (D-241). */
+  function takeIncoming(win) {
+    if (!incoming || !win) return false;
+    var got = incoming;
+    incoming = null;
+    openCompose(win, { mode: "studio", subject: got.subject, body: got.body });
+    return true;
+  }
 
   function openCompose(win, prefill) {
     win._mailCompose = {
@@ -1079,6 +1103,37 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("mail", {
+      /* ЧЕМ ЭТА КОМНАТА ОТКРЫВАЕТСЯ СНАРУЖИ (D-245). Дверь, о которой хозяин
+         не сказал, — незваная: ровно из таких выросли шестнадцать частных
+         ходов, каждый правый в свой день. Охраняется tools/hand-check.mjs. */
+      opens: ["sbMailOpenResult", "sbMailComposeStudio"],
+      /* ЧТО НУЖНО, ЧТОБЫ ДЕЛАТЬ РАБОТУ (D-243). Комната НАЗЫВАЕТ нужду;
+         есть ли она — измеряет прибор, а не она сама.
+         Охраняется tools/alive-check.mjs. */
+      needs: ["диск", "почтальон", "свой сервер"],
+      offDesk: "не делает работу",
+      /* ПРИЧИНА, ПО КОТОРОЙ СНЯТО СО СТОЛА — СИСТЕМЕ, А НЕ КОММЕНТАРИЮ.
+         Она и раньше была написана честно, но жила в этом файле, и спросить
+         её было нельзя ни человеку, ни Совету (D-243). */
+      why: "Письма без сервера некуда отправить и неоткуда получить: приложение показывает, КАК БЫЛО БЫ, а не делает работу. Адрес почтальона в описи выходов есть; сервера, который принимал бы письма к вам, — нет.",
+      /* СВОИ МЕСТА НА ДИСКЕ (D-242). Чужих не берёт.
+         Охраняется tools/room-rights-check.mjs. */
+      keeps: [KEY_V2, KEY_V1, STUDIO_GUARD],
+      /* ПРИЁМ И ОТДАЧА (D-241). Письмо — та комната, куда вещь чаще всего
+         и несут: чтобы отправить. Охраняется tools/hand-check.mjs. */
+      gives: ["письмо"],
+      takes: ["запись", "файл"],
+      take: function (thing) {
+        if (!thing || typeof thing.text !== "string") return false;
+        incoming = { subject: String(thing.name || ""), body: thing.text };
+        var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("mail") : null;
+        if (!win && typeof window.toggleApp === "function") {
+          window.toggleApp("mail");                      /* окно подхватит incoming при отрисовке */
+        } else if (win) {
+          try { takeIncoming(win); } catch (e) { /* окно откроется без предзаполнения */ }
+        }
+        return true;
+      },
       /* ── ВРЕМЕННО УБРАНО СО СТОЛА · решение D-186 ──────────────────────
          Основатель 27.08.2026: «прошу временно убрать те приложения, которые
          не несут пользы на данном этапе».

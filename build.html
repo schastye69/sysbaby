@@ -51,13 +51,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v114">
+<meta name="sysbaby-build" content="v134">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v114">
+<link rel="stylesheet" href="shared/system.css?b=v134">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -135,11 +135,11 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v114"></script>
-<script src="shared/portfolio.strings.js?b=v114"></script>
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v114" />
-<script src="shared/portfolio.view.js?b=v114"></script>
-<script src="shared/pricing.data.js?b=v114"></script>
+<script src="shared/portfolio.data.js?b=v134"></script>
+<script src="shared/portfolio.strings.js?b=v134"></script>
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v134" />
+<script src="shared/portfolio.view.js?b=v134"></script>
+<script src="shared/pricing.data.js?b=v134"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -2050,7 +2050,7 @@ html[data-anim="paused"] .dock-flare{display:none}
             "errCopied": "Copied",
             "errKept": "Your text stays here either way — nothing you wrote has been cleared.",
             "mailSubject": "Project brief",
-            "hint": "This sends a project brief, no obligation. Nothing is charged today. Your details reach the founder by email, are never sold or used for marketing, and are deleted on request — just ask."
+            "hint": "This sends a project brief, no obligation. Nothing is charged today. It travels to the founder through {host} — not our server, and your brief is readable there on the way; you can write straight to build@sys.baby instead. Your details are never sold or used for marketing, and are deleted on request — just ask."
           }
         },
         "ru": {
@@ -2137,7 +2137,7 @@ html[data-anim="paused"] .dock-flare{display:none}
             "errCopied": "Скопировано",
             "errKept": "Текст остаётся здесь в любом случае — ничего из написанного не стёрлось.",
             "mailSubject": "Проектный бриф",
-            "hint": "Это отправляет проектный бриф, ни к чему не обязывает. Сегодня оплата не требуется. Ваши данные приходят по почте основателю, не продаются и не используются для рассылок, удаляются по запросу — просто напишите."
+            "hint": "Это отправляет проектный бриф, ни к чему не обязывает. Сегодня оплата не требуется. К основателю бриф идёт через службу {host} — это не наш сервер, и по дороге он там читается; можно вместо этого написать прямо на build@sys.baby. Ваши данные не продаются и не используются для рассылок, удаляются по запросу — просто напишите."
           }
         },
         "ee": {
@@ -2224,7 +2224,7 @@ html[data-anim="paused"] .dock-flare{display:none}
             "errCopied": "Kopeeritud",
             "errKept": "Tekst jääb siia igal juhul — midagi kirjutatust pole kustutatud.",
             "mailSubject": "Projekti kirjeldus",
-            "hint": "See saadab projekti lähteülesande, ei kohusta millekski. Täna makset ei toimu. Sinu andmed jõuavad e-postiga asutajani, neid ei müüda ega kasutata turunduseks ning need kustutatakse soovi korral — kirjuta lihtsalt."
+            "hint": "See saadab projekti lähteülesande, ei kohusta millekski. Täna makset ei toimu. Asutajani jõuab see teenuse {host} kaudu — see pole meie server ja lähteülesanne on seal teel loetav; võid selle asemel kirjutada otse aadressile build@sys.baby. Sinu andmeid ei müüda ega kasutata turunduseks ning need kustutatakse soovi korral — kirjuta lihtsalt."
           }
         },
         "fi": {
@@ -2311,7 +2311,7 @@ html[data-anim="paused"] .dock-flare{display:none}
             "errCopied": "Kopioitu",
             "errKept": "Tekstinne pysyy tässä joka tapauksessa — mitään kirjoittamaanne ei ole tyhjennetty.",
             "mailSubject": "Projektin tehtävänanto",
-            "hint": "Tämä lähettää projektin tehtävänannon, ei sido mihinkään. Tänään ei veloiteta mitään. Tietonne menevät perustajalle sähköpostitse, niitä ei koskaan myydä eikä käytetä markkinointiin, ja ne poistetaan pyynnöstä — pyytäkää vain."
+            "hint": "Tämä lähettää projektin tehtävänannon, ei sido mihinkään. Tänään ei veloiteta mitään. Se kulkee perustajalle palvelun {host} kautta — se ei ole meidän palvelimemme, ja tehtävänanto on siellä matkalla luettavissa; voitte kirjoittaa sen sijaan suoraan osoitteeseen build@sys.baby. Tietojanne ei koskaan myydä eikä käytetä markkinointiin, ja ne poistetaan pyynnöstä — pyytäkää vain."
           }
         }
       }
@@ -2758,6 +2758,11 @@ var DOC_LANG = { en: "en", ru: "ru", ee: "et", fi: "fi" };
 var OS_LINK = "os/";
 var SEEN_KEY = "sysbaby.seen.systems";
 var ENDPOINT = S.formEndpoint;
+/* Чужая машина, через которую идёт бриф, называется в форме по имени — и имя
+   достаётся из ENDPOINT, а не пишется буквой в переводах. */
+function relayHost() {
+  try { return new URL(ENDPOINT).hostname; } catch (e) { return ENDPOINT; }
+}
 var CONTACT_EMAIL = S.contactEmail;
 /* Toast title for the order confirmation (spec 12.4) is the plain brand name.
    Derived from the wordmark by dropping its typographic U+200A hair spaces so
@@ -4345,7 +4350,10 @@ function renderOrder(record) {
         '<span class="help">' + form.taskHelp + "</span></div>" +
       '<div class="submit-row">' +
         '<button class="btn-submit" type="submit">' + form.submit + "</button>" +
-        '<span class="hint">' + form.hint + "</span>" +
+        /* Имя чужой машины берётся из ТОГО САМОГО адреса, по которому уходит
+           бриф (D-200/D-201, D-229). Сменится formEndpoint — сменится
+           надпись. Охраняется tools/relay-named-check.mjs. */
+        '<span class="hint">' + form.hint.replace("{host}", esc(relayHost())) + "</span>" +
       "</div>" +
       '<div class="form-status" id="orderStatus" role="status" aria-live="polite"></div>' +
     "</form>");

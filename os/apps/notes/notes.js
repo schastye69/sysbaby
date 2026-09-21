@@ -13,40 +13,26 @@
   var KEY = "sysbaby.notes.v2";
   var LEGACY_KEY = "sysbaby.widget.notes";
 
-  /* ---------------------------------------------------------------- store */
-
-  function dbGet(key) {
-    try {
-      if (window.sbDB && typeof window.sbDB.get === "function") return window.sbDB.get(key);
-      return localStorage.getItem(key);
-    } catch (err) {
-      console.error("[notes] read failed for " + key, err);
-      return null;
-    }
+  /* ── ХРАНИЛИЩЕ ЧЕРЕЗ СВОЙ ЯЩИК · D-242 ──────────────────────────────────
+     Здесь стояли четыре своих обёртки над складом, и у каждой комнаты были
+     такие же свои. Комната ходила на диск прямо, и ни одна строка системы не
+     говорила, какие места ей принадлежат. Теперь диск виден комнате через
+     ящик, выданный по её объявлению keeps/reads (см. registerApp ниже), а
+     защита от закрытого хранилища живёт в ОДНОМ месте — os/core/rights.js —
+     вместо одиннадцати.
+     ЯЩИК СПРАШИВАЕТСЯ, А НЕ ЗАПОМИНАЕТСЯ: комната объявляется раньше, чем
+     поднимается ядро прав, и ящик, взятый один раз при загрузке, был бы
+     ящиком того мига, а не этой минуты. */
+  function box() {
+    return window.sbRights
+      ? window.sbRights.box("notes")
+      : { get: function () { return null; }, set: function () { return false; },
+          remove: function () { return false; }, flush: function () { } };
   }
-
-  function dbSet(key, value) {
-    if (window.sbDB && typeof window.sbDB.set === "function") return window.sbDB.set(key, value);
-    localStorage.setItem(key, value);
-    return true;
-  }
-
-  function dbRemove(key) {
-    try {
-      if (window.sbDB && typeof window.sbDB.remove === "function") { window.sbDB.remove(key); return; }
-      localStorage.removeItem(key);
-    } catch (err) {
-      console.error("[notes] remove failed for " + key, err);
-    }
-  }
-
-  function dbFlush() {
-    try {
-      if (window.sbDB && typeof window.sbDB.flushSync === "function") window.sbDB.flushSync();
-    } catch (err) {
-      console.error("[notes] flush failed", err);
-    }
-  }
+  function dbGet(key) { return box().get(key); }
+  function dbSet(key, value) { return box().set(key, value); }
+  function dbRemove(key) { box().remove(key); }
+  function dbFlush() { box().flush(); }
 
   function storeToast(title, text) {
     if (typeof window.showToast === "function") {
@@ -303,6 +289,13 @@
     return '<div class="notes-editor-head">' +
       '<button type="button" class="notes-del" id="notesDelete" title="' + esc(t("nt.delete")) + '" aria-label="' + esc(t("nt.delete")) + '">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l1 12.2a1 1 0 0 0 1 .9h7a1 1 0 0 0 1-.9L17.5 7"/></svg></button>' +
+      /* ПЕРЕДАТЬ В ДРУГУЮ КОМНАТУ (D-240). Список комнат не записан здесь:
+         он спрашивается у ядра, и комната, научившаяся принимать записи,
+         появится в нём сама. Если принять запись некому — кнопки нет: не
+         предлагать того, чего не будет. Охраняется tools/hand-check.mjs. */
+      /* ОБЩАЯ КНОПКА ПЕРЕДАЧИ (D-241). Разметка приходит из ядра: одна на
+         все комнаты, иначе «один способ» становится тремя похожими. */
+      (window.sbHand ? window.sbHand.menuHtml("запись", "notes") : "") +
       "</div>" +
       '<input type="text" class="notes-title" id="noteTitleInput" placeholder="' + esc(t("nt.ph.title")) + '" spellcheck="false" value="' + esc(title) + '">' +
       /* The leading newline compensates for the one HTML parsing eats right
@@ -387,6 +380,18 @@
 
     var del = host.querySelector("#notesDelete");
     if (del) del.addEventListener("click", function () { deleteActive(win); });
+
+    /* Передача: комната говорит только, КАК собрать вещь (D-241). */
+    if (window.sbHand) {
+      window.sbHand.wire(host, function () {
+        var list = liveNotes(), note = null;
+        list.forEach(function (n) { if (n.id === activeId) note = n; });
+        if (!note) return null;
+        var lines = String(note.text == null ? "" : note.text).split("\n");
+        return { kind: "запись", name: (lines[0] || "").trim(),
+                 text: lines.slice(1).join("\n").replace(/^\n/, "") };
+      });
+    }
 
     var titleEl = host.querySelector("#noteTitleInput");
     var bodyEl = host.querySelector("#noteBodyInput");
@@ -550,6 +555,27 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("notes", {
+      /* ЧЕМ ЭТА КОМНАТА ОТКРЫВАЕТСЯ СНАРУЖИ (D-245). Дверь, о которой хозяин
+         не сказал, — незваная: ровно из таких выросли шестнадцать частных
+         ходов, каждый правый в свой день. Охраняется tools/hand-check.mjs. */
+      opens: ["sbNotesOpenResult"],
+      /* ЧТО НУЖНО, ЧТОБЫ ДЕЛАТЬ РАБОТУ (D-243). Комната НАЗЫВАЕТ нужду;
+         есть ли она — измеряет прибор, а не она сама.
+         Охраняется tools/alive-check.mjs. */
+      needs: ["диск"],
+      /* СВОИ МЕСТА НА ДИСКЕ (D-242). Чужих не берёт ни одного.
+         Охраняется tools/room-rights-check.mjs. */
+      keeps: [KEY, LEGACY_KEY],
+      /* ПРИЁМ ВЕЩЕЙ ИЗ ДРУГИХ КОМНАТ (D-240). Охраняется hand-check.mjs. */
+      gives: ["запись"],
+      takes: ["файл", "письмо", "запись"],
+      take: function (thing) {
+        if (!thing || typeof thing.text !== "string") return false;
+        if (typeof window.sbAddQuickNote !== "function") return false;
+        var head = String(thing.name || "").trim();
+        var body = head ? head + "\n\n" + thing.text : thing.text;
+        return !!window.sbAddQuickNote(body, {});
+      },
       title: "Scribble",
       i18n: {
         ru: { title: "Записи", label: "Записи" },

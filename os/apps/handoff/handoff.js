@@ -220,6 +220,9 @@
     return h.indexOf("#t=") === 0 ? h.slice(3) : null;
   }
 
+  /* Принятое из другой комнаты ждёт здесь до ближайшей отрисовки (D-240). */
+  var pending = null;
+
   function render(win) {
     var host = (win && win.el) ? win.el.querySelector(".window-body") : win;
     if (!host) return;
@@ -246,6 +249,13 @@
         '</section>' +
         '<p class="hf-honest">' + esc(t.honest) + '</p>' +
       '</div>';
+    /* Вещь, принятая из другой комнаты, ложится в поле — и забывается:
+       второй раз её никто не приносил. */
+    if (pending) {
+      var box = host.querySelector(".hf-text");
+      if (box) { box.value = (pending.name ? pending.name + "\n\n" : "") + pending.text; }
+      pending = null;
+    }
     if (keep) keep();
 
     /* Список того, что уже лежит в системе. Пусто — так и сказано, а не
@@ -370,6 +380,21 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("handoff", {
+      /* ПРИЁМ ВЕЩЕЙ ИЗ ДРУГИХ КОМНАТ (D-240). «Передать» — единственная
+         комната, из которой вещь уходит к ДРУГОМУ ЧЕЛОВЕКУ, и потому она
+         обязана уметь принять что угодно из своих же комнат: иначе человек
+         снова копирует руками. Приёмник кладёт текст в поле и открывает
+         окно — запечатывать или нет, решает человек, а не передача.
+         Охраняется tools/hand-check.mjs. */
+      takes: ["запись", "файл", "письмо"],
+      take: function (thing) {
+        if (!thing || typeof thing.text !== "string") return false;
+        pending = { name: String(thing.name || ""), text: thing.text };
+        var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("handoff") : null;
+        if (!win && typeof window.toggleApp === "function") window.toggleApp("handoff");
+        else if (win) { try { render(win); } catch (e) { /* окно перерисуется само */ } }
+        return true;
+      },
       title: UI.en.title,
       label: UI.en.label,
       i18n: { ru: { title: UI.ru.title, label: UI.ru.label }, ee: { title: UI.ee.title, label: UI.ee.label } },

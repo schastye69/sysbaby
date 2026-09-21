@@ -48,23 +48,32 @@
      совпасть с тем, что написано под иконкой в доке. */
   function appName(id) { return typeof window.sbAppTitle === "function" ? window.sbAppTitle(id) : id; }
 
+  /* ── ХРАНИЛИЩЕ ЧЕРЕЗ СВОЙ ЯЩИК · D-242 ──────────────────────────────────
+     ЭТА КОМНАТА ОБЪЯВИЛА СЕБЯ ОБХОДЧИКОМ ВСЕГО ДИСКА (sweeps в registerApp),
+     и объявление честное: она считает ключи, собирает и переносит профили,
+     делает выгрузку и ввоз. Без обхода всего диска этого не сделать.
+     Ящик ей поэтому ничего не запрещает — но право названо вслух, и закон
+     tools/room-rights-check.mjs печатает имя обходчика КАЖДЫЙ ПРОГОН. Пока
+     обходчик один, это устройство системы. Когда их станет двое, человек
+     увидит это в тот же день, а не через год. */
+  function box() {
+    return window.sbRights
+      ? window.sbRights.box("settings")
+      : { get: function () { return null; }, set: function () { return false; },
+          remove: function () { return false; }, flush: function () { } };
+  }
+
   function dbGet(key) {
-    try {
-      if (window.sbDB && typeof window.sbDB.get === "function") return window.sbDB.get(key);
-      return localStorage.getItem(key);
-    } catch (err) { console.error("[settings] read failed", err); return null; }
+    try { return box().get(key); }
+    catch (err) { console.error("[settings] read failed", err); return null; }
   }
 
   function dbSet(key, value) {
-    try {
-      if (window.sbDB && typeof window.sbDB.set === "function") { window.sbDB.set(key, value); return true; }
-      localStorage.setItem(key, value);
-      return true;
-    } catch (err) {
-      console.error("[settings] write failed", err);
-      toast(t("set.save.failTitle"), t("set.save.failBody"));
-      return false;
-    }
+    var done = false;
+    try { done = box().set(key, value); }
+    catch (err) { console.error("[settings] write failed", err); done = false; }
+    if (!done) toast(t("set.save.failTitle"), t("set.save.failBody"));
+    return done;
   }
 
   function dbFlush() {
@@ -979,6 +988,15 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("settings", {
+      /* ЧТО НУЖНО, ЧТОБЫ ДЕЛАТЬ РАБОТУ (D-243). Комната НАЗЫВАЕТ нужду;
+         есть ли она — измеряет прибор, а не она сама.
+         Охраняется tools/alive-check.mjs. */
+      needs: ["диск"],
+      /* ОБХОДЧИК ВСЕГО ДИСКА (D-242), и объявление честное: эта комната
+         считает ключи, переносит профили, делает выгрузку и ввоз. Без
+         обхода всего диска этого не сделать. Право названо вслух и
+         печатается в каждом прогоне: tools/room-rights-check.mjs. */
+      sweeps: true,
       title: "Pulse",
       i18n: {
         ru: { title: "Настройки", label: "Настройки" },

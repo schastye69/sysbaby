@@ -31,9 +31,9 @@
 .fv-crumb {
   border: 0;
   background: transparent;
-  color: rgba(255, 255, 255, .62);
+  color: var(--ink-2);
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--f-ui);
   padding: 3px 6px;
   border-radius: var(--r-ctrl);
   cursor: pointer;
@@ -48,7 +48,7 @@
   .fv-crumb:hover { background: rgba(255, 255, 255, .07); color: inherit; }
 }
 .fv-crumb.current { color: inherit; font-weight: 600; cursor: default; }
-.fv-crumb-sep { color: rgba(255, 255, 255, .3); font-size: 12px; }
+.fv-crumb-sep { color: var(--ink-3); font-size: var(--f-ui); }
 
 .fv-tools { display: flex; gap: 6px; flex: 0 0 auto; }
 
@@ -62,7 +62,7 @@
   background: rgba(255, 255, 255, .05);
   color: inherit;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--f-ui);
   cursor: pointer;
 }
 
@@ -125,7 +125,7 @@
 .fv-tile svg { width: 23px; height: 23px; }
 
 .fv-name {
-  font-size: 11.5px;
+  font-size: var(--f-meta);
   line-height: 1.3;
   text-align: center;
   word-break: break-word;
@@ -135,7 +135,7 @@
 
 .fv-rename {
   font: inherit;
-  font-size: 11.5px;
+  font-size: var(--f-meta);
   text-align: center;
   width: 100%;
   padding: 2px 4px;
@@ -172,7 +172,7 @@
   border-radius: var(--r-tag);
   border: 1px solid rgba(255, 255, 255, .14);
   background: rgba(12, 13, 16, .8);
-  color: rgba(255, 255, 255, .78);
+  color: var(--ink-2);
   cursor: pointer;
   padding: 0;
 }
@@ -199,8 +199,8 @@
   grid-column: 1 / -1;
   padding: 40px 20px;
   text-align: center;
-  font-size: 12.5px;
-  color: rgba(255, 255, 255, .45);
+  font-size: var(--f-ui);
+  color: var(--ink-3);
 }
 
 .fv-preview {
@@ -222,7 +222,7 @@
   border-bottom: 1px solid rgba(255, 255, 255, .07);
 }
 
-.fv-preview-name { font-size: 12.5px; font-weight: 600; }
+.fv-preview-name { font-size: var(--f-ui); font-weight: 600; }
 .fv-preview-actions { display: flex; align-items: center; gap: 8px; }
 
 .fv-open-real {
@@ -230,7 +230,7 @@
   background: rgba(58, 208, 168, .13);
   color: #8ff0d4;
   font: inherit;
-  font-size: 11.5px;
+  font-size: var(--f-meta);
   padding: 4px 9px;
   border-radius: var(--r-ctrl);
   cursor: pointer;
@@ -276,11 +276,11 @@
   margin: 0;
   padding: 10px 13px 13px;
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
-  font-size: 11.5px;
+  font-size: var(--f-meta);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
-  color: rgba(255, 255, 255, .82);
+  color: var(--ink);
 }
 
 .fv-preview-edit {
@@ -294,7 +294,7 @@
 .fv-miss {
   margin: 0;
   padding: 9px 14px;
-  font-size: 12px;
+  font-size: var(--f-ui);
   color: #ffd8a8;
   background: rgba(255, 157, 60, .14);
   border-bottom: 1px solid rgba(255, 157, 60, .3);
@@ -312,7 +312,7 @@
 .fv-tile.thing { color: var(--ink-2); }
 .fv-tile.thing.kind-image { color: var(--accent); }
 .fv-thing-note {
-  margin-top: 2px; font-size: 10.5px; color: var(--ink-3);
+  margin-top: 2px; font-size: var(--f-micro); color: var(--ink-3);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
 .fv-thing-view {
@@ -328,14 +328,14 @@
 .fv-thing-said { flex-direction: column; gap: 10px; grid-auto-flow: row; }
 .fv-thing-icon { color: var(--ink-3); }
 .fv-thing-icon svg { width: 40px; height: 40px; display: block; }
-.fv-thing-said-text { font-size: 12.5px; color: var(--ink-2); }
+.fv-thing-said-text { font-size: var(--f-ui); color: var(--ink-2); }
 
 /* Отпускание вещи на окно. Подпись лежит поверх и появляется только тогда,
    когда над окном действительно что-то несут. */
 .fv-catch {
   position: absolute; inset: 0; z-index: var(--z-inside);
   display: none; place-items: center; text-align: center; padding: 20px;
-  font-size: 13px; color: var(--ink);
+  font-size: var(--f-read); color: var(--ink);
   background: rgba(var(--accent-rgb), .10);
   border: 2px dashed var(--accent-ring); border-radius: var(--r-card);
   pointer-events: none;

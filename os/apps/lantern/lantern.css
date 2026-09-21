@@ -2,17 +2,17 @@
    Вид подчинён одному: читаемости в плохую минуту. Крупная строка, короткие
    шаги, никакого декора между глазом и действием. Цвет — свет комнаты, как у
    всего в системе. */
-.lt-wrap { padding: 4px 2px 18px; }
+.lt-wrap { padding: 4px var(--pad-room) 18px; }
 .lt-head { padding: 2px 2px 10px; }
-.lt-title { margin: 0 0 6px; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
-.lt-lead { margin: 0 0 10px; font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
+.lt-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: 700; letter-spacing: -.01em; }
+.lt-lead { margin: 0 0 10px; font-size: var(--f-read); line-height: 1.6; color: var(--ink-2); }
 .lt-warn {
-  margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--ink-2);
+  margin: 0; font-size: var(--f-ui); line-height: 1.6; color: var(--ink-2);
   padding: 10px 12px; border-radius: var(--r-ctrl);
   background: rgba(255, 69, 58, .07); border: 1px solid rgba(255, 69, 58, .22);
 }
 .lt-group {
-  margin: 20px 2px 8px; font-size: 11px; font-weight: 600;
+  margin: 20px 2px 8px; font-size: var(--f-meta); font-weight: 600;
   text-transform: uppercase; letter-spacing: .09em; color: var(--ink-3);
 }
 .lt-cards { display: flex; flex-direction: column; gap: 10px; }
@@ -20,14 +20,14 @@
   padding: 13px 14px; border-radius: var(--r-card);
   background: rgba(255, 255, 255, .028); border: 1px solid var(--line);
 }
-.lt-card-title { margin: 0 0 8px; font-size: 16px; font-weight: 650; color: var(--ink); }
+.lt-card-title { margin: 0 0 8px; font-size: var(--f-lead); font-weight: 650; color: var(--ink); }
 /* Шаги пронумерованы не для красоты: в плохую минуту человек возвращается
    глазом к строке, на которой остановился, и номер — единственное, за что
    можно зацепиться. */
 .lt-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 7px; }
-.lt-steps li { font-size: 14px; line-height: 1.55; color: var(--ink); }
+.lt-steps li { font-size: var(--f-read); line-height: 1.55; color: var(--ink); }
 .lt-steps li::marker { color: var(--accent); font-variant-numeric: tabular-nums; }
-.lt-src { margin: 10px 0 0; font-size: 11px; line-height: 1.5; color: var(--ink-3); overflow-wrap: anywhere; }
+.lt-src { margin: 10px 0 0; font-size: var(--f-meta); line-height: 1.5; color: var(--ink-3); overflow-wrap: anywhere; }
 .lt-src a { color: var(--ink-3); text-decoration: underline; text-underline-offset: 2px; }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -37,8 +37,8 @@
   .lt-src a:hover { color: var(--accent); }
 }
 @media (max-width: 520px) {
-  .lt-title { font-size: 20px; }
-  .lt-steps li { font-size: 14.5px; }
+  .lt-title { font-size: var(--f-title); }
+  .lt-steps li { font-size: var(--f-read); }
 }
 
 /* ── ФОНАРЬ КАК ПРИБОР (v100, D-207) ────────────────────────────────────────
@@ -51,13 +51,13 @@
 @media (hover: hover) {
   .lt-card:hover { border-color: var(--accent-ring); background: rgba(255, 255, 255, .05); }
 }
-.lt-card-hint { margin: 0 0 6px; font-size: 12px; color: var(--ink-3); }
+.lt-card-hint { margin: 0 0 6px; font-size: var(--f-ui); color: var(--ink-3); }
 .lt-has-tool { color: var(--accent); }
 
 .lt-head-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .lt-torch-btns { display: flex; gap: 6px; }
 .lt-tb {
-  font: inherit; font-size: 11.5px; padding: 5px 10px; cursor: pointer;
+  font: inherit; font-size: var(--f-meta); padding: 5px 10px; cursor: pointer;
   color: var(--ink-2); background: rgba(255, 255, 255, .04);
   border: 1px solid var(--line); border-radius: var(--r-ctrl);
 }
@@ -77,15 +77,15 @@
   font: inherit; cursor: pointer; border-radius: var(--r-ctrl);
   border: 1px solid var(--line); background: rgba(255, 255, 255, .04); color: var(--ink);
 }
-.lt-back, .lt-small { font-size: 13px; padding: 7px 12px; color: var(--ink-2); }
-.lt-count { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.lt-open-title { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink-3); letter-spacing: .04em; text-transform: uppercase; }
+.lt-back, .lt-small { font-size: var(--f-read); padding: 7px 12px; color: var(--ink-2); }
+.lt-count { font-size: var(--f-ui); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.lt-open-title { margin: 0; font-size: var(--f-lead); font-weight: 600; color: var(--ink-3); letter-spacing: .04em; text-transform: uppercase; }
 /* Один шаг — и он крупный. Это главная строка приложения. */
-.lt-step { margin: 0; font-size: 25px; line-height: 1.38; font-weight: 500; color: var(--ink); text-wrap: pretty; }
+.lt-step { margin: 0; font-size: var(--f-title); line-height: 1.38; font-weight: 500; color: var(--ink); text-wrap: pretty; }
 .lt-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; }
-.lt-big { font-size: 16px; font-weight: 600; padding: 13px 20px; }
+.lt-big { font-size: var(--f-lead); font-weight: 600; padding: 13px 20px; }
 .lt-big.next { background: var(--accent-soft); border-color: var(--accent-ring); }
-.lt-tap { margin: 0; font-size: 11.5px; color: var(--ink-3); text-align: center; }
+.lt-tap { margin: 0; font-size: var(--f-meta); color: var(--ink-3); text-align: center; }
 
 /* ── ПРИБОРЫ ─────────────────────────────────────────────────────────────── */
 .lt-tool {
@@ -93,17 +93,17 @@
   padding: 14px; border-radius: var(--r-card);
   border: 1px solid var(--line); background: rgba(255, 255, 255, .03); cursor: default;
 }
-.lt-tool-note { margin: 0; font-size: 12px; color: var(--ink-3); text-align: center; }
+.lt-tool-note { margin: 0; font-size: var(--f-ui); color: var(--ink-3); text-align: center; }
 .lt-pulse {
   width: 92px; height: 92px; border-radius: var(--r-round);
   display: flex; align-items: center; justify-content: center;
   border: 2px solid var(--accent-ring); background: var(--accent-soft);
-  font-size: 22px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums;
+  font-size: var(--f-title); font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums;
 }
 .lt-pulse.hit { animation: lt-beat var(--t-rise); }
 @keyframes lt-beat { from { transform: scale(1.16); } to { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .lt-pulse.hit { animation: none; } }
-.lt-time { font-size: 44px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.lt-time { font-size: var(--f-hero); font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
 .lt-clock.done .lt-time { color: #7ee081; }
 .lt-clock-btns { display: flex; gap: 8px; }
 
@@ -115,11 +115,11 @@
 }
 .lt-torch.white { background: #fff; }
 .lt-torch.red { background: #8b0000; }
-.lt-torch p { margin: 0; font-size: 13px; letter-spacing: .04em; }
+.lt-torch p { margin: 0; font-size: var(--f-read); letter-spacing: .04em; }
 .lt-torch.white p { color: #555; }
-.lt-torch.red p { color: rgba(255, 255, 255, .72); }
+.lt-torch.red p { color: var(--ink-2); }
 
 @media (max-width: 420px) {
-  .lt-step { font-size: 22px; }
-  .lt-time { font-size: 38px; }
+  .lt-step { font-size: var(--f-title); }
+  .lt-time { font-size: var(--f-hero); }
 }

@@ -54,18 +54,22 @@
     });
   }
 
-  function dbGet(key) {
-    try {
-      if (window.sbDB && typeof window.sbDB.get === "function") return window.sbDB.get(key);
-      return localStorage.getItem(key);
-    } catch (err) { console.error("[files] read failed", err); return null; }
+  /* ── ХРАНИЛИЩЕ ЧЕРЕЗ СВОЙ ЯЩИК · D-242 ──────────────────────────────────
+     Здесь стояли свои обёртки над складом, и такие же были у каждой комнаты.
+     Комната ходила на диск прямо, и ни одна строка системы не говорила,
+     какие места ей принадлежат. Теперь диск виден через ящик, выданный по
+     объявлению keeps/reads (см. registerApp ниже), а защита от закрытого
+     хранилища живёт в ОДНОМ месте — os/core/rights.js.
+     ЯЩИК СПРАШИВАЕТСЯ, А НЕ ЗАПОМИНАЕТСЯ: комната объявляется раньше, чем
+     поднимается ядро прав. */
+  function box() {
+    return window.sbRights
+      ? window.sbRights.box("files")
+      : { get: function () { return null; }, set: function () { return false; },
+          remove: function () { return false; }, flush: function () { } };
   }
-
-  function dbSet(key, value) {
-    if (window.sbDB && typeof window.sbDB.set === "function") return window.sbDB.set(key, value);
-    localStorage.setItem(key, value);
-    return true;
-  }
+  function dbGet(key) { return box().get(key); }
+  function dbSet(key, value) { return box().set(key, value); }
 
   function toast(title, text) {
     if (typeof window.showToast !== "function") return;
@@ -397,6 +401,11 @@
             '<button type="button" class="fv-tool" id="fvBring" title="' + esc(t("fv.bring")) + '">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16.5v-10M8.2 10L12 6.2 15.8 10M5 19.5h14"/></svg>' +
               "<span>" + esc(t("fv.bring")) + "</span></button>" +
+            /* ОБЩАЯ ПЕРЕДАЧА (D-241). Разметка приходит из ядра: одна кнопка
+               на все комнаты. Отдаётся ВЫБРАННЫЙ файл; если не выбрано
+               ничего — ничего и не уходит, и об этом говорится.
+               Охраняется tools/hand-check.mjs. */
+            (window.sbHand ? window.sbHand.menuHtml("файл", "files") : "") +
           "</div>" +
         "</div>" +
         '<div class="fv-grid" id="fvGrid">' +
@@ -442,6 +451,24 @@
     }
 
     /* ── ПРИНЕСТИ ВЕЩЬ: КНОПКА И ОТПУСКАНИЕ НА ОКНО ─────────────────────── */
+    /* Передача выбранного файла через общую кнопку (D-241): комната
+       говорит только, как собрать вещь. Ничего не выбрано — ничего и не
+       уходит, и человеку сказано почему. */
+    if (window.sbHand) {
+      window.sbHand.wire(host, function () {
+        var kids = (currentFolder() && currentFolder().children) || [];
+        var node = kids[selectedIndex];
+        if (!node || node.type === "folder") {
+          if (typeof window.showToast === "function") {
+            window.showToast(t("fv.hand.none"), t("fv.hand.noneSub"), "", true);
+          }
+          return null;
+        }
+        return { kind: "файл", name: String(node.name || ""),
+                 text: String(node.content == null ? "" : node.content) };
+      });
+    }
+
     var bring = host.querySelector("#fvBring");
     if (bring) {
       bring.addEventListener("click", function () {
@@ -821,15 +848,16 @@
     return true;
   };
 
-  /* Appends a document at Home root only if no root child holds that name. */
-  window.sbFilesSeedDocument = function (name, body) {
-    ensureLoaded();
-    var exists = (tree.children || []).some(function (child) { return child && child.name === name; });
-    if (exists) return false;
-    tree.children.push({ name: name, type: "file", content: body });
-    persist();
-    return true;
-  };
+  /* ЗДЕСЬ СТОЯЛА sbFilesSeedDocument — ЧАСТНАЯ ДВЕРЬ, КОТОРУЮ D-240 НАЗВАЛ
+     И НЕ УБРАЛ (D-245). Она клала документ в корень Хранилища, и звала её
+     одна комната — Эхо, когда человек просит посеять следы. Работу эту умеет
+     take() ниже: тот же документ, то же место, и ОДНА политика тёзок вместо
+     двух. Общий механизм, стоящий рядом с частной дверью, — просто ещё одна
+     частная дверь; D-241 вынул такую же кнопку из Писем, а эту Совет
+     проглядел, пока не пересчитал все двери разом.
+     Разница была одна и честная: посев ПРОПУСКАЛ тёзку, а take кладёт рядом
+     под соседним именем. Выбрано поведение take: оно объявлено, охраняется
+     законом и одинаково для всех, кто что-либо передаёт. */
 
   /* ------------------------------------------------------- registration */
 
@@ -848,6 +876,37 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("files", {
+      /* ЧЕМ ЭТА КОМНАТА ОТКРЫВАЕТСЯ СНАРУЖИ (D-245). Дверь, о которой хозяин
+         не сказал, — незваная: ровно из таких выросли шестнадцать частных
+         ходов, каждый правый в свой день. Охраняется tools/hand-check.mjs. */
+      opens: ["sbFilesAll", "sbFilesOpenResult", "sbFilesDeleted", "sbFilesRestore", "sbFilesSilence"],
+      /* ЧТО НУЖНО, ЧТОБЫ ДЕЛАТЬ РАБОТУ (D-243). Комната НАЗЫВАЕТ нужду;
+         есть ли она — измеряет прибор, а не она сама.
+         Охраняется tools/alive-check.mjs. */
+      needs: ["диск"],
+      /* СВОЁ МЕСТО НА ДИСКЕ (D-242): всё дерево одним документом.
+         Охраняется tools/room-rights-check.mjs. */
+      keeps: [KEY],
+      /* ПРИЁМ ВЕЩЕЙ ИЗ ДРУГИХ КОМНАТ (D-240). Объявление и приёмник стоят
+         рядом нарочно: объявить и не уметь — значит обещать дверь, которая
+         не открывается. Охраняется tools/hand-check.mjs. */
+      gives: ["файл"],
+      takes: ["запись", "письмо", "файл"],
+      take: function (thing) {
+        if (!thing || typeof thing.text !== "string") return false;
+        ensureLoaded();
+        var base = String(thing.name || "").trim() || "без имени";
+        var name = base, i = 2;
+        /* Имя, которое уже занято, не затирается: у вещи появляется соседнее. */
+        while ((tree.children || []).some(function (c) { return c && c.name === name; })) {
+          name = base + " (" + i + ")"; i++;
+        }
+        tree.children.push({ name: name, type: "file", content: thing.text });
+        persist();
+        var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("files") : null;
+        if (win && typeof render === "function") { try { render(win); } catch (e) { /* окно перерисуется само */ } }
+        return true;
+      },
       title: "Vault",
       i18n: {
         ru: { title: "Хранилище", label: "Хранилище" },

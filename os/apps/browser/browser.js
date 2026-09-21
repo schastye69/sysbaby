@@ -42,12 +42,26 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
     });
   }
+  /* ── ХРАНИЛИЩЕ ЧЕРЕЗ СВОЙ ЯЩИК · D-242 ──────────────────────────────────
+     Здесь стояли свои обёртки над складом, и такие же были у каждой комнаты.
+     Комната ходила на диск прямо, и ни одна строка системы не говорила,
+     какие места ей принадлежат. Теперь диск виден через ящик, выданный по
+     объявлению keeps/reads (см. registerApp ниже), а защита от закрытого
+     хранилища живёт в ОДНОМ месте — os/core/rights.js.
+     ЯЩИК СПРАШИВАЕТСЯ, А НЕ ЗАПОМИНАЕТСЯ: комната объявляется раньше, чем
+     поднимается ядро прав. */
+  function box() {
+    return window.sbRights
+      ? window.sbRights.box("browser")
+      : { get: function () { return null; }, set: function () { return false; },
+          remove: function () { return false; }, flush: function () { } };
+  }
   function readJSON(k, dflt) {
-    try { var v = window.sbDB && window.sbDB.get(k); return v ? JSON.parse(v) : dflt; }
+    try { var v = box().get(k); return v ? JSON.parse(v) : dflt; }
     catch (err) { console.error("[browser] read failed", err); return dflt; }
   }
   function writeJSON(k, v) {
-    try { if (window.sbDB) window.sbDB.set(k, JSON.stringify(v)); }
+    try { box().set(k, JSON.stringify(v)); }
     catch (err) { console.error("[browser] write failed", err); }
   }
 
@@ -319,6 +333,15 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("browser", {
+      /* ЧТО НУЖНО, ЧТОБЫ ДЕЛАТЬ РАБОТУ (D-243). Комната НАЗЫВАЕТ нужду;
+         есть ли она — измеряет прибор, а не она сама.
+         Охраняется tools/alive-check.mjs. */
+      needs: ["диск", "сеть", "чужое согласие"],
+      offDesk: "не делает работу",
+      /* ПРИЧИНА — СИСТЕМЕ, А НЕ КОММЕНТАРИЮ (D-243). */
+      why: "Страница внутри страницы: большинство сайтов запрещают себя показывать так, а остальным нужна сеть — то самое, без чего система нарочно умеет жить.",
+      /* СВОИ МЕСТА НА ДИСКЕ (D-242). Охраняется room-rights-check.mjs. */
+      keeps: [HIST_KEY, MARK_KEY, SHUT_KEY],
       /* ── ВРЕМЕННО УБРАНО СО СТОЛА · решение D-186 ──────────────────────
          Основатель 27.08.2026: «прошу временно убрать те приложения, которые
          не несут пользы на данном этапе».

@@ -49,30 +49,24 @@
     });
   }
 
-  function dbGet(key) {
-    try {
-      if (window.sbDB && typeof window.sbDB.get === "function") return window.sbDB.get(key);
-      return localStorage.getItem(key);
-    } catch (err) { console.error("[messenger] read failed", err); return null; }
+  /* ── ХРАНИЛИЩЕ ЧЕРЕЗ СВОЙ ЯЩИК · D-242 ──────────────────────────────────
+     Здесь стояли свои обёртки над складом, и такие же были у каждой комнаты.
+     Комната ходила на диск прямо, и ни одна строка системы не говорила,
+     какие места ей принадлежат. Теперь диск виден через ящик, выданный по
+     объявлению keeps/reads (см. registerApp ниже), а защита от закрытого
+     хранилища живёт в ОДНОМ месте — os/core/rights.js.
+     ЯЩИК СПРАШИВАЕТСЯ, А НЕ ЗАПОМИНАЕТСЯ: комната объявляется раньше, чем
+     поднимается ядро прав. */
+  function box() {
+    return window.sbRights
+      ? window.sbRights.box("messenger")
+      : { get: function () { return null; }, set: function () { return false; },
+          remove: function () { return false; }, flush: function () { } };
   }
-
-  function dbSet(key, value) {
-    if (window.sbDB && typeof window.sbDB.set === "function") return window.sbDB.set(key, value);
-    localStorage.setItem(key, value);
-    return true;
-  }
-
-  function dbRemove(key) {
-    try {
-      if (window.sbDB && typeof window.sbDB.remove === "function") { window.sbDB.remove(key); return; }
-      localStorage.removeItem(key);
-    } catch (err) { console.error("[messenger] remove failed", err); }
-  }
-
-  function dbFlush() {
-    try { if (window.sbDB && typeof window.sbDB.flushSync === "function") window.sbDB.flushSync(); }
-    catch (err) { console.error("[messenger] flush failed", err); }
-  }
+  function dbGet(key) { return box().get(key); }
+  function dbSet(key, value) { return box().set(key, value); }
+  function dbRemove(key) { box().remove(key); }
+  function dbFlush() { box().flush(); }
 
   function toast(title, text) {
     if (typeof window.showToast !== "function") return;
@@ -198,21 +192,34 @@
     write();
   }
 
+  /* ── СТАРЫЕ РЕДАКЦИИ УБИРАЮТСЯ ВСЕГДА, А НЕ ТОЛЬКО ПРИ ПЕРЕНОСЕ (D-227) ──
+     ЗДЕСЬ БЫЛА ЩЕЛЬ, и нашёл её закон, написанный для скрытого приложения.
+     Если нынешняя редакция уже есть, чтение возвращалось СРАЗУ — и ключи
+     прежнего образца оставались на диске навсегда. То есть у всякого, кто
+     пользовался старой сборкой и перешёл на новую, рядом с живой перепиской
+     лежала её прежняя копия: не нужная никому, не показанная нигде, и
+     переживающая любое удаление разговоров.
+     Уборка теперь стоит ПЕРВОЙ и не зависит от того, было ли что переносить.
+     В шапке приложения было написано «keys are removed» — теперь это правда,
+     а не намерение. */
+  function dropLegacy() {
+    if (dbGet(KEY_V2) != null) dbRemove(KEY_V2);
+    if (dbGet(KEY_V1) != null) dbRemove(KEY_V1);
+  }
+
   function load() {
     var v3 = parseList(dbGet(KEY_V3));
-    if (v3) { convos = normalizeAll(v3); return; }
+    if (v3) { convos = normalizeAll(v3); dropLegacy(); return; }
 
     var legacy = parseList(dbGet(KEY_V2));
     if (!legacy) legacy = parseList(dbGet(KEY_V1));
     if (legacy) {
       convos = normalizeAll(legacy);
-      if (writeVerified()) {
-        if (dbGet(KEY_V2) != null) dbRemove(KEY_V2);
-        if (dbGet(KEY_V1) != null) dbRemove(KEY_V1);
-      }
+      if (writeVerified()) dropLegacy();
       return;
     }
     seed();
+    dropLegacy();
   }
 
   function ensureLoaded() { if (!convos) load(); }
@@ -808,6 +815,19 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("messenger", {
+      /* ЧЕМ ЭТА КОМНАТА ОТКРЫВАЕТСЯ СНАРУЖИ (D-245). Дверь, о которой хозяин
+         не сказал, — незваная: ровно из таких выросли шестнадцать частных
+         ходов, каждый правый в свой день. Охраняется tools/hand-check.mjs. */
+      opens: ["sbMessengerOpenResult"],
+      /* ЧТО НУЖНО, ЧТОБЫ ДЕЛАТЬ РАБОТУ (D-243). Комната НАЗЫВАЕТ нужду;
+         есть ли она — измеряет прибор, а не она сама.
+         Охраняется tools/alive-check.mjs. */
+      needs: ["диск", "свой сервер", "собеседник"],
+      offDesk: "не делает работу",
+      /* ПРИЧИНА — СИСТЕМЕ, А НЕ КОММЕНТАРИЮ (D-243). */
+      why: "Разговор без сервера не с кем вести: собеседник здесь нарисован, и это сказано внутри самого окна. Живого человека на том конце машина не измеряет ничем.",
+      /* СВОИ МЕСТА НА ДИСКЕ (D-242). Охраняется room-rights-check.mjs. */
+      keeps: [KEY_V3, KEY_V2, KEY_V1],
       /* ── ВРЕМЕННО УБРАНО СО СТОЛА · решение D-186 ──────────────────────
          Основатель 27.08.2026: «прошу временно убрать те приложения, которые
          не несут пользы на данном этапе».

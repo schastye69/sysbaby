@@ -28,7 +28,11 @@
   var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
     '<circle cx="12" cy="12" r="8.4"/><path d="M12 3.6v3.2M12 17.2v3.2M20.4 12h-3.2M6.8 12H3.6"/><circle cx="12" cy="12" r="3.1"/></svg>';
 
-  var PREFIX = "sysbaby.v.";
+  /* ЗДЕСЬ СТОЯЛО var PREFIX = приставка конвертов замка — объявленное и НИ
+     РАЗУ НЕ ИСПОЛЬЗОВАННОЕ (D-242). Имя claimило место на диске, которого
+     эта комната не трогает: конверты кладут core/seals.js и core/store.js.
+     Опись прав нашла его первым же прогоном. Комната Замка права на диск не
+     имеет и не должна: она показывает состояние, а запирает ядро. */
   var FLIP_STEP = 38;          /* сдвиг между поворотами соседних ячеек, мс */
 
   function esc(s) {

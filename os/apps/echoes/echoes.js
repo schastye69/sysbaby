@@ -390,11 +390,21 @@
 
   /* ------------------------------------------------- opt-in trace seeding */
 
+  /* ── ХРАНИЛИЩЕ ЧЕРЕЗ СВОЙ ЯЩИК · D-242 ──────────────────────────────────
+     Ящик спрашивается, а не запоминается: комната объявляется раньше, чем
+     поднимается ядро прав. Что комнате можно — объявлено в registerApp
+     ниже и охраняется tools/room-rights-check.mjs. */
+  function box() {
+    return window.sbRights
+      ? window.sbRights.box("echoes")
+      : { get: function () { return null; }, set: function () { return false; },
+          remove: function () { return false; }, flush: function () { } };
+  }
+
   window.sbSeedTraceContent = function () {
-    var db = window.sbDB;
-    var guard = "sysbaby.traces.seeded";
+    var guard = TRACE_GUARD;
     var already = null;
-    try { already = db && typeof db.get === "function" ? db.get(guard) : localStorage.getItem(guard); }
+    try { already = box().get(guard); }
     catch (err) { console.error("[echoes] trace guard read failed", err); return false; }
     if (already === "1") return false;
 
@@ -412,16 +422,19 @@
       s.save(list);
       s.notify();
     }
-    if (typeof window.sbFilesSeedDocument === "function") {
+    /* ПЕРЕДАЁТСЯ ОБЩИМ МЕХАНИЗМОМ, А НЕ ЧАСТНЫМ ХОДОМ (D-245). Раньше здесь
+       звалась sbFilesSeedDocument — личная дверь Хранилища, заведённая по
+       случаю и никому не объявленная. Теперь документ идёт тем же путём,
+       которым идёт всякая вещь между комнатами: Хранилище объявило, что
+       берёт файлы, и берёт их одинаково от кого угодно. */
+    if (window.sbHand && typeof window.sbHand.give === "function") {
       TRACE_DOCUMENTS.forEach(function (doc) {
-        try { window.sbFilesSeedDocument(doc.name, doc.body); }
+        try { window.sbHand.give("files", { kind: "файл", name: doc.name, text: doc.body }); }
         catch (err) { console.error("[echoes] trace document failed", err); }
       });
     }
-    try {
-      if (db && typeof db.set === "function") db.set(guard, "1");
-      else localStorage.setItem(guard, "1");
-    } catch (err) { console.error("[echoes] trace guard write failed", err); }
+    try { box().set(guard, "1"); }
+    catch (err) { console.error("[echoes] trace guard write failed", err); }
     return true;
   };
 
@@ -429,6 +442,13 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("echoes", {
+      /* ЧТО НУЖНО, ЧТОБЫ ДЕЛАТЬ РАБОТУ (D-243). Комната НАЗЫВАЕТ нужду;
+         есть ли она — измеряет прибор, а не она сама.
+         Охраняется tools/alive-check.mjs. */
+      needs: ["диск"],
+      /* СВОЁ МЕСТО НА ДИСКЕ (D-242): сторож, чтобы не посеять дважды.
+         Охраняется tools/room-rights-check.mjs. */
+      keeps: [TRACE_GUARD],
       title: "Echoes",
       i18n: {
         ru: { title: "Эхо", label: "Эхо" },
