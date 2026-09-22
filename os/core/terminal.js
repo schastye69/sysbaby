@@ -99,6 +99,14 @@
        не открывается (D-243). */
     "floor", "rights", "alive"];
 
+  /* ── КОМАНДЫ, ПОДАРЕННЫЕ СУНДУКОМ (D-255) ──────────────────────────────
+     Реестр лежит в ядре, наполняет его комната: терминал спрашивает, а не
+     знает. Подаренная команда дополняется Tab и стоит в help наравне с
+     родными — иначе это дверь, о которой не сказано. */
+  window.sbTerminalCommands = window.sbTerminalCommands || {};
+  function gifted() { return Object.keys(window.sbTerminalCommands || {}).sort(); }
+  function allCommands() { return COMMANDS.concat(gifted().filter(function (c) { return COMMANDS.indexOf(c) === -1; })); }
+
   function lang() { return window.sbLang ? window.sbLang() : "en"; }
   /* ── ВНУТРЕННЕЕ СЛОВО ИДЁТ НА ЭКРАН ЧЕРЕЗ СЛОВАРЬ · D-253 ─────────────────
      Роды вещей, нужды, состояния, «ядро» — система называет их по-русски у
@@ -175,6 +183,10 @@
       var reg = (window.SysBaby && window.SysBaby.order) ? window.SysBaby.order.length : 0;
       var launch = window.sbLaunchableApps ? window.sbLaunchableApps().length : 0;
       write(build + " · " + reg + " windows registered, " + launch + " launchable.", "term-dim");
+      /* Подаренное приветствие — по имени и со счётом дней (D-255). */
+      var hello = "";
+      try { hello = window.sbChest && window.sbChest.word ? window.sbChest.word("greeting") : ""; } catch (e) { hello = ""; }
+      if (hello) write(hello, "term-dim");
     }
 
     function run(raw) {
@@ -196,6 +208,7 @@
             "journal    log · log all — this system's own build history",
             "voice      seen · who"
           ]);
+          if (gifted().length) write("gifts      " + gifted().map(function (c) { return (window.sbTerminalCommands[c].help || c); }).join(" · "));
           write("not everything is listed. terminals keep some doors unlabelled.", "term-dim");
           return;
         /* ── ПРИБРАТЬ СТОЛ ─────────────────────────────────────────────────
@@ -608,8 +621,14 @@
           write("pong. locally. this desktop has nowhere to ping — no server, no calls home.");
           return;
         default: {
+          var gift = window.sbTerminalCommands && window.sbTerminalCommands[cmd];
+          if (gift && typeof gift.run === "function") {
+            try { gift.run(rest, { write: write, writeLines: writeLines }); }
+            catch (e) { write("that command failed: " + (e && e.message ? e.message : "unknown")); }
+            return;
+          }
           var best = null, bestD = 99;
-          COMMANDS.forEach(function (c) {
+          allCommands().forEach(function (c) {
             var d2 = distance(cmd, c);
             if (d2 < bestD) { bestD = d2; best = c; }
           });
@@ -639,7 +658,7 @@
         ev.preventDefault();
         var frag = input.value.trim().toLowerCase();
         if (!frag) return;
-        var hits = COMMANDS.filter(function (c) { return c.indexOf(frag) === 0; });
+        var hits = allCommands().filter(function (c) { return c.indexOf(frag) === 0; });
         if (hits.length === 1) input.value = hits[0] + " ";
         else if (hits.length > 1) write(hits.join("   "), "term-dim");
       }

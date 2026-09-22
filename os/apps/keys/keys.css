@@ -2,7 +2,12 @@
    Вид подчинён одному: человек открывает это на бегу, между делом, и должен
    за секунду найти место и забрать пароль. Никакого декора между глазом и
    кнопкой «копировать». */
-.ky-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; }
+/* ОБЁРТКА СЖИМАЕТСЯ ДО ОКНА (D-256). Тело окна — flex, обёртка — его
+   элемент, и без min-width: 0 её наименьшая ширина равна ширине содержимого
+   «без переносов» — вместе с внутренней шириной поля поиска. На телефоне
+   основателя это срезало кнопку «+ New place» правой кромкой.
+   Охраняется tools/room-fits-check.mjs. */
+.ky-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; width: 100%; }
 .ky-head { padding: 2px 2px 2px; }
 .ky-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: 700; letter-spacing: -.01em; }
 .ky-lead { margin: 0; font-size: var(--f-read); line-height: 1.6; color: var(--ink-2); }

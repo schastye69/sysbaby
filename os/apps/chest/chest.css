@@ -1,0 +1,88 @@
+/* chest.css — Сундук (D-255). Шкалы — только из ядра: шрифт, радиус,
+   длительность. Цвета дерева объявлены здесь как свои переменные комнаты. */
+.ch-wrap { --ch-wood: #a56a2c; --ch-line: #3a2410; padding: 18px var(--pad-room) 26px; display: flex; flex-direction: column; gap: 18px; color: var(--ink); }
+html[data-theme="light"] .ch-wrap { --ch-wood: #c98a45; --ch-line: #4a2e14; }
+.ch-head { display: flex; flex-direction: column; gap: 6px; }
+.ch-title { margin: 0; font-size: var(--f-title); font-weight: 600; letter-spacing: -.01em; }
+.ch-lead { margin: 0; font-size: var(--f-read); color: var(--ink-2); max-width: 62ch; line-height: 1.5; }
+
+.ch-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.ch-dot { width: 9px; height: 9px; border-radius: var(--r-round); background: rgba(255, 255, 255, .10); border: 1px solid var(--line); }
+html[data-theme="light"] .ch-dot { background: rgba(0, 0, 0, .06); }
+.ch-dot.on { background: var(--accent); border-color: var(--accent); }
+.ch-dot.now { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.ch-count { margin-left: 8px; font-size: var(--f-meta); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+.ch-chest { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px 16px 20px; border: 1px solid var(--line); border-radius: var(--r-card); background: rgba(255, 255, 255, .03); }
+html[data-theme="light"] .ch-chest { background: rgba(0, 0, 0, .03); }
+.ch-art { width: 200px; height: 150px; overflow: visible; }
+.ch-lid { transform-origin: 18px 46px; transition: transform var(--t-scene) ease; }
+.ch-glow { opacity: 0; transition: opacity var(--t-move) ease; }
+.ch-chest[data-state="ready"] .ch-glow { opacity: 1; }
+.ch-chest[data-state="waiting"] .ch-art, .ch-chest[data-state="done"] .ch-art { opacity: .72; }
+.ch-chest[data-just="1"] .ch-lid { transform: rotate(-38deg); }
+.ch-chest[data-just="1"] .ch-glow { opacity: 1; }
+.ch-say { margin: 0; font-size: var(--f-read); color: var(--ink-2); text-align: center; max-width: 52ch; }
+.ch-open {
+  padding: 11px 22px; font-size: var(--f-lead); font-weight: 600; color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)); border: 0; border-radius: var(--r-pill); cursor: pointer;
+  transition: transform var(--t-touch) ease, box-shadow var(--t-touch) ease;
+}
+.ch-open:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 3px; }
+.ch-open:active { transform: scale(.98); }
+
+.ch-prize { display: flex; flex-direction: column; gap: 8px; padding: 18px 18px 16px; border-radius: var(--r-card); border: 1px solid var(--accent-ring); background: var(--accent-soft); }
+.ch-prize.fresh { animation: ch-rise var(--t-scene) ease both; }
+@keyframes ch-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+html[data-motion="reduced"] .ch-prize.fresh { animation: none; }
+html[data-motion="reduced"] .ch-lid { transition: none; }
+.ch-prize-k { margin: 0; font-size: var(--f-meta); text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); }
+.ch-prize-title { margin: 0; font-size: var(--f-title); font-weight: 600; }
+.ch-prize-what { margin: 0; font-size: var(--f-read); color: var(--ink-2); line-height: 1.5; max-width: 60ch; }
+.ch-prize-line { margin: 4px 0 0; font-size: var(--f-read); color: var(--ink); font-weight: 500; }
+.ch-where { align-self: flex-start; margin-top: 6px; padding: 8px 14px; font-size: var(--f-ui); border-radius: var(--r-ctrl); border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
+.ch-where:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
+
+.ch-titles { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; }
+.ch-titled { width: 100%; margin: 0 0 2px; font-size: var(--f-ui); color: var(--ink-2); }
+.ch-title-choice { padding: 7px 12px; font-size: var(--f-ui); border-radius: var(--r-pill); border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
+.ch-title-choice.on { border-color: var(--accent); background: var(--accent-soft); }
+.ch-title-choice:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
+
+.ch-echo-box, .ch-letter { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-card); }
+.ch-echo-k, .ch-letter-k { margin: 0; font-size: var(--f-meta); color: var(--ink-3); }
+.ch-echo { margin: 0; font-size: var(--f-lead); line-height: 1.5; color: var(--ink); font-style: italic; }
+.ch-echo-none { font-style: normal; font-size: var(--f-read); color: var(--ink-2); }
+.ch-letter textarea { width: 100%; padding: 10px 12px; font: inherit; font-size: var(--f-read); color: var(--ink); background: rgba(255, 255, 255, .04); border: 1px solid var(--line); border-radius: var(--r-ctrl); resize: vertical; }
+.ch-letter textarea:focus { outline: none; border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
+.ch-seal { align-self: flex-start; padding: 8px 16px; font-size: var(--f-ui); font-weight: 600; border-radius: var(--r-pill); border: 0; background: var(--accent); color: #fff; cursor: pointer; }
+.ch-seal:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 3px; }
+
+.ch-shelf { display: flex; flex-direction: column; gap: 8px; }
+.ch-shelf-title { margin: 0; font-size: var(--f-meta); text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); }
+.ch-shelf ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.ch-item { display: grid; grid-template-columns: 64px 1fr auto; gap: 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: var(--f-read); }
+.ch-item-day { color: var(--ink-3); font-size: var(--f-meta); font-variant-numeric: tabular-nums; }
+.ch-item-date { color: var(--ink-3); font-size: var(--f-meta); font-variant-numeric: tabular-nums; }
+.ch-empty { margin: 0; font-size: var(--f-read); color: var(--ink-2); }
+.ch-honest { margin: 4px 0 0; font-size: var(--f-meta); line-height: 1.5; color: var(--ink-3); max-width: 70ch; }
+
+@media (max-width: 560px) {
+  .ch-wrap { padding-top: 14px; }
+  .ch-item { grid-template-columns: 52px 1fr; }
+  .ch-item-date { grid-column: 2; }
+}
+
+/* ── ЗНАК НА ЗАМЕТКАХ (приз «stamp») ─────────────────────────────────────
+   Едва заметный оттиск в углу; текст заметки он не трогает — лежит под
+   ним и не перекрывает строк. */
+html[data-sigil="on"] .sticky-note::after {
+  content: ""; position: absolute; right: 8px; bottom: 8px; width: 18px; height: 18px; pointer-events: none;
+  background: var(--sb-sigil) center / contain no-repeat; opacity: .16;
+}
+
+/* Наведение — только там, где есть мышь (hover-is-not-touch). */
+@media (hover: hover) {
+  .ch-open:hover { box-shadow: 0 0 0 4px var(--accent-soft); }
+  .ch-where:hover { border-color: var(--accent-ring); }
+}

@@ -1162,9 +1162,19 @@
     var cur = (window.sbProfiles && window.sbProfiles.current) ? window.sbProfiles.current() : "local";
     var name = (window.sbGetUsername ? window.sbGetUsername() : "") || "";
 
-    var who = '<div class="acc-who"><span class="acc-dot" aria-hidden="true"></span>' +
+    /* Титул, знак и номер — подарки Сундука (D-255): спрашиваются у него,
+       пусто — не рисуются. */
+    var gift = { title: "", sigil: "", serial: "" };
+    try {
+      if (window.sbChest) { gift.title = window.sbChest.title() || ""; gift.sigil = window.sbChest.sigil() || ""; gift.serial = window.sbChest.serial() || ""; }
+    } catch (e) { gift = { title: "", sigil: "", serial: "" }; }
+    var who = '<div class="acc-who">' +
+      (gift.sigil ? '<span class="acc-sigil" aria-hidden="true">' + gift.sigil + "</span>" : '<span class="acc-dot" aria-hidden="true"></span>') +
       '<span class="acc-who-text"><b>' + esc(name || tr("acc.guest")) + "</b>" +
-      (rec && rec.name ? '<span class="acc-who-sub">' + esc(rec.name) + "</span>" : "") + "</span></div>";
+      (gift.title ? '<span class="acc-who-sub acc-title">' + esc(gift.title) + "</span>" : "") +
+      (rec && rec.name ? '<span class="acc-who-sub">' + esc(rec.name) + "</span>" : "") +
+      (gift.serial ? '<span class="acc-who-sub acc-serial" data-sb-nolang>' + esc(gift.serial) + "</span>" : "") +
+      "</span></div>";
 
     var field =
       '<label class="acc-field"><span class="acc-label">' + esc(tr("acc.name")) + "</span>" +

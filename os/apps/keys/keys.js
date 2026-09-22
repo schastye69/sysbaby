@@ -386,6 +386,9 @@
       needs: ["диск"],
       /* СВОЁ МЕСТО НА ДИСКЕ (D-242). Охраняется room-rights-check.mjs. */
       keeps: [STORE_KEY],
+      /* ДВЕРЬ НАЗВАНА ХОЗЯИНОМ (D-245): число мест спрашивает Сундук для
+         летописи. Охраняется tools/hand-check.mjs. */
+      opens: ["sbKeysAll"],
       title: UI.en.title,
       label: UI.en.label,
       i18n: {

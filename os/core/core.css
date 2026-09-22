@@ -474,6 +474,39 @@ html[data-wp-mood="sunset"] .wp-layer {
     radial-gradient(700px 540px at 16% 84%, rgba(255, 80, 140, .14), transparent 60%),
     linear-gradient(168deg, #150a08 0%, #0a0608 58%, #050406 100%);
 }
+/* ── КОМНАТЫ, ПОДАРЕННЫЕ СУНДУКОМ (D-255) ─────────────────────────────────
+   Своя комната берёт тон из переменной, которую ставит Сундук из имени
+   человека; четыре остальные — как прежние: свой нижний слой, свой свет. */
+html[data-wp-mood="own"] .wp-layer {
+  background:
+    radial-gradient(900px 620px at 78% 18%, hsla(var(--sb-own-hue, 22), 62%, 58%, .16), transparent 62%),
+    radial-gradient(760px 560px at 14% 82%, hsla(var(--sb-own-hue, 22), 50%, 72%, .10), transparent 60%),
+    linear-gradient(168deg, #0e0e12 0%, #09090c 52%, #050507 100%);
+}
+html[data-wp-mood="midnight"] .wp-layer {
+  background:
+    radial-gradient(900px 620px at 78% 18%, rgba(70, 92, 210, .14), transparent 62%),
+    radial-gradient(760px 560px at 14% 82%, rgba(40, 60, 160, .12), transparent 60%),
+    linear-gradient(168deg, #07091a 0%, #05060f 52%, #030308 100%);
+}
+html[data-wp-mood="garden"] .wp-layer {
+  background:
+    radial-gradient(900px 620px at 78% 18%, rgba(110, 200, 120, .14), transparent 62%),
+    radial-gradient(760px 560px at 14% 82%, rgba(60, 140, 90, .12), transparent 60%),
+    linear-gradient(168deg, #08110b 0%, #060a07 52%, #040604 100%);
+}
+html[data-wp-mood="lavender"] .wp-layer {
+  background:
+    radial-gradient(900px 620px at 78% 18%, rgba(160, 120, 240, .15), transparent 62%),
+    radial-gradient(760px 560px at 14% 82%, rgba(120, 80, 200, .12), transparent 60%),
+    linear-gradient(168deg, #0f0a17 0%, #09060f 52%, #050408 100%);
+}
+html[data-wp-mood="honey"] .wp-layer {
+  background:
+    radial-gradient(900px 620px at 78% 18%, rgba(240, 190, 80, .18), transparent 62%),
+    radial-gradient(760px 560px at 14% 82%, rgba(220, 150, 50, .12), transparent 60%),
+    linear-gradient(168deg, #16110a 0%, #0c0906 52%, #070504 100%);
+}
 html[data-wp-mood="mono"] .wp-layer {
   background:
     radial-gradient(900px 620px at 74% 18%, rgba(255, 255, 255, .07), transparent 62%),
@@ -2396,6 +2429,9 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .acc-dot { width: 10px; height: 10px; border-radius: var(--r-round); background: var(--accent); flex: none; }
 .acc-who-text { display: flex; flex-direction: column; min-width: 0; font-size: var(--f-read); }
 .acc-who-sub { font-size: var(--f-meta); color: var(--ink-3); }
+.acc-sigil { width: 28px; height: 28px; flex: none; color: var(--accent); }
+.acc-sigil svg { width: 100%; height: 100%; display: block; }
+.acc-serial { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
 .acc-field { display: flex; flex-direction: column; gap: 6px; }
 .acc-label { font-size: var(--f-meta); text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
 .acc-field input {

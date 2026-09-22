@@ -12,6 +12,9 @@
 .fv-bar {
   display: flex;
   align-items: center;
+  /* Узкое окно: инструменты переносятся на вторую строку, а не уходят за
+     кромку (D-256). Охраняется tools/room-fits-check.mjs. */
+  flex-wrap: wrap;
   gap: 10px;
   padding: 9px 12px;
   border-bottom: 1px solid var(--hairline, rgba(255, 255, 255, .09));
@@ -50,7 +53,7 @@
 .fv-crumb.current { color: inherit; font-weight: 600; cursor: default; }
 .fv-crumb-sep { color: var(--ink-3); font-size: var(--f-ui); }
 
-.fv-tools { display: flex; gap: 6px; flex: 0 0 auto; }
+.fv-tools { display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto; min-width: 0; }
 
 .fv-tool {
   display: inline-flex;

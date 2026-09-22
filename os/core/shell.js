@@ -958,6 +958,17 @@
   window.sbWallpaperMoods = MOODS.map(function (m) {
     return { id: m.id, name: m.name, drift: !!m.drift, session: !!m.session };
   });
+  /* ── КОМНАТА, ПОДАРЕННАЯ СУНДУКОМ (D-255) ──────────────────────────────
+     Список комнат не константа: Сундук дарит новые, и они входят в тот же
+     ряд, тем же светом (sbRoomLight) и той же палитрой поля. Список для
+     окон (sbWallpaperMoods) — тот же предмет, а не копия: дописывается в
+     него, чтобы Настройки и панель увидели комнату без перерисовки списка. */
+  window.sbAddMood = function (def) {
+    if (!def || !def.id || MOODS.some(function (m) { return m.id === def.id; })) return false;
+    MOODS.push(def);
+    window.sbWallpaperMoods.push({ id: def.id, name: def.name, drift: !!def.drift, session: !!def.session });
+    return true;
+  };
   window.sbGetWallpaperMood = function () {
     var v = (window.sbDB && window.sbDB.get(MOOD_KEY)) || "studio";
     return MOODS.some(function (m) { return m.id === v; }) ? v : "studio";
@@ -3705,6 +3716,20 @@
      подпись, стол и есть система. */
   var SENTENCE_1 = "only you and your system, baby";
   var SENTENCE_2 = "only you and your system, baby";
+  /* ── СТРОКА ВХОДА И ПРОЩАНИЕ СПРАШИВАЮТСЯ У СУНДУКА (D-255) ─────────────
+     Подаренное слово кончается именем человека, а не «baby». Пока не
+     подарено — фраза прежняя, слово в слово. Занавес (ячейки выше) фразу не
+     меняет: там она — знак системы, а не обращение. */
+  window.sbLoginLine = function () {
+    var w = "";
+    try { w = window.sbChest && window.sbChest.word ? window.sbChest.word("tagline") : ""; } catch (e) { w = ""; }
+    return w || SENTENCE_1;
+  };
+  window.sbFarewellLine = function () {
+    var w = "";
+    try { w = window.sbChest && window.sbChest.word ? window.sbChest.word("farewell") : ""; } catch (e) { w = ""; }
+    return w || "The system sleeps when you do, baby.";
+  };
 
   function padCenter(text) {
     var t = String(text).slice(0, CELLS);
@@ -4307,6 +4332,8 @@
   function wireLogin() {
     var card = $("#sbLogin");
     if (!card) { loginSuccess(); return; }
+    var decoding = $("#sbNameDecoding");
+    if (decoding) decoding.textContent = window.sbLoginLine();
     if (root.classList.contains("sb-has-session")) {
       if (card.parentNode) card.parentNode.removeChild(card);
       loginSuccess();
@@ -4485,7 +4512,7 @@
       '</div><p class="farewell-line"></p>';
     doc.body.appendChild(curtain);
     requestAnimationFrame(function () { curtain.classList.add("on"); });
-    var line = "The system sleeps when you do, baby.";
+    var line = window.sbFarewellLine();
     var out = curtain.querySelector(".farewell-line");
     var i = 0;
     var type = setInterval(function () {
