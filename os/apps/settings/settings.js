@@ -134,7 +134,11 @@
         '<span class="st-username"><input type="text" id="stUsername" maxlength="18" spellcheck="false" autocomplete="off" value="' + esc(name) + '">' +
           '<span class="st-suffix">.sys.baby</span><span class="st-saved" id="stUsernameSaved">' + esc(t("set.general.saved")) + "</span></span>") +
       rowMarkup(esc(t("set.general.language")), esc(t("set.general.languageSub")),
-        '<select class="st-select" id="stLang">' + options + "</select>") +
+        /* Имена языков — каждое на своём языке, по всеобщему обычаю: человек,
+           не читающий по-русски, ищет слово «English», а не «Английский».
+           Это единственное место, где кириллица на английском экране
+           законна, и оно объявлено вне языка (D-253). */
+        '<select class="st-select" id="stLang" data-sb-nolang>' + options + "</select>") +
       '<div class="st-note"><p>' + esc(t("set.general.note")) + "</p></div>";
   }
 

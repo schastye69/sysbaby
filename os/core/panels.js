@@ -846,6 +846,57 @@
     window.sbIncognitoSelfDestruct = { reset: reset, seconds: function () { return Math.max(0, Math.round((deadline - Date.now()) / 1000)); } };
   })();
 
+  /* ══════ ЗАМОК БЕРЕЖЁТ И СЕАНС · решение D-254 ═════════════════════════════
+     Дыра из описи (zamok-ne-berezhet-seans): человек, отошедший от открытой
+     вкладки, был защищён только самой вкладкой — всё расшифрованное жило в
+     памяти, пока вкладку не закроют. В описи стояло оправдание: закрыть
+     значило бы перешифровывать на каждое действие. Это было неправдой: замок
+     и так запечатывает каждую запись в тот же миг (scheduleSeal в store.js),
+     а «Запереть сейчас» — просто перезагрузка, потому что ключи живут только
+     в памяти. Значит, сеанс без движения закрывается той же ценой.
+     ДВИЖЕНИЕ — это нажатие, клавиша, колесо, касание. Срок спрашивается у
+     хранилища; ноль — «никогда». Возврат во вкладку тоже сверяет счёт: в
+     спрятанной вкладке браузер таймеры усыпляет, и без этой сверки человек,
+     вернувшийся через час, застал бы сеанс открытым.
+     Охраняется tools/idle-lock-check.mjs. */
+  (function idleLock() {
+    var V = window.sbVault;
+    var KEY = "sysbaby.lock.idleMin", DEFAULT = 15;
+    function minutes() {
+      var raw = window.sbDB ? window.sbDB.get(KEY) : null;
+      /* Пустое место — не ноль: ноль здесь значит «никогда», а пусто — «как
+         по умолчанию». Number(null) даёт 0, и без этой строки пустое
+         хранилище выключало бы замок покоя молча. */
+      if (raw == null || raw === "") return DEFAULT;
+      var m = num(raw, NaN);
+      return (isFinite(m) && m >= 0) ? m : DEFAULT;
+    }
+    var last = Date.now();
+    function touch() { last = Date.now(); }
+    ["pointerdown", "keydown", "wheel", "touchstart"].forEach(function (e) { doc.addEventListener(e, touch, true); });
+    function shut() {
+      if (window.sbDB && window.sbDB.flushSync) { try { window.sbDB.flushSync(); } catch (e) { /* ignore */ } }
+      location.reload();
+    }
+    function check() {
+      if (!V || !V.isLocked() || !V.isOpen()) return;
+      var m = minutes();
+      if (!(m > 0)) return;
+      if (Date.now() - last >= m * 60000) shut();
+    }
+    setInterval(check, 15000);
+    doc.addEventListener("visibilitychange", function () { if (doc.visibilityState === "visible") check(); });
+    window.sbIdleLock = {
+      minutes: minutes,
+      set: function (m) {
+        m = num(m, DEFAULT);
+        if (window.sbDB) window.sbDB.set(KEY, String(m < 0 ? 0 : m));
+        touch();
+      },
+      idleFor: function () { return Date.now() - last; }
+    };
+  })();
+
   /* ============================================================ bare keys */
   doc.addEventListener("keydown", function (ev) {
     if (!window.sbBareKeyOk || !window.sbBareKeyOk(ev)) return;
@@ -872,6 +923,27 @@
     return [(c.ciphers || []).join("  →  "), c.mac, (c.kdf || []).join("  →  "),
       "padding " + (c.pad || 256) + " B", c.names ? "names " + c.names : ""]
       .filter(Boolean).join("\n");
+  }
+
+  /* Срок покоя стоит рядом с замком, потому что это свойство замка (D-254).
+     Варианты — минуты; ноль — «никогда». Текущее значение спрашивается у
+     системы, а не помнится окном. */
+  var IDLE_CHOICES = [0, 5, 15, 60];
+  function idleLabel(m) {
+    if (!(m > 0)) return tr("lock.idle.never");
+    if (m >= 60) return tr("lock.idle.hour", { n: Math.round(m / 60) });
+    return tr("lock.idle.min", { n: m });
+  }
+  function idleRow() {
+    if (!window.sbIdleLock) return "";
+    var cur = window.sbIdleLock.minutes();
+    var choices = IDLE_CHOICES.indexOf(cur) === -1 ? IDLE_CHOICES.concat([cur]).sort(function (a, b) { return a - b; }) : IDLE_CHOICES;
+    var opts = choices.map(function (m) {
+      return '<option value="' + m + '"' + (m === cur ? " selected" : "") + ">" + esc(idleLabel(m)) + "</option>";
+    }).join("");
+    return '<label class="lock-idle"><span class="panel-copy">' + esc(tr("lock.idle")) + "</span>" +
+      '<select id="sbLockIdle" aria-label="' + esc(tr("lock.idle")) + '">' + opts + "</select></label>" +
+      '<p class="panel-copy dim">' + esc(tr("lock.idleWhat")) + "</p>";
   }
 
   /* ── РАЗДЕЛ «ЗАМОК» ─────────────────────────────────────────────────────── */
@@ -907,6 +979,7 @@
            умеющая показать «тревожное слово установлено», сама и есть
            утечка, ради предотвращения которой всё это построено. */
         '<p class="panel-copy dim">' + esc(tr("lock.duressWhat")) + "</p>" +
+        idleRow() +
         '<div class="lock-acts">' +
           '<button type="button" class="btn ghost" id="sbLockChange">' + esc(tr("lock.change")) + "</button>" +
           '<button type="button" class="btn ghost" id="sbLockDuressSet">' + esc(tr("lock.duress")) + "</button>" +
@@ -1005,6 +1078,10 @@
     });
     var nowBtn = body.querySelector("#sbLockNow");
     if (nowBtn) nowBtn.addEventListener("click", function () { window.location.reload(); });
+    var idleSel = body.querySelector("#sbLockIdle");
+    if (idleSel && window.sbIdleLock) idleSel.addEventListener("change", function () {
+      window.sbIdleLock.set(idleSel.value);
+    });
   }
 
   /* ── РАЗДЕЛ «КОПИИ» · решение D-172 ─────────────────────────────────────── */

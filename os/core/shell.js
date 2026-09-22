@@ -1005,6 +1005,22 @@
     /* Одно место речи (v66): извещение встаёт на линию подсказки, и
        самопришедшая подсказка уступает ему. Вызванная лампочкой — нет. */
     if (window.sbDeskHintYield) window.sbDeskHintYield();
+    /* ── ПОДТВЕРЖДЕНИЕ ЗАМЕЩАЕТ ПОДТВЕРЖДЕНИЕ · D-252 ───────────────────
+       Совет снял все комнаты подряд на телефоне и на каждом снимке увидел
+       ТРИ извещения «закрыто — Отменить» столбиком: треть экрана. Закон
+       v47.3 убрал их из списка («оповещения о закрытии — лишний шум и
+       мусор», слово основателя), а на экране они остались и копились.
+       Правило то же, что у списка, — одинаковое освежает первую строку, а
+       не заводит вторую, — применённое к экрану: подтверждение (ответ на
+       нажатие самого человека) не встаёт в очередь, а сменяет предыдущее.
+       Событие (пришло письмо) человек не вызывал и мог пропустить — оно
+       остаётся стоять рядом.
+       Охраняется tools/toast-surface-check.mjs. */
+    if (t.getAttribute("data-kind") === "confirm") {
+      $$(".toast[data-kind=\"confirm\"]", host).forEach(function (old) {
+        if (old.parentNode) old.parentNode.removeChild(old);
+      });
+    }
     host.appendChild(t);
     /* ── ПОКОЙ — БАЗА, ДВИЖЕНИЕ — ИСКЛЮЧЕНИЕ (D-176) ──────────────────────
        Извещение уже стоит на своём месте и видимо: так объявлен сам класс
@@ -3642,8 +3658,8 @@
         var backend = (window.sbDB && typeof window.sbDB.get === "function") ? "sbDB" : "localStorage";
         var n = 0;
         try { for (var i = 0; i < localStorage.length; i++) if (String(localStorage.key(i)).indexOf("sysbaby.") === 0) n++; } catch (e) { n = -1; }
-        if (n < 0) throw new Error("хранилище закрыто браузером");
-        return backend + "  ·  " + n + " записей";
+        if (n < 0) throw new Error(tr("boot.storageShut"));
+        return backend + "  ·  " + tr("boot.records", { n: n });
       } },
     { id: "session", label: "session", run: function () {
         var name = "";
@@ -3657,8 +3673,8 @@
       } },
     { id: "apps", label: "apps", run: function () {
         var list = window.sbLaunchableApps ? window.sbLaunchableApps() : [];
-        if (!list.length) throw new Error("ни одно приложение не зарегистрировалось");
-        return list.length + " зарегистрировано";
+        if (!list.length) throw new Error(tr("boot.noApps"));
+        return tr("boot.registered", { n: list.length });
       } },
     { id: "data", label: "data", run: function () {
         /* Имена глобальных берутся из самих файлов данных, а не из памяти:
@@ -3667,8 +3683,8 @@
            стоила минуты и доказала, что шаг измеряет, а не рассказывает. */
         var pf = (window.sbPortfolio && window.sbPortfolio.length) || 0;
         var pr = (typeof window.sbPricingBand === "function") ? 1 : 0;
-        if (!pf) throw new Error("портфолио не подгрузилось");
-        return pf + " работ" + (pr ? "  ·  прайс на месте" : "  ·  прайса нет");
+        if (!pf) throw new Error(tr("boot.noPortfolio"));
+        return tr("boot.works", { n: pf }) + "  ·  " + tr(pr ? "boot.priceOk" : "boot.priceNo");
       } }
   ];
 

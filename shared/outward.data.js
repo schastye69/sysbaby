@@ -22,7 +22,10 @@ window.SB_OUTWARD = {
     "не входит: её адрес виден до нажатия и она ничего не уносит.",
     "",
     "default: 'on'/'off' — с чем дверь живёт, пока человек не трогал выключатель.",
-    "Самоходная дверь К ЧУЖОМУ ХОЗЯИНУ обязана быть 'off' — это закон, а не вкус."
+    "Самоходная дверь К ЧУЖОМУ ХОЗЯИНУ обязана быть 'off' — это закон, а не вкус.",
+    "",
+    "what / who — на каждом языке ОС, как и title (D-253). Раньше они были только",
+    "по-русски и выходили на английский и эстонский экран как есть."
   ],
   "doors": [
     {
@@ -38,8 +41,16 @@ window.SB_OUTWARD = {
       "side": "hand",
       "byHand": true,
       "host": "",
-      "what": "Адрес, который вы сами назвали, и всё, что обычно уходит при открытии страницы: ваш адрес в сети, вид браузера, размер экрана, ваши cookies того сайта.",
-      "who": "Тот сайт и его хозяева. sys.baby не видит ничего: рамка чужая, читать её изнутри страницы нельзя."
+      "what": {
+        "ru": "Адрес, который вы сами назвали, и всё, что обычно уходит при открытии страницы: ваш адрес в сети, вид браузера, размер экрана, ваши cookies того сайта.",
+        "en": "The address you typed yourself, and everything that normally leaves when a page opens: your network address, your browser type, your screen size, your cookies for that site.",
+        "ee": "Aadress, mille ise sisestasid, ja kõik, mis lehe avamisel tavaliselt lahkub: sinu võrguaadress, brauseri tüüp, ekraani suurus, sinu küpsised sellel saidil."
+      },
+      "who": {
+        "ru": "Тот сайт и его хозяева. sys.baby не видит ничего: рамка чужая, читать её изнутри страницы нельзя.",
+        "en": "That site and its owners. sys.baby sees nothing: the frame belongs to them, and a page cannot read inside it.",
+        "ee": "See sait ja selle omanikud. sys.baby ei näe midagi: raam on võõras ja lehe seest seda lugeda ei saa."
+      }
     },
     {
       "id": "browser-tab",
@@ -54,8 +65,16 @@ window.SB_OUTWARD = {
       "side": "hand",
       "byHand": true,
       "host": "",
-      "what": "То же самое, что и при обычном переходе по ссылке: адрес, который вы назвали, уходит вашему браузеру и дальше тому сайту.",
-      "who": "Тот сайт. Это обычная вкладка вашего браузера, sys.baby к ней отношения не имеет."
+      "what": {
+        "ru": "То же самое, что и при обычном переходе по ссылке: адрес, который вы назвали, уходит вашему браузеру и дальше тому сайту.",
+        "en": "The same as following any link: the address you typed goes to your browser and on to that site.",
+        "ee": "Sama mis tavalise lingi avamisel: sinu sisestatud aadress läheb sinu brauserile ja edasi sellele saidile."
+      },
+      "who": {
+        "ru": "Тот сайт. Это обычная вкладка вашего браузера, sys.baby к ней отношения не имеет.",
+        "en": "That site. It is an ordinary tab of your browser; sys.baby has nothing to do with it.",
+        "ee": "See sait. See on sinu brauseri tavaline vahekaart; sys.baby-l pole sellega mingit pistmist."
+      }
     },
     {
       "id": "browser-search",
@@ -70,8 +89,16 @@ window.SB_OUTWARD = {
       "side": "third",
       "byHand": true,
       "host": "duckduckgo.com",
-      "what": "Слова, которые вы набрали, если они не похожи на адрес. Они уходят в строке запроса к поисковой службе.",
-      "who": "DuckDuckGo. Служба выбрана за то, что не ведёт истории поиска, но верить в это приходится ей, а не проверять."
+      "what": {
+        "ru": "Слова, которые вы набрали, если они не похожи на адрес. Они уходят в строке запроса к поисковой службе.",
+        "en": "The words you typed, if they do not look like an address. They leave in the query string to the search service.",
+        "ee": "Sinu sisestatud sõnad, kui need ei näe välja nagu aadress. Need lahkuvad päringureana otsinguteenusele."
+      },
+      "who": {
+        "ru": "DuckDuckGo. Служба выбрана за то, что не ведёт истории поиска, но верить в это приходится ей, а не проверять.",
+        "en": "DuckDuckGo. Chosen because it keeps no search history — but that is something you have to trust it on, not verify.",
+        "ee": "DuckDuckGo. Valitud, sest see ei pea otsinguajalugu — kuid seda tuleb teenusel uskuda, mitte kontrollida."
+      }
     },
     {
       "id": "letters",
@@ -86,8 +113,16 @@ window.SB_OUTWARD = {
       "side": "third",
       "byHand": true,
       "host": "formsubmit.co",
-      "what": "Весь текст письма, имя и обратный адрес, которые вы вписали, и метка «Letters · sys.baby OS».",
-      "who": "Служба formsubmit.co и её владельцы — письмо проходит через их машину открытым, это не наш сервер. И почтовый ящик sys.baby, куда оно придёт."
+      "what": {
+        "ru": "Весь текст письма, имя и обратный адрес, которые вы вписали, и метка «Letters · sys.baby OS».",
+        "en": "The full text of the letter, the name and reply address you entered, and the tag “Letters · sys.baby OS”.",
+        "ee": "Kirja kogu tekst, sinu sisestatud nimi ja vastusaadress ning silt „Letters · sys.baby OS“."
+      },
+      "who": {
+        "ru": "Служба formsubmit.co и её владельцы — письмо проходит через их машину открытым, это не наш сервер. И почтовый ящик sys.baby, куда оно придёт.",
+        "en": "The formsubmit.co service and its owners — the letter passes through their machine in the clear; it is not our server. And the sys.baby mailbox where it lands.",
+        "ee": "Teenus formsubmit.co ja selle omanikud — kiri läbib nende masina avatult; see ei ole meie server. Ja sys.baby postkast, kuhu see jõuab."
+      }
     },
     {
       "id": "landing-form",
@@ -103,8 +138,16 @@ window.SB_OUTWARD = {
       "side": "third",
       "byHand": true,
       "host": "formsubmit.co",
-      "what": "То, что вписано в форму на витрине: имя, способ связи, текст, и от кого пришли, если это указано.",
-      "who": "Та же служба formsubmit.co. Написанное проходит через чужую машину открытым."
+      "what": {
+        "ru": "То, что вписано в форму на витрине: имя, способ связи, текст, и от кого пришли, если это указано.",
+        "en": "What was entered in the form on the showcase: name, how to reach you, the text, and where you came from if that was given.",
+        "ee": "Mis vitriini vormi sisestati: nimi, kuidas sind kätte saada, tekst ja kust sa tulid, kui see on märgitud."
+      },
+      "who": {
+        "ru": "Та же служба formsubmit.co. Написанное проходит через чужую машину открытым.",
+        "en": "The same formsubmit.co service. What you wrote passes through someone else's machine in the clear.",
+        "ee": "Sama teenus formsubmit.co. Kirjutatu läbib võõra masina avatult."
+      }
     },
     {
       "id": "works-probe",
@@ -121,10 +164,22 @@ window.SB_OUTWARD = {
       "byHand": false,
       "toggle": "probeWorks",
       "host": "",
-      "what": "Один запрос к адресу самой работы на этом же сайте, чтобы карточка не говорила «работает», когда работа не отвечает.",
-      "who": "Тот, кто держит sys.baby, и посредник сети — Cloudflare. Наружу к чужим хозяевам не уходит ничего.",
+      "what": {
+        "ru": "Один запрос к адресу самой работы на этом же сайте, чтобы карточка не говорила «работает», когда работа не отвечает.",
+        "en": "One request to the work's own address on this same site, so the card does not say “working” when the work does not answer.",
+        "ee": "Üks päring töö enda aadressile samal saidil, et kaart ei ütleks „töötab“, kui töö ei vasta."
+      },
+      "who": {
+        "ru": "Тот, кто держит sys.baby, и посредник сети — Cloudflare. Наружу к чужим хозяевам не уходит ничего.",
+        "en": "Whoever hosts sys.baby, and the network intermediary — Cloudflare. Nothing leaves to outside owners.",
+        "ee": "See, kes sys.baby-d hoiab, ja võrgu vahendaja — Cloudflare. Võõrastele omanikele ei lahku midagi."
+      },
       "default": "on",
-      "defaultWhy": "Включено по умолчанию: адрес свой, чужих хозяев нет, а выключенная проверка вернула бы карточку, которая говорит «работает», не зная этого. Третья сторона по умолчанию была бы выключена — здесь её нет."
+      "defaultWhy": {
+        "ru": "Включено по умолчанию: адрес свой, чужих хозяев нет, а выключенная проверка вернула бы карточку, которая говорит «работает», не зная этого. Третья сторона по умолчанию была бы выключена — здесь её нет.",
+        "en": "On by default: our own address, no outside owners, and a probe switched off would return a card that says “working” without knowing it. A third party would be off by default — there is none here.",
+        "ee": "Vaikimisi sees: oma aadress, võõraid omanikke pole, ja väljalülitatud kontroll tagastaks kaardi, mis ütleb „töötab“ seda teadmata. Kolmas osapool oleks vaikimisi väljas — siin seda pole."
+      }
     },
     {
       "id": "works-frame",
@@ -140,10 +195,22 @@ window.SB_OUTWARD = {
       "byHand": false,
       "toggle": "probeWorks",
       "host": "",
-      "what": "Работа открывается в рамке прямо в карточке — это не картинка, а сама работающая программа, и она грузится сама.",
-      "who": "Тот же, кто держит sys.baby. Адрес свой, чужих хозяев здесь нет.",
+      "what": {
+        "ru": "Работа открывается в рамке прямо в карточке — это не картинка, а сама работающая программа, и она грузится сама.",
+        "en": "The work opens in a frame right inside the card — not a picture but the running program itself, and it loads on its own.",
+        "ee": "Töö avaneb raamis otse kaardi sees — mitte pilt, vaid töötav programm ise, ja see laadib end ise."
+      },
+      "who": {
+        "ru": "Тот же, кто держит sys.baby. Адрес свой, чужих хозяев здесь нет.",
+        "en": "The same party that hosts sys.baby. Our own address; no outside owners here.",
+        "ee": "Sama, kes sys.baby-d hoiab. Oma aadress; võõraid omanikke siin pole."
+      },
       "default": "on",
-      "defaultWhy": "Включено по умолчанию: адрес свой, чужих хозяев нет, а выключенная проверка вернула бы карточку, которая говорит «работает», не зная этого. Третья сторона по умолчанию была бы выключена — здесь её нет."
+      "defaultWhy": {
+        "ru": "Включено по умолчанию: адрес свой, чужих хозяев нет, а выключенная проверка вернула бы карточку, которая говорит «работает», не зная этого. Третья сторона по умолчанию была бы выключена — здесь её нет.",
+        "en": "On by default: our own address, no outside owners, and a probe switched off would return a card that says “working” without knowing it. A third party would be off by default — there is none here.",
+        "ee": "Vaikimisi sees: oma aadress, võõraid omanikke pole, ja väljalülitatud kontroll tagastaks kaardi, mis ütleb „töötab“ seda teadmata. Kolmas osapool oleks vaikimisi väljas — siin seda pole."
+      }
     },
     {
       "id": "service-worker",
@@ -159,11 +226,27 @@ window.SB_OUTWARD = {
       "side": "self",
       "byHand": false,
       "host": "",
-      "noToggleWhy": "Выключателя быть не может: это и есть загрузка самой системы. Он ходит за теми же файлами, за которыми пришёл ваш браузер, и кладёт их в запас, чтобы система открывалась без сети. Выключить его — значит выключить систему; выключатель здесь был бы обманкой.",
-      "what": "Запрос за файлами самой системы: страница, стили, код приложений. Ровно то, что браузер запросил бы и без него.",
-      "who": "Тот, кто держит sys.baby, и посредник сети. Ни одного чужого хозяина.",
+      "noToggleWhy": {
+        "ru": "Выключателя быть не может: это и есть загрузка самой системы. Он ходит за теми же файлами, за которыми пришёл ваш браузер, и кладёт их в запас, чтобы система открывалась без сети. Выключить его — значит выключить систему; выключатель здесь был бы обманкой.",
+        "en": "There can be no switch: this IS the loading of the system itself. It fetches the same files your browser came for and keeps them in reserve so the system opens without a network. Switching it off would mean switching the system off; a switch here would be a decoy.",
+        "ee": "Lülitit ei saa olla: see ONGI süsteemi enda laadimine. See toob samad failid, mille järele sinu brauser tuli, ja hoiab neid varuks, et süsteem avaneks ilma võrguta. Selle väljalülitamine tähendaks süsteemi väljalülitamist; lüliti oleks siin pettekuju."
+      },
+      "what": {
+        "ru": "Запрос за файлами самой системы: страница, стили, код приложений. Ровно то, что браузер запросил бы и без него.",
+        "en": "A request for the system's own files: the page, the styles, the application code. Exactly what the browser would request without it.",
+        "ee": "Päring süsteemi enda failide järele: leht, stiilid, rakenduste kood. Täpselt see, mida brauser küsiks ka ilma selleta."
+      },
+      "who": {
+        "ru": "Тот, кто держит sys.baby, и посредник сети. Ни одного чужого хозяина.",
+        "en": "Whoever hosts sys.baby, and the network intermediary. Not a single outside owner.",
+        "ee": "See, kes sys.baby-d hoiab, ja võrgu vahendaja. Mitte ühtegi võõrast omanikku."
+      },
       "default": "on",
-      "defaultWhy": "Это и есть загрузка самой системы; выключателя нет — см. причину рядом."
+      "defaultWhy": {
+        "ru": "Это и есть загрузка самой системы; выключателя нет — см. причину рядом.",
+        "en": "On by default: our own address, no outside owners, and a probe switched off would return a card that says “working” without knowing it. A third party would be off by default — there is none here.",
+        "ee": "Vaikimisi sees: oma aadress, võõraid omanikke pole, ja väljalülitatud kontroll tagastaks kaardi, mis ütleb „töötab“ seda teadmata. Kolmas osapool oleks vaikimisi väljas — siin seda pole."
+      }
     },
     {
       "id": "build-frame",
@@ -178,8 +261,16 @@ window.SB_OUTWARD = {
       "side": "self",
       "byHand": true,
       "host": "",
-      "what": "Витрина sys.baby открывается в рамке внутри окна: тот же сайт, тот же адрес.",
-      "who": "Тот, кто держит sys.baby. Чужих хозяев здесь нет."
+      "what": {
+        "ru": "Витрина sys.baby открывается в рамке внутри окна: тот же сайт, тот же адрес.",
+        "en": "The sys.baby showcase opens in a frame inside the window: same site, same address.",
+        "ee": "sys.baby vitriin avaneb akna sees raamis: sama sait, sama aadress."
+      },
+      "who": {
+        "ru": "Тот, кто держит sys.baby. Чужих хозяев здесь нет.",
+        "en": "Whoever hosts sys.baby. No outside owners here.",
+        "ee": "See, kes sys.baby-d hoiab. Võõraid omanikke siin pole."
+      }
     },
     {
       "id": "project-frame",
@@ -194,8 +285,16 @@ window.SB_OUTWARD = {
       "side": "self",
       "byHand": true,
       "host": "",
-      "what": "Выбранная работа открывается в рамке: это сама работающая программа с этого же сайта.",
-      "who": "Тот, кто держит sys.baby."
+      "what": {
+        "ru": "Выбранная работа открывается в рамке: это сама работающая программа с этого же сайта.",
+        "en": "The chosen work opens in a frame: the running program itself, from this same site.",
+        "ee": "Valitud töö avaneb raamis: töötav programm ise, samalt saidilt."
+      },
+      "who": {
+        "ru": "Тот, кто держит sys.baby.",
+        "en": "Whoever hosts sys.baby.",
+        "ee": "See, kes sys.baby-d hoiab."
+      }
     },
     {
       "id": "product-frame",
@@ -210,8 +309,16 @@ window.SB_OUTWARD = {
       "side": "self",
       "byHand": true,
       "host": "",
-      "what": "Выбранный товар витрины показывается рамкой с этого же сайта.",
-      "who": "Тот, кто держит sys.baby."
+      "what": {
+        "ru": "Выбранный товар витрины показывается рамкой с этого же сайта.",
+        "en": "The chosen showcase item is shown in a frame from this same site.",
+        "ee": "Valitud vitriinitoode näidatakse raamis samalt saidilt."
+      },
+      "who": {
+        "ru": "Тот, кто держит sys.baby.",
+        "en": "Whoever hosts sys.baby.",
+        "ee": "See, kes sys.baby-d hoiab."
+      }
     }
   ]
 };

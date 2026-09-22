@@ -77,6 +77,19 @@
     var d = window.SB_OUTWARD && window.SB_OUTWARD.doors;
     return Array.isArray(d) ? d : [];
   }
+  /* ЧТО УХОДИТ И КТО УВИДИТ — НА ЯЗЫКЕ ЧЕЛОВЕКА (D-253). Опись держит эти
+     слова на каждом языке ОС, как и заголовок; раньше они были только по-русски
+     и выходили на английский экран как есть — 25 русских строк в английском
+     окне. Старая форма (одна строка) принимается как русская. */
+  function byLang(v) {
+    if (v == null) return "";
+    if (typeof v === "string") return v;
+    var l = lang();
+    /* ОТКАТ: языка в записи нет — падаем на английский, потом на русский.
+       Полнота записей на каждом языке сторожится tools/outward-check.mjs,
+       так что откат — страховка от чужой правки описи, а не рабочий путь. */
+    return v[l] || v.en || v.ru || "";
+  }
   function titleOf(d) {
     var t = d.title || {};
     return t[lang()] || t.en || d.id;
@@ -107,17 +120,17 @@
         '</header>' +
         '<p class="ow-when">' + esc(auto ? t.byItself : t.byHand) + '</p>' +
         '<dl class="ow-facts">' +
-          '<dt>' + esc(t.what) + '</dt><dd>' + esc(d.what || '') + '</dd>' +
-          '<dt>' + esc(t.who) + '</dt><dd>' + esc(d.who || '') + '</dd>' +
+          '<dt>' + esc(t.what) + '</dt><dd>' + esc(byLang(d.what)) + '</dd>' +
+          '<dt>' + esc(t.who) + '</dt><dd>' + esc(byLang(d.who)) + '</dd>' +
           '<dt>' + esc(t.where) + '</dt><dd class="ow-mono">' + esc((d.where || []).join(' · ')) + '</dd>' +
         '</dl>' +
         (d.toggle
           ? '<div class="ow-switch"><button type="button" class="ow-sw' + (on ? " on" : "") +
             '" role="switch" aria-checked="' + (on ? "true" : "false") + '" data-toggle="' + esc(d.toggle) + '"><i></i></button>' +
             '<span>' + esc(on ? t.on : t.off) + '</span>' +
-            (d.defaultWhy ? '<span class="ow-why">' + esc(d.defaultWhy) + '</span>' : '') + '</div>'
+            (d.defaultWhy ? '<span class="ow-why">' + esc(byLang(d.defaultWhy)) + '</span>' : '') + '</div>'
           : (d.noToggleWhy
-              ? '<p class="ow-noswitch"><b>' + esc(t.noSwitch) + '</b> ' + esc(d.noToggleWhy) + '</p>'
+              ? '<p class="ow-noswitch"><b>' + esc(t.noSwitch) + '</b> ' + esc(byLang(d.noToggleWhy)) + '</p>'
               : '')) +
         '</section>';
     }).join("");

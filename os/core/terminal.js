@@ -100,6 +100,17 @@
     "floor", "rights", "alive"];
 
   function lang() { return window.sbLang ? window.sbLang() : "en"; }
+  /* ── ВНУТРЕННЕЕ СЛОВО ИДЁТ НА ЭКРАН ЧЕРЕЗ СЛОВАРЬ · D-253 ─────────────────
+     Роды вещей, нужды, состояния, «ядро» — система называет их по-русски у
+     себя внутри, и это её право. Но терминал печатал их как есть в
+     английский ответ: «21 вещи · 28 выбор». Основатель: «такого нигде не
+     должно быть». Слово переводится по префиксу словаря; незнакомое —
+     остаётся как есть, и закон one-alphabet-check его найдёт. */
+  function vocab(prefix, word) {
+    var k = prefix + "." + word;
+    var v = window.sbT ? window.sbT(k) : k;
+    return v === k ? word : v;
+  }
   function localeFor() { var l = lang(); return l === "ru" ? "ru-RU" : (l === "ee" ? "et-EE" : "en-GB"); }
   function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
   function pad(s, n) { s = String(s == null ? "" : s); while (s.length < n) s += " "; return s; }
@@ -322,15 +333,16 @@
             });
             if (!hits.length) { write("nothing on the floor matches '" + want + "'."); return; }
             hits.slice(0, 12).forEach(function (pl) {
-              write(pad(pl.kind, 11) + pl.id);
+              write(pad(vocab("kind", pl.kind), 13) + pl.id);
               write("            " + pl.what, "term-dim");
             });
             if (hits.length > 12) write("…and " + (hits.length - 12) + " more.", "term-dim");
             return;
           }
           write(fl.length + " places on this disk: " +
-            Object.keys(byKind).map(function (k) { return byKind[k] + " " + k; }).join(" · "));
-          write("'вещи' is what you made; 'выбор' is what you chose; 'служебное' is what the system remembers about itself.", "term-dim");
+            Object.keys(byKind).map(function (k) { return byKind[k] + " " + vocab("kind", k); }).join(" · "));
+          write("'" + vocab("kind", "вещи") + "' is what you made; '" + vocab("kind", "выбор") + "' is what you chose; '" +
+                vocab("kind", "служебное") + "' is what the system remembers about itself.", "term-dim");
           /* НЕ ОБЕЩАТЬ ТОГО, ЧЕГО САМ НЕ ПРОВЕРЯЛ (D-228). Терминал смотрит
              на замок ПРЯМО СЕЙЧАС и говорит о том, что видит; а про то, что
              прячется всё без исключения, он ссылается на закон, который это
@@ -359,7 +371,7 @@
             var jr = R.denials();
             if (!jr.length) { write("no room has been refused this session."); return; }
             jr.slice(-14).forEach(function (r) {
-              write(pad(r.room, 11) + r.key + "  " + r.how);
+              write(pad(r.room, 11) + r.key + "  " + vocab("how", r.how));
             });
             if (jr.length > 14) write("…" + (jr.length - 14) + " earlier refusals this session.", "term-dim");
             write("the journal lives for this visit only: it exists so a refusal is visible now, not so refusals pile up on the disk as one more place with no owner.", "term-dim");
@@ -375,7 +387,7 @@
               return;
             }
             found.slice(0, 14).forEach(function (k) {
-              write(pad(mp[k].owner, 11) + k);
+              write(pad(vocab("who", mp[k].owner), 11) + k);
               if (mp[k].borrowers.length) write("            read by: " + mp[k].borrowers.join(", "), "term-dim");
             });
             if (found.length > 14) write("…and " + (found.length - 14) + " more.", "term-dim");
@@ -385,12 +397,12 @@
           names.forEach(function (k) { byRoom[mp[k].owner] = (byRoom[mp[k].owner] || 0) + 1; });
           var lent = names.filter(function (k) { return mp[k].borrowers.length; });
           write(names.length + " places have a declared owner: " +
-            Object.keys(byRoom).sort().map(function (r) { return r + " " + byRoom[r]; }).join(" · "));
+            Object.keys(byRoom).sort().map(function (r) { return vocab("who", r) + " " + byRoom[r]; }).join(" · "));
           write("everything not declared belongs to the core. no list of the core's own places is kept anywhere — a second list would drift from the first.", "term-dim");
           if (lent.length) {
             write(lent.length + " of them are read by another room, declared:", "term-dim");
             lent.slice(0, 6).forEach(function (k) {
-              write("  " + k + "  " + mp[k].owner + " → " + mp[k].borrowers.join(", "), "term-dim");
+              write("  " + k + "  " + vocab("who", mp[k].owner) + " → " + mp[k].borrowers.join(", "), "term-dim");
             });
           } else {
             write("no room reads another room's place.", "term-dim");
@@ -426,9 +438,9 @@
             if (!hit.length) { write("no room matches '" + want + "'."); return; }
             hit.slice(0, 6).forEach(function (id) {
               var r = all[id];
-              write(pad(r.state, 18) + r.title + (r.onDesk ? "" : "  (off the desk)"));
+              write(pad(vocab("state", r.state), 18) + r.title + (r.onDesk ? "" : "  (off the desk)"));
               (r.needs || []).forEach(function (n) {
-                write("            " + pad(n.need, 14) + n.verdict + " — " + n.why, "term-dim");
+                write("            " + pad(vocab("need", n.need), 14) + vocab("verdict", n.verdict) + " — " + n.why, "term-dim");
               });
               if (r.why) write("            " + r.why, "term-dim");
             });
@@ -443,7 +455,7 @@
             write("waiting on something:", "term-dim");
             waiting.slice(0, 8).forEach(function (id) {
               var miss = (all[id].needs || []).filter(function (n) { return n.verdict === "нет"; })
-                .map(function (n) { return n.need; }).join(", ");
+                .map(function (n) { return vocab("need", n.need); }).join(", ");
               write("  " + pad(all[id].title, 16) + "needs " + miss, "term-dim");
             });
           }
@@ -451,7 +463,7 @@
             write("cannot be checked from in here:", "term-dim");
             unsure.slice(0, 8).forEach(function (id) {
               var q = (all[id].needs || []).filter(function (n) { return n.verdict === "нечем проверить"; });
-              write("  " + pad(all[id].title, 16) + (q[0] ? q[0].need + " — " + q[0].why : ""), "term-dim");
+              write("  " + pad(all[id].title, 16) + (q[0] ? vocab("need", q[0].need) + " — " + q[0].why : ""), "term-dim");
             });
           }
           write("READ THIS BEFORE YOU RELY ON IT: a network answer means the cable is plugged in, not that whoever you need answers. a named postman means the address exists and there is only one of it, not that a letter arrives. a live person on the other end is measured by nothing here at all — silent and absent look the same from inside.", "term-dim");

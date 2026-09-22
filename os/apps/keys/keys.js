@@ -276,9 +276,13 @@
            в 7776 слов. Делим на тысячу таких машин, работающих разом. */
         var tries = Math.pow(7776, 6);
         var years = (tries * (ms / 1000)) / 1000 / (365.25 * 24 * 3600);
-        var human = years >= 1e9 ? (years / 1e9).toFixed(0) + " млрд лет"
-                  : years >= 1e6 ? (years / 1e6).toFixed(0) + " млн лет"
-                  : years >= 1 ? Math.round(years) + " лет" : "меньше года";
+        /* СРОК ИДЁТ НА ЭКРАН ЧЕРЕЗ СЛОВАРЬ (D-253). Здесь стояло « млрд лет»
+           буквой — и основатель увидел на английском экране «89858 млрд лет»
+           посреди английской фразы. Число — общее, слово — языка. */
+        var T = window.sbT || function (k, v) { return String(k).replace("{n}", v && v.n); };
+        var human = years >= 1e9 ? T("years.b", { n: (years / 1e9).toFixed(0) })
+                  : years >= 1e6 ? T("years.m", { n: (years / 1e6).toFixed(0) })
+                  : years >= 1 ? T("years.y", { n: Math.round(years) }) : T("years.lt1");
         line.textContent = String(t.costBody).replace("{ms}", ms).replace("{years}", human);
       }, function () { measure.disabled = false; });
     });

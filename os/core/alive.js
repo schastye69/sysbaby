@@ -76,6 +76,11 @@
 
   function apps() { return (window.SysBaby && window.SysBaby.apps) || {}; }
   function everyRoom() { return Object.keys(apps()); }
+  /* ОБЪЯСНЕНИЕ ПРИБОРА — НА ЯЗЫКЕ ЧЕЛОВЕКА (D-253). Приборы объясняли себя
+     по-русски, и терминал печатал это в английский ответ. Слово идёт через
+     словарь; нет словаря — остаётся ключ, и закон one-alphabet-check это
+     увидит как незнакомое. */
+  function say(key, vars) { return window.sbT ? window.sbT(key, vars) : key; }
   function list(def, field) {
     var v = def && def[field];
     return Array.isArray(v) ? v : [];
@@ -125,10 +130,10 @@
   probes[DISK] = function (roomId) {
     var place = ownPlace(roomId);
     if (!place) {
-      return { verdict: NO, why: "у этой комнаты нет своего места на диске: писать некуда" };
+      return { verdict: NO, why: say("alive.disk.noPlace") };
     }
     if (!window.sbRights || typeof window.sbRights.box !== "function") {
-      return { verdict: DUNNO, why: "ядро прав не поднялось, и спросить ящик комнаты не у кого" };
+      return { verdict: DUNNO, why: say("alive.disk.noRights") };
     }
     var box = window.sbRights.box(roomId);
     var had = box.get(place);
@@ -142,11 +147,9 @@
       if (empty) { box.remove(place); box.flush(); }
     } catch (e) { wrote = false; }
     if (wrote && read === mark) {
-      return { verdict: YES, why: empty
-        ? "место пустое: проверено пробной записью, и она снята"
-        : "записано и прочитано обратно прямо сейчас, и лежит там то же, что лежало" };
+      return { verdict: YES, why: say(empty ? "alive.disk.empty" : "alive.disk.same") };
     }
-    return { verdict: NO, why: "запись не вернулась: хранилище закрыто или права не дают" };
+    return { verdict: NO, why: say("alive.disk.refused") };
   };
 
   /* СЕТЬ. Браузер говорит ровно одно: воткнут ли провод. Он НЕ говорит, что
@@ -155,10 +158,10 @@
   probes[NET] = function () {
     var on = true;
     try { on = (typeof navigator.onLine === "boolean") ? navigator.onLine : true; }
-    catch (e) { return { verdict: DUNNO, why: "браузер не сказал о сети ничего" }; }
+    catch (e) { return { verdict: DUNNO, why: say("alive.net.unknown") }; }
     return on
-      ? { verdict: YES, why: "провод воткнут. отвечает ли тот, кто нужен, отсюда не видно" }
-      : { verdict: NO, why: "браузер говорит, что сети нет" };
+      ? { verdict: YES, why: say("alive.net.on") }
+      : { verdict: NO, why: say("alive.net.off") };
   };
 
   /* ПОЧТАЛЬОН. Спрашивается у ОПИСИ ВЫХОДОВ (D-221) — единственного места,
@@ -167,14 +170,13 @@
      отправлять без человека система не станет. */
   probes[POST] = function () {
     var doors = (window.SB_OUTWARD && window.SB_OUTWARD.doors) || null;
-    if (!doors) return { verdict: DUNNO, why: "опись выходов не загрузилась, и спросить адрес не у кого" };
+    if (!doors) return { verdict: DUNNO, why: say("alive.post.noList") };
     var hosts = [];
     doors.forEach(function (d) {
       if (d && d.side === "third" && d.host && hosts.indexOf(d.host) === -1) hosts.push(d.host);
     });
-    if (!hosts.length) return { verdict: NO, why: "в описи выходов не названо ни одного чужого хозяина" };
-    return { verdict: YES, why: "адрес назван в описи выходов: " + hosts.join(", ") +
-      ". примет ли он письмо сегодня — отсюда не видно" };
+    if (!hosts.length) return { verdict: NO, why: say("alive.post.none") };
+    return { verdict: YES, why: say("alive.post.named", { hosts: hosts.join(", ") }) };
   };
 
   /* ПАПКА НА ДИСКЕ ЧЕЛОВЕКА. Умение браузера, а не наше: спрашивается у него. */
@@ -182,8 +184,8 @@
     var can = false;
     try { can = typeof window.showDirectoryPicker === "function"; } catch (e) { can = false; }
     return can
-      ? { verdict: YES, why: "браузер умеет открыть папку по вашему выбору" }
-      : { verdict: NO, why: "этот браузер не умеет открывать папку: работа будет только с тем, что перетащили" };
+      ? { verdict: YES, why: say("alive.folder.yes") }
+      : { verdict: NO, why: say("alive.folder.no") };
   };
 
   /* СВОЙ СЕРВЕР — тот, по чьему адресу к вам ПРИХОДИТ. Почтальон умеет
@@ -197,20 +199,19 @@
      виноват был не механизм, а плохо названная нужда. */
   probes[SERVER] = function () {
     var doors = (window.SB_OUTWARD && window.SB_OUTWARD.doors) || null;
-    if (!doors) return { verdict: DUNNO, why: "опись выходов не загрузилась, и спросить не у кого" };
+    if (!doors) return { verdict: DUNNO, why: say("alive.server.noList") };
     var back = doors.filter(function (d) { return d && d.receives === true; });
     if (!back.length) {
-      return { verdict: NO, why: "ни одна дверь в описи выходов не объявляет обратной дороги: адреса, по которому к вам приходило бы, сегодня нет" };
+      return { verdict: NO, why: say("alive.server.none") };
     }
-    return { verdict: YES, why: "обратная дорога объявлена в описи выходов: " +
-      back.map(function (d) { return d.host || d.id; }).join(", ") };
+    return { verdict: YES, why: say("alive.server.named", { hosts: back.map(function (d) { return d.host || d.id; }).join(", ") }) };
   };
 
   /* ЧУЖОЕ СОГЛАСИЕ. Разрешает ли чужой сайт показывать себя в рамке —
      узнаётся только попыткой его открыть. Система нарочно не ходит наружу,
      чтобы поговорить о себе (D-221), и гадать не станет. */
   probes[CONSENT] = function () {
-    return { verdict: DUNNO, why: "согласие чужого сайта показываться в рамке узнаётся только попыткой открыть его, а система не ходит наружу ради разговора о себе" };
+    return { verdict: DUNNO, why: say("alive.consent") };
   };
 
   /* СОБЕСЕДНИК. ЗДЕСЬ ПРИБОРА НЕТ И БЫТЬ НЕ МОЖЕТ, и это не пробел, а
@@ -218,16 +219,16 @@
      человека от отсутствующего. Комната, которой нужен живой собеседник,
      остаётся непроверяемой — и говорит об этом словами. */
   probes[PEER] = function () {
-    return { verdict: DUNNO, why: "живого человека на том конце машина не измеряет ничем: молчащий и отсутствующий отсюда неразличимы" };
+    return { verdict: DUNNO, why: say("alive.peer") };
   };
 
   function ask(need, roomId) {
     var p = probes[need];
     if (typeof p !== "function") {
-      return { need: need, verdict: DUNNO, why: "такой нужде в системе не заведено прибора, и догадываться она не станет" };
+      return { need: need, verdict: DUNNO, why: say("alive.noProbe") };
     }
     var r;
-    try { r = p(roomId); } catch (e) { r = { verdict: DUNNO, why: "прибор не отработал: " + (e && e.message) }; }
+    try { r = p(roomId); } catch (e) { r = { verdict: DUNNO, why: say("alive.probeFailed", { err: e && e.message }) }; }
     return { need: need, verdict: r.verdict, why: r.why };
   }
 
@@ -261,7 +262,9 @@
         title: window.sbAppTitle ? window.sbAppTitle(id) : id,
         state: state,
         needs: needs,
-        why: def.why || "",
+        /* Причина комнаты — ключ словаря (why.<комната>) либо, по-старому,
+           готовая фраза. Ключ переводится; фраза идёт как есть. */
+        why: (typeof def.why === "string" && def.why.indexOf("why.") === 0) ? say(def.why) : (def.why || ""),
         onDesk: !!(window.sbLaunchableApps && window.sbLaunchableApps().indexOf(id) !== -1)
       };
     },

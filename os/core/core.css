@@ -46,6 +46,14 @@
   --glass-tint: rgba(var(--accent-rgb), .07);
   --glass-2: rgba(242, 242, 240, .10);
   --glass-blur: 26px;
+  /* ── ГОЛОС СИСТЕМЫ — ПОВЕРХНОСТЬ, А НЕ СТЕКЛО (D-252) ─────────────────
+     Извещение говорит от имени системы и обязано быть слышно над чем угодно.
+     Замер: сквозь пустой участок извещения над белой плитой доходило 255 из
+     255 — извещение было прозрачным. Это НЕ окно: слово основателя о
+     прозрачности (D-147) было про «фон окон», и оно не тронуто. Число:
+     .94 плёнки цвета поля даёт над белым ≈ 24 — читается любое чернило.
+     Охраняется tools/toast-surface-check.mjs. */
+  --voice: rgba(16, 16, 18, .94);
   /* The seam. One colour, one meaning: here you can act, or here something is
      alive. The Control Center still lets a visitor pick another accent — that
      is their desktop, not our brand — this is only the default. */
@@ -285,6 +293,7 @@ html[data-theme="light"] {
      мягкости краёв, но работу по читаемости делает не оно. */
   --glass: rgba(255, 255, 255, .93);
   --glass-2: rgba(255, 255, 255, .975);
+  --voice: rgba(255, 255, 255, .96);
   --shadow: 0 20px 50px rgba(20, 24, 40, .18), 0 3px 10px rgba(20, 24, 40, .12);
   --shadow-soft: 0 10px 26px rgba(20, 24, 40, .12);
 }
@@ -1760,6 +1769,34 @@ html[data-theme="light"] .window::before { background: rgba(12, 14, 20, .08); }
   background: var(--bg-elev, #14100f);
   will-change: transform, opacity;
 }
+/* ── ОКНО ПОЗАДИ ПРИГЛУШАЕТСЯ · D-251 ─────────────────────────────────────
+   Совет снял экран и увидел: поверх витрины открыто Хранилище, и сквозь его
+   стекло — тонкое по слову основателя, D-147, — просвечивает белая кнопка
+   витрины. Замер: сквозь пустой участок верхнего окна над белой плитой
+   доходит 254 из 255. Стекло НЕ уплотняется — это отменило бы слово
+   основателя. Приглушается то, что ПОЗАДИ: окно, которое не сверху,
+   накрывается плёнкой цвета поля. Так устроены и другие столы — неактивное
+   окно тише активного, — и это помогает глазу дважды: читать верхнее и
+   видеть, какое из окон сейчас слушает.
+   Плёнка лежит НАД содержимым и под рамкой: заголовок остаётся различим,
+   чтобы окно можно было найти и поднять. Число плёнки не вкус: при .72
+   белое становится ≈72 — порог, ниже которого вторые чернила верхнего окна
+   читаются с отношением 3, первые — 8.
+   Охраняется tools/window-behind-check.mjs. */
+.window .window-body { position: relative; }
+.window .window-body::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: var(--z-veil);
+  background: rgba(10, 10, 11, 0);
+  transition: background var(--t-touch) ease;
+}
+.window:not(.focused) .window-body::after { background: rgba(10, 10, 11, .78); }
+/* Заголовок неактивного окна лишь чуть тише — его читают, чтобы найти окно. */
+.window:not(.focused) .titlebar { opacity: .72; }
+/* Пока окно летит, плёнка не участвует: полёт и так без размытия (см. выше). */
+.window.opening .window-body::after, .window.traveling .window-body::after { display: none; }
+/* В светлой теме плёнка светлая: приглушить — значит приблизить к полю, а
+   поле там белое. Тёмная плёнка на белом окне читалась бы как поломка. */
+html[data-theme="light"] .window:not(.focused) .window-body::after { background: rgba(255, 255, 255, .78); }
 .window.focused { border-color: rgba(var(--accent-rgb), .45); box-shadow: 0 0 0 1px var(--accent-soft), var(--shadow); }
 .window.focused::before { background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .5), transparent); }
 .window.minimized { display: none; }
@@ -1915,7 +1952,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
   background:
     radial-gradient(160% 180% at 12% -40%,
       rgba(var(--wp-light-rgb, 91, 124, 255), .13), transparent 64%),
-    var(--glass);
+    var(--voice);
   border: 1px solid rgba(var(--wp-light-rgb, 91, 124, 255), .30);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
@@ -2229,7 +2266,7 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
   background:
     radial-gradient(160% 180% at 12% -40%,
       rgba(var(--wp-light-rgb, 91, 124, 255), .13), transparent 64%),
-    var(--glass);
+    var(--voice);
   border: 1px solid rgba(var(--wp-light-rgb, 91, 124, 255), .30);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
@@ -2404,6 +2441,12 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
   background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
 }
 .lock-field input:focus { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
+.lock-idle { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lock-idle select {
+  padding: 8px 10px; font-size: var(--f-ui); border-radius: var(--r-ctrl);
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
+}
+.lock-idle select:focus { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
 .lock-acts { display: flex; flex-wrap: wrap; gap: 8px; }
 .lock-acts .btn { flex: 1 1 140px; }
 .lock-warn {
