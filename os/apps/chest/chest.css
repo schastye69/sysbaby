@@ -116,3 +116,41 @@ html[data-sigil="on"] .sticky-note::after {
 .sb-saver-date { font-size: var(--f-read); color: var(--ink-2); }
 .sb-saver-name { font-size: var(--f-meta); color: var(--ink-3); letter-spacing: .08em; text-transform: uppercase; }
 html[data-motion="reduced"] #sbSaver { transition: none; }
+
+/* ── один фокус, чистый лист, в этот день, мой расклад ─────────────────── */
+.ch-focus, .ch-sheet, .ch-day, .ch-layout { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-card); }
+.ch-focus-k, .ch-day-k, .ch-layout-k { margin: 0; font-size: var(--f-meta); color: var(--ink-3); }
+.ch-focus-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ch-sheet { flex-direction: row; align-items: center; flex-wrap: wrap; }
+.ch-sheet-q { font-size: var(--f-read); color: var(--ink-2); font-style: italic; }
+.ch-day ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.ch-day-item { display: grid; grid-template-columns: 110px 1fr; gap: 10px; font-size: var(--f-read); }
+.ch-day-ago { color: var(--ink-3); font-size: var(--f-meta); }
+.ch-day-none, .ch-layout-state { margin: 0; font-size: var(--f-read); color: var(--ink-2); }
+
+/* ── чистый лист на столе: шире, спокойнее, с вопросом вместо приглашения ── */
+.sticky-note.sheet { min-width: 260px; }
+.sticky-note.sheet .note-text { font-size: var(--f-lead); line-height: 1.5; }
+.sticky-note.sheet .note-text::placeholder { font-style: italic; opacity: .7; }
+
+/* ── день, который помнит · ключ сохранён · порядок ─────────────────────── */
+.ch-remember { margin: 6px 0 0; font-size: var(--f-read); color: var(--ink); }
+.ch-key, .ch-tidy { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-card); }
+.ch-key-k, .ch-tidy-k { margin: 0; font-size: var(--f-meta); color: var(--ink-3); }
+.ch-key-state, .ch-key-last { margin: 0; font-size: var(--f-read); color: var(--ink-2); }
+.ch-key-said, .ch-tidy-said { font-size: var(--f-ui); color: var(--ink-2); }
+
+/* ── снимок · фрагмент · световой след · гость ─────────────────────────── */
+.ch-shot, .ch-fragment { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-card); }
+.ch-shot-k, .ch-fragment-k { margin: 0; font-size: var(--f-meta); color: var(--ink-3); }
+.ch-shot-no { margin: 0; font-size: var(--f-read); color: var(--ink-2); }
+.ch-shot-said { font-size: var(--f-ui); color: var(--ink-2); }
+.ch-fragment-art svg { display: block; }
+#sbDayTrace { position: fixed; left: 0; right: 0; top: 0; height: 3px; pointer-events: none; z-index: var(--z-badge);
+  background: linear-gradient(90deg, transparent 0%, hsl(var(--trace-hue, 225) var(--trace-sat, 30%) 62%) 30%, hsl(var(--trace-hue, 225) var(--trace-sat, 30%) 62%) 70%, transparent 100%);
+  opacity: .85; transition: background var(--t-rise) ease; }
+#sbGuest { position: fixed; right: 18px; bottom: calc(var(--dock-h, 90px) + 10px); width: 64px; height: 48px; padding: 0; border: 0; background: transparent; cursor: pointer; z-index: var(--z-float); color: var(--ink); opacity: .55; transition: opacity var(--t-move) ease, transform var(--t-scene) ease; }
+#sbGuest svg { width: 100%; height: 100%; fill: currentColor; }
+#sbGuest.leaving { opacity: 0; transform: translateX(40px); }
+#sbGuest:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; border-radius: var(--r-ctrl); }
+html[data-motion="reduced"] #sbGuest, html[data-motion="reduced"] #sbDayTrace { transition: none; }

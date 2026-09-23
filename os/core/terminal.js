@@ -104,7 +104,17 @@
      знает. Подаренная команда дополняется Tab и стоит в help наравне с
      родными — иначе это дверь, о которой не сказано. */
   window.sbTerminalCommands = window.sbTerminalCommands || {};
-  function gifted() { return Object.keys(window.sbTerminalCommands || {}).sort(); }
+  function gifted() { return Object.keys(window.sbTerminalCommands || {}).filter(function (c) { return !!(window.sbTerminalCommands[c] || {}).help; }).sort(); }
+  /* Знак приглашения: свой — если подарен и выбран (секретная настройка,
+     D-261), иначе ❯. Спрашивается у Сундука через ядро. */
+  function glyph() {
+    var g = "";
+    try { g = window.sbTerminalPromptGlyph ? String(window.sbTerminalPromptGlyph() || "") : ""; } catch (e) { g = ""; }
+    return g || "❯";
+  }
+  window.sbTerminalRepaint = function () {
+    Array.prototype.forEach.call(document.querySelectorAll(".term-prompt"), function (el) { el.textContent = glyph(); });
+  };
   function allCommands() { return COMMANDS.concat(gifted().filter(function (c) { return COMMANDS.indexOf(c) === -1; })); }
 
   function lang() { return window.sbLang ? window.sbLang() : "en"; }
@@ -147,7 +157,7 @@
         return '<button class="term-chip" type="button" data-cmd="' + c + '">' + c + "</button>";
       }).join("") + "</div>" +
       '<div class="term-out" role="log" aria-live="polite"></div>' +
-      '<form class="term-line"><span class="term-prompt">❯</span>' +
+      '<form class="term-line"><span class="term-prompt">' + glyph() + '</span>' +
       '<input class="term-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal input" /></form>';
 
     var out = rootEl.querySelector(".term-out");
@@ -192,12 +202,21 @@
     function run(raw) {
       var line = String(raw || "").trim();
       if (!line) return;
-      write("❯ " + line, "term-echo");
+      write(glyph() + " " + line, "term-echo");
       history.unshift(line);
       histIdx = -1;
       var parts = line.split(/\s+/);
       var cmd = parts[0].toLowerCase();
       var rest = line.slice(parts[0].length).trim();
+      /* СВОИ СЛОВА (D-261): подаренное сокращение раскрывается в строку, как
+         будто человек набрал её сам. Реестр лежит в ядре, наполняет Сундук. */
+      var al = window.sbTerminalAliases && window.sbTerminalAliases[cmd];
+      if (al && typeof al === "string") {
+        line = (al + " " + rest).trim();
+        parts = line.split(/\s+/);
+        cmd = parts[0].toLowerCase();
+        rest = line.slice(parts[0].length).trim();
+      }
 
       switch (cmd) {
         case "help":

@@ -70,9 +70,9 @@
   var UI = {
     en: {
       title: "Chest", label: "Chest",
-      lead: "Once a day the system gives you one thing. Thirty chests, in an order drawn at random for you alone — and the next one does not open until this one has.",
+      lead: "Once a day the system gives you one thing. {total} chests, in an order drawn at random for you alone — and the next one does not open until this one has.",
       open: "Open the chest", ready: "A chest is waiting.", waiting: "The next chest opens tomorrow — in {t}.",
-      done: "All thirty are open. There are no more chests; everything they held is yours to keep.",
+      done: "All {total} are open. There are no more chests; everything they held is yours to keep.",
       progress: "{n} of {total} opened", got: "You received", where: "Where it lives",
       shelf: "What the chests have given you", shelfEmpty: "Nothing yet — the first chest is waiting above.",
       day: "day {n}", chooseTitle: "Choose your title", titled: "Your title: {t}",
@@ -88,6 +88,20 @@
       countLead: "A date and a word — and a note on the desk starts counting the days by itself.",
       countDate: "Date", countLabel: "What for", countAdd: "Put it on the desk", countDone: "It is on the desk.",
       count: { until: "{n} days until: {label}", today: "today: {label}", since: "{n} days since: {label}" },
+      focusLead: "One thing, quietly. Other windows step aside, notices wait.", focusMin: "{n} min", focusStop: "Stop", focusOn: "Focus: {t} left",
+      focusDone: "Time is up", focusDoneLine: "{n} minutes on one thing. The desk is yours again.",
+      sheetBtn: "A clean sheet", sheetQ: "What matters now?",
+      dayLead: "On this day", dayNone: "Nothing on this day in earlier months or years — and the chest invents nothing. Your notes begin on {first}.", dayNoneYet: "No notes yet — the chest invents nothing.",
+      monthAgo: "a month ago", monthsAgo: "{n} months ago", yearAgo: "a year ago", yearsAgo: "{n} years ago",
+      layoutLead: "The windows as they stand — which are open and where.", layoutSave: "Save this arrangement", layoutBack: "Bring it back", layoutSaved: "Saved: {n} windows, {when}.", layoutNone: "Nothing saved yet.",
+      rememberLine: "Day {n} with your system · {k} chests opened. Missed days took nothing from you: the chest waited.",
+      keyLead: "Your lock and your envelopes, as they are right now.", keyLocked: "lock set, session open", keyShut: "lock set, session closed", keyNone: "no lock — the copy would be plain text",
+      keyEnvelopes: "{n} envelopes sealed on this disk", keyLast: "last copy: {when}", keyNever: "no copy saved yet", keySave: "Save a sealed copy", keySaved: "Saved: {name}",
+      tidyLead: "Icons back to the grid, windows in a cascade — and one tap to put it all back.", tidyDo: "Tidy up", tidyUndo: "Put it back", tidyDone: "Moved {i} icons and {w} windows.", tidyNothing: "Nothing to tidy.",
+      secretHint: "The terminal knows one more word than its help admits.",
+      shotLead: "A real picture of the desk, saved to your device.", shotDo: "Take a snapshot", shotDone: "Saved: {name}", shotNo: "This browser cannot capture the screen — nothing was pretended.", shotRefused: "The screen was not shared — nothing was saved.",
+      fragmentLead: "Fragment of the day — from you and {date}.",
+      morningTitle: "Good morning, {name}", morningLine: "Day {n} with your system. The night was spent in Ember; your room returns in {m} minutes.",
       line: {
         mood: "The room «{room}» is now among your rooms.",
         own: "Your hue is {hue}° — derived from «{name}». No one else has this exact room.",
@@ -96,6 +110,20 @@
         countdown: "Set a date below — the note appears on the desk and counts on its own.",
         saver: "Leave the desk still for {n} minutes and see.",
         room: "«{room}» now stands in your dock.",
+        focus: "Pick the minutes below, or type «focus 15» in the terminal.",
+        sheet: "Press below — a clean note appears on the desk with one question.",
+        onthisday: "From now on this room shows what you wrote on this day before.",
+        layout: "Save below when the windows stand the way you like.",
+        morning: "The next morning after a night in Ember will greet you by name.",
+        remember: "From now on the chest greets you with your day.",
+        keysafe: "Below — the state of your lock, and one tap for a sealed copy.",
+        tidy: "Below — one tap to tidy, one to put it back.",
+        secret: "No hint beyond this: {hint}",
+        alias: "Type «alias k=chronicle» in the terminal, then just «k».",
+        shot: "Below — one tap; the browser will ask which screen.",
+        trace: "Look at the very top edge of the desk. It will change with the hour.",
+        fragment: "Today's fragment is below; tomorrow's will be different.",
+        guest: "Look at the right edge of the desk.",
         serial: "Your system's number: {serial}.",
         stamp: "Your sign now prints in the corner of every note.",
         word: "From now on the system says it with your name: «{w}».",
@@ -109,9 +137,9 @@
     },
     ru: {
       title: "Сундук", label: "Сундук",
-      lead: "Раз в сутки система дарит вам одну вещь. Тридцать сундуков в порядке, выпавшем случайно и только вам, — и следующий не откроется, пока не открыт этот.",
+      lead: "Раз в сутки система дарит вам одну вещь. {total} сундуков в порядке, выпавшем случайно и только вам, — и следующий не откроется, пока не открыт этот.",
       open: "Открыть сундук", ready: "Сундук ждёт.", waiting: "Следующий сундук откроется завтра — через {t}.",
-      done: "Все тридцать открыты. Сундуков больше нет; всё, что в них было, остаётся вашим.",
+      done: "Все {total} открыты. Сундуков больше нет; всё, что в них было, остаётся вашим.",
       progress: "открыто {n} из {total}", got: "Вы получили", where: "Где это живёт",
       shelf: "Что вам дали сундуки", shelfEmpty: "Пока ничего — первый сундук ждёт выше.",
       day: "день {n}", chooseTitle: "Выберите титул", titled: "Ваш титул: {t}",
@@ -127,6 +155,20 @@
       countLead: "Дата и слово — и заметка на столе сама начнёт считать дни.",
       countDate: "Дата", countLabel: "К чему", countAdd: "Поставить на стол", countDone: "Стоит на столе.",
       count: { until: "{n} дн. до: {label}", today: "сегодня: {label}", since: "{n} дн. после: {label}" },
+      focusLead: "Одно дело, тихо. Остальные окна отходят, извещения ждут.", focusMin: "{n} мин", focusStop: "Стоп", focusOn: "Фокус: осталось {t}",
+      focusDone: "Время вышло", focusDoneLine: "{n} минут на одно дело. Стол снова ваш.",
+      sheetBtn: "Чистый лист", sheetQ: "Что сейчас важно?",
+      dayLead: "В этот день", dayNone: "В этот день в прошлые месяцы и годы — ничего, и сундук ничего не выдумывает. Ваши записи начинаются {first}.", dayNoneYet: "Записей ещё нет — сундук ничего не выдумывает.",
+      monthAgo: "месяц назад", monthsAgo: "{n} мес. назад", yearAgo: "год назад", yearsAgo: "{n} г. назад",
+      layoutLead: "Окна как они стоят — какие открыты и где.", layoutSave: "Сохранить расклад", layoutBack: "Вернуть", layoutSaved: "Сохранено: окон {n}, {when}.", layoutNone: "Пока ничего не сохранено.",
+      rememberLine: "День {n} с вашей системой · открыто {k}. Пропущенные дни ничего не отняли: сундук ждал.",
+      keyLead: "Ваш замок и ваши конверты — как они есть сейчас.", keyLocked: "замок стоит, сеанс открыт", keyShut: "замок стоит, сеанс закрыт", keyNone: "замка нет — копия будет открытым текстом",
+      keyEnvelopes: "конвертов запечатано на этом диске: {n}", keyLast: "последняя копия: {when}", keyNever: "копия ещё не сохранялась", keySave: "Сохранить запечатанную копию", keySaved: "Сохранено: {name}",
+      tidyLead: "Значки на сетку, окна лесенкой — и одно касание, чтобы вернуть всё как было.", tidyDo: "Прибрать", tidyUndo: "Вернуть как было", tidyDone: "Переставлено: значков {i}, окон {w}.", tidyNothing: "Прибирать нечего.",
+      secretHint: "Терминал знает на одно слово больше, чем признаёт его help.",
+      shotLead: "Настоящая картинка стола, сохранённая на устройство.", shotDo: "Сделать снимок", shotDone: "Сохранено: {name}", shotNo: "Этот браузер не умеет снимать экран — ничего не изображалось.", shotRefused: "Экран не был показан — ничего не сохранено.",
+      fragmentLead: "Фрагмент дня — из вас и {date}.",
+      morningTitle: "Доброе утро, {name}", morningLine: "День {n} с вашей системой. Ночь прошла в Углях; ваша комната вернётся через {m} мин.",
       line: {
         mood: "Комната «{room}» теперь среди ваших комнат.",
         own: "Ваш тон — {hue}°, выведен из «{name}». Такой комнаты нет ни у кого другого.",
@@ -135,6 +177,20 @@
         countdown: "Поставьте дату ниже — заметка появится на столе и будет считать сама.",
         saver: "Оставьте стол без движения на {n} минуты — и увидите.",
         room: "«{room}» теперь стоит в вашем доке.",
+        focus: "Выберите минуты ниже или наберите «focus 15» в терминале.",
+        sheet: "Нажмите ниже — на столе появится чистая заметка с одним вопросом.",
+        onthisday: "Отныне эта комната показывает, что вы писали в этот день раньше.",
+        layout: "Сохраните ниже, когда окна стоят так, как вам нравится.",
+        morning: "Следующее утро после ночи в Углях поздоровается с вами по имени.",
+        remember: "Отныне сундук встречает вас вашим днём.",
+        keysafe: "Ниже — состояние замка и одно касание для запечатанной копии.",
+        tidy: "Ниже — одно касание прибрать, одно вернуть.",
+        secret: "Подсказки не будет, кроме этой: {hint}",
+        alias: "Наберите «alias k=chronicle» в терминале, потом просто «k».",
+        shot: "Ниже — одно касание; браузер спросит, какой экран.",
+        trace: "Посмотрите на самую верхнюю кромку стола. Она будет меняться с часом.",
+        fragment: "Сегодняшний фрагмент ниже; завтрашний будет другим.",
+        guest: "Посмотрите на правый край стола.",
         serial: "Номер вашей системы: {serial}.",
         stamp: "Ваш знак теперь стоит в углу каждой заметки.",
         word: "Отныне система говорит это с вашим именем: «{w}».",
@@ -148,9 +204,9 @@
     },
     ee: {
       title: "Laegas", label: "Laegas",
-      lead: "Kord päevas annab süsteem sulle ühe asja. Kolmkümmend laegast, järjekorras, mis on loositud ainult sulle — ja järgmine ei avane enne, kui see on avatud.",
+      lead: "Kord päevas annab süsteem sulle ühe asja. {total} laegast, järjekorras, mis on loositud ainult sulle — ja järgmine ei avane enne, kui see on avatud.",
       open: "Ava laegas", ready: "Laegas ootab.", waiting: "Järgmine laegas avaneb homme — {t} pärast.",
-      done: "Kõik kolmkümmend on avatud. Rohkem laekaid pole; kõik, mis neis oli, jääb sulle.",
+      done: "Kõik {total} on avatud. Rohkem laekaid pole; kõik, mis neis oli, jääb sulle.",
       progress: "avatud {n} / {total}", got: "Sa said", where: "Kus see elab",
       shelf: "Mida laekad on sulle andnud", shelfEmpty: "Veel mitte midagi — esimene laegas ootab ülal.",
       day: "päev {n}", chooseTitle: "Vali oma tiitel", titled: "Sinu tiitel: {t}",
@@ -166,6 +222,20 @@
       countLead: "Kuupäev ja sõna — ja märge laual hakkab ise päevi lugema.",
       countDate: "Kuupäev", countLabel: "Milleks", countAdd: "Pane lauale", countDone: "On laual.",
       count: { until: "{n} päeva kuni: {label}", today: "täna: {label}", since: "{n} päeva pärast: {label}" },
+      focusLead: "Üks asi, vaikselt. Teised aknad astuvad kõrvale, teated ootavad.", focusMin: "{n} min", focusStop: "Peata", focusOn: "Fookus: jäänud {t}",
+      focusDone: "Aeg on läbi", focusDoneLine: "{n} minutit ühele asjale. Laud on jälle sinu.",
+      sheetBtn: "Puhas leht", sheetQ: "Mis on praegu oluline?",
+      dayLead: "Sel päeval", dayNone: "Sel päeval varasematel kuudel ja aastatel — mitte midagi, ja laegas ei mõtle midagi välja. Sinu märkmed algavad {first}.", dayNoneYet: "Märkmeid veel pole — laegas ei mõtle midagi välja.",
+      monthAgo: "kuu aega tagasi", monthsAgo: "{n} kuud tagasi", yearAgo: "aasta tagasi", yearsAgo: "{n} aastat tagasi",
+      layoutLead: "Aknad nii, nagu need seisavad — millised on lahti ja kus.", layoutSave: "Salvesta paigutus", layoutBack: "Too tagasi", layoutSaved: "Salvestatud: {n} akent, {when}.", layoutNone: "Veel midagi pole salvestatud.",
+      rememberLine: "Päev {n} sinu süsteemiga · avatud {k}. Vahele jäänud päevad ei võtnud midagi: laegas ootas.",
+      keyLead: "Sinu lukk ja sinu ümbrikud — nii nagu need praegu on.", keyLocked: "lukk peal, seanss avatud", keyShut: "lukk peal, seanss suletud", keyNone: "lukku pole — koopia oleks lihttekst",
+      keyEnvelopes: "sellel kettal pitseeritud ümbrikke: {n}", keyLast: "viimane koopia: {when}", keyNever: "koopiat pole veel salvestatud", keySave: "Salvesta pitseeritud koopia", keySaved: "Salvestatud: {name}",
+      tidyLead: "Ikoonid ruudustikku, aknad kaskaadi — ja üks puudutus, et kõik endiseks panna.", tidyDo: "Korrasta", tidyUndo: "Pane endiseks", tidyDone: "Liigutatud: ikoone {i}, aknaid {w}.", tidyNothing: "Pole midagi korrastada.",
+      secretHint: "Terminal teab ühe sõna rohkem, kui tema help tunnistab.",
+      shotLead: "Laua tõeline pilt, salvestatud seadmesse.", shotDo: "Tee hetkepilt", shotDone: "Salvestatud: {name}", shotNo: "See brauser ei oska ekraani pildistada — midagi ei teeseldud.", shotRefused: "Ekraani ei jagatud — midagi ei salvestatud.",
+      fragmentLead: "Päeva fragment — sinust ja {date}.",
+      morningTitle: "Tere hommikust, {name}", morningLine: "Päev {n} sinu süsteemiga. Öö möödus Hõõguses; sinu tuba tuleb tagasi {m} minuti pärast.",
       line: {
         mood: "Tuba «{room}» on nüüd sinu tubade seas.",
         own: "Sinu toon on {hue}° — tuletatud nimest «{name}». Sellist tuba pole kellelgi teisel.",
@@ -174,6 +244,20 @@
         countdown: "Pane allpool kuupäev — märge ilmub lauale ja loeb ise.",
         saver: "Jäta laud {n} minutiks liikumatuks — ja näed.",
         room: "«{room}» seisab nüüd sinu dokis.",
+        focus: "Vali allpool minutid või kirjuta terminali «focus 15».",
+        sheet: "Vajuta allpool — lauale ilmub puhas märge ühe küsimusega.",
+        onthisday: "Nüüdsest näitab see tuba, mida sa sel päeval varem kirjutasid.",
+        layout: "Salvesta allpool, kui aknad seisavad nii, nagu sulle meeldib.",
+        morning: "Järgmine hommik pärast ööd Hõõguses tervitab sind nimepidi.",
+        remember: "Nüüdsest tervitab laegas sind sinu päevaga.",
+        keysafe: "Allpool — luku seis ja üks puudutus pitseeritud koopiaks.",
+        tidy: "Allpool — üks puudutus korrastamiseks, üks tagasipanekuks.",
+        secret: "Vihjet ei tule, peale selle: {hint}",
+        alias: "Kirjuta terminali «alias k=chronicle», siis lihtsalt «k».",
+        shot: "Allpool — üks puudutus; brauser küsib, milline ekraan.",
+        trace: "Vaata laua kõige ülemist serva. See muutub tunniga.",
+        fragment: "Tänane fragment on allpool; homne on teistsugune.",
+        guest: "Vaata laua paremat serva.",
         serial: "Sinu süsteemi number: {serial}.",
         stamp: "Sinu märk on nüüd iga märkme nurgas.",
         word: "Nüüdsest ütleb süsteem seda sinu nimega: «{w}».",
@@ -529,6 +613,35 @@
         n.chests + " chests opened of " + prizes().length + "."
       ]);
     } },
+    focus: { help: "focus [minutes] — quiet minutes on one thing · focus stop", run: function (rest, io) {
+      if (/^stop$/i.test(rest)) { io.write(focusStop(false) ? "focus ended. the desk is yours again." : "no focus running."); return; }
+      var min = focusStart(rest);
+      io.write("focus: " + min + " min. other windows stepped aside; notices wait.");
+    } },
+    sheet: { help: "sheet — a clean note with one question", run: function (rest, io) {
+      io.write(sheetOpen() ? "a clean sheet is on the desk." : "notes are not listening.");
+    } },
+    layout: { help: "layout save · layout back — the windows as they stand", run: function (rest, io) {
+      if (/^save$/i.test(rest)) { io.write("saved: " + layoutSave() + " windows."); return; }
+      if (/^back$/i.test(rest)) { var n = layoutBack(); io.write(n ? "bringing back " + n + " windows." : "nothing saved yet."); return; }
+      io.write("layout save · layout back");
+    } },
+    prompt: { help: "", run: function (rest, io) {
+      var g = String(rest || "").trim().slice(0, 3);
+      state().prompt = g; save(); applyPrompt();
+      io.write(g ? "the prompt is now " + g : "the prompt is itself again.");
+    } },
+    alias: { help: "alias k=chronicle · alias — list · alias -k — forget", run: function (rest, io) {
+      var st = state(); st.aliases = st.aliases || {};
+      var r = String(rest || "").trim();
+      if (!r) { var keys = Object.keys(st.aliases); io.write(keys.length ? keys.map(function (k) { return k + " = " + st.aliases[k]; }).join(" · ") : "no aliases yet. alias k=chronicle"); return; }
+      var m = /^-(\S+)$/.exec(r);
+      if (m) { delete st.aliases[m[1]]; save(); publishAliases(); io.write("forgot " + m[1] + "."); return; }
+      var eq = /^([a-z0-9_-]{1,16})\s*=\s*(.+)$/i.exec(r);
+      if (!eq) { io.write("alias k=chronicle"); return; }
+      st.aliases[eq[1].toLowerCase()] = eq[2].trim().slice(0, 80); save(); publishAliases();
+      io.write(eq[1].toLowerCase() + " now means «" + st.aliases[eq[1].toLowerCase()] + "».");
+    } },
     note: { help: "note <text> — a sticky note on the desk", run: function (rest, io) {
       var text = String(rest || "").trim();
       if (!text) { io.write("note <text>, for example: note buy bread"); return; }
@@ -539,7 +652,7 @@
   };
 
   /* ── ДВИЖОК: ЧТО ДАНО — ТО ЖИВЁТ ─────────────────────────────────────── */
-  var KINDS = ["mood", "command", "word", "title", "serial", "stamp", "echo", "letter", "systemletter", "night", "rename", "countdown", "saver", "room"];
+  var KINDS = ["mood", "command", "word", "title", "serial", "stamp", "echo", "letter", "systemletter", "night", "rename", "countdown", "saver", "room", "focus", "sheet", "onthisday", "layout", "morning", "remember", "keysafe", "tidy", "secret", "shot", "trace", "fragment", "guest"];
   function applyOne(p, fresh) {
     switch (p.kind) {
       case "mood": {
@@ -566,6 +679,37 @@
         return;
       }
       case "night": { nightTick(); return; }
+      case "focus": {
+        window.sbTerminalCommands = window.sbTerminalCommands || {};
+        window.sbTerminalCommands.focus = COMMANDS.focus;
+        return;
+      }
+      case "sheet": {
+        window.sbTerminalCommands = window.sbTerminalCommands || {};
+        window.sbTerminalCommands.sheet = COMMANDS.sheet;
+        return;
+      }
+      case "layout": {
+        window.sbTerminalCommands = window.sbTerminalCommands || {};
+        window.sbTerminalCommands.layout = COMMANDS.layout;
+        return;
+      }
+      case "morning": { return; }
+      case "onthisday": { return; }
+      case "remember": { return; }
+      case "keysafe": { return; }
+      case "shot": { return; }
+      case "fragment": { return; }
+      case "trace": { traceTick(); return; }
+      case "guest": { guestTick(); return; }
+      case "tidy": { return; }
+      case "secret": {
+        /* Команда о себе не объявляет: help о ней молчит нарочно. */
+        window.sbTerminalCommands = window.sbTerminalCommands || {};
+        window.sbTerminalCommands.prompt = COMMANDS.prompt;
+        applyPrompt();
+        return;
+      }
       case "saver": { saverArm(); return; }
       case "rename": { if (typeof window.sbRefreshNames === "function") window.sbRefreshNames(); return; }
       case "countdown": { refreshCountdowns(); return; }
@@ -579,7 +723,16 @@
   }
   function applyAll() {
     state().opened.forEach(function (o) { var p = prize(o.id); if (p) applyOne(p, false); });
+    publishAliases();
     deliverLetter();
+  }
+  function publishAliases() {
+    window.sbTerminalAliases = granted("alias") ? (state().aliases || {}) : {};
+  }
+  function applyPrompt() {
+    var g = granted("secret") ? String(state().prompt || "") : "";
+    window.sbTerminalPromptGlyph = function () { return g; };
+    if (typeof window.sbTerminalRepaint === "function") window.sbTerminalRepaint();
   }
   /* Выключить или включить подаренное. Ничего не теряется: вещь остаётся
      на полке, просто не действует. */
@@ -592,6 +745,8 @@
     applyOne(p, false);
     if (!on && p.kind === "night") nightRestore();
     if (!on && p.kind === "saver") saverHide();
+    if (!on && p.kind === "trace") traceHide();
+    if (!on && p.kind === "guest") guestHide();
     if (p.kind === "rename" && typeof window.sbRefreshNames === "function") window.sbRefreshNames();
     if (window.sbPaintIris) window.sbPaintIris();
     return true;
@@ -609,10 +764,298 @@
   function nightRestore() {
     var st = state();
     if (!st.night || !st.night.dayRoom) return;
-    if (typeof window.sbGetWallpaperMood === "function" && window.sbGetWallpaperMood() === "ember") window.sbSetWallpaperMood(st.night.dayRoom);
+    var inEmber = typeof window.sbGetWallpaperMood === "function" && window.sbGetWallpaperMood() === "ember";
+    /* ПЕРВОЕ УТРО: не рывком. Двадцать минут — Суточная комната (её утренний
+       свет и есть рассвет), приветствие по имени и по дню, потом своя. */
+    if (inEmber && kindGranted("morning") && !st.morning) {
+      var mins = morningMinutes();
+      st.morning = { dayRoom: st.night.dayRoom, until: Date.now() + mins * 60000 };
+      st.night = null; save();
+      window.sbSetWallpaperMood("daylight");
+      if (window.showToast) window.showToast(fmt(T().morningTitle, { name: username() }), fmt(T().morningLine, { n: daysKept(), m: mins }), ICON, true, "", "event");
+      return;
+    }
+    if (inEmber) window.sbSetWallpaperMood(st.night.dayRoom);
     st.night = null; save();
   }
-  setInterval(function () { try { nightTick(); refreshCountdowns(); } catch (e) { /* ignore */ } }, 60000);
+  function morningMinutes() { var p = prize("morning"); return (p && p.params && p.params.minutes) || 20; }
+  function morningTick() {
+    var st = state();
+    if (!st.morning) return;
+    if (Date.now() < st.morning.until) return;
+    if (typeof window.sbGetWallpaperMood === "function" && window.sbGetWallpaperMood() === "daylight" && st.morning.dayRoom) window.sbSetWallpaperMood(st.morning.dayRoom);
+    st.morning = null; save();
+  }
+  setInterval(function () { try { nightTick(); morningTick(); refreshCountdowns(); focusTick(); traceTick(); guestTick(); } catch (e) { /* ignore */ } }, 60000);
+
+  /* ── ОДИН ФОКУС: ТИХИЕ МИНУТЫ НА ОДНО ДЕЛО ───────────────────────────── */
+  var focus = null, focusBadge = null, focusClock = null;
+  function focusStart(min) {
+    min = Math.max(1, Math.min(180, parseInt(min, 10) || 15));
+    focusStop(true);
+    var keep = null;
+    try {
+      var wins = window.openWindows || {};
+      Object.keys(wins).forEach(function (id) {
+        var w = wins[id];
+        if (!w || w.minimized) return;
+        if (w.el && w.el.classList.contains("focused")) { keep = id; return; }
+      });
+      Object.keys(wins).forEach(function (id) {
+        if (id === keep || id === "chest") return;
+        if (wins[id] && !wins[id].minimized && typeof window.sbMinimizeWindow === "function") window.sbMinimizeWindow(id);
+      });
+    } catch (e) { /* окна — не условие фокуса */ }
+    if (typeof window.sbSetControlToggle === "function") window.sbSetControlToggle("dnd", true);
+    focus = { min: min, until: Date.now() + min * 60000 };
+    focusBadge = doc.createElement("div");
+    focusBadge.id = "sbFocusBadge";
+    focusBadge.className = "fixed-badge";
+    doc.body.appendChild(focusBadge);
+    focusPaint();
+    focusClock = setInterval(focusTick, 1000);
+    return min;
+  }
+  function focusPaint() {
+    if (!focus || !focusBadge) return;
+    var left = Math.max(0, focus.until - Date.now()), m = Math.floor(left / 60000), sec = Math.floor((left % 60000) / 1000);
+    focusBadge.textContent = fmt(T().focusOn, { t: m + ":" + (sec < 10 ? "0" : "") + sec });
+  }
+  function focusTick() {
+    if (!focus) return;
+    if (Date.now() >= focus.until) {
+      var min = focus.min;
+      focusStop(false);
+      if (window.showToast) window.showToast(T().focusDone, fmt(T().focusDoneLine, { n: min }), ICON, true, "", "event");
+      return;
+    }
+    focusPaint();
+  }
+  function focusStop(quiet) {
+    if (focusClock) { clearInterval(focusClock); focusClock = null; }
+    if (focusBadge && focusBadge.parentNode) focusBadge.parentNode.removeChild(focusBadge);
+    focusBadge = null;
+    if (focus && typeof window.sbSetControlToggle === "function") window.sbSetControlToggle("dnd", false);
+    var was = !!focus;
+    focus = null;
+    return was && !quiet;
+  }
+
+  /* ── ЧИСТЫЙ ЛИСТ ─────────────────────────────────────────────────────── */
+  function sheetOpen() {
+    if (typeof window.sbAddQuickNote !== "function") return null;
+    var id = window.sbAddQuickNote("", { onDesktop: true, sheet: true, x: 160 + Math.round(Math.random() * 60), y: 120 + Math.round(Math.random() * 40) });
+    setTimeout(function () {
+      var ta = doc.querySelector('.sticky-note[data-id="' + id + '"] .note-text');
+      if (ta) ta.focus();
+    }, 80);
+    return id;
+  }
+
+  /* ── В ЭТОТ ДЕНЬ ─────────────────────────────────────────────────────── */
+  function onThisDay() {
+    var notes = [];
+    try { notes = window.sbNotesStore ? window.sbNotesStore.load() : []; } catch (e) { notes = []; }
+    var today = new Date(), out = [], first = null;
+    notes.forEach(function (n) {
+      if (!n || n.from === "chest" || !n.text) return;
+      var at = new Date(Number(n.updatedAt) || 0);
+      if (!first || at < first) first = at;
+      if (at.getDate() !== today.getDate()) return;
+      var months = (today.getFullYear() - at.getFullYear()) * 12 + (today.getMonth() - at.getMonth());
+      if (months <= 0) return;
+      out.push({ months: months, at: at.getTime(), line: String(n.text).split("\n")[0].slice(0, 160) });
+    });
+    out.sort(function (a, b) { return a.months - b.months; });
+    return { items: out, first: first ? first.getTime() : null };
+  }
+  function agoMonths(m) {
+    var t = T();
+    if (m % 12 === 0) { var y = m / 12; return y === 1 ? t.yearAgo : fmt(t.yearsAgo, { n: y }); }
+    return m === 1 ? t.monthAgo : fmt(t.monthsAgo, { n: m });
+  }
+
+  /* ── ПОРЯДОК: ПРИБРАТЬ И ВЕРНУТЬ ─────────────────────────────────────── */
+  var tidyUndo = null;
+  function tidyDo() {
+    var wins = window.openWindows || {}, ids = Object.keys(wins).filter(function (id) { return wins[id] && !wins[id].minimized && id !== "chest"; });
+    var places = typeof window.sbIconPlaces === "function" ? window.sbIconPlaces() : {};
+    tidyUndo = { icons: places, wins: ids.map(function (id) { var w = wins[id]; return { id: id, left: w.x, top: w.y, w: w.w, h: w.h }; }) };
+    var moved = typeof window.sbTidyDesk === "function" ? window.sbTidyDesk() : 0;
+    var bar = 60;
+    try { bar = Math.round(doc.getElementById("topbar").getBoundingClientRect().height) || 60; } catch (e) { bar = 60; }
+    ids.forEach(function (id, i) {
+      if (typeof window.sbPlaceWindow === "function") window.sbPlaceWindow(id, { left: 40 + i * 32, top: bar + 24 + i * 32, w: wins[id].w, h: wins[id].h });
+    });
+    return { icons: moved, wins: ids.length };
+  }
+  function tidyBack() {
+    if (!tidyUndo) return false;
+    if (typeof window.sbRestoreIconPlaces === "function") window.sbRestoreIconPlaces(tidyUndo.icons);
+    tidyUndo.wins.forEach(function (r) {
+      if (typeof window.sbPlaceWindow === "function") window.sbPlaceWindow(r.id, { left: r.left, top: r.top, w: r.w, h: r.h });
+    });
+    tidyUndo = null;
+    return true;
+  }
+
+  /* ── КЛЮЧ СОХРАНЁН: СОСТОЯНИЕ ЗАМКА И ЗАПЕЧАТАННАЯ КОПИЯ ─────────────── */
+  function keyState() {
+    var V = window.sbVault, out = { locked: false, open: false, envelopes: 0, last: 0 };
+    try { out.locked = !!(V && V.available() && V.isLocked()); out.open = !!(V && V.isOpen()); } catch (e) { /* ignore */ }
+    try { out.envelopes = window.sbSeals ? window.sbSeals.names().length : 0; } catch (e) { out.envelopes = 0; }
+    try { out.last = (window.sbBackup && window.sbBackup.state && window.sbBackup.state().lastOk) || 0; } catch (e) { out.last = 0; }
+    return out;
+  }
+  function keySave() {
+    if (typeof window.sbExportProfile !== "function") return Promise.resolve(null);
+    var text = JSON.stringify(window.sbExportProfile(), null, 1), V = window.sbVault;
+    var sealed = !!(V && V.isLocked() && V.isOpen() && typeof V.seal === "function");
+    return (sealed ? V.seal(text) : Promise.resolve(text)).then(function (body) {
+      var name = "sysbaby-copy-" + new Date().toISOString().slice(0, 10) + (sealed ? ".sealed.json" : ".json");
+      var blob = new Blob([sealed ? body : text], { type: "application/json" });
+      var a = doc.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = name;
+      doc.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
+      return { name: name, sealed: sealed };
+    });
+  }
+
+  /* ── СНИМОК ДНЯ: НАСТОЯЩАЯ КАРТИНКА СТОЛА ЧЕРЕЗ СОГЛАСИЕ БРАУЗЕРА ───── */
+  function shotSupported() {
+    try { return !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === "function"); } catch (e) { return false; }
+  }
+  function shotTake() {
+    if (!shotSupported()) return Promise.reject(new Error("unsupported"));
+    return navigator.mediaDevices.getDisplayMedia({ video: true, audio: false }).then(function (stream) {
+      var video = doc.createElement("video");
+      video.muted = true; video.srcObject = stream;
+      return new Promise(function (resolve, reject) {
+        var done = false;
+        var finish = function () {
+          if (done) return; done = true;
+          try {
+            var c = doc.createElement("canvas");
+            /* ОТКАТ: если поток ещё не назвал размер кадра — обычный размер экрана,
+               чтобы снимок всё же получился, а не пустой файл нулевой ширины. */
+            c.width = video.videoWidth || 1280; c.height = video.videoHeight || 720;
+            c.getContext("2d").drawImage(video, 0, 0, c.width, c.height);
+            stream.getTracks().forEach(function (t) { t.stop(); });
+            c.toBlob(function (blob) {
+              if (!blob) { reject(new Error("no-frame")); return; }
+              var name = "sysbaby-desk-" + new Date().toISOString().slice(0, 10) + ".png";
+              var a = doc.createElement("a");
+              a.href = URL.createObjectURL(blob); a.download = name;
+              doc.body.appendChild(a); a.click();
+              setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
+              resolve({ name: name });
+            }, "image/png");
+          } catch (e) { stream.getTracks().forEach(function (t) { t.stop(); }); reject(e); }
+        };
+        video.addEventListener("loadeddata", function () { setTimeout(finish, 120); });
+        video.play().catch(function () { finish(); });
+        setTimeout(finish, 2500);
+      });
+    });
+  }
+
+  /* ── СВЕТОВОЙ СЛЕД: ПОЛОСКА СВЕТА ПО ВЕРХНЕЙ КРОМКЕ, ЗА ЧАСОМ ────────── */
+  var traceEl = null;
+  function traceHue(h) {
+    /* Рассвет — золото, полдень — белизна, вечер — янтарь, ночь — синева;
+       между ними — по прямой, без ступеней. */
+    var pts = [[0, 225, 30], [5, 225, 30], [7, 42, 80], [12, 48, 12], [17, 34, 80], [21, 24, 60], [24, 225, 30]];
+    for (var i = 1; i < pts.length; i++) {
+      if (h <= pts[i][0]) {
+        var a = pts[i - 1], b = pts[i], f = (h - a[0]) / (b[0] - a[0]);
+        /* Тон — по короткой дуге круга: от янтаря к синеве через розовые
+           сумерки, а не через зелень посреди ночи. */
+        var dh = b[1] - a[1];
+        if (dh > 180) dh -= 360; else if (dh < -180) dh += 360;
+        return { hue: (Math.round(a[1] + dh * f) + 360) % 360, sat: Math.round(a[2] + (b[2] - a[2]) * f) };
+      }
+    }
+    return { hue: 225, sat: 30 };
+  }
+  function traceTick() {
+    if (!kindGranted("trace")) { traceHide(); return; }
+    if (!traceEl) {
+      traceEl = doc.createElement("div");
+      traceEl.id = "sbDayTrace";
+      traceEl.setAttribute("aria-hidden", "true");
+      doc.body.appendChild(traceEl);
+    }
+    var d = new Date(), h = d.getHours() + d.getMinutes() / 60, c = traceHue(h);
+    traceEl.style.setProperty("--trace-hue", String(c.hue));
+    traceEl.style.setProperty("--trace-sat", c.sat + "%");
+    traceEl.setAttribute("data-hour", String(d.getHours()));
+  }
+  function traceHide() { if (traceEl && traceEl.parentNode) traceEl.parentNode.removeChild(traceEl); traceEl = null; }
+
+  /* ── ФРАГМЕНТ: МАЛЕНЬКИЙ ПРЕДМЕТ ИЗ ВАС И ДАТЫ ───────────────────────── */
+  function fragmentSvg(size) {
+    var seed = hash32(username().toLowerCase() + "|" + dayKey(Date.now()) + "|fragment"), s = size || 120 /* ОТКАТ: размер по умолчанию для комнаты */, n = 6, cell = s / n;
+    var out = '<svg viewBox="0 0 ' + s + " " + s + '" width="' + s + '" height="' + s + '" aria-hidden="true" data-seed="' + seed + '">';
+    var h = hue(), x, y, k = 0;
+    for (y = 0; y < n; y++) for (x = 0; x < n; x++) {
+      var v = (seed >>> (k % 29)) & 7; k += 5;
+      if (v < 3) continue;
+      var r = cell * (0.18 + (v - 3) * 0.08), cx = x * cell + cell / 2, cy = y * cell + cell / 2;
+      var tone = (h + (v * 37) % 60 - 30 + 360) % 360;
+      out += (v % 2)
+        ? '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="hsl(' + tone + ' 60% 62%)" fill-opacity=".85"/>'
+        : '<rect x="' + (cx - r).toFixed(1) + '" y="' + (cy - r).toFixed(1) + '" width="' + (2 * r).toFixed(1) + '" height="' + (2 * r).toFixed(1) + '" rx="' + (r / 3).toFixed(1) + '" fill="hsl(' + tone + ' 50% 70%)" fill-opacity=".8"/>';
+    }
+    return out + "</svg>";
+  }
+
+  /* ── МАЛЕНЬКИЙ ГОСТЬ: ТИХИЙ КОТ НА КРАЮ СТОЛА ─────────────────────────── */
+  var guestEl = null;
+  function guestTick() {
+    var st = state();
+    if (!kindGranted("guest") || st.guestGone === dayKey(Date.now())) { guestHide(); return; }
+    if (guestEl) return;
+    guestEl = doc.createElement("button");
+    guestEl.type = "button";
+    guestEl.id = "sbGuest";
+    guestEl.setAttribute("aria-label", byLang(prize("guest").title));
+    guestEl.innerHTML = '<svg viewBox="0 0 64 48" aria-hidden="true"><path d="M10 46c-2-8-1-16 3-22l-1-12 8 6c4-1 8-1 12 0l8-6-1 12c4 6 5 14 3 22z"/><path d="M40 40c6 0 10-4 14-10 2-3 6-1 4 3-4 8-10 12-18 12" opacity=".9"/><circle cx="22" cy="24" r="1.6" fill="rgba(0,0,0,.55)"/><circle cx="32" cy="24" r="1.6" fill="rgba(0,0,0,.55)"/></svg>';
+    guestEl.addEventListener("click", function () {
+      state().guestGone = dayKey(Date.now()); save();
+      guestEl.classList.add("leaving");
+      setTimeout(guestHide, 500);
+    });
+    doc.body.appendChild(guestEl);
+  }
+  function guestHide() { if (guestEl && guestEl.parentNode) guestEl.parentNode.removeChild(guestEl); guestEl = null; }
+
+  /* ── МОЙ РАСКЛАД ─────────────────────────────────────────────────────── */
+  function layoutSave() {
+    var wins = window.openWindows || {}, list = [];
+    Object.keys(wins).forEach(function (id) {
+      var w = wins[id];
+      if (!w || w.minimized || id === "chest") return;
+      list.push({ id: id, left: w.x, top: w.y, w: w.w, h: w.h });
+    });
+    state().layout = { at: Date.now(), wins: list };
+    save();
+    return list.length;
+  }
+  function layoutBack() {
+    var lay = state().layout;
+    if (!lay || !lay.wins || !lay.wins.length) return 0;
+    lay.wins.forEach(function (r, i) {
+      var open = !!(window.openWindows || {})[r.id];
+      if (!open && typeof window.toggleApp === "function") window.toggleApp(r.id);
+      setTimeout(function () {
+        var w = (window.openWindows || {})[r.id];
+        if (w && w.minimized && typeof window.toggleApp === "function") window.toggleApp(r.id);
+        if (typeof window.sbPlaceWindow === "function") window.sbPlaceWindow(r.id, { left: r.left, top: r.top, w: r.w, h: r.h });
+      }, 420 + i * 60);
+    });
+    return lay.wins.length;
+  }
 
   /* ── СЧЁТЧИК НА СТОЛЕ: ЗАМЕТКА, КОТОРАЯ САМА СЧИТАЕТ ДНИ ─────────────── */
   function countLine(date, label) {
@@ -748,10 +1191,23 @@
       case "countdown": return t.countdown;
       case "saver": return fmt(t.saver, { n: saverMinutes() });
       case "room": return fmt(t.room, { room: byLang(p.title) });
+      case "focus": return t.focus;
+      case "sheet": return t.sheet;
+      case "onthisday": return t.onthisday;
+      case "layout": return t.layout;
+      case "morning": return t.morning;
+      case "remember": return t.remember;
+      case "keysafe": return t.keysafe;
+      case "tidy": return t.tidy;
+      case "secret": return fmt(t.secret, { hint: T().secretHint });
+      case "shot": return t.shot;
+      case "trace": return t.trace;
+      case "fragment": return t.fragment;
+      case "guest": return t.guest;
+      case "command": if (p.id === "alias") return t.alias; return fmt(t.command, { cmd: p.params.cmd });
       case "stamp": return t.stamp;
       case "word": return fmt(t.word, { w: word(p.params.word) });
       case "title": return t.title;
-      case "command": return fmt(t.command, { cmd: p.params.cmd });
       case "echo": return t.echo;
       case "letter": return fmt(t.letter, { d: p.params.days || 30 });
       case "systemletter": return t.systemletter;
@@ -779,7 +1235,8 @@
     var ready = available(), done = n >= total;
     var stateName = done ? "done" : (ready ? "ready" : "waiting");
     var out = '<div class="ch-wrap">';
-    out += '<header class="ch-head"><h1 class="ch-title">' + esc(t.title) + "</h1><p class=\"ch-lead\">" + esc(t.lead) + "</p></header>";
+    out += '<header class="ch-head"><h1 class="ch-title">' + esc(t.title) + "</h1><p class=\"ch-lead\">" + esc(fmt(t.lead, { total: total })) + "</p>" +
+      (kindGranted("remember") ? '<p class="ch-remember">' + esc(fmt(t.rememberLine, { n: daysKept(), k: n })) + "</p>" : "") + "</header>";
 
     out += '<div class="ch-progress" aria-label="' + esc(fmt(t.progress, { n: n, total: total })) + '">';
     for (var i = 0; i < total; i++) {
@@ -788,7 +1245,7 @@
     out += '<span class="ch-count">' + esc(fmt(t.progress, { n: n, total: total })) + "</span></div>";
 
     out += '<section class="ch-chest" data-state="' + stateName + '"' + (justOpened ? ' data-just="1"' : "") + ">" + chestSvg();
-    if (done) out += '<p class="ch-say">' + esc(t.done) + "</p>";
+    if (done) out += '<p class="ch-say">' + esc(fmt(t.done, { total: total })) + "</p>";
     else if (ready) out += '<p class="ch-say">' + esc(t.ready) + '</p><button type="button" class="ch-open" id="chOpen">' + esc(t.open) + "</button>";
     else out += '<p class="ch-say ch-wait">' + esc(fmt(t.waiting, { t: untilTomorrow() })) + "</p>";
     out += "</section>";
@@ -809,6 +1266,14 @@
     if (kindGranted("echo") && (!show || show.kind !== "echo")) out += echoHtml(t);
     if (kindGranted("letter") && (!show || show.kind !== "letter")) out += letterHtml(t);
     if (kindGranted("countdown") && (!show || show.kind !== "countdown")) out += countHtml(t);
+    if (kindGranted("focus") && (!show || show.kind !== "focus")) out += focusHtml(t);
+    if (kindGranted("tidy") && (!show || show.kind !== "tidy")) out += tidyHtml(t);
+    if (kindGranted("fragment") && (!show || show.kind !== "fragment")) out += fragmentHtml(t);
+    if (kindGranted("shot") && (!show || show.kind !== "shot")) out += shotHtml(t);
+    if (kindGranted("keysafe") && (!show || show.kind !== "keysafe")) out += keyHtml(t);
+    if (kindGranted("sheet") && (!show || show.kind !== "sheet")) out += sheetHtml(t);
+    if (kindGranted("onthisday") && (!show || show.kind !== "onthisday")) out += dayHtml(t);
+    if (kindGranted("layout") && (!show || show.kind !== "layout")) out += layoutHtml(t);
     if (kindGranted("rename") && (!show || show.kind !== "rename")) out += renameHtml(t);
 
     out += '<section class="ch-shelf"><h3 class="ch-shelf-title">' + esc(t.shelf) + "</h3>";
@@ -845,7 +1310,65 @@
     if (!p.where || p.where === "chest" || p.where === "login") return "";
     return '<button type="button" class="ch-where" data-open="' + esc(p.where) + '">' + esc(t.where) + "</button>";
   }
+  function focusHtml(t) {
+    return '<section class="ch-focus"><p class="ch-focus-k">' + esc(t.focusLead) + '</p><div class="ch-focus-row">' +
+      [15, 25, 45].map(function (m) { return '<button type="button" class="ch-title-choice ch-focus-btn" data-min="' + m + '">' + esc(fmt(t.focusMin, { n: m })) + "</button>"; }).join("") +
+      (focus ? '<button type="button" class="ch-title-choice ch-focus-stop" id="chFocusStop">' + esc(t.focusStop) + "</button>" : "") +
+      "</div></section>";
+  }
+  function sheetHtml(t) {
+    return '<section class="ch-sheet"><button type="button" class="ch-seal" id="chSheet">' + esc(t.sheetBtn) + '</button><span class="ch-sheet-q">«' + esc(t.sheetQ) + "»</span></section>";
+  }
+  function dayHtml(t) {
+    var r = onThisDay(), out = '<section class="ch-day"><p class="ch-day-k">' + esc(t.dayLead) + " · " + esc(dateOf(Date.now())) + "</p>";
+    if (!r.items.length) {
+      out += '<p class="ch-day-none">' + esc(r.first ? fmt(t.dayNone, { first: dateOf(r.first) }) : t.dayNoneYet) + "</p>";
+    } else {
+      out += "<ul>" + r.items.map(function (it) {
+        return '<li class="ch-day-item"><span class="ch-day-ago">' + esc(agoMonths(it.months)) + '</span><span class="ch-day-line" data-sb-userdata>' + esc(it.line) + "</span></li>";
+      }).join("") + "</ul>";
+    }
+    return out + "</section>";
+  }
+  function layoutHtml(t) {
+    var lay = state().layout;
+    return '<section class="ch-layout"><p class="ch-layout-k">' + esc(t.layoutLead) + "</p>" +
+      '<p class="ch-layout-state">' + esc(lay && lay.wins ? fmt(t.layoutSaved, { n: lay.wins.length, when: dateOf(lay.at) }) : t.layoutNone) + "</p>" +
+      '<div class="ch-focus-row"><button type="button" class="ch-seal" id="chLayoutSave">' + esc(t.layoutSave) + "</button>" +
+      (lay && lay.wins && lay.wins.length ? '<button type="button" class="ch-title-choice" id="chLayoutBack">' + esc(t.layoutBack) + "</button>" : "") +
+      "</div></section>";
+  }
+  function keyHtml(t) {
+    var k = keyState();
+    return '<section class="ch-key"><p class="ch-key-k">' + esc(t.keyLead) + "</p>" +
+      '<p class="ch-key-state">' + esc(k.locked ? (k.open ? t.keyLocked : t.keyShut) : t.keyNone) + " · " + esc(fmt(t.keyEnvelopes, { n: k.envelopes })) + "</p>" +
+      '<p class="ch-key-last">' + esc(k.last ? fmt(t.keyLast, { when: dateOf(k.last) }) : t.keyNever) + "</p>" +
+      '<div class="ch-focus-row"><button type="button" class="ch-seal" id="chKeySave">' + esc(t.keySave) + '</button><span class="ch-key-said" id="chKeySaid"></span></div></section>';
+  }
+  function tidyHtml(t) {
+    return '<section class="ch-tidy"><p class="ch-tidy-k">' + esc(t.tidyLead) + "</p>" +
+      '<div class="ch-focus-row"><button type="button" class="ch-seal" id="chTidy">' + esc(t.tidyDo) + "</button>" +
+      (tidyUndo ? '<button type="button" class="ch-title-choice" id="chTidyBack">' + esc(t.tidyUndo) + "</button>" : "") +
+      '<span class="ch-tidy-said" id="chTidySaid"></span></div></section>';
+  }
+  function shotHtml(t) {
+    return '<section class="ch-shot"><p class="ch-shot-k">' + esc(t.shotLead) + "</p>" +
+      (shotSupported()
+        ? '<div class="ch-focus-row"><button type="button" class="ch-seal" id="chShot">' + esc(t.shotDo) + '</button><span class="ch-shot-said" id="chShotSaid"></span></div>'
+        : '<p class="ch-shot-no">' + esc(t.shotNo) + "</p>") + "</section>";
+  }
+  function fragmentHtml(t) {
+    return '<section class="ch-fragment"><p class="ch-fragment-k">' + esc(fmt(t.fragmentLead, { date: dateOf(Date.now()) })) + '</p><div class="ch-fragment-art">' + fragmentSvg(120) + "</div></section>";
+  }
   function extraFor(p, t) {
+    if (p.kind === "shot") return shotHtml(t);
+    if (p.kind === "fragment") return fragmentHtml(t);
+    if (p.kind === "keysafe") return keyHtml(t);
+    if (p.kind === "tidy") return tidyHtml(t);
+    if (p.kind === "focus") return focusHtml(t);
+    if (p.kind === "sheet") return sheetHtml(t);
+    if (p.kind === "onthisday") return dayHtml(t);
+    if (p.kind === "layout") return layoutHtml(t);
     if (p.kind === "title") return titleHtml(t);
     if (p.kind === "echo") return echoHtml(t);
     if (p.kind === "letter") return letterHtml(t);
@@ -917,6 +1440,47 @@
         render(win);
       });
     });
+    var shotBtn = host.querySelector("#chShot");
+    if (shotBtn) shotBtn.addEventListener("click", function () {
+      shotBtn.disabled = true;
+      var said = host.querySelector("#chShotSaid");
+      shotTake().then(function (r) {
+        shotBtn.disabled = false;
+        if (said) said.textContent = fmt(T().shotDone, { name: r.name });
+      }, function () {
+        shotBtn.disabled = false;
+        if (said) said.textContent = T().shotRefused;
+      });
+    });
+    var tidyBtn = host.querySelector("#chTidy");
+    if (tidyBtn) tidyBtn.addEventListener("click", function () {
+      var r = tidyDo();
+      render(win);
+      var said = host.querySelector("#chTidySaid") || (win.el && win.el.querySelector("#chTidySaid"));
+      if (said) said.textContent = (r.icons || r.wins) ? fmt(T().tidyDone, { i: r.icons, w: r.wins }) : T().tidyNothing;
+    });
+    var tidyBackBtn = host.querySelector("#chTidyBack");
+    if (tidyBackBtn) tidyBackBtn.addEventListener("click", function () { tidyBack(); render(win); });
+    var keyBtn = host.querySelector("#chKeySave");
+    if (keyBtn) keyBtn.addEventListener("click", function () {
+      keyBtn.disabled = true;
+      keySave().then(function (r) {
+        keyBtn.disabled = false;
+        var said = host.querySelector("#chKeySaid");
+        if (said && r) said.textContent = fmt(T().keySaved, { name: r.name });
+      }, function () { keyBtn.disabled = false; });
+    });
+    host.querySelectorAll(".ch-focus-btn").forEach(function (b) {
+      b.addEventListener("click", function () { focusStart(b.getAttribute("data-min")); render(win); });
+    });
+    var fstop = host.querySelector("#chFocusStop");
+    if (fstop) fstop.addEventListener("click", function () { focusStop(false); render(win); });
+    var sheetBtn = host.querySelector("#chSheet");
+    if (sheetBtn) sheetBtn.addEventListener("click", function () { sheetOpen(); });
+    var laySave = host.querySelector("#chLayoutSave");
+    if (laySave) laySave.addEventListener("click", function () { layoutSave(); render(win); });
+    var layBack = host.querySelector("#chLayoutBack");
+    if (layBack) layBack.addEventListener("click", function () { layoutBack(); });
     host.querySelectorAll(".ch-switch").forEach(function (b) {
       b.addEventListener("click", function () {
         var id = b.getAttribute("data-id");

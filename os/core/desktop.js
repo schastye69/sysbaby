@@ -819,6 +819,12 @@
       '<div class="note-chip-host"></div>';
     var ta = el.querySelector(".note-text");
     var bodyEl = el.querySelector(".note-body");
+    /* ЧИСТЫЙ ЛИСТ (D-260): спокойная заметка с одним вопросом вместо
+       приглашения писать. Поле — то же; иной только вид и вопрос. */
+    if (rec.sheet) {
+      el.classList.add("sheet");
+      ta.setAttribute("placeholder", tr("note.sheetQ"));
+    }
     var parts = splitNote(rec.text);
     ta.value = parts.title;
     bodyEl.value = parts.body;
@@ -1441,7 +1447,10 @@
     if (!host || !window.sbNotesStore) return;
 
     var want = window.sbNotesStore.load().filter(function (n) {
-      return n.onDesktop && String(n.text || "").trim();      /* empty restored notes never appear */
+      /* empty restored notes never appear — кроме ЧИСТОГО ЛИСТА (D-260): он
+         и есть пустая заметка с вопросом, и ждёт, пока человек его коснётся;
+         оставленный пустым после касания, он уходит сам (blur ниже). */
+      return n.onDesktop && (String(n.text || "").trim() || n.sheet);
     });
     var have = $$(".sticky-note", host);
     var same = have.length === want.length;

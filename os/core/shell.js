@@ -2869,6 +2869,14 @@
     return n;
   };
   window.sbIconPlaces = function () { return JSON.parse(JSON.stringify(getIconPlaces())); };
+  /* Вернуть места значков, снятые раньше через sbIconPlaces (Порядок, D-261). */
+  window.sbRestoreIconPlaces = function (places) {
+    if (!places || typeof places !== "object") return false;
+    iconPlaces = JSON.parse(JSON.stringify(places));
+    writeJSON("sysbaby.icons.pos", iconPlaces);
+    layoutIcons();
+    return true;
+  };
 
   function desktopIconIds() {
     return launchable().filter(function (id) { return apps[id].desktopIcon !== false; });
