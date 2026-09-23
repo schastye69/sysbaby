@@ -1357,9 +1357,17 @@
      missing translation shows the English name rather than an id. */
   function tr(k, v) { return window.sbT ? window.sbT(k, v) : k; }
 
+  /* ── СВОЁ ИМЯ КОМНАТЕ (D-257) ──────────────────────────────────────────
+     Имя, которое дал человек, спрашивается у Сундука и стоит выше имени
+     комнаты и выше перевода: это его смысл, а не наш. Пусто — своё имя. */
+  function ownName(id) {
+    try { return window.sbChest && window.sbChest.roomName ? (window.sbChest.roomName(id) || "") : ""; } catch (e) { return ""; }
+  }
   function appTitle(id) {
     var def = apps[id];
     if (!def) return id;
+    var own = ownName(id);
+    if (own) return own;
     var l = (window.sbLang ? window.sbLang() : "en");
     var loc = def.i18n && def.i18n[l];
     return (loc && loc.title) || def.title || id;
@@ -1367,15 +1375,37 @@
   function appLabel(id) {
     var def = apps[id];
     if (!def) return id;
+    var own = ownName(id);
+    if (own) return own;
     var l = (window.sbLang ? window.sbLang() : "en");
     var loc = def.i18n && def.i18n[l];
     return (loc && loc.label) || (loc && loc.title) || def.label || def.title || id;
   }
+  /* Перерисовать имена везде, где они стоят: док, стол, заголовки окон. */
+  window.sbRefreshNames = function () {
+    if (!bootReady) return;
+    buildDock(); buildIcons(); layoutIcons();
+    Object.keys(openWindows).forEach(function (id) {
+      var w = openWindows[id], n = w.el.querySelector(".win-name");
+      if (n) { n.textContent = appTitle(id); n.toggleAttribute("data-sb-userdata", !!ownName(id)); }
+      w.el.setAttribute("aria-label", appTitle(id));
+    });
+  };
   window.sbAppTitle = appTitle;
   window.sbAppLabel = appLabel;
 
   function launchable() { return order.filter(function (id) { return apps[id] && !apps[id].hidden; }); }
   window.sbLaunchableApps = launchable;
+  /* ── КОМНАТА, ОТКРЫТАЯ ПОДАРКОМ (D-257) ─────────────────────────────────
+     Скрытая комната становится видимой — встаёт в док и на стол — тем же
+     путём, каким строится всё остальное. Зовёт Сундук; больше никто. */
+  window.sbRevealApp = function (id) {
+    var def = apps[id];
+    if (!def || !def.hidden) return false;
+    def.hidden = false;
+    if (bootReady) { buildDock(); buildIcons(); layoutIcons(); }
+    return true;
+  };
 
   var ICONS = {
     window: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/></svg>',
@@ -1630,6 +1660,11 @@
     win.el.style.zIndex = String(win.z);
     focusedId = id;
     $$(".window").forEach(function (w) { w.classList.toggle("focused", w === win.el); });
+    /* Есть фокусное окно — значит есть «позади» (D-259). Класс стоит на слое
+       окон, а не на корне: запись в корень пересчитывает стиль всего
+       документа (window-blast-check, D-143), слой — только окна. */
+    var wl = winLayer();
+    if (wl && !wl.classList.contains("sb-window-focused")) wl.classList.add("sb-window-focused");
     /* И КЛАВИАТУРА ТОЖЕ ПРИХОДИТ СЮДА (D-232). Замер до починки: человек
        открыл «Записи», мыши не касался, нажал Tab — и попал в своё окно с
        ДВАДЦАТЬ ПЕРВОГО раза, пройдя двенадцать плиток дока, полосу сверху и
@@ -1654,6 +1689,9 @@
   function unfocusAll() {
     focusedId = null;
     $$(".window").forEach(function (w) { w.classList.remove("focused"); });
+    /* Фокусного нет — позади никого, и гаснуть некому (D-259). */
+    var wl0 = winLayer();
+    if (wl0) wl0.classList.remove("sb-window-focused");
     updateAppSequence();
     buildDock();
   }
@@ -1697,6 +1735,7 @@
     if (focusedId === id) {
       var next = highestRemaining();
       focusedId = null;
+      if (winLayer()) winLayer().classList.remove("sb-window-focused");
       if (next) focusWindow(next); else { updateAppSequence(); buildDock(); }
     } else { updateAppSequence(); buildDock(); }
     updateTopbarAutoHide();
@@ -1750,6 +1789,7 @@
     if (focusedId === id) {
       var next = highestRemaining();
       focusedId = null;
+      if (winLayer()) winLayer().classList.remove("sb-window-focused");
       if (next) focusWindow(next); else { updateAppSequence(); buildDock(); }
     } else { updateAppSequence(); buildDock(); }
     updateTopbarAutoHide();
@@ -2861,7 +2901,7 @@
       /* the name is re-read every build: a node that already exists still has
          to follow the language */
       var lbl = node.querySelector(".icon-label");
-      if (lbl) lbl.textContent = appLabel(id);
+      if (lbl) { lbl.textContent = appLabel(id); lbl.toggleAttribute("data-sb-userdata", !!ownName(id)); }
       node.setAttribute("aria-label", tr("win.openApp", { app: appTitle(id) }));
       var spark = node.querySelector(".icon-spark");
       if (spark) spark.setAttribute("aria-label", tr("win.quickAction", { app: appTitle(id) }));
@@ -3631,7 +3671,10 @@
   doc.addEventListener("pointerdown", function (ev) {
     var t = ev.target;
     if (!t || !t.closest) return;
-    if (t.closest(".window, #dock, #topbar, #sbCmdk, .panel-overlay, #sbControlCenter, #sbCtxMenu, #toastLayer")) return;
+    /* Карточка входа, дверь замка, прощание — не стол: касание по ним не
+       снимает фокус с окна, открытого на входе (D-259, снимок основателя:
+       «build стало тёмным при входе»). */
+    if (t.closest(".window, #dock, #topbar, #sbCmdk, .panel-overlay, #sbControlCenter, #sbCtxMenu, #toastLayer, #sbLogin, #sbVaultGate, #sbFarewell, #sbDeskHint")) return;
     if (focusedId) unfocusAll();
   });
 

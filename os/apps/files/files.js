@@ -356,7 +356,14 @@
       '<div class="fv-preview-head">' +
         '<span class="fv-preview-name" data-sb-userdata>' + esc(node.name) + "</span>" +
         '<span class="fv-preview-actions">' +
-
+          /* ── ЗАБРАТЬ СЕБЕ — И ТЕКСТОВЫЙ ФАЙЛ ТОЖЕ (D-258) ───────────────
+             Основатель о призе сундука: «его не скачать из vault». Кнопка
+             была только у принесённых вещей; файл, положенный текстом,
+             вынести было нечем. Одно слово на все файлы — fv.thingSave.
+             Охраняется tools/vault-save-check.mjs. */
+          '<button type="button" class="fv-edit" id="fvFileSave" title="' + esc(t("fv.thingSave")) + '" aria-label="' + esc(t("fv.thingSave")) + '">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg>' +
+          "</button>" +
           '<button type="button" class="fv-edit" id="fvEdit" title="' + esc(t("fv.edit")) + '" aria-label="' + esc(t("fv.edit")) + '">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 19.5h4l10-10a1.6 1.6 0 0 0 0-2.3l-1.7-1.7a1.6 1.6 0 0 0-2.3 0l-10 10v4Z"/></svg>' +
           "</button>" +
@@ -561,6 +568,26 @@
         removeNode(win, parseInt(btn.getAttribute("data-delete"), 10));
       });
     });
+
+    var saveBtn = host.querySelector("#fvFileSave");
+    if (saveBtn) {
+      saveBtn.addEventListener("click", function () {
+        var kids = (currentFolder() && currentFolder().children) || [];
+        var node = kids[selectedIndex];
+        if (!node || node.type !== "file") return;
+        /* Тип — по расширению: svg уходит картинкой, остальное — текстом.
+           Устройство откроет то, что ему сказали, а не угадает. */
+        var name = String(node.name || "file");
+        var type = /\.svg$/i.test(name) ? "image/svg+xml" : (/\.json$/i.test(name) ? "application/json" : (/\.html?$/i.test(name) ? "text/html" : "text/plain"));
+        var blob = new Blob([String(node.content || "")], { type: type });
+        var a = doc.createElement("a");
+        a.href = thingUrl(blob);
+        a.download = name;
+        doc.body.appendChild(a);
+        a.click();
+        doc.body.removeChild(a);
+      });
+    }
 
     var editBtn = host.querySelector("#fvEdit");
     if (editBtn) {

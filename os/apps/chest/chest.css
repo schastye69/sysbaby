@@ -86,3 +86,33 @@ html[data-sigil="on"] .sticky-note::after {
   .ch-open:hover { box-shadow: 0 0 0 4px var(--accent-soft); }
   .ch-where:hover { border-color: var(--accent-ring); }
 }
+
+/* ── род радости на карточке приза ──────────────────────────────────────── */
+.ch-tier { text-transform: none; letter-spacing: 0; color: var(--accent); }
+
+/* ── переключатель на полке: получить и не пользоваться — тоже владение ── */
+.ch-switch { justify-self: end; padding: 4px 10px; font: inherit; font-size: var(--f-meta); border-radius: var(--r-pill); border: 1px solid var(--line); background: transparent; color: var(--ink-3); cursor: pointer; }
+.ch-switch.on { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
+.ch-switch:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
+.ch-item.off .ch-item-title { color: var(--ink-3); }
+
+/* ── имена комнатам и счётчик ───────────────────────────────────────────── */
+.ch-rename, .ch-count { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-card); }
+.ch-rename-k, .ch-count-k { margin: 0; font-size: var(--f-meta); color: var(--ink-3); }
+.ch-rename-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 10px; align-items: center; font-size: var(--f-read); }
+.ch-rename-base { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-rename, .ch-count-row input { min-width: 0; width: 100%; padding: 8px 10px; font: inherit; font-size: var(--f-read); color: var(--ink); background: rgba(255, 255, 255, .04); border: 1px solid var(--line); border-radius: var(--r-ctrl); }
+.ch-rename:focus, .ch-count-row input:focus { outline: none; border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
+.ch-count-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.ch-count-row label { display: flex; flex-direction: column; gap: 4px; font-size: var(--f-meta); color: var(--ink-3); flex: 1 1 140px; min-width: 0; }
+.ch-count-done { margin: 0; font-size: var(--f-ui); color: var(--ink-2); }
+
+/* ── заставка: тихое поле с часами и луной ──────────────────────────────── */
+#sbSaver { position: fixed; inset: 0; z-index: var(--z-curtain); display: flex; align-items: center; justify-content: center; background: rgba(6, 6, 8, .94); color: var(--ink); opacity: 0; transition: opacity var(--t-scene) ease; }
+#sbSaver.on { opacity: 1; }
+#sbSaver[hidden] { display: none; }
+.sb-saver-in { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.sb-saver-time { font-size: var(--f-hero); font-weight: 600; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.sb-saver-date { font-size: var(--f-read); color: var(--ink-2); }
+.sb-saver-name { font-size: var(--f-meta); color: var(--ink-3); letter-spacing: .08em; text-transform: uppercase; }
+html[data-motion="reduced"] #sbSaver { transition: none; }

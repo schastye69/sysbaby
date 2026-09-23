@@ -1822,14 +1822,15 @@ html[data-theme="light"] .window::before { background: rgba(12, 14, 20, .08); }
   background: rgba(10, 10, 11, 0);
   transition: background var(--t-touch) ease;
 }
-.window:not(.focused) .window-body::after { background: rgba(10, 10, 11, .78); }
+/* Гаснет окно ПОЗАДИ ФОКУСНОГО; нет фокусного — не гаснет никто (D-259). */
+#windowLayer.sb-window-focused .window:not(.focused) .window-body::after { background: rgba(10, 10, 11, .78); }
 /* Заголовок неактивного окна лишь чуть тише — его читают, чтобы найти окно. */
-.window:not(.focused) .titlebar { opacity: .72; }
+#windowLayer.sb-window-focused .window:not(.focused) .titlebar { opacity: .72; }
 /* Пока окно летит, плёнка не участвует: полёт и так без размытия (см. выше). */
 .window.opening .window-body::after, .window.traveling .window-body::after { display: none; }
 /* В светлой теме плёнка светлая: приглушить — значит приблизить к полю, а
    поле там белое. Тёмная плёнка на белом окне читалась бы как поломка. */
-html[data-theme="light"] .window:not(.focused) .window-body::after { background: rgba(255, 255, 255, .78); }
+html[data-theme="light"] #windowLayer.sb-window-focused .window:not(.focused) .window-body::after { background: rgba(255, 255, 255, .78); }
 .window.focused { border-color: rgba(var(--accent-rgb), .45); box-shadow: 0 0 0 1px var(--accent-soft), var(--shadow); }
 .window.focused::before { background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .5), transparent); }
 .window.minimized { display: none; }

@@ -82,10 +82,20 @@
       ago1: "yesterday", agoN: "{n} days ago", agoToday: "today", hour: "h", minute: "min",
       honest: "Honest part: the day is counted by this device — no server, so setting the clock forward only fools you. The prizes are things of this system; they cost nothing, go nowhere, and ask nobody's consent. There are no coupons and no discounts here.",
       titles: { keeper: "Keeper", warden: "Warden", gardener: "Gardener", night: "Night watch" },
+      tiers: { joy: "daily joy", discovery: "personal discovery", rare: "rare moment" },
+      on: "On", off: "Off", offNote: "Off — the thing stays on the shelf, it just does not act.",
+      renameLead: "Give any room your own name. Empty — the room's own name returns.",
+      countLead: "A date and a word — and a note on the desk starts counting the days by itself.",
+      countDate: "Date", countLabel: "What for", countAdd: "Put it on the desk", countDone: "It is on the desk.",
+      count: { until: "{n} days until: {label}", today: "today: {label}", since: "{n} days since: {label}" },
       line: {
         mood: "The room «{room}» is now among your rooms.",
         own: "Your hue is {hue}° — derived from «{name}». No one else has this exact room.",
-        file: "«{file}» is in your Vault.",
+        night: "From tonight, after midnight the desk goes to Ember by itself and comes back in the morning.",
+        rename: "Name your rooms below — the dock and the desk follow at once.",
+        countdown: "Set a date below — the note appears on the desk and counts on its own.",
+        saver: "Leave the desk still for {n} minutes and see.",
+        room: "«{room}» now stands in your dock.",
         serial: "Your system's number: {serial}.",
         stamp: "Your sign now prints in the corner of every note.",
         word: "From now on the system says it with your name: «{w}».",
@@ -111,10 +121,20 @@
       ago1: "вчера", agoN: "{n} дн. назад", agoToday: "сегодня", hour: "ч", minute: "мин",
       honest: "Честная часть: сутки считает это устройство — сервера нет, и, переведя часы вперёд, вы обманете только себя. Призы — вещи этой системы: они ничего не стоят, никуда не уходят и ничьего согласия не требуют. Купонов и скидок здесь нет.",
       titles: { keeper: "Хранитель", warden: "Смотритель", gardener: "Садовник", night: "Ночной сторож" },
+      tiers: { joy: "ежедневная радость", discovery: "личная находка", rare: "редкий момент" },
+      on: "Вкл", off: "Выкл", offNote: "Выключено — вещь остаётся на полке, просто не действует.",
+      renameLead: "Дайте любой комнате своё имя. Пусто — вернётся её собственное.",
+      countLead: "Дата и слово — и заметка на столе сама начнёт считать дни.",
+      countDate: "Дата", countLabel: "К чему", countAdd: "Поставить на стол", countDone: "Стоит на столе.",
+      count: { until: "{n} дн. до: {label}", today: "сегодня: {label}", since: "{n} дн. после: {label}" },
       line: {
         mood: "Комната «{room}» теперь среди ваших комнат.",
         own: "Ваш тон — {hue}°, выведен из «{name}». Такой комнаты нет ни у кого другого.",
-        file: "«{file}» лежит в Хранилище.",
+        night: "С этой ночи после полуночи стол сам уйдёт в Угли и утром вернётся.",
+        rename: "Назовите комнаты ниже — док и стол подхватят сразу.",
+        countdown: "Поставьте дату ниже — заметка появится на столе и будет считать сама.",
+        saver: "Оставьте стол без движения на {n} минуты — и увидите.",
+        room: "«{room}» теперь стоит в вашем доке.",
         serial: "Номер вашей системы: {serial}.",
         stamp: "Ваш знак теперь стоит в углу каждой заметки.",
         word: "Отныне система говорит это с вашим именем: «{w}».",
@@ -140,10 +160,20 @@
       ago1: "eile", agoN: "{n} päeva tagasi", agoToday: "täna", hour: "h", minute: "min",
       honest: "Aus osa: päeva loeb see seade — serverit pole, nii et kella ettepoole keeramine petab ainult sind ennast. Auhinnad on selle süsteemi asjad: need ei maksa midagi, ei lähe kuhugi ega küsi kellegi nõusolekut. Kuponge ja allahindlusi siin pole.",
       titles: { keeper: "Hoidja", warden: "Valvur", gardener: "Aednik", night: "Öövaht" },
+      tiers: { joy: "igapäevane rõõm", discovery: "isiklik avastus", rare: "haruldane hetk" },
+      on: "Sees", off: "Väljas", offNote: "Väljas — asi jääb riiulile, lihtsalt ei toimi.",
+      renameLead: "Anna ükskõik millisele toale oma nimi. Tühi — toa enda nimi tuleb tagasi.",
+      countLead: "Kuupäev ja sõna — ja märge laual hakkab ise päevi lugema.",
+      countDate: "Kuupäev", countLabel: "Milleks", countAdd: "Pane lauale", countDone: "On laual.",
+      count: { until: "{n} päeva kuni: {label}", today: "täna: {label}", since: "{n} päeva pärast: {label}" },
       line: {
         mood: "Tuba «{room}» on nüüd sinu tubade seas.",
         own: "Sinu toon on {hue}° — tuletatud nimest «{name}». Sellist tuba pole kellelgi teisel.",
-        file: "«{file}» on sinu Hoidlas.",
+        night: "Alates tänasest ööst läheb laud pärast keskööd ise Hõõgusesse ja tuleb hommikul tagasi.",
+        rename: "Nimeta toad allpool — dokk ja laud võtavad kohe üle.",
+        countdown: "Pane allpool kuupäev — märge ilmub lauale ja loeb ise.",
+        saver: "Jäta laud {n} minutiks liikumatuks — ja näed.",
+        room: "«{room}» seisab nüüd sinu dokis.",
         serial: "Sinu süsteemi number: {serial}.",
         stamp: "Sinu märk on nüüd iga märkme nurgas.",
         word: "Nüüdsest ütleb süsteem seda sinu nimega: «{w}».",
@@ -170,20 +200,38 @@
     var st = null;
     try { var raw = box().get(STORE_KEY); st = raw ? JSON.parse(raw) : null; } catch (e) { st = null; }
     if (!st || !Array.isArray(st.order) || !Array.isArray(st.opened)) st = null;
-    if (!st) st = { v: 1, order: shuffle(prizes().map(function (p) { return p.id; })), opened: [], title: "", letter: null, serial: "", echo: null };
+    if (!st) st = { v: 1, order: shuffle(prizes()), opened: [], title: "", letter: null, serial: "", echo: null, off: [], names: {}, night: null };
+    if (!Array.isArray(st.off)) st.off = [];
+    if (!st.names || typeof st.names !== "object") st.names = {};
     cached = st;
     return st;
   }
   function save() {
     try { box().set(STORE_KEY, JSON.stringify(state())); } catch (e) { /* ignore */ }
   }
-  /* Перестановка — случайными байтами браузера, один раз. */
+  /* Перестановка — случайными байтами браузера, один раз. С двумя условиями
+     по слову основателя: первый сундук — ежедневная радость (joy), а редкое
+     (rare) не выпадает раньше восьмого дня. Удивление, а не разочарование. */
+  var RARE_AFTER = 7;
   function shuffle(list) {
-    var a = list.slice(), i, j, t, r = new Uint32Array(a.length);
+    var a = list.map(function (p) { return p.id; }), i, j, t, r = new Uint32Array(a.length);
+    var tier = {};
+    list.forEach(function (p) { tier[p.id] = p.tier || "discovery"; });
     try { window.crypto.getRandomValues(r); } catch (e) { for (i = 0; i < r.length; i++) r[i] = Math.floor(Math.random() * 4294967296); }
     for (i = a.length - 1; i > 0; i--) {
       j = r[i] % (i + 1);
       t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    /* Редкое из первой недели уезжает назад, меняясь местами с нередким. */
+    for (i = 0; i < Math.min(RARE_AFTER, a.length); i++) {
+      if (tier[a[i]] !== "rare") continue;
+      for (j = a.length - 1; j >= RARE_AFTER; j--) {
+        if (tier[a[j]] !== "rare") { t = a[i]; a[i] = a[j]; a[j] = t; break; }
+      }
+    }
+    /* Первым — радость. */
+    if (tier[a[0]] !== "joy") {
+      for (j = 1; j < a.length; j++) if (tier[a[j]] === "joy") { t = a[0]; a[0] = a[j]; a[j] = t; break; }
     }
     return a;
   }
@@ -197,10 +245,15 @@
   function opened(id) {
     return state().opened.some(function (o) { return o.id === id; });
   }
+  /* Дано И не выключено человеком: получить вещь и не пользоваться ею —
+     тоже часть владения (основатель). */
+  function granted(id) {
+    return opened(id) && state().off.indexOf(id) === -1;
+  }
   function kindGranted(kind, param, value) {
     return state().opened.some(function (o) {
       var p = prize(o.id);
-      return !!p && p.kind === kind && (!param || (p.params && p.params[param] === value));
+      return !!p && granted(o.id) && p.kind === kind && (!param || (p.params && p.params[param] === value));
     });
   }
 
@@ -294,85 +347,6 @@
     });
     return out + "</svg>";
   }
-  function hsl(h, s, l) { return "hsl(" + h + " " + s + "% " + l + "%)"; }
-  function constellationSvg() {
-    var name = username(), w = 480, h = 320, pts = [], i, ch, x, y, big;
-    var out = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '">' +
-      '<rect width="' + w + '" height="' + h + '" fill="#0a0b10"/>';
-    for (i = 0; i < name.length; i++) {
-      ch = name.charAt(i);
-      x = 40 + (hash32(ch + "|x|" + i + "|" + name) % (w - 80));
-      y = 40 + (hash32(ch + "|y|" + i + "|" + name) % (h - 80));
-      big = /[aeiouyаеёиоуыэюяaeiouõäöü]/i.test(ch);
-      pts.push({ x: x, y: y, r: big ? 4.2 : 2.6, ch: ch });
-    }
-    var path = pts.map(function (p, k) { return (k ? "L" : "M") + p.x + " " + p.y; }).join(" ");
-    out += '<path d="' + path + '" fill="none" stroke="' + hsl(hue(), 60, 70) + '" stroke-opacity=".55" stroke-width="1"/>';
-    pts.forEach(function (p) {
-      out += '<circle cx="' + p.x + '" cy="' + p.y + '" r="' + (p.r * 3) + '" fill="' + hsl(hue(), 70, 75) + '" fill-opacity=".10"/>' +
-        '<circle cx="' + p.x + '" cy="' + p.y + '" r="' + p.r + '" fill="#f4f1ea"/>' +
-        '<text x="' + (p.x + 8) + '" y="' + (p.y - 8) + '" font-family="ui-monospace, monospace" font-size="11" fill="#9a9ba6">' + esc(p.ch) + "</text>";
-    });
-    out += '<text x="24" y="' + (h - 20) + '" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#6f7180">' + esc(name) + " · sys.baby</text>";
-    return out + "</svg>";
-  }
-  function dayAngle(t) {
-    if (typeof window.sbDayAngle === "function") return window.sbDayAngle(t);
-    var d = new Date(t), start = new Date(d.getFullYear(), 0, 0);
-    return (Math.floor((d - start) / DAY) / 365) * 360;
-  }
-  function yearWheelSvg() {
-    var s = 420, cx = s / 2, cy = s / 2, R = 170, i, a, x1, y1, x2, y2;
-    var out = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + s + ' ' + s + '" width="' + s + '" height="' + s + '">' +
-      '<rect width="' + s + '" height="' + s + '" fill="#0a0b10"/>' +
-      '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="none" stroke="#2a2c36" stroke-width="1.5"/>';
-    for (i = 0; i < 12; i++) {
-      a = (i / 12) * Math.PI * 2 - Math.PI / 2;
-      x1 = cx + Math.cos(a) * (R - 10); y1 = cy + Math.sin(a) * (R - 10);
-      x2 = cx + Math.cos(a) * R; y2 = cy + Math.sin(a) * R;
-      out += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="#55586a" stroke-width="1.5"/>';
-    }
-    function mark(t, color, r, label) {
-      var ang = (dayAngle(t) / 360) * Math.PI * 2 - Math.PI / 2;
-      var x = cx + Math.cos(ang) * R, y = cy + Math.sin(ang) * R;
-      return '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + r + '" fill="' + color + '"/>' +
-        '<text x="' + (x + (Math.cos(ang) * 22)).toFixed(1) + '" y="' + (y + (Math.sin(ang) * 22) + 4).toFixed(1) + '" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#c9cad3">' + esc(label) + "</text>";
-    }
-    out += mark(birthMs(), hsl(hue(), 70, 62), 6, dateOf(birthMs()));
-    out += mark(Date.now(), "#f4f1ea", 5, dateOf(Date.now()));
-    out += '<text x="' + cx + '" y="' + (cy - 6) + '" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="30" fill="#f4f1ea">' + daysKept() + "</text>" +
-      '<text x="' + cx + '" y="' + (cy + 18) + '" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#8a8c9a">' + esc(username()) + " · sys.baby</text>";
-    return out + "</svg>";
-  }
-  function birthSvg() {
-    var w = 520, h = 340;
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '">' +
-      '<rect width="' + w + '" height="' + h + '" fill="#f4f1ea"/>' +
-      '<rect x="14" y="14" width="' + (w - 28) + '" height="' + (h - 28) + '" fill="none" stroke="#1a1a1e" stroke-width="1.5"/>' +
-      '<g transform="translate(' + (w - 120) + ',40)" color="#1a1a1e">' + sigilSvg(72).replace(/<svg[^>]*>|<\/svg>/g, "") + "</g>" +
-      '<text x="40" y="64" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12" letter-spacing="2" fill="#6f7180">SYS.BABY</text>' +
-      '<text x="40" y="118" font-family="ui-sans-serif, system-ui, sans-serif" font-size="30" fill="#1a1a1e">' + esc(username()) + "</text>" +
-      '<text x="40" y="170" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#3a3b44">' + esc(dateOf(birthMs())) + "</text>" +
-      '<text x="40" y="196" font-family="ui-monospace, monospace" font-size="14" fill="#3a3b44">' + esc(serial()) + "</text>" +
-      '<text x="40" y="' + (h - 40) + '" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#8a8c9a">' + esc(dateOf(Date.now())) + "</text>" +
-      "</svg>";
-  }
-  function portraitSvg() {
-    var w = 600, h = 800, H = hue();
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '">' +
-      '<rect width="' + w + '" height="' + h + '" fill="#0a0b10"/>' +
-      '<rect x="0" y="0" width="' + w + '" height="' + h + '" fill="' + hsl(H, 55, 45) + '" fill-opacity=".10"/>' +
-      '<g transform="translate(' + (w / 2 - 110) + ',110)" color="' + hsl(H, 65, 70) + '">' + sigilSvg(220).replace(/<svg[^>]*>|<\/svg>/g, "") + "</g>" +
-      '<text x="' + (w / 2) + '" y="420" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="44" fill="#f4f1ea">' + esc(username()) + "</text>" +
-      '<text x="' + (w / 2) + '" y="462" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" letter-spacing="3" fill="#9a9ba6">SYS.BABY</text>' +
-      '<rect x="' + (w / 2 - 60) + '" y="510" width="120" height="8" rx="4" fill="' + hsl(H, 70, 60) + '"/>' +
-      '<text x="' + (w / 2) + '" y="560" text-anchor="middle" font-family="ui-monospace, monospace" font-size="14" fill="#c9cad3">' + H + "°</text>" +
-      '<text x="' + (w / 2) + '" y="620" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="16" fill="#c9cad3">' + esc(dateOf(birthMs())) + "</text>" +
-      '<text x="' + (w / 2) + '" y="660" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="16" fill="#c9cad3">' + daysKept() + " d</text>" +
-      '<text x="' + (w / 2) + '" y="' + (h - 40) + '" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" fill="#6f7180">' + esc(serial()) + "</text>" +
-      "</svg>";
-  }
-  var MAKERS = { sigil: function () { return sigilSvg(160); }, constellation: constellationSvg, yearwheel: yearWheelSvg, birth: birthSvg, portrait: portraitSvg };
 
   /* ── ЧИСЛА СИСТЕМЫ — СПРОШЕНЫ, НЕ ЗАПОМНЕНЫ ─────────────────────────── */
   function numbers() {
@@ -565,7 +539,7 @@
   };
 
   /* ── ДВИЖОК: ЧТО ДАНО — ТО ЖИВЁТ ─────────────────────────────────────── */
-  var KINDS = ["mood", "command", "word", "title", "serial", "file", "stamp", "echo", "letter", "systemletter"];
+  var KINDS = ["mood", "command", "word", "title", "serial", "stamp", "echo", "letter", "systemletter", "night", "rename", "countdown", "saver", "room"];
   function applyOne(p, fresh) {
     switch (p.kind) {
       case "mood": {
@@ -581,17 +555,20 @@
         return;
       }
       case "stamp": {
+        if (!granted(p.id)) { root.removeAttribute("data-sigil"); return; }
         var svg = sigilSvg(48).replace("currentColor", "%23ffffff").replace(/currentColor/g, "%23ffffff");
         root.style.setProperty("--sb-sigil", 'url("data:image/svg+xml,' + encodeURIComponent(svg).replace(/%2523/g, "%23") + '")');
         root.setAttribute("data-sigil", "on");
         return;
       }
-      case "file": {
-        if (!fresh) return;
-        var make = MAKERS[p.params.make];
-        if (make && window.sbHand) window.sbHand.give("files", { kind: "файл", name: p.params.file, text: make() });
+      case "room": {
+        if (typeof window.sbRevealApp === "function") window.sbRevealApp(p.params.room);
         return;
       }
+      case "night": { nightTick(); return; }
+      case "saver": { saverArm(); return; }
+      case "rename": { if (typeof window.sbRefreshNames === "function") window.sbRefreshNames(); return; }
+      case "countdown": { refreshCountdowns(); return; }
       case "serial": { serial(); return; }
       case "systemletter": {
         if (fresh && typeof window.sbAddQuickNote === "function") window.sbAddQuickNote(systemLetter(), { from: "chest" });
@@ -603,6 +580,138 @@
   function applyAll() {
     state().opened.forEach(function (o) { var p = prize(o.id); if (p) applyOne(p, false); });
     deliverLetter();
+  }
+  /* Выключить или включить подаренное. Ничего не теряется: вещь остаётся
+     на полке, просто не действует. */
+  function toggle(id, on) {
+    var st = state(), p = prize(id), i = st.off.indexOf(id);
+    if (!p || !p.switch || !opened(id)) return false;
+    if (on && i !== -1) st.off.splice(i, 1);
+    if (!on && i === -1) st.off.push(id);
+    save();
+    applyOne(p, false);
+    if (!on && p.kind === "night") nightRestore();
+    if (!on && p.kind === "saver") saverHide();
+    if (p.kind === "rename" && typeof window.sbRefreshNames === "function") window.sbRefreshNames();
+    if (window.sbPaintIris) window.sbPaintIris();
+    return true;
+  }
+
+  /* ── НОЧЬ САМА: ПОСЛЕ ПОЛУНОЧИ — УГЛИ, УТРОМ — ВАША КОМНАТА ──────────── */
+  var NIGHT_FROM = 0, NIGHT_TO = 6;
+  function nightTick() {
+    if (!kindGranted("night") || typeof window.sbGetWallpaperMood !== "function") return;
+    var st = state(), h = new Date().getHours(), cur = window.sbGetWallpaperMood();
+    if (h >= NIGHT_FROM && h < NIGHT_TO) {
+      if (cur !== "ember") { st.night = { dayRoom: cur }; save(); window.sbSetWallpaperMood("ember"); }
+    } else nightRestore();
+  }
+  function nightRestore() {
+    var st = state();
+    if (!st.night || !st.night.dayRoom) return;
+    if (typeof window.sbGetWallpaperMood === "function" && window.sbGetWallpaperMood() === "ember") window.sbSetWallpaperMood(st.night.dayRoom);
+    st.night = null; save();
+  }
+  setInterval(function () { try { nightTick(); refreshCountdowns(); } catch (e) { /* ignore */ } }, 60000);
+
+  /* ── СЧЁТЧИК НА СТОЛЕ: ЗАМЕТКА, КОТОРАЯ САМА СЧИТАЕТ ДНИ ─────────────── */
+  function countLine(date, label) {
+    var t = T(), target = new Date(date + "T00:00:00"), today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var n = Math.round((target - today) / DAY);
+    if (!isFinite(n)) return label;
+    if (n === 0) return fmt(t.count.today, { label: label });
+    if (n > 0) return fmt(t.count.until, { n: n, label: label });
+    return fmt(t.count.since, { n: -n, label: label });
+  }
+  function addCountdown(date, label) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || typeof window.sbAddQuickNote !== "function") return false;
+    label = String(label || "").trim().slice(0, 60) || date;
+    window.sbAddQuickNote(countLine(date, label), { onDesktop: true, from: "chest", countdown: { date: date, label: label } });
+    return true;
+  }
+  function refreshCountdowns() {
+    if (!window.sbNotesStore) return;
+    var list, changed = false;
+    try { list = window.sbNotesStore.load(); } catch (e) { return; }
+    list.forEach(function (n) {
+      if (!n || !n.countdown || !n.countdown.date) return;
+      var line = countLine(n.countdown.date, n.countdown.label || n.countdown.date);
+      var rest = String(n.text || "").split("\n").slice(1).join("\n");
+      var next = rest ? line + "\n" + rest : line;
+      if (next !== n.text) { n.text = next; n.updatedAt = Date.now(); changed = true; }
+    });
+    if (changed) { window.sbNotesStore.save(list); window.sbNotesStore.notify(); }
+  }
+
+  /* ── ЗАСТАВКА: СТОЛ БЕЗ ДВИЖЕНИЯ ГАСНЕТ В ТИХОЕ ПОЛЕ ─────────────────── */
+  var saverLast = Date.now(), saverEl = null, saverOn = false, saverArmed = false, saverClock = null;
+  function saverMinutes() { var p = prize("saver"); return (p && p.params && p.params.minutes) || 3; }
+  function moonGlyph(size) {
+    var ph = moonPhase(Date.now()), lit = ph.lit, waxing = ph.age < 29.530588853 / 2;
+    var r = size / 2 - 2, cx = size / 2, cy = size / 2;
+    /* Освещённая доля рисуется двумя дугами: терминатор — эллипс, чья ширина
+       идёт от -r до r по мере фазы. */
+    var k = (lit * 2 - 1) * r, sweepDark = waxing ? 0 : 1;
+    var d = "M " + cx + " " + (cy - r) + " A " + r + " " + r + " 0 0 " + (waxing ? 1 : 0) + " " + cx + " " + (cy + r) +
+      " A " + Math.abs(k) + " " + r + " 0 0 " + ((k >= 0) === waxing ? 0 : 1) + " " + cx + " " + (cy - r) + " Z";
+    return '<svg viewBox="0 0 ' + size + " " + size + '" width="' + size + '" height="' + size + '" aria-hidden="true">' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="rgba(255,255,255,.08)"/>' +
+      '<path d="' + d + '" fill="rgba(244,241,234,.92)"/>' + (sweepDark ? "" : "") + "</svg>";
+  }
+  function saverPaint() {
+    if (!saverEl) return;
+    var d = new Date();
+    var time = (d.getHours() < 10 ? "0" : "") + d.getHours() + ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
+    saverEl.innerHTML = '<div class="sb-saver-in"><div class="sb-saver-moon">' + moonGlyph(96) + "</div>" +
+      '<div class="sb-saver-time">' + esc(time) + "</div>" +
+      '<div class="sb-saver-date">' + esc(dateOf(Date.now())) + "</div>" +
+      '<div class="sb-saver-name" data-sb-userdata>' + esc(username()) + "</div></div>";
+  }
+  function saverShow() {
+    if (saverOn || doc.getElementById("sbVaultGate")) return;
+    if (!saverEl) {
+      saverEl = doc.createElement("div");
+      saverEl.id = "sbSaver";
+      saverEl.setAttribute("aria-hidden", "true");
+      doc.body.appendChild(saverEl);
+    }
+    saverPaint();
+    saverEl.hidden = false;
+    saverOn = true;
+    requestAnimationFrame(function () { if (saverEl) saverEl.classList.add("on"); });
+    if (saverClock) clearInterval(saverClock);
+    saverClock = setInterval(saverPaint, 30000);
+  }
+  function saverHide() {
+    if (!saverOn) return;
+    saverOn = false;
+    if (saverClock) { clearInterval(saverClock); saverClock = null; }
+    if (saverEl) { saverEl.classList.remove("on"); saverEl.hidden = true; }
+  }
+  function saverArm() {
+    if (saverArmed) return;
+    saverArmed = true;
+    var touch = function () { saverLast = Date.now(); if (saverOn) saverHide(); };
+    ["pointerdown", "pointermove", "keydown", "wheel", "touchstart"].forEach(function (e) { doc.addEventListener(e, touch, true); });
+    setInterval(function () {
+      if (!kindGranted("saver") || doc.visibilityState === "hidden") return;
+      if (Date.now() - saverLast >= saverMinutes() * 60000) saverShow();
+    }, 15000);
+  }
+
+  /* ── СВОЁ ИМЯ КОМНАТАМ ───────────────────────────────────────────────── */
+  function roomName(id) {
+    if (!kindGranted("rename")) return "";
+    var v = state().names[id];
+    return typeof v === "string" ? v.trim().slice(0, 18) : "";
+  }
+  function setRoomName(id, name) {
+    var st = state();
+    name = String(name || "").trim().slice(0, 18);
+    if (name) st.names[id] = name; else delete st.names[id];
+    save();
+    if (typeof window.sbRefreshNames === "function") window.sbRefreshNames();
   }
 
   function open() {
@@ -633,8 +742,12 @@
     var t = T().line, name = username();
     switch (p.kind) {
       case "mood": return p.params.mood === "own" ? fmt(t.own, { hue: hue(), name: name }) : fmt(t.mood, { room: byLang(p.title) });
-      case "file": return fmt(t.file, { file: p.params.file });
       case "serial": return fmt(t.serial, { serial: serial() });
+      case "night": return t.night;
+      case "rename": return t.rename;
+      case "countdown": return t.countdown;
+      case "saver": return fmt(t.saver, { n: saverMinutes() });
+      case "room": return fmt(t.room, { room: byLang(p.title) });
       case "stamp": return t.stamp;
       case "word": return fmt(t.word, { w: word(p.params.word) });
       case "title": return t.title;
@@ -683,7 +796,7 @@
     var show = justOpened || (n && !ready ? prize(st.opened[n - 1].id) : null);
     if (show) {
       out += '<section class="ch-prize' + (justOpened ? " fresh" : "") + '">' +
-        '<p class="ch-prize-k">' + esc(t.got) + "</p>" +
+        '<p class="ch-prize-k">' + esc(t.got) + (t.tiers[show.tier] ? ' · <span class="ch-tier" data-tier="' + esc(show.tier) + '">' + esc(t.tiers[show.tier]) + "</span>" : "") + "</p>" +
         '<h2 class="ch-prize-title">' + esc(byLang(show.title)) + "</h2>" +
         '<p class="ch-prize-what">' + esc(byLang(show.what)) + "</p>" +
         '<p class="ch-prize-line">' + esc(personalLine(show)) + "</p>" +
@@ -695,6 +808,8 @@
     /* Эхо и письмо живут в комнате всегда, когда даны. */
     if (kindGranted("echo") && (!show || show.kind !== "echo")) out += echoHtml(t);
     if (kindGranted("letter") && (!show || show.kind !== "letter")) out += letterHtml(t);
+    if (kindGranted("countdown") && (!show || show.kind !== "countdown")) out += countHtml(t);
+    if (kindGranted("rename") && (!show || show.kind !== "rename")) out += renameHtml(t);
 
     out += '<section class="ch-shelf"><h3 class="ch-shelf-title">' + esc(t.shelf) + "</h3>";
     if (!n) out += '<p class="ch-empty">' + esc(t.shelfEmpty) + "</p>";
@@ -703,8 +818,13 @@
       st.opened.slice().reverse().forEach(function (o, k) {
         var p = prize(o.id);
         if (!p) return;
-        out += '<li class="ch-item" data-id="' + esc(o.id) + '"><span class="ch-item-day">' + esc(fmt(t.day, { n: n - k })) + '</span>' +
-          '<span class="ch-item-title">' + esc(byLang(p.title)) + '</span><span class="ch-item-date">' + esc(dateOf(o.at)) + "</span></li>";
+        var isOn = granted(o.id);
+        out += '<li class="ch-item' + (p.switch && !isOn ? " off" : "") + '" data-id="' + esc(o.id) + '"><span class="ch-item-day">' + esc(fmt(t.day, { n: n - k })) + '</span>' +
+          '<span class="ch-item-title">' + esc(byLang(p.title)) + '</span>' +
+          (p.switch
+            ? '<button type="button" class="ch-switch' + (isOn ? " on" : "") + '" data-id="' + esc(o.id) + '" aria-pressed="' + (isOn ? "true" : "false") + '">' + esc(isOn ? t.on : t.off) + "</button>"
+            : '<span class="ch-item-date">' + esc(dateOf(o.at)) + "</span>") +
+          "</li>";
       });
       out += "</ol>";
     }
@@ -729,7 +849,28 @@
     if (p.kind === "title") return titleHtml(t);
     if (p.kind === "echo") return echoHtml(t);
     if (p.kind === "letter") return letterHtml(t);
+    if (p.kind === "rename") return renameHtml(t);
+    if (p.kind === "countdown") return countHtml(t);
     return "";
+  }
+  /* Комнаты для имён спрашиваются у реестра; Сундук себя не переименовывает. */
+  function renameHtml(t) {
+    var ids = (window.sbLaunchableApps ? window.sbLaunchableApps() : []).filter(function (id) { return id !== "chest"; });
+    var st = state(), out = '<section class="ch-rename"><p class="ch-rename-k">' + esc(t.renameLead) + "</p>";
+    ids.forEach(function (id) {
+      var own = (window.SysBaby && window.SysBaby.apps[id]) ? window.SysBaby.apps[id] : null;
+      var base = own ? ((own.i18n && own.i18n[lang()] && own.i18n[lang()].label) || own.label || own.title || id) : id;
+      out += '<label class="ch-rename-row"><span class="ch-rename-base">' + esc(base) + '</span>' +
+        '<input type="text" class="ch-rename" data-room="' + esc(id) + '" maxlength="18" value="' + esc(st.names[id] || "") + '" placeholder="' + esc(base) + '" data-sb-userdata></label>';
+    });
+    return out + "</section>";
+  }
+  function countHtml(t) {
+    return '<section class="ch-count"><p class="ch-count-k">' + esc(t.countLead) + "</p>" +
+      '<div class="ch-count-row"><label><span>' + esc(t.countDate) + '</span><input type="date" id="chCountDate" data-sb-nolang></label>' +
+      '<label><span>' + esc(t.countLabel) + '</span><input type="text" id="chCountLabel" maxlength="60" data-sb-userdata></label>' +
+      '<button type="button" class="ch-seal" id="chCountAdd">' + esc(t.countAdd) + '</button></div>' +
+      '<p class="ch-count-done" id="chCountDone" hidden>' + esc(t.countDone) + "</p></section>";
   }
   function titleHtml(t) {
     var st = state(), out = '<div class="ch-titles">';
@@ -776,6 +917,23 @@
         render(win);
       });
     });
+    host.querySelectorAll(".ch-switch").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var id = b.getAttribute("data-id");
+        toggle(id, !granted(id));
+        render(win);
+      });
+    });
+    host.querySelectorAll(".ch-rename").forEach(function (inp) {
+      inp.addEventListener("change", function () { setRoomName(inp.getAttribute("data-room"), inp.value); });
+    });
+    var countAdd = host.querySelector("#chCountAdd");
+    if (countAdd) countAdd.addEventListener("click", function () {
+      var d = host.querySelector("#chCountDate"), l = host.querySelector("#chCountLabel"), done = host.querySelector("#chCountDone");
+      if (!d || !addCountdown(d.value, l ? l.value : "")) { if (d) d.focus(); return; }
+      if (l) l.value = "";
+      if (done) done.hidden = false;
+    });
     var seal = host.querySelector("#chLetterSeal"), ta = host.querySelector("#chLetterText");
     if (seal && ta) seal.addEventListener("click", function () {
       var text = String(ta.value || "").trim();
@@ -800,16 +958,16 @@
     state: state,
     available: available,
     open: open,
-    granted: opened,
+    granted: granted,
+    toggle: toggle,
     word: word,
     title: titleText,
     serial: function () { return kindGranted("serial") ? serial() : ""; },
-    sigil: function () { return (kindGranted("file", "make", "sigil") || kindGranted("stamp")) ? sigilSvg(28) : ""; },
+    sigil: function () { return kindGranted("stamp") ? sigilSvg(28) : ""; },
+    roomName: roomName,
     hue: hue,
     numbers: numbers
   };
-
-  applyAll();
 
   if (typeof window.registerApp === "function") {
     window.registerApp("chest", {
@@ -830,4 +988,8 @@
       render: render
     });
   }
+  /* ПОСЛЕ объявления, не до: ящик выдаётся по объявлению keeps, и чтение до
+     регистрации ядро прав честно отказывало (замер: denial «чтение
+     sysbaby.chest.v1»). */
+  applyAll();
 })();

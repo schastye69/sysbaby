@@ -1,0 +1,36 @@
+/* solitaire.css — Пасьянс (D-257). Карты — разметка, масти — знаки шрифта.
+   Шкалы — из ядра. Размер карты считается от ширины окна: семь стопок
+   входят в любое окно, включая телефонное. */
+/* ШИРИНА КАРТЫ — ОТ ШИРИНЫ ОКНА, ВЫСОТА — ОТ ШИРИНЫ КАРТЫ. Проценты в
+   custom property считаются в месте применения: для height они значили бы
+   долю ВЫСОТЫ родителя (auto → ноль), и первая редакция сложила все карты
+   в одну строку. Высота задана aspect-ratio, а вертикальные отступы
+   стопки — от ширины (проценты у margin-top тоже считаются от ширины). */
+.sol-wrap { --sol-w: clamp(38px, calc((100% - 6 * 6px) / 7), 76px);
+  padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; color: var(--ink); min-width: 0; width: 100%; }
+.sol-top, .sol-cols { display: grid; grid-template-columns: repeat(7, var(--sol-w)); gap: 6px; justify-content: start; }
+.sol-gap { }
+.sol-card, .sol-slot { width: var(--sol-w); aspect-ratio: 5 / 7; border-radius: var(--r-tag); box-sizing: border-box; }
+.sol-slot { border: 1px dashed var(--line); background: rgba(255, 255, 255, .02); }
+.sol-slot.sol-home { border-style: solid; }
+.sol-card { position: relative; border: 1px solid rgba(0, 0, 0, .35); background: #f4f1ea; color: #1a1a1e; display: flex; flex-direction: column; justify-content: space-between; padding: 3px 4px; font-size: var(--f-ui); font-weight: 600; line-height: 1; cursor: pointer; user-select: none; -webkit-user-select: none; }
+.sol-card.red { color: #b3261e; }
+.sol-card.down { background: repeating-linear-gradient(135deg, #3b4a6b 0 3px, #2b3650 3px 6px); border-color: rgba(0, 0, 0, .45); cursor: default; }
+.sol-card.sel { outline: 3px solid var(--accent); outline-offset: -1px; box-shadow: 0 0 0 3px var(--accent-soft); }
+.sol-card:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
+.sol-suit { align-self: flex-end; font-size: var(--f-lead); }
+.sol-stock, .sol-waste, .sol-found { position: relative; width: var(--sol-w); aspect-ratio: 5 / 7; cursor: pointer; }
+.sol-stock .sol-card, .sol-waste .sol-card, .sol-found .sol-card { position: absolute; inset: 0; }
+.sol-col { position: relative; min-height: calc(var(--sol-w) * 1.4); display: flex; flex-direction: column; }
+.sol-col .sol-card { flex: none; }
+.sol-col .sol-card + .sol-card { margin-top: calc(var(--sol-w) * -1); }
+.sol-col .sol-card.down + .sol-card { margin-top: calc(var(--sol-w) * -1.2); }
+.sol-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: var(--f-ui); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.sol-bar .sol-btn { margin-left: auto; }
+.sol-bar .sol-btn + .sol-btn { margin-left: 0; }
+.sol-btn { padding: 7px 12px; font: inherit; font-size: var(--f-ui); color: var(--ink); background: rgba(255, 255, 255, .04); border: 1px solid var(--line); border-radius: var(--r-ctrl); cursor: pointer; }
+.sol-btn:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
+.sol-hint { margin: 0; font-size: var(--f-meta); color: var(--ink-3); max-width: 60ch; }
+.sol-win { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: var(--r-card); border: 1px solid var(--accent-ring); background: var(--accent-soft); font-size: var(--f-read); }
+.sol-win strong { font-size: var(--f-title); font-weight: 600; }
+html[data-theme="light"] .sol-card.down { background: repeating-linear-gradient(135deg, #7d8db0 0 3px, #6a7a9c 3px 6px); }

@@ -229,6 +229,13 @@ window.SB_FLOOR = {
       "where": "os/apps/settings/settings.js:833"
     },
     {
+      "id": "sysbaby.solitaire.v1",
+      "kind": "вещи",
+      "what": "Пасьянс: текущий расклад, счёт ходов, время начала и ходы, которые можно отменить.",
+      "rooms": ["solitaire"],
+      "where": "os/apps/solitaire/solitaire.js:27"
+    },
+    {
       "id": "sysbaby.chest.v1",
       "kind": "вещи",
       "what": "Сундук: в каком порядке выпали призы, какие открыты и когда, ваш титул, номер системы и письмо себе до срока.",
