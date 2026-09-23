@@ -101,6 +101,12 @@
       secretHint: "The terminal knows one more word than its help admits.",
       shotLead: "A real picture of the desk, saved to your device.", shotDo: "Take a snapshot", shotDone: "Saved: {name}", shotNo: "This browser cannot capture the screen — nothing was pretended.", shotRefused: "The screen was not shared — nothing was saved.",
       fragmentLead: "Fragment of the day — from you and {date}.",
+      rainLead: "Rain made by this device, right now — no recording.", rainOn: "Let it rain", rainOff: "Stop the rain", rainNo: "This browser has no sound engine — nothing was pretended.",
+      voiceLead: "The voice of this device, once, when you ask.", voiceDo: "Say my name", voiceNo: "This browser cannot speak — nothing was pretended.", voiceSaid: "Said.", voiceText: "Good day, {name}. This is your system. Day {n} together.",
+      breathLead: "One minute: in, hold, out, rest. Any touch ends it early.", breathDo: "Breathe one minute", breathIn: "breathe in", breathHold: "hold", breathOut: "breathe out", breathRest: "rest", breathLeave: "touch anywhere to leave", breathDone: "One minute of breath. Nothing was measured.",
+      firstLead: "Where it began.", firstBorn: "You began on {date} at {time} — day {n} today.", firstNote: "Your first note, {date}:", firstNone: "No notes yet — the chest invents nothing. Your first note will stand here.",
+      mapLead: "Map of days", mapLine: "{n} days with the system · {k} with a chest opened. Empty dots are just empty days: nothing is lost, nothing is owed.",
+      mileNote: "Day {n} with {name}.\n\n{notes} notes, {words} words, {envelopes} envelopes sealed, {chests} chests opened. Nothing here has left this device.\n\n— your system, on a round day",
       morningTitle: "Good morning, {name}", morningLine: "Day {n} with your system. The night was spent in Ember; your room returns in {m} minutes.",
       line: {
         mood: "The room «{room}» is now among your rooms.",
@@ -124,6 +130,12 @@
         trace: "Look at the very top edge of the desk. It will change with the hour.",
         fragment: "Today's fragment is below; tomorrow's will be different.",
         guest: "Look at the right edge of the desk.",
+        rain: "Below — one tap starts it, one stops it.",
+        voice: "Below — one tap, and the device says your name.",
+        breath: "Below — one tap, one minute.",
+        firstday: "Below — your beginning, as your own Notes remember it.",
+        daysmap: "Below — every day since you began, as dots.",
+        milestone: "Day {n} now. The next round day is {next}; the letter will find you in Notes.",
         serial: "Your system's number: {serial}.",
         stamp: "Your sign now prints in the corner of every note.",
         word: "From now on the system says it with your name: «{w}».",
@@ -168,6 +180,12 @@
       secretHint: "Терминал знает на одно слово больше, чем признаёт его help.",
       shotLead: "Настоящая картинка стола, сохранённая на устройство.", shotDo: "Сделать снимок", shotDone: "Сохранено: {name}", shotNo: "Этот браузер не умеет снимать экран — ничего не изображалось.", shotRefused: "Экран не был показан — ничего не сохранено.",
       fragmentLead: "Фрагмент дня — из вас и {date}.",
+      rainLead: "Дождь, который это устройство делает сейчас — без записи.", rainOn: "Пустить дождь", rainOff: "Остановить дождь", rainNo: "В этом браузере нет звукового движка — ничего не изображено.",
+      voiceLead: "Голос этого устройства — один раз, когда попросите.", voiceDo: "Назови моё имя", voiceNo: "Этот браузер не умеет говорить — ничего не изображено.", voiceSaid: "Сказано.", voiceText: "Добрый день, {name}. Это ваша система. День {n} вместе.",
+      breathLead: "Минута: вдох, задержка, выдох, пауза. Любое касание заканчивает раньше.", breathDo: "Минуту дышать", breathIn: "вдох", breathHold: "задержка", breathOut: "выдох", breathRest: "пауза", breathLeave: "коснитесь, чтобы выйти", breathDone: "Минута дыхания. Ничего не измерялось.",
+      firstLead: "Где всё началось.", firstBorn: "Вы начали {date} в {time} — сегодня день {n}.", firstNote: "Ваша первая запись, {date}:", firstNone: "Записей пока нет — сундук ничего не выдумывает. Первая запись встанет здесь.",
+      mapLead: "Карта дней", mapLine: "{n} дней с системой · {k} с открытым сундуком. Пустые точки — просто пустые дни: ничего не потеряно и никто ничего не должен.",
+      mileNote: "День {n} с {name}.\n\n{notes} записей, {words} слов, {envelopes} конвертов запечатано, {chests} сундуков открыто. Ничто отсюда не покинуло это устройство.\n\n— ваша система, в круглый день",
       morningTitle: "Доброе утро, {name}", morningLine: "День {n} с вашей системой. Ночь прошла в Углях; ваша комната вернётся через {m} мин.",
       line: {
         mood: "Комната «{room}» теперь среди ваших комнат.",
@@ -191,6 +209,12 @@
         trace: "Посмотрите на самую верхнюю кромку стола. Она будет меняться с часом.",
         fragment: "Сегодняшний фрагмент ниже; завтрашний будет другим.",
         guest: "Посмотрите на правый край стола.",
+        rain: "Ниже — одно касание пускает, одно останавливает.",
+        voice: "Ниже — одно касание, и устройство называет ваше имя.",
+        breath: "Ниже — одно касание, одна минута.",
+        firstday: "Ниже — ваше начало, каким его помнят ваши Записи.",
+        daysmap: "Ниже — каждый день с начала, точками.",
+        milestone: "Сейчас день {n}. Ближайший круглый — {next}; письмо найдёт вас в Записях.",
         serial: "Номер вашей системы: {serial}.",
         stamp: "Ваш знак теперь стоит в углу каждой заметки.",
         word: "Отныне система говорит это с вашим именем: «{w}».",
@@ -235,6 +259,12 @@
       secretHint: "Terminal teab ühe sõna rohkem, kui tema help tunnistab.",
       shotLead: "Laua tõeline pilt, salvestatud seadmesse.", shotDo: "Tee hetkepilt", shotDone: "Salvestatud: {name}", shotNo: "See brauser ei oska ekraani pildistada — midagi ei teeseldud.", shotRefused: "Ekraani ei jagatud — midagi ei salvestatud.",
       fragmentLead: "Päeva fragment — sinust ja {date}.",
+      rainLead: "Vihm, mida see seade teeb praegu — ilma salvestuseta.", rainOn: "Lase vihma", rainOff: "Peata vihm", rainNo: "Selles brauseris pole helimootorit — midagi ei teeseldud.",
+      voiceLead: "Selle seadme hääl — üks kord, kui palud.", voiceDo: "Ütle mu nimi", voiceNo: "See brauser ei oska rääkida — midagi ei teeseldud.", voiceSaid: "Öeldud.", voiceText: "Tere päevast, {name}. See on sinu süsteem. Päev {n} koos.",
+      breathLead: "Minut: sisse, hoia, välja, paus. Iga puudutus lõpetab varem.", breathDo: "Hinga üks minut", breathIn: "hinga sisse", breathHold: "hoia", breathOut: "hinga välja", breathRest: "paus", breathLeave: "puuduta, et lahkuda", breathDone: "Minut hingamist. Midagi ei mõõdetud.",
+      firstLead: "Kus kõik algas.", firstBorn: "Sa alustasid {date} kell {time} — täna on päev {n}.", firstNote: "Sinu esimene märge, {date}:", firstNone: "Märkmeid veel pole — laegas ei mõtle midagi välja. Esimene märge seisab siin.",
+      mapLead: "Päevade kaart", mapLine: "{n} päeva süsteemiga · {k} avatud laekaga. Tühjad täpid on lihtsalt tühjad päevad: midagi pole kadunud ja keegi ei võlgne midagi.",
+      mileNote: "Päev {n} koos {name}.\n\n{notes} märget, {words} sõna, {envelopes} ümbrikku pitseeritud, {chests} laegast avatud. Miski siit pole sellest seadmest lahkunud.\n\n— sinu süsteem, ümmargusel päeval",
       morningTitle: "Tere hommikust, {name}", morningLine: "Päev {n} sinu süsteemiga. Öö möödus Hõõguses; sinu tuba tuleb tagasi {m} minuti pärast.",
       line: {
         mood: "Tuba «{room}» on nüüd sinu tubade seas.",
@@ -258,6 +288,12 @@
         trace: "Vaata laua kõige ülemist serva. See muutub tunniga.",
         fragment: "Tänane fragment on allpool; homne on teistsugune.",
         guest: "Vaata laua paremat serva.",
+        rain: "All — üks puudutus alustab, üks peatab.",
+        voice: "All — üks puudutus, ja seade ütleb sinu nime.",
+        breath: "All — üks puudutus, üks minut.",
+        firstday: "All — sinu algus, nagu sinu Märkmed seda mäletavad.",
+        daysmap: "All — iga päev alates algusest, täppidena.",
+        milestone: "Praegu on päev {n}. Järgmine ümmargune on {next}; kiri leiab sind Märkmetest.",
         serial: "Sinu süsteemi number: {serial}.",
         stamp: "Sinu märk on nüüd iga märkme nurgas.",
         word: "Nüüdsest ütleb süsteem seda sinu nimega: «{w}».",
@@ -652,7 +688,7 @@
   };
 
   /* ── ДВИЖОК: ЧТО ДАНО — ТО ЖИВЁТ ─────────────────────────────────────── */
-  var KINDS = ["mood", "command", "word", "title", "serial", "stamp", "echo", "letter", "systemletter", "night", "rename", "countdown", "saver", "room", "focus", "sheet", "onthisday", "layout", "morning", "remember", "keysafe", "tidy", "secret", "shot", "trace", "fragment", "guest"];
+  var KINDS = ["mood", "command", "word", "title", "serial", "stamp", "echo", "letter", "systemletter", "night", "rename", "countdown", "saver", "room", "focus", "sheet", "onthisday", "layout", "morning", "remember", "keysafe", "tidy", "secret", "shot", "trace", "fragment", "guest", "rain", "voice", "breath", "firstday", "daysmap", "milestone"];
   function applyOne(p, fresh) {
     switch (p.kind) {
       case "mood": {
@@ -703,6 +739,18 @@
       case "trace": { traceTick(); return; }
       case "guest": { guestTick(); return; }
       case "tidy": { return; }
+      case "rain": { if (!granted(p.id)) rainStop(); return; }
+      case "voice": { return; }
+      case "breath": { return; }
+      case "firstday": { return; }
+      case "daysmap": { return; }
+      case "milestone": {
+        /* В день подарка круглые дни, что уже позади, считаются виденными:
+           письмо задним числом — не письмо. */
+        if (fresh) { var st0 = state(), n0 = daysKept(); st0.milestones = MILESTONES.filter(function (m) { return m < n0; }); save(); }
+        milestoneTick();
+        return;
+      }
       case "secret": {
         /* Команда о себе не объявляет: help о ней молчит нарочно. */
         window.sbTerminalCommands = window.sbTerminalCommands || {};
@@ -747,6 +795,7 @@
     if (!on && p.kind === "saver") saverHide();
     if (!on && p.kind === "trace") traceHide();
     if (!on && p.kind === "guest") guestHide();
+    if (!on && p.kind === "rain") rainStop();
     if (p.kind === "rename" && typeof window.sbRefreshNames === "function") window.sbRefreshNames();
     if (window.sbPaintIris) window.sbPaintIris();
     return true;
@@ -786,7 +835,7 @@
     if (typeof window.sbGetWallpaperMood === "function" && window.sbGetWallpaperMood() === "daylight" && st.morning.dayRoom) window.sbSetWallpaperMood(st.morning.dayRoom);
     st.morning = null; save();
   }
-  setInterval(function () { try { nightTick(); morningTick(); refreshCountdowns(); focusTick(); traceTick(); guestTick(); } catch (e) { /* ignore */ } }, 60000);
+  setInterval(function () { try { nightTick(); morningTick(); refreshCountdowns(); focusTick(); traceTick(); guestTick(); milestoneTick(); } catch (e) { /* ignore */ } }, 60000);
 
   /* ── ОДИН ФОКУС: ТИХИЕ МИНУТЫ НА ОДНО ДЕЛО ───────────────────────────── */
   var focus = null, focusBadge = null, focusClock = null;
@@ -1030,6 +1079,136 @@
   }
   function guestHide() { if (guestEl && guestEl.parentNode) guestEl.parentNode.removeChild(guestEl); guestEl = null; }
 
+
+  /* ── ТИХИЙ ДОЖДЬ: ШУМ, КОТОРЫЙ ДЕЛАЕТ САМО УСТРОЙСТВО ────────────────── */
+  var rain = null;
+  function rainSupported() { return typeof (window.AudioContext || window.webkitAudioContext) === "function"; }
+  function rainStart() {
+    if (rain || !rainSupported()) return false;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    var ctx = new AC(), sr = ctx.sampleRate, len = sr * 2, buf = ctx.createBuffer(1, len, sr), d = buf.getChannelData(0), i, last = 0, w;
+    /* Коричневый шум: каждый отсчёт — шаг от предыдущего. Так шумит дождь по
+       крыше, а не эфир. Два секунды в кольце — шва не слышно. */
+    for (i = 0; i < len; i++) { w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+    var src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+    var lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 900;
+    var gain = ctx.createGain(); gain.gain.value = 0.0001;
+    /* Капли: редкие короткие всплески высоких частот. */
+    var hp = ctx.createBiquadFilter(); hp.type = "bandpass"; hp.frequency.value = 3200; hp.Q.value = 6;
+    var drops = ctx.createGain(); drops.gain.value = 0.0;
+    src.connect(lp); lp.connect(gain); gain.connect(ctx.destination);
+    src.connect(hp); hp.connect(drops); drops.connect(ctx.destination);
+    src.start();
+    gain.gain.setTargetAtTime(0.09, ctx.currentTime, 1.2);
+    var dropTimer = setInterval(function () {
+      if (!rain) return;
+      var t = ctx.currentTime;
+      drops.gain.cancelScheduledValues(t);
+      drops.gain.setValueAtTime(0.0, t);
+      drops.gain.linearRampToValueAtTime(0.05 + Math.random() * 0.05, t + 0.01);
+      drops.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+    }, 140 + Math.floor(Math.random() * 120));
+    rain = { ctx: ctx, src: src, gain: gain, drops: dropTimer };
+    if (ctx.state === "suspended") ctx.resume().catch(function () { /* без жеста — молчит */ });
+    return true;
+  }
+  function rainStop() {
+    if (!rain) return;
+    var r = rain; rain = null;
+    clearInterval(r.drops);
+    try { r.gain.gain.setTargetAtTime(0.0001, r.ctx.currentTime, 0.4); } catch (e) { /* ignore */ }
+    setTimeout(function () { try { r.src.stop(); } catch (e) { /* ignore */ } try { r.ctx.close(); } catch (e) { /* ignore */ } }, 1500);
+  }
+  function rainState() { return rain ? { on: true, state: rain.ctx.state } : { on: false, state: "" }; }
+
+  /* ── ГОЛОС: УСТРОЙСТВО ПРОИЗНОСИТ ИМЯ ─────────────────────────────────── */
+  function voiceSupported() { return !!(window.speechSynthesis && typeof window.SpeechSynthesisUtterance === "function"); }
+  function voiceSay() {
+    if (!voiceSupported()) return false;
+    var text = fmt(T().voiceText, { name: username(), n: daysKept() });
+    var u = new window.SpeechSynthesisUtterance(text);
+    u.lang = lang() === "ee" ? "et-EE" : (lang() === "ru" ? "ru-RU" : "en-GB");
+    u.rate = 0.95;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    return true;
+  }
+
+  /* ── МИНУТА ДЫХАНИЯ: КРУГ ДЫШИТ ВМЕСТЕ С ЧЕЛОВЕКОМ ────────────────────── */
+  /* ПОСТОЯННАЯ: четыре секунды на фазу — «квадратное дыхание» 4-4-4-4, самая
+     распространённая безопасная схема; не число о составе системы. */
+  var BREATH_STEP = 4000;
+  var breath = null;
+  function breathSeconds() { var p = prize("breath"); return (p && p.params && p.params.seconds) || 60 /* ОТКАТ: минута по описи */; }
+  function breathStart() {
+    if (breath) return;
+    var t = T(), el = doc.createElement("div");
+    el.id = "sbBreathMinute";   /* не #sbBreath: так зовётся дыхание стола (D-141) */
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-label", byLang(prize("breath").title));
+    el.innerHTML = '<div class="sb-breath-in"><div class="sb-breath-ring"></div><p class="sb-breath-phase" data-phase="in">' + esc(t.breathIn) + '</p><p class="sb-breath-left">' + esc(t.breathLeave) + "</p></div>";
+    doc.body.appendChild(el);
+    var end = function () { breathStop(true); };
+    el.addEventListener("pointerdown", end);
+    el.addEventListener("keydown", end);
+    breath = { el: el, start: Date.now(), until: Date.now() + breathSeconds() * 1000, timer: setInterval(breathTick, 250) };
+    requestAnimationFrame(function () { el.classList.add("on"); });
+  }
+  function breathTick() {
+    if (!breath) return;
+    var now = Date.now();
+    if (now >= breath.until) { breathStop(false); return; }
+    var phases = ["in", "hold", "out", "rest"], keys = { "in": "breathIn", hold: "breathHold", out: "breathOut", rest: "breathRest" };
+    var k = Math.floor((now - breath.start) / BREATH_STEP) % 4, ph = phases[k];
+    var p = breath.el.querySelector(".sb-breath-phase");
+    if (p && p.getAttribute("data-phase") !== ph) { p.setAttribute("data-phase", ph); p.textContent = T()[keys[ph]]; }
+  }
+  function breathStop(early) {
+    if (!breath) return;
+    var b = breath; breath = null;
+    clearInterval(b.timer);
+    if (b.el.parentNode) b.el.parentNode.removeChild(b.el);
+    if (!early && window.showToast) window.showToast(byLang(prize("breath").title), T().breathDone, ICON, true, "", "event");
+  }
+
+  /* ── ВАШ ПЕРВЫЙ ДЕНЬ: СПРОШЕНО У ЗАПИСЕЙ, НЕ ВЫДУМАНО ─────────────────── */
+  function firstNote() {
+    var notes = [];
+    try { notes = window.sbNotesStore ? window.sbNotesStore.load() : []; } catch (e) { notes = []; }
+    var first = null;
+    notes.forEach(function (n) {
+      if (!n || n.from === "chest" || !String(n.text || "").trim()) return;
+      var at = Number(n.createdAt || n.updatedAt) || 0;
+      if (!first || at < first.at) first = { at: at, text: String(n.text).trim() };
+    });
+    return first;
+  }
+  function timeOf(t) {
+    try { return new Date(t).toLocaleTimeString(lang() === "ee" ? "et-EE" : (lang() === "ru" ? "ru-RU" : "en-GB"), { hour: "2-digit", minute: "2-digit" }); }
+    catch (e) { return new Date(t).toISOString().slice(11, 16); }
+  }
+
+  /* ── КРУГЛЫЕ ДНИ: ПИСЬМО В СОТЫЙ, В ГОДОВОЙ, В ТЫСЯЧНЫЙ ──────────────── */
+  /* ПОСТОЯННАЯ: сто, год и тысяча — круглые дни по описи приза (params.days);
+     здесь лишь отражение описи, а не память о составе системы. */
+  var MILESTONES = (function () { var p = prize("milestone"); return (p && p.params && Array.isArray(p.params.days)) ? p.params.days.slice() : []; })();
+  function milestoneTick() {
+    if (!kindGranted("milestone") || typeof window.sbAddQuickNote !== "function") return;
+    var st = state(), n = daysKept();
+    if (!Array.isArray(st.milestones)) st.milestones = [];
+    MILESTONES.forEach(function (m) {
+      if (n < m || st.milestones.indexOf(m) !== -1) return;
+      var k = numbers();
+      window.sbAddQuickNote(fmt(T().mileNote, { n: m, name: username(), notes: k.notes, words: k.words, envelopes: k.envelopes, chests: k.chests }), { from: "chest" });
+      st.milestones.push(m); save();
+    });
+  }
+  function nextMilestone() {
+    var n = daysKept();
+    for (var i = 0; i < MILESTONES.length; i++) if (MILESTONES[i] > n) return MILESTONES[i];
+    return null;
+  }
+
   /* ── МОЙ РАСКЛАД ─────────────────────────────────────────────────────── */
   function layoutSave() {
     var wins = window.openWindows || {}, list = [];
@@ -1204,6 +1383,12 @@
       case "trace": return t.trace;
       case "fragment": return t.fragment;
       case "guest": return t.guest;
+      case "rain": return t.rain;
+      case "voice": return t.voice;
+      case "breath": return t.breath;
+      case "firstday": return t.firstday;
+      case "daysmap": return t.daysmap;
+      case "milestone": { var nx = nextMilestone(); return fmt(t.milestone, { n: daysKept(), next: nx === null ? "—" : nx }); }
       case "command": if (p.id === "alias") return t.alias; return fmt(t.command, { cmd: p.params.cmd });
       case "stamp": return t.stamp;
       case "word": return fmt(t.word, { w: word(p.params.word) });
@@ -1270,6 +1455,11 @@
     if (kindGranted("tidy") && (!show || show.kind !== "tidy")) out += tidyHtml(t);
     if (kindGranted("fragment") && (!show || show.kind !== "fragment")) out += fragmentHtml(t);
     if (kindGranted("shot") && (!show || show.kind !== "shot")) out += shotHtml(t);
+    if (kindGranted("rain") && (!show || show.kind !== "rain")) out += rainHtml(t);
+    if (kindGranted("voice") && (!show || show.kind !== "voice")) out += voiceHtml(t);
+    if (kindGranted("breath") && (!show || show.kind !== "breath")) out += breathHtml(t);
+    if (kindGranted("firstday") && (!show || show.kind !== "firstday")) out += firstHtml(t);
+    if (kindGranted("daysmap") && (!show || show.kind !== "daysmap")) out += mapHtml(t);
     if (kindGranted("keysafe") && (!show || show.kind !== "keysafe")) out += keyHtml(t);
     if (kindGranted("sheet") && (!show || show.kind !== "sheet")) out += sheetHtml(t);
     if (kindGranted("onthisday") && (!show || show.kind !== "onthisday")) out += dayHtml(t);
@@ -1360,8 +1550,46 @@
   function fragmentHtml(t) {
     return '<section class="ch-fragment"><p class="ch-fragment-k">' + esc(fmt(t.fragmentLead, { date: dateOf(Date.now()) })) + '</p><div class="ch-fragment-art">' + fragmentSvg(120) + "</div></section>";
   }
+  function rainHtml(t) {
+    var r = rainState();
+    return '<section class="ch-rain"><p class="ch-rain-k">' + esc(t.rainLead) + "</p>" +
+      (rainSupported()
+        ? '<div class="ch-focus-row"><button type="button" class="ch-seal" id="chRain" data-on="' + (r.on ? "1" : "0") + '">' + esc(r.on ? t.rainOff : t.rainOn) + "</button></div>"
+        : '<p class="ch-rain-no">' + esc(t.rainNo) + "</p>") + "</section>";
+  }
+  function voiceHtml(t) {
+    return '<section class="ch-voice"><p class="ch-voice-k">' + esc(t.voiceLead) + "</p>" +
+      (voiceSupported()
+        ? '<div class="ch-focus-row"><button type="button" class="ch-seal" id="chVoice">' + esc(t.voiceDo) + '</button><span class="ch-voice-said" id="chVoiceSaid"></span></div>'
+        : '<p class="ch-voice-no">' + esc(t.voiceNo) + "</p>") + "</section>";
+  }
+  function breathHtml(t) {
+    return '<section class="ch-breath"><p class="ch-breath-k">' + esc(t.breathLead) + '</p><div class="ch-focus-row"><button type="button" class="ch-seal" id="chBreath">' + esc(t.breathDo) + "</button></div></section>";
+  }
+  function firstHtml(t) {
+    var b = birthMs(), f = firstNote();
+    return '<section class="ch-first"><p class="ch-first-k">' + esc(t.firstLead) + '</p><p class="ch-first-born">' + esc(fmt(t.firstBorn, { date: dateOf(b), time: timeOf(b), n: daysKept() })) + "</p>" +
+      (f ? '<p class="ch-first-when">' + esc(fmt(t.firstNote, { date: dateOf(f.at) })) + '</p><blockquote class="ch-first-note" data-sb-userdata>' + esc(f.text.length > 400 ? f.text.slice(0, 400) + "…" : f.text) + "</blockquote>"
+         : '<p class="ch-first-none">' + esc(t.firstNone) + "</p>") + "</section>";
+  }
+  function mapHtml(t) {
+    var st = state(), n = daysKept(), b = birthMs(), lit = {}, k = 0, i, out;
+    st.opened.forEach(function (o) { var d = dayKey(o.at); if (!lit[d]) { lit[d] = true; k++; } });
+    out = '<section class="ch-map"><p class="ch-map-k">' + esc(t.mapLead) + '</p><div class="ch-map-grid" role="img" aria-label="' + esc(fmt(t.mapLine, { n: n, k: k })) + '">';
+    var today = dayKey(Date.now());
+    for (i = 0; i < n; i++) {
+      var d = dayKey(b + i * DAY);
+      out += '<span class="ch-map-dot' + (lit[d] ? " on" : "") + (d === today ? " today" : "") + '"></span>';
+    }
+    return out + '</div><p class="ch-map-line">' + esc(fmt(t.mapLine, { n: n, k: k })) + "</p></section>";
+  }
   function extraFor(p, t) {
     if (p.kind === "shot") return shotHtml(t);
+    if (p.kind === "rain") return rainHtml(t);
+    if (p.kind === "voice") return voiceHtml(t);
+    if (p.kind === "breath") return breathHtml(t);
+    if (p.kind === "firstday") return firstHtml(t);
+    if (p.kind === "daysmap") return mapHtml(t);
     if (p.kind === "fragment") return fragmentHtml(t);
     if (p.kind === "keysafe") return keyHtml(t);
     if (p.kind === "tidy") return tidyHtml(t);
@@ -1440,6 +1668,20 @@
         render(win);
       });
     });
+    var rainBtn = host.querySelector("#chRain");
+    if (rainBtn) rainBtn.addEventListener("click", function () {
+      if (rainState().on) rainStop(); else rainStart();
+      var on = rainState().on;
+      rainBtn.setAttribute("data-on", on ? "1" : "0");
+      rainBtn.textContent = on ? T().rainOff : T().rainOn;
+    });
+    var voiceBtn = host.querySelector("#chVoice");
+    if (voiceBtn) voiceBtn.addEventListener("click", function () {
+      var said = host.querySelector("#chVoiceSaid");
+      if (voiceSay() && said) said.textContent = T().voiceSaid;
+    });
+    var breathBtn = host.querySelector("#chBreath");
+    if (breathBtn) breathBtn.addEventListener("click", function () { breathStart(); });
     var shotBtn = host.querySelector("#chShot");
     if (shotBtn) shotBtn.addEventListener("click", function () {
       shotBtn.disabled = true;
@@ -1520,6 +1762,7 @@
     prizes: prizes,
     kinds: function () { return KINDS.slice(); },
     state: state,
+    rain: rainState,
     available: available,
     open: open,
     granted: granted,

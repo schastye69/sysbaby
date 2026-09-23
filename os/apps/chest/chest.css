@@ -154,3 +154,36 @@ html[data-motion="reduced"] #sbSaver { transition: none; }
 #sbGuest.leaving { opacity: 0; transform: translateX(40px); }
 #sbGuest:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; border-radius: var(--r-ctrl); }
 html[data-motion="reduced"] #sbGuest, html[data-motion="reduced"] #sbDayTrace { transition: none; }
+
+/* ── тихий дождь, голос, дыхание, первый день, карта дней ───────────────── */
+.ch-rain, .ch-voice, .ch-breath, .ch-first, .ch-map { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-card); }
+.ch-rain-k, .ch-voice-k, .ch-breath-k, .ch-first-k, .ch-map-k { margin: 0; font-size: var(--f-meta); color: var(--ink-3); }
+.ch-rain-no, .ch-voice-no, .ch-first-none { margin: 0; font-size: var(--f-meta); color: var(--ink-3); font-style: italic; }
+.ch-voice-said { font-size: var(--f-meta); color: var(--ink-3); }
+#chRain[data-on="1"] { background: color-mix(in oklab, var(--accent) 22%, transparent); }
+.ch-first-born { margin: 0; font-size: var(--f-read); color: var(--ink); }
+.ch-first-when { margin: 0; font-size: var(--f-meta); color: var(--ink-3); }
+.ch-first-note { margin: 0; padding: 8px 12px; border-left: 2px solid var(--accent); font-size: var(--f-read); color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ch-map-grid { display: flex; flex-wrap: wrap; gap: 4px; }
+.ch-map-dot { width: 10px; height: 10px; border-radius: var(--r-round); background: color-mix(in oklab, var(--ink) 12%, transparent); }
+.ch-map-dot.on { background: var(--accent); }
+.ch-map-dot.today { outline: 2px solid var(--ink-2); outline-offset: 1px; }
+.ch-map-line { margin: 0; font-size: var(--f-meta); color: var(--ink-3); }
+
+/* ── минута дыхания: слой над столом ───────────────────────────────────── */
+#sbBreathMinute { position: fixed; inset: 0; z-index: var(--z-curtain); display: flex; align-items: center; justify-content: center; background: rgba(6, 6, 8, .9); color: var(--ink); opacity: 0; transition: opacity var(--t-scene) ease; cursor: pointer; }
+#sbBreathMinute.on { opacity: 1; }
+.sb-breath-in { display: flex; flex-direction: column; align-items: center; gap: 22px; text-align: center; }
+.sb-breath-ring { width: 120px; height: 120px; border-radius: var(--r-round); background: color-mix(in oklab, var(--accent) 55%, transparent); box-shadow: 0 0 60px color-mix(in oklab, var(--accent) 35%, transparent); animation: sb-breath 16s ease-in-out infinite; }
+.sb-breath-phase { margin: 0; font-size: var(--f-title); font-weight: 500; letter-spacing: .04em; min-height: 1.4em; }
+.sb-breath-left { margin: 0; font-size: var(--f-micro); color: var(--ink-3); letter-spacing: .08em; text-transform: uppercase; }
+/* Дыхание фона: четыре фазы по четверти круга — вдох, задержка, выдох, пауза. */
+@keyframes sb-breath {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.6); }
+  50% { transform: scale(1.6); }
+  75% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+html[data-motion="reduced"] #sbBreathMinute { transition: none; }
+html[data-motion="reduced"] .sb-breath-ring { animation: none; }
