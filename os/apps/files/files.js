@@ -69,6 +69,19 @@
           remove: function () { return false; }, flush: function () { } };
   }
   function dbGet(key) { return box().get(key); }
+  /* ── ЭПОХА ХРАНИЛИЩА (D-274) ──────────────────────────────────────────
+     Копия памяти этой комнаты помнит, в какую эпоху хранилища она снята, и
+     перечитывается, когда эпоха другая (замок открыли, заперли, сняли). Пока
+     хранилище закрыто замком, копия не снимается вовсе: «ничего» за дверью —
+     не пустота, а запертое. Охраняется tools/lock-memory-check.mjs. */
+  function epochNow() {
+    try { return window.sbDB && window.sbDB.epoch ? window.sbDB.epoch() : 0; }
+    catch (e) { return 0; /* ОТКАТ: ядро без эпох — одна эпоха на весь сеанс */ }
+  }
+  function storeClosed() {
+    try { return !!(window.sbDB && window.sbDB.closed && window.sbDB.closed()); }
+    catch (e) { return false; /* ОТКАТ: не спросить — считаем открытым, как было */ }
+  }
   function dbSet(key, value) { return box().set(key, value); }
 
   function toast(title, text) {
@@ -82,7 +95,7 @@
 
   /* ---------------------------------------------------------------- store */
 
-  var tree = null;
+  var tree = null, treeEpoch = -1;
   var pathStack = [];        // app-global: stack of folder nodes, [0] = root
   var selectedIndex = -1;    // index within the current folder's children
   var previewIndex = -1;     // index of the previewed file, -1 = hidden
@@ -92,6 +105,8 @@
   function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
 
   function persist() {
+    /* Копия из другой эпохи не пишется никогда: она легла бы поверх настоящей памяти (D-274). */
+    if (treeEpoch !== epochNow()) return false;
     try {
       dbSet(KEY, JSON.stringify(tree));
       return true;
@@ -112,6 +127,13 @@
      в load() ниже. */
 
   function load() {
+    treeEpoch = epochNow();
+    /* За дверью замка Хранилище не читается и не пишется (D-274). */
+    if (storeClosed()) {
+      tree = clone(SEED_TREE); treeEpoch = -1;
+      pathStack = [tree]; selectedIndex = -1; previewIndex = -1; editing = false;
+      return;
+    }
     var parsed = null;
     var raw = dbGet(KEY);
     if (raw) {
@@ -153,7 +175,7 @@
     editing = false;
   }
 
-  function ensureLoaded() { if (!tree) load(); }
+  function ensureLoaded() { if (!tree || treeEpoch !== epochNow()) load(); }
 
   function currentFolder() {
     ensureLoaded();

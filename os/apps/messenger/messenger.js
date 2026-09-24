@@ -64,6 +64,19 @@
           remove: function () { return false; }, flush: function () { } };
   }
   function dbGet(key) { return box().get(key); }
+  /* ── ЭПОХА ХРАНИЛИЩА (D-274) ──────────────────────────────────────────
+     Копия памяти этой комнаты помнит, в какую эпоху хранилища она снята, и
+     перечитывается, когда эпоха другая (замок открыли, заперли, сняли). Пока
+     хранилище закрыто замком, копия не снимается вовсе: «ничего» за дверью —
+     не пустота, а запертое. Охраняется tools/lock-memory-check.mjs. */
+  function epochNow() {
+    try { return window.sbDB && window.sbDB.epoch ? window.sbDB.epoch() : 0; }
+    catch (e) { return 0; /* ОТКАТ: ядро без эпох — одна эпоха на весь сеанс */ }
+  }
+  function storeClosed() {
+    try { return !!(window.sbDB && window.sbDB.closed && window.sbDB.closed()); }
+    catch (e) { return false; /* ОТКАТ: не спросить — считаем открытым, как было */ }
+  }
   function dbSet(key, value) { return box().set(key, value); }
   function dbRemove(key) { box().remove(key); }
   function dbFlush() { box().flush(); }
@@ -186,7 +199,7 @@
 
   /* ------------------------------------------------------------ data model */
 
-  var convos = null;
+  var convos = null, convosEpoch = -1;
   var activeId = null;
 
   function normalizeMessages(list) {
@@ -234,6 +247,8 @@
   }
 
   function write() {
+    /* Копия из другой эпохи не пишется никогда: она легла бы поверх настоящей памяти (D-274). */
+    if (convosEpoch !== epochNow()) return false;
     try {
       dbSet(KEY_V3, JSON.stringify(convos));
       return true;
@@ -282,6 +297,9 @@
   }
 
   function load() {
+    convosEpoch = epochNow();
+    /* За дверью замка переписка не читается и не сажается (D-274). */
+    if (storeClosed()) { convos = []; convosEpoch = -1; return; }
     var v3 = parseList(dbGet(KEY_V3));
     if (v3) { convos = normalizeAll(v3); dropLegacy(); return; }
 
@@ -296,7 +314,7 @@
     dropLegacy();
   }
 
-  function ensureLoaded() { if (!convos) load(); }
+  function ensureLoaded() { if (!convos || convosEpoch !== epochNow()) load(); }
 
   function byId(id) {
     ensureLoaded();

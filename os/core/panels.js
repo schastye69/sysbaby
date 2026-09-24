@@ -1029,9 +1029,20 @@
            утечка, ради предотвращения которой всё это построено. */
         keyRow +
         '<p class="panel-copy dim">' + esc(tr("lock.duressWhat")) + "</p>" +
+        /* ── УСИЛЕНИЕ ПАМЯТЬЮ (D-275) — только у замка прежней цены. Что он
+           прежней цены, видно в записи замка и так (строка шифра выше). */
+        (V.strengthen && V.strong && !V.strong() ? '<p class="panel-copy dim" id="sbLockStrongWhat">' + esc(tr("lock.strongWhat")) + "</p>" : "") +
+        /* ── КЛЮЧ УСТРОЙСТВА (D-276) — привязка и снятие. Что замок его
+           спрашивает, видно в записи замка и так; строка это называет. */
+        (V.hwState ? '<h4 class="panel-sub">' + esc(tr("lock.hw")) + "</h4>" +
+          '<p class="panel-copy dim">' + esc(tr("lock.hwWhat")) + "</p>" +
+          '<p class="panel-copy" id="sbLockHwState">' + esc(V.hwState().on ? tr("lock.hwOn") : (V.hwState().can ? tr("lock.hwNone") : tr("lock.hwCant"))) + "</p>" : "") +
         idleRow() +
         '<div class="lock-acts">' +
           '<button type="button" class="btn ghost" id="sbLockChange">' + esc(tr("lock.change")) + "</button>" +
+          (V.strengthen && V.strong && !V.strong() ? '<button type="button" class="btn ghost" id="sbLockStrong">' + esc(tr("lock.strong")) + "</button>" : "") +
+          (V.hwState && V.hwState().can && !V.hwState().on ? '<button type="button" class="btn ghost" id="sbLockHwAdd">' + esc(tr("lock.hwAdd")) + "</button>" : "") +
+          (V.hwState && V.hwState().on ? '<button type="button" class="btn ghost" id="sbLockHwOff">' + esc(tr("lock.hwOff")) + "</button>" : "") +
           '<button type="button" class="btn ghost" id="sbLockSpare">' + esc(tr("lock.spare")) + "</button>" +
           '<button type="button" class="btn ghost" id="sbLockDuressSet">' + esc(tr("lock.duress")) + "</button>" +
           '<button type="button" class="btn ghost" id="sbLockDuressOff">' + esc(tr("lock.duressOff")) + "</button>" +
@@ -1110,6 +1121,54 @@
         body.querySelector("#sbLockCur").value = "";
       }, function () { busy(false); say(tr("lock.failed")); });
     });
+    /* Усилить памятью: главное слово обязательно; тревожное — если заводили,
+       иначе мир за ним будет потерян, и об этом сказано до нажатия. Первое
+       нажатие открывает поле тревожного слова, второе — усиливает. */
+    var strongBtn = body.querySelector("#sbLockStrong");
+    if (strongBtn && V.strengthen) strongBtn.addEventListener("click", function () {
+      var curEl = body.querySelector("#sbLockCur");
+      var cur = curEl.value;
+      if (String(cur).length < 4) { say(tr("lock.old")); curEl.focus(); return; }
+      if (dField && dField.hidden) { dField.hidden = false; dField.focus(); say(tr("lock.strongAsk")); return; }
+      var dw = dField ? dField.value : "";
+      busy(true);
+      keyBytes().then(function (kb) { return V.strengthen(cur, dw || null, kb); }).then(function (okp) {
+        busy(false);
+        if (!okp) { say(tr("lock.wrong")); return; }
+        curEl.value = "";
+        if (dField) { dField.value = ""; dField.hidden = true; }
+        if (window.showToast) window.showToast(tr("lock.title"), tr("lock.strongDone"), "");
+        accountBody();
+      }, function (e) { busy(false); say(e && e.message === "duress-wrong" ? tr("lock.duressWrong") : tr("lock.failed")); });
+    });
+    /* Привязать и отвязать ключ устройства — тем же порядком, что усиление:
+       главное слово обязательно, тревожное — если заводили. */
+    function hwAction(btnId, run, doneKey) {
+      var b = body.querySelector(btnId);
+      if (!b) return;
+      b.addEventListener("click", function () {
+        var curEl = body.querySelector("#sbLockCur");
+        var cur = curEl.value;
+        if (String(cur).length < 4) { say(tr("lock.old")); curEl.focus(); return; }
+        if (dField && dField.hidden) { dField.hidden = false; dField.focus(); say(tr("lock.strongAsk")); return; }
+        var dw = dField ? dField.value : "";
+        busy(true);
+        keyBytes().then(function (kb) { return run(cur, kb, dw || null); }).then(function (okp) {
+          busy(false);
+          if (!okp) { say(tr("lock.wrong")); return; }
+          curEl.value = "";
+          if (dField) { dField.value = ""; dField.hidden = true; }
+          if (window.showToast) window.showToast(tr("lock.hw"), tr(doneKey), "");
+          accountBody();
+        }, function (e) {
+          busy(false);
+          var m = e && e.message;
+          say(m === "duress-wrong" ? tr("lock.duressWrong") : (m === "no-prf" || m === "no-webauthn") ? tr("lock.hwNoPrf") : tr("lock.hwFailed"));
+        });
+      });
+    }
+    if (V.hwEnroll) hwAction("#sbLockHwAdd", function (p, kb, d) { return V.hwEnroll(p, kb, d); }, "lock.hwDone");
+    if (V.hwRemove) hwAction("#sbLockHwOff", function (p, kb, d) { return V.hwRemove(p, kb, d); }, "lock.hwRemoved");
     var dOff = body.querySelector("#sbLockDuressOff");
     if (dOff) dOff.addEventListener("click", function () {
       var cur = body.querySelector("#sbLockCur").value;

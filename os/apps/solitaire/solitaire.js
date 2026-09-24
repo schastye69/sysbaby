@@ -64,14 +64,33 @@
       ? window.sbRights.box("solitaire")
       : { get: function () { return null; }, set: function () { return false; } };
   }
-  var game = null;
+  /* ── ЭПОХА ХРАНИЛИЩА (D-274) ──────────────────────────────────────────
+     Копия памяти этой комнаты помнит, в какую эпоху хранилища она снята, и
+     перечитывается, когда эпоха другая (замок открыли, заперли, сняли). Пока
+     хранилище закрыто замком, копия не снимается вовсе: «ничего» за дверью —
+     не пустота, а запертое. Охраняется tools/lock-memory-check.mjs. */
+  function epochNow() {
+    try { return window.sbDB && window.sbDB.epoch ? window.sbDB.epoch() : 0; }
+    catch (e) { return 0; /* ОТКАТ: ядро без эпох — одна эпоха на весь сеанс */ }
+  }
+  function storeClosed() {
+    try { return !!(window.sbDB && window.sbDB.closed && window.sbDB.closed()); }
+    catch (e) { return false; /* ОТКАТ: не спросить — считаем открытым, как было */ }
+  }
+  var game = null, gameEpoch = -1;
   function load() {
-    try { var raw = box().get(STORE_KEY); game = raw ? JSON.parse(raw) : null; } catch (e) { game = null; }
+    gameEpoch = storeClosed() ? -1 : epochNow();
+    try { var raw = gameEpoch === -1 ? null : box().get(STORE_KEY); game = raw ? JSON.parse(raw) : null; } catch (e) { game = null; }
     if (!game || !Array.isArray(game.cols) || game.cols.length !== 7) game = deal();
     if (!Array.isArray(game.undo)) game.undo = [];
     return game;
   }
-  function save() { try { box().set(STORE_KEY, JSON.stringify(game)); } catch (e) { /* ignore */ } }
+  function save() {
+    /* Расклад из другой эпохи (или взятый, пока замок закрыт) не пишется:
+       он лёг бы поверх настоящего (D-274). */
+    if (gameEpoch === -1 || gameEpoch !== epochNow()) return;
+    try { box().set(STORE_KEY, JSON.stringify(game)); } catch (e) { /* ignore */ }
+  }
 
   function deal() {
     var ids = [], i, j, r = new Uint32Array(52);

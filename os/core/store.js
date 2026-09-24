@@ -248,7 +248,21 @@
     },
     flushSync: function () { flush(); },
     activeProfile: activeProfile,
-    nsKey: nsKey
+    nsKey: nsKey,
+    /* ── ЭПОХА ХРАНИЛИЩА (D-274) ─────────────────────────────────────────
+       ПОВОД, дословно от основателя 24.09.2026: «открываю сундук, перезахожу
+       в свою же систему и у меня снова открытие сундуков начинается с самого
+       начала... я уже говорил об этом».
+       Пока замок заперт и не открыт, защищённое не читается: хранилище
+       отвечает «ничего» — и это не «данных нет», а «данные за дверью».
+       Комната, которая держит у себя копию памяти, снятую в эту минуту,
+       держала пустоту и после двери — и следующей записью клала её поверх
+       настоящей. Эпоха — число, которое меняется, когда меняется ВЕСЬ
+       видимый мир разом: замок открыли, заперли, сняли. Всякая копия памяти
+       помнит свою эпоху и перечитывается, когда эпоха другая; пока closed(),
+       пустоту не запоминает вовсе. Охраняется tools/lock-memory-check.mjs. */
+    epoch: function () { return readEpoch; },
+    closed: function () { return vaultLocked() && !vaultOpen; }
   };
   window.sbDB = sbDB;
 
@@ -1042,6 +1056,13 @@
    ЦЕНА НАЗВАНА: открытие занимает секунды, а на медленном телефоне —
    до десятка. Платится один раз за сеанс, а не на каждое чтение. */
 var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
+  /* ── ТРЕТИЙ ПРОХОД — ПАМЯТЬ (D-275) ──────────────────────────────────────
+     Argon2id после двух PBKDF2: каждой попытке подобрать слово нужны 64 МиБ
+     своей памяти, трижды пройденной (подробно — шапка core/argon2.js).
+     ПОСТОЯННАЯ: m = 65536 КиБ, t = 3, p = 1 — второй рекомендованный набор
+     RFC 9106 (m = 2^16, t = 3); одна дорожка, потому что JS считает её одним
+     потоком, а работа та же. Замер на столе: около секунды на попытку. */
+  var A2_M = 65536, A2_T = 3, A2_P = 1;
   var KDF2_ITER = 8000000;             /* PBKDF2-HMAC-SHA-256 — OWASP */
   var PAD_BLOCK = 256;                /* длина прячется: конверт кратен блоку */
   var VAULT_ITER = KDF2_ITER;         /* прежнее имя — для старых записей v1 */
@@ -1080,6 +1101,12 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     return out;
   }
 
+  /* Эпоха хранилища (D-274): см. sbDB.epoch. Меняется в одном месте — здесь. */
+  var readEpoch = 1;
+  function bumpEpoch(why) {
+    readEpoch++;
+    if (window.sbBus && window.sbBus.emit) window.sbBus.emit("store:epoch", { epoch: readEpoch, why: why });
+  }
   var vaultKeys = null;         /* набор ключей сеанса — только в памяти */
   var vaultMaster = null;       /* мастер-ключ сеанса: нужен для смены пароля */
   /* Через какую дверь вошли. НАРУЖУ НЕ ОТДАЁТСЯ НИКОГДА: система,
@@ -1126,7 +1153,17 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      из пароля не получается тот KEK, и обходить нечего — нечего обходить.
      Приём стандартный, не самодельный: извлечение HKDF, где солью служит
      тайна второго ключа (RFC 5869, шаг extract). */
-  function deriveKEK(password, saltB64, it1, it2, fsec) {
+  /* Сегодняшняя цена памяти — если растяжка памятью на этом устройстве есть.
+     Без неё новый замок делается прежней ценой, и это видно в его записи. */
+  function todayA2() {
+    return (window.sbArgon2 && typeof window.sbArgon2.hash === "function") ? { m: A2_M, t: A2_T, p: A2_P } : null;
+  }
+  function a2Label(a2) { return "ARGON2ID:m=" + a2.m + ",t=" + a2.t + ",p=" + a2.p; }
+  function a2Parse(s) {
+    var m = /^ARGON2ID:m=(\d+),t=(\d+),p=(\d+)$/.exec(String(s || ""));
+    return m ? { m: parseInt(m[1], 10), t: parseInt(m[2], 10), p: parseInt(m[3], 10) } : null;
+  }
+  function deriveKEK(password, saltB64, it1, it2, fsec, a2) {
     var n1 = it1 || KDF1_ITER, n2 = it2 || KDF2_ITER;
     var enc = new TextEncoder();
     var salt = unb64(saltB64);
@@ -1145,6 +1182,15 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           name: "PBKDF2", salt: cat(salt, enc.encode("sys.baby/kek/v2")),
           iterations: n2, hash: "SHA-256"
         }, mid, 256);
+      })
+      .then(function (bits) {
+        /* Третий проход — память (D-275). Вход — итог PBKDF2, соль — та же с
+           третьей меткой: три прохода не склеиваются ни в один. У замка без
+           этого прохода в записи его нет, и он открывается прежней ценой. */
+        if (!a2) return bits;
+        if (!window.sbArgon2) return Promise.reject(new Error("no-argon2"));
+        return window.sbArgon2.hash(new Uint8Array(bits), cat(salt, enc.encode("sys.baby/kek/v3")),
+          { m: a2.m, t: a2.t, p: a2.p, tagLength: 32 });
       })
       .then(function (bits) {
         if (!fsec) return subtle.importKey("raw", bits, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
@@ -1166,14 +1212,77 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       .then(function (d) { return new Uint8Array(d); });
   }
   function factorOf(rec) { return (rec && rec.factor) || null; }
+
+  /* ── КЛЮЧ УСТРОЙСТВА (D-276) ─────────────────────────────────────────────
+     ПОВОД, дословно от основателя 24.09.2026: «сделать шифрование ещё более
+     невероятным. любыми методами, но самыми сильными и инновационными».
+     Самое сильное, что умеет браузер без сервера, — ключ, которого нет ни в
+     какой памяти, куда можно заглянуть: секрет живёт в защищённом чипе
+     устройства (Secure Enclave, Titan, TPM, ключ-брелок) и отдаёт наружу не
+     себя, а ОТВЕТ на наш вопрос — HMAC от нашей соли (расширение WebAuthn
+     PRF, оно же hmac-secret в CTAP2). Ответ даётся только после отпечатка,
+     лица или PIN самого устройства. Этот ответ входит в ключ двери наравне
+     со словом и файлом: без устройства дверь не ВЫВОДИТСЯ — нечего
+     проверять, нечего обходить.
+     ЧТО НА ДИСКЕ: имя ключа (идентификатор учётки WebAuthn) и соль вопроса.
+     Ни ответа, ни его следа. Ответ живёт в памяти сеанса — он нужен, чтобы
+     сменить слово или завести тревожное, не прикладывая палец снова, — и
+     исчезает вместе со страницей.
+     ЧТО ОНО ДАЁТ: украденный диск плюс подсмотренное слово — всё ещё ничего.
+     ЧЕГО НЕ ДАЁТ, вслух: потерянное устройство без кода восстановления — это
+     потерянный замок; код восстановления открывает главный мир без слова и
+     без ключа устройства — и снимает его, как снимает второй ключ.
+     Охраняется tools/hardware-key-check.mjs. */
+  var hwSecret = null;
+  function hwOf(rec) { return (rec && rec.hw) || null; }
+  function hwAvailable() {
+    return !!(window.isSecureContext && window.PublicKeyCredential && navigator.credentials && navigator.credentials.get);
+  }
+  function mixFactors(fileSec, hw) {
+    if (!hw) return Promise.resolve(fileSec);
+    var enc = new TextEncoder();
+    var body = cat(enc.encode("sys.baby/factors/v1"), fileSec ? cat(new Uint8Array([1]), new Uint8Array(fileSec)) : new Uint8Array([0]));
+    return window.crypto.subtle.digest("SHA-256", cat(body, new Uint8Array(hw))).then(function (d) { return new Uint8Array(d); });
+  }
+  /* Ответ устройства на этот сеанс; без него — заведомо не тот (32 нуля). */
+  function hwNow(rec) {
+    if (!hwOf(rec)) return null;
+    /* ОТКАТ: устройство не спрошено или не ответило — дверь просто не выведется. */
+    return hwSecret || new Uint8Array(32);
+  }
+  function hwAsk(rec) {
+    var h = hwOf(rec);
+    if (!h) return Promise.resolve(true);
+    if (!hwAvailable()) return Promise.resolve(false);
+    var challenge = new Uint8Array(32);
+    window.crypto.getRandomValues(challenge);
+    var opts = {
+      challenge: challenge,
+      allowCredentials: [{ type: "public-key", id: unb64(h.id) }],
+      userVerification: "required",
+      timeout: 120000,
+      extensions: { prf: { eval: { first: unb64(h.salt) } } }
+    };
+    if (h.rp) opts.rpId = h.rp;
+    return navigator.credentials.get({ publicKey: opts }).then(function (a) {
+      var ext = a && a.getClientExtensionResults ? a.getClientExtensionResults() : null;
+      var first = ext && ext.prf && ext.prf.results && ext.prf.results.first;
+      if (!first) return false;
+      hwSecret = new Uint8Array(first);
+      return true;
+    }, function () { return false; });
+  }
   /* Второй ключ нужен ИЛИ нет — это свойство замка, и оно видно на диске.
      Сказано вслух в окне: посторонний узнаёт, что второй ключ есть; узнать,
      ЧТО ИМЕННО за файл, и тем более обойтись без него он не может. */
   function factorFor(rec, fileBytes) {
-    var f = factorOf(rec);
-    if (!f) return Promise.resolve(null);
-    if (!fileBytes) return Promise.resolve(new Uint8Array(32));   /* заведомо не тот */
-    return factorSecret(fileBytes, f.salt);
+    var f = factorOf(rec), filePart;
+    if (!f) filePart = Promise.resolve(null);
+    else if (!fileBytes) filePart = Promise.resolve(new Uint8Array(32));   /* заведомо не тот */
+    else filePart = factorSecret(fileBytes, f.salt);
+    /* Ключ устройства входит в ту же тайну, что и файл (D-276). */
+    if (!hwOf(rec)) return filePart;
+    return filePart.then(function (fs) { return mixFactors(fs, hwNow(rec)); });
   }
 
   /* ── МАСТЕР-КЛЮЧ → четыре ключа по HKDF ───────────────────────────────── */
@@ -1572,7 +1681,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   function makeDoor(password, master, saltB64, fsec, cost) {
     var iv = new Uint8Array(12);
     window.crypto.getRandomValues(iv);
-    return deriveKEK(password, saltB64, cost ? cost[0] : null, cost ? cost[1] : null, fsec).then(function (kek) {
+    return deriveKEK(password, saltB64, cost ? cost[0] : null, cost ? cost[1] : null, fsec, cost ? cost[2] : todayA2()).then(function (kek) {
       return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, kek, master);
     }).then(function (w) { return { wrapIv: b64(iv), wrap: b64(w) }; });
   }
@@ -1583,7 +1692,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     var k = (rec && rec.kdf) || [];
     var a = parseInt(String(k[0] || "").split(":")[1], 10);
     var b = parseInt(String(k[1] || "").split(":")[1], 10);
-    return [a > 0 ? a : 210000, b > 0 ? b : 600000];
+    /* Третий элемент — проход памятью (D-275), если замок сделан с ним. */
+    return [a > 0 ? a : 210000, b > 0 ? b : 600000, a2Parse(k[2])];
   }
 
   function saltOf(rec) {
@@ -1602,7 +1712,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   function openDoors(rec, password, fsec) {
     var doors = doorsOf(rec);
     var cost = costOf(rec);
-    return deriveKEK(password, saltOf(rec), cost[0], cost[1], fsec).then(function (kek) {
+    return deriveKEK(password, saltOf(rec), cost[0], cost[1], fsec, cost[2]).then(function (kek) {
       var jobs = doors.map(function (d) {
         var wrapped, iv;
         try { wrapped = unb64(d.wrap); iv = unb64(d.wrapIv || d.iv); }
@@ -1884,10 +1994,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     var fsaltB64 = b64(fsalt);
     var factorRec = factorFile ? { kind: "file", salt: fsaltB64 } : null;
     return (factorFile ? factorSecret(factorFile, fsaltB64) : Promise.resolve(null)).then(function (fsec) {
-    return deriveKEK(password, saltB64, null, null, fsec).then(function (kek) {
+    var a2 = todayA2();
+    return deriveKEK(password, saltB64, null, null, fsec, a2).then(function (kek) {
       return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: wrapIv }, kek, master).then(function (wrapped) {
         var second = duressPassword
-          ? makeDoor(duressPassword, (function () { var m = new Uint8Array(32); window.crypto.getRandomValues(m); return m; })(), saltB64, fsec)
+          ? makeDoor(duressPassword, (function () { var m = new Uint8Array(32); window.crypto.getRandomValues(m); return m; })(), saltB64, fsec, [KDF1_ITER, KDF2_ITER, a2])
           : Promise.resolve(randomDoor());
         return second.then(function (door2) {
         return subkeys(master).then(function (ks) {
@@ -1903,7 +2014,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
                открытые копии, а замка нет — потерять нечего. */
             var body = {
               v: factorRec ? 4 : 3,
-              kdf: ["PBKDF2-SHA512:" + KDF1_ITER, "PBKDF2-SHA256:" + KDF2_ITER],
+              kdf: ["PBKDF2-SHA512:" + KDF1_ITER, "PBKDF2-SHA256:" + KDF2_ITER].concat(a2 ? [a2Label(a2)] : []),
               ciphers: ["AES-256-CTR", "AES-256-GCM"],
               mac: "HMAC-SHA-512",
               names: "HMAC-SHA-256",
@@ -1951,7 +2062,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     /* Чем именно заперто — не тайна: тайна это ключ, а не имя шифра. */
     cipher: function () {
       var rec = lockRecord();
-      if (!rec) return { v: 2, kdf: ["PBKDF2-SHA512:" + KDF1_ITER, "PBKDF2-SHA256:" + KDF2_ITER],
+      if (!rec) return { v: 2, kdf: ["PBKDF2-SHA512:" + KDF1_ITER, "PBKDF2-SHA256:" + KDF2_ITER].concat(todayA2() ? [a2Label(todayA2())] : []),
         ciphers: ["AES-256-CTR", "AES-256-GCM"], mac: "HMAC-SHA-512", names: "HMAC-SHA-256", pad: PAD_BLOCK };
       return rec;
     },
@@ -2024,6 +2135,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         if (vaultMaster) { vaultMaster.fill(0); vaultMaster = null; }
         vaultOpen = false;
         sealing = false;
+        bumpEpoch("lock");
         if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: true, open: false });
         return true;
       }, function (e) { sealing = false; pending.clear(); throw e; });
@@ -2034,6 +2146,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     unlock: function (password, secondKeyFile) {
       var rec = lockRecord();
       if (!rec) return Promise.resolve(true);
+      /* Ключ устройства спрашивается дверью ДО слова (hwAsk) — здесь его ответ
+         уже лежит в памяти сеанса; без ответа дверь просто не выведется. */
       if (!vaultAvailable()) return Promise.resolve(false);
       if (rec.v === 1) return migrateV1(password, rec);
       /* Верен ли пароль, отвечает сам AES-GCM: неверный ключ не даёт подписи
@@ -2081,6 +2195,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         vaultDoor = -1;
         if (vaultMaster) { vaultMaster.fill(0); vaultMaster = null; }
         nameMap.clear();
+        bumpEpoch("remove");
         if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: false });
         return true;
       });
@@ -2184,23 +2299,28 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       var fsalt = new Uint8Array(32);
       window.crypto.getRandomValues(fsalt);
       var fsaltB64 = b64(fsalt);
-      var master0 = null, master1 = null, fsec = null;
-      return openDoors(rec, password, null).then(function (m) {
+      var master0 = null, master1 = null, fsec = null, fsecOld = null;
+      return factorFor(rec, null).then(function (fo) {
+        fsecOld = fo;
+        return openDoors(rec, password, fsecOld);
+      }).then(function (m) {
         if (!m) return false;
         if (vaultDoor !== 0) return true;        /* из тревожного мира — молча «готово» */
         master0 = m;
         if (!duressPassword) return null;
-        return openDoors(rec, duressPassword, null).then(function (m2) { master1 = m2; return null; });
+        return openDoors(rec, duressPassword, fsecOld).then(function (m2) { master1 = m2; return null; });
       }).then(function (early) {
         if (early === false || early === true) return early;
         return factorSecret(fileBytes, fsaltB64).then(function (fs) {
+          return mixFactors(fs, hwNow(rec));
+        }).then(function (fs) {
           fsec = fs;
           return makeDoor(password, master0, saltB64, fsec, costOf(rec));
         }).then(function (door0) {
           var second = master1 ? makeDoor(duressPassword, master1, saltB64, fsec, costOf(rec)) : Promise.resolve(randomDoor());
           return second.then(function (door1) {
             var next = lockRecord() || {};
-            next.v = 4;
+            next.v = hwOf(next) ? 5 : 4;
             next.salt = saltB64;
             next.factor = { kind: "file", salt: fsaltB64 };
             next.doors = [door0, door1];
@@ -2228,11 +2348,13 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         });
       }).then(function (early) {
         if (early === false || early === true) return early;
-        return makeDoor(password, master0, saltB64, null, costOf(rec)).then(function (door0) {
-          var second = master1 ? makeDoor(duressPassword, master1, saltB64, null, costOf(rec)) : Promise.resolve(randomDoor());
+        /* Снимается файл — ключ устройства остаётся (D-276). */
+        return mixFactors(null, hwNow(rec)).then(function (fsecNo) {
+        return makeDoor(password, master0, saltB64, fsecNo, costOf(rec)).then(function (door0) {
+          var second = master1 ? makeDoor(duressPassword, master1, saltB64, fsecNo, costOf(rec)) : Promise.resolve(randomDoor());
           return second.then(function (door1) {
             var next = lockRecord() || {};
-            next.v = 3;
+            next.v = hwOf(next) ? 5 : 3;
             next.salt = saltB64;
             delete next.factor;
             next.doors = [door0, door1];
@@ -2241,8 +2363,200 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             return true;
           });
         });
+        });
       });
     },
+
+    /* ── УСИЛИТЬ ЗАМОК ПАМЯТЬЮ (D-275) ────────────────────────────────────
+       Замок, сделанный до D-275, растягивает слово только временем. Здесь
+       его двери переделываются ценой с памятью; мастер-ключ и конверты не
+       трогаются — меняется лишь то, чем открывается мастер-ключ.
+       ПОЧЕМУ НЕ МОЛЧА ПРИ ВХОДЕ. Все двери замка обязаны быть одной цены
+       (D-266): растяжка считается один раз и пробуется на всех. Главную
+       дверь можно переделать словом, которое человек только что ввёл, —
+       тревожную нельзя: её слова система не знает. Молчаливое усиление
+       убило бы тревожный мир — ровно тот урок D-266. Поэтому усиление —
+       действие человека: он вводит слово и, если заводил, тревожное. Без
+       тревожного слова вторая дверь становится шумом, и это сказано в окне
+       ДО нажатия. Неверное тревожное слово не принимается: иначе опечатка
+       стирала бы мир.
+       Из тревожного мира — молча «готово» и ничего не меняется (D-203). */
+    strengthen: function (password, duressPassword, secondKeyFile) {
+      var rec = lockRecord();
+      if (!rec) return Promise.reject(new Error("no-lock"));
+      var a2 = todayA2();
+      if (!a2) return Promise.reject(new Error("no-argon2"));
+      var cost = costOf(rec);
+      if (cost[2]) return Promise.resolve(true);
+      var saltB64 = saltOf(rec), master0 = null, master1 = null, fsec = null;
+      return factorFor(rec, secondKeyFile).then(function (fs) {
+        fsec = fs;
+        return openDoors(rec, password, fsec);
+      }).then(function (m) {
+        if (!m) return false;
+        if (vaultDoor !== 0) return true;
+        master0 = m;
+        if (!duressPassword) return null;
+        return openDoors(rec, duressPassword, fsec).then(function (m2) {
+          if (!m2 || vaultDoor !== 1) return "duress-wrong";
+          master1 = m2;
+          return null;
+        });
+      }).then(function (early) {
+        if (early === false || early === true) { vaultDoor = 0; return early; }
+        if (early === "duress-wrong") { vaultDoor = 0; return Promise.reject(new Error("duress-wrong")); }
+        var next = [cost[0], cost[1], a2];
+        return makeDoor(password, master0, saltB64, fsec, next).then(function (door0) {
+          var second = master1 ? makeDoor(duressPassword, master1, saltB64, fsec, next) : Promise.resolve(randomDoor());
+          return second.then(function (door1) {
+            var fresh = lockRecord() || {};
+            fresh.salt = saltB64;
+            fresh.kdf = ["PBKDF2-SHA512:" + cost[0], "PBKDF2-SHA256:" + cost[1], a2Label(a2)];
+            fresh.doors = [door0, door1];
+            delete fresh.wrapIv; delete fresh.wrap;
+            lsSet(LOCK_KEY, JSON.stringify(fresh));
+            master0.fill(0); if (master1) master1.fill(0);
+            vaultDoor = 0;
+            return true;
+          });
+        });
+      });
+    },
+    /* ── КЛЮЧ УСТРОЙСТВА: состояние, вопрос, привязка, снятие (D-276) ───── */
+    hwState: function () { var rec = lockRecord(); return { on: !!hwOf(rec), can: hwAvailable() }; },
+    hwAsk: function () { return hwAsk(lockRecord()); },
+    hwEnroll: function (password, secondKeyFile, duressPassword) {
+      var rec = lockRecord();
+      if (!rec) return Promise.reject(new Error("no-lock"));
+      if (!vaultOpen) return Promise.reject(new Error("closed"));
+      if (hwOf(rec)) return Promise.reject(new Error("already"));
+      if (!hwAvailable()) return Promise.reject(new Error("no-webauthn"));
+      var prfSalt = new Uint8Array(32), userId = new Uint8Array(16), challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(prfSalt); window.crypto.getRandomValues(userId); window.crypto.getRandomValues(challenge);
+      var rp = String(location.hostname || "");
+      var cred = null, secret = null, fsecOld = null, master0 = null, master1 = null, fromDuress = false;
+      return factorFor(rec, secondKeyFile).then(function (fo) {
+        fsecOld = fo;
+        return openDoors(rec, password, fsecOld);
+      }).then(function (m) {
+        if (!m) return false;
+        fromDuress = vaultDoor !== 0;
+        master0 = m;
+        if (fromDuress || !duressPassword) return true;
+        return openDoors(rec, duressPassword, fsecOld).then(function (m2) {
+          if (!m2 || vaultDoor !== 1) return "duress-wrong";
+          master1 = m2;
+          return true;
+        });
+      }).then(function (st) {
+        vaultDoor = fromDuress ? vaultDoor : 0;
+        if (st === false) return false;
+        if (st === "duress-wrong") return Promise.reject(new Error("duress-wrong"));
+        /* Учётка заводится у устройства и ТУТ ЖЕ спрашивается: ключ, который
+           не ответил на вопрос, в замок не входит. */
+        return navigator.credentials.create({ publicKey: {
+          rp: { name: "sys.baby", id: rp },
+          user: { id: userId, name: "sys.baby", displayName: "sys.baby" },
+          challenge: challenge,
+          pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+          authenticatorSelection: { userVerification: "required", residentKey: "preferred" },
+          timeout: 120000,
+          extensions: { prf: { eval: { first: prfSalt } } }
+        } }).then(function (c) {
+          cred = c;
+          var ext = c && c.getClientExtensionResults ? c.getClientExtensionResults() : null;
+          if (!ext || !ext.prf || ext.prf.enabled === false) throw new Error("no-prf");
+          var first = ext.prf.results && ext.prf.results.first;
+          if (first) return new Uint8Array(first);
+          var ch2 = new Uint8Array(32); window.crypto.getRandomValues(ch2);
+          return navigator.credentials.get({ publicKey: {
+            challenge: ch2, rpId: rp, userVerification: "required", timeout: 120000,
+            allowCredentials: [{ type: "public-key", id: c.rawId }],
+            extensions: { prf: { eval: { first: prfSalt } } }
+          } }).then(function (a) {
+            var e2 = a && a.getClientExtensionResults ? a.getClientExtensionResults() : null;
+            var f2 = e2 && e2.prf && e2.prf.results && e2.prf.results.first;
+            if (!f2) throw new Error("no-prf");
+            return new Uint8Array(f2);
+          });
+        }).then(function (sec) {
+          secret = sec;
+          /* Из тревожного мира — учётка заведена (снаружи это видно и так),
+             а замок не тронут: признаться, что мир не первый, значило бы
+             отдать главный (D-203). */
+          if (fromDuress) { master0.fill(0); return true; }
+          var fileSec = null;
+          var f = factorOf(rec);
+          return (f ? factorSecret(secondKeyFile || new Uint8Array(0), f.salt) : Promise.resolve(null)).then(function (fs) {
+            fileSec = fs;
+            return mixFactors(fileSec, secret);
+          }).then(function (fsecNew) {
+            var cost = costOf(rec), saltB64 = saltOf(rec);
+            return makeDoor(password, master0, saltB64, fsecNew, cost).then(function (door0) {
+              var second = master1 ? makeDoor(duressPassword, master1, saltB64, fsecNew, cost) : Promise.resolve(randomDoor());
+              return second.then(function (door1) {
+                var next = lockRecord() || {};
+                next.v = 5;
+                next.salt = saltB64;
+                next.hw = { kind: "webauthn-prf", id: b64(new Uint8Array(cred.rawId)), salt: b64(prfSalt), rp: rp };
+                next.doors = [door0, door1];
+                delete next.wrapIv; delete next.wrap;
+                lsSet(LOCK_KEY, JSON.stringify(next));
+                hwSecret = secret;
+                master0.fill(0); if (master1) master1.fill(0);
+                vaultDoor = 0;
+                return true;
+              });
+            });
+          });
+        });
+      });
+    },
+    hwRemove: function (password, secondKeyFile, duressPassword) {
+      var rec = lockRecord();
+      if (!rec) return Promise.reject(new Error("no-lock"));
+      if (!hwOf(rec)) return Promise.resolve(true);
+      var fsecOld = null, master0 = null, master1 = null, fileSec = null;
+      return factorFor(rec, secondKeyFile).then(function (fo) {
+        fsecOld = fo;
+        return openDoors(rec, password, fsecOld);
+      }).then(function (m) {
+        if (!m) return false;
+        if (vaultDoor !== 0) return true;
+        master0 = m;
+        if (!duressPassword) return null;
+        return openDoors(rec, duressPassword, fsecOld).then(function (m2) {
+          if (!m2 || vaultDoor !== 1) return "duress-wrong";
+          master1 = m2; return null;
+        });
+      }).then(function (early) {
+        if (early === false || early === true) return early;
+        if (early === "duress-wrong") { vaultDoor = 0; return Promise.reject(new Error("duress-wrong")); }
+        var f = factorOf(rec);
+        return (f ? factorSecret(secondKeyFile || new Uint8Array(0), f.salt) : Promise.resolve(null)).then(function (fs) {
+          fileSec = fs;
+          var cost = costOf(rec), saltB64 = saltOf(rec);
+          return makeDoor(password, master0, saltB64, fileSec, cost).then(function (door0) {
+            var second = master1 ? makeDoor(duressPassword, master1, saltB64, fileSec, cost) : Promise.resolve(randomDoor());
+            return second.then(function (door1) {
+              var next = lockRecord() || {};
+              next.v = hwOf(next) ? 5 : (factorOf(next) ? 4 : 3);
+              next.salt = saltB64;
+              delete next.hw;
+              next.doors = [door0, door1];
+              lsSet(LOCK_KEY, JSON.stringify(next));
+              hwSecret = null;
+              master0.fill(0); if (master1) master1.fill(0);
+              vaultDoor = 0;
+              return true;
+            });
+          });
+        });
+      });
+    },
+
+    /* Сделан ли этот замок ценой с памятью — видно в его записи и так. */
+    strong: function () { var rec = lockRecord(); return !!(rec && costOf(rec)[2]); },
 
     setDuress: function (mainPassword, duressPassword, secondKeyFile) {
       var rec = lockRecord();
@@ -2263,7 +2577,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           doors[1] = door;
           /* Замок со вторым ключом остаётся четвёртой редакцией: понизить его
              здесь значило бы молча снять второй ключ вместе с тревожным. */
-          next.v = factorOf(next) ? 4 : 3;
+          next.v = hwOf(next) ? 5 : (factorOf(next) ? 4 : 3);
           next.salt = saltOf(next); next.doors = doors;
           delete next.wrapIv; delete next.wrap;
           lsSet(LOCK_KEY, JSON.stringify(next));
@@ -2292,7 +2606,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         /* Замок со вторым ключом остаётся четвёртой редакцией (D-266): понизить
            его здесь значило бы стереть запись о втором ключе при дверях,
            сделанных с ним, — и не открыть больше ничего. */
-        next.v = factorOf(next) ? 4 : 3; next.salt = saltOf(next); next.doors = doors;
+        next.v = hwOf(next) ? 5 : (factorOf(next) ? 4 : 3); next.salt = saltOf(next); next.doors = doors;
         delete next.wrapIv; delete next.wrap;
         lsSet(LOCK_KEY, JSON.stringify(next));
         return true;
@@ -2350,14 +2664,14 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           .then(function (buf) { return new Uint8Array(buf); }, function () { return null; });
       }).then(function (master) {
         if (!master) return false;
-        var hadFactor = !!factorOf(rec);
+        var hadFactor = !!factorOf(rec) || !!hwOf(rec);
         return makeDoor(newPassword, master, saltB64, null, costOf(rec)).then(function (door0) {
           master.fill(0);
           var next = lockRecord() || {};
           var doors = doorsOf(next).map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; });
           while (doors.length < 2) doors.push(randomDoor());
           doors[0] = door0;
-          if (hadFactor) { doors[1] = randomDoor(); delete next.factor; }
+          if (hadFactor) { doors[1] = randomDoor(); delete next.factor; delete next.hw; hwSecret = null; }
           next.v = 3;
           next.salt = saltB64;
           next.doors = doors;
@@ -2406,7 +2720,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         /* Цена — ЦЕНА ЗАМКА, а не сегодняшняя (D-266): другие двери сделаны
            ею, и растяжка считается одна на все. */
         var cost = costOf(lockRecord() || {});
-        return deriveKEK(newPassword, saltB64, cost[0], cost[1], fsecNew).then(function (kek) {
+        return deriveKEK(newPassword, saltB64, cost[0], cost[1], fsecNew, cost[2]).then(function (kek) {
           return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: wrapIv }, kek, vaultMaster);
         }).then(function (wrapped) {
           var next = lockRecord() || {};
@@ -2418,9 +2732,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           var mine = (typeof vaultDoor === "number" && vaultDoor >= 0) ? vaultDoor : 0;
           doors = doors.map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; });
           doors[mine] = { wrapIv: b64(wrapIv), wrap: b64(wrapped) };
-          next.v = factorOf(next) ? 4 : 3;
+          next.v = hwOf(next) ? 5 : (factorOf(next) ? 4 : 3);
           next.salt = saltB64;
-          next.kdf = ["PBKDF2-SHA512:" + cost[0], "PBKDF2-SHA256:" + cost[1]];
+          /* Проход памятью остаётся в записи (D-275): двери сделаны им, и без
+             этой строки после смены слова замок не открылся бы никогда. */
+          next.kdf = ["PBKDF2-SHA512:" + cost[0], "PBKDF2-SHA256:" + cost[1]].concat(cost[2] ? [a2Label(cost[2])] : []);
           next.doors = doors;
           delete next.wrapIv; delete next.wrap;
           lsSet(LOCK_KEY, JSON.stringify(next));
@@ -2452,8 +2768,21 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         /* В памяти ключи ЛОГИЧЕСКИЕ (без приставки профиля) — такими их
            спрашивает sbDB.get. Приставку снимаем здесь, в единственном
            месте, где физическое имя превращается в логическое. */
-        var logical = pfx && it.k.indexOf(pfx) === 0 ? it.k.slice(pfx.length) : it.k;
-        cache.set(logical, it.v);
+        /* ── ЧУЖОЙ ПРОФИЛЬ НЕ ВХОДИТ В СВОЮ ПАМЯТЬ (D-274) ─────────────────
+           Здесь стояло «есть приставка своего профиля — снять её, нет — взять
+           имя как есть». Но «как есть» — это ключи ГОСТЯ: у них приставки нет
+           вовсе. Под своим именем записи гостя вставали в память на те же
+           логические места, и какая победит, решал порядок расшифровки.
+           Нашёл lock-memory-check: под именем «ПРОБА запись» лежала в
+           хранилище, а комната видела «[]» — пустые Записи гостя. Каждый
+           второй-третий вход. Теперь в память идёт ТОЛЬКО своё: под именем —
+           ключи со своей приставкой, гостем — ключи без чужих приставок.
+           Конверт остаётся открытым в своём месте (mem) — чужого он не
+           подменяет, потому что там лежат физические имена. */
+        var logical = null;
+        if (pfx) { if (it.k.indexOf(pfx) === 0) logical = it.k.slice(pfx.length); }
+        else if (it.k.indexOf(PROFILE_PREFIX) !== 0) logical = it.k;
+        if (logical !== null) cache.set(logical, it.v);
       }
       vaultKeys = ks;
       vaultOpen = true;
@@ -2464,6 +2793,10 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       sealThingsNow(ks, vaultDoor !== 0);
       levelDisk(ks).then(function () { return rollOnce(ks); });
       rollKeep(ks);
+      /* Мир за дверью вернулся весь разом — копии памяти, снятые до двери,
+         обязаны перечитаться (D-274). Эпоха меняется ДО объявления: всякий,
+         кто услышит «открыто», спросит уже новую. */
+      bumpEpoch("open");
       if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: true, open: true });
       /* Вид системы возвращается вместе со словами: до этого мига комната
          была не своя, потому что и её запирали (D-164). */

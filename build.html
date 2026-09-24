@@ -51,13 +51,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v145">
+<meta name="sysbaby-build" content="v147">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v145">
+<link rel="stylesheet" href="shared/system.css?b=v147">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -125,6 +125,28 @@ header('Content-Type: text/html; charset=utf-8');
      зависеть. Тот же приём давно стоит в оболочке (entrySearch). */
   window.sbEntryQuery = location.search || "";
 
+  /* ── ЧЕМ КОСНУЛИСЬ ПОСЛЕДНИМ (D-272, D-277) ─────────────────────────────
+     Тот же признак, что ставит оболочка системы: html[data-input] = mouse |
+     touch. Вопрос (hover: hover) задаётся устройству, и планшет с пером или
+     обложкой-клавиатурой честно отвечает «да» — а потом держит наведение там,
+     где коснулся палец. Витрина живёт и внутри окна build, на том же
+     планшете, — значит и у неё правило наведения спрашивает ещё и это.
+     Пишется ТОЛЬКО при смене: запись в корень заставляет браузер пересчитать
+     стили всей страницы. */
+  (function () {
+    var root = document.documentElement, kind = null;
+    function setKind(k) { if (k === kind) return; kind = k; root.setAttribute("data-input", k); }
+    var mouseFirst = false;
+    try { mouseFirst = window.matchMedia("(hover: hover) and (pointer: fine)").matches; } catch (e) { /* ОТКАТ: без matchMedia считаем касанием — наведение не прилипнет */ }
+    setKind(mouseFirst ? "mouse" : "touch");
+    document.addEventListener("pointerdown", function (ev) {
+      setKind(ev.pointerType === "mouse" ? "mouse" : "touch");
+    }, { capture: true, passive: true });
+    document.addEventListener("pointermove", function (ev) {
+      if (ev.pointerType === "mouse" || (ev.pointerType === "pen" && !ev.buttons)) setKind("mouse");
+    }, { capture: true, passive: true });
+  })();
+
   var m = /[?&]i=([^&]+)/.exec(location.search || "");
   if (m) {
     try {
@@ -135,11 +157,11 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v145"></script>
-<script src="shared/portfolio.strings.js?b=v145"></script>
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v145" />
-<script src="shared/portfolio.view.js?b=v145"></script>
-<script src="shared/pricing.data.js?b=v145"></script>
+<script src="shared/portfolio.data.js?b=v147"></script>
+<script src="shared/portfolio.strings.js?b=v147"></script>
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v147" />
+<script src="shared/portfolio.view.js?b=v147"></script>
+<script src="shared/pricing.data.js?b=v147"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -356,7 +378,11 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
   font-size:11px;color:var(--muted);cursor:pointer;white-space:nowrap;
   transition:color .25s,border-color .25s,background .25s;
 }
-.tb-btn:hover{color:var(--text);border-color:var(--accent-soft)}
+/* Наведение — это про мышь (политика v64, D-272, D-277): правило спрашивает
+   и устройство, и страницу — чем её коснулись последним (data-input ставит
+   первый сценарий витрины). Иначе на телефоне и планшете подложка остаётся
+   висеть там, где коснулся палец. Охраняется tools/hover-is-not-touch-check.mjs. */
+@media (hover:hover){:where(html:not([data-input="touch"])) .tb-btn:hover{color:var(--text);border-color:var(--accent-soft)}}
 .tb-btn svg{width:13px;height:13px;flex:none}
 .keycap{font-family:var(--mono);font-size:9px;padding:1px 5px;border:1px solid var(--border);border-radius:5px;letter-spacing:.5px}
 /* Часы, статус Wi-Fi/батареи и переключатель темы убраны с витрины —
@@ -365,7 +391,7 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
 .lang{position:relative;background:transparent;border:0;cursor:pointer;padding:5px 7px 7px;
   font-family:var(--mono);font-size:11px;letter-spacing:.16em;line-height:1;
   color:var(--muted);border-radius:6px;transition:color .25s,background .25s}
-.lang:hover{color:var(--text);background:rgba(242,242,240,.05)}
+@media (hover:hover){:where(html:not([data-input="touch"])) .lang:hover{color:var(--text);background:rgba(242,242,240,.05)}}
 /* Свет под текущим языком — тот же уголёк, что раньше жил под доком.
    Он переехал туда, где действительно что-то означает. */
 .lang::after{content:"";position:absolute;left:7px;right:7px;bottom:2px;height:1px;
@@ -605,7 +631,7 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
   color:var(--text);
   transition:border-color .3s,background-color .3s,box-shadow .3s,transform .18s var(--ease);
 }
-.btn:hover{border-color:var(--accent-soft);box-shadow:0 0 0 1px var(--accent-soft),0 0 26px var(--accent-soft)}
+@media (hover:hover){:where(html:not([data-input="touch"])) .btn:hover{border-color:var(--accent-soft);box-shadow:0 0 0 1px var(--accent-soft),0 0 26px var(--accent-soft)}}
 .btn:active{transform:scale(.985)}
 .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* Подпись не сжимается: её измеренная ширина — истина для fitCtaRow() и
@@ -613,7 +639,7 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
    узел подписи, и подгон мерил сжатую коробку вместо текста. */
 .btn .btn-label{flex:none}
 .btn-primary{background:var(--btn-bg);color:var(--btn-fg);border-color:transparent}
-.btn-primary:hover{box-shadow:0 0 0 1px var(--accent-soft),0 10px 30px rgba(0,0,0,.28)}
+@media (hover:hover){:where(html:not([data-input="touch"])) .btn-primary:hover{box-shadow:0 0 0 1px var(--accent-soft),0 10px 30px rgba(0,0,0,.28)}}
 /* Точка на клавише ОС — то же утверждение, что в контактах: система не
    закрывается никогда. Тот же глиф, что в живой строке часов поддержки:
    клавиша ведёт не на страницу о продукте, а в работающую ОС. */
@@ -720,10 +746,14 @@ html.in-build .window-layer{position:absolute}
    Прибор это и поймал — закон меряет то, что видно, а не то, что написано. */
 .dock.is-resting .tile{opacity:.5}
 .dock.is-resting .lbl{opacity:.25}
-.dock.is-resting:hover,.dock.is-resting:focus-within{transform:translateX(-50%);
+.dock.is-resting:focus-within{transform:translateX(-50%);
   background:var(--glass);border-color:var(--border);box-shadow:var(--shadow)}
-.dock.is-resting:hover .tile,.dock.is-resting:focus-within .tile{opacity:1}
-.dock.is-resting:hover .lbl,.dock.is-resting:focus-within .lbl{opacity:1}
+@media (hover:hover){:where(html:not([data-input="touch"])) .dock.is-resting:hover{transform:translateX(-50%);
+  background:var(--glass);border-color:var(--border);box-shadow:var(--shadow)}}
+.dock.is-resting:focus-within .tile{opacity:1}
+@media (hover:hover){:where(html:not([data-input="touch"])) .dock.is-resting:hover .tile{opacity:1}}
+.dock.is-resting:focus-within .lbl{opacity:1}
+@media (hover:hover){:where(html:not([data-input="touch"])) .dock.is-resting:hover .lbl{opacity:1}}
 .dock-item .tile,.dock-item .lbl{transition:opacity .3s var(--ease)}
 @media (prefers-reduced-motion:reduce){.dock.is-resting{transform:translateX(-50%)}}
 .dock-item{
@@ -742,8 +772,11 @@ html.in-build .window-layer{position:absolute}
 .dock-item .dot{width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0;transition:opacity .25s}
 .dock-item.is-running .dot{opacity:1}
 .dock-item .lbl{font-size:9px;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+/* z-index: знак непрочитанного стоит в разметке РАНЬШЕ плитки, а плитка —
+   позиционированная (position:relative ниже), и без своего слоя стекло
+   плитки ложилось поверх цифры и приглушало её. Нашёл закон D-277. */
 .dock-item .badge{
-  position:absolute;top:-4px;right:2px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;
+  position:absolute;top:-4px;right:2px;z-index:2;min-width:16px;height:16px;padding:0 4px;border-radius:999px;
   background:var(--err);color:#fff;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;
 }
 .dock-item.has-badge .badge{display:flex}
@@ -952,8 +985,10 @@ html[data-anim="paused"] .dock-flare{display:none}
 .lights{display:flex;align-items:center;gap:2px;padding:2px;border-radius:10px;background:rgba(255,255,255,.045);border:1px solid var(--border)}
 .light{width:22px;height:18px;border-radius:7px;border:0;cursor:pointer;padding:0;display:grid;place-items:center;background:transparent;color:var(--muted);font-size:11px;line-height:1;transition:background .14s,color .14s}
 .light span{opacity:1}
-.light:hover,.light:focus-visible{background:var(--glass);color:var(--text)}
-.light-close:hover,.light-close:focus-visible{background:rgba(255,69,58,.18);color:#ff6a60}
+.light:focus-visible{background:var(--glass);color:var(--text)}
+@media (hover:hover){:where(html:not([data-input="touch"])) .light:hover{background:var(--glass);color:var(--text)}}
+.light-close:focus-visible{background:rgba(255,69,58,.18);color:#ff6a60}
+@media (hover:hover){:where(html:not([data-input="touch"])) .light-close:hover{background:rgba(255,69,58,.18);color:#ff6a60}}
 .win.is-focused .lights{background:rgba(255,255,255,.07)}
 .win-title{font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted)}
 /* ЗАПАС ПОД ДОКОМ. Док плывёт над содержимым — это его материал и его место,
@@ -1008,7 +1043,8 @@ html[data-anim="paused"] .dock-flare{display:none}
   font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--accent);
   border-bottom:1px solid transparent;transition:border-color .2s ease;
 }
-.attn-act:hover,.attn-act:focus-visible{border-bottom-color:var(--accent)}
+.attn-act:focus-visible{border-bottom-color:var(--accent)}
+@media (hover:hover){:where(html:not([data-input="touch"])) .attn-act:hover{border-bottom-color:var(--accent)}}
 .attn-tool{margin-top:14px}
 .attn-label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:6px}
 .attn-row{display:flex;gap:8px;flex-wrap:wrap}
@@ -1025,7 +1061,7 @@ html[data-anim="paused"] .dock-flare{display:none}
   flex:none;padding:9px 13px;border-radius:10px;cursor:pointer;
   border:1px solid var(--border);background:var(--glass);color:var(--text);font-size:12.5px;
 }
-.attn-copy:hover{border-color:var(--accent-soft)}
+@media (hover:hover){:where(html:not([data-input="touch"])) .attn-copy:hover{border-color:var(--accent-soft)}}
 .attn-link{
   margin:10px 0 0;font-family:var(--mono);font-size:11.5px;line-height:1.5;
   color:var(--muted);word-break:break-all;
@@ -1072,7 +1108,7 @@ html[data-anim="paused"] .dock-flare{display:none}
   background:var(--glass);border:1px solid var(--border);border-radius:16px;color:inherit;
   transition:border-color .3s,box-shadow .3s,transform .3s var(--ease);
 }
-.pkg:hover{transform:translateY(-2px)}
+@media (hover:hover){:where(html:not([data-input="touch"])) .pkg:hover{transform:translateY(-2px)}}
 .pkg.is-selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft),0 0 30px var(--seam-haze)}
 .pkg .badge-line{font-size:9.5px;letter-spacing:.9px;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
 .pkg .pkg-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px}
@@ -1149,7 +1185,12 @@ html[data-anim="paused"] .dock-flare{display:none}
 .product-ask .product-note{margin:0}
 .product-ask b{font-size:14px;color:var(--text)}
 .product-ask .btn{height:46px}
-@media (max-width:620px){ .product-frame{height:min(52vh,340px)} .product-ask .btn{width:100%} }
+/* На узком экране клавиша во всю ширину ПЕРЕНОСИТ подпись: общий запрет
+   переноса у .btn держал «Рассказать основателю одной строкой» в одну
+   строку, и на 320 px буквы выходили за оба края клавиши (D-277). */
+@media (max-width:620px){ .product-frame{height:min(52vh,340px)}
+  .product-ask .btn{width:100%;height:auto;min-height:46px;padding-top:10px;padding-bottom:10px;
+    white-space:normal;text-align:center;line-height:1.3} }
 
 /* Расшифровка имени в «О нас»: моноширинная, приглушённая, с выделенной
    второй половиной. Она объясняет имя, а не продаёт — потому и набрана
@@ -1283,7 +1324,17 @@ html[data-anim="paused"] .dock-flare{display:none}
   .field input,.field textarea,.chat-send-row textarea,.chat-input input.mail,.pal-top input{font-size:16px}
 }
 @media (max-width:620px){
-  .dock{gap:5px;padding:7px 8px;bottom:14px;border-radius:20px}
+  /* ── ПОЛКА ВИТРИНЫ ПРОКРУЧИВАЕТСЯ, А НЕ УХОДИТ ЗА КРАЯ (D-277) ─────────
+     Та же беда, что у дока системы в v53: полка отцентрована через
+     left:50% + translateX(-50%), и на экране 320 px восемь плиток уходили
+     за ОБА края — первая и последняя были видны наполовину и недосягаемы.
+     Решение то же, что в системе: полка не шире экрана и едет пальцем.
+     Нашёл закон tools/shape-integrity-check.mjs. */
+  .dock{gap:5px;padding:7px 8px;bottom:14px;border-radius:20px;
+    max-width:calc(100vw - 16px);box-sizing:border-box;overflow-x:auto;overflow-y:hidden;
+    overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:none}
+  .dock::-webkit-scrollbar{width:0;height:0;display:none}
+  .dock-item{flex:0 0 auto}
   .dock-item .tile{width:40px;height:40px;border-radius:12px}
   .dock-item .tile svg{width:19px;height:19px}
   .dock-item .lbl{display:none}

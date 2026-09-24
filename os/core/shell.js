@@ -2817,11 +2817,27 @@
   }
 
   /* ======================================================= desktop icons §4.2 */
-  var hiddenIcons = null;
+  /* ── КОПИИ СТОЛА ЖИВУТ В ЭПОХЕ ХРАНИЛИЩА (D-274) ───────────────────────
+     Убранные значки и места, поставленные рукой, читались один раз — и если
+     этот раз приходился на минуту до двери замка, стол запоминал пустоту:
+     после входа убранные в Эхо значки стояли на столе снова. Копия помнит
+     эпоху хранилища и перечитывается, когда эпоха другая; за дверью не
+     снимается вовсе. */
+  function storeEpoch() {
+    try { return window.sbDB && window.sbDB.epoch ? window.sbDB.epoch() : 0; }
+    catch (e) { return 0; /* ОТКАТ: ядро без эпох — одна эпоха на весь сеанс */ }
+  }
+  function storeClosed() {
+    try { return !!(window.sbDB && window.sbDB.closed && window.sbDB.closed()); }
+    catch (e) { return false; /* ОТКАТ: не спросить — считаем открытым, как было */ }
+  }
+  var hiddenIcons = null, hiddenEpoch = -1;
   function getHiddenIcons() {
-    if (!hiddenIcons) {
+    if (storeClosed()) return [];
+    if (!hiddenIcons || hiddenEpoch !== storeEpoch()) {
       var v = readJSON("sysbaby.icons.hidden", []);
       hiddenIcons = Array.isArray(v) ? v : [];
+      hiddenEpoch = storeEpoch();
     }
     return hiddenIcons.slice();
   }
@@ -2889,9 +2905,12 @@
      один значок рукой — и сетка для остальных пересчитывалась и съезжала:
      клетка означала бы разное в зависимости от того, сколько значков успели
      передвинуть. Сетка — свойство СТОЛА и экрана, а не того, кого двигали. */
-  var iconPlaces = null;
+  var iconPlaces = null, placesEpoch = -1;
   function getIconPlaces() {
-    if (!iconPlaces) {
+    /* За дверью замка мест нет на эту минуту — и это не запоминается (D-274). */
+    if (storeClosed()) return {};
+    if (!iconPlaces || placesEpoch !== storeEpoch()) {
+      placesEpoch = storeEpoch();
       var v = readJSON("sysbaby.icons.pos", {});
       iconPlaces = (v && typeof v === "object" && !Array.isArray(v)) ? v : {};
       /* Записи прошлых версий (доли) переводятся в клетки ОДИН РАЗ, при
@@ -3122,6 +3141,16 @@
   window.addEventListener("resize", scheduleRelayout);
   window.addEventListener("orientationchange", scheduleRelayout);
   sbBus.on("icon:visibility", function () { layoutIcons(); });
+  /* Мир за дверью вернулся (или ушёл) весь разом — стол перечитывает свои
+     копии и перестраивается: убранные значки, места рукой, полка, число
+     писем на полке (D-274). Без этого стол показывал бы минуту до двери. */
+  sbBus.on("store:epoch", function () {
+    if (!bootReady) return;
+    try {
+      buildDock(); buildIcons(); layoutIcons();
+      if (typeof window.sbMailUnreadCount === "function" && window.setMailBadge) window.setMailBadge(num(window.sbMailUnreadCount(), 0));
+    } catch (e) { if (window.console) console.error("[shell] epoch rebuild", e); }
+  });
 
   /* icon interaction: open, keyboard, drag with collision + grid snap */
   function rectsOverlap(a, b, padPx) {
@@ -4046,6 +4075,12 @@
             '<input type="file" id="sbVaultKey"></label>' +
             '<p class="vg-keynote">' + escapeHtml(gateText("lock.keyNeed")) + '</p>'
           : '') +
+        /* ── КЛЮЧ УСТРОЙСТВА (D-276): сказано ДО нажатия, что после слова
+           устройство попросит отпечаток, лицо или PIN. Что он нужен, видно на
+           диске — строка ничего нового постороннему не говорит. */
+        (window.sbVault.hwState && window.sbVault.hwState().on
+          ? '<p class="vg-keynote" id="sbVaultHwNote">' + escapeHtml(gateText("lock.hwNeed")) + "</p>"
+          : "") +
         '<button type="button" class="btn primary" id="sbVaultOpen">' + escapeHtml(gateText("lock.open")) + "</button>" +
         /* ── ЗАБЫТОЕ СЛОВО (D-266) ────────────────────────────────────────
            Кнопка стоит всегда — у замка с кодом и без: дверь, которая
@@ -4094,6 +4129,18 @@
          поворачиваются ЛЕПЕСТКИ: человек видит, как поворачивается ключ. */
       gate.classList.remove("vg-wrong");
       gate.classList.add("vg-work");
+      /* Устройство спрашивается ПЕРВЫМ, в том же нажатии: браузеры отдают
+         ключ устройства только в ответ на жест человека. */
+      var hwOn = !!(window.sbVault.hwState && window.sbVault.hwState().on);
+      (hwOn ? window.sbVault.hwAsk() : Promise.resolve(true)).then(function (hwOk) {
+      if (!hwOk) {
+        busy = false;
+        gate.classList.remove("vg-work");
+        gate.classList.add("vg-wrong");
+        errEl.textContent = gateText("lock.hwNo");
+        errEl.hidden = false;
+        return;
+      }
       keyBytes().then(function (bytes) {
       var t0 = (window.performance || Date).now();
       window.sbVault.unlock(field.value, bytes).then(function (okp) {
@@ -4127,6 +4174,7 @@
         errEl.hidden = false;
       });
       });
+      });
     }
     /* Число проходов СПРАШИВАЕТСЯ у замка, а не помнится: у старого замка
        оно другое, и написать здесь сегодняшнее значило бы соврать о нём. */
@@ -4142,11 +4190,19 @@
       } catch (e) { return 0; }
     }
     function groups(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "\u2009"); }
+    /* Проход памятью (D-275) — тоже цена попытки, и её называют вслух. */
+    function memOfLock() {
+      try {
+        var line = ((window.sbVault.cipher() || {}).kdf || []).filter(function (x) { return /^ARGON2ID:/.test(String(x)); })[0];
+        var m = line ? parseInt(String(line).split("m=")[1], 10) : 0;
+        return m > 0 ? " " + gateText("lock.costMem").replace("{mb}", String(Math.round(m / 1024))) : "";
+      } catch (e) { return ""; }
+    }
     function showCost(ms) {
       var el = gate.querySelector("#sbVaultCost");
       var rounds = roundsOfLock();
       if (!el || !rounds) return;
-      el.textContent = gateText("lock.cost").replace("{n}", groups(rounds)).replace("{ms}", String(Math.round(ms)));
+      el.textContent = gateText("lock.cost").replace("{n}", groups(rounds)).replace("{ms}", String(Math.round(ms))) + memOfLock();
       el.setAttribute("data-rounds", String(rounds));
       el.setAttribute("data-ms", String(Math.round(ms)));
       el.hidden = false;

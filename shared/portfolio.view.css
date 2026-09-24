@@ -1,5 +1,17 @@
 /* sys.baby OS — Portfolio presentation. */
 
+/* ── КАРТОЧКА ВЛАДЕЕТ СВОЕЙ ФОРМОЙ В ЛЮБОМ ДОМЕ (D-277) ──────────────────
+   Этот модуль рисует одну и ту же карточку в двух домах: в системе и на
+   витрине (окно build). У витрины свои правила для абзацев и заголовков
+   окна — «.win-body p { margin: 0 0 14px }», «.win-body h3 { font-size:
+   20px }», — и они СИЛЬНЕЕ одиночного класса: элемент плюс класс весит
+   больше, чем класс. Карточка там теряла поля, и строки ложились прямо на
+   её рамку; имя вырастало до заголовка окна. Снимок основателя 24.09.2026.
+   Поэтому всё, что касается текста карточки, пишется от корня модуля
+   (.app-portfolio …): два класса сильнее элемента с классом в любом доме, и
+   карточка выглядит одинаково там и здесь. Охраняется
+   tools/shape-integrity-check.mjs — он меряет форму, а не классы. */
+
 .app-portfolio {
   flex: 1;
   min-width: 0;
@@ -32,7 +44,12 @@
   cursor: pointer;
 }
 
-.pf-replay:hover { background: rgba(255, 255, 255, .1); }
+/* Наведение — это про мышь (политика v64, D-272): вопрос задаётся и
+   устройству, и системе — чем её коснулись последним. На витрине признак
+   рода касания ставит её же первый сценарий. */
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .pf-replay:hover { background: rgba(255, 255, 255, .1); }
+}
 .pf-replay-title { font-size: 12.5px; font-weight: 650; }
 .pf-replay-sub { font-size: 11px; color: rgba(255, 255, 255, .48); }
 
@@ -66,7 +83,9 @@
   transition: transform .5s cubic-bezier(.16, 1, .3, 1);
 }
 
-.pf-preview:hover .pf-frame { transform: scale(.375); }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .pf-preview:hover .pf-frame { transform: scale(.375); }
+}
 
 .pf-preview::after {
   content: "";
@@ -139,21 +158,32 @@
 
 @media (prefers-reduced-motion: reduce) {
   .pf-live i { animation: none; }
-  .pf-preview:hover .pf-frame { transform: scale(.357); }
+}
+@media (hover: hover) and (prefers-reduced-motion: reduce) {
+  :where(html:not([data-input="touch"])) .pf-preview:hover .pf-frame { transform: scale(.357); }
 }
 
+/* Голова карточки ПЕРЕНОСИТСЯ: длинное имя и длинный ярлык не помещаются
+   в одну строку узкого экрана, и ярлык, которому нельзя было уступить,
+   выезжал за правый край карточки на 75 px (на 320 px — на 145). Теперь он
+   уходит на следующую строку, а если не помещается и там — переносит свою
+   подпись, но не выходит за край. */
 .pf-card-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 6px 10px;
   padding: 13px 14px 0;
 }
 
-.pf-name { margin: 0; font-size: 14.5px; font-weight: 650; line-height: 1.35; }
+.app-portfolio .pf-name { flex: 1 1 11em; min-width: 0; margin: 0; font-size: 14.5px; font-weight: 650; line-height: 1.35; letter-spacing: 0; }
 
 .pf-badge {
   flex: 0 0 auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
   font-size: 9.5px;
   text-transform: uppercase;
   letter-spacing: .05em;
@@ -161,12 +191,12 @@
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, .14);
   color: rgba(255, 255, 255, .6);
-  white-space: nowrap;
 }
 
 .pf-badge.conf { border-color: rgba(242, 242, 240, .22); color: rgba(242, 242, 240, .66); }
 
-.pf-meta, .pf-scale, .pf-goal, .pf-results, .pf-results-source { margin: 6px 14px 0; }
+.app-portfolio .pf-meta, .app-portfolio .pf-scale, .app-portfolio .pf-goal,
+.app-portfolio .pf-results, .app-portfolio .pf-results-source { margin: 6px 14px 0; }
 .pf-meta { font-size: 12px; color: rgba(255, 255, 255, .62); }
 .pf-scale { font-size: 11.5px; color: rgba(255, 255, 255, .45); }
 
@@ -181,7 +211,7 @@
   color: rgba(255, 255, 255, .7);
 }
 
-.pf-sub {
+.app-portfolio .pf-sub {
   margin: 14px 14px 5px;
   font-size: 10.5px;
   text-transform: uppercase;
@@ -189,13 +219,27 @@
   color: rgba(255, 255, 255, .42);
 }
 
-.pf-list { margin: 0 14px; padding-left: 17px; font-size: 12px; line-height: 1.65; color: rgba(255, 255, 255, .78); }
+.app-portfolio .pf-list { margin: 0 14px; padding-left: 17px; font-size: 12px; line-height: 1.65; color: rgba(255, 255, 255, .78); }
 .pf-goal, .pf-results { font-size: 12.5px; line-height: 1.6; color: rgba(255, 255, 255, .82); }
 .pf-results-source { font-size: 11.5px; color: rgba(255, 255, 255, .48); }
 
 .pf-primary { padding: 14px 14px 0; }
 
+/* КНОПКА — КОРОБКА, А НЕ СТРОКА. На витрине это ссылка, а ссылка без
+   display — строчный элемент: у строчного фон и скругление режутся на
+   каждой строке, и длинная подпись на узком экране рвала кнопку надвое —
+   оранжевая плашка и отдельный обрывок со стрелкой (снимок основателя
+   24.09.2026). Коробка переносит подпись ВНУТРИ себя и остаётся целой. */
 .pf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  text-decoration: none;
+  line-height: 1.35;
   border: 1px solid rgba(255, 255, 255, .14);
   background: rgba(255, 255, 255, .05);
   color: inherit;
@@ -206,7 +250,9 @@
   cursor: pointer;
 }
 
-.pf-btn:hover { background: rgba(255, 255, 255, .12); }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .pf-btn:hover { background: rgba(255, 255, 255, .12); }
+}
 
 .pf-btn.primary {
   background: var(--accent, #e0663c);
@@ -215,7 +261,9 @@
   font-weight: 600;
 }
 
-.pf-btn.primary:hover { filter: brightness(1.1); }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .pf-btn.primary:hover { filter: brightness(1.1); }
+}
 
 .pf-note { font-size: 11.5px; color: rgba(255, 255, 255, .5); }
 
@@ -240,7 +288,7 @@
    Amber, not red: nothing here is broken. The badge takes the place of "live"
    at the same weight, so the card reads as a state rather than as a fault, and
    the sentence replaces the button that would have gone nowhere. */
-.pf-offline-note {
+.app-portfolio .pf-offline-note {
   display: none;
   margin: 0;
   font-size: 12px;
@@ -249,14 +297,17 @@
   max-width: 60ch;
 }
 .pf-card.offline .pf-btn.primary { display: none; }
-.pf-card.offline .pf-offline-note { display: block; }
+.app-portfolio .pf-card.offline .pf-offline-note { display: block; }
 
 /* HOW A RELATIONSHIP BEGAN §12
    One line, the same weight as the meta above it. Trust here is not a badge
    or a rating — it is a fact about the work's own history, so it is set like
    every other fact on the card and given no decoration at all. */
-.pf-origin {
-  margin: 12px 0 0;
+/* Поля по бокам — те же 14 px, что у всех строк карточки: у карточки нет
+   своих боковых полей, их держит каждая строка, и строка без них ложится
+   на рамку. */
+.app-portfolio .pf-origin {
+  margin: 12px 14px 0;
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: .1em;
@@ -295,7 +346,7 @@
 
 .pf-pipe-body { min-width: 0; }
 
-.pf-pipe-label {
+.app-portfolio .pf-pipe-label {
   margin: 0 0 4px;
   font-family: var(--mono);
   font-size: 10.5px;
@@ -305,7 +356,7 @@
   color: var(--ink-3);
 }
 
-.pf-pipe-note {
+.app-portfolio .pf-pipe-note {
   margin: 0;
   font-size: 12.5px;
   line-height: 1.55;
@@ -327,10 +378,12 @@
   text-align: center;
 }
 
-.pf-cta p { margin: 0 0 10px; font-size: 13px; }
+.app-portfolio .pf-cta p { margin: 0 0 10px; font-size: 13px; }
 
 .pf-cta-link {
   display: inline-block;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 8px 15px;
   border-radius: 11px;
   background: var(--accent, #e0663c);
@@ -340,7 +393,9 @@
   text-decoration: none;
 }
 
-.pf-cta-link:hover { filter: brightness(1.1); }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .pf-cta-link:hover { filter: brightness(1.1); }
+}
 
 .pf-empty {
   display: flex;

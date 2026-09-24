@@ -98,6 +98,19 @@
           remove: function () { return false; }, flush: function () { } };
   }
   function dbGet(key) { return box().get(key); }
+  /* ── ЭПОХА ХРАНИЛИЩА (D-274) ──────────────────────────────────────────
+     Копия памяти этой комнаты помнит, в какую эпоху хранилища она снята, и
+     перечитывается, когда эпоха другая (замок открыли, заперли, сняли). Пока
+     хранилище закрыто замком, копия не снимается вовсе: «ничего» за дверью —
+     не пустота, а запертое. Охраняется tools/lock-memory-check.mjs. */
+  function epochNow() {
+    try { return window.sbDB && window.sbDB.epoch ? window.sbDB.epoch() : 0; }
+    catch (e) { return 0; /* ОТКАТ: ядро без эпох — одна эпоха на весь сеанс */ }
+  }
+  function storeClosed() {
+    try { return !!(window.sbDB && window.sbDB.closed && window.sbDB.closed()); }
+    catch (e) { return false; /* ОТКАТ: не спросить — считаем открытым, как было */ }
+  }
   function dbSet(key, value) { return box().set(key, value); }
   function dbRemove(key) { box().remove(key); }
   function dbFlush() { box().flush(); }
@@ -172,7 +185,7 @@
 
   /* -------------------------------------------------------- data & schema */
 
-  var state = null;
+  var state = null, stateEpoch = -1;
   var selectedId = null;
 
   /* Fills only missing fields — existing values always win. */
@@ -212,6 +225,8 @@
   }
 
   function write() {
+    /* Копия из другой эпохи не пишется никогда: она легла бы поверх настоящей памяти (D-274). */
+    if (stateEpoch !== epochNow()) return false;
     try {
       dbSet(KEY_V2, JSON.stringify(state));
       return true;
@@ -245,6 +260,10 @@
   }
 
   function load() {
+    stateEpoch = epochNow();
+    /* За дверью замка ящик не читается и не сажается: пустой на эту минуту,
+       и эта пустота не запоминается (D-274). */
+    if (storeClosed()) { state = { nextId: 1, data: [] }; stateEpoch = -1; return; }
     var v2 = parseEnvelope(dbGet(KEY_V2));
     if (v2) { state = normalizeAll(v2); topUpStudioLetter(); return; }
 
@@ -284,7 +303,7 @@
     } catch (err) { console.error("[mail] studio letter top-up failed", err); }
   }
 
-  function ensureLoaded() { if (!state) load(); }
+  function ensureLoaded() { if (!state || stateEpoch !== epochNow()) load(); }
 
   function messageById(id) {
     ensureLoaded();

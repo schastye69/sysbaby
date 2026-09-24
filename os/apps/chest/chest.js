@@ -314,19 +314,49 @@
       ? window.sbRights.box("chest")
       : { get: function () { return null; }, set: function () { return false; } };
   }
-  var cached = null;
+  /* ── ПАМЯТЬ СУНДУКА ЖИВЁТ В ЭПОХЕ ХРАНИЛИЩА (D-274) ─────────────────────
+     ПОВОД, дословно от основателя 24.09.2026: «открываю сундук, перезахожу в
+     свою же систему и у меня снова открытие сундуков начинается с самого
+     начала... я уже говорил об этом».
+     D-257 чинил первую причину и доказывал перезагрузкой — по незапертой
+     системе. У основателя замок: при входе сперва дверь, и за ней защищённое
+     не читается. Сундук успевал спросить память ДО двери (его слово нужно
+     карточке входа), получал пустоту, заводил новый порядок и запоминал его;
+     после двери показывал запомненную пустоту, а следующее открытие клало её
+     поверх настоящей памяти. Теперь копия помнит эпоху хранилища и
+     перечитывается, когда эпоха сменилась; пока хранилище закрыто, пустота
+     не запоминается и не записывается. Охраняется lock-memory-check. */
+  var cached = null, cachedEpoch = -1, transient = null;
+  function epochNow() {
+    try { return window.sbDB && window.sbDB.epoch ? window.sbDB.epoch() : 0; }
+    catch (e) { return 0; /* ОТКАТ: ядро без эпох — одна эпоха на весь сеанс */ }
+  }
+  function closedNow() {
+    try { return !!(window.sbDB && window.sbDB.closed && window.sbDB.closed()); }
+    catch (e) { return false; /* ОТКАТ: не можем спросить — считаем открытым, как было */ }
+  }
+  function fresh() {
+    return { v: 1, order: shuffle(prizes()), opened: [], title: "", letter: null, serial: "", echo: null, off: [], names: {}, night: null };
+  }
   function state() {
-    if (cached) return cached;
+    /* За дверью — временная пустота на эту минуту, не память: её нельзя ни
+       запомнить, ни записать. */
+    if (closedNow()) { if (!transient) transient = fresh(); return transient; }
+    transient = null;
+    var ep = epochNow();
+    if (cached && cachedEpoch === ep) return cached;
     var st = null;
     try { var raw = box().get(STORE_KEY); st = raw ? JSON.parse(raw) : null; } catch (e) { st = null; }
     if (!st || !Array.isArray(st.order) || !Array.isArray(st.opened)) st = null;
-    if (!st) st = { v: 1, order: shuffle(prizes()), opened: [], title: "", letter: null, serial: "", echo: null, off: [], names: {}, night: null };
+    if (!st) st = fresh();
     if (!Array.isArray(st.off)) st.off = [];
     if (!st.names || typeof st.names !== "object") st.names = {};
     cached = st;
+    cachedEpoch = ep;
     return st;
   }
   function save() {
+    if (closedNow()) return;
     try { box().set(STORE_KEY, JSON.stringify(state())); } catch (e) { /* ignore */ }
   }
   /* Перестановка — случайными байтами браузера, один раз. С двумя условиями
