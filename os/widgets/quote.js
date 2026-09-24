@@ -58,7 +58,9 @@
     '[data-widget-id="quote"] .qt-unit.on{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1)}' +
     '[data-widget-id="quote"] .qt-unit-name{flex:1;min-width:0;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
     '[data-widget-id="quote"] .qt-step{width:20px;height:20px;flex:0 0 20px;display:grid;place-items:center;border-radius:7px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:inherit;font:inherit;font-size:12px;line-height:1;cursor:pointer;padding:0}' +
-    '[data-widget-id="quote"] .qt-step:hover{background:rgba(255,255,255,.13)}' +
+    /* Наведение — только мыши (D-272): спрашивается и устройство, и то, чем
+       систему коснулись последним. Охраняется hover-is-not-touch-check. */
+    '@media (hover: hover){:where(html:not([data-input="touch"])) [data-widget-id="quote"] .qt-step:hover{background:rgba(255,255,255,.13)}}' +
     '[data-widget-id="quote"] .qt-count{min-width:16px;text-align:center;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11.5px}' +
     '[data-widget-id="quote"] .qt-out{display:flex;flex-direction:column;gap:4px;margin-top:2px;padding-top:8px;border-top:1px solid rgba(255,255,255,.09)}' +
     '[data-widget-id="quote"] .qt-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}' +

@@ -136,6 +136,13 @@
      назвал именно его. Дальше она одна на всех.
      Охраняется tools/room-padding-check.mjs. */
   --pad-room: 15px;
+  /* ── КОЛОНКА КОМНАТЫ (D-273) ──────────────────────────────────────────────
+     Ширина, до которой растёт комната-колонка (Сундук, Передать, Замок,
+     Фонарь), прежде чем встать посередине развёрнутого окна. 960 — это
+     ширина планшета 1280 минус по 160 воздуха с каждой стороны: колонка
+     на планшете и на столе выглядит одинаково, а на телефоне занимает всё.
+     Охраняется tools/room-center-check.mjs. */
+  --room-col: 960px;
 
   --f-micro: 10px;
   --f-meta: 11px;
@@ -340,6 +347,15 @@ html[data-transparency="reduced"] #sbCtxMenu {
   border-color: var(--line-2);
 }
 
+/* ── СХЕМА ЦВЕТА — СВОЯ, А НЕ УСТРОЙСТВА (D-272) ──────────────────────────
+   Страница объявляла «dark light» и отдавала выбор браузеру: на светлом
+   телефоне родные части (полосы прокрутки, поля, списки, системные цвета)
+   рисовались светлыми посреди тёмной системы, а браузер с «затемнением
+   сайтов» принимал её за светлую и перекрашивал по-своему. Схема теперь
+   следует теме самой системы — и больше ничему. Охраняется same-look-check. */
+:root { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+
 * { box-sizing: border-box; }
 
 /* No tap flash. Android paints a translucent block over whatever element it
@@ -368,6 +384,9 @@ html, body { -webkit-user-select: none; user-select: none; }
 .desk-icon, .titlebar, .resize-handle, .sticky-note, .sticky-note-head {
   touch-action: none;
 }
+/* Долгое касание значка не вызывает меню браузера «сохранить / скопировать»
+   (D-272): у значка стола и плитки полки своё меню — правый щелчок стола. */
+.desk-icon, .dock-item { -webkit-touch-callout: none; }
 /* Разрешение — точечное и полное: всё, что человек читает и копирует.
    Список растёт по мере надобности, и это правильно: он ошибается в сторону
    «нельзя выделить то, что хотелось», а не в сторону «мазня по столу». */
@@ -420,7 +439,7 @@ kbd { font-family: var(--mono); font-size: var(--f-ui); }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .btn:hover { background: var(--glass-2); }
+  :where(html:not([data-input="touch"])) .btn:hover { background: var(--glass-2); }
 }
 .btn:active { transform: scale(.98); }
 .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; color: #fff; }
@@ -547,6 +566,10 @@ html.sb-incognito .wp-layer {
 #sbVaultGate {
   position: fixed; inset: 0; z-index: var(--z-door);
   display: grid; place-items: center; padding: 24px;
+  /* Дверь прокручивается (D-266, нашёл закон): с полем второго ключа и
+     «забыли слово?» она выше телефонного экрана, и кнопка «Открыть кодом»
+     оказывалась за нижним краем — недостижимой пальцем. */
+  overflow-y: auto; overscroll-behavior: contain;
   background: rgba(6, 7, 10, .92);
   backdrop-filter: blur(calc(var(--glass-blur) * 1.2));
   -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.2));
@@ -615,6 +638,21 @@ html.sb-incognito .wp-layer {
 .vg-keynote {
   margin: -2px 0 2px; font-size: var(--f-meta); line-height: 1.6; color: var(--ink-3); max-width: 44ch;
 }
+/* Забытое слово — тихая строка под кнопкой, а не вторая кнопка: дверь
+   открывается словом, код — запасной ход (D-266). */
+.vg-forgot {
+  background: none; border: 0; padding: 6px 4px; cursor: pointer;
+  font: inherit; font-size: var(--f-meta); color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px;
+}
+.vg-forgot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.vg-spare { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.vg-spare[hidden] { display: none; }
+.vg-spare input {
+  width: 100%; padding: 11px 12px; font-size: var(--f-read); border-radius: var(--r-ctrl);
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
+}
+.vg-spare input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#sbVaultCode { font-family: var(--mono); letter-spacing: .06em; text-transform: uppercase; }
 .vg-iris .vgi-rim {
   fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: .5;
   transition: stroke var(--t-move) ease, opacity var(--t-move) ease;
@@ -1107,7 +1145,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .tb-identity:hover { background: var(--glass); }
+  :where(html:not([data-input="touch"])) .tb-identity:hover { background: var(--glass); }
 }
 .id-name { font-weight: 600; }
 .tb-btn {
@@ -1121,7 +1159,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .tb-btn:hover { background: var(--glass); color: var(--ink); }
+  :where(html:not([data-input="touch"])) .tb-btn:hover { background: var(--glass); color: var(--ink); }
 }
 .tb-btn.on, .tb-btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
 .tb-badge {
@@ -1138,7 +1176,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .seq-item:hover { background: var(--glass); }
+  :where(html:not([data-input="touch"])) .seq-item:hover { background: var(--glass); }
 }
 .seq-item.active { background: var(--glass-2); }
 .seq-item.dim { opacity: .5; }
@@ -1352,7 +1390,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .desk-icon:hover { background: rgba(255, 255, 255, .06); }
+  :where(html:not([data-input="touch"])) .desk-icon:hover { background: rgba(255, 255, 255, .06); }
 }
 .desk-icon.selected { background: var(--accent-soft); outline: 1px solid var(--accent-ring); }
 .desk-icon.dragging { opacity: .85; transition: none; z-index: var(--z-lift); }
@@ -1386,7 +1424,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .desk-icon:hover .icon-tile {
+  :where(html:not([data-input="touch"])) .desk-icon:hover .icon-tile {
   box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, .12);
   background: linear-gradient(155deg, rgba(242, 242, 240, .18), rgba(242, 242, 240, .05));
 }
@@ -1411,7 +1449,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .desk-icon:hover .icon-spark { opacity: 1; }
+  :where(html:not([data-input="touch"])) .desk-icon:hover .icon-spark { opacity: 1; }
 }
 .icon-spark svg { width: 12px; height: 12px; }
 .icon-capsule {
@@ -1579,7 +1617,7 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .note-invite:hover {
+  :where(html:not([data-input="touch"])) .note-invite:hover {
   border-style: solid;
   border-color: rgba(var(--wp-light-rgb, 91, 124, 255), .52);
   outline: none;
@@ -1662,7 +1700,7 @@ html[data-controls="right"] .titlebar .tb-right { order: 2; }
 .sticky-note.lights-held .note-lights .light,
 .sticky-note.full .note-lights .light { color: var(--ink-2); }
 @media (hover: hover) and (pointer: fine) {
-  .sticky-note:hover .note-lights { opacity: 1; pointer-events: auto; }
+  :where(html:not([data-input="touch"])) .sticky-note:hover .note-lights { opacity: 1; pointer-events: auto; }
 }
 html[data-motion="reduced"] .note-lights { transition: none; }
 
@@ -1799,7 +1837,9 @@ html[data-theme="light"] .window::before { background: rgba(12, 14, 20, .08); }
 .window.opening,
 .window.traveling {
   backdrop-filter: none; -webkit-backdrop-filter: none;
-  background: var(--bg-elev, #14100f);
+  /* Свет комнаты летит вместе с окном (D-272): градиент не стоит кадров,
+     и окно не «загорается» в конце полёта. */
+  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--bg-elev, #14100f);
   will-change: transform, opacity;
 }
 /* ── ОКНО ПОЗАДИ ПРИГЛУШАЕТСЯ · D-251 ─────────────────────────────────────
@@ -1882,7 +1922,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .light:hover { background: var(--glass-2); color: var(--ink); }
+  :where(html:not([data-input="touch"])) .light:hover { background: var(--glass-2); color: var(--ink); }
 }
 .light.close:focus-visible { background: rgba(255, 69, 58, .18); color: #ff6a60; }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
@@ -1891,7 +1931,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .light.close:hover { background: rgba(255, 69, 58, .18); color: #ff6a60; }
+  :where(html:not([data-input="touch"])) .light.close:hover { background: rgba(255, 69, 58, .18); color: #ff6a60; }
 }
 .window.focused .lights { border-color: var(--line-2); background: rgba(255, 255, 255, .07); }
 .window.focused .light { color: var(--ink-2); }
@@ -1925,6 +1965,29 @@ html.dragging .window { backdrop-filter: blur(6px); }
   .tb-right .win-kbd, .win-kbd { display: inline; color: var(--ink-3); font-size: var(--f-meta); }
 }
 .window-body { flex: 1; min-height: 0; overflow: auto; }
+/* ── КОРЕНЬ КОМНАТЫ ЗАНИМАЕТ ОКНО ЦЕЛИКОМ (D-273) ──────────────────────────
+   ПОВОД, дословно от основателя 23.09.2026: «большинство приложений при
+   открытии на весь экран не отцентрованы … проверить стоит каждое
+   приложение».
+   createWindow ставит телу окна display: flex (строкой). Корень комнаты
+   становился флекс-элементом без роста — и брал ширину СВОЕГО СОДЕРЖИМОГО,
+   прижатую к левой стенке. Пока окно узкое, содержимое шире его, и дефекта
+   не видно; развёрнутое окно шире — и справа оставалось пустое поле. У
+   двенадцати старых комнат корень растёт своим flex: 1; у семи новых — нет,
+   и пять из них стояли у стенки. Правило здесь, а не в каждой комнате:
+   комната, заведённая завтра, займёт окно сама. */
+.window-body > :only-child { flex-grow: 1; }
+/* ── РАЗВЁРНУТОЕ ОКНО: СТЕКЛО ДО НИЗА, СОДЕРЖИМОЕ НАД ПОЛКОЙ (D-273) ───────
+   Окно накрывает стол целиком — иначе обои под ним не гаснут (field.js,
+   field-park-check). А тело кончается над полкой: полка лежит на стекле
+   самого окна, и ни одна кнопка комнаты под ней не прячется — так нижняя
+   навигация витрины раньше уходила под полку. Высота полки — та, что
+   публикует shell.js (--dock-h), поле снизу — то же, что у самой полки.
+   На узком экране окно и так кончается над полкой (compactRect), а во весь
+   экран (второе нажатие) полки нет вовсе. */
+html:not(.is-compact) .window.maximized:not(.fullscreen) > .window-body {
+  margin-bottom: calc(var(--dock-h, 68px) + max(14px, env(safe-area-inset-bottom)) + 12px);
+}
 .app-fail { padding: 22px; color: var(--ink-2); font-size: var(--f-read); }
 .resize-handle { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize; }
 .resize-handle::after { content: ""; position: absolute; right: 5px; bottom: 5px; width: 7px; height: 7px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); }
@@ -2013,7 +2076,7 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); t
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .dh-body:hover { background: rgba(var(--wp-light-rgb, 91, 124, 255), .09); }
+  :where(html:not([data-input="touch"])) .dh-body:hover { background: rgba(var(--wp-light-rgb, 91, 124, 255), .09); }
 }
 .dh-glyph {
   flex: none; display: grid; place-items: center; width: 17px; height: 17px;
@@ -2035,7 +2098,7 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); t
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .dh-close:hover { background: rgba(var(--wp-light-rgb, 91, 124, 255), .12); color: var(--ink); }
+  :where(html:not([data-input="touch"])) .dh-close:hover { background: rgba(var(--wp-light-rgb, 91, 124, 255), .12); color: var(--ink); }
 }
 
 /* ── ПОДСКАЗКА НА ТЕЛЕФОНЕ: ШИРЕ, А НЕ ВЫШЕ (v48) ────────────────────────
@@ -2094,11 +2157,13 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); t
   #sbDeskHint.on { transform: translate(0, 0); }
   html[data-motion="reduced"] #sbDeskHint { transform: translate(0, 0); }
 
-  /* Нет дока — весь ряд опускается к самому низу. --desk-row-b общее, и
-     кнопка идёт вниз вместе с подсказкой, а не отдельным числом. */
-  html.dock-empty {
-    --row-base: 22px;
-  }
+}
+/* Нет дока — весь ряд опускается к самому низу, на ЛЮБОЙ ширине (D-272:
+   пустой полки больше нет нигде). --desk-row-b общее, и кнопка идёт вниз
+   вместе с подсказкой, а не отдельным числом. Вырез экрана снизу
+   учитывается тем же max(), каким встаёт сама полка. */
+html.dock-empty {
+  --row-base: calc(max(14px, env(safe-area-inset-bottom)) + 8px);
 }
 
 /* =================================================================== dock §4.1 */
@@ -2107,15 +2172,33 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); t
   z-index: var(--z-shelf); display: flex; flex-direction: column; align-items: center; gap: 6px;
   transition: transform var(--t-move) var(--ease), opacity var(--t-move) ease;
 }
+/* ── ПУСТОЙ ПОЛКИ НЕТ НИ НА ОДНОМ ЭКРАНЕ (D-272) ─────────────────────────
+   ПОВОД, дословно от основателя 23.09.2026, со снимком планшета: «док
+   панель активна даже если ни одно приложение не открыто».
+   На телефоне пустая полка не показывалась давно (D-061): док — полка
+   ОТКРЫТОГО, и полка без единой плитки — загадка, а не приглашение. На
+   широком экране правило стояло внутри @media (max-width: 620px), и планшет
+   видел таблетку без плиток и под ней «⌘K — открыть приложение» — клавишу,
+   которой у планшета нет. Одна система — одно правило: полка появляется
+   вместе с первым открытым окном на любой ширине. Подсказка про ⌘K снята
+   совсем: она жила только в пустой полке, а там её больше нет; сочетание
+   называет совет стола (tip.cmdk), и только там, где есть точный указатель.
+   Охраняется tools/same-look-check.mjs. */
+html.dock-empty #dock {
+  opacity: 0; transform: translate(-50%, 14px); pointer-events: none;
+}
 /* Док не уходит за кромку — он затихает. То же решение, что на лендинге:
    единственный вход в продукт не должен исчезать с экрана. Настройка в
    Центре управления называется теперь «приглушать», и она не врёт. */
 /* Тот же диагноз, что на лендинге: opacity на элементе гасит и размытие
    подложки, и сквозь док проступает текст. Поверхность остаётся плотной,
    притухает только содержимое. */
-html.dock-away #dock { transform: translate(-50%, 5px) scale(.975); }
-html.dock-away .dock-shelf { background: rgba(16, 13, 12, .74); }
-html.dock-away #dock .dock-tile, html.dock-away #dock .dock-label { opacity: .5; }
+/* Затихание — ответ на уход МЫШИ: пальцу нечем «вернуться» к полке
+   наведением, и после касания она не затихает (D-272). Признак рода касания
+   ставит shell.js; тот же вопрос задают все правила наведения. */
+html.dock-away:where(:not([data-input="touch"])) #dock { transform: translate(-50%, 5px) scale(.975); }
+html.dock-away:where(:not([data-input="touch"])) .dock-shelf { background: rgba(16, 13, 12, .74); }
+html.dock-away:where(:not([data-input="touch"])) #dock .dock-tile, html.dock-away:where(:not([data-input="touch"])) #dock .dock-label { opacity: .5; }
 html.dock-away #dock:focus-within { transform: translate(-50%, 0); }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -2123,7 +2206,7 @@ html.dock-away #dock:focus-within { transform: translate(-50%, 0); }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  html.dock-away #dock:hover { transform: translate(-50%, 0); }
+  html.dock-away:where(:not([data-input="touch"])) #dock:hover { transform: translate(-50%, 0); }
 }
 html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within .dock-label { opacity: 1; }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
@@ -2132,7 +2215,7 @@ html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within 
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  html.dock-away #dock:hover .dock-tile, html.dock-away #dock:hover .dock-label { opacity: 1; }
+  html.dock-away:where(:not([data-input="touch"])) #dock:hover .dock-tile, html.dock-away:where(:not([data-input="touch"])) #dock:hover .dock-label { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) { html.dock-away #dock { transform: translate(-50%, 0); } }
 .dock-shelf {
@@ -2227,7 +2310,6 @@ html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within 
   border-radius: var(--r-pill); background: var(--danger); color: #fff; font-size: var(--f-micro);
   display: grid; place-items: center;
 }
-#dockHint { font-size: var(--f-meta); color: var(--ink-3); }
 /* Круглая кнопка — деталь рабочего стола. Открытое окно её убирает: класс
    ставит updateAppSequence() в os/core/shell.js. */
 html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translateY(8px); }
@@ -2484,8 +2566,22 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
   background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
 }
 .lock-idle select:focus { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
+.lock-stays { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; font-size: var(--f-meta); line-height: 1.5; color: var(--ink-3); }
 .lock-acts { display: flex; flex-wrap: wrap; gap: 8px; }
 .lock-acts .btn { flex: 1 1 140px; }
+/* Файл второго ключа и код восстановления в окне аккаунта (D-266). */
+.lock-keyfile { display: flex; flex-direction: column; gap: 6px; }
+.lock-keyfile input[type="file"] {
+  font: inherit; font-size: var(--f-ui); color: var(--ink-2); padding: 9px 10px;
+  background: rgba(255, 255, 255, .03); border: 1px dashed rgba(var(--accent-rgb), .45); border-radius: var(--r-ctrl);
+}
+.lock-spare-out { display: flex; flex-direction: column; gap: 8px; }
+.lock-spare-code {
+  margin: 0; padding: 12px; font-family: var(--mono); font-size: var(--f-read); line-height: 1.6;
+  letter-spacing: .08em; color: var(--ink); text-align: center; white-space: pre-wrap; overflow-wrap: anywhere;
+  background: rgba(var(--accent-rgb), .07); border: 1px solid var(--accent-ring); border-radius: var(--r-ctrl);
+  user-select: all;
+}
 .lock-warn {
   font-size: var(--f-ui); line-height: 1.55; color: var(--danger);
   padding: 9px 11px; border-radius: var(--r-ctrl);
@@ -2551,7 +2647,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .notif-row:hover, .task-row:hover, .clip-row:hover { background: rgba(255, 255, 255, .06); }
+  :where(html:not([data-input="touch"])) .notif-row:hover, :where(html:not([data-input="touch"])) .task-row:hover, :where(html:not([data-input="touch"])) .clip-row:hover { background: rgba(255, 255, 255, .06); }
 }
 .notif-main { flex: 1; min-width: 0; }
 .notif-title { font-size: var(--f-read); }
@@ -2608,7 +2704,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .ctx-item:hover { background: var(--accent-soft); }
+  :where(html:not([data-input="touch"])) .ctx-item:hover { background: var(--accent-soft); }
 }
 .ctx-check { color: var(--accent); }
 .ctx-sep { height: 1px; margin: 5px 8px; background: var(--line); }
@@ -2646,12 +2742,20 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
    измерено: закон fps-check считает долгие кадры на открытии окна при
    вчетверо замедленном процессоре. */
 @media (max-width: 860px) {
+  /* ── ПЛОТНАЯ ПОДЛОЖКА — ДА; СВЕТ КОМНАТЫ, БЛИК И СКРУГЛЕНИЕ — ТЕ ЖЕ (D-272)
+     ПОВОД, дословно от основателя 23.09.2026: «дизайн на всех устройствах
+     должен быть идентичным».
+     Здесь окно теряло НЕ ТОЛЬКО размытие, которое стоит кадров, но и то, что
+     не стоит ничего: тёплый свет комнаты сверху, блик по кромке и — между 681
+     и 860 — скругление (ниже 680 оно возвращалось правилом у значков, выше
+     860 было всегда: три вида одного окна). Бесплатное возвращено; снято
+     только размытие — стекло 26 px стоит телефону 34.1 мс кадра против 26.0
+     без него (D-148). Одно это различие названо в same-look-check. */
   .window {
-    border-radius: 0; box-shadow: none;
+    box-shadow: none;
     backdrop-filter: none; -webkit-backdrop-filter: none;
-    background: var(--bg-elev, #14100f);
+    background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--bg-elev, #14100f);
   }
-  .window::before { display: none; }
   .resize-handle { display: none; }
 }
 /* Icon step-down (§4.2, the "681 px lesson"): the small-icon regime must extend
@@ -2690,7 +2794,6 @@ html.icons-small .icon-label { font-size: var(--f-micro); }
      подпись действия и подсказка про ⌘K (клавиш тут нет), а плитки жмутся
      до размера, который ещё берётся пальцем. Три состояния точки остаются:
      нет — закрыто, полная — на экране, полая — ждёт. */
-  #dockHint { display: none; }
     #dock { bottom: max(10px, env(safe-area-inset-bottom)); }
   .dock-shelf { --dock-gap: 6px; padding: 6px 8px; border-radius: var(--r-window); }
   .dock-item { width: 40px; }
@@ -2748,11 +2851,8 @@ html.icons-small .icon-label { font-size: var(--f-micro); }
      получает снизу запас ровно в высоту полки (см. .window-body ниже).
      Полка плывёт над содержимым, но ни одна управляющая деталь под ней не
      остаётся — это и стережёт dock-clearance-check.
-     Пустая полка по-прежнему не показывается: единственная кнопка без
-     подписи — загадка, а не приглашение. */
-  html.dock-empty #dock {
-    opacity: 0; transform: translate(-50%, 14px); pointer-events: none;
-  }
+     Пустая полка по-прежнему не показывается — теперь на любой ширине
+     (D-272, правило переехало в §4.1 «dock»). */
   /* Запаса-подкладки здесь больше нет (v48): он был мёртв — createWindow
      ставит окну инлайновый padding:0, который бьёт любой класс. Решение
      переехало в геометрию: компактное окно заканчивается НАД полкой
@@ -2817,7 +2917,7 @@ html.is-compact .titlebar { cursor: default; }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .tb-lang-now:hover { color: var(--ink); background: var(--glass-2); border-color: var(--line-2); }
+  :where(html:not([data-input="touch"])) .tb-lang-now:hover { color: var(--ink); background: var(--glass-2); border-color: var(--line-2); }
 }
 .tb-lang-now:active { transform: scale(.94); }
 .tb-lang-now:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -2844,7 +2944,7 @@ html.is-compact .titlebar { cursor: default; }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .tb-lang-item:hover { background: var(--glass-2); color: var(--ink); }
+  :where(html:not([data-input="touch"])) .tb-lang-item:hover { background: var(--glass-2); color: var(--ink); }
 }
 .tb-lang-item.is-active { color: var(--ink); }
 .tb-lang-item.is-active .tb-lang-code { color: var(--accent); }
@@ -2871,7 +2971,7 @@ button.tb-mark {
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  button.tb-mark:hover { background: var(--glass); }
+  :where(html:not([data-input="touch"])) button.tb-mark:hover { background: var(--glass); }
 }
 button.tb-mark:active { transform: scale(.94); }
 button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -2973,7 +3073,7 @@ html[data-motion="reduced"] .echo-catch { animation: none; }
   border-radius: var(--r-ctrl); border: 1px solid transparent; background: transparent;
   color: inherit; transition: background var(--t-touch) ease, border-color var(--t-touch) ease;
 }
-@media (hover: hover) { .tb-clock-btn:hover { background: rgba(255, 255, 255, .06); border-color: var(--line); } }
+@media (hover: hover) { :where(html:not([data-input="touch"])) .tb-clock-btn:hover { background: rgba(255, 255, 255, .06); border-color: var(--line); } }
 .tb-clock-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* ── ОДНА ЛИНЕЙКА НА КОМНАТУ И НА ОКНО · решение D-169 ────────────────────
    ПОВОД: снимок основателя с календарём и слова «окно должно быть идеально по
@@ -3003,7 +3103,7 @@ html[data-motion="reduced"] .echo-catch { animation: none; }
   border-radius: var(--r-ctrl); border: 1px solid var(--line);
   background: rgba(255, 255, 255, .04); color: var(--ink-2);
 }
-@media (hover: hover) { .cal-step:hover { background: var(--glass); color: var(--ink); } }
+@media (hover: hover) { :where(html:not([data-input="touch"])) .cal-step:hover { background: var(--glass); color: var(--ink); } }
 .cal-head, .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
 .cal-head { padding-bottom: 5px; }
 .cal-head span {
@@ -3091,20 +3191,23 @@ body.sb-alarm-flash::after {
    Охраняется tools/hand-check.mjs. */
 .sb-hand { position: relative; }
 
+/* Кнопка одного роста с соседними кнопками комнаты (D-273): в Хранилище
+   «Передать в…» стояла мельче и бледнее «Новой папки» рядом — одна полоса
+   инструментов говорила двумя голосами. Кегль и поле — как у кнопок комнат. */
 .sb-hand-btn {
   border: 1px solid rgba(255, 255, 255, .14);
   background: rgba(255, 255, 255, .05);
-  color: var(--ink-2);
+  color: var(--ink);
   font: inherit;
-  font-size: var(--f-meta);
-  padding: 5px 10px;
+  font-size: var(--f-ui);
+  padding: 6px 10px;
   border-radius: var(--r-ctrl);
   cursor: pointer;
   white-space: nowrap;
 }
 
 @media (hover: hover) {
-  .sb-hand-btn:hover { background: rgba(255, 255, 255, .1); color: var(--ink); }
+  :where(html:not([data-input="touch"])) .sb-hand-btn:hover { background: rgba(255, 255, 255, .1); color: var(--ink); }
 }
 
 .sb-hand-menu {
@@ -3135,5 +3238,20 @@ body.sb-alarm-flash::after {
 }
 
 @media (hover: hover) {
-  .sb-hand-to:hover { background: rgba(255, 255, 255, .08); color: var(--ink); }
+  :where(html:not([data-input="touch"])) .sb-hand-to:hover { background: rgba(255, 255, 255, .08); color: var(--ink); }
 }
+
+/* Живая копия (D-267): строка о происхождении копии. Устаревшая говорит
+   тоном внимания, а не тревоги: это не ошибка, а новость. */
+.sb-hand-src {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+  margin: 6px 0; padding: 7px 10px; border-radius: var(--r-ctrl);
+  font-size: var(--f-meta); line-height: 1.5; color: var(--ink-3);
+  background: rgba(255, 255, 255, .03); border: 1px solid var(--line);
+}
+.sb-hand-src[data-state="changed"] { color: var(--ink-2); border-color: var(--accent-ring); background: rgba(var(--accent-rgb), .06); }
+.sb-hand-src-take {
+  border: 1px solid var(--accent-ring); background: transparent; color: var(--ink);
+  font: inherit; font-size: var(--f-meta); padding: 4px 9px; border-radius: var(--r-ctrl); cursor: pointer;
+}
+.sb-hand-src-take:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

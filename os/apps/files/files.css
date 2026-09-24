@@ -48,7 +48,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .fv-crumb:hover { background: rgba(255, 255, 255, .07); color: inherit; }
+  :where(html:not([data-input="touch"])) .fv-crumb:hover { background: rgba(255, 255, 255, .07); color: inherit; }
 }
 .fv-crumb.current { color: inherit; font-weight: 600; cursor: default; }
 .fv-crumb-sep { color: var(--ink-3); font-size: var(--f-ui); }
@@ -75,7 +75,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .fv-tool:hover { background: rgba(255, 255, 255, .11); }
+  :where(html:not([data-input="touch"])) .fv-tool:hover { background: rgba(255, 255, 255, .11); }
 }
 .fv-tool svg { width: 15px; height: 15px; }
 
@@ -109,7 +109,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .fv-item:hover { background: rgba(255, 255, 255, .05); }
+  :where(html:not([data-input="touch"])) .fv-item:hover { background: rgba(255, 255, 255, .05); }
 }
 .fv-item.selected { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .14); }
 .fv-item:focus-visible { outline: 2px solid var(--accent, #e0663c); outline-offset: 2px; }
@@ -164,7 +164,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .fv-item:hover .fv-mini { display: flex; }
+  :where(html:not([data-input="touch"])) .fv-item:hover .fv-mini { display: flex; }
 }
 
 .fv-mini-btn {
@@ -186,7 +186,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .fv-mini-btn:hover { background: rgba(255, 255, 255, .16); color: #fff; }
+  :where(html:not([data-input="touch"])) .fv-mini-btn:hover { background: rgba(255, 255, 255, .16); color: #fff; }
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -194,7 +194,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .fv-mini-btn.danger:hover { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .55); }
+  :where(html:not([data-input="touch"])) .fv-mini-btn.danger:hover { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .55); }
 }
 .fv-mini-btn svg { width: 13px; height: 13px; }
 
@@ -245,7 +245,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .fv-open-real:hover { background: rgba(58, 208, 168, .22); }
+  :where(html:not([data-input="touch"])) .fv-open-real:hover { background: rgba(58, 208, 168, .22); }
 }
 
 .fv-edit {
@@ -267,7 +267,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .fv-edit:hover { background: rgba(255, 255, 255, .12); }
+  :where(html:not([data-input="touch"])) .fv-edit:hover { background: rgba(255, 255, 255, .12); }
 }
 .fv-edit svg { width: 14px; height: 14px; }
 

@@ -1,6 +1,8 @@
 /* chest.css — Сундук (D-255). Шкалы — только из ядра: шрифт, радиус,
    длительность. Цвета дерева объявлены здесь как свои переменные комнаты. */
-.ch-wrap { --ch-wood: #a56a2c; --ch-line: #3a2410; padding: 18px var(--pad-room) 26px; display: flex; flex-direction: column; gap: 18px; color: var(--ink); }
+/* Колонка встаёт посередине развёрнутого окна (D-273): растёт до общей
+   ширины колонки комнат и не дальше. Охраняется room-center-check. */
+.ch-wrap { --ch-wood: #a56a2c; --ch-line: #3a2410; padding: 18px var(--pad-room) 26px; display: flex; flex-direction: column; gap: 18px; color: var(--ink); width: 100%; max-width: var(--room-col); margin-inline: auto; }
 html[data-theme="light"] .ch-wrap { --ch-wood: #c98a45; --ch-line: #4a2e14; }
 .ch-head { display: flex; flex-direction: column; gap: 6px; }
 .ch-title { margin: 0; font-size: var(--f-title); font-weight: 600; letter-spacing: -.01em; }
@@ -83,8 +85,8 @@ html[data-sigil="on"] .sticky-note::after {
 
 /* Наведение — только там, где есть мышь (hover-is-not-touch). */
 @media (hover: hover) {
-  .ch-open:hover { box-shadow: 0 0 0 4px var(--accent-soft); }
-  .ch-where:hover { border-color: var(--accent-ring); }
+  :where(html:not([data-input="touch"])) .ch-open:hover { box-shadow: 0 0 0 4px var(--accent-soft); }
+  :where(html:not([data-input="touch"])) .ch-where:hover { border-color: var(--accent-ring); }
 }
 
 /* ── род радости на карточке приза ──────────────────────────────────────── */

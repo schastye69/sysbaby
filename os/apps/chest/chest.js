@@ -102,10 +102,10 @@
       shotLead: "A real picture of the desk, saved to your device.", shotDo: "Take a snapshot", shotDone: "Saved: {name}", shotNo: "This browser cannot capture the screen — nothing was pretended.", shotRefused: "The screen was not shared — nothing was saved.",
       fragmentLead: "Fragment of the day — from you and {date}.",
       rainLead: "Rain made by this device, right now — no recording.", rainOn: "Let it rain", rainOff: "Stop the rain", rainNo: "This browser has no sound engine — nothing was pretended.",
-      voiceLead: "The voice of this device, once, when you ask.", voiceDo: "Say my name", voiceNo: "This browser cannot speak — nothing was pretended.", voiceSaid: "Said.", voiceText: "Good day, {name}. This is your system. Day {n} together.",
+      voiceLead: "The voice of this device, once, when you ask.", voiceDo: "Say my name", voiceNo: "This browser cannot speak — nothing was pretended.", voiceNoLang: "This device has no voice for your language — nothing was pretended.", voiceSaid: "Said.", voiceText: "Good day, {name}. This is your system. Day {n} together.",
       breathLead: "One minute: in, hold, out, rest. Any touch ends it early.", breathDo: "Breathe one minute", breathIn: "breathe in", breathHold: "hold", breathOut: "breathe out", breathRest: "rest", breathLeave: "touch anywhere to leave", breathDone: "One minute of breath. Nothing was measured.",
       firstLead: "Where it began.", firstBorn: "You began on {date} at {time} — day {n} today.", firstNote: "Your first note, {date}:", firstNone: "No notes yet — the chest invents nothing. Your first note will stand here.",
-      mapLead: "Map of days", mapLine: "{n} days with the system · {k} with a chest opened. Empty dots are just empty days: nothing is lost, nothing is owed.",
+      mapLead: "Map of days", mapLine: "Days with the system: {n} · with a chest opened: {k}. Empty dots are just empty days: nothing is lost, nothing is owed.",
       mileNote: "Day {n} with {name}.\n\n{notes} notes, {words} words, {envelopes} envelopes sealed, {chests} chests opened. Nothing here has left this device.\n\n— your system, on a round day",
       morningTitle: "Good morning, {name}", morningLine: "Day {n} with your system. The night was spent in Ember; your room returns in {m} minutes.",
       line: {
@@ -181,10 +181,10 @@
       shotLead: "Настоящая картинка стола, сохранённая на устройство.", shotDo: "Сделать снимок", shotDone: "Сохранено: {name}", shotNo: "Этот браузер не умеет снимать экран — ничего не изображалось.", shotRefused: "Экран не был показан — ничего не сохранено.",
       fragmentLead: "Фрагмент дня — из вас и {date}.",
       rainLead: "Дождь, который это устройство делает сейчас — без записи.", rainOn: "Пустить дождь", rainOff: "Остановить дождь", rainNo: "В этом браузере нет звукового движка — ничего не изображено.",
-      voiceLead: "Голос этого устройства — один раз, когда попросите.", voiceDo: "Назови моё имя", voiceNo: "Этот браузер не умеет говорить — ничего не изображено.", voiceSaid: "Сказано.", voiceText: "Добрый день, {name}. Это ваша система. День {n} вместе.",
+      voiceLead: "Голос этого устройства — один раз, когда попросите.", voiceDo: "Назови моё имя", voiceNo: "Этот браузер не умеет говорить — ничего не изображено.", voiceNoLang: "На этом устройстве нет голоса для вашего языка — ничего не изображено.", voiceSaid: "Сказано.", voiceText: "Добрый день, {name}. Это ваша система. День {n} вместе.",
       breathLead: "Минута: вдох, задержка, выдох, пауза. Любое касание заканчивает раньше.", breathDo: "Минуту дышать", breathIn: "вдох", breathHold: "задержка", breathOut: "выдох", breathRest: "пауза", breathLeave: "коснитесь, чтобы выйти", breathDone: "Минута дыхания. Ничего не измерялось.",
       firstLead: "Где всё началось.", firstBorn: "Вы начали {date} в {time} — сегодня день {n}.", firstNote: "Ваша первая запись, {date}:", firstNone: "Записей пока нет — сундук ничего не выдумывает. Первая запись встанет здесь.",
-      mapLead: "Карта дней", mapLine: "{n} дней с системой · {k} с открытым сундуком. Пустые точки — просто пустые дни: ничего не потеряно и никто ничего не должен.",
+      mapLead: "Карта дней", mapLine: "Дней с системой: {n} · с открытым сундуком: {k}. Пустые точки — просто пустые дни: ничего не потеряно и никто ничего не должен.",
       mileNote: "День {n} с {name}.\n\n{notes} записей, {words} слов, {envelopes} конвертов запечатано, {chests} сундуков открыто. Ничто отсюда не покинуло это устройство.\n\n— ваша система, в круглый день",
       morningTitle: "Доброе утро, {name}", morningLine: "День {n} с вашей системой. Ночь прошла в Углях; ваша комната вернётся через {m} мин.",
       line: {
@@ -260,10 +260,10 @@
       shotLead: "Laua tõeline pilt, salvestatud seadmesse.", shotDo: "Tee hetkepilt", shotDone: "Salvestatud: {name}", shotNo: "See brauser ei oska ekraani pildistada — midagi ei teeseldud.", shotRefused: "Ekraani ei jagatud — midagi ei salvestatud.",
       fragmentLead: "Päeva fragment — sinust ja {date}.",
       rainLead: "Vihm, mida see seade teeb praegu — ilma salvestuseta.", rainOn: "Lase vihma", rainOff: "Peata vihm", rainNo: "Selles brauseris pole helimootorit — midagi ei teeseldud.",
-      voiceLead: "Selle seadme hääl — üks kord, kui palud.", voiceDo: "Ütle mu nimi", voiceNo: "See brauser ei oska rääkida — midagi ei teeseldud.", voiceSaid: "Öeldud.", voiceText: "Tere päevast, {name}. See on sinu süsteem. Päev {n} koos.",
+      voiceLead: "Selle seadme hääl — üks kord, kui palud.", voiceDo: "Ütle mu nimi", voiceNo: "See brauser ei oska rääkida — midagi ei teeseldud.", voiceNoLang: "Selles seadmes pole sinu keele häält — midagi ei teeseldud.", voiceSaid: "Öeldud.", voiceText: "Tere päevast, {name}. See on sinu süsteem. Päev {n} koos.",
       breathLead: "Minut: sisse, hoia, välja, paus. Iga puudutus lõpetab varem.", breathDo: "Hinga üks minut", breathIn: "hinga sisse", breathHold: "hoia", breathOut: "hinga välja", breathRest: "paus", breathLeave: "puuduta, et lahkuda", breathDone: "Minut hingamist. Midagi ei mõõdetud.",
       firstLead: "Kus kõik algas.", firstBorn: "Sa alustasid {date} kell {time} — täna on päev {n}.", firstNote: "Sinu esimene märge, {date}:", firstNone: "Märkmeid veel pole — laegas ei mõtle midagi välja. Esimene märge seisab siin.",
-      mapLead: "Päevade kaart", mapLine: "{n} päeva süsteemiga · {k} avatud laekaga. Tühjad täpid on lihtsalt tühjad päevad: midagi pole kadunud ja keegi ei võlgne midagi.",
+      mapLead: "Päevade kaart", mapLine: "Päevi süsteemiga: {n} · avatud laekaga: {k}. Tühjad täpid on lihtsalt tühjad päevad: midagi pole kadunud ja keegi ei võlgne midagi.",
       mileNote: "Päev {n} koos {name}.\n\n{notes} märget, {words} sõna, {envelopes} ümbrikku pitseeritud, {chests} laegast avatud. Miski siit pole sellest seadmest lahkunud.\n\n— sinu süsteem, ümmargusel päeval",
       morningTitle: "Tere hommikust, {name}", morningLine: "Päev {n} sinu süsteemiga. Öö möödus Hõõguses; sinu tuba tuleb tagasi {m} minuti pärast.",
       line: {
@@ -1123,11 +1123,27 @@
 
   /* ── ГОЛОС: УСТРОЙСТВО ПРОИЗНОСИТ ИМЯ ─────────────────────────────────── */
   function voiceSupported() { return !!(window.speechSynthesis && typeof window.SpeechSynthesisUtterance === "function"); }
+  /* Голос на СВОЁМ языке — или честное «нет». Если устройство перечислило
+     голоса и среди них нет ни одного для языка системы, чужой голос прочёл
+     бы эстонскую фразу по-английски: это был бы не подарок, а насмешка. Пустой
+     список значит «ещё не загрузились» — тогда выбирает сам браузер. */
+  function voiceFor(tag) {
+    var list = [];
+    try { list = window.speechSynthesis.getVoices() || []; } catch (e) { list = []; }
+    if (!list.length) return { known: false, voice: null };
+    var pre = tag.slice(0, 2).toLowerCase(), hit = null;
+    list.forEach(function (v) { if (!hit && String(v.lang || "").toLowerCase().indexOf(pre) === 0) hit = v; });
+    return { known: true, voice: hit };
+  }
   function voiceSay() {
     if (!voiceSupported()) return false;
+    var tag = lang() === "ee" ? "et-EE" : (lang() === "ru" ? "ru-RU" : "en-GB");
+    var pick = voiceFor(tag);
+    if (pick.known && !pick.voice) return "nolang";
     var text = fmt(T().voiceText, { name: username(), n: daysKept() });
     var u = new window.SpeechSynthesisUtterance(text);
-    u.lang = lang() === "ee" ? "et-EE" : (lang() === "ru" ? "ru-RU" : "en-GB");
+    if (pick.voice) u.voice = pick.voice;
+    u.lang = tag;
     u.rate = 0.95;
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(u);
@@ -1573,14 +1589,18 @@
          : '<p class="ch-first-none">' + esc(t.firstNone) + "</p>") + "</section>";
   }
   function mapHtml(t) {
-    var st = state(), n = daysKept(), b = birthMs(), lit = {}, k = 0, i, out;
-    st.opened.forEach(function (o) { var d = dayKey(o.at); if (!lit[d]) { lit[d] = true; k++; } });
-    out = '<section class="ch-map"><p class="ch-map-k">' + esc(t.mapLead) + '</p><div class="ch-map-grid" role="img" aria-label="' + esc(fmt(t.mapLine, { n: n, k: k })) + '">';
+    var st = state(), n = daysKept(), b = birthMs(), lit = {}, k = 0, i, out, dots = "";
+    st.opened.forEach(function (o) { lit[dayKey(o.at)] = true; });
     var today = dayKey(Date.now());
+    /* Считается то, что СВЕТИТСЯ на карте, а не всё, что лежит в описи:
+       сундук, открытый раньше дня рождения профиля (перенос, часы), на карте
+       не стоит — и в число не входит. */
     for (i = 0; i < n; i++) {
       var d = dayKey(b + i * DAY);
-      out += '<span class="ch-map-dot' + (lit[d] ? " on" : "") + (d === today ? " today" : "") + '"></span>';
+      if (lit[d]) k++;
+      dots += '<span class="ch-map-dot' + (lit[d] ? " on" : "") + (d === today ? " today" : "") + '"></span>';
     }
+    out = '<section class="ch-map"><p class="ch-map-k">' + esc(t.mapLead) + '</p><div class="ch-map-grid" role="img" aria-label="' + esc(fmt(t.mapLine, { n: n, k: k })) + '">' + dots;
     return out + '</div><p class="ch-map-line">' + esc(fmt(t.mapLine, { n: n, k: k })) + "</p></section>";
   }
   function extraFor(p, t) {
@@ -1678,7 +1698,8 @@
     var voiceBtn = host.querySelector("#chVoice");
     if (voiceBtn) voiceBtn.addEventListener("click", function () {
       var said = host.querySelector("#chVoiceSaid");
-      if (voiceSay() && said) said.textContent = T().voiceSaid;
+      var r = voiceSay();
+      if (said) said.textContent = r === "nolang" ? T().voiceNoLang : (r ? T().voiceSaid : "");
     });
     var breathBtn = host.querySelector("#chBreath");
     if (breathBtn) breathBtn.addEventListener("click", function () { breathStart(); });

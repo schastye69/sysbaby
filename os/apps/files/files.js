@@ -369,6 +369,8 @@
           "</button>" +
         "</span>" +
       "</div>" +
+      /* Копия говорит, откуда она и не устарела ли (D-267). */
+      (node.source && window.sbHand && window.sbHand.sourceHtml ? window.sbHand.sourceHtml(node.source) : "") +
       (editing
         /* Leading newline compensates for the one HTML parsing eats right
          * after <textarea>: without it a file starting with a blank line
@@ -457,6 +459,17 @@
       });
     }
 
+    /* Живая копия: касание берёт у источника то, что у него сейчас (D-267). */
+    if (window.sbHand && window.sbHand.wireSource && previewIndex >= 0) {
+      var pnode = (currentFolder().children || [])[previewIndex];
+      if (pnode && pnode.source) window.sbHand.wireSource(host, pnode.source, function (cur, nsrc) {
+        pnode.content = cur.text;
+        pnode.source = nsrc;
+        persist();
+        render(win);
+      });
+    }
+
     /* ── ПРИНЕСТИ ВЕЩЬ: КНОПКА И ОТПУСКАНИЕ НА ОКНО ─────────────────────── */
     /* Передача выбранного файла через общую кнопку (D-241): комната
        говорит только, как собрать вещь. Ничего не выбрано — ничего и не
@@ -471,8 +484,12 @@
           }
           return null;
         }
-        return { kind: "файл", name: String(node.name || ""),
-                 text: String(node.content == null ? "" : node.content) };
+        /* У файла появляется свой номер в тот миг, когда его впервые
+           передают: по нему копия спросит, какой он сейчас (D-267). */
+        if (!node.id) { node.id = "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); persist(); }
+        var ftext = String(node.content == null ? "" : node.content);
+        return { kind: "файл", name: String(node.name || ""), text: ftext,
+                 source: window.sbHand.source("files", node.id, ftext) };
       });
     }
 
@@ -928,11 +945,25 @@
         while ((tree.children || []).some(function (c) { return c && c.name === name; })) {
           name = base + " (" + i + ")"; i++;
         }
-        tree.children.push({ name: name, type: "file", content: thing.text });
+        var made = { name: name, type: "file", content: thing.text };
+        if (thing.source) made.source = thing.source;
+        tree.children.push(made);
         persist();
         var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("files") : null;
         if (win && typeof render === "function") { try { render(win); } catch (e) { /* окно перерисуется само */ } }
         return true;
+      },
+      /* Какой файл у меня сейчас — для копий в других комнатах (D-267).
+         null — файла с этим номером больше нет. */
+      current: function (id) {
+        ensureLoaded();
+        var hit = null;
+        (function walk(n) {
+          if (!n || hit) return;
+          if (n.id === id && n.type === "file") { hit = n; return; }
+          (n.children || []).forEach(walk);
+        })(tree);
+        return hit ? { name: String(hit.name || ""), text: String(hit.content == null ? "" : hit.content) } : null;
       },
       title: "Vault",
       i18n: {

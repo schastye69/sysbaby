@@ -40,7 +40,8 @@
 
    ЧТО ТАКОЕ ВЕЩЬ. { kind, name, text } — род, имя и содержимое. Больше
    ничего: вещь, которая тащит за собой устройство своей комнаты, не вещь,
-   а привязка.
+   а привязка. С D-267 — ещё source, обратный адрес {room, id, v, at}: его
+   форму задаёт ЯДРО, а не комната, и принимающий хранит его не разбирая.
 
    Охраняется tools/hand-check.mjs.
    ═════════════════════════════════════════════════════════════════════════ */
@@ -98,6 +99,68 @@
       }
       return true;
     }
+  };
+
+  /* ── ЖИВАЯ КОПИЯ (D-267) ─────────────────────────────────────────────
+     Вещь, переданная из комнаты в комнату, остаётся КОПИЕЙ — и это выбор:
+     общий пол отнял бы у человека право держать свою версию. Беда была в
+     другом: человек не узнавал, что источник с тех пор изменился. Теперь
+     вещь несёт source — {room, id, v, at}: откуда, какой предмет, отпечаток
+     переданного текста и когда. Комната-источник объявляет current(id) —
+     какая вещь у неё сейчас ({name, text} или null, если её больше нет), —
+     и копия отвечает одним из трёх: same · changed · gone. Решает человек:
+     новая версия берётся касанием, а не приезжает сама.
+     Отпечаток — FNV-1a по тексту: он не тайна и не подпись, он отвечает
+     ровно на один вопрос — «тот же ли это текст». */
+  function sign(text) {
+    var h = 0x811c9dc5, str = String(text == null ? "" : text), i;
+    for (i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+    }
+    return ("0000000" + (h >>> 0).toString(16)).slice(-8);
+  }
+  function fmt(str, vars) {
+    return String(str).replace(/\{(\w+)\}/g, function (m, k) { return vars && vars[k] != null ? String(vars[k]) : m; });
+  }
+  window.sbHand.sign = sign;
+  window.sbHand.source = function (room, id, text) {
+    return { room: String(room), id: String(id), v: sign(text), at: Date.now() };
+  };
+  window.sbHand.current = function (src) {
+    if (!src || !src.room) return undefined;
+    var def = apps()[src.room];
+    if (!def || typeof def.current !== "function") return undefined;
+    try { return def.current(src.id); } catch (e) { return undefined; }
+  };
+  window.sbHand.state = function (src) {
+    var cur = window.sbHand.current(src);
+    if (cur === undefined) return "unknown";
+    if (!cur) return "gone";
+    return sign(cur.text) === src.v ? "same" : "changed";
+  };
+  window.sbHand.sourceHtml = function (src) {
+    if (!src || !src.room) return "";
+    var st = window.sbHand.state(src);
+    var d = new Date(src.at || Date.now()).toLocaleDateString();
+    var head = fmt(word("hand.src.from", "Скопировано из «{room}» {d}."), { room: title(src.room), d: d });
+    var line = st === "same" ? word("hand.src.same", "Совпадает с источником.")
+      : st === "changed" ? word("hand.src.changed", "С тех пор источник изменился.")
+      : st === "gone" ? word("hand.src.gone", "Источника больше нет — это последняя копия.") : "";
+    return '<div class="sb-hand-src" data-state="' + esc(st) + '"><span>' + esc(head + (line ? " " + line : "")) + "</span>" +
+      (st === "changed" ? '<button type="button" class="sb-hand-src-take">' + esc(word("hand.src.update", "Взять новую версию")) + "</button>" : "") +
+      "</div>";
+  };
+  /* Касание берёт то, что у источника СЕЙЧАС, — не то, что было при
+     отрисовке: между ними могла пройти ещё одна правка. */
+  window.sbHand.wireSource = function (host, src, onTake) {
+    var btn = host && host.querySelector(".sb-hand-src-take");
+    if (!btn || !src) return;
+    btn.addEventListener("click", function () {
+      var cur = window.sbHand.current(src);
+      if (!cur) return;
+      onTake(cur, { room: src.room, id: src.id, v: sign(cur.text), at: Date.now() });
+    });
   };
 
   /* ── ОДНА КНОПКА НА ВСЕ КОМНАТЫ ──────────────────────────────────────

@@ -77,6 +77,54 @@ window.SB_OUTWARD = {
       }
     },
     {
+      "id": "mail-own",
+      "title": {
+        "ru": "Письма — своей почтой",
+        "en": "Letters — your own mail",
+        "ee": "Kirjad — oma postiga"
+      },
+      "where": [
+        "os/apps/mail/mail.js"
+      ],
+      "side": "hand",
+      "byHand": true,
+      "host": "",
+      "what": {
+        "ru": "Адрес получателя, тема и текст письма — открытым текстом — уходят вашей почтовой программе, а через неё вашей почтовой службе.",
+        "en": "The recipient's address, the subject and the letter's text — as plain text — go to your mail app, and through it to your mail service.",
+        "ee": "Saaja aadress, teema ja kirja tekst — avatud tekstina — lähevad sinu postiprogrammile ja selle kaudu sinu postiteenusele."
+      },
+      "who": {
+        "ru": "Ваша почтовая служба и получатель письма. sys.baby в этом пути не участвует и не знает, дошло ли письмо.",
+        "en": "Your mail service and the recipient. sys.baby takes no part in this path and does not know whether the letter arrived.",
+        "ee": "Sinu postiteenus ja kirja saaja. sys.baby selles teekonnas ei osale ega tea, kas kiri kohale jõudis."
+      }
+    },
+    {
+      "id": "messenger-sealed",
+      "title": {
+        "ru": "Разговор — запечатанное сообщение",
+        "en": "Whisper — a sealed message",
+        "ee": "Sosin — pitseeritud sõnum"
+      },
+      "where": [
+        "os/apps/messenger/messenger.js"
+      ],
+      "side": "hand",
+      "byHand": true,
+      "host": "",
+      "what": {
+        "ru": "Строка «sb1:…», которую вы сами скопировали и отдали любой программе. Внутри — сообщение, запечатанное общим словом; без слова это шум.",
+        "en": "The «sb1:…» text you copied yourself and gave to any app. Inside is the message, sealed with your shared word; without the word it is noise.",
+        "ee": "Tekst «sb1:…», mille ise kopeerisid ja andsid mis tahes rakendusele. Sees on ühise sõnaga pitseeritud sõnum; ilma sõnata on see müra."
+      },
+      "who": {
+        "ru": "Программа, которой вы доверили строку, видит только шум; прочесть сообщение может лишь тот, кто знает общее слово.",
+        "en": "The app you trusted with the text sees only noise; only someone who knows the shared word can read the message.",
+        "ee": "Rakendus, millele teksti usaldasid, näeb ainult müra; sõnumit saab lugeda ainult see, kes teab ühist sõna."
+      }
+    },
+    {
       "id": "browser-search",
       "title": {
         "ru": "Браузер — поиск",

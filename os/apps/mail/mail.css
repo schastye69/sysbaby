@@ -42,7 +42,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .ml-folder:hover { background: rgba(255, 255, 255, .06); color: inherit; }
+  :where(html:not([data-input="touch"])) .ml-folder:hover { background: rgba(255, 255, 255, .06); color: inherit; }
 }
 .ml-folder.active { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .12); color: inherit; font-weight: 600; }
 .ml-folder-icon { display: grid; place-items: center; }
@@ -109,7 +109,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .ml-btn:hover { background: rgba(255, 255, 255, .12); }
+  :where(html:not([data-input="touch"])) .ml-btn:hover { background: rgba(255, 255, 255, .12); }
 }
 /* БЕЛЫМ ПО ФИРМЕННОМУ ОРАНЖЕВОМУ — 3.48 при мере 4.5 (D-234). Темнеет
    ЗАЛИВКА КНОПКИ, а не фирменный цвет: знак остаётся собой, --brand не
@@ -126,7 +126,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .ml-btn.primary:hover { filter: brightness(1.1); }
+  :where(html:not([data-input="touch"])) .ml-btn.primary:hover { filter: brightness(1.1); }
 }
 .ml-btn.danger { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .4); }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
@@ -135,7 +135,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .ml-btn.danger:hover { background: rgba(255, 69, 58, .16); }
+  :where(html:not([data-input="touch"])) .ml-btn.danger:hover { background: rgba(255, 69, 58, .16); }
 }
 
 .ml-list { flex: 1; min-height: 0; overflow: auto; padding: 5px; }
@@ -155,7 +155,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .ml-row:hover { background: rgba(255, 255, 255, .05); }
+  :where(html:not([data-input="touch"])) .ml-row:hover { background: rgba(255, 255, 255, .05); }
 }
 .ml-row.active { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .12); }
 .ml-row-main { flex: 1; min-width: 0; }
@@ -209,7 +209,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .ml-star:hover { color: var(--ink-2); }
+  :where(html:not([data-input="touch"])) .ml-star:hover { color: var(--ink-2); }
 }
 .ml-star.on { color: var(--warn, #ffd60a); }
 .ml-star svg { width: 15px; height: 15px; }
@@ -291,7 +291,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .ml-link:hover { background: rgba(255, 255, 255, .09); }
+  :where(html:not([data-input="touch"])) .ml-link:hover { background: rgba(255, 255, 255, .09); }
 }
 .ml-link.live { border-color: rgba(48, 209, 88, .4); background: rgba(48, 209, 88, .1); }
 
@@ -360,7 +360,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .ml-compose-x:hover { background: rgba(255, 255, 255, .12); }
+  :where(html:not([data-input="touch"])) .ml-compose-x:hover { background: rgba(255, 255, 255, .12); }
 }
 
 .ml-field {
@@ -426,6 +426,7 @@
 }
 .ml-tag.delivered { color: #7de08a; border: 1px solid rgba(125, 224, 138, .35); }
 .ml-tag.local { color: var(--ink-3); border: 1px solid rgba(255, 255, 255, .18); }
+.ml-tag.handed { color: var(--ink-2); border: 1px solid var(--accent-ring); }
 .ml-tag.studio { color: var(--accent, #e0663c); border: 1px solid var(--accent-soft, rgba(224, 102, 60, .35)); }
 
 .ml-delivery {
@@ -441,4 +442,5 @@ html[data-theme="light"] .ml-to-fixed { color: rgba(0, 0, 0, .7); }
 html[data-theme="light"] .ml-to-fixed b { color: #000; }
 html[data-theme="light"] .ml-channel option { background: #fff; color: #16171a; }
 html[data-theme="light"] .ml-tag.local { color: rgba(0, 0, 0, .5); border-color: rgba(0, 0, 0, .2); }
+html[data-theme="light"] .ml-tag.handed { color: rgba(0, 0, 0, .5); }
 html[data-theme="light"] .ml-delivery.quiet { color: rgba(0, 0, 0, .55); border-color: rgba(0, 0, 0, .12); background: rgba(0, 0, 0, .04); }

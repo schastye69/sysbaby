@@ -946,6 +946,26 @@
       '<p class="panel-copy dim">' + esc(tr("lock.idleWhat")) + "</p>";
   }
 
+  /* ── ЧТО ОСТАЁТСЯ ОТКРЫТЫМ, СКАЗАНО ВСЛУХ (D-265) ─────────────────────
+     В описи дыр стояло «под замком прячутся вещи, но не выбор — человек может
+     думать, что спрятано всё». Замер D-265 показал, что выбор (язык, обои,
+     настройки) спрятан на ВСЕХ полках диска. Но «спрятано всё» и тогда не
+     правда: остаётся запись замка, номер профиля, отметка входа и указатель
+     на папку копий. Список не пишется здесь — он спрашивается у замка
+     (neverLocked) и у копий (hasFolder); здесь только человеческие слова. */
+  function staysList(V) {
+    var keys = [];
+    try { keys = V.neverLocked ? V.neverLocked() : []; } catch (e) { keys = []; }
+    var items = keys.map(function (k) {
+      var w = tr("lock.stays." + k);
+      return w === "lock.stays." + k ? k : w;
+    });
+    try { if (window.sbBackup && window.sbBackup.hasFolder && window.sbBackup.hasFolder()) items.push(tr("lock.stays.folder")); } catch (e) { /* ignore */ }
+    if (!items.length) return "";
+    return '<p class="panel-copy dim">' + esc(tr("lock.stays")) + "</p>" +
+      '<ul class="lock-stays">' + items.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>";
+  }
+
   /* ── РАЗДЕЛ «ЗАМОК» ─────────────────────────────────────────────────────── */
   function lockSection() {
     var V = window.sbVault;
@@ -964,8 +984,37 @@
       esc(locked ? tr("lock.state.armed") : tr("lock.state.none")) + "</span></div>" +
       '<p class="panel-copy">' + esc(tr("lock.what")) + "</p>" +
       '<p class="panel-copy dim">' + esc(tr("lock.accounts")) + "</p>" +
+      (locked ? staysList(V) : "") +
       '<pre class="lock-cipher">' + esc(cipherLine()) + "</pre>" +
       '<p class="lock-warn">' + esc(tr("lock.warn")) + "</p>";
+    /* ── ФАЙЛ ВТОРОГО КЛЮЧА — ТАМ ЖЕ, ГДЕ СЛОВО (D-266) ──────────────────
+       Прежде окно звало смену слова, тревожное слово и снятие замка БЕЗ файла,
+       и человек со вторым ключом на верное слово слышал «неверный пароль» —
+       ложь, от которой не было выхода. Поле стоит только у замка, который
+       его требует: что такой замок есть, и так видно на диске. */
+    var needsKey = false;
+    try { needsKey = !!(V.secondKey && V.secondKey().on); } catch (e) { needsKey = false; }
+    var keyRow = needsKey
+      ? '<label class="lock-keyfile"><span class="panel-copy">' + esc(tr("lock.keyFile")) + '</span><input type="file" id="sbLockKeyFile"></label>' +
+        '<p class="panel-copy dim">' + esc(tr("lock.keyFileWhat")) + "</p>"
+      : "";
+    /* Код восстановления: есть ли он — спрашивается у замка открытого
+       сеанса, а не помнится окном; в тревожном мире ответ свой. */
+    var spare = null;
+    try { spare = V.recoveryState ? V.recoveryState() : null; } catch (e) { spare = null; }
+    var spareLine = spare && spare.at
+      ? tr("lock.spareOn", { d: new Date(spare.at).toLocaleDateString() })
+      : tr("lock.spareNone");
+    var spareRow = V.recoveryMake
+      ? '<h4 class="panel-sub">' + esc(tr("lock.spare")) + "</h4>" +
+        '<p class="panel-copy dim">' + esc(tr("lock.spareWhat")) + "</p>" +
+        '<p class="panel-copy" id="sbLockSpareState">' + esc(spareLine) + "</p>" +
+        '<div class="lock-spare-out" id="sbLockSpareOut" hidden>' +
+          '<pre class="lock-spare-code" id="sbLockSpareCode" data-sb-nolang></pre>' +
+          '<p class="lock-warn">' + esc(tr("lock.spareDone")) + "</p>" +
+          '<div class="lock-acts"><button type="button" class="btn ghost" id="sbLockSpareSave">' + esc(tr("lock.spareSave")) + "</button></div>" +
+        "</div>"
+      : "";
     return head + (locked
       ? '<div class="lock-field">' +
           '<input type="password" id="sbLockCur" autocomplete="current-password" placeholder="' + esc(tr("lock.old")) + '" aria-label="' + esc(tr("lock.old")) + '">' +
@@ -978,15 +1027,17 @@
            всегда и выглядят одинаково при любом состоянии замка: панель,
            умеющая показать «тревожное слово установлено», сама и есть
            утечка, ради предотвращения которой всё это построено. */
+        keyRow +
         '<p class="panel-copy dim">' + esc(tr("lock.duressWhat")) + "</p>" +
         idleRow() +
         '<div class="lock-acts">' +
           '<button type="button" class="btn ghost" id="sbLockChange">' + esc(tr("lock.change")) + "</button>" +
+          '<button type="button" class="btn ghost" id="sbLockSpare">' + esc(tr("lock.spare")) + "</button>" +
           '<button type="button" class="btn ghost" id="sbLockDuressSet">' + esc(tr("lock.duress")) + "</button>" +
           '<button type="button" class="btn ghost" id="sbLockDuressOff">' + esc(tr("lock.duressOff")) + "</button>" +
           '<button type="button" class="btn ghost" id="sbLockRemove">' + esc(tr("lock.remove")) + "</button>" +
           '<button type="button" class="btn primary" id="sbLockNow">' + esc(tr("lock.now")) + "</button>" +
-        "</div>"
+        "</div>" + spareRow
       : '<div class="lock-field">' +
           '<input type="password" id="sbLockP1" autocomplete="new-password" placeholder="' + esc(tr("lock.new")) + '" aria-label="' + esc(tr("lock.new")) + '">' +
           '<input type="password" id="sbLockP2" autocomplete="new-password" placeholder="' + esc(tr("lock.again")) + '" aria-label="' + esc(tr("lock.again")) + '">' +
@@ -1002,6 +1053,14 @@
     function busy(on) {
       body.querySelectorAll("button").forEach(function (b) { b.disabled = !!on; });
       if (on) say(tr("lock.busy"));
+    }
+    /* Файл второго ключа читается ДО вызова: чтение с диска не должно
+       попадать в цену попытки (тот же довод, что у двери замка). */
+    function keyBytes() {
+      var inp = body.querySelector("#sbLockKeyFile");
+      var f = inp && inp.files && inp.files[0];
+      if (!f) return Promise.resolve(null);
+      return f.arrayBuffer().then(function (b) { return new Uint8Array(b); }, function () { return null; });
     }
     var doBtn = body.querySelector("#sbLockDo");
     if (doBtn) doBtn.addEventListener("click", function () {
@@ -1025,7 +1084,7 @@
       var nw = newField.value;
       if (String(nw).length < 4) { say(tr("lock.short")); return; }
       busy(true);
-      V.rekey(cur, nw).then(function (okp) {
+      keyBytes().then(function (kb) { return V.rekey(cur, nw, kb); }).then(function (okp) {
         busy(false);
         if (!okp) { say(tr("lock.wrong")); return; }
         say(tr("lock.changed"));
@@ -1043,7 +1102,7 @@
       if (String(dw).length < 4) { say(tr("lock.short")); return; }
       if (dw === cur) { say(tr("lock.duressSame")); return; }
       busy(true);
-      V.setDuress(cur, dw).then(function (okp) {
+      keyBytes().then(function (kb) { return V.setDuress(cur, dw, kb); }).then(function (okp) {
         busy(false);
         if (!okp) { say(tr("lock.wrong")); return; }
         say(tr("lock.duressDone"));
@@ -1055,7 +1114,7 @@
     if (dOff) dOff.addEventListener("click", function () {
       var cur = body.querySelector("#sbLockCur").value;
       busy(true);
-      V.clearDuress(cur).then(function (okp) {
+      keyBytes().then(function (kb) { return V.clearDuress(cur, kb); }).then(function (okp) {
         busy(false);
         if (!okp) { say(tr("lock.wrong")); return; }
         /* Тот же ответ, что и при заведении: по надписи на экране нельзя
@@ -1068,13 +1127,43 @@
     if (removeBtn) removeBtn.addEventListener("click", function () {
       var cur = body.querySelector("#sbLockCur").value;
       busy(true);
-      V.remove(cur).then(function (okp) {
+      keyBytes().then(function (kb) { return V.remove(cur, kb); }).then(function (okp) {
         busy(false);
         if (!okp) { say(tr("lock.wrong")); return; }
         if (window.showToast) window.showToast(tr("lock.title"), tr("lock.removed"), "");
         accountBody();
         if (window.sbPaintIris) window.sbPaintIris();
       }, function () { busy(false); say(tr("lock.failed")); });
+    });
+    var spareBtn = body.querySelector("#sbLockSpare");
+    var spareCode = "";
+    if (spareBtn && V.recoveryMake) spareBtn.addEventListener("click", function () {
+      var cur = body.querySelector("#sbLockCur").value;
+      if (String(cur).length < 4) { say(tr("lock.old")); body.querySelector("#sbLockCur").focus(); return; }
+      busy(true);
+      keyBytes().then(function (kb) { return V.recoveryMake(cur, kb); }).then(function (code) {
+        busy(false);
+        if (!code) { say(tr("lock.wrong")); return; }
+        spareCode = String(code);
+        var out = body.querySelector("#sbLockSpareOut");
+        var pre = body.querySelector("#sbLockSpareCode");
+        if (pre) pre.textContent = spareCode;
+        if (out) out.hidden = false;
+        var stEl = body.querySelector("#sbLockSpareState");
+        if (stEl) stEl.textContent = tr("lock.spareOn", { d: new Date().toLocaleDateString() });
+        body.querySelector("#sbLockCur").value = "";
+        say("");
+      }, function () { busy(false); say(tr("lock.failed")); });
+    });
+    var spareSave = body.querySelector("#sbLockSpareSave");
+    if (spareSave) spareSave.addEventListener("click", function () {
+      if (!spareCode) return;
+      var text = tr("lock.spareFile", { code: spareCode, d: new Date().toLocaleDateString() });
+      var a = doc.createElement("a");
+      a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+      a.download = "sysbaby-recovery-" + new Date().toISOString().slice(0, 10) + ".txt";
+      doc.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
     });
     var nowBtn = body.querySelector("#sbLockNow");
     if (nowBtn) nowBtn.addEventListener("click", function () { window.location.reload(); });

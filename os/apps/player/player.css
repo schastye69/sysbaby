@@ -49,7 +49,7 @@ html[data-motion="reduced"] .pl-title.runs .pl-title-in { animation: none; }
   transition: background var(--t-touch) ease, color var(--t-touch) ease;
 }
 .pl-b svg { width: 15px; height: 15px; }
-@media (hover: hover) { .pl-b:hover { background: rgba(255, 255, 255, .08); color: var(--ink); } }
+@media (hover: hover) { :where(html:not([data-input="touch"])) .pl-b:hover { background: rgba(255, 255, 255, .08); color: var(--ink); } }
 .pl-b:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pl-seek {
   position: absolute; left: 10px; right: 10px; top: -1px; height: 3px;
@@ -71,7 +71,7 @@ html[data-motion="reduced"] .pl-title.runs .pl-title-in { animation: none; }
 }
 .pl-row .pl-n { font-family: var(--mono); font-size: var(--f-meta); color: var(--ink-3); min-width: 2ch; }
 .pl-row .pl-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (hover: hover) { .pl-row:hover { background: rgba(255, 255, 255, .05); color: var(--ink); } }
+@media (hover: hover) { :where(html:not([data-input="touch"])) .pl-row:hover { background: rgba(255, 255, 255, .05); color: var(--ink); } }
 .pl-row.on { background: rgba(255, 255, 255, .07); color: var(--ink); border-color: var(--line); }
 .pl-row.on .pl-n { color: var(--accent); }
 .pl-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 26px; text-align: center; }
@@ -86,7 +86,7 @@ html[data-motion="reduced"] .pl-title.runs .pl-title-in { animation: none; }
 }
 .pl-pick.small { margin-top: 0; padding: 7px 12px; font-size: var(--f-ui); }
 .pl-pick svg { width: 16px; height: 16px; }
-@media (hover: hover) { .pl-pick:hover { background: var(--glass); } }
+@media (hover: hover) { :where(html:not([data-input="touch"])) .pl-pick:hover { background: var(--glass); } }
 
 @media (max-width: 560px) {
   .pl-bar { gap: 5px; padding: 6px 8px; }

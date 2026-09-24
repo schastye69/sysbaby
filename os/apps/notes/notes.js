@@ -297,11 +297,27 @@
          все комнаты, иначе «один способ» становится тремя похожими. */
       (window.sbHand ? window.sbHand.menuHtml("запись", "notes") : "") +
       "</div>" +
+      /* Копия говорит, откуда она и не устарела ли (D-267). */
+      (note.source && window.sbHand && window.sbHand.sourceHtml ? window.sbHand.sourceHtml(note.source) : "") +
       '<input type="text" class="notes-title" id="noteTitleInput" placeholder="' + esc(t("nt.ph.title")) + '" spellcheck="false" value="' + esc(title) + '">' +
       /* The leading newline compensates for the one HTML parsing eats right
        * after <textarea>. Without it a note written as "Title\n\nbody" would
        * silently lose its blank line the next time it was edited. */
       '<textarea class="notes-body" id="noteBodyInput" placeholder="' + esc(t("nt.ph.body")) + '">\n' + esc(body) + "</textarea>";
+  }
+
+  /* Запись как вещь: первая строка — имя, остальное — текст. Одна мерка и
+     для передачи, и для ответа «какая вещь у меня сейчас» (D-267): две
+     мерки разошлись бы, и копия считала бы себя устаревшей без причины. */
+  function noteThing(note) {
+    var lines = String(note.text == null ? "" : note.text).split("\n");
+    return { kind: "запись", name: (lines[0] || "").trim(),
+             text: lines.slice(1).join("\n").replace(/^\n/, "") };
+  }
+  function noteById(id) {
+    var hit = null;
+    liveNotes().forEach(function (n) { if (n && n.id === id) hit = n; });
+    return hit;
   }
 
   function render(win) {
@@ -387,9 +403,29 @@
         var list = liveNotes(), note = null;
         list.forEach(function (n) { if (n.id === activeId) note = n; });
         if (!note) return null;
-        var lines = String(note.text == null ? "" : note.text).split("\n");
-        return { kind: "запись", name: (lines[0] || "").trim(),
-                 text: lines.slice(1).join("\n").replace(/^\n/, "") };
+        var th = noteThing(note);
+        /* Вещь помнит, откуда она (D-267): копия сможет сказать, изменилась
+           ли запись с тех пор. */
+        th.source = window.sbHand.source("notes", note.id, th.text);
+        return th;
+      });
+    }
+
+    if (window.sbHand && window.sbHand.wireSource) {
+      var srcNote = noteById(activeId);
+      if (srcNote && srcNote.source) window.sbHand.wireSource(host, srcNote.source, function (cur, nsrc) {
+        var list = liveNotes();
+        list.forEach(function (n) {
+          if (n && n.id === srcNote.id) {
+            var head = String(cur.name || "").trim();
+            n.text = head ? head + "\n\n" + cur.text : cur.text;
+            n.source = nsrc;
+            n.updatedAt = Date.now();
+          }
+        });
+        window.sbNotesStore.save(list);
+        window.sbNotesStore.notify();
+        render(win);
       });
     }
 
@@ -574,7 +610,15 @@
         if (typeof window.sbAddQuickNote !== "function") return false;
         var head = String(thing.name || "").trim();
         var body = head ? head + "\n\n" + thing.text : thing.text;
-        return !!window.sbAddQuickNote(body, {});
+        return !!window.sbAddQuickNote(body, thing.source ? { source: thing.source } : {});
+      },
+      /* Какая запись у меня сейчас — для копий в других комнатах (D-267).
+         null — записи больше нет. */
+      current: function (id) {
+        var n = noteById(id);
+        if (!n) return null;
+        var th = noteThing(n);
+        return { name: th.name, text: th.text };
       },
       title: "Scribble",
       i18n: {

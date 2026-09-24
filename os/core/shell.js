@@ -120,6 +120,42 @@
   applyFlags();
   function compact() { return root.classList.contains("is-compact"); }
 
+  /* ── ЧЕМ КОСНУЛИСЬ ПОСЛЕДНИМ (D-272) ─────────────────────────────────────
+     ПОВОД, дословно от основателя 23.09.2026, со снимком планшета: «стоит мне
+     нажать на любую иконку и она становится ярко серой».
+     (hover: hover) спрашивает УСТРОЙСТВО, умеет ли оно наводить. Планшет с
+     пером, клавиатурой-обложкой или тачпадом честно отвечает «да» — и после
+     касания пальцем держит :hover на том месте, где палец был, пока не
+     коснутся другого. Устройство умеет наводить, но коснулись его не мышью.
+     Здесь система запоминает РОД последнего касания: мышь или палец (перо на
+     нажатии — тоже палец: оно касается экрана). Каждое правило наведения в
+     стилях спрашивает этот признак (html:not([data-input="touch"])), и
+     наведение рисуется только тогда, когда его действительно делает мышь.
+     Мышь, сдвинувшаяся после касания, возвращает наведение сразу.
+     ПИШЕТСЯ ТОЛЬКО ПРИ СМЕНЕ РОДА. Запись в корень пересчитывает стиль всего
+     документа (урок v64 о моргании): одно касание за другим того же рода не
+     пишет ничего, и посреди переноса окна корень не трогается.
+     Охраняется tools/same-look-check.mjs и hover-is-not-touch-check.mjs. */
+  var inputKind = "";
+  function setInputKind(kind) {
+    if (kind === inputKind) return;
+    inputKind = kind;
+    root.setAttribute("data-input", kind);
+  }
+  (function () {
+    var mouseFirst = false;
+    try { mouseFirst = window.matchMedia("(hover: hover) and (pointer: fine)").matches; } catch (e) { mouseFirst = !isTouch(); }
+    setInputKind(mouseFirst ? "mouse" : "touch");
+    doc.addEventListener("pointerdown", function (ev) {
+      setInputKind(ev.pointerType === "mouse" ? "mouse" : "touch");
+    }, { capture: true, passive: true });
+    doc.addEventListener("pointermove", function (ev) {
+      /* Перо, зависшее над экраном, наводит так же честно, как мышь. */
+      if (ev.pointerType === "mouse" || (ev.pointerType === "pen" && !ev.buttons)) setInputKind("mouse");
+    }, { capture: true, passive: true });
+  })();
+  window.sbInputKind = function () { return inputKind; };
+
   /* =================================================================== bus */
   var busMap = Object.create(null);
   var sbBus = {
@@ -1981,12 +2017,31 @@
        · без оглядки на dock-empty — окно, которое сейчас рождается, само и
          выведет полку; первая редакция смотрела на класс, и первое окно
          занимало весь низ, а полка выезжала поверх (поймал smoke-shell);
-       · без живого чтения --dock-h — измеренная высота полки дышит на
+       · без живого чтения --dock-h — измеренная высота полки дышала на
          ±12px (значок пришёл, подпись мигнула), и окна ездили за этим
          дребезгом. На узком экране полка фиксирована правилами §14
          core.css (плитка 38 + поля 6), итого 62 — берём её как константу
-         той же природы, что высота полосы, плюс 22 воздуха. */
-    return 84;
+         той же природы, что высота полосы, плюс 22 воздуха.
+       ── ТРЕТИЙ УРОК (D-273): ПОЛКА ОДНОЙ ВЫСОТЫ, И ЕЁ МОЖНО СПРОСИТЬ ────────
+       Окно у края экрана (половины и четверти) на широком экране шло ПОД
+       полку, и низ комнаты прятался за ней. Теперь место под полку
+       оставляется и там. Дребезга, от которого берегла константа, больше
+       нет: подпись «⌘K» снята с полки (D-272), а закрытая плитка высоты не
+       теряет — полка одной высоты при любом составе. Поэтому высота
+       читается у самой полки (offsetHeight — не прямоугольник: затихшая
+       полка сдвинута переносом, но место занимает то же), а не угадывается
+       вторым числом рядом с правилами §4.1 и §14. Развёрнутое окно место
+       под полку оставляет не рамкой, а телом — см. maximizedRect. */
+    var d = $("#dock");
+    var h = d ? d.offsetHeight : 0;
+    /* ОТКАТ: полки нет в разметке или она ещё не разложена — берём высоту
+       узкой полки из §14 (62), по которой константа и считалась. */
+    if (!(h > 0)) h = 62;
+    var bottom = 14;
+    try { bottom = parseFloat(getComputedStyle(d).bottom) || 14; } catch (e) { /* ОТКАТ: поле §4.1 — 14 px */ }
+    /* ПОСТОЯННАЯ: 12 px воздуха над полкой и не меньше 84 всего — прежняя
+       мерка телефона (62 + 22), которую держат smoke-shell и dock-clearance. */
+    return Math.max(84, Math.round(h + bottom + 12));
   }
   function compactRect() {
     return {
@@ -2113,6 +2168,17 @@
      когда-то дал два скрипта выкладки. Теперь прямоугольник считает одна
      функция, и разойтись им негде. */
   function maximizedRect() {
+    /* ── РАЗВЁРНУТОЕ ОКНО НАКРЫВАЕТ СТОЛ ДО НИЗА, А СОДЕРЖИМОЕ — НАД ПОЛКОЙ
+       (D-273, вторая редакция) ────────────────────────────────────────────
+       Первая редакция поднимала низ самого окна над полкой. Доска v145 это
+       опровергла: развёрнутое окно перестало накрывать обои целиком, и они
+       остались жить под ним полосой у полки (field-park-check, field-idle-
+       check: «окно 1280×662 при обоях 1280×800, а поле всё ещё живёт»). А
+       живые обои под стеклом — это 11 кадров вместо 33 (field.js).
+       Поэтому окно снова идёт до низа экрана, а место под полку оставляет
+       его ТЕЛО: core.css даёт .window-body развёрнутого окна нижнее поле в
+       высоту полки. Полка лежит на стекле самого окна, обои под ним гаснут,
+       и ничего из комнаты под полкой не прячется. */
     return {
       x: 0, y: topbarBox(),
       w: window.innerWidth,
@@ -2121,8 +2187,10 @@
   }
 
   function snapRect(zone) {
+    /* Половины и четверти тоже кончаются над полкой (D-273): иначе окно,
+       приставленное к краю, уходило бы под неё так же, как развёрнутое. */
     var vw = window.innerWidth, vh = window.innerHeight, m = 14, top = 44;
-    var halfW = (vw - 28) / 2 - 5, fullH = vh - top - m, halfH = fullH / 2 - 5;
+    var halfW = (vw - 28) / 2 - 5, fullH = vh - top - Math.max(m, dockAllowance()), halfH = fullH / 2 - 5;
     switch (zone) {
       case "max": return maximizedRect();
       case "left": return { x: m, y: top, w: halfW, h: fullH };
@@ -2496,7 +2564,17 @@
   function buildDock() {
     var host = $("#dockInner");
     if (!host) return;
+    /* ── ОТКРЫТАЯ СКРЫТАЯ КОМНАТА ТОЖЕ НА ПОЛКЕ (D-272) ─────────────────────
+       Скрытые комнаты (D-186: Браузер, Письма, Просмотр…) не стоят на полке
+       ЗАПУСКОМ — их зовут Поиском и командами. Но полка — это ещё и ответ
+       «что сейчас открыто», и открытая скрытая комната на нём отсутствовала:
+       полка считала себя пустой при открытом окне, пряталась, а свёрнутый
+       Браузер на телефоне пропадал без следа (полоса окон там не помещается).
+       Теперь открытая комната стоит на полке, пока открыта, — любая. */
     var ids = launchable();
+    openOrder.forEach(function (id) {
+      if (openWindows[id] && apps[id] && ids.indexOf(id) === -1) ids.push(id);
+    });
     var existing = Object.create(null);
     $$(".dock-item[data-app]", host).forEach(function (n) { existing[n.getAttribute("data-app")] = n; });
 
@@ -2530,8 +2608,6 @@
     Object.keys(existing).forEach(function (id) { if (existing[id].parentNode) existing[id].parentNode.removeChild(existing[id]); });
 
     var anyRunning = ids.some(function (id) { return !!openWindows[id]; });
-    var hint = $("#dockHint");
-    if (hint) hint.hidden = anyRunning;
     /* Пустая полка на телефоне не показывается вовсе: там док — полка
        ОТКРЫТОГО (D-061), и пустая полка была бы одинокой оранжевой кнопкой
        без подписи — загадкой, а не приглашением. Пусковой полкой на
@@ -3185,7 +3261,14 @@
       node.classList.remove("dragging", "armed");
       node.style.willChange = "";
       if (window.sbEchoesHighlight) window.sbEchoesHighlight(false);
-      if (!d.moved) { node.style.transform = ""; toggleApp(id); return; }
+      if (!d.moved) {
+        node.style.transform = "";
+        /* Палец не оставляет значку фокуса (D-272): фокус от касания ничего
+           не значит для человека, а браузер планшета мог бы его нарисовать. */
+        if (ev && ev.pointerType && ev.pointerType !== "mouse" && node.blur) node.blur();
+        toggleApp(id);
+        return;
+      }
       /* Перенос был показным — теперь он становится координатой. Порядок
          важен: сперва записать left/top, потом снять transform. Наоборот
          значок мигнул бы обратно в исходную точку на один кадр. */
@@ -3964,6 +4047,20 @@
             '<p class="vg-keynote">' + escapeHtml(gateText("lock.keyNeed")) + '</p>'
           : '') +
         '<button type="button" class="btn primary" id="sbVaultOpen">' + escapeHtml(gateText("lock.open")) + "</button>" +
+        /* ── ЗАБЫТОЕ СЛОВО (D-266) ────────────────────────────────────────
+           Кнопка стоит всегда — у замка с кодом и без: дверь, которая
+           показывала бы «у этого человека есть код», сама была бы сведением
+           о нём. Что код сделает с тревожным словом и вторым ключом, сказано
+           ДО нажатия, а не после. */
+        '<button type="button" class="vg-forgot" id="sbVaultForgot">' + escapeHtml(gateText("lock.forgot")) + "</button>" +
+        '<div class="vg-spare" id="sbVaultSpare" hidden>' +
+          '<p class="vg-keynote">' + escapeHtml(gateText("lock.codeWhat")) + "</p>" +
+          '<input type="text" id="sbVaultCode" autocomplete="off" autocapitalize="characters" spellcheck="false" data-sb-nolang ' +
+            'aria-label="' + escapeHtml(gateText("lock.code")) + '" placeholder="' + escapeHtml(gateText("lock.code")) + '">' +
+          '<input type="password" id="sbVaultNew" autocomplete="new-password" aria-label="' + escapeHtml(gateText("lock.codeNew")) + '" placeholder="' + escapeHtml(gateText("lock.codeNew")) + '">' +
+          '<input type="password" id="sbVaultNew2" autocomplete="new-password" aria-label="' + escapeHtml(gateText("lock.codeAgain")) + '" placeholder="' + escapeHtml(gateText("lock.codeAgain")) + '">' +
+          '<button type="button" class="btn primary" id="sbVaultRecover">' + escapeHtml(gateText("lock.codeOpen")) + "</button>" +
+        "</div>" +
         '<p class="vg-err" id="sbVaultErr" role="alert" hidden></p>' +
         /* Цена попытки — не лозунг: число проходов берётся из записи замка,
            а миллисекунды замеряются на этой попытке. Появляется ПОСЛЕ, а не
@@ -4063,6 +4160,51 @@
       return f.arrayBuffer().then(function (b) { return new Uint8Array(b); }, function () { return null; });
     }
     gate.querySelector("#sbVaultOpen").addEventListener("click", tryOpen);
+    var forgot = gate.querySelector("#sbVaultForgot");
+    var spareBox = gate.querySelector("#sbVaultSpare");
+    if (forgot && spareBox) forgot.addEventListener("click", function () {
+      spareBox.hidden = !spareBox.hidden;
+      if (!spareBox.hidden) { try { gate.querySelector("#sbVaultCode").focus(); } catch (e) { /* ignore */ } }
+    });
+    function openedGate() {
+      gate.classList.add("vg-open");
+      var done = false;
+      var once = function () { if (done) return; done = true; if (gate.parentNode) gate.remove(); onDone(); };
+      setTimeout(once, 980);
+      gate.addEventListener("transitionend", function (ev) { if (ev.propertyName === "transform") once(); });
+    }
+    var recBtn = gate.querySelector("#sbVaultRecover");
+    if (recBtn && window.sbVault.recover) recBtn.addEventListener("click", function () {
+      if (busy) return;
+      var code = gate.querySelector("#sbVaultCode").value;
+      var n1 = gate.querySelector("#sbVaultNew").value, n2 = gate.querySelector("#sbVaultNew2").value;
+      errEl.hidden = true;
+      if (String(n1).length < 4) { errEl.textContent = gateText("lock.short"); errEl.hidden = false; return; }
+      if (n1 !== n2) { errEl.textContent = gateText("lock.mismatch"); errEl.hidden = false; return; }
+      busy = true;
+      gate.classList.remove("vg-wrong");
+      gate.classList.add("vg-work");
+      window.sbVault.recover(code, n1).then(function (okp) {
+        busy = false;
+        gate.classList.remove("vg-work");
+        if (!okp) {
+          gate.classList.add("vg-wrong");
+          errEl.textContent = gateText("lock.codeWrong");
+          errEl.hidden = false;
+          return;
+        }
+        openedGate();
+        setTimeout(function () {
+          if (window.showToast) window.showToast(tr("lock.spare"), tr("lock.codeUsed"), "", true, "", "event");
+        }, 1400);
+      }, function () {
+        busy = false;
+        gate.classList.remove("vg-work");
+        gate.classList.add("vg-wrong");
+        errEl.textContent = gateText("lock.codeWrong");
+        errEl.hidden = false;
+      });
+    });
     field.addEventListener("keydown", function (ev) { if (ev.key === "Enter") tryOpen(); });
     setTimeout(function () { try { field.focus(); } catch (e) { /* ignore */ } }, 60);
   }

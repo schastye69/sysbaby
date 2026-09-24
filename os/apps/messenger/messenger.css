@@ -64,7 +64,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .mg-newbtn:hover, .mg-attach-btn:hover { background: rgba(255, 255, 255, .13); }
+  :where(html:not([data-input="touch"])) .mg-newbtn:hover, :where(html:not([data-input="touch"])) .mg-attach-btn:hover { background: rgba(255, 255, 255, .13); }
 }
 .mg-newbtn svg, .mg-attach-btn svg, .mg-send svg { width: 16px; height: 16px; }
 .mg-send { background: var(--accent, #e0663c); border-color: transparent; color: #fff; }
@@ -74,7 +74,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .mg-send:hover { filter: brightness(1.12); }
+  :where(html:not([data-input="touch"])) .mg-send:hover { filter: brightness(1.12); }
 }
 
 .mg-newform {
@@ -133,7 +133,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .mg-convo:hover { background: rgba(255, 255, 255, .05); }
+  :where(html:not([data-input="touch"])) .mg-convo:hover { background: rgba(255, 255, 255, .05); }
 }
 .mg-convo.active { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .12); }
 .mg-convo.muted { opacity: .55; }
@@ -187,7 +187,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .mg-convo:hover .mg-convo-actions { display: flex; }
+  :where(html:not([data-input="touch"])) .mg-convo:hover .mg-convo-actions { display: flex; }
 }
 
 .mg-mini {
@@ -209,7 +209,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .mg-mini:hover { background: rgba(255, 255, 255, .16); color: #fff; }
+  :where(html:not([data-input="touch"])) .mg-mini:hover { background: rgba(255, 255, 255, .16); color: #fff; }
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -217,7 +217,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .mg-mini.danger:hover { color: var(--danger, #ff453a); }
+  :where(html:not([data-input="touch"])) .mg-mini.danger:hover { color: var(--danger, #ff453a); }
 }
 .mg-mini svg { width: 13px; height: 13px; }
 
@@ -260,7 +260,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .mg-head-name:hover { text-decoration: underline; text-underline-offset: 2px; }
+  :where(html:not([data-input="touch"])) .mg-head-name:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .mg-head-members { font-size: var(--f-meta); color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -342,7 +342,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .mg-msg:hover .mg-meta { opacity: 1; }
+  :where(html:not([data-input="touch"])) .mg-msg:hover .mg-meta { opacity: 1; }
 }
 
 .mg-meta-btn {
@@ -362,7 +362,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .mg-meta-btn:hover { color: var(--ink); }
+  :where(html:not([data-input="touch"])) .mg-meta-btn:hover { color: var(--ink); }
 }
 .mg-meta-btn svg { width: 12px; height: 12px; vertical-align: middle; }
 
@@ -444,7 +444,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .mg-attach-item:hover { background: rgba(255, 255, 255, .08); }
+  :where(html:not([data-input="touch"])) .mg-attach-item:hover { background: rgba(255, 255, 255, .08); }
 }
 .mg-attach-item svg { width: 15px; height: 15px; flex: 0 0 auto; }
 .mg-attach-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -487,7 +487,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .mg-react-pop button:hover { background: rgba(255, 255, 255, .14); }
+  :where(html:not([data-input="touch"])) .mg-react-pop button:hover { background: rgba(255, 255, 255, .14); }
 }
 
 @media (max-width: 620px) {
@@ -509,5 +509,27 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .mg-to-letter:hover { background: var(--accent-soft, rgba(224, 102, 60, .16)); }
+  :where(html:not([data-input="touch"])) .mg-to-letter:hover { background: var(--accent-soft, rgba(224, 102, 60, .16)); }
 }
+
+/* ── запечатанная переписка (D-269) ─────────────────────────────────────── */
+.mg-seal-panel {
+  display: flex; flex-direction: column; gap: 8px; margin: 8px 12px 0; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: var(--r-card); background: rgba(255, 255, 255, .03);
+}
+.mg-seal-what { margin: 0; font-size: var(--f-meta); line-height: 1.55; color: var(--ink-3); }
+.mg-seal-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.mg-seal-row .mg-input { flex: 1 1 180px; min-width: 0; }
+.mg-seal-text {
+  width: 100%; min-height: 68px; resize: vertical; padding: 8px 10px; box-sizing: border-box;
+  font-family: var(--mono); font-size: var(--f-meta); line-height: 1.5; color: var(--ink-2); overflow-wrap: anywhere;
+  background: rgba(0, 0, 0, .18); border: 1px solid var(--line); border-radius: var(--r-ctrl);
+}
+.mg-seal-go {
+  border: 1px solid var(--accent-ring); background: transparent; color: var(--ink); cursor: pointer;
+  font: inherit; font-size: var(--f-ui); padding: 6px 12px; border-radius: var(--r-ctrl);
+}
+.mg-seal-go.quiet { border-color: var(--line); color: var(--ink-2); }
+.mg-seal-go:focus-visible, .mg-seal-text:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mg-seal-say { margin: 0; min-height: 1em; font-size: var(--f-meta); color: var(--ink-2); }
+.mg-seal-btn { font-size: var(--f-micro); letter-spacing: .02em; }

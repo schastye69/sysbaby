@@ -6,8 +6,20 @@
    долю ВЫСОТЫ родителя (auto → ноль), и первая редакция сложила все карты
    в одну строку. Высота задана aspect-ratio, а вертикальные отступы
    стопки — от ширины (проценты у margin-top тоже считаются от ширины). */
-.sol-wrap { --sol-w: clamp(38px, calc((100% - 6 * 6px) / 7), 76px);
-  padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; color: var(--ink); min-width: 0; width: 100%; }
+/* ── ОДНА ШИРИНА КАРТЫ НА ВСЁ ПОЛЕ (D-273) ────────────────────────────────
+   Ширина карты стояла как calc(100% …) внутри переменной. Процент в
+   переменной считается там, ГДЕ она подставлена: в сетке — от ширины поля,
+   у карты — от её собственной колонки. Итог на развёрнутом окне: карты в
+   38 px, прижатые к левому краю, а справа — пустой стол. Теперь процент
+   взят у самого поля (единица cqi от контейнера .sol-wrap) и одинаков для
+   всех, а поле — колонка ширины семи самых крупных карт посередине окна.
+   ОТКАТ: браузер без единиц контейнера берёт карту 44 px — ту, что была. */
+.sol-wrap { --sol-w: 44px;
+  padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; color: var(--ink); min-width: 0; width: 100%;
+  max-width: calc(7 * 76px + 6 * 6px + 2 * var(--pad-room)); margin-inline: auto; container-type: inline-size; }
+@supports (width: 1cqi) {
+  .sol-wrap { --sol-w: clamp(38px, calc((100cqi - 6 * 6px) / 7), 76px); }
+}
 .sol-top, .sol-cols { display: grid; grid-template-columns: repeat(7, var(--sol-w)); gap: 6px; justify-content: start; }
 .sol-gap { }
 .sol-card, .sol-slot { width: var(--sol-w); aspect-ratio: 5 / 7; border-radius: var(--r-tag); box-sizing: border-box; }

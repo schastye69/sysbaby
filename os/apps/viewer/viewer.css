@@ -45,5 +45,5 @@
    касанию и держится до следующего касания где-нибудь ещё.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .vw-save:hover { background: var(--glass-2); }
+  :where(html:not([data-input="touch"])) .vw-save:hover { background: var(--glass-2); }
 }

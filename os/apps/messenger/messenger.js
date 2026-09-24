@@ -77,6 +77,80 @@
 
   function uid() { return "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
+  /* ── ЗАПЕЧАТАННАЯ ПЕРЕПИСКА (D-269) ───────────────────────────────────
+     ПОВОД. В описи дыр: «Переписка не делает работу — ждёт своего сервера».
+     Сервер нужен, чтобы НОСИТЬ сообщения. Но носить их умеет любой канал,
+     которым человек уже пользуется: мессенджер, почта, SMS. Чего у этих
+     каналов нет — тайны: носильщик читает всё.
+     Здесь тайна есть. У разговора — ОБЩЕЕ СЛОВО, о котором двое договорились
+     при встрече или голосом. Сообщение запечатывается им: PBKDF2-SHA-256
+     (600 000 проходов, своя соль на каждое сообщение) → AES-256-GCM. Получается
+     строка «sb1:…» — её человек сам несёт любым путём, и тот, кто несёт,
+     видит шум. На другом конце вставленная строка открывается тем же словом.
+     ЧТО ЭТО НЕ ДАЁТ, сказано вслух: носит человек, а не система; дошло ли —
+     система не знает; общее слово хранится под замком и никуда не уходит, но
+     если его узнает носильщик, тайна кончится. Слабое общее слово — слабая
+     тайна: поэтому короче шести знаков его не принимаем. */
+  var SEAL_PREFIX = "sb1:";
+  /* ПОСТОЯННАЯ: 600 000 — рекомендация OWASP для PBKDF2-SHA-256; цена одной
+     попытки подбора общего слова, а не число о составе системы. */
+  var SEAL_ITER = 600000;
+  var SEAL_AAD = "sys.baby/whisper/v1";
+  /* ПОСТОЯННАЯ: шесть знаков — нижняя граница общего слова; мера тайны. */
+  var PACT_MIN = 6;
+  function b64u(bytes) {
+    var bin = "", i;
+    for (i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function unb64u(str) {
+    var s64 = String(str).replace(/-/g, "+").replace(/_/g, "/");
+    while (s64.length % 4) s64 += "=";
+    var bin = atob(s64), out = new Uint8Array(bin.length), i;
+    for (i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function pactKey(pact, salt) {
+    var subtle = window.crypto.subtle;
+    return subtle.importKey("raw", new TextEncoder().encode(String(pact)), { name: "PBKDF2" }, false, ["deriveKey"]).then(function (base) {
+      return subtle.deriveKey({ name: "PBKDF2", salt: salt, iterations: SEAL_ITER, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    });
+  }
+  function sealFor(pact, text) {
+    var salt = new Uint8Array(16), iv = new Uint8Array(12);
+    window.crypto.getRandomValues(salt);
+    window.crypto.getRandomValues(iv);
+    var body = new TextEncoder().encode(JSON.stringify({ v: 1, t: String(text), at: Date.now() }));
+    return pactKey(pact, salt).then(function (key) {
+      return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv, additionalData: new TextEncoder().encode(SEAL_AAD) }, key, body);
+    }).then(function (ct) {
+      var c = new Uint8Array(ct), all = new Uint8Array(16 + 12 + c.length);
+      all.set(salt, 0); all.set(iv, 16); all.set(c, 28);
+      return SEAL_PREFIX + b64u(all);
+    });
+  }
+  /* Вставить можно как угодно: с пробелами, переносами и словами вокруг —
+     печать ищется в тексте сама. */
+  function findSeal(pasted) {
+    var m = String(pasted || "").replace(/\s+/g, "").match(/sb1:[A-Za-z0-9_-]+/);
+    return m ? m[0] : "";
+  }
+  function openFrom(pact, sealed) {
+    var s64 = findSeal(sealed);
+    if (!s64) return Promise.reject(new Error("shape"));
+    var all;
+    try { all = unb64u(s64.slice(SEAL_PREFIX.length)); } catch (e) { return Promise.reject(new Error("shape")); }
+    if (all.length < 16 + 12 + 16) return Promise.reject(new Error("shape"));
+    var salt = all.subarray(0, 16), iv = all.subarray(16, 28), ct = all.subarray(28);
+    return pactKey(pact, salt).then(function (key) {
+      return window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv, additionalData: new TextEncoder().encode(SEAL_AAD) }, key, ct);
+    }).then(function (plain) {
+      var o = JSON.parse(new TextDecoder().decode(plain));
+      if (!o || typeof o.t !== "string") throw new Error("shape");
+      return o;
+    });
+  }
+
   function hash(text) {
     var h = 0, s = String(text == null ? "" : text);
     for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
@@ -301,7 +375,10 @@
         (m.reaction ? '<span class="mg-reaction">' + esc(m.reaction) + "</span>" : "") +
       "</div>" +
       '<div class="mg-meta">' +
-        "<span>" + esc(clockOf(m.ts)) + (m.edited ? " · " + esc(t("mg.edited")) : "") + "</span>" +
+        "<span>" + esc(clockOf(m.ts)) + (m.edited ? " · " + esc(t("mg.edited")) : "") +
+          (m.sealedIn || m.sealedOut ? " · " + esc(t("mg.sealedTag")) : "") + "</span>" +
+        (mine && c.pact && m.type !== "file"
+          ? '<button type="button" class="mg-meta-btn mg-seal-btn" data-seal="' + esc(m.id) + '" title="' + esc(t("mg.sealTitle")) + '">' + esc(t("mg.seal")) + "</button>" : "") +
         (seen ? "<span>· " + esc(t("mg.seen")) + "</span>" : "") +
         '<button type="button" class="mg-meta-btn" data-react="' + esc(m.id) + '" title="' + esc(t("mg.react")) + '" aria-label="' + esc(t("mg.react")) + '">🙂</button>' +
         '<button type="button" class="mg-meta-btn" data-del-msg="' + esc(m.id) + '" title="' + esc(t("mg.delMsg")) + '" aria-label="' + esc(t("mg.delMsg")) + '">' +
@@ -338,17 +415,51 @@
         "</span>" +
         /* The one honest way out of a local room: turn the thread into a real
            letter. Whisper thinks, Letters speaks — that is the difference. */
+        '<button type="button" class="mg-to-letter" id="mgPactBtn" aria-expanded="' + (win._mgPactOpen ? "true" : "false") + '">' + esc(c.pact ? t("mg.pactSet") : t("mg.pact")) + "</button>" +
         '<button type="button" class="mg-to-letter" id="mgToLetter" title="' + esc(t("mg.toLetterTitle")) + '">' + esc(t("mg.toLetter")) + "</button>" +
       "</header>" +
+      sealPanels(win, c) +
       '<div class="mg-messages" id="mgMessages">' + (out.length ? out.join("") : '<div class="mg-thread-empty"><p>' + esc(t("mg.noMessages")) + "</p></div>") + "</div>" +
       attachMarkup(win) +
       '<div class="mg-inputrow">' +
+        '<button type="button" class="mg-attach-btn" id="mgPaste" title="' + esc(t("mg.paste")) + '" aria-label="' + esc(t("mg.paste")) + '" aria-expanded="' + (win._mgPasteOpen ? "true" : "false") + '">' + SEAL_GLYPH + "</button>" +
         '<button type="button" class="mg-attach-btn" id="mgAttach" title="' + esc(t("mg.attach", { files: appName("files") })) + '" aria-label="' + esc(t("mg.attach", { files: appName("files") })) + '">' + PAPERCLIP + "</button>" +
         '<input type="text" id="msgrInput" class="mg-input flat" placeholder="' + esc(t("mg.ph.message", { name: firstWord })) + '" autocomplete="off">' +
         '<button type="button" class="mg-send" id="mgSend" title="' + esc(t("mg.send")) + '" aria-label="' + esc(t("mg.send")) + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4 4 10.4l6.3 2.4L20 4Z"/><path d="M20 4 13.4 20l-3.1-7.2L20 4Z"/></svg>' +
         "</button>" +
       "</div>";
+  }
+
+  var SEAL_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7.5h15v10a1.5 1.5 0 0 1-1.5 1.5H6a1.5 1.5 0 0 1-1.5-1.5v-10Z"/><path d="m4.5 7.5 7.5 6 7.5-6"/><circle cx="12" cy="16" r="1.4"/></svg>';
+  /* Три тихие панели запечатанной переписки: общее слово, выданная печать,
+     вставка полученной. Каждая открывается касанием и не висит без дела. */
+  function sealPanels(win, c) {
+    var out = "";
+    if (win._mgPactOpen) {
+      out += '<div class="mg-seal-panel" id="mgPactPanel">' +
+        '<p class="mg-seal-what">' + esc(t("mg.pactWhat")) + "</p>" +
+        '<div class="mg-seal-row"><input type="password" id="mgPactInput" class="mg-input flat" autocomplete="off" placeholder="' + esc(t("mg.pactPh")) + '" aria-label="' + esc(t("mg.pact")) + '">' +
+        '<button type="button" class="mg-seal-go" id="mgPactSave">' + esc(t("mg.pactSave")) + "</button></div>" +
+        '<p class="mg-seal-say" id="mgPactSay" role="status"></p></div>';
+    }
+    if (win._mgSealed && String(win._mgSealed.convo) === String(c.id)) {
+      out += '<div class="mg-seal-panel" id="mgSealedPanel">' +
+        '<p class="mg-seal-what">' + esc(t("mg.sealedOut")) + "</p>" +
+        '<textarea id="mgSealedOut" class="mg-seal-text" readonly data-sb-nolang>' + esc(win._mgSealed.text) + "</textarea>" +
+        '<div class="mg-seal-row"><button type="button" class="mg-seal-go" id="mgSealedCopy">' + esc(t("mg.copy")) + "</button>" +
+        (navigator.share ? '<button type="button" class="mg-seal-go" id="mgSealedShare">' + esc(t("mg.share")) + "</button>" : "") +
+        '<button type="button" class="mg-seal-go quiet" id="mgSealedClose">' + esc(t("mg.close")) + "</button></div>" +
+        '<p class="mg-seal-say" id="mgSealedSay" role="status"></p></div>';
+    }
+    if (win._mgPasteOpen) {
+      out += '<div class="mg-seal-panel" id="mgPastePanel">' +
+        '<p class="mg-seal-what">' + esc(t("mg.pasteWhat")) + "</p>" +
+        '<textarea id="mgSealedIn" class="mg-seal-text" data-sb-nolang placeholder="sb1:…" aria-label="' + esc(t("mg.paste")) + '"></textarea>' +
+        '<div class="mg-seal-row"><button type="button" class="mg-seal-go" id="mgSealedOpen">' + esc(t("mg.pasteOpen")) + "</button></div>" +
+        '<p class="mg-seal-say" id="mgPasteSay" role="status"></p></div>';
+    }
+    return out;
   }
 
   function attachMarkup(win) {
@@ -505,6 +616,75 @@
     var send = host.querySelector("#mgSend");
     if (input) input.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); sendMessage(win, input.value); } });
     if (send && input) send.addEventListener("click", function () { sendMessage(win, input.value); });
+
+    /* ── запечатанная переписка: проводка (D-269) ── */
+    var pactBtn = host.querySelector("#mgPactBtn");
+    if (pactBtn) pactBtn.addEventListener("click", function () { win._mgPactOpen = !win._mgPactOpen; render(win); });
+    var pactSave = host.querySelector("#mgPactSave");
+    if (pactSave) pactSave.addEventListener("click", function () {
+      var c = byId(activeId), inp = host.querySelector("#mgPactInput"), say = host.querySelector("#mgPactSay");
+      var v = inp ? String(inp.value) : "";
+      if (!c) return;
+      if (v.length < PACT_MIN) { if (say) say.textContent = t("mg.pactShort", { n: PACT_MIN }); return; }
+      c.pact = v;
+      write();
+      win._mgPactOpen = false;
+      render(win);
+      toast(t("mg.pactSet"), t("mg.pactOn"));
+    });
+    host.querySelectorAll("[data-seal]").forEach(function (btn) {
+      btn.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        var c = byId(activeId);
+        if (!c || !c.pact) return;
+        var m = null;
+        (c.messages || []).forEach(function (x) { if (String(x.id) === btn.getAttribute("data-seal")) m = x; });
+        if (!m || !m.text) return;
+        btn.disabled = true;
+        sealFor(c.pact, m.text).then(function (sealed) {
+          m.sealedOut = Date.now();
+          write();
+          win._mgSealed = { convo: c.id, text: sealed };
+          render(win);
+        }, function () { btn.disabled = false; toast(t("mg.seal"), t("mg.sealFailed")); });
+      });
+    });
+    var sealedCopy = host.querySelector("#mgSealedCopy");
+    if (sealedCopy) sealedCopy.addEventListener("click", function () {
+      var ta = host.querySelector("#mgSealedOut"), say = host.querySelector("#mgSealedSay");
+      var text = ta ? ta.value : "";
+      var done = function () { if (say) say.textContent = t("mg.copied"); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () { if (ta) { ta.select(); } if (say) say.textContent = t("mg.copyHand"); });
+      } else { if (ta) ta.select(); if (say) say.textContent = t("mg.copyHand"); }
+    });
+    var sealedShare = host.querySelector("#mgSealedShare");
+    if (sealedShare) sealedShare.addEventListener("click", function () {
+      var ta = host.querySelector("#mgSealedOut");
+      try { navigator.share({ text: ta ? ta.value : "" }).catch(function () { /* человек передумал */ }); } catch (e) { /* ignore */ }
+    });
+    var sealedClose = host.querySelector("#mgSealedClose");
+    if (sealedClose) sealedClose.addEventListener("click", function () { win._mgSealed = null; render(win); });
+    var pasteBtn = host.querySelector("#mgPaste");
+    if (pasteBtn) pasteBtn.addEventListener("click", function () { win._mgPasteOpen = !win._mgPasteOpen; render(win); });
+    var sealedOpen = host.querySelector("#mgSealedOpen");
+    if (sealedOpen) sealedOpen.addEventListener("click", function () {
+      var c = byId(activeId), ta = host.querySelector("#mgSealedIn"), say = host.querySelector("#mgPasteSay");
+      if (!c) return;
+      if (!c.pact) { if (say) say.textContent = t("mg.pasteNoPact"); return; }
+      var pasted = ta ? ta.value : "";
+      if (!findSeal(pasted)) { if (say) say.textContent = t("mg.pasteNone"); return; }
+      sealedOpen.disabled = true;
+      openFrom(c.pact, pasted).then(function (o) {
+        c.messages.push({ id: uid(), from: "them", text: o.t, ts: Date.now(), sentAt: Number(o.at) || null, sealedIn: true, edited: false, reaction: null });
+        write();
+        win._mgPasteOpen = false;
+        render(win);
+      }, function () {
+        sealedOpen.disabled = false;
+        if (say) say.textContent = t("mg.pasteWrong");
+      });
+    });
 
     var toLetter = host.querySelector("#mgToLetter");
     if (toLetter) {
@@ -822,8 +1002,10 @@
       /* ЧТО НУЖНО, ЧТОБЫ ДЕЛАТЬ РАБОТУ (D-243). Комната НАЗЫВАЕТ нужду;
          есть ли она — измеряет прибор, а не она сама.
          Охраняется tools/alive-check.mjs. */
-      needs: ["диск", "свой сервер", "собеседник"],
-      offDesk: "не делает работу",
+      /* С D-269 сервер Переписке не нужен: носит человек, любым своим путём,
+         а тайну держит общее слово. Живого собеседника на том конце прибор
+         не измерит — и так и скажет. */
+      needs: ["диск", "собеседник"],
       /* ПРИЧИНА — СИСТЕМЕ, А НЕ КОММЕНТАРИЮ (D-243). */
       /* Причина — ключ словаря: на экран она идёт на языке человека (D-253). */
       why: "why.messenger",
@@ -837,8 +1019,11 @@
          свою работу, — не приложение, а КАРТИНКА приложения. Такие сняты со
          стола, из полки и из палитры.
          УБРАНО, А НЕ УДАЛЕНО: код на месте, законы его по-прежнему проверяют,
-         открыть по имени можно. Возврат — снятием одной строки. */
-      hidden: true,
+         открыть по имени можно. Возврат — снятием одной строки.
+         ── ВОЗВРАЩЕНО НА СТОЛ · решение D-269 ────────────────────────────
+         Причина снятия была одна: работы нет. С запечатанной перепиской она
+         есть — по тому же правилу основателя комната, которая делает свою
+         работу, стоит на столе. Снять снова — строкой hidden: true. */
       title: "Whisper",
       i18n: {
         ru: { title: "Разговор", label: "Разговор" },

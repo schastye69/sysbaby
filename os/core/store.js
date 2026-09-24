@@ -570,16 +570,34 @@
       var rec = {
         id: id,
         blob: blob,
+        /* ОТКАТ: вещь без имени и рода всё равно принимается — имя «вещь» и род
+           из самого Blob, а не отказ; иначе файл без расширения терялся бы. */
         name: (meta && meta.name) || "вещь",
         mime: (meta && meta.mime) || blob.type || "application/octet-stream",
         size: blob.size || 0,
         at: Date.now()
       };
+      /* ── ПОД ЗАМКОМ ВЕЩЬ ЛОЖИТСЯ КОНВЕРТОМ (D-265) ─────────────────────
+         Замок стоит — склад принимает только запечатанное; замок стоит, а
+         сеанс не открыт — не принимает ничего: ключа нет, а открытым класть
+         нельзя. Имя, род и размер уходят ВНУТРЬ конверта вместе с байтами. */
+      if (vaultLocked()) {
+        if (!vaultOpen || !vaultKeys) return Promise.resolve(null);
+        return thingToSealed(vaultKeys, rec).then(function (sealed) {
+          return idbPut("things", sealed);
+        }).then(function (okFlag) { return okFlag ? id : null; }, function () { return null; });
+      }
       return idbPut("things", rec).then(function (okFlag) { return okFlag ? id : null; });
     },
     get: function (id) {
       if (!id) return Promise.resolve(null);
-      return idbGet("things", id);
+      return idbGet("things", id).then(function (rec) {
+        if (!rec || !rec.sealed) return rec;
+        /* Запечатанная вещь отдаётся только открытому сеансу, и только тому
+           миру, чьим ключом она запечатана: чужой мир получает «нет вещи». */
+        if (!vaultOpen || !vaultKeys) return null;
+        return thingFromSealed(vaultKeys, rec).then(null, function () { return null; });
+      });
     },
     del: function (id) {
       if (!id) return Promise.resolve(false);
@@ -614,6 +632,9 @@
 
   function idbPutAccount(rec) {
     if (!rec) return;
+    /* Под замком зеркало аккаунта не знает о человеке ничего, кроме номера
+       места: имя и почта — сведения о человеке ровно так же, как записи (D-265). */
+    if (vaultLocked()) { idbPut("accounts", { id: rec.id }); return; }
     idbPut("accounts", {
       id: rec.id,
       username: rec.name || rec.id,
@@ -634,13 +655,75 @@
     if (window.sbIncognitoActive) return Promise.resolve(false);
     if (snapTimer) { clearTimeout(snapTimer); snapTimer = null; }
     var pid = activeProfile();
-    return idbPut("snapshots", { profileId: pid, data: enumerateProfileKeys(pid), updatedAt: Date.now() });
+    return idbPut("snapshots", { profileId: pid, data: diskSafe(enumerateProfileKeys(pid)), updatedAt: Date.now() });
+  }
+  /* ── СНИМОК НЕ ВЫНОСИТ ПАМЯТЬ СЕАНСА НА ДИСК (D-265) ───────────────────
+     Снимок профиля пишется, пока система работает, — то есть пока всё
+     расшифровано в памяти. Прежняя редакция клала в IndexedDB ровно эту
+     память: записи, письма, профиль — открытым текстом, рядом с замком,
+     который их якобы прятал. При стоящем замке защищённое в снимок не идёт
+     вовсе: снимок запертой системы несёт только то, что и так лежит
+     открытым, — сам замок и два служебных ключа. */
+  function diskSafe(data) {
+    if (!vaultLocked() || !data) return data;
+    var out = {}, k;
+    for (k in data) if (Object.prototype.hasOwnProperty.call(data, k) && !isProtectedKey(k)) out[k] = data[k];
+    return out;
+  }
+  function idbAll(storeName) {
+    return idb().then(function (db) {
+      if (!db) return [];
+      return new Promise(function (resolve) {
+        var tx, rq;
+        try { tx = db.transaction(storeName, "readonly"); rq = tx.objectStore(storeName).getAll(); } catch (e) { resolve([]); return; }
+        rq.onsuccess = function () { resolve(rq.result || []); };
+        rq.onerror = function () { resolve([]); };
+      });
+    }).catch(function () { return []; });
+  }
+  function idbDel(storeName, key) {
+    return idb().then(function (db) {
+      if (!db) return false;
+      return new Promise(function (resolve) {
+        var tx;
+        try { tx = db.transaction(storeName, "readwrite"); tx.objectStore(storeName).delete(key); } catch (e) { resolve(false); return; }
+        tx.oncomplete = function () { resolve(true); };
+        tx.onerror = function () { resolve(false); };
+        tx.onabort = function () { resolve(false); };
+      });
+    }).catch(function () { return false; });
+  }
+  /* ── СТАРЫЕ УТЕЧКИ ВЫЧИЩАЮТСЯ БЕЗ ПРОСЬБЫ (D-265) ───────────────────────
+     Прежние выпуски успели записать открытые снимки и имя в зеркало аккаунта
+     на дисках людей. Запертая система вычищает это сама — при загрузке, до
+     пароля, и сразу после поворота ключа. Вычищается только открытое:
+     снимок остаётся снимком, зеркало — номером места. */
+  function purgeDiskLeaks() {
+    if (!vaultLocked()) return Promise.resolve(false);
+    return idbAll("snapshots").then(function (list) {
+      return Promise.all(list.map(function (snap) {
+        if (!snap || !snap.data) return null;
+        var clean = diskSafe(snap.data);
+        if (Object.keys(clean).length === Object.keys(snap.data).length) return null;
+        return idbPut("snapshots", { profileId: snap.profileId, data: clean, updatedAt: snap.updatedAt });
+      }));
+    }).then(function () {
+      return idbAll("accounts");
+    }).then(function (list) {
+      return Promise.all(list.map(function (a) {
+        if (!a || Object.keys(a).length <= 1) return null;
+        return idbPut("accounts", { id: a.id });
+      }));
+    }).then(function () { return true; });
   }
   window.sbSnapshotNow = snapshotNow;
   window.sbReadSnapshot = function (profileId) { return idbGet("snapshots", profileId || activeProfile()); };
 
   document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") { flush(); snapshotNow(); } });
   setTimeout(function () { idbPutAccount(sbProfiles.currentRecord()); snapshotNow(); }, 2500);
+  /* Чистка — сразу, а не через две с половиной секунды: закрытую вкладку
+     могут открыть и тут же закрыть, и открытый снимок пролежал бы ещё раз. */
+  setTimeout(function () { purgeDiskLeaks(); }, 0);
 
   /* ------------------------------------------------ 7. EXPORT / IMPORT §1.5 */
   var DENY_EXACT = ["sysbaby.activeProfile", "sysbaby.profiles.v1", "sysbaby.authed",
@@ -930,7 +1013,9 @@
      под обоими шифрами. «Не видно вообще ничего» — значит и этого.
 
      ЧЕГО ЗДЕСЬ НЕТ, И ЭТО СКАЗАНО ЧЕЛОВЕКУ ДО ПОВОРОТА КЛЮЧА:
-       · восстановления пароля нет. Сервера нет — восстанавливать некому;
+       · восстановления пароля нет У ДРУГИХ: сервера нет, копии ни у кого.
+         Есть свой код восстановления на бумаге (D-266) — запасная дверь,
+         которая выводит ключ, а не проверяет;
        · пока система открыта в этой вкладке, слова лежат в памяти
          расшифрованными. Замок бережёт ПОКОЙ, а не работающий сеанс;
        · растяжка пароля здесь НЕ памятно-твёрдая. Signal на телефоне берёт
@@ -1191,6 +1276,137 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     });
   }
 
+  /* ── ВЕЩЬ В КОНВЕРТЕ (D-265) ──────────────────────────────────────────
+     Те же два шифра и подпись, что у записей (CTR → GCM → HMAC-SHA-512), на
+     тех же ключах сеанса; первый байт подписанного — 3, у записей — 2, и
+     конверт одного рода нельзя выдать за конверт другого. Внутри — имя,
+     род, размер и время вещи, затем её байты; снаружи — только номер.
+     Длина прячется кратностью 4 КиБ: у файлов сотни килобайт, и шаг в 256
+     байт ничего бы не спрятал, а раздул бы число шагов. */
+  var THING_BLOCK = 4096;
+  function padTo(bytes, block) {
+    var total = 4 + bytes.length;
+    var n = Math.ceil(total / block) * block;
+    var out = new Uint8Array(n);
+    out[0] = (bytes.length >>> 24) & 255;
+    out[1] = (bytes.length >>> 16) & 255;
+    out[2] = (bytes.length >>> 8) & 255;
+    out[3] = bytes.length & 255;
+    out.set(bytes, 4);
+    return out;
+  }
+  function blobBytes(blob) {
+    if (blob && typeof blob.arrayBuffer === "function") return blob.arrayBuffer().then(function (b) { return new Uint8Array(b); });
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onload = function () { resolve(new Uint8Array(fr.result)); };
+      fr.onerror = function () { reject(fr.error); };
+      fr.readAsArrayBuffer(blob);
+    });
+  }
+  function sealBytes(ks, meta, bytes) {
+    var mb = new TextEncoder().encode(JSON.stringify(meta));
+    if (mb.length > 65535) return Promise.reject(new Error("meta"));
+    var body = padTo(cat(new Uint8Array([(mb.length >>> 8) & 255, mb.length & 255]), mb, bytes), THING_BLOCK);
+    var ctr = new Uint8Array(16), iv = new Uint8Array(12);
+    window.crypto.getRandomValues(ctr);
+    window.crypto.getRandomValues(iv);
+    var subtle = window.crypto.subtle;
+    return subtle.encrypt({ name: "AES-CTR", counter: ctr, length: 64 }, ks.ctr, body).then(function (mid) {
+      return subtle.encrypt({ name: "AES-GCM", iv: iv, additionalData: ctr }, ks.gcm, new Uint8Array(mid));
+    }).then(function (outer) {
+      var o = new Uint8Array(outer);
+      return subtle.sign("HMAC", ks.mac, cat(new Uint8Array([3]), ctr, iv, o)).then(function (tag) {
+        return cat(ctr, iv, o, new Uint8Array(tag));
+      });
+    });
+  }
+  function openBytes(ks, box) {
+    /* ПОСТОЯННАЯ: 16 — счётчик CTR, 12 — вектор GCM, 64 — подпись
+       HMAC-SHA-512; размеры примитивов, а не состав системы. */
+    if (!box || box.length < 16 + 12 + 16 + 64) return Promise.reject(new Error("shape"));
+    var ctr = box.subarray(0, 16), iv = box.subarray(16, 28);
+    var o = box.subarray(28, box.length - 64), tag = box.subarray(box.length - 64);
+    var subtle = window.crypto.subtle;
+    return subtle.verify("HMAC", ks.mac, tag, cat(new Uint8Array([3]), ctr, iv, o)).then(function (good) {
+      if (!good) throw new Error("mac");
+      return subtle.decrypt({ name: "AES-GCM", iv: iv, additionalData: ctr }, ks.gcm, o);
+    }).then(function (mid) {
+      return subtle.decrypt({ name: "AES-CTR", counter: ctr, length: 64 }, ks.ctr, new Uint8Array(mid));
+    }).then(function (plain) {
+      var flat = unpadBytes(new Uint8Array(plain));
+      if (flat.length < 2) throw new Error("shape");
+      var mlen = (flat[0] << 8) | flat[1];
+      if (mlen > flat.length - 2) throw new Error("shape");
+      return { meta: JSON.parse(new TextDecoder().decode(flat.subarray(2, 2 + mlen))), bytes: flat.slice(2 + mlen) };
+    });
+  }
+  function thingToSealed(ks, rec) {
+    return blobBytes(rec.blob).then(function (bytes) {
+      return sealBytes(ks, { name: rec.name, mime: rec.mime, size: rec.size, at: rec.at }, bytes);
+    }).then(function (box) {
+      return { id: rec.id, sealed: 3, box: new Blob([box], { type: "application/octet-stream" }) };
+    });
+  }
+  function thingFromSealed(ks, rec) {
+    return blobBytes(rec.box).then(function (b) { return openBytes(ks, b); }).then(function (o) {
+      var m = o.meta || {};
+      return { id: rec.id, blob: new Blob([o.bytes], { type: m.mime || "" }), name: m.name, mime: m.mime, size: m.size, at: m.at };
+    });
+  }
+  /* Запечатать открытые вещи. При повороте ключа мир один — запечатывается
+     всё. При открытии замка — только вещи, о которых знает ЭТОТ мир (номер
+     вещи стоит в одной из его расшифрованных записей): открытая вещь,
+     оставшаяся от прежнего выпуска, могла принадлежать другому миру, и
+     запечатать её чужим ключом значило бы потерять её для хозяина. */
+  /* Запечатывание и распечатывание идут ОДНОЙ очередью: иначе открытие
+     замка (запечатать своё) и снятие замка (распечатать всё), начатые подряд,
+     разошлись бы по складу наперегонки, и вещь осталась бы запечатанной
+     ключом, которого уже нет. */
+  var thingsWork = Promise.resolve();
+  function thingsQueue(job) {
+    thingsWork = thingsWork.then(job, job);
+    return thingsWork;
+  }
+  function sealThingsNow(ks, onlyKnown) {
+    return thingsQueue(function () { return sealThingsJob(ks, onlyKnown); });
+  }
+  function unsealThingsNow(ks) {
+    return thingsQueue(function () { return unsealThingsJob(ks); });
+  }
+  function sealThingsJob(ks, onlyKnown) {
+    var known = null;
+    if (onlyKnown) {
+      known = [];
+      mem.forEach(function (v) { if (v != null) known.push(String(v)); });
+      known = known.join("\n");
+    }
+    return idbAll("things").then(function (list) {
+      return list.reduce(function (chain, rec) {
+        return chain.then(function () {
+          if (!rec || rec.sealed || !rec.blob) return null;
+          if (known !== null && known.indexOf(String(rec.id)) === -1) return null;
+          return thingToSealed(ks, rec).then(function (sealed) { return idbPut("things", sealed); });
+        });
+      }, Promise.resolve());
+    }).then(function () { return true; }, function () { return false; });
+  }
+  /* Снять замок — распечатать вещи. Запечатанная вещь без мастер-ключа
+     потеряна навсегда; вещь другого мира, которую этим ключом не открыть,
+     после снятия замка не откроет уже никто — она убирается как шум. */
+  function unsealThingsJob(ks) {
+    return idbAll("things").then(function (list) {
+      return list.reduce(function (chain, rec) {
+        return chain.then(function () {
+          if (!rec || !rec.sealed) return null;
+          return thingFromSealed(ks, rec).then(function (plain) {
+            return idbPut("things", plain);
+          }, function () { return idbDel("things", rec.id); });
+        });
+      }, Promise.resolve());
+    }).then(function () { return true; }, function () { return false; });
+  }
+
   /* ── СТАРЫЙ ЗАМОК v1: только читается, чтобы переехать ────────────────── */
   function deriveVaultKeyV1(password, saltHex) {
     var enc = new TextEncoder();
@@ -1285,6 +1501,59 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     return { wrapIv: b64(iv), wrap: b64(wrap) };
   }
 
+  /* ── ЗАПАСНАЯ ДВЕРЬ: КОД ВОССТАНОВЛЕНИЯ (D-266) ─────────────────────────
+     «Забытый пароль означает потерю запертого» — так стояло в описи дыр, и
+     причиной называлось отсутствие сервера. Сервер для этого не нужен. Нужен
+     ещё один конверт мастер-ключа, который открывается не словом, а кодом:
+     160 случайных бит, тридцать два знака без путаницы (алфавит Крокфорда:
+     нет I, L, O, U). Код показывается ОДИН раз — на бумагу; на диске его нет
+     ни байта. Код не проверяется отдельно: он ВЫВОДИТ ключ той же растяжкой,
+     что и слово, — обходить нечего.
+     ЗАПАСНАЯ ДВЕРЬ СТОИТ ВСЕГДА, как и вторая: без кода в ней шум той же длины.
+     Иначе диск говорил бы, есть ли у человека код.
+     КОД ОДНОРАЗОВЫЙ: открыл — дверь снова становится шумом, и окно аккаунта
+     предлагает завести новый. Код, однажды набранный на чужих глазах или
+     чужой клавиатуре, не должен оставаться ключом.
+     ЦЕНА НАЗВАНА: код открывает главный мир без слова и без второго ключа.
+     Он — такая же тайна, как слово, только длиннее; хранить его отдельно от
+     устройства — условие, при котором он спасает, а не выдаёт. */
+  var SPARE_ALPHA = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+  var SPARE_KEY = "sysbaby.lock.spareAt";
+  function spareNorm(code) {
+    return String(code || "").toUpperCase().replace(/O/g, "0").replace(/[IL]/g, "1").replace(/[^0-9A-Z]/g, "");
+  }
+  function spareNew() {
+    var b = new Uint8Array(20), out = "", acc = 0, bits = 0, i;
+    window.crypto.getRandomValues(b);
+    for (i = 0; i < b.length; i++) {
+      acc = ((acc << 8) | b[i]) & 0xffff;
+      bits += 8;
+      while (bits >= 5) { out += SPARE_ALPHA.charAt((acc >>> (bits - 5)) & 31); bits -= 5; }
+    }
+    return out.match(/.{4}/g).join("-");
+  }
+  function spareSecret(norm) { return "sys.baby/spare/v1:" + norm; }
+  function spareKdf() { return ["PBKDF2-SHA512:" + KDF1_ITER, "PBKDF2-SHA256:" + KDF2_ITER]; }
+  function randomSpare() { var d = randomDoor(); d.kdf = spareKdf(); return d; }
+  function makeSpare(code, master, saltB64) {
+    var iv = new Uint8Array(12);
+    window.crypto.getRandomValues(iv);
+    return deriveKEK(spareSecret(spareNorm(code)), saltB64, KDF1_ITER, KDF2_ITER, null).then(function (kek) {
+      return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, kek, master);
+    }).then(function (w) { return { wrapIv: b64(iv), wrap: b64(w), kdf: spareKdf() }; });
+  }
+  function upgradeSpare() {
+    var rec = lockRecord();
+    if (!rec || rec.spare) return;
+    rec.spare = randomSpare();
+    lsSet(LOCK_KEY, JSON.stringify(rec));
+  }
+  /* Отметка «код заведён» — ВНУТРИ хранилища, под замком: снаружи её нет,
+     и в тревожном мире она своя. */
+  function markSpare(on) {
+    try { if (on) lsSet(SPARE_KEY, String(Date.now())); else lsDel(SPARE_KEY); } catch (e) { /* ignore */ }
+  }
+
   /* СОЛЬ У ЗАМКА ОДНА НА ОБЕ ДВЕРИ, и это не экономия на стойкости.
      Соль мешает считать таблицы ЗАРАНЕЕ и СРАЗУ НА МНОГИХ; для двух дверей
      одного человека на одном устройстве разные соли не добавляют ничего, а
@@ -1292,10 +1561,18 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      растяжка считается ОДИН раз, а полученный ключ пробуется на обеих
      дверях — это уже дешёвые действия. Заодно исчезает утечка временем:
      стоимость попытки одинакова всегда. */
-  function makeDoor(password, master, saltB64, fsec) {
+  /* ── ДВЕРЬ ДЕЛАЕТСЯ ЦЕНОЙ СВОЕГО ЗАМКА (D-266, нашёл закон) ────────────
+     Растяжка считается ОДИН раз на попытку и пробуется на всех дверях — значит
+     все двери обязаны быть сделаны одной ценой: ценой, записанной в замке.
+     Прежде новая дверь делалась СЕГОДНЯШНЕЙ ценой, а открывалась ценой замка:
+     у замка, запертого до D-205, тревожное слово, заведённое потом, не
+     открывало ничего, а смена главного слова переписывала цену замка и
+     молча убивала тревожный мир. cost — пара проходов из costOf(rec); без неё
+     дверь делается сегодняшней ценой, и это верно только для нового замка. */
+  function makeDoor(password, master, saltB64, fsec, cost) {
     var iv = new Uint8Array(12);
     window.crypto.getRandomValues(iv);
-    return deriveKEK(password, saltB64, null, null, fsec).then(function (kek) {
+    return deriveKEK(password, saltB64, cost ? cost[0] : null, cost ? cost[1] : null, fsec).then(function (kek) {
       return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, kek, master);
     }).then(function (w) { return { wrapIv: b64(iv), wrap: b64(w) }; });
   }
@@ -1632,7 +1909,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
               names: "HMAC-SHA-256",
               pad: PAD_BLOCK,
               salt: saltB64,
-              doors: [{ wrapIv: b64(wrapIv), wrap: b64(wrapped) }, door2]
+              doors: [{ wrapIv: b64(wrapIv), wrap: b64(wrapped) }, door2],
+              spare: randomSpare()
             };
             if (factorRec) body.factor = factorRec;
             lsSet(LOCK_KEY, JSON.stringify(body));
@@ -1724,6 +2002,10 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
            вместо тридцати двух. Выравнивать надо там, где запись кончается. */
         return levelDisk(sealedWith);
       }).then(function () {
+        /* Вещи склада уходят в конверты ТЕМ ЖЕ поворотом ключа, и старые
+           открытые снимки вычищаются: замок держит весь диск (D-265). */
+        return sealThingsNow(sealedWith, false).then(function () { return purgeDiskLeaks(); });
+      }).then(function () {
         /* ── ЗАПЕР — ЗНАЧИТ ЗАПЕРТО, С ЭТОГО ЖЕ МИГА ────────────────────────
            Прежняя редакция оставляла сеанс ОТКРЫТЫМ после поворота ключа и
            при этом стирала память. Получалась худшая из возможных середин:
@@ -1763,6 +2045,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       }).then(function (masterBuf) {
         if (!masterBuf) throw new Error("wrong");
         if (!factorOf(rec)) upgradeDoors(rec);
+        upgradeSpare();
         var master = new Uint8Array(masterBuf);
         return subkeys(master).then(function (ks) {
           /* Мастер-ключ остаётся в памяти сеанса — ради смены пароля БЕЗ
@@ -1783,6 +2066,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       var rec = lockRecord();
       if (!rec) return Promise.resolve(true);
       return window.sbVault.unlock(password, secondKeyFile).then(function (okp) {
+        if (!okp) return false;
+        return unsealThingsNow(vaultKeys).then(function () { return true; });
+      }).then(function (okp) {
         if (!okp) return false;
         var names = sealedNamesNow(), i;
         mem.forEach(function (v, k) {
@@ -1866,7 +2152,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
        бессмысленным до тех пор, пока файл не в руках.
 
        ЦЕНА, КОТОРУЮ СОВЕТ ОБЯЗАН НАЗВАТЬ ПЕРВОЙ. Потерять файл — то же
-       самое, что забыть слово. Восстановления нет и здесь. Второй ключ
+       самое, что забыть слово: спасает только код восстановления (D-266),
+       если он заведён. Второй ключ
        делает хранилище сильнее РОВНО НАСТОЛЬКО, насколько надёжно человек
        хранит файл отдельно от машины. Поэтому он не включается сам и не
        предлагается по умолчанию.
@@ -1908,9 +2195,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         if (early === false || early === true) return early;
         return factorSecret(fileBytes, fsaltB64).then(function (fs) {
           fsec = fs;
-          return makeDoor(password, master0, saltB64, fsec);
+          return makeDoor(password, master0, saltB64, fsec, costOf(rec));
         }).then(function (door0) {
-          var second = master1 ? makeDoor(duressPassword, master1, saltB64, fsec) : Promise.resolve(randomDoor());
+          var second = master1 ? makeDoor(duressPassword, master1, saltB64, fsec, costOf(rec)) : Promise.resolve(randomDoor());
           return second.then(function (door1) {
             var next = lockRecord() || {};
             next.v = 4;
@@ -1941,8 +2228,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         });
       }).then(function (early) {
         if (early === false || early === true) return early;
-        return makeDoor(password, master0, saltB64, null).then(function (door0) {
-          var second = master1 ? makeDoor(duressPassword, master1, saltB64, null) : Promise.resolve(randomDoor());
+        return makeDoor(password, master0, saltB64, null, costOf(rec)).then(function (door0) {
+          var second = master1 ? makeDoor(duressPassword, master1, saltB64, null, costOf(rec)) : Promise.resolve(randomDoor());
           return second.then(function (door1) {
             var next = lockRecord() || {};
             next.v = 3;
@@ -1969,7 +2256,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         window.crypto.getRandomValues(m);
         var next0 = lockRecord() || {};
         return factorFor(next0, secondKeyFile).then(function (fsec) {
-        return makeDoor(duressPassword, m, saltOf(next0), fsec).then(function (door) {
+        return makeDoor(duressPassword, m, saltOf(next0), fsec, costOf(next0)).then(function (door) {
           var next = lockRecord() || {};
           var doors = doorsOf(next).map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; });
           while (doors.length < 2) doors.push(randomDoor());
@@ -1992,20 +2279,96 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
        остаются на диске неотличимым от шума набором конвертов, и это не
        недосмотр: диск, с которого вдруг исчезла половина конвертов, сам
        рассказывает, что там что-то было. */
-    clearDuress: function (mainPassword) {
+    clearDuress: function (mainPassword, secondKeyFile) {
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
-      return window.sbVault.unlock(mainPassword).then(function (okp) {
+      return window.sbVault.unlock(mainPassword, secondKeyFile).then(function (okp) {
         if (!okp) return false;
         if (vaultDoor !== 0) return true;
         var next = lockRecord() || {};
         var doors = doorsOf(next).map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; });
         while (doors.length < 2) doors.push(randomDoor());
         doors[1] = randomDoor();
-        next.v = 3; next.salt = saltOf(next); next.doors = doors;
+        /* Замок со вторым ключом остаётся четвёртой редакцией (D-266): понизить
+           его здесь значило бы стереть запись о втором ключе при дверях,
+           сделанных с ним, — и не открыть больше ничего. */
+        next.v = factorOf(next) ? 4 : 3; next.salt = saltOf(next); next.doors = doors;
         delete next.wrapIv; delete next.wrap;
         lsSet(LOCK_KEY, JSON.stringify(next));
         return true;
+      });
+    },
+
+    /* ── КОД ВОССТАНОВЛЕНИЯ (D-266) — см. шапку «ЗАПАСНАЯ ДВЕРЬ» ─────────── */
+    recoveryMake: function (password, secondKeyFile) {
+      var rec = lockRecord();
+      if (!rec) return Promise.reject(new Error("no-lock"));
+      if (!vaultOpen) return Promise.reject(new Error("closed"));
+      var saved = vaultDoor;
+      return factorFor(rec, secondKeyFile).then(function (fsec) {
+        return openDoors(rec, password, fsec);
+      }).then(function (m) {
+        var door = vaultDoor;
+        vaultDoor = saved;
+        if (!m) return false;
+        var code = spareNew();
+        /* Из тревожного мира — код, который выглядит кодом и не открывает
+           ничего: запасная дверь главного мира не трогается, а признаться, что
+           мир не первый, значило бы отдать главный (D-203). */
+        if (door !== 0) { m.fill(0); markSpare(true); return code; }
+        return makeSpare(code, m, saltOf(rec)).then(function (sp) {
+          m.fill(0);
+          var next = lockRecord() || {};
+          next.spare = sp;
+          lsSet(LOCK_KEY, JSON.stringify(next));
+          markSpare(true);
+          return code;
+        });
+      });
+    },
+    recoveryState: function () {
+      if (!vaultOpen) return null;
+      var at = parseInt(lsGet(SPARE_KEY) || "", 10);
+      return { at: at > 0 ? at : null };
+    },
+    /* Открыть кодом, у двери, когда слово забыто. Главный мир встаёт под
+       НОВЫМ словом, код расходуется. Был второй ключ — он снимается: человек,
+       потерявший файл, иначе остался бы за дверью и с кодом. Вместе с ним
+       теряется тревожный мир — его дверь сделана с файлом, и открыть её
+       больше нечем; это сказано у двери до нажатия. */
+    recover: function (code, newPassword) {
+      var rec = lockRecord();
+      if (!rec) return Promise.reject(new Error("no-lock"));
+      if (String(newPassword || "").length < 4) return Promise.reject(new Error("short"));
+      var sp = rec.spare || randomSpare();
+      var sk = costOf({ kdf: sp.kdf });
+      var saltB64 = saltOf(rec);
+      return deriveKEK(spareSecret(spareNorm(code)), saltB64, sk[0], sk[1], null).then(function (kek) {
+        var wrapped, iv;
+        try { wrapped = unb64(sp.wrap); iv = unb64(sp.wrapIv); } catch (e) { return null; }
+        return window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, kek, wrapped)
+          .then(function (buf) { return new Uint8Array(buf); }, function () { return null; });
+      }).then(function (master) {
+        if (!master) return false;
+        var hadFactor = !!factorOf(rec);
+        return makeDoor(newPassword, master, saltB64, null, costOf(rec)).then(function (door0) {
+          master.fill(0);
+          var next = lockRecord() || {};
+          var doors = doorsOf(next).map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; });
+          while (doors.length < 2) doors.push(randomDoor());
+          doors[0] = door0;
+          if (hadFactor) { doors[1] = randomDoor(); delete next.factor; }
+          next.v = 3;
+          next.salt = saltB64;
+          next.doors = doors;
+          next.spare = randomSpare();
+          delete next.wrapIv; delete next.wrap;
+          lsSet(LOCK_KEY, JSON.stringify(next));
+          return window.sbVault.unlock(newPassword);
+        }).then(function (okp) {
+          if (okp) markSpare(false);
+          return okp;
+        });
       });
     },
 
@@ -2017,11 +2380,18 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
        хранилища ради нового слова была бы долгой (на телефоне — минуты) и
        опасной: обрыв посередине оставил бы половину данных на старом ключе,
        а половину на новом. */
-    rekey: function (oldPassword, newPassword) {
+    rekey: function (oldPassword, newPassword, secondKeyFile) {
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
       if (String(newPassword || "").length < 4) return Promise.reject(new Error("short"));
-      return window.sbVault.unlock(oldPassword).then(function (okp) {
+      var fsecNew = null;
+      return window.sbVault.unlock(oldPassword, secondKeyFile).then(function (okp) {
+        if (!okp || !vaultMaster) return false;
+        /* Второй ключ входит и в новую дверь: смена слова не снимает его
+           (D-266 — прежде смена со вторым ключом не проходила вовсе, а если бы
+           прошла, записала бы дверь без него и третью редакцию замка). */
+        return factorFor(lockRecord(), secondKeyFile).then(function (f) { fsecNew = f; return true; });
+      }).then(function (okp) {
         if (!okp || !vaultMaster) return false;
         /* СОЛЬ ЗАМКА НЕ МЕНЯЕТСЯ ПРИ СМЕНЕ ПАРОЛЯ, и это выбор, а не небрежность.
            Соль общая на обе двери; сменить её значило бы заново завернуть и
@@ -2033,7 +2403,10 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         var wrapIv = new Uint8Array(12);
         window.crypto.getRandomValues(wrapIv);
         var saltB64 = saltOf(lockRecord() || {});
-        return deriveKEK(newPassword, saltB64).then(function (kek) {
+        /* Цена — ЦЕНА ЗАМКА, а не сегодняшняя (D-266): другие двери сделаны
+           ею, и растяжка считается одна на все. */
+        var cost = costOf(lockRecord() || {});
+        return deriveKEK(newPassword, saltB64, cost[0], cost[1], fsecNew).then(function (kek) {
           return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: wrapIv }, kek, vaultMaster);
         }).then(function (wrapped) {
           var next = lockRecord() || {};
@@ -2045,9 +2418,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           var mine = (typeof vaultDoor === "number" && vaultDoor >= 0) ? vaultDoor : 0;
           doors = doors.map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; });
           doors[mine] = { wrapIv: b64(wrapIv), wrap: b64(wrapped) };
-          next.v = 3;
+          next.v = factorOf(next) ? 4 : 3;
           next.salt = saltB64;
-          next.kdf = ["PBKDF2-SHA512:" + KDF1_ITER, "PBKDF2-SHA256:" + KDF2_ITER];
+          next.kdf = ["PBKDF2-SHA512:" + cost[0], "PBKDF2-SHA256:" + cost[1]];
           next.doors = doors;
           delete next.wrapIv; delete next.wrap;
           lsSet(LOCK_KEY, JSON.stringify(next));
@@ -2084,6 +2457,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       }
       vaultKeys = ks;
       vaultOpen = true;
+      /* Главный мир запечатывает все открытые вещи: открытая вещь на диске
+         запертой системы — утечка, чья бы она ни была. Второй мир — только
+         свои: запечатать чужую вещь чужим ключом значило бы отнять её у
+         хозяина. */
+      sealThingsNow(ks, vaultDoor !== 0);
       levelDisk(ks).then(function () { return rollOnce(ks); });
       rollKeep(ks);
       if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: true, open: true });

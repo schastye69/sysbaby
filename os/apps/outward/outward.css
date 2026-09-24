@@ -3,7 +3,9 @@
    каждая строка отвечает на три вопроса и ничего не прячет за раскрывашкой:
    спрятанное в описи — то же, что отсутствующее. */
 
-.ow-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; }
+/* Колонка встаёт посередине развёрнутого окна (D-273), как у всех комнат-
+   колонок: одна ширина, одна ось. Охраняется room-center-check. */
+.ow-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: var(--room-col); margin-inline: auto; }
 .ow-top { position: relative; padding: 2px 2px 0; }
 .ow-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: 700; letter-spacing: -.01em; }
 .ow-lead { margin: 0; font-size: var(--f-read); line-height: 1.6; color: var(--ink-2); max-width: 62ch; }

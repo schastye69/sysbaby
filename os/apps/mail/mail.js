@@ -117,6 +117,29 @@
   }
 
   function myAddress() { return username() + DOMAIN; }
+  /* ── СВОЕЙ ПОЧТОЙ (D-269) ─────────────────────────────────────────────
+     Без сервера Письмам некуда отправлять — но у человека уже есть почта.
+     «Своей почтой» открывает его почтовую программу с этим письмом: адрес,
+     тема и текст уходят ЕЙ, открытым текстом, и дальше его почтовой службе.
+     sys.baby в этом пути не участвует и дошло ли письмо, не знает — так и
+     сказано. Получать письма по-прежнему неоткуда: для этого нужен сервер. */
+  var OWN_ADDR = /^[^@\s<>"]+@[^@\s<>"]+\.[^@\s<>"]+$/;
+  function ownAddressOk(to) {
+    var a = String(to || "").trim();
+    return OWN_ADDR.test(a) && a.slice(-DOMAIN.length).toLowerCase() !== DOMAIN;
+  }
+  function openOwnMail(to, subject, body) {
+    var href = "mailto:" + encodeURI(String(to).trim()) +
+      "?subject=" + encodeURIComponent(String(subject || "")) +
+      "&body=" + encodeURIComponent(String(body || ""));
+    var a = document.createElement("a");
+    a.href = href;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    return href;
+  }
 
   function normalizeAddress(value) {
     var v = String(value == null ? "" : value).trim();
@@ -326,6 +349,7 @@
     if (folder === "sent" && m.delivery) {
       if (m.delivery.state === "delivered") return '<span class="ml-tag delivered">' + esc(t("ml.tag.delivered")) + "</span>";
       if (m.delivery.state === "local") return '<span class="ml-tag local">' + esc(t("ml.tag.local")) + "</span>";
+      if (m.delivery.state === "handed") return '<span class="ml-tag handed">' + esc(t("ml.tag.handed")) + "</span>";
     }
     if (folder === "drafts" && m.composeMode === "studio") return '<span class="ml-tag studio">' + esc(t("ml.tag.studio")) + "</span>";
     return "";
@@ -424,6 +448,8 @@
            по имени. Шаг второй убирает частные ходы, а не ставит общий
            рядом с ними. Охраняется tools/hand-check.mjs. */
         (window.sbHand ? window.sbHand.menuHtml("письмо", "mail") : "") +
+        (isSent && m.delivery && m.delivery.state !== "delivered" && ownAddressOk(m.to)
+          ? '<button type="button" class="ml-btn" id="mlOwnAgain" title="' + esc(t("ml.compose.ownNote")) + '">' + esc(t("ml.compose.sendOwn")) + "</button>" : "") +
         starMarkup(m) +
         '<button type="button" class="ml-btn" id="mlDelete">' + esc(t("ml.act.delete")) + "</button>";
     }
@@ -438,6 +464,8 @@
           : t("ml.delivery.ok", { addr: STUDIO_ADDR, when: timeAgo(m.delivery.at) })) + "</div>";
       } else if (m.delivery.state === "local") {
         deliveryLine = '<div class="ml-delivery quiet">' + esc(t("ml.delivery.local")) + "</div>";
+      } else if (m.delivery.state === "handed") {
+        deliveryLine = '<div class="ml-delivery quiet">' + esc(t("ml.delivery.handed", { when: new Date(m.delivery.at).toLocaleString() })) + "</div>";
       }
     }
 
@@ -488,7 +516,8 @@
         : "") +
       '<p class="ml-compose-status" id="mlComposeStatus" role="status"></p>' +
       '<div class="ml-compose-foot">' +
-        '<span class="ml-honest">' + esc(studio ? t("ml.compose.honestStudio", { host: relayHost() }) : t("ml.compose.honestLocal")) + "</span>" +
+        '<span class="ml-honest">' + esc(studio ? t("ml.compose.honestStudio", { host: relayHost() }) : t("ml.compose.honestLocal") + " " + t("ml.compose.ownNote")) + "</span>" +
+        (studio ? "" : '<button type="button" class="ml-btn" id="mlSendOwn">' + esc(t("ml.compose.sendOwn")) + "</button>") +
         '<button type="button" class="ml-btn primary" id="mlSend">' + esc(studio ? t("ml.compose.sendStudio") : t("ml.compose.sendLocal")) + "</button>" +
       "</div>" +
     "</div>";
@@ -644,8 +673,10 @@
         return {
           kind: "письмо",
           name: String(m.subject || t("ml.noSubject")),
+          /* Дата и час, а не «пять минут назад»: копия письма живёт годами,
+             и относительное время в ней застывало бы враньём (D-267). */
           text: String(m.body || "") + "\n\n— " + appName("mail") + " · " +
-                String(m.from || m.to || "") + " · " + timeAgo(m.ts)
+                String(m.from || m.to || "") + " · " + new Date(m.ts).toLocaleString()
         };
       });
     }
@@ -960,6 +991,42 @@
       });
     }
 
+    var sendOwn = host.querySelector("#mlSendOwn");
+    if (sendOwn) {
+      sendOwn.addEventListener("click", function () {
+        var fields = readCompose(win, host);
+        if (!ownAddressOk(fields.to)) { composeStatus(host, t("ml.status.ownTo"), "warn"); return; }
+        if (!fields.body.trim() && !fields.subject.trim()) { composeStatus(host, t("ml.status.emptyBody"), "warn"); return; }
+        var draftId = win._mailCompose.draftId;
+        if (draftId != null) state.data = state.data.filter(function (x) { return x.id !== draftId; });
+        var subject = fields.subject.trim() || "(no subject)";
+        state.data.push({
+          id: state.nextId++, from: "You", fromAddr: myAddress(), to: fields.to.trim(),
+          subject: subject, snippet: fields.body.slice(0, 60), body: fields.body,
+          delivery: { state: "handed", at: Date.now() },
+          ts: Date.now(), unread: false, folder: "sent", starred: false
+        });
+        write();
+        openOwnMail(fields.to, subject, fields.body);
+        win._mailCompose = null;
+        win._mailFolder = "sent";
+        win._mailSearch = "";
+        selectedId = null;
+        render(win);
+        toast(t("ml.toast.handedTitle"), t("ml.toast.handedBody"));
+      });
+    }
+    var ownAgain = host.querySelector("#mlOwnAgain");
+    if (ownAgain) {
+      ownAgain.addEventListener("click", function () {
+        var m = messageById(selectedId);
+        if (!m || !ownAddressOk(m.to)) return;
+        openOwnMail(m.to, m.subject, m.body);
+        m.delivery = { state: "handed", at: Date.now() };
+        write();
+        render(win);
+      });
+    }
     var send = host.querySelector("#mlSend");
     if (send) {
       send.addEventListener("click", function () {

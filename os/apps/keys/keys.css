@@ -7,7 +7,9 @@
    «без переносов» — вместе с внутренней шириной поля поиска. На телефоне
    основателя это срезало кнопку «+ New place» правой кромкой.
    Охраняется tools/room-fits-check.mjs. */
-.ky-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; width: 100%; }
+/* Колонка встаёт посередине развёрнутого окна (D-273), как у всех комнат-
+   колонок: одна ширина, одна ось. Охраняется room-center-check. */
+.ky-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; width: 100%; max-width: var(--room-col); margin-inline: auto; }
 .ky-head { padding: 2px 2px 2px; }
 .ky-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: 700; letter-spacing: -.01em; }
 .ky-lead { margin: 0; font-size: var(--f-read); line-height: 1.6; color: var(--ink-2); }
@@ -61,7 +63,7 @@
 }
 .ky-acts .ky-del { color: #ff9b8f; border-color: rgba(255, 69, 58, .28); }
 @media (hover: hover) {
-  .ky-acts button:hover { border-color: var(--accent-ring); color: var(--ink); }
+  :where(html:not([data-input="touch"])) .ky-acts button:hover { border-color: var(--accent-ring); color: var(--ink); }
 }
 .ky-empty { margin: 8px 2px; font-size: var(--f-read); color: var(--ink-3); }
 .ky-honest {

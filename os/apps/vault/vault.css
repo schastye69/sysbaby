@@ -4,7 +4,9 @@
    Единственное заметное движение в окне — поворот конверта, и он случается
    ровно тогда, когда конверт действительно перезаписан. */
 
-.vw-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 14px; }
+/* Колонка встаёт посередине развёрнутого окна (D-273): растёт до общей
+   ширины колонки комнат и не дальше. Охраняется room-center-check. */
+.vw-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: var(--room-col); margin-inline: auto; }
 .vw-head { padding: 2px 2px 0; }
 .vw-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: 700; letter-spacing: -.01em; }
 .vw-lead { margin: 0; font-size: var(--f-read); line-height: 1.6; color: var(--ink-2); max-width: 60ch; }

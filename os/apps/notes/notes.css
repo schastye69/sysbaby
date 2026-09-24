@@ -60,7 +60,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .notes-add:hover { background: rgba(255, 255, 255, .12); }
+  :where(html:not([data-input="touch"])) .notes-add:hover { background: rgba(255, 255, 255, .12); }
 }
 .notes-add svg { width: 17px; height: 17px; }
 
@@ -85,7 +85,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .notes-row:hover { background: rgba(255, 255, 255, .05); }
+  :where(html:not([data-input="touch"])) .notes-row:hover { background: rgba(255, 255, 255, .05); }
 }
 
 .notes-row.active {
@@ -154,7 +154,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  .notes-del:hover { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .5); }
+  :where(html:not([data-input="touch"])) .notes-del:hover { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .5); }
 }
 .notes-del svg { width: 16px; height: 16px; }
 

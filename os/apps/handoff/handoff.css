@@ -2,7 +2,9 @@
    Вид подчинён одному: человек должен за секунду понять, что он отправляет
    тайну, и за ту же секунду — что ссылка И ЕСТЬ эта тайна. */
 
-.hf-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; }
+/* Колонка встаёт посередине развёрнутого окна (D-273): растёт до общей
+   ширины колонки комнат и не дальше. Охраняется room-center-check. */
+.hf-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: var(--room-col); margin-inline: auto; }
 .hf-head { padding: 2px 2px 0; }
 .hf-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: 700; letter-spacing: -.01em; }
 .hf-lead { margin: 0; font-size: var(--f-read); line-height: 1.6; color: var(--ink-2); max-width: 60ch; }
