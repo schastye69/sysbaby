@@ -269,7 +269,7 @@
       "set.advanced.resetDoneBody": "Your desk is back in Studio, and its light with it.",
       "set.about.build": "Build",
       "set.about.apps": "Applications",
-      "set.about.appsValue": "{registered} registered · {launchable} in the dock",
+      "set.about.appsValue": "{registered} registered · {launchable} can be opened",
       "set.about.appsNA": "registry unavailable",
       "set.about.madeOf": "Made of",
       "set.about.madeOfValue": "HTML, CSS and plain JavaScript — no framework, no build step",
@@ -283,7 +283,7 @@
       "set.about.whatTitle": "What this desktop is",
       "set.about.whatBody": "A working answer to one question: what does it feel like when your business software belongs to you? Every app here is real — the notes keep, the files move, the terminal answers — and every word of it runs on your device. The client systems in {portfolio} are the same idea, built for real companies.",
       "set.about.whoTitle": "Who builds it",
-      "set.about.whoBody": "A systems studio in Tallinn. The desktop you are looking at is written by the same hands that build the client systems — it is our proof of work, not a template. Press the clay tile in the dock to start a project of your own.",
+      "set.about.whoBody": "A systems studio in Tallinn. The desktop you are looking at is written by the same hands that build the client systems — it is our proof of work, not a template. To start a project of your own, open {build}.",
       "set.about.note": "Accounts here are local profiles in this browser, not a server. Every account keeps its own data on this device, and nothing leaves it unless you export it yourself.",
       "set.storage.measuring": "measuring…",
       "set.storage.notExposed": "not exposed by this browser",
@@ -821,7 +821,7 @@
       "set.advanced.resetDoneBody": "Ваш стол снова в Studio, и свет вернулся вместе с ним.",
       "set.about.build": "Сборка",
       "set.about.apps": "Приложения",
-      "set.about.appsValue": "{registered} зарегистрировано · {launchable} в доке",
+      "set.about.appsValue": "{registered} зарегистрировано · {launchable} можно открыть",
       "set.about.appsNA": "реестр недоступен",
       "set.about.madeOf": "Из чего сделано",
       "set.about.madeOfValue": "HTML, CSS и обычный JavaScript — без фреймворка и сборки",
@@ -835,7 +835,7 @@
       "set.about.whatTitle": "Что это за рабочий стол",
       "set.about.whatBody": "Работающий ответ на один вопрос: каково это, когда рабочая программа принадлежит вам? Каждое приложение здесь настоящее — заметки хранятся, файлы двигаются, терминал отвечает — и всё это работает на вашем устройстве. Клиентские системы в разделе {portfolio} — та же мысль, собранная для реальных компаний.",
       "set.about.whoTitle": "Кто его делает",
-      "set.about.whoBody": "Системная студия в Таллине. Рабочий стол, на который вы смотрите, написан теми же руками, что делают клиентские системы, — это доказательство работы, а не шаблон. Нажмите глиняную плитку в доке, чтобы начать свой проект.",
+      "set.about.whoBody": "Системная студия в Таллине. Рабочий стол, на который вы смотрите, написан теми же руками, что делают клиентские системы, — это доказательство работы, а не шаблон. Чтобы начать свой проект, откройте {build}.",
       "set.about.note": "Аккаунты здесь — локальные профили в этом браузере, а не сервер. Каждый аккаунт держит свои данные на этом устройстве, и ничего не уходит наружу, пока вы сами не сделаете экспорт.",
       "set.storage.measuring": "измеряю…",
       "set.storage.notExposed": "браузер не сообщает",
@@ -1353,7 +1353,7 @@
       "set.advanced.resetDoneBody": "Sinu laud on taas Studios, ja valgus koos sellega.",
       "set.about.build": "Versioon",
       "set.about.apps": "Rakendused",
-      "set.about.appsValue": "{registered} registreeritud · {launchable} dokis",
+      "set.about.appsValue": "{registered} registreeritud · {launchable} avatavat",
       "set.about.appsNA": "register pole saadaval",
       "set.about.madeOf": "Millest tehtud",
       "set.about.madeOfValue": "HTML, CSS ja puhas JavaScript — raamistikku ega ehitussammu pole",
@@ -1367,7 +1367,7 @@
       "set.about.whatTitle": "Mis see töölaud on",
       "set.about.whatBody": "Töötav vastus ühele küsimusele: milline on tunne, kui teie äritarkvara kuulub teile? Iga rakendus siin on päris — märkmed püsivad, failid liiguvad, terminal vastab — ja iga sõna sellest töötab teie seadmes. Kliendisüsteemid jaotises {portfolio} on sama mõte, ehitatud päris ettevõtetele.",
       "set.about.whoTitle": "Kes seda ehitab",
-      "set.about.whoBody": "Süsteemistuudio Tallinnas. Töölaua, mida te praegu vaatate, on kirjutanud samad käed, mis ehitavad kliendisüsteeme — see on meie töö tõend, mitte mall. Vajutage dokis savist plaati, et alustada oma projekti.",
+      "set.about.whoBody": "Süsteemistuudio Tallinnas. Töölaua, mida te praegu vaatate, on kirjutanud samad käed, mis ehitavad kliendisüsteeme — see on meie töö tõend, mitte mall. Oma projekti alustamiseks avage {build}.",
       "set.about.note": "Kontod on siin selle brauseri kohalikud profiilid, mitte server. Iga konto hoiab oma andmeid selles seadmes ja miski ei lahku siit enne, kui te ise selle ekspordite.",
       "set.storage.measuring": "mõõdan…",
       "set.storage.notExposed": "brauser ei avalda",
@@ -1672,6 +1672,9 @@
     return LANGS.some(function (l) { return l.code === v; }) ? v : "en";
   }
   window.sbLang = lang;
+  /* Языки системы — наружу, чтобы законы СПРАШИВАЛИ их, а не держали свой
+     список (D-200, D-278). Копия: снаружи список не правится. */
+  window.sbLangs = function () { return LANGS.map(function (l) { return { code: l.code, show: l.show, label: l.label }; }); };
   /* sbT(key) -> the string; sbT(key, {name: "x"}) -> the string with {name}
      filled in. Interpolation lives here rather than at the call sites because
      word order differs between the three languages: a sentence assembled from

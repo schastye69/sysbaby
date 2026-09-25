@@ -94,7 +94,7 @@
       beatStart: "Start the beat", beatStop: "Stop", beatWhat: "110 a minute — press with the beat",
       clockStart: "Start", clockStop: "Stop", clockReset: "Reset",
       clockUp: "Time since you started", clockDown: "Keep cooling until zero",
-      torch: "Light", torchNight: "Night light", torchOff: "Tap anywhere to put it out",
+      torch: "Light", torchNight: "Night light", torchOff: "Put out",
       tapNext: "Tap to go on",
       source: "Source", checked: "checked"
     },
@@ -107,7 +107,7 @@
       beatStart: "Включить ритм", beatStop: "Остановить", beatWhat: "110 в минуту — жмите в такт",
       clockStart: "Пуск", clockStop: "Стоп", clockReset: "Сброс",
       clockUp: "Прошло с начала", clockDown: "Охлаждать до нуля",
-      torch: "Свет", torchNight: "Ночной свет", torchOff: "Нажмите где угодно, чтобы погасить",
+      torch: "Свет", torchNight: "Ночной свет", torchOff: "Погасить",
       tapNext: "Нажмите, чтобы дальше",
       source: "Источник", checked: "сверено"
     },
@@ -120,7 +120,7 @@
       beatStart: "Käivita rütm", beatStop: "Peata", beatWhat: "110 minutis — vajuta rütmis",
       clockStart: "Käivita", clockStop: "Peata", clockReset: "Nulli",
       clockUp: "Aega algusest", clockDown: "Jahuta nullini",
-      torch: "Valgus", torchNight: "Öövalgus", torchOff: "Kustutamiseks puuduta ükskõik kus",
+      torch: "Valgus", torchNight: "Öövalgus", torchOff: "Kustuta",
       tapNext: "Puuduta, et edasi",
       source: "Allikas", checked: "kontrollitud"
     }
@@ -608,7 +608,6 @@
        свода, а человек, закрыв беду, оказывается там же, где был. */
     var out = '<div class="lt-wrap' + (openCard ? " is-open" : "") + '">' +
       shelfHtml(t, L) + (openCard ? openHtml(openCard, t, L) : "") +
-      '<div class="lt-torch" id="ltTorch" hidden><p>' + esc(t.torchOff) + "</p></div>" +
       "</div>";
 
     var keep = window.sbKeepScroll ? window.sbKeepScroll(host) : null;
@@ -718,17 +717,114 @@
     /* ── СВЕТ ─────────────────────────────────────────────────────────────
        Фонарь так называется. Белый — чтобы видеть; красный — чтобы видеть и
        НЕ ослепнуть: привыкшие к темноте глаза красный свет не сбивает. */
-    var torch = host.querySelector("#ltTorch");
     host.querySelectorAll("[data-torch]").forEach(function (b) {
       b.addEventListener("click", function (ev) {
         ev.stopPropagation();
-        if (!torch) return;
-        torch.className = "lt-torch " + (b.getAttribute("data-torch") === "red" ? "red" : "white");
-        torch.hidden = false;
+        torchOn(b.getAttribute("data-torch") === "red" ? "night" : "white", b, t);
       });
     });
-    if (torch) torch.addEventListener("click", function () { torch.hidden = true; });
   }
+
+  /* ── СВЕТ ПОВЕРХ ВСЕЙ СИСТЕМЫ, ЖИВОЙ, С ОДНОЙ КНОПКОЙ (D-281) ─────────────
+     ПОВОД, дословно от основателя 24.09.2026, со снимками: «свет и ночной
+     свет нужно сделать более красиво, гениально и желательно с тем же
+     анимационным фоном рабочего стола и ничего лишнего быть не должно, кроме
+     отключения, а то сейчас это выглядит как какой-то дизайнерский баг...».
+     Было: плоская плита ВНУТРИ окна — а полоса системы и док лежат выше
+     окна и стояли поверх света; подсказку внизу закрывал док.
+     Стало:
+       · Свет — отдельный слой на весь экран поверх ВСЕЙ системы, а где
+         браузер позволяет — и поверх самого браузера (полный экран).
+       · Свет — это обои стола: то же поле (sbField.mirror) в той же фазе.
+         Белый — поле, вывернутое в свет: по яркой плите медленно идут
+         тёплые тени тех же лент. Ночной — те же ленты тёмно-красным, без
+         синего: читающая головка поля синяя, в ночном её нет.
+       · Одна кнопка — «Погасить». Касание по свету его не гасит: фонарь
+         держат в руке, палец лежит на экране. Escape гасит.
+       · Пока горит — экран не гаснет сам (Wake Lock), погас — отпущен.
+       · Свет раскрывается кругом из той кнопки, которой его зажгли.
+     Слой создаётся при включении и удаляется при выключении: ненужного
+     узла в документе не остаётся. Охраняется tools/lantern-light-check.mjs. */
+  var LIGHT = {
+    /* Белый: плита белая, поле накладывается разностью. Палитра нарочно
+       тусклая и холодная — разность с белым даёт тёплые тени лент, и
+       средняя яркость остаётся почти белой: фонарь обязан светить. */
+    white: { base: "#ffffff", blend: "difference", noHead: false,
+      palette: [[4.6, 7.4, 13], [2.9, 4.9, 9], [6.2, 9, 15.6]] },
+    /* Ночной: плита тёмно-красная, ленты прибавляют красный. Ни в одной
+       строке палитры нет синего, и головки нет. */
+    night: { base: "#560000", blend: "lighter", noHead: true,
+      palette: [[118, 6, 0], [70, 2, 0], [150, 12, 0]] }
+  };
+  var torch = null;
+  function reducedNow() {
+    try {
+      if (window.sbReducedMotion && window.sbReducedMotion()) return true;
+      return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch (e) { return false; }
+  }
+  function torchOn(kind, from, t) {
+    torchOff();
+    /* ОТКАТ: неизвестный род света — белый: фонарь обязан светить, а не
+       промолчать. Родов два, и оба зовутся из этого же файла. */
+    var cfg = LIGHT[kind] || LIGHT.white;
+    var el = document.createElement("div");
+    el.id = "sbTorch";
+    el.className = "sb-torch " + kind;
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-label", kind === "night" ? t.torchNight : t.torch);
+    el.innerHTML = '<canvas class="sb-torch-field" aria-hidden="true"></canvas>' +
+      '<button type="button" class="sb-torch-off" data-torch-off>' + esc(t.torchOff) + "</button>";
+    /* Круг раскрытия — из центра нажатой кнопки. */
+    try {
+      var r = from.getBoundingClientRect();
+      el.style.setProperty("--ox", Math.round(r.left + r.width / 2) + "px");
+      el.style.setProperty("--oy", Math.round(r.top + r.height / 2) + "px");
+    } catch (e) { /* без точки — из середины */ }
+    document.body.appendChild(el);
+    var still = reducedNow() || document.documentElement.classList.contains("sb-turbo");
+    var field = window.sbField && window.sbField.mirror ? window.sbField.mirror(el.querySelector("canvas"), cfg) : null;
+    if (field) field.start(still);
+    var state = { el: el, field: field, lock: null, fs: false, kind: kind };
+    torch = state;
+    /* Полный экран — только если система ещё не в нём: выходить потом
+       будем только из того, во что вошли сами. */
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      try {
+        var p = document.documentElement.requestFullscreen({ navigationUI: "hide" });
+        state.fs = true;
+        if (p && p.catch) p.catch(function () { state.fs = false; });
+      } catch (e) { state.fs = false; }
+    }
+    if (navigator.wakeLock && navigator.wakeLock.request) {
+      navigator.wakeLock.request("screen").then(function (lock) {
+        if (torch !== state) { lock.release(); return; }
+        state.lock = lock;
+      }, function () { /* устройство не держит экран — свет всё равно горит */ });
+    }
+    el.querySelector("[data-torch-off]").addEventListener("click", function (ev) { ev.stopPropagation(); torchOff(); });
+    requestAnimationFrame(function () { el.classList.add("on"); });
+  }
+  function torchOff() {
+    var s = torch;
+    if (!s) return;
+    torch = null;
+    if (s.field) s.field.stop();
+    if (s.lock) { try { s.lock.release(); } catch (e) { /* уже отпущен */ } }
+    if (s.fs && document.exitFullscreen) { try { var q = document.exitFullscreen(); if (q && q.catch) q.catch(function () { /* уже вышли */ }); } catch (e) { /* уже вышли */ } }
+    if (s.el && s.el.parentNode) s.el.parentNode.removeChild(s.el);
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (torch && ev.key === "Escape") { ev.preventDefault(); torchOff(); }
+  });
+  /* Вкладку спрятали — браузер сам отпускает Wake Lock; вернулись со
+     светом — берём снова. */
+  document.addEventListener("visibilitychange", function () {
+    if (!torch || document.visibilityState !== "visible" || !navigator.wakeLock) return;
+    var s = torch;
+    navigator.wakeLock.request("screen").then(function (lock) { if (torch === s) s.lock = lock; else lock.release(); }, function () { /* не держит */ });
+  });
+  window.sbTorch = { off: torchOff, on: function () { return !!torch; } };
 
   window.sbLanternCards = function () { return CARDS.slice(); };
   window.sbLanternSources = function () { return SOURCES; };

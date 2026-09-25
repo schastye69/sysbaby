@@ -30,7 +30,101 @@
 (function () {
   "use strict";
 
+  /* ── ПОТОК ПОЛЯ (D-282) ─────────────────────────────────────────────────
+     ПОВОД — указание основателя 24.09.2026 («Performance Singularity
+     Protocol»): «найди реальные bottleneck'и… 10 самых дорогих операций
+     важнее 100 мелких улучшений».
+     ЗАМЕР. Профиль пустого стола за 10 секунд, телефон: поле — 690 мс
+     работы главного потока из 700 всей работы системы (draw 523 мс, его
+     синус 113, обёртка кадра 32). Всё остальное вместе — 10 мс. То есть на
+     пустом столе главный поток занят обоями 7% времени, а на телефоне
+     вчетверо медленнее — 27%: каждый кадр поля там ~40 мс, и касание,
+     пришедшее в этот кадр, ждёт его конца.
+     РЕШЕНИЕ. Тот же файл, загруженный как поток (Worker), держит холст
+     обоев (OffscreenCanvas) и считает его точки. Главный поток считает
+     только сорок чисел кадра и отправляет их. Картинка та же самой
+     функцией (paintBuf), такт и все решения — «накрыто», «тихо», Турбо,
+     волны касаний, ступень качества — остаются там, где были.
+     Там, где браузер не умеет отдать холст потоку, всё считается как
+     раньше, в главном. Охраняется tools/field-thread-check.mjs. */
+  if (typeof document === "undefined" && typeof self !== "undefined" && typeof self.postMessage === "function") {
+    var wcv = null, wcx = null, woff = null, wocx = null, wimg = null, wbuf = null, wrq = null;
+    var wpw = 0, wph = 0, wcw = 0, wch = 0, wseed = 22222219, wpending = null, wbusy = false, wsize = null;
+    /* Счёт для прибора (no-blink-check): сколько раз холст, на котором уже
+       было нарисовано, стёрт сменой размера и отдан на экран без кадра. У
+       этого пути должно быть ноль — иначе на экране мигнула пустота. */
+    var wpainted = 0, wblank = 0, wunpainted = false;
+    /* Новый размер применяется В ТОМ ЖЕ ШАГЕ, что и первый кадр под него:
+       смена ширины холста стирает его, и если бы между стиранием и кадром
+       браузер успел показать холст, на экране мигнула бы пустота — ровно то,
+       от чего поле уже лечили (v59, no-blink-check). */
+    var wapply = function () {
+      var m = wsize; wsize = null;
+      wunpainted = wpainted > 0;
+      /* Конец этого шага — миг, когда холст уходит на экран. Если к нему
+         кадра так и не было, это и есть мигание. */
+      Promise.resolve().then(function () { if (wunpainted) { wblank++; wunpainted = false; } });
+      wpw = m.pw; wph = m.ph; wcw = m.cw; wch = m.ch;
+      woff.width = wpw; woff.height = wph;
+      wcv.width = wcw; wcv.height = wch;
+      wimg = wocx.createImageData(wpw, wph);
+      wbuf = new Uint32Array(wimg.data.buffer);
+      wcx.imageSmoothingEnabled = true;
+      wcx.imageSmoothingQuality = "high";
+    };
+    var WSIN = new Float32Array(2048);
+    for (var wi = 0; wi < 2048; wi++) WSIN[wi] = Math.sin(wi * Math.PI * 2 / 2048);
+    var wrun = function () {
+      wbusy = false;
+      var d = wpending; wpending = null;
+      if (!d || !wcx) return;
+      if (wsize && wsize.pw === d.P.pw && wsize.ph === d.P.ph) wapply();
+      /* Кадр, посчитанный под прежний размер, не рисуется: он придёт заново. */
+      if (!wbuf || d.P.pw !== wpw || d.P.ph !== wph) return;
+      var t0 = performance.now();
+      if (!wrq || wrq.length < d.P.nb) wrq = new Float32Array(d.P.nb);
+      wseed = paintBuf(d.P, wbuf, wrq, WSIN, wseed);
+      wocx.putImageData(wimg, 0, 0);
+      wcx.globalCompositeOperation = "source-over";
+      wcx.fillStyle = d.base;
+      wcx.fillRect(0, 0, wcw, wch);
+      wcx.globalCompositeOperation = d.blend;
+      wcx.drawImage(woff, 0, 0, wpw, wph, 0, 0, wcw, wch);
+      wcx.globalCompositeOperation = "source-over";
+      wpainted++; wunpainted = false;
+      self.postMessage({ type: "cost", ms: performance.now() - t0 });
+    };
+    self.onmessage = function (e) {
+      var m = e.data || {};
+      if (m.type === "init") {
+        wcv = m.canvas;
+        wcx = wcv.getContext("2d", { alpha: false });
+        woff = new OffscreenCanvas(1, 1);
+        wocx = woff.getContext("2d");
+      } else if (m.type === "size" && wcx) {
+        wsize = m;
+        /* Самый первый размер некому ждать — холст ещё пуст. */
+        if (!wbuf) wapply();
+      } else if (m.type === "frame") {
+        /* Держится только самый свежий кадр: пока поток считал, главный мог
+           прислать два, и рисовать устаревший незачем. */
+        wpending = m;
+        if (!wbusy) { wbusy = true; setTimeout(wrun, 0); }
+      } else if (m.type === "stats") {
+        self.postMessage({ type: "stats", id: m.id, paints: wpainted, blank: wblank });
+      } else if (m.type === "pixels" && wcv) {
+        /* Для приборов: уменьшенный снимок того, что сейчас на холсте. */
+        var w = m.w || 48, h = m.h || 48, pc = new OffscreenCanvas(w, h), px = pc.getContext("2d");
+        px.drawImage(wcv, 0, 0, w, h);
+        self.postMessage({ type: "pixels", id: m.id, data: px.getImageData(0, 0, w, h).data });
+      }
+    };
+    return;
+  }
+
   var doc = document;
+  /* Адрес этого же файла — чтобы запустить его потоком поля. */
+  var FIELD_SRC = (doc.currentScript && doc.currentScript.src) || "";
 
   function q(sel) { return doc.querySelector(sel); }
 
@@ -132,10 +226,16 @@
       if (this.cv) return;
       this.cv = q("#sbField");
       if (!this.cv) return;
-      this.cx = this.cv.getContext("2d", { alpha: false });
-      if (!this.cx) { this.cv = null; return; }
-      this.off = doc.createElement("canvas");
-      this.ocx = this.off.getContext("2d");
+      /* Холст отдаётся потоку ДО того, как его коснётся главный: у холста,
+         у которого уже взяли рисование, отдать управление нельзя. */
+      this.worker = offload(this);
+      if (!this.worker) {
+        if (!this.cv) return;
+        this.cx = this.cv.getContext("2d", { alpha: false });
+        if (!this.cx) { this.cv = null; return; }
+        this.off = doc.createElement("canvas");
+        this.ocx = this.off.getContext("2d");
+      }
       this.SIN = new Float32Array(2048);
       for (var i = 0; i < 2048; i++) this.SIN[i] = Math.sin(i * Math.PI * 2 / 2048);
       this.pal = MOOD_PALETTE.studio.map(function (c) { return c.slice(); });
@@ -314,19 +414,27 @@
          а видимая ячейка уменьшается почти в полтора раза. */
       this.pw = Math.round((small ? 168 : 248) * (tier >= 2 ? 0.715 : 1));
       this.ph = Math.max(2, Math.round(this.pw * this.H / this.W));
-      this.off.width = this.pw; this.off.height = this.ph;
       this.cw = this.pw; this.ch = this.ph;
-      this.cv.width = this.cw; this.cv.height = this.ch;
-      this.img = this.ocx.createImageData(this.pw, this.ph);
-      this.buf = new Uint32Array(this.img.data.buffer);
+      if (this.worker) {
+        /* Размер холста теперь меняет поток: у отданного холста главный его
+           не трогает. */
+        this.worker.postMessage({ type: "size", pw: this.pw, ph: this.ph, cw: this.cw, ch: this.ch, nb: this.blobs.length });
+      } else {
+        this.off.width = this.pw; this.off.height = this.ph;
+        this.cv.width = this.cw; this.cv.height = this.ch;
+        this.img = this.ocx.createImageData(this.pw, this.ph);
+        this.buf = new Uint32Array(this.img.data.buffer);
+      }
 
       /* Строчные черновики для тел света. Выделяются здесь и живут до
          следующего изменения размера — в кадре не создаётся ни одного
          объекта. Длина по числу пятен: в строке активных всегда не больше. */
       var nb0 = this.blobs.length;
       this.rIR = new Float32Array(nb0); this.rQ0 = new Float32Array(nb0);
-      this.cx.imageSmoothingEnabled = true;
-      this.cx.imageSmoothingQuality = "high";
+      if (this.cx) {
+        this.cx.imageSmoothingEnabled = true;
+        this.cx.imageSmoothingQuality = "high";
+      }
     },
 
     /* The desktop's furniture is lit by the wallpaper, not by a palette of
@@ -617,7 +725,9 @@
       var headN = ((t / 46) % 1.34 - .17);
       this.head = headN;
       var hy = headN * ph, hBand = ph * .24;
-      var hA = (0.055 + warm * .05) * gain;
+      /* Отражение поля в свете Фонаря может снять головку: она синяя, а
+         ночной свет не смеет нести синего (D-281). */
+      var hA = this.noHead ? 0 : (0.055 + warm * .05) * gain;
 
       /* Мелкий случайный дизер вместо упорядоченного: без него плавный
          градиент, посчитанный во float и обрезанный до 8 бит, даёт полосы.
@@ -632,107 +742,243 @@
       for (var bk = 0; bk < nb; bk++) bIR[bk] = 1 / bR2[bk];
       var rQ0 = this.rQ0;
 
-      var idx = 0;
-      for (var y = 0; y < ph; y++) {
-        /* головка зависит только от строки — считается один раз на строку */
-        var hd = y - hy, hAbs = hd < 0 ? -hd : hd, hw = 0;
-        if (hAbs < hBand) hw = hA * (1 - hAbs / hBand);
-        var hR = 143 * hw, hG = 168 * hw, hB = 242 * hw;
-
-        /* Вертикальная часть q² — одна на строку, а не на каждый пиксель.
-           Пятну, не дотянувшемуся до строки, кладётся заведомо большое q²:
-           тогда общая проверка «q² < 1» отсекает его сама, и лишней ветки
-           в горячем цикле не появляется.
-
-           Отдельно проверено и ОТКАЧЕНО: вариант с горизонтальными границами
-           отрезка оказался ДОРОЖЕ исходного — 304 мс против 209 за шесть
-           секунд. Две проверки на пиксель на пятно и лишние чтения из
-           типизированных массивов стоят больше, чем экономит отсечение,
-           потому что пятна огромны и покрывают почти всю строку. */
-        for (var bi3 = 0; bi3 < nb; bi3++) {
-          var dyb = y - bY[bi3], q0 = dyb * dyb * bIR[bi3];
-          rQ0[bi3] = q0 < 1 ? q0 : 4;
-        }
-
-        for (var x = 0; x < pw; x++) {
-          /* refraction phase from taps — bend the coordinates, draw no lines */
-          var bend = 0, comp = 0;
-          for (var wj = 0; wj < nw; wj++) {
-            var ddx = x - wx0[wj], ddy = y - wy0[wj];
-            var d = Math.sqrt(ddx * ddx + ddy * ddy);
-            var w = this.waves[wj];
-            var front = d * 0.155 - w.t * 5.0;
-            if (front > -4.6 && front < 4.6) {
-              var fall = 1 / (1 + d * 0.028);
-              var sh = s(front * 0.62);
-              bend += sh * wa[wj] * fall;
-              /* compressing the front raises brightness — a lens does this */
-              comp += (1 - Math.abs(front) / 4.6) * fall * (1 - w.t / 2.4);
-            }
-          }
-          var wx = x + s(y * 0.031 + t * 0.13) * 7.5 + bend;
-          var wy = y + s(x * 0.028 - t * 0.11) * 7.5 + bend * 0.6;
-          var dx = wx - cxp, dy = wy - cyp;
-          var v = s(wx * 0.0295 + t * 0.207)
-            + s(wy * 0.0231 - t * 0.163)
-            + s((wx + wy) * 0.0182 + t * 0.121)
-            + s((dx * dx + dy * dy) * 0.00055 - t * 0.281);
-          /* the same pattern, shifted in time and space by 1.988 */
-          var ex = wx + DR, ey = wy + DR, tt = t - DR;
-          var edx = ex - cxp, edy = ey - cyp;
-          var v2 = s(ex * 0.0295 + tt * 0.207)
-            + s(ey * 0.0231 - tt * 0.163)
-            + s((ex + ey) * 0.0182 + tt * 0.121)
-            + s((edx * edx + edy * edy) * 0.00055 - tt * 0.281);
-          var n = ((v * 0.70 + v2 * 0.30) + 4) * 0.125;
-          n = n * n; n = n * n; n = n * n * n;      /* ^12 — narrow ribbons on dark */
-          if (comp > 0) n += comp * comp * 0.10;
-          var qq = n * amp * 7.4;
-          var w2 = s(wy * 0.019 + t * 0.09) * .5 + .5;
-          var r = (c0[0] * (1 - w2) + c2[0] * w2) * qq + 190 * n * warm * amp * 0.7;
-          var g = (c0[1] * (1 - w2) + c2[1] * w2) * qq + 140 * n * warm * amp * 0.5;
-          var b = (c0[2] * (1 - w2) + c2[2] * w2) * qq + 95 * n * warm * amp * 0.3;
-
-          /* тела света — тот же аддитивный вклад, что давал lighter-градиент.
-             Ни одного деления: вертикальная часть q² пришла из строки,
-             горизонтальная умножается на готовый обратный квадрат радиуса. */
-          for (var bj = 0; bj < nb; bj++) {
-            var pdx = x - bX[bj];
-            var q2 = rQ0[bj] + pdx * pdx * bIR[bj];
-            if (q2 < 1) {
-              var fv = 1 - q2; fv = fv * fv; fv = fv * fv * bA[bj];
-              r += bCr[bj] * fv; g += bCg[bj] * fv; b += bCb[bj] * fv;
-            }
-          }
-          /* читающая головка — вклад строки, посчитан выше */
-          if (hw > 0) { r += hR; g += hG; b += hB; }
-
-          /* дизер: ±0,5 уровня, без периода */
-          seed = (seed * 1664525 + 1013904223) | 0;
-          var dz = ((seed >>> 16) & 1023) * 0.0009766 - 0.5;
-          r += dz; g += dz; b += dz;
-
-          r = r < 0 ? 0 : r > 255 ? 255 : r; g = g < 0 ? 0 : g > 255 ? 255 : g; b = b < 0 ? 0 : b > 255 ? 255 : b;
-          buf[idx++] = (255 << 24) | (b << 16) | (g << 8) | r;
-        }
+      var P = { pw: pw, ph: ph, t: t, c0: c0.slice(), c2: c2.slice(), cxp: cxp, cyp: cyp, amp: amp, DR: DR,
+        nw: nw, wx0: wx0, wy0: wy0, wa: wa, wt: wtArr(this.waves), warm: warm,
+        nb: nb, bX: bX, bY: bY, bIR: new Float32Array(bIR), bA: bA, bCr: bCr, bCg: bCg, bCb: bCb,
+        hy: hy, hBand: hBand, hA: hA };
+      /* ── ПЛАЗМА СЧИТАЕТСЯ НЕ ЗДЕСЬ, ЕСЛИ ЕСТЬ ГДЕ (D-282) ────────────────
+         Выше — лёгкое: сорок чисел кадра. Ниже — тяжёлое: сто шестьдесят
+         тысяч точек. Где браузер умеет отдать холст потоку (OffscreenCanvas),
+         точки считает и рисует свой поток, а главный — только посылает эти
+         сорок чисел. Главный поток остаётся свободным для пальца. */
+      if (this.worker) {
+        this.worker.postMessage({ type: "frame", P: P, base: this.base || "#070a14", blend: this.blend || "lighter" });
+        /* Ступень качества судит по цене ТОЧЕК — её присылает поток. */
+        return;
       }
+      this.seed = paintBuf(P, buf, rQ0, S_, seed);
       this.ocx.putImageData(this.img, 0, 0);
       var cx = this.cx, W = this.cw, H = this.ch;
       cx.globalCompositeOperation = "source-over";
-      cx.fillStyle = "#070a14";
+      /* Основа и способ наложения — свои у отражения в Фонаре (D-281); у
+         стола они всегда эти: тёмная ночь и свет, который прибавляется. */
+      cx.fillStyle = this.base || "#070a14";
       cx.fillRect(0, 0, W, H);
-      cx.globalCompositeOperation = "lighter";
+      cx.globalCompositeOperation = this.blend || "lighter";
       cx.drawImage(this.off, 0, 0, pw, ph, 0, 0, W, H);
       cx.globalCompositeOperation = "source-over";
-      this.seed = seed;
       /* Ни одного градиента после этой строки. Тела света и читающая головка
          уже в буфере — см. длинный комментарий перед пиксельным циклом. */
       this.note(now() - t_in);
     }
   };
 
+  /* ── ПИКСЕЛЬНЫЙ ЦИКЛ ПОЛЯ — ОДИН НА ОБА ПОТОКА (D-282) ──────────────────
+     Та же самая функция считает точки и в главном потоке (где холст отдать
+     некуда, и в отражении Фонаря), и в потоке поля. Одна функция — одна
+     картинка: поле не может выглядеть по-разному в зависимости от того,
+     где его посчитали. На вход — числа кадра (P), на выход — новый посев
+     дизера. */
+  function wtArr(waves) {
+    var a = new Float32Array(waves.length);
+    for (var i = 0; i < waves.length; i++) a[i] = waves[i].t;
+    return a;
+  }
+  function paintBuf(P, buf, rQ0, S_, seed) {
+    var K = 325.9493;
+    var s = function (a) { return S_[(a * K) & 2047]; };
+    var pw = P.pw, ph = P.ph, t = P.t, c0 = P.c0, c2 = P.c2, cxp = P.cxp, cyp = P.cyp, amp = P.amp, DR = P.DR;
+    var nw = P.nw, wx0 = P.wx0, wy0 = P.wy0, wa = P.wa, wt = P.wt, warm = P.warm;
+    var nb = P.nb, bX = P.bX, bY = P.bY, bIR = P.bIR, bA = P.bA, bCr = P.bCr, bCg = P.bCg, bCb = P.bCb;
+    var hy = P.hy, hBand = P.hBand, hA = P.hA;
+    seed = seed | 0;
+    var idx = 0;
+    for (var y = 0; y < ph; y++) {
+      /* головка зависит только от строки — считается один раз на строку */
+      var hd = y - hy, hAbs = hd < 0 ? -hd : hd, hw = 0;
+      if (hAbs < hBand) hw = hA * (1 - hAbs / hBand);
+      var hR = 143 * hw, hG = 168 * hw, hB = 242 * hw;
+
+      /* Вертикальная часть q² — одна на строку, а не на каждый пиксель.
+         Пятну, не дотянувшемуся до строки, кладётся заведомо большое q²:
+         тогда общая проверка «q² < 1» отсекает его сама, и лишней ветки
+         в горячем цикле не появляется.
+
+         Отдельно проверено и ОТКАЧЕНО: вариант с горизонтальными границами
+         отрезка оказался ДОРОЖЕ исходного — 304 мс против 209 за шесть
+         секунд. Две проверки на пиксель на пятно и лишние чтения из
+         типизированных массивов стоят больше, чем экономит отсечение,
+         потому что пятна огромны и покрывают почти всю строку. */
+      for (var bi3 = 0; bi3 < nb; bi3++) {
+        var dyb = y - bY[bi3], q0 = dyb * dyb * bIR[bi3];
+        rQ0[bi3] = q0 < 1 ? q0 : 4;
+      }
+
+      for (var x = 0; x < pw; x++) {
+        /* refraction phase from taps — bend the coordinates, draw no lines */
+        var bend = 0, comp = 0;
+        for (var wj = 0; wj < nw; wj++) {
+          var ddx = x - wx0[wj], ddy = y - wy0[wj];
+          var d = Math.sqrt(ddx * ddx + ddy * ddy);
+          var wT = wt[wj];
+          var front = d * 0.155 - wT * 5.0;
+          if (front > -4.6 && front < 4.6) {
+            var fall = 1 / (1 + d * 0.028);
+            var sh = s(front * 0.62);
+            bend += sh * wa[wj] * fall;
+            /* compressing the front raises brightness — a lens does this */
+            comp += (1 - Math.abs(front) / 4.6) * fall * (1 - wT / 2.4);
+          }
+        }
+        var wx = x + s(y * 0.031 + t * 0.13) * 7.5 + bend;
+        var wy = y + s(x * 0.028 - t * 0.11) * 7.5 + bend * 0.6;
+        var dx = wx - cxp, dy = wy - cyp;
+        var v = s(wx * 0.0295 + t * 0.207)
+          + s(wy * 0.0231 - t * 0.163)
+          + s((wx + wy) * 0.0182 + t * 0.121)
+          + s((dx * dx + dy * dy) * 0.00055 - t * 0.281);
+        /* the same pattern, shifted in time and space by 1.988 */
+        var ex = wx + DR, ey = wy + DR, tt = t - DR;
+        var edx = ex - cxp, edy = ey - cyp;
+        var v2 = s(ex * 0.0295 + tt * 0.207)
+          + s(ey * 0.0231 - tt * 0.163)
+          + s((ex + ey) * 0.0182 + tt * 0.121)
+          + s((edx * edx + edy * edy) * 0.00055 - tt * 0.281);
+        var n = ((v * 0.70 + v2 * 0.30) + 4) * 0.125;
+        n = n * n; n = n * n; n = n * n * n;      /* ^12 — narrow ribbons on dark */
+        if (comp > 0) n += comp * comp * 0.10;
+        var qq = n * amp * 7.4;
+        var w2 = s(wy * 0.019 + t * 0.09) * .5 + .5;
+        var r = (c0[0] * (1 - w2) + c2[0] * w2) * qq + 190 * n * warm * amp * 0.7;
+        var g = (c0[1] * (1 - w2) + c2[1] * w2) * qq + 140 * n * warm * amp * 0.5;
+        var b = (c0[2] * (1 - w2) + c2[2] * w2) * qq + 95 * n * warm * amp * 0.3;
+
+        /* тела света — тот же аддитивный вклад, что давал lighter-градиент.
+           Ни одного деления: вертикальная часть q² пришла из строки,
+           горизонтальная умножается на готовый обратный квадрат радиуса. */
+        for (var bj = 0; bj < nb; bj++) {
+          var pdx = x - bX[bj];
+          var q2 = rQ0[bj] + pdx * pdx * bIR[bj];
+          if (q2 < 1) {
+            var fv = 1 - q2; fv = fv * fv; fv = fv * fv * bA[bj];
+            r += bCr[bj] * fv; g += bCg[bj] * fv; b += bCb[bj] * fv;
+          }
+        }
+        /* читающая головка — вклад строки, посчитан выше */
+        if (hw > 0) { r += hR; g += hG; b += hB; }
+
+        /* дизер: ±0,5 уровня, без периода */
+        seed = (seed * 1664525 + 1013904223) | 0;
+        var dz = ((seed >>> 16) & 1023) * 0.0009766 - 0.5;
+        r += dz; g += dz; b += dz;
+
+        r = r < 0 ? 0 : r > 255 ? 255 : r; g = g < 0 ? 0 : g > 255 ? 255 : g; b = b < 0 ? 0 : b > 255 ? 255 : b;
+        buf[idx++] = (255 << 24) | (b << 16) | (g << 8) | r;
+      }
+    }
+    return seed;
+  }
+
   function now() {
     return (window.performance && window.performance.now) ? window.performance.now() : Date.now();
+  }
+
+  /* ── ОТРАЖЕНИЕ ПОЛЯ (D-281) ─────────────────────────────────────────────
+     ПОВОД, дословно от основателя 24.09.2026: «свет и ночной свет нужно
+     сделать более красиво, гениально и желательно с тем же анимационным
+     фоном рабочего стола».
+     Не второй рисунок «похожий на обои», а ТЕ ЖЕ обои: тот же расчёт
+     плазмы, те же тела света, тот же отсчёт времени — отражение стоит в той
+     же фазе, что поле на столе, и продолжает его, а не начинает заново.
+     Меняется только то, ЧЕМ поле светит: своя палитра, своя основа, свой
+     способ наложения. Отражение не слушает касаний, не паркуется под окнами
+     и не пишет свет стола в корень документа — оно живёт в своём холсте и
+     останавливается, когда его останавливают. */
+  /* Отдать холст потоку поля. Возвращает поток — или null, и тогда поле
+     считается в главном потоке, как всегда. */
+  var pixelAsks = {}, pixelSeq = 0;
+  function offload(F) {
+    var cv = F.cv;
+    if (!FIELD_SRC || typeof window.Worker !== "function" || typeof cv.transferControlToOffscreen !== "function" ||
+        typeof window.OffscreenCanvas !== "function" || typeof window.OffscreenCanvasRenderingContext2D !== "function") return null;
+    var w;
+    try { w = new Worker(FIELD_SRC); } catch (e) { return null; }
+    var oc;
+    try { oc = cv.transferControlToOffscreen(); } catch (e) { try { w.terminate(); } catch (e2) { /* ignore */ } return null; }
+    try { w.postMessage({ type: "init", canvas: oc }, [oc]); }
+    catch (e) {
+      /* Холст уже отдан, а поток его не взял: рисовать некому и нечем.
+         Поле гаснет честно, а не притворяется. */
+      try { w.terminate(); } catch (e2) { /* ignore */ }
+      F.cv = null;
+      return null;
+    }
+    w.onmessage = function (e) {
+      var m = e.data || {};
+      if (m.type === "cost") F.note(m.ms);
+      else if ((m.type === "pixels" || m.type === "stats") && pixelAsks[m.id]) { var f = pixelAsks[m.id]; delete pixelAsks[m.id]; f(m.type === "stats" ? { paints: m.paints, blank: m.blank } : m.data); }
+    };
+    return w;
+  }
+  function pixels(w, h) {
+    w = w || 48; h = h || 48;
+    return new Promise(function (res) {
+      if (Field.worker) {
+        var id = ++pixelSeq;
+        pixelAsks[id] = res;
+        Field.worker.postMessage({ type: "pixels", id: id, w: w, h: h });
+        return;
+      }
+      if (!Field.cv) { res(null); return; }
+      var c = doc.createElement("canvas"); c.width = w; c.height = h;
+      var x = c.getContext("2d");
+      x.drawImage(Field.cv, 0, 0, w, h);
+      res(x.getImageData(0, 0, w, h).data);
+    });
+  }
+
+  function mirror(canvas, o) {
+    if (!canvas || !o || !o.palette) return null;
+    var m = Object.create(Field);
+    /* Отражение считается в своём потоке — главном: у него свой холст. */
+    m.worker = null;
+    m.cv = canvas;
+    m.cx = canvas.getContext("2d", { alpha: false });
+    if (!m.cx) return null;
+    m.off = doc.createElement("canvas");
+    m.ocx = m.off.getContext("2d");
+    if (Field.SIN) m.SIN = Field.SIN;
+    else { m.SIN = new Float32Array(2048); for (var i = 0; i < 2048; i++) m.SIN[i] = Math.sin(i * Math.PI * 2 / 2048); }
+    m.pal = o.palette.map(function (c) { return c.slice(); });
+    m.palTo = o.palette;
+    m.blobs = [];
+    for (var b = 0; b < 3; b++) m.blobs.push(Field.blobs[b] ? Object.assign({}, Field.blobs[b]) : {
+      px: .24 + b * .28, py: .28 + ((b * 41) % 100) / 240, ax: .19 + b * .05, ay: .13 + b * .04,
+      sx: 37 + b * 15, sy: 53 + b * 21, ph: b * 2.3, r: .52 + b * .14
+    });
+    m.waves = []; m.cost = null; m.costI = 0; m.tier = 0; m.tierAt = 0;
+    m.level = "live"; m.on = true; m.parked = false; m.pendingResize = false;
+    m.charge = 0; m.calm = 0; m.typing = -1e9; m.tiltX = 0; m.tiltY = 0;
+    m.touchCount = 0; m.resizeCount = 0; m.drawCount = 0;
+    m.seed = 22222219; m.last = 0; m.raf = 0;
+    /* Та же фаза, что на столе: отражение продолжает поле, а не начинает его. */
+    m.t0 = Field.t0 || now();
+    m.base = o.base || null; m.blend = o.blend || null; m.noHead = !!o.noHead;
+    m.resize();
+    var onResize = function () { m.resize(); m.last = 0; };
+    return {
+      /* still: один кадр и покой — для «меньше движения». */
+      start: function (still) {
+        window.addEventListener("resize", onResize);
+        m.last = 0; m.draw(now());
+        if (!still) m.loop();
+      },
+      stop: function () {
+        cancelAnimationFrame(m.raf);
+        window.removeEventListener("resize", onResize);
+      },
+      draws: function () { return m.drawCount; }
+    };
   }
 
   /* ------------------------------------------------------------- public API */
@@ -766,7 +1012,23 @@
        Закон tools/field-idle-check.mjs держит оба числа неподвижными, пока
        поле накрыто окном. Числа только растут и никогда не сбрасываются —
        сброс дал бы закону способ не заметить работу между двумя замерами. */
-    work: function () { return { touches: Field.touchCount, resizes: Field.resizeCount, draws: Field.drawCount }; }
+    work: function () { return { touches: Field.touchCount, resizes: Field.resizeCount, draws: Field.drawCount }; },
+    mirror: mirror,
+    /* Где считаются точки: «thread» — свой поток, «main» — главный (D-282). */
+    thread: function () { return Field.worker ? "thread" : "main"; },
+    /* Уменьшенный снимок холста — для приборов: у отданного потоку холста
+       главный поток пикселей не читает. */
+    pixels: pixels,
+    /* Счёт потока поля для прибора: кадров и «пустых отдач» после смены
+       размера. В главном потоке пустой отдачи не бывает по устройству. */
+    stats: function () {
+      return new Promise(function (res) {
+        if (!Field.worker) { res({ paints: Field.drawCount, blank: 0, thread: "main" }); return; }
+        var id = ++pixelSeq;
+        pixelAsks[id] = function (d) { d.thread = "thread"; res(d); };
+        Field.worker.postMessage({ type: "stats", id: id });
+      });
+    }
   };
 
   /* ── ОБОИ ГАСНУТ, ТОЛЬКО ЕСЛИ ИХ НЕ ВИДНО, И ТОЛЬКО ПОСЛЕ ПОЛЁТА (v58) ───

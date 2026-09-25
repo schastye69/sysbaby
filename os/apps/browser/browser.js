@@ -321,14 +321,26 @@
        гасить СРАЗУ, на сигнале, а не ждать уборки: эти сто десять миллисекунд
        чужая страница ещё грузится и ещё может заиграть. Слушаем настоящий
        сигнал оболочки (window:closed), а не выдуманный крючок. */
-    if (window.sbBus && typeof window.sbBus.on === "function") {
-      window.sbBus.on("window:closed", function (p) {
-        if (!p || p.id !== "browser") return;
-        if (frame) { try { frame.src = "about:blank"; } catch (e) { /* ignore */ } }
-        if (frame && frame.parentNode) frame.parentNode.removeChild(frame);
-        frame = null;
-      });
-    }
+    /* ОДНА ПОДПИСКА НА ВЕСЬ СЕАНС (D-282). Здесь слушатель вешался на
+       шину при КАЖДОМ открытии и не снимался никогда: сто открытий — сто
+       слушателей, и каждое закрытие любого окна будило их все. Теперь
+       открытие только называет, ЧТО гасить; слушает один. */
+    killFrame = function () {
+      if (frame) { try { frame.src = "about:blank"; } catch (e) { /* ignore */ } }
+      if (frame && frame.parentNode) frame.parentNode.removeChild(frame);
+      frame = null;
+    };
+    wireClosedOnce();
+  }
+
+  var killFrame = null, closedWired = false;
+  function wireClosedOnce() {
+    if (closedWired || !window.sbBus || typeof window.sbBus.on !== "function") return;
+    closedWired = true;
+    window.sbBus.on("window:closed", function (p) {
+      if (!p || p.id !== "browser" || !killFrame) return;
+      var k = killFrame; killFrame = null; k();
+    });
   }
 
   if (typeof window.registerApp === "function") {

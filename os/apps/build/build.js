@@ -227,6 +227,10 @@
 
   document.addEventListener("sysbaby:desktop-ready", function () {
     if (!window.sbBuildAutoOpenStillOn()) return;
+    /* Пришедший по ссылке «Передать» пришёл за переданным, а не за нашей
+       витриной: окно build вставало ПОВЕРХ присланного, и человек за дверью
+       своего замка видел не то, ради чего открыл ссылку (D-279). */
+    if (/^#t=/.test(location.hash || "")) return;
     try {
       if (box().get(CLOSED_KEY) === "1") return;
     } catch (e) { /* сессия закрыта — открываем */ }

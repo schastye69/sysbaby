@@ -147,6 +147,9 @@
       text: "What you are handing over", modeKey: "Key inside the link — simple",
       modeWord: "Word said separately — properly", word: "The word you will say out loud",
       make: "Seal it", again: "Seal another", copy: "Copy the link", copied: "Copied",
+      share: "Send…", copyFail: "This browser did not let the link be copied. It is selected above — copy it by hand.",
+      copyText: "Copy the text", own: "Hand over something of your own",
+      leadIn: "Someone sealed this and sent it to you. It was opened here, in your browser — no server saw it on the way.", ready: "Sealed. Send the link — the recipient needs nothing but it.",
       len: "{n} characters in the link", tooLong: "Too long for a link — keep it under {n} characters.",
       needWord: "Say a word — a long one. Whoever has the link can try words against it.",
       gotTitle: "Someone handed this to you", ask: "This one needs the word you were told.",
@@ -163,6 +166,9 @@
       text: "Что передаёте", modeKey: "Ключ внутри ссылки — просто",
       modeWord: "Слово отдельно — по-настоящему", word: "Слово, которое вы скажете голосом",
       make: "Запечатать", again: "Запечатать ещё", copy: "Скопировать ссылку", copied: "Скопировано",
+      share: "Отправить…", copyFail: "Браузер не дал скопировать ссылку. Она выделена выше — скопируйте её сами.",
+      copyText: "Скопировать текст", own: "Передать своё",
+      leadIn: "Это запечатали и прислали вам. Открыто здесь, в вашем браузере, — по дороге этого не видел ни один сервер.", ready: "Запечатано. Отправьте ссылку — получателю не нужно ничего, кроме неё.",
       len: "{n} знаков в ссылке", tooLong: "Слишком длинно для ссылки — уложитесь в {n} знаков.",
       needWord: "Назовите слово, и лучше длинное: тот, у кого ссылка, может перебирать слова.",
       gotTitle: "Вам передали", ask: "Здесь нужно слово, которое вам сказали.",
@@ -179,6 +185,9 @@
       text: "Mida annad edasi", modeKey: "Võti lingi sees — lihtne",
       modeWord: "Sõna eraldi — päriselt", word: "Sõna, mille ütled häälega",
       make: "Pitseeri", again: "Pitseeri veel", copy: "Kopeeri link", copied: "Kopeeritud",
+      share: "Saada…", copyFail: "Brauser ei lasknud linki kopeerida. See on ülal valitud — kopeeri see ise.",
+      copyText: "Kopeeri tekst", own: "Anna edasi midagi oma",
+      leadIn: "Keegi pitseeris selle ja saatis sulle. See avati siin, sinu brauseris — teel ei näinud seda ükski server.", ready: "Pitseeritud. Saada link — saajal pole vaja midagi peale selle.",
       len: "{n} märki lingis", tooLong: "Lingi jaoks liiga pikk — mahu {n} märgi sisse.",
       needWord: "Ütle sõna, pikem on parem: kellel on link, võib sõnu proovida.",
       gotTitle: "Sulle anti edasi", ask: "Siin on vaja sõna, mis sulle öeldi.",
@@ -233,9 +242,14 @@
     host.innerHTML =
       '<div class="hf-wrap">' +
         '<div class="hf-head"><h2 class="hf-title">' + esc(t.title) + '</h2>' +
-        '<p class="hf-lead">' + esc(t.lead) + '</p></div>' +
-        (incoming ? '<section class="hf-in"></section>' : '') +
-        '<section class="hf-out">' +
+        /* Пришедшему читать — слова о том, что перед ним, а не о том, как
+           отправлять (D-279). */
+        '<p class="hf-lead">' + esc(incoming ? t.leadIn : t.lead) + '</p></div>' +
+        (incoming ? '<section class="hf-in"></section>' +
+          /* Кто пришёл ЧИТАТЬ, видит прочитанное, а не форму отправки: она
+             свёрнута до его же просьбы (D-279). */
+          '<button type="button" class="hf-act hf-own" data-act="hf-own">' + esc(t.own) + '</button>' : '') +
+        '<section class="hf-out"' + (incoming ? ' hidden' : '') + '>' +
           '<label class="hf-lab">' + esc(t.text) + '</label>' +
           '<textarea class="hf-text" rows="5" maxlength="' + MAX + '"></textarea>' +
           '<div class="hf-pick"><span class="hf-pick-l">' + esc(t.pick) + '</span>' +
@@ -311,12 +325,24 @@
           if (url.length > URL_MAX) { say.textContent = fill(t.tooBig, { n: url.length }); return; }
           var box = host.querySelector(".hf-link");
           box.hidden = false;
-          box.innerHTML = '<code class="hf-url"></code>' +
-            '<button type="button" class="hf-act" data-act="hf-copy">' + esc(t.copy) + '</button>' +
+          /* ОТПРАВИТЬ — ТЕМ, ЧЕМ УСТРОЙСТВО И ТАК ОТПРАВЛЯЕТ (D-279). На
+             телефоне это общий лист «Поделиться»: мессенджер, почта, что
+             угодно. Кнопка есть только там, где устройство это умеет; копия
+             остаётся всегда. */
+          var canShare = typeof navigator.share === "function";
+          box.innerHTML = '<p class="hf-ready">' + esc(t.ready) + '</p>' +
+            '<code class="hf-url"></code>' +
+            '<div class="hf-link-acts">' +
+              (canShare ? '<button type="button" class="hf-act primary" data-act="hf-share">' + esc(t.share) + '</button>' : '') +
+              '<button type="button" class="hf-act" data-act="hf-copy">' + esc(t.copy) + '</button>' +
+            '</div>' +
             '<span class="hf-len">' + esc(fill(t.len, { n: url.length })) + '</span>' +
             '<span class="hf-len">' + esc(t.linkNote) + '</span>';
           box.querySelector(".hf-url").textContent = url;
           say.textContent = "";
+          /* Ссылка появляется ниже поля — на телефоне это за краем окна, и
+             человек не видел, что всё уже готово. Окно само подводит к ней. */
+          try { box.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) { /* старый браузер: без прокрутки */ }
         }, function () { b.disabled = false; say.textContent = t.bad; });
         return;
       }
@@ -324,8 +350,27 @@
       if (act === "hf-copy") {
         var u = host.querySelector(".hf-url");
         if (!u) return;
-        try { navigator.clipboard.writeText(u.textContent); } catch (e) { /* ignore */ }
-        host.querySelector(".hf-say").textContent = t.copied;
+        copyOut(u.textContent, u, host.querySelector(".hf-say"), t);
+        return;
+      }
+
+      if (act === "hf-share") {
+        var su = host.querySelector(".hf-url");
+        if (!su || typeof navigator.share !== "function") return;
+        /* Отказ человека закрыть лист — не ошибка: он передумал. */
+        navigator.share({ url: su.textContent, title: t.title }).catch(function () { /* лист закрыли */ });
+        return;
+      }
+
+      if (act === "hf-own") {
+        var out = host.querySelector(".hf-out");
+        if (out) { out.hidden = false; b.hidden = true; var ta = out.querySelector(".hf-text"); if (ta) ta.focus(); }
+        return;
+      }
+
+      if (act === "hf-copytext") {
+        var gt = host.querySelector(".hf-got-text");
+        if (gt) copyOut(gt.textContent, gt, host.querySelector(".hf-got-say"), t);
         return;
       }
 
@@ -342,6 +387,21 @@
         });
       }
     });
+  }
+
+  /* КОПИЯ ГОВОРИТ ПРАВДУ (D-279). «Скопировано» писалось сразу, до ответа
+     браузера, — и тогда, когда он отказал. Теперь слово ждёт ответа буфера;
+     отказ назван, а сам текст выделен, чтобы скопировать его рукой. */
+  function copyOut(text, el, say, t) {
+    function selectIt() {
+      try { var rg = doc.createRange(); rg.selectNodeContents(el); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(rg); } catch (e) { /* выделить нечем */ }
+    }
+    function failed() { selectIt(); if (say) say.textContent = t.copyFail; }
+    var cb = navigator.clipboard;
+    if (!cb || typeof cb.writeText !== "function") { failed(); return; }
+    var p;
+    try { p = cb.writeText(text); } catch (e) { failed(); return; }
+    Promise.resolve(p).then(function () { if (say) say.textContent = t.copied; }, failed);
   }
 
   function showIncoming(box, payload, t) {
@@ -367,7 +427,9 @@
     var got = unpack(raw);
     box.innerHTML = '<div class="hf-got"><h3>' + esc(t.gotTitle) + '</h3>' +
       (got.name ? '<p class="hf-got-name"></p>' : '') +
-      '<pre class="hf-got-text"></pre></div>';
+      '<pre class="hf-got-text"></pre>' +
+      '<button type="button" class="hf-act" data-act="hf-copytext">' + esc(t.copyText) + '</button>' +
+      '<p class="hf-say hf-got-say" role="status"></p></div>';
     if (got.name) box.querySelector(".hf-got-name").textContent = got.name;
     box.querySelector(".hf-got-text").textContent = got.text;
   }
@@ -411,9 +473,23 @@
   function openIfIncoming() {
     if (!hashPayload()) return;
     if (typeof window.toggleApp !== "function") { setTimeout(openIfIncoming, 200); return; }
-    if (doc.querySelector('.window[data-app="handoff"]')) return;
+    /* Спрашивается реестр окон, а не разметка: закрываемое окно ещё живёт в
+       разметке на время своего ухода, и ссылка, пришедшая в этот миг,
+       считалась «уже открытой» — окно так и не вставало (D-279). */
+    var open = typeof window.getOpenWindow === "function" ? window.getOpenWindow("handoff") : null;
+    if (open) { if (window.focusWindow) { try { window.focusWindow("handoff"); } catch (e) { /* окно на месте — поднять не удалось, не страшно */ } } return; }
     try { window.toggleApp("handoff"); } catch (e) { setTimeout(openIfIncoming, 300); }
   }
   doc.addEventListener("sysbaby:desktop-ready", function () { setTimeout(openIfIncoming, 120); }, { once: true });
+  /* ССЫЛКА, ВСТАВЛЕННАЯ В ТУ ЖЕ ВКЛАДКУ (D-279). Меняется только хвост после
+     «#», и страница не перезагружается — раньше «Передать» не замечал этого
+     вовсе, и присланная себе ссылка «не работала». Теперь смена хвоста
+     открывает окно, а открытое — перерисовывает с новым переданным. */
+  window.addEventListener("hashchange", function () {
+    if (!hashPayload()) return;
+    var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("handoff") : null;
+    if (win) { try { render(win); } catch (e) { /* окно перерисуется само */ } }
+    else openIfIncoming();
+  });
   setTimeout(openIfIncoming, 1500);
 })();

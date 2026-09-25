@@ -51,13 +51,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v147">
+<meta name="sysbaby-build" content="v149">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v147">
+<link rel="stylesheet" href="shared/system.css?b=v149">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -157,11 +157,11 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v147"></script>
-<script src="shared/portfolio.strings.js?b=v147"></script>
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v147" />
-<script src="shared/portfolio.view.js?b=v147"></script>
-<script src="shared/pricing.data.js?b=v147"></script>
+<script src="shared/portfolio.data.js?b=v149"></script>
+<script src="shared/portfolio.strings.js?b=v149"></script>
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v149" />
+<script src="shared/portfolio.view.js?b=v149"></script>
+<script src="shared/pricing.data.js?b=v149"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -1180,17 +1180,29 @@ html[data-anim="paused"] .dock-flare{display:none}
    единственная кнопка, ради которой всё это построено, была не видна в момент,
    когда человек только что сделал работу. Липкость решает это без отъёма
    места у продукта; фон непрозрачный, иначе под ней просвечивает рамка. */
-.product-ask{position:sticky;bottom:0;display:flex;flex-direction:column;gap:10px;align-items:flex-start;
-  margin-top:14px;padding:12px 0 2px;border-top:1px solid var(--border);background:var(--win-strong)}
-.product-ask .product-note{margin:0}
-.product-ask b{font-size:14px;color:var(--text)}
-.product-ask .btn{height:46px}
+/* ── ЛИПНЕТ ОДНА СТРОКА (D-284) ──────────────────────────────────────────
+   В полосе лежала и оговорка о данных — пять строк. На 320×568 и 360×640
+   полоса выходила выше 200 px и закрывала саму систему целиком (прибор:
+   0 px видимой демонстрации). Теперь липнет одна строка — вопрос и кнопка
+   рядом, — а оговорка стоит перед системой в потоке.
+   Охраняется tools/demo-visible-check.mjs. */
+.product-note-before{margin:4px 0 0}
+.product-ask{position:sticky;bottom:0;display:flex;flex-direction:row;gap:12px;align-items:center;
+  margin-top:12px;padding:10px 0 2px;border-top:1px solid var(--border);background:var(--win-strong)}
+.product-ask b{flex:none;font-size:14px;color:var(--text)}
+.product-ask .btn{height:46px;flex:1 1 auto}
 /* На узком экране клавиша во всю ширину ПЕРЕНОСИТ подпись: общий запрет
    переноса у .btn держал «Рассказать основателю одной строкой» в одну
    строку, и на 320 px буквы выходили за оба края клавиши (D-277). */
 @media (max-width:620px){ .product-frame{height:min(52vh,340px)}
-  .product-ask .btn{width:100%;height:auto;min-height:46px;padding-top:10px;padding-bottom:10px;
+  .product-ask .btn{min-width:0;height:auto;min-height:46px;padding-top:8px;padding-bottom:8px;
     white-space:normal;text-align:center;line-height:1.3} }
+/* На узком телефоне вопрос «Получилось?» рядом с кнопкой ужимал её до
+   четырёх строк, и липкая полоса снова вырастала. Там вопрос остаётся для
+   читающих экран (он — подпись полосы), а глазу хватает самой кнопки. */
+@media (max-width:420px){
+  .product-ask b{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+  .product-ask .btn{width:100%} }
 
 /* Расшифровка имени в «О нас»: моноширинная, приглушённая, с выделенной
    второй половиной. Она объясняет имя, а не продаёт — потому и набрана
@@ -4224,14 +4236,21 @@ function renderProduct(record) {
   setHtml(record.body,
     '<h3>' + esc(t.title) + "</h3>" +
     "<p>" + esc(t.intro) + "</p>" +
+    /* ── ГРАНИЦА — ДО СИСТЕМЫ, ПРИЗЫВ — ПОСЛЕ (D-284) ────────────────────
+       История, чтобы не повторить её в третий раз. Сначала граница стояла в
+       потоке ПОД рамкой, а кнопка липла к низу — и кнопка накрыла границу
+       собой: система показывала предложение поверх собственного предела.
+       Тогда их сложили в один липкий блок, «вместе и всегда видны». Но блок
+       вырос до пяти строк и на телефоне 320×568 и 360×640 закрыл уже саму
+       демонстрацию — 0 px видимой системы (прибор, 24.09.2026).
+       Теперь граница стоит ПЕРЕД системой: её читают до того, как начали
+       пользоваться, и липкой кнопке её не накрыть — она выше. Липнет одна
+       строка: вопрос и кнопка. Охраняются first-product-check (граница
+       видна) и demo-visible-check (демонстрация видна). */
+    '<p class="product-note product-note-before"><span class="d-mark">D</span>' + esc(t.note) + "</p>" +
     '<div class="product-frame"><iframe id="productFrame" src="' + esc(url) + '" ' +
       'title="' + esc(t.title) + '" loading="lazy"></iframe></div>' +
-    /* Граница и призыв живут В ОДНОМ липком блоке. Сначала они стояли врозь:
-       граница — в потоке, кнопка — липкая, и кнопка накрыла границу собой.
-       Система, показывающая предложение поверх собственного предела, врёт
-       оформлением, даже когда текст верен. Поэтому вместе и всегда видны. */
     '<div class="product-ask">' +
-      '<p class="product-note"><span class="d-mark">D</span>' + esc(t.note) + "</p>" +
       "<b>" + esc(t.askIntro) + "</b>" +
       '<button class="btn btn-primary" type="button" id="productAsk">' + esc(t.ask) + "</button>" +
     "</div>");

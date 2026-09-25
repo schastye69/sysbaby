@@ -318,6 +318,10 @@
          Турбо выигрывал 0.7 мс сверх того, что даёт меньший радиус, — и
          платил за них внешностью всей системы. Теперь Турбо уменьшает
          радиус (html.sb-turbo в core.css), а стекло остаётся.
+         ПЕРЕСМОТРЕНО (D-280): и радиус теперь тот же — на сегодняшнем Турбо,
+         где движение снято почти целиком, он не стоил ни миллисекунды, а
+         делал стекло прозрачнее (основатель: «почему при включении турбо
+         прозрачность усиливается?»).
          И отдельно: «меньше прозрачности» — это ВЫБОР ЧЕЛОВЕКА, режим
          доступности. Скоростной режим не имеет права его за него делать. */
       if (window.sbField) window.sbField.setLevel("off");
@@ -2627,6 +2631,7 @@
      dock (translated off-screen) still reports its true size. */
   var dockRO = null;
   var dockHPublished = "";
+  var fontsAsked = false;
   function publishDockHeight() {
     var dock = $("#dock");
     if (!dock) return;
@@ -2670,8 +2675,17 @@
        So: wait for a laid-out frame, confirm again once fonts settle, and
        from then on let the observer keep it honest. */
     requestAnimationFrame(publishDockHeight);
-    if (doc.fonts && doc.fonts.ready && doc.fonts.ready.then) {
-      doc.fonts.ready.then(publishDockHeight, function () { });
+    /* ── ШРИФТЫ СПРАШИВАЮТСЯ ОДИН РАЗ (D-282) ─────────────────────────────
+       Геттер document.fonts.ready заставляет браузер синхронно досчитать
+       стиль и раскладку. Он стоял в каждой перестройке дока — то есть в
+       каждом открытии и закрытии окна — и стоил 25–30 мс из 64–101 мс
+       открытия на телефоне вчетверо медленнее. Шрифтам нужно дождаться один
+       раз; дальше высоту дока держит наблюдатель размера ниже.
+       Охраняется tools/open-cost-check.mjs. */
+    if (!fontsAsked && doc.fonts) {
+      fontsAsked = true;
+      var fr = doc.fonts.ready;
+      if (fr && fr.then) fr.then(publishDockHeight, function () { });
     }
     if (!dockRO && typeof ResizeObserver === "function") {
       dockRO = new ResizeObserver(publishDockHeight);

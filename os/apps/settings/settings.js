@@ -407,7 +407,11 @@
       "</div>" +
       '<div class="st-card">' +
         "<h3>" + esc(t("set.about.whoTitle")) + "</h3>" +
-        "<p>" + esc(t("set.about.whoBody")) + "</p>" +
+        /* Звало нажать «глиняную плитку в доке» — кнопку, снятую решением
+           D-087 больше месяца назад (основатель, 24.09.2026: «это устаревшие
+           данные»). Теперь называет то, что есть, и имя комнаты спрашивает у
+           системы. Охраняется tools/retired-words-check.mjs (D-278). */
+        "<p>" + esc(t("set.about.whoBody", { build: appName("build") })) + "</p>" +
       "</div>" +
       '<div class="st-note"><p>' + esc(t("set.about.note")) + "</p></div>";
   }

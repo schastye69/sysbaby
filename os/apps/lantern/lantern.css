@@ -109,17 +109,36 @@
 .lt-clock.done .lt-time { color: #7ee081; }
 .lt-clock-btns { display: flex; gap: 8px; }
 
-/* ── СВЕТ ────────────────────────────────────────────────────────────────── */
-.lt-torch {
+/* ── СВЕТ (D-281) ──────────────────────────────────────────────────────────
+   Слой на весь экран поверх всей системы — лежит в <body>, а не в окне:
+   внутри окна «поверх всего» значило «поверх окна», и полоса с доком стояли
+   над светом. Под холстом — та же основа, что у поля: если холста нет
+   (старый браузер), свет всё равно белый или красный. */
+.sb-torch {
   position: fixed; inset: 0; z-index: var(--z-above);
-  display: flex; align-items: flex-end; justify-content: center;
-  padding-bottom: 8vh; cursor: pointer;
+  overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  clip-path: circle(0 at var(--ox, 50%) var(--oy, 50%));
+  transition: clip-path var(--t-drift) cubic-bezier(.2, .7, .2, 1);
 }
-.lt-torch.white { background: #fff; }
-.lt-torch.red { background: #8b0000; }
-.lt-torch p { margin: 0; font-size: var(--f-read); letter-spacing: .04em; }
-.lt-torch.white p { color: #555; }
-.lt-torch.red p { color: var(--ink-2); }
+.sb-torch.on { clip-path: circle(150vmax at var(--ox, 50%) var(--oy, 50%)); }
+@media (prefers-reduced-motion: reduce) { .sb-torch { transition: none; } }
+.sb-torch.white { background: #fff; }
+.sb-torch.night { background: #560000; }
+.sb-torch-field { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* Единственная кнопка. Белый свет — светлое стекло и тёмная подпись; ночной
+   — тёмно-красное стекло и тусклая красная подпись: ни одного белого
+   пикселя, который сбил бы привыкшие к темноте глаза. */
+.sb-torch-off {
+  position: absolute; left: 50%; bottom: max(30px, calc(env(safe-area-inset-bottom) + 22px));
+  transform: translateX(-50%);
+  min-width: 132px; padding: 13px 26px; border-radius: var(--r-pill);
+  font: inherit; font-size: var(--f-read); font-weight: 600; letter-spacing: .04em; cursor: pointer;
+  backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+.sb-torch.white .sb-torch-off { color: #4a3a2e; background: rgba(255, 255, 255, .58); border: 1px solid rgba(74, 58, 46, .16); }
+.sb-torch.night .sb-torch-off { color: #d2331f; background: rgba(40, 0, 0, .5); border: 1px solid rgba(210, 51, 31, .28); }
+.sb-torch-off:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 
 @media (max-width: 420px) {
   .lt-step { font-size: var(--f-title); }
