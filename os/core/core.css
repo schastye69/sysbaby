@@ -154,6 +154,33 @@
   --f-hero: 40px;
   --shadow: 0 24px 60px rgba(0, 0, 0, .55), 0 4px 14px rgba(0, 0, 0, .4);
   --shadow-soft: 0 12px 34px rgba(0, 0, 0, .38);
+  /* ── ВЕЩЕСТВО ЗНАЧКА — НЕПРОЗРАЧНОЕ (D-285) ────────────────────────────
+     Плитка была плёнкой (белый 13% → 3% поверх живого поля), и её цвет
+     задавало то, что под ней, и то, как устройство смешивает прозрачное.
+     Планшет основателя, не стирающий кадр перед перерисовкой, складывал
+     плёнку слоями: чем чаще касались значка, тем он светлее (снимок
+     25.09.2026, от 200 у первого значка до 66 у последнего). Непрозрачная
+     краска, положенная на себя сколько угодно раз, даёт тот же цвет.
+     Значения сняты с телефона основателя, где значки выглядели так, как
+     задумано: плитка 60→45, подпись 163 над полем 33.
+     Охраняется tools/tile-look-check.mjs. */
+  --tile-top: #3b393a;
+  --tile-bottom: #2c2a2b;
+  --tile-edge: #4a4849;
+  --tile-top-on: #4a4748;
+  --tile-bottom-on: #353233;
+  --tile-edge-on: #5a5758;
+  --tile-label: #a3a1a0;
+  --tile-label-on: #f2f2f0;
+  /* Обводка подписи вместо полупрозрачной тени: над тёмным полем её не
+     видно, как не было видно и тени, а над световым пятном она держит
+     буквы — и при этом непрозрачна. */
+  --tile-halo: #121112;
+  --tile-dot: #8e8c8b;
+  /* Свёрнутое — та же точка, тусклее (D-285). Раньше она была полым
+     кольцом в 1 px; при плотности экрана 1 и 1.5 такое кольцо целиком
+     состоит из полупрозрачных пикселей — плёнки. */
+  --tile-dot-min: #5a5758;
   --ease: cubic-bezier(.16, 1, .3, 1);
   --spring: cubic-bezier(.34, 1.56, .64, 1);
   --font: system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
@@ -303,6 +330,19 @@ html[data-theme="light"] {
   --voice: rgba(255, 255, 255, .96);
   --shadow: 0 20px 50px rgba(20, 24, 40, .18), 0 3px 10px rgba(20, 24, 40, .12);
   --shadow-soft: 0 10px 26px rgba(20, 24, 40, .12);
+  /* Вещество значка в светлой теме (D-285): те же доли чернил, что были
+     плёнкой, пересчитаны над полем #eef0f5 в непрозрачный цвет. */
+  --tile-top: #fbfbfc;
+  --tile-bottom: #eceef2;
+  --tile-edge: #d9dbe1;
+  --tile-top-on: #ffffff;
+  --tile-bottom-on: #f3f4f7;
+  --tile-edge-on: #c9ccd4;
+  --tile-label: #626469;
+  --tile-label-on: #1e2026;
+  --tile-halo: #f4f5f8;
+  --tile-dot: #979aa0;
+  --tile-dot-min: #c6c9cf;
 }
 
 html.sb-incognito {
@@ -313,6 +353,18 @@ html.sb-incognito {
   --accent-rgb: 160, 107, 255;
   --line: rgba(255, 255, 255, .18);
   --glass: rgba(255, 255, 255, .05);
+  /* Вещество значка в инкогнито (D-285): поле чёрное, плитка — уголь. */
+  --tile-top: #1d1d1e;
+  --tile-bottom: #0e0e0e;
+  --tile-edge: #3a3a3b;
+  --tile-top-on: #28282a;
+  --tile-bottom-on: #161617;
+  --tile-edge-on: #4a4a4c;
+  --tile-label: #969695;
+  --tile-label-on: #f2f2f0;
+  --tile-halo: #000000;
+  --tile-dot: #7e7e7d;
+  --tile-dot-min: #444445;
 }
 
 /* ── ТУРБО УДЕШЕВЛЯЕТ СТЕКЛО, А НЕ ОТМЕНЯЕТ ЕГО (D-148) ────────────────────
@@ -653,6 +705,21 @@ html.sb-incognito .wp-layer {
   font: inherit; font-size: var(--f-meta); color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px;
 }
 .vg-forgot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* ── ЯЗЫК ДВЕРИ НА ЭТОТ ВХОД (D-288) ─────────────────────────────────────
+   Ряд кодов над диафрагмой: каждый язык подписан собой, нажатый — светлее.
+   Выбор живёт только в памяти страницы (см. gateLang в shell.js).
+   Охраняется tools/door-language-check.mjs. */
+.vg-langs { display: flex; justify-content: center; gap: 6px; }
+.vg-lang {
+  min-width: 44px; min-height: 32px; padding: 0 10px; border-radius: var(--r-pill);
+  font-family: var(--mono); font-size: var(--f-micro); letter-spacing: .08em;
+  color: var(--ink-3); border: 1px solid var(--line); background: transparent;
+}
+.vg-lang.on { color: var(--ink); border-color: var(--line-2); background: var(--glass); }
+.vg-lang:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .vg-lang:hover { color: var(--ink); }
+}
 .vg-spare { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 .vg-spare[hidden] { display: none; }
 .vg-spare input {
@@ -1414,17 +1481,27 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
    деталь — светлая нить по верхней кромке (inset-тень в 1 px). Она не
    рисуется отдельным слоем и не стоит ни одного лишнего прохода, но даёт
    плитке грань: свет падает сверху, как и на всём остальном столе. */
+/* ── ПЛИТКА НЕПРОЗРАЧНА (D-285) ─────────────────────────────────────────
+   Заливка, рамка, подпись и точка — из токенов --tile-*, и все они
+   непрозрачны: значок выглядит одинаково над любым полем и на любом экране,
+   сколько бы раз его ни перерисовали. Снято вместе с плёнкой:
+   • внешняя мягкая тень — она прозрачна по природе и на нестирающем экране
+     темнела бы с каждым касанием; на тёмном поле её и так не было видно;
+   • переход по background — браузер не переходит между градиентами (см.
+     D-158), строка ничего не делала, кроме лишних перерисовок.
+   Светлая нить по верхней кромке (inset) осталась: она ложится на
+   непрозрачную заливку и даёт непрозрачный пиксель. */
 .icon-tile {
   width: 46px; height: 46px; border-radius: var(--r-card); display: grid; place-items: center;
   color: var(--ink);
-  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, .07);
-  background: linear-gradient(155deg, rgba(242, 242, 240, .13), rgba(242, 242, 240, .028));
-  border: 1px solid var(--line);
-  transition: box-shadow var(--t-touch) var(--ease), background var(--t-touch) ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07);
+  background: linear-gradient(155deg, var(--tile-top), var(--tile-bottom));
+  border: 1px solid var(--tile-edge);
 }
 .desk-icon.active-app .icon-tile {
-  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, .12);
-  background: linear-gradient(155deg, rgba(242, 242, 240, .18), rgba(242, 242, 240, .05));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+  background: linear-gradient(155deg, var(--tile-top-on), var(--tile-bottom-on));
+  border-color: var(--tile-edge-on);
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -1433,20 +1510,30 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
   :where(html:not([data-input="touch"])) .desk-icon:hover .icon-tile {
-  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, .12);
-  background: linear-gradient(155deg, rgba(242, 242, 240, .18), rgba(242, 242, 240, .05));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+  background: linear-gradient(155deg, var(--tile-top-on), var(--tile-bottom-on));
+  border-color: var(--tile-edge-on);
 }
 }
 .icon-tile svg { width: 22px; height: 22px; }
 /* Подпись читается НАД ЛЮБЫМИ обоями. Поле живое и местами очень светлое —
    в оранжевой полосе подпись пропадала совсем. Тень под текстом дешевле
    подложки и не добавляет ни слоя, ни прохода композитора. */
+/* Размытая тень под текстом заменена непрозрачной каймой (D-285): тень
+   полупрозрачна, и экран, не стирающий кадр, делал её тяжелее и тяжелее, а
+   подпись — белее (снимок планшета 25.09.2026). Кайма — восемь резких копий
+   буквы на пиксель в каждую сторону, непрозрачных: над тёмным полем её не
+   видно, как не было видно и тени, а над световым пятном она держит буквы.
+   Обводка шрифта (-webkit-text-stroke) была первой попыткой и снята: её
+   острые углы давали шипы под «t» и «w» — прибор нашёл их как плёнку. */
 .icon-label {
-  font-size: var(--f-meta); color: var(--ink-2); text-align: center; line-height: 1.25;
+  font-size: var(--f-meta); color: var(--tile-label); text-align: center; line-height: 1.25;
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, .55);
+  text-shadow:
+    1px 0 0 var(--tile-halo), -1px 0 0 var(--tile-halo), 0 1px 0 var(--tile-halo), 0 -1px 0 var(--tile-halo),
+    1px 1px 0 var(--tile-halo), -1px 1px 0 var(--tile-halo), 1px -1px 0 var(--tile-halo), -1px -1px 0 var(--tile-halo);
 }
-.desk-icon.active-app .icon-label { color: var(--ink); }
+.desk-icon.active-app .icon-label { color: var(--tile-label-on); }
 .icon-spark {
   position: absolute; top: 2px; right: 4px; width: 18px; height: 18px; border-radius: var(--r-round);
   display: grid; place-items: center; color: var(--ink-3); opacity: 0; transition: opacity var(--t-touch) ease;
@@ -2019,8 +2106,8 @@ html:not(.is-compact) .window.maximized:not(.fullscreen) > .window-body {
 }
 .expose-tile {
   width: 42px; height: 42px; border-radius: var(--r-card); display: grid; place-items: center;
-  color: var(--ink); background: linear-gradient(150deg, rgba(242, 242, 240, .12), rgba(242, 242, 240, .03));
-  border: 1px solid var(--line);
+  color: var(--ink); background: linear-gradient(150deg, var(--tile-top), var(--tile-bottom));
+  border: 1px solid var(--tile-edge);
 }
 .expose-tile svg { width: 20px; height: 20px; }
 .expose-name { font-size: var(--f-ui); color: var(--ink-2); }
@@ -2206,7 +2293,9 @@ html.dock-empty #dock {
    ставит shell.js; тот же вопрос задают все правила наведения. */
 html.dock-away:where(:not([data-input="touch"])) #dock { transform: translate(-50%, 5px) scale(.975); }
 html.dock-away:where(:not([data-input="touch"])) .dock-shelf { background: rgba(16, 13, 12, .74); }
-html.dock-away:where(:not([data-input="touch"])) #dock .dock-tile, html.dock-away:where(:not([data-input="touch"])) #dock .dock-label { opacity: .5; }
+/* Приглушение — яркостью, а не прозрачностью (D-285): полупрозрачная
+   плитка снова стала бы плёнкой, чей цвет решает поле под ней. */
+html.dock-away:where(:not([data-input="touch"])) #dock .dock-tile, html.dock-away:where(:not([data-input="touch"])) #dock .dock-label { filter: brightness(.55); }
 html.dock-away #dock:focus-within { transform: translate(-50%, 0); }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -2216,14 +2305,14 @@ html.dock-away #dock:focus-within { transform: translate(-50%, 0); }
 @media (hover: hover) {
   html.dock-away:where(:not([data-input="touch"])) #dock:hover { transform: translate(-50%, 0); }
 }
-html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within .dock-label { opacity: 1; }
+html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within .dock-label { filter: none; }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал. Повод — снимок основателя
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  html.dock-away:where(:not([data-input="touch"])) #dock:hover .dock-tile, html.dock-away:where(:not([data-input="touch"])) #dock:hover .dock-label { opacity: 1; }
+  html.dock-away:where(:not([data-input="touch"])) #dock:hover .dock-tile, html.dock-away:where(:not([data-input="touch"])) #dock:hover .dock-label { filter: none; }
 }
 @media (prefers-reduced-motion: reduce) { html.dock-away #dock { transform: translate(-50%, 0); } }
 .dock-shelf {
@@ -2288,24 +2377,26 @@ html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within 
   width: 0; min-width: 0; padding: 0; opacity: 0; pointer-events: none; overflow: hidden;
   margin-left: calc(var(--dock-gap) * -1);
 }
+/* Та же плитка, что на столе (D-285): одно приложение — одно вещество. */
 .dock-tile {
   width: 42px; height: 42px; border-radius: var(--r-card); display: grid; place-items: center;
-  color: var(--ink); box-shadow: var(--shadow-soft); flex: none;
-  background: linear-gradient(150deg, rgba(242, 242, 240, .12), rgba(242, 242, 240, .03));
-  border: 1px solid var(--line);
+  color: var(--ink); flex: none;
+  background: linear-gradient(150deg, var(--tile-top), var(--tile-bottom));
+  border: 1px solid var(--tile-edge);
 }
 /* The one coloured tile in the dock: the call to action. Seam means "here you
    can act", and this is the act. */
 .dock-tile svg { width: 21px; height: 21px; }
-.dock-dot { width: 4px; height: 4px; border-radius: var(--r-round); background: var(--ink-3); opacity: 0; }
+.dock-dot { width: 4px; height: 4px; border-radius: var(--r-round); background: var(--tile-dot); opacity: 0; }
 .dock-item.running .dock-dot { opacity: 1; }
 .dock-item.active-app .dock-dot { background: var(--accent); }
-/* Свёрнутое окно — точка полая: приложение живо, но его не видно. Закрытое —
+/* Свёрнутое окно — точка тусклая: приложение живо, но его не видно. Закрытое —
    точки нет вовсе. Три состояния в одном месте (v47). */
-.dock-item.running.is-min .dock-dot {
-  background: transparent; box-shadow: inset 0 0 0 1px var(--ink-3); opacity: .9;
-}
-.dock-item.active-app.is-min .dock-dot { box-shadow: inset 0 0 0 1px var(--accent); }
+/* До D-285 точка свёрнутого была полым кольцом в 1 px; кольцо такой
+   толщины на экране с плотностью 1 и 1.5 не содержит ни одного
+   непрозрачного пикселя. Тусклая точка говорит то же и непрозрачна. */
+.dock-item.running.is-min .dock-dot { background: var(--tile-dot-min); }
+.dock-item.active-app.is-min .dock-dot { background: color-mix(in srgb, var(--accent) 50%, var(--tile-bottom)); }
 /* То же самое в списке открытых окон наверху: приглушение уже было, но без
    имени состояния. Теперь у него есть и знак. */
 .seq-item.dim::after { content: "·"; margin-left: 2px; opacity: .8; }
@@ -2432,6 +2523,23 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
 .toast-action {
   grid-column: 2; justify-self: start; margin-top: 8px; padding: 5px 11px; border-radius: var(--r-ctrl);
   font-size: var(--f-ui); background: var(--accent-soft); border: 1px solid var(--accent-ring); color: var(--ink);
+}
+/* ── ИЗВЕЩЕНИЕ, КОТОРОЕ ЖДЁТ ОТВЕТА (D-286) ─────────────────────────────
+   Эстафета говорит с той же линии, что и весь стол, но её решения — два
+   действия в ряд. Кнопки по-настоящему берутся пальцем (36 px), и карточка
+   никогда не ложится под круглую кнопку: ей оставлено место ровно по той
+   же мерке, по какой его оставляет подсказка (--fab-*, --desk-row-gap). */
+.toast-actions { grid-column: 2; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.toast-actions .toast-action { margin-top: 0; min-height: 36px; padding: 6px 14px; }
+.toast-action.quiet { background: transparent; border-color: var(--line-2); color: var(--ink-2); }
+/* Вторая строка эстафеты — недописанная мысль (D-289): перенос строки в
+   тексте извещения — это её граница, а не случайный пробел. */
+.toast-baton .toast-text { white-space: pre-line; }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .toast-action.quiet:hover { color: var(--ink); border-color: var(--accent-ring); }
+}
+#toastLayer .toast-standing {
+  margin-right: max(0px, calc(var(--fab-inset) + var(--fab-size) + var(--desk-row-gap) - (100vw - min(560px, 100vw - 32px)) / 2));
 }
 .toast-warn { border-color: rgba(255, 214, 10, .45); }
 /* Спокойное извещение (D-183): им говорится то, что НЕ является бедой. Потеря
@@ -2801,7 +2909,7 @@ html.icons-small .icon-label { font-size: var(--f-micro); }
      показывает РОВНО ОДНО — что открыто и что свёрнуто. Поэтому уходят
      подпись действия и подсказка про ⌘K (клавиш тут нет), а плитки жмутся
      до размера, который ещё берётся пальцем. Три состояния точки остаются:
-     нет — закрыто, полная — на экране, полая — ждёт. */
+     нет — закрыто, яркая — на экране, тусклая — ждёт (D-285). */
     #dock { bottom: max(10px, env(safe-area-inset-bottom)); }
   .dock-shelf { --dock-gap: 6px; padding: 6px 8px; border-radius: var(--r-window); }
   .dock-item { width: 40px; }
@@ -2840,6 +2948,8 @@ html.icons-small .icon-label { font-size: var(--f-micro); }
   /* Линия речи одна на всех экранах (см. «одно место речи» выше) — на
      узком меняется только кегль и запас по бокам. */
   #toastLayer { gap: 6px; width: calc(100vw - 20px); }
+  /* На телефоне слой шире — и место под кнопку считается от его края. */
+  #toastLayer .toast-standing { margin-right: calc(var(--fab-inset) + var(--fab-size) + var(--desk-row-gap) - 10px); }
   .toast { padding: 10px 12px; gap: 9px; }
   .toast-title { font-size: var(--f-ui); }
   .toast-text { font-size: var(--f-meta); }
@@ -2989,7 +3099,7 @@ button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset:
 /* ── Состояние приложения на значке стола (v47) ───────────────────────────
    На телефоне дока нет, и значки стола — единственное место, где видно,
    что приложение живо. Три ответа в одной точке: нет её — закрыто, полная —
-   окно на экране, полая — свёрнуто и ждёт нажатия. */
+   окно на экране, тусклая — свёрнуто и ждёт нажатия (до D-285 — полая). */
 /* ЗДЕСЬ СТОЯЛО `.desk-icon { position: relative }` — И ЭТО БЫЛА ОШИБКА.
    Правило приписали привычным жестом, чтобы точке ниже было к чему
    привязаться. Оно легло НИЖЕ объявления `position: absolute` (см. «desktop
@@ -3003,14 +3113,14 @@ button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset:
    Правило не восстановлено намеренно; доказано в desktop-drag-check §4. */
 .desk-icon::after {
   content: ""; position: absolute; left: 50%; bottom: 2px; width: 4px; height: 4px;
-  margin-left: -2px; border-radius: var(--r-round); background: var(--ink-3);
-  opacity: 0; transition: opacity var(--t-touch) ease, box-shadow var(--t-touch) ease;
+  margin-left: -2px; border-radius: var(--r-round); background: var(--tile-dot);
+  opacity: 0; transition: opacity var(--t-touch) ease;
   pointer-events: none;
 }
 .desk-icon.running::after { opacity: 1; }
-.desk-icon.running.is-min::after { background: transparent; box-shadow: inset 0 0 0 1px var(--ink-3); }
+.desk-icon.running.is-min::after { background: var(--tile-dot-min); }
 .desk-icon.active-app::after { background: var(--accent); }
-.desk-icon.active-app.is-min::after { background: transparent; box-shadow: inset 0 0 0 1px var(--accent); }
+.desk-icon.active-app.is-min::after { background: color-mix(in srgb, var(--accent) 50%, var(--tile-bottom)); }
 
 /* ── СРОК НА ЗАМЕТКЕ (v71) ────────────────────────────────────────────────
    Срок читается в словах самой заметки (см. sbNoteDue в desktop.js) и

@@ -236,6 +236,10 @@
     if (key === "motion") return systemReduced();          /* default ON under reduce-motion */
     if (key === "autohide") return !isTouch();
     if (key === "sound") return true;
+    /* Эстафета (D-286) включена с первого входа: она хранит только то, что
+       и так было открыто, только на этом устройстве и под замком, и ничего
+       не делает сама — лишь предлагает. Выключатель — в Приватности. */
+    if (key === "baton") return true;
     /* ── УМОЛЧАНИЕ ДВЕРИ НАРУЖУ БЕРЁТСЯ У ОПИСИ (D-221) ──────────────────
        Не у этого файла: опись — единственный источник, и написать умолчание
        второй раз здесь значило бы завести вторую правду, которая однажды
@@ -371,8 +375,13 @@
     }
   }
 
+  /* Темы, какие система умеет, — одним списком (D-285). Законы спрашивают
+     его, а не помнят: так тема, добавленная позже, сама попадёт под них.
+     Первая — тема по умолчанию: неизвестное имя приводит к ней. */
+  var THEMES = ["dark", "light"];
+  window.sbThemes = function () { return THEMES.slice(); };
   window.setTheme = function (t) {
-    var mode = t === "light" ? "light" : "dark";
+    var mode = THEMES.indexOf(t) !== -1 ? t : THEMES[0];
     if (window.sbIncognitoActive) mode = "dark";            /* incognito forces dark */
     root.setAttribute("data-theme", mode);
     if (window.sbDB) window.sbDB.set(THEME_KEY, mode);      /* persisted (deviation, §16.3 #2) */
@@ -1103,7 +1112,8 @@
       if (ev.target && ev.target.closest && ev.target.closest("button.toast-action")) return;
       kill();
     });
-    setTimeout(kill, num(ttl, 5800));
+    /* Бессрочное извещение (D-286) ждёт ответа и не снимается по часам. */
+    if (ttl !== Infinity) setTimeout(kill, num(ttl, 5800));
     return { el: t, dismiss: kill };
   }
 
@@ -1130,6 +1140,34 @@
     return list.length;
   };
 
+  /* ── ИЗВЕЩЕНИЕ, КОТОРОЕ ЖДЁТ ОТВЕТА (D-286) ─────────────────────────────
+     Стоит на той же линии, что и все (одно место речи, v66), но не
+     снимается по часам: его снимает ответ. Кнопки — действия; касание мимо
+     кнопок убирает извещение, как и любое другое. «Не беспокоить» оно
+     слушается: само пришедшее не говорит, когда просили тишины. */
+  window.showStandingToast = function (title, text, iconSvg, actions, extraClass) {
+    if (dnd()) return null;
+    var t = buildToast(title, text, iconSvg, "toast-standing" + (extraClass ? " " + extraClass : ""), "event");
+    var row = doc.createElement("div");
+    row.className = "toast-actions";
+    var handle = null;
+    (actions || []).forEach(function (a) {
+      var b = doc.createElement("button");
+      b.type = "button";
+      b.className = "toast-action" + (a.quiet ? " quiet" : "");
+      if (a.id) b.setAttribute("data-act", a.id);
+      b.textContent = a.label;
+      b.addEventListener("click", function () {
+        if (handle) handle.dismiss();
+        try { a.run(); } catch (e) { if (window.console) console.error(e); }
+      });
+      row.appendChild(b);
+    });
+    t.appendChild(row);
+    handle = mountToast(t, Infinity);
+    return handle;
+  };
+
   function showUndoToast(title, text, onUndo) {
     if (dnd()) return null;
     var t = buildToast(title, text, ICONS.window, "toast-undo", "confirm");
@@ -1145,6 +1183,7 @@
     });
     return handle;
   }
+  window.sbShowUndoToast = showUndoToast;
 
   /* notification chirp (gated by the Sound toggle; Volume slider sets gain) */
   var audioCtx = null;
@@ -4011,7 +4050,18 @@
   /* Экран замка говорит на языке, который берётся у САМОГО БРАУЗЕРА: язык
      системы теперь тоже заперт (D-164), и спрашивать его до пароля неоткуда.
      Настройка браузера — не сведения о человеке: её видно любому сайту. */
+  /* ── ЯЗЫК ДВЕРИ НА ЭТОТ ВХОД (D-288) ─────────────────────────────────
+     Основатель: «нужен самый безопасный и концептуальный вариант». Дверь
+     говорит на языке устройства — это знает любой сайт, нового о человеке
+     в этом нет. Кому язык устройства не свой, выбирает другой прямо у двери,
+     и выбор живёт ТОЛЬКО В ПАМЯТИ ЭТОЙ СТРАНИЦЫ: ни в localStorage, ни в
+     sessionStorage, ни в адресе. Записать его открыто значило бы оставить
+     на диске запертой системы строку о том, кто за дверью. После двери
+     система говорит на своём языке — он лежит под замком.
+     Охраняется tools/door-language-check.mjs. */
+  var gatePick = null;
   function gateLang() {
+    if (gatePick) return gatePick;
     try {
       var l = String((navigator.languages && navigator.languages[0]) || navigator.language || "en").toLowerCase();
       if (l.indexOf("ru") === 0) return "ru";
@@ -4027,6 +4077,34 @@
   }
 
   var IRIS_SVG = '<svg viewBox="0 0 200 200" aria-hidden="true"><defs><mask id="vgAperture" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200"><rect x="0" y="0" width="200" height="200" fill="#000"/><circle cx="100" cy="100" r="96" fill="#fff"/><polygon class="vgi-hole" points="188.0,100.0 144.0,176.2 56.0,176.2 12.0,100.0 56.0,23.8 144.0,23.8" fill="#000"/></mask></defs><circle class="vgi-glow" cx="100" cy="100" r="74"/><g mask="url(#vgAperture)"><circle class="vgi-disc" cx="100" cy="100" r="96"/><g class="vgi-seams"><line x1="145.0" y1="126.0" x2="184.0" y2="148.5"/><line x1="100.0" y1="152.0" x2="100.0" y2="197.0"/><line x1="55.0" y1="126.0" x2="16.0" y2="148.5"/><line x1="55.0" y1="74.0" x2="16.0" y2="51.5"/><line x1="100.0" y1="48.0" x2="100.0" y2="3.0"/><line x1="145.0" y1="74.0" x2="184.0" y2="51.5"/></g></g><circle class="vgi-rim" cx="100" cy="100" r="97"/></svg>';
+  /* Ряд языков у двери: только те, на которых система говорит сама
+     (у неполных — витрина, а не система), подписаны на себе самих. */
+  function gateLangRow() {
+    var langs = [];
+    try { langs = (window.sbLangs ? window.sbLangs() : []).filter(function (l) { return !l.partial; }); } catch (e) { langs = []; }
+    if (langs.length < 2) return "";
+    var cur = gateLang();
+    return '<div class="vg-langs" role="group" aria-label="' + escapeHtml(gateText("aria.langs")) + '" data-gk-aria="aria.langs">' +
+      langs.map(function (l) {
+        return '<button type="button" class="vg-lang' + (l.code === cur ? " on" : "") + '" data-gate-lang="' + escapeHtml(l.code) + '" lang="' + escapeHtml(l.code === "ee" ? "et" : l.code) + '" aria-pressed="' + (l.code === cur ? "true" : "false") + '" title="' + escapeHtml(l.label) + '">' + escapeHtml(l.show) + "</button>";
+      }).join("") + "</div>";
+  }
+  function gateResay(gate) {
+    $$("[data-gk]", gate).forEach(function (el) {
+      var v = gateText(el.getAttribute("data-gk"));
+      if (el.hasAttribute("data-gk-n")) v = v.replace("{n}", el.getAttribute("data-gk-n"));
+      el.textContent = v;
+    });
+    $$("[data-gk-ph]", gate).forEach(function (el) { el.setAttribute("placeholder", gateText(el.getAttribute("data-gk-ph"))); });
+    $$("[data-gk-aria]", gate).forEach(function (el) { el.setAttribute("aria-label", gateText(el.getAttribute("data-gk-aria"))); });
+    var cur = gateLang();
+    $$("[data-gate-lang]", gate).forEach(function (b) {
+      var on = b.getAttribute("data-gate-lang") === cur;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    try { gate.setAttribute("lang", cur === "ee" ? "et" : cur); } catch (e) { /* ignore */ }
+  }
   function runVaultGate(onDone) {
     if (!window.sbVault || !window.sbVault.isLocked() || !window.sbVault.available()) { onDone(); return; }
     var needsKey = false;
@@ -4062,7 +4140,8 @@
            дуговой внешней кромкой, повёрнутые вокруг центра; закрытие — это
            поворот, как у настоящей диафрагмы, а не изменение размера. */
         '<div class="vg-iris" aria-hidden="true">' + IRIS_SVG + "</div>" +
-        '<h1 class="vg-title">' + escapeHtml(gateText("lock.locked")) + "</h1>" +
+        gateLangRow() +
+        '<h1 class="vg-title" data-gk="lock.locked">' + escapeHtml(gateText("lock.locked")) + "</h1>" +
         /* ── ЗАЯВЛЕНИЕ, А НЕ ОПРАВДАНИЕ · решение D-190 ────────────────────
            Основатель, глядя на эту страницу: «на этой странице вместо
            оправдания должно быть заявление — например — only you and your
@@ -4076,7 +4155,7 @@
            Строка НЕ ПЕРЕВОДИТСЯ, как и «only you and your system, baby» на
            входе: это один голос системы, а не подпись к кнопке. */
         '<p class="vg-claim">only you and your encrypted system, baby.<br>nothing can leave us.</p>' +
-        '<input type="password" id="sbVaultPass" autocomplete="current-password" ' +
+        '<input type="password" id="sbVaultPass" autocomplete="current-password" data-gk-ph="lock.ask" data-gk-aria="lock.ask" ' +
           'aria-label="' + escapeHtml(gateText("lock.ask")) + '" placeholder="' + escapeHtml(gateText("lock.ask")) + '">' +
         /* ── ВТОРОЙ КЛЮЧ СПРАШИВАЕТСЯ ТАМ ЖЕ, ГДЕ СЛОВО (D-215) ────────────
            Поле появляется только у замка, который его требует. Что такой
@@ -4085,39 +4164,46 @@
            может, потому что ключ без файла не ВЫВОДИТСЯ, а не «не проходит
            проверку». */
         (needsKey
-          ? '<label class="vg-key"><span>' + escapeHtml(gateText("lock.key")) + '</span>' +
+          ? '<label class="vg-key"><span data-gk="lock.key">' + escapeHtml(gateText("lock.key")) + '</span>' +
             '<input type="file" id="sbVaultKey"></label>' +
-            '<p class="vg-keynote">' + escapeHtml(gateText("lock.keyNeed")) + '</p>'
+            '<p class="vg-keynote" data-gk="lock.keyNeed">' + escapeHtml(gateText("lock.keyNeed")) + '</p>'
           : '') +
         /* ── КЛЮЧ УСТРОЙСТВА (D-276): сказано ДО нажатия, что после слова
            устройство попросит отпечаток, лицо или PIN. Что он нужен, видно на
            диске — строка ничего нового постороннему не говорит. */
         (window.sbVault.hwState && window.sbVault.hwState().on
-          ? '<p class="vg-keynote" id="sbVaultHwNote">' + escapeHtml(gateText("lock.hwNeed")) + "</p>"
+          ? '<p class="vg-keynote" id="sbVaultHwNote" data-gk="lock.hwNeed">' + escapeHtml(gateText("lock.hwNeed")) + "</p>"
           : "") +
-        '<button type="button" class="btn primary" id="sbVaultOpen">' + escapeHtml(gateText("lock.open")) + "</button>" +
+        '<button type="button" class="btn primary" id="sbVaultOpen" data-gk="lock.open">' + escapeHtml(gateText("lock.open")) + "</button>" +
         /* ── ЗАБЫТОЕ СЛОВО (D-266) ────────────────────────────────────────
            Кнопка стоит всегда — у замка с кодом и без: дверь, которая
            показывала бы «у этого человека есть код», сама была бы сведением
            о нём. Что код сделает с тревожным словом и вторым ключом, сказано
            ДО нажатия, а не после. */
-        '<button type="button" class="vg-forgot" id="sbVaultForgot">' + escapeHtml(gateText("lock.forgot")) + "</button>" +
+        '<button type="button" class="vg-forgot" id="sbVaultForgot" data-gk="lock.forgot">' + escapeHtml(gateText("lock.forgot")) + "</button>" +
         '<div class="vg-spare" id="sbVaultSpare" hidden>' +
-          '<p class="vg-keynote">' + escapeHtml(gateText("lock.codeWhat")) + "</p>" +
+          '<p class="vg-keynote" data-gk="lock.codeWhat">' + escapeHtml(gateText("lock.codeWhat")) + "</p>" +
           '<input type="text" id="sbVaultCode" autocomplete="off" autocapitalize="characters" spellcheck="false" data-sb-nolang ' +
-            'aria-label="' + escapeHtml(gateText("lock.code")) + '" placeholder="' + escapeHtml(gateText("lock.code")) + '">' +
-          '<input type="password" id="sbVaultNew" autocomplete="new-password" aria-label="' + escapeHtml(gateText("lock.codeNew")) + '" placeholder="' + escapeHtml(gateText("lock.codeNew")) + '">' +
-          '<input type="password" id="sbVaultNew2" autocomplete="new-password" aria-label="' + escapeHtml(gateText("lock.codeAgain")) + '" placeholder="' + escapeHtml(gateText("lock.codeAgain")) + '">' +
-          '<button type="button" class="btn primary" id="sbVaultRecover">' + escapeHtml(gateText("lock.codeOpen")) + "</button>" +
+            'data-gk-ph="lock.code" data-gk-aria="lock.code" aria-label="' + escapeHtml(gateText("lock.code")) + '" placeholder="' + escapeHtml(gateText("lock.code")) + '">' +
+          '<input type="password" id="sbVaultNew" autocomplete="new-password" data-gk-ph="lock.codeNew" data-gk-aria="lock.codeNew" aria-label="' + escapeHtml(gateText("lock.codeNew")) + '" placeholder="' + escapeHtml(gateText("lock.codeNew")) + '">' +
+          '<input type="password" id="sbVaultNew2" autocomplete="new-password" data-gk-ph="lock.codeAgain" data-gk-aria="lock.codeAgain" aria-label="' + escapeHtml(gateText("lock.codeAgain")) + '" placeholder="' + escapeHtml(gateText("lock.codeAgain")) + '">' +
+          '<button type="button" class="btn primary" id="sbVaultRecover" data-gk="lock.codeOpen">' + escapeHtml(gateText("lock.codeOpen")) + "</button>" +
         "</div>" +
         '<p class="vg-err" id="sbVaultErr" role="alert" hidden></p>' +
         /* Цена попытки — не лозунг: число проходов берётся из записи замка,
            а миллисекунды замеряются на этой попытке. Появляется ПОСЛЕ, а не
            до: обещать цену заранее значило бы обещать. */
         '<p class="vg-cost" id="sbVaultCost" hidden></p>' +
-        (sealCount ? '<p class="vg-sealed">' + escapeHtml(gateText("lock.sealed").replace("{n}", String(sealCount))) + "</p>" : "") +
+        (sealCount ? '<p class="vg-sealed" data-gk="lock.sealed" data-gk-n="' + sealCount + '">' + escapeHtml(gateText("lock.sealed").replace("{n}", String(sealCount))) + "</p>" : "") +
       "</div>";
     doc.body.appendChild(gate);
+    gate.setAttribute("lang", gateLang() === "ee" ? "et" : gateLang());
+    gate.addEventListener("click", function (ev) {
+      var b = ev.target && ev.target.closest ? ev.target.closest("[data-gate-lang]") : null;
+      if (!b) return;
+      gatePick = b.getAttribute("data-gate-lang");
+      gateResay(gate);
+    });
     /* Поле оживает СРАЗУ и живёт, пока стоит дверь: это не заставка, а
        диск, который лежит за ней прямо сейчас. */
     var fieldCanvas = gate.querySelector("#sbVaultField");

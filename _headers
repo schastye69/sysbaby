@@ -21,6 +21,16 @@
 /sw.js
   Cache-Control: no-store
 
+# ── МАНИФЕСТ (D-287) тоже без номера сборки: телефон перечитывает его
+# сам, и держать старый год значило бы держать старые значки и цель
+# «Поделиться». Тип назван явно: не каждый хостинг знает .webmanifest.
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache
+/os/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache
+
 # Части несут номер сборки в адресе — их можно держать вечно.
 /*.js
   Cache-Control: public, max-age=31536000, immutable

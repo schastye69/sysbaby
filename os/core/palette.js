@@ -68,6 +68,19 @@
       icon: "",
       run: function () { if (window.setTheme) window.setTheme(next); }
     });
+    /* Эстафета (D-286): место, где человек остановился, достаётся и отсюда —
+       в том числе когда стол молчит по «Не беспокоить». */
+    var baton = window.sbBaton ? window.sbBaton.peek() : null;
+    if (baton) {
+      out.push({
+        key: window.sbBaton.t("palette") + " " + baton.said,
+        title: window.sbBaton.t("palette"),
+        sub: baton.said,
+        color: "linear-gradient(160deg,#6f7480,#2a2c33)",
+        icon: "",
+        run: function () { window.sbBaton.resume(); }
+      });
+    }
     [["sbShortcutsOverlay", "k.shortcuts"],
      ["sbTaskOverlay", "k.windows"],
      ["sbClipOverlay", "k.clipboard"],

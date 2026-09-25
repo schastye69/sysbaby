@@ -233,6 +233,10 @@
       "set.privacy.emailBadTitle": "Invalid email",
       "set.privacy.emailBadBody": "Enter a full email address.",
       "set.privacy.storage": "Local storage used",
+      "set.privacy.baton": "Remember where I stopped",
+      "set.privacy.batonSub": "Which rooms were open and where in them. Only on this device, sealed by the lock; nothing opens by itself — you are only offered to continue",
+      "set.privacy.batonForget": "Forget now",
+      "set.privacy.batonCounts": "So far you continued {go}, let go {release}, set aside {later}.",
       "set.privacy.clear": "Clear all local data",
       "set.privacy.clearSub": "Removes everything this browser holds for sys.baby",
       "set.privacy.clearBtn": "Clear",
@@ -785,6 +789,10 @@
       "set.privacy.emailBadTitle": "Неверная почта",
       "set.privacy.emailBadBody": "Введите полный адрес почты.",
       "set.privacy.storage": "Занято в браузере",
+      "set.privacy.baton": "Помнить, где я остановился",
+      "set.privacy.batonSub": "Какие комнаты были открыты и где в них. Только на этом устройстве и под замком; ничего не открывается само — система лишь предлагает продолжить",
+      "set.privacy.batonForget": "Забыть сейчас",
+      "set.privacy.batonCounts": "Пока вы продолжали {go}, отпускали {release}, откладывали {later}.",
       "set.privacy.clear": "Удалить все локальные данные",
       "set.privacy.clearSub": "Удаляет всё, что этот браузер хранит для sys.baby",
       "set.privacy.clearBtn": "Удалить",
@@ -1317,6 +1325,10 @@
       "set.privacy.emailBadTitle": "Vigane e-post",
       "set.privacy.emailBadBody": "Sisestage täielik e-posti aadress.",
       "set.privacy.storage": "Kasutatud kohalik maht",
+      "set.privacy.baton": "Mäleta, kus ma pooleli jäin",
+      "set.privacy.batonSub": "Millised toad olid avatud ja kus neis. Ainult selles seadmes ja luku all; midagi ei avane ise — süsteem ainult pakub jätkata",
+      "set.privacy.batonForget": "Unusta kohe",
+      "set.privacy.batonCounts": "Seni jätkasite {go}, lasite lahti {release}, lükkasite edasi {later}.",
       "set.privacy.clear": "Kustuta kõik kohalikud andmed",
       "set.privacy.clearSub": "Eemaldab kõik, mida see brauser sys.baby jaoks hoiab",
       "set.privacy.clearBtn": "Kustuta",
@@ -1674,7 +1686,10 @@
   window.sbLang = lang;
   /* Языки системы — наружу, чтобы законы СПРАШИВАЛИ их, а не держали свой
      список (D-200, D-278). Копия: снаружи список не правится. */
-  window.sbLangs = function () { return LANGS.map(function (l) { return { code: l.code, show: l.show, label: l.label }; }); };
+  /* partial — язык, на котором говорит витрина, но ещё не система: словаря
+     нет, и система честно отвечает по-английски (D-286 спрашивает это,
+     чтобы не требовать своих слов там, где их не обещали). */
+  window.sbLangs = function () { return LANGS.map(function (l) { return { code: l.code, show: l.show, label: l.label, partial: !STRINGS[l.code] }; }); };
   /* sbT(key) -> the string; sbT(key, {name: "x"}) -> the string with {name}
      filled in. Interpolation lives here rather than at the call sites because
      word order differs between the three languages: a sentence assembled from

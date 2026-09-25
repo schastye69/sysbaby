@@ -620,6 +620,58 @@
         var th = noteThing(n);
         return { name: th.name, text: th.text };
       },
+      /* ГДЕ Я СЕЙЧАС — для Эстафеты (D-286): открытая запись, её имя —
+         первая строка. Окно закрыто или записи нет — места нет.
+         Охраняется tools/baton-check.mjs. */
+      /* МЕСТО — УКАЗАТЕЛЬ, А НЕ КОПИЯ (D-289): какая запись, где стоял
+         курсор и насколько прокручено. Сам текст здесь не повторяется — он
+         и так лежит в записи; Эстафета прочтёт его живым при возвращении.
+         Так правка в другой вкладке и удалённая запись видны честно. */
+      where: function () {
+        var win = openWin();
+        var n = win ? noteById(activeId) : null;
+        if (!n) return null;
+        var host = bodyOf(win), body = host ? host.querySelector("#noteBodyInput") : null;
+        var title = host ? host.querySelector("#noteTitleInput") : null;
+        var inTitle = !!(title && document.activeElement === title);
+        return {
+          id: n.id,
+          field: inTitle ? "title" : "body",
+          caret: body ? (body.selectionStart || 0) : 0,
+          scroll: body ? Math.round(body.scrollTop) : 0
+        };
+      },
+      resume: function (win, place) {
+        if (!(win && place && place.id && window.sbNotesOpenResult(win, place.id))) return false;
+        var host = bodyOf(win), body = host ? host.querySelector("#noteBodyInput") : null;
+        if (!body) return true;
+        var at = Math.max(0, Math.min(Number(place.caret) || 0, body.value.length));
+        try { body.setSelectionRange(at, at); } catch (e) { /* поле не текстовое */ }
+        body.scrollTop = Number(place.scroll) || 0;
+        /* Продолжить — значит писать дальше: поле берёт курсор. Нажатие
+           «Продолжить» и есть жест человека, клавиатура не выскочит сама. */
+        try { body.focus({ preventScroll: true }); } catch (e) { body.focus(); }
+        return true;
+      },
+      /* Что стоит на месте сейчас: имя записи, строка, на которой стоял
+         курсор (недописанная мысль), и менялась ли запись после ухода.
+         Записи нет — места нет: null. */
+      recall: function (place, since) {
+        var n = place && noteById(place.id);
+        if (!n) return null;
+        var th = noteThing(n);
+        /* Курсор считан в поле редактора, а в нём текст начинается сразу
+           после первой строки — та же мерка, что в editorMarkup. */
+        var body = String(n.text == null ? "" : n.text).split("\n").slice(1).join("\n");
+        var at = Math.max(0, Math.min(Number(place.caret) || 0, body.length));
+        var start = body.lastIndexOf("\n", at - 1) + 1, end = body.indexOf("\n", at);
+        var line = body.slice(start, end === -1 ? body.length : end).trim();
+        if (!line) {
+          var before = body.slice(0, at).split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+          line = before.length ? before[before.length - 1] : "";
+        }
+        return { name: th.name, line: line, changed: !!(since && n.updatedAt && n.updatedAt > since) };
+      },
       title: "Scribble",
       i18n: {
         ru: { title: "Записи", label: "Записи" },

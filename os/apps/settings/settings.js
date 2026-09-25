@@ -281,6 +281,14 @@
 
   function profilesApi() { return window.sbProfiles || null; }
 
+  /* Счёт ответов на вопрос эстафеты (D-289) — виден тому, чей он. */
+  function batonCounts() {
+    var c = null;
+    try { c = window.sbBaton && window.sbBaton.counts ? window.sbBaton.counts() : null; } catch (err) { console.error("[settings] baton counts failed", err); }
+    if (!c || !(c.go + c.release + c.later)) return "";
+    return " " + esc(t("set.privacy.batonCounts", { go: c.go, release: c.release, later: c.later }));
+  }
+
   function privacyMarkup() {
     var api = profilesApi();
     var record = null, list = [], currentProfileId = "local";
@@ -311,6 +319,10 @@
         esc(t("set.privacy.profilesSub")),
         '<span class="st-profiles" data-sb-userdata>' + chips +
           '<button type="button" class="st-chip" id="stAddAccount">' + esc(t("set.privacy.addAccount")) + "</button></span>") +
+      /* Эстафета (D-286): что хранится, где и как забыть — в одной строке. */
+      rowMarkup(esc(t("set.privacy.baton")), esc(t("set.privacy.batonSub")) + batonCounts(),
+        (window.sbBaton && (window.sbBaton.peek() || batonCounts()) ? '<button type="button" class="st-btn" id="stBatonForget">' + esc(t("set.privacy.batonForget")) + "</button> " : "") +
+        switchMarkup("baton")) +
       rowMarkup(esc(t("set.privacy.storage")), "", '<span class="st-value" id="stStorage">' + esc(t("set.storage.measuring")) + "</span>") +
       rowMarkup(esc(t("set.privacy.clear")), esc(t("set.privacy.clearSub")),
         '<button type="button" class="st-btn danger" id="stClearAll">' + esc(t("set.privacy.clearBtn")) + "</button>") +
@@ -520,7 +532,7 @@
     appearance: { mood: 1, brightness: 1, toggle: 1, side: 1, fullscreen: 1 },
     sound: { toggle: 1, volume: 1 },
     desktop: { toggle: 1 },
-    privacy: {},
+    privacy: { toggle: 1 },
     advanced: {},
     about: {}
   };
@@ -710,6 +722,13 @@
   /* -------------------------------------------------------------- privacy */
 
   function wirePrivacy(win, host) {
+    var batonForget = host.querySelector("#stBatonForget");
+    if (batonForget) {
+      batonForget.addEventListener("click", function () {
+        try { if (window.sbBaton) window.sbBaton.forget(); } catch (err) { console.error("[settings] baton forget failed", err); }
+        render(win);
+      });
+    }
     var signOut = host.querySelector("#stSignOut");
     if (signOut) {
       signOut.addEventListener("click", function () {
