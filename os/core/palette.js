@@ -81,6 +81,28 @@
         run: function () { window.sbBaton.resume(); }
       });
     }
+    /* Поставить систему на экран (D-293): там, куда человек пришёл сам. */
+    if (window.sbInstall && window.sbInstall.state() !== "installed") {
+      out.push({
+        key: window.sbInstall.t("palette") + " " + window.sbInstall.t("row"),
+        title: window.sbInstall.t("palette"),
+        sub: window.sbInstall.t("rowSub"),
+        color: "linear-gradient(160deg,#6f7480,#2a2c33)",
+        icon: "",
+        run: function () { window.sbInstall.go(); }
+      });
+    }
+    /* Слово человека к делу (D-290): «зачем» — одной строкой, по просьбе. */
+    if (window.sbBaton && window.sbBaton.askWhy && (baton || Object.keys(window.openWindows || {}).length)) {
+      out.push({
+        key: window.sbBaton.t("whyCmd"),
+        title: window.sbBaton.t("whyCmd"),
+        sub: baton ? baton.said.split("\n")[0] : "",
+        color: "linear-gradient(160deg,#6f7480,#2a2c33)",
+        icon: "",
+        run: function () { window.sbBaton.askWhy(); }
+      });
+    }
     [["sbShortcutsOverlay", "k.shortcuts"],
      ["sbTaskOverlay", "k.windows"],
      ["sbClipOverlay", "k.clipboard"],
@@ -185,6 +207,9 @@
 
   window.openCmdk = function (prefill) { open(prefill); };
   window.sbClosePalette = close;
+  /* Что стоит в быстрых действиях сейчас — названиями (для законов и тех,
+     кто спрашивает; D-293). */
+  window.sbPaletteRows = function () { return appActions().concat(extraActions("")).map(function (r) { return { title: r.title, sub: r.sub }; }); };
   window.sbPaletteIsOpen = function () { return openState; };
 
   doc.addEventListener("keydown", function (ev) {

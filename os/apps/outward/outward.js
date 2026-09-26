@@ -102,6 +102,33 @@
     catch (e) { return d.default !== "off"; }
   }
 
+  /* ── СВИДЕТЕЛЬ (D-291): опись говорит, что МОЖЕТ уйти; Свидетель — что
+     ушло на самом деле, по учёту самого браузера. Этот вход и прошлый. */
+  function witnessHtml() {
+    var w = window.sbWitness;
+    if (!w) return "";
+    var tw = w.t;
+    function block(when, r) {
+      if (!r) return '<div class="ow-wit" data-when="' + when + '"><h4>' + esc(tw(when)) + '</h4><p class="ow-wit-none">' + esc(tw("first")) + "</p></div>";
+      var bad = Object.keys(r.undeclared || {});
+      return '<div class="ow-wit' + (bad.length ? " is-bad" : "") + '" data-when="' + when + '"><h4>' + esc(tw(when)) + "</h4>" +
+        '<dl class="ow-wit-facts">' +
+          "<dt>" + esc(tw("third")) + "</dt><dd>" + esc(Object.keys(r.third || {}).length ? Object.keys(r.third).map(function (h) { return h + " ×" + r.third[h]; }).join(", ") : tw("none")) + "</dd>" +
+          "<dt>" + esc(tw("undeclared")) + "</dt><dd>" + esc(bad.length ? bad.map(function (h) { return h + " ×" + r.undeclared[h]; }).join(", ") : "0") + "</dd>" +
+          "<dt>" + esc(tw("hand")) + "</dt><dd>" + esc(String(r.hand || 0)) + "</dd>" +
+          "<dt>" + esc(tw("self")) + "</dt><dd>" + esc(String(r.self || 0)) + "</dd>" +
+          "<dt>" + esc(tw("sealed")) + "</dt><dd>" + esc(String(r.sealed || 0)) + "</dd>" +
+        "</dl></div>";
+    }
+    var now = null, prev = null;
+    try { now = w.now(); prev = w.prev(); } catch (e) { now = null; prev = null; }
+    return '<section class="ow-witness" aria-label="' + esc(tw("title")) + '">' +
+      "<h3>" + esc(tw("title")) + "</h3>" +
+      '<div class="ow-wit-row">' + block("now", now) + block("prev", prev) + "</div>" +
+      '<p class="ow-wit-limit">' + esc(tw("limit")) + "</p>" +
+      "</section>";
+  }
+
   function render(win) {
     var host = (win && win.el) ? win.el.querySelector(".window-body") : win;
     if (!host) return;
@@ -143,6 +170,7 @@
           '<p class="ow-lead">' + esc(t.lead) + '</p>' +
           '<p class="ow-count"><b>' + list.length + '</b></p>' +
         '</div>' +
+        witnessHtml() +
         (list.length ? rows : '<p class="ow-none">' + esc(t.none) + '</p>') +
         '<p class="ow-honest">' + esc(t.honest) + '</p>' +
       '</div>';

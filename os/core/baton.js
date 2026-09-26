@@ -38,6 +38,13 @@
      основатель решит, оставаться ли ей включённой (радар baton-continuity).
      Лежит под замком, виден в Приватности, стирается вместе с местом. */
   var COUNTS = "sysbaby.baton.counts";
+  /* ── СЛОВО ЧЕЛОВЕКА (D-290) ─────────────────────────────────────────────
+     «Зачем» система не угадывает: его говорит только человек, одной строкой
+     и только по своей просьбе (быстрые действия → «Нить: зачем…»). Слово
+     привязано к делу — к той вещи, что была в фокусе, когда его сказали.
+     То же дело при следующем уходе — то же слово; другое дело — без него.
+     «Нет, я делал другое» — просто новое слово поверх прежнего. */
+  var WHY = "sysbaby.baton.why";
   var TOGGLE = "baton";
 
   var UI = {
@@ -47,6 +54,8 @@
       released: "Let go of where you stopped", releasedBody: "The rooms stay as they are; only the place is forgotten.",
       now: "just now", min: "{n} min ago", hour: "{n} h ago", day: "{n} d ago", since: "since {date}",
       changed: "changed since", q: "“{s}”", thought: "“…{s}”",
+      why: "What for: {s}", whyAsk: "What is this for? One line in your own words — the system will say it back when you return.",
+      whyCmd: "Thread: what for…",
       palette: "Continue where you stopped", paletteSub: "Where you stopped"
     },
     ru: {
@@ -55,6 +64,8 @@
       released: "Место отпущено", releasedBody: "Комнаты остались как есть — забыто только место.",
       now: "только что", min: "{n} мин назад", hour: "{n} ч назад", day: "{n} дн. назад", since: "с {date}",
       changed: "менялась с тех пор", q: "«{s}»", thought: "«…{s}»",
+      why: "Зачем: {s}", whyAsk: "Зачем вы это делаете? Одна строка своими словами — система скажет её вам, когда вернётесь.",
+      whyCmd: "Нить: зачем…",
       palette: "Продолжить с того места", paletteSub: "Где вы остановились"
     },
     ee: {
@@ -63,6 +74,8 @@
       released: "Koht on lahti lastud", releasedBody: "Toad jäid nagu olid — unustati ainult koht.",
       now: "just nüüd", min: "{n} min tagasi", hour: "{n} h tagasi", day: "{n} p tagasi", since: "alates {date}",
       changed: "on vahepeal muutunud", q: "„{s}“", thought: "„…{s}“",
+      why: "Milleks: {s}", whyAsk: "Milleks te seda teete? Üks rida oma sõnadega — süsteem ütleb selle teile tagasi, kui naasete.",
+      whyCmd: "Niit: milleks…",
       palette: "Jätka sealt, kus pooleli jäi", paletteSub: "Kus te pooleli jäite"
     }
   };
@@ -131,6 +144,8 @@
     if (!allowed() || !readable()) return false;
     var snap = snapshot();
     if (!snap) return false;
+    var w = readWhy();
+    if (w && w.anchor === anchorOf(snap)) snap.why = w.why;
     return write(snap);
   }
   doc.addEventListener("visibilitychange", function () { if (doc.visibilityState === "hidden") hold(); });
@@ -156,6 +171,19 @@
   }
   function title(id) { return window.sbAppTitle ? window.sbAppTitle(id) : id; }
   function cut(s, n) { s = String(s || "").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+  /* Чьё это дело: комната в фокусе и её вещь. */
+  function anchorOf(b) {
+    if (!b || !b.focus) return "";
+    var r = null;
+    b.rooms.forEach(function (x) { if (x.id === b.focus) r = x; });
+    var pl = r && r.place;
+    var who = pl ? (pl.id || pl.docId || pl.file || pl.card || pl.section || "") : "";
+    return b.focus + ":" + who;
+  }
+  function readWhy() {
+    if (!readable()) return null;
+    try { var w = JSON.parse(db().get(WHY) || "null"); return w && w.why ? w : null; } catch (e) { return null; }
+  }
   /* Что стоит на месте СЕЙЧАС. Место — указатель: комната, умеющая его
      прочесть (def.recall), отвечает живым текстом; вещи больше нет — null,
      и имени в карточке не будет. Старое место без recall говорит своим
@@ -180,7 +208,13 @@
       return title(r.id) + (name ? " — " + t("q", { s: name }) + (now.changed ? " (" + t("changed") + ")" : "") : "");
     });
     /* Вторая строка — недописанная мысль: строка, на которой стоял курсор. */
-    return parts.join(" · ") + " · " + ago(b.at) + (thought ? "\n" + t("thought", { s: thought }) : "");
+    /* Строка Свидетеля (D-291): что ушло наружу в прошлый вход — замером. */
+    var wl = "";
+    try { wl = window.sbWitness && window.sbWitness.line ? window.sbWitness.line() : ""; } catch (e) { wl = ""; }
+    return parts.join(" · ") + " · " + ago(b.at) +
+      (b.why ? "\n" + t("why", { s: cut(b.why, 90) }) : "") +
+      (thought ? "\n" + t("thought", { s: thought }) : "") +
+      (wl ? "\n" + wl : "");
   }
   function counts() {
     var d = db();
@@ -227,21 +261,52 @@
     var b = read();
     if (!b) return false;
     answered = true;
+    var w = db().get(WHY);
     write(null);
+    if (w) db().remove(WHY);
     if (window.sbShowUndoToast) {
-      window.sbShowUndoToast(t("released"), t("releasedBody"), function () { write(b); });
+      window.sbShowUndoToast(t("released"), t("releasedBody"), function () { if (w) db().set(WHY, w); write(b); });
     }
     return true;
   }
   function forget() {
     answered = true; hideCard();
     var d = db();
-    if (d) d.remove(COUNTS);
+    if (d) { d.remove(COUNTS); d.remove(WHY); }
     return write(null);
+  }
+  /* Своё слово: к открытому сейчас делу, а если ничего не открыто — к
+     делу, которое ждёт в эстафете. Пустая строка — слово снято. */
+  function setWhy(text) {
+    if (!allowed() || !readable()) return false;
+    var d = db(), v = String(text == null ? "" : text).trim();
+    var now = snapshot(), b = read();
+    var target = now || b;
+    if (!target) return false;
+    if (!v) { d.remove(WHY); if (b && b.why) { delete b.why; write(b); } refreshCard(); return true; }
+    d.set(WHY, JSON.stringify({ why: v.slice(0, 200), anchor: anchorOf(target), at: Date.now() }));
+    if (b && anchorOf(b) === anchorOf(target)) { b.why = v.slice(0, 200); write(b); }
+    else if (d.flushSync) d.flushSync();
+    refreshCard();
+    return true;
+  }
+  function askWhy() {
+    var w = readWhy(), b = read();
+    var cur = (b && b.why) || (w && w.why) || "";
+    var v = null;
+    try { v = window.prompt(t("whyAsk"), cur); } catch (e) { v = null; }
+    if (v === null) return false;
+    return setWhy(v);
   }
 
   var card = null;
   function hideCard() { if (card) { card.dismiss(); card = null; } }
+  /* Слово сказано, пока карточка стоит, — карточка говорит его сразу. */
+  function refreshCard() {
+    if (!card || !card.el) return;
+    var b = read(), el = card.el.querySelector(".toast-text");
+    if (b && el) { el.textContent = said(b); card.el.setAttribute("data-text", el.textContent); }
+  }
   function offer() {
     if (answered || card || !allowed()) return false;
     /* Пришли по ссылке «Передать» или из меню «Поделиться» — пришли за
@@ -285,6 +350,8 @@
     release: function () { hideCard(); return release(); },
     forget: forget,
     counts: counts,
+    why: setWhy,
+    askWhy: askWhy,
     t: t
   };
 })();

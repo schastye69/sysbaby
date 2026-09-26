@@ -1145,8 +1145,9 @@
      снимается по часам: его снимает ответ. Кнопки — действия; касание мимо
      кнопок убирает извещение, как и любое другое. «Не беспокоить» оно
      слушается: само пришедшее не говорит, когда просили тишины. */
-  window.showStandingToast = function (title, text, iconSvg, actions, extraClass) {
-    if (dnd()) return null;
+  window.showStandingToast = function (title, text, iconSvg, actions, extraClass, force) {
+    /* force — только для беды (D-291: выход вне описи): о ней молчать нельзя. */
+    if (dnd() && !force) return null;
     var t = buildToast(title, text, iconSvg, "toast-standing" + (extraClass ? " " + extraClass : ""), "event");
     var row = doc.createElement("div");
     row.className = "toast-actions";

@@ -177,6 +177,26 @@
 
   function ensureLoaded() { if (!tree || treeEpoch !== epochNow()) load(); }
 
+  /* Отпечаток содержимого (D-290): FNV-1a, 32 бита. Не шифр и не копия —
+     только ответ «тот же ли это текст». */
+  function printOf(text) {
+    var h = 0x811c9dc5, str = String(text == null ? "" : text);
+    for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    return str.length + ":" + h.toString(16);
+  }
+  /* Путь по именам папок от корня; нет папки — нет пути. */
+  function walkTo(names) {
+    ensureLoaded();
+    var stack = [tree], node = tree;
+    for (var i = 0; i < names.length; i++) {
+      var next = null;
+      (node.children || []).forEach(function (c) { if (!next && c && c.type === "folder" && c.name === names[i]) next = c; });
+      if (!next) return null;
+      node = next; stack.push(next);
+    }
+    return { stack: stack, node: node };
+  }
+
   function currentFolder() {
     ensureLoaded();
     if (!pathStack.length) pathStack = [tree];
@@ -958,6 +978,41 @@
          не открывается. Охраняется tools/hand-check.mjs. */
       gives: ["файл"],
       takes: ["запись", "письмо", "файл"],
+      /* МЕСТО ДЛЯ ЭСТАФЕТЫ (D-290): папки по именам и открытый файл —
+         указателем. Вместо копии содержимого — отпечаток: по нему видно,
+         менялся ли файл после ухода, а прочесть по нему нельзя ничего. */
+      where: function () {
+        var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("files") : null;
+        if (!win) return null;
+        ensureLoaded();
+        var folders = pathStack.slice(1).map(function (n) { return n.name; });
+        var node = previewIndex >= 0 ? (currentFolder().children || [])[previewIndex] : null;
+        var file = node && node.type === "file" ? node : null;
+        if (!file && !folders.length) return null;
+        return { path: folders, file: file ? file.name : null, docId: (file && file.docId) || null, mark: file ? printOf(file.content) : null };
+      },
+      resume: function (win, place) {
+        if (!win || !place) return false;
+        var folders = Array.isArray(place.path) ? place.path : [];
+        if (place.file) return !!window.sbFilesOpenResult(win, { path: folders.concat([place.file]), docId: place.docId, name: place.file });
+        var at = walkTo(folders);
+        if (!at) return false;
+        pathStack = at.stack; selectedIndex = -1; previewIndex = -1; editing = false;
+        render(win);
+        return true;
+      },
+      recall: function (place) {
+        if (!place) return null;
+        var at = walkTo(Array.isArray(place.path) ? place.path : []);
+        if (!at) return null;
+        if (!place.file) return { name: place.path.join(" / ") };
+        var hit = null;
+        (at.node.children || []).forEach(function (c) {
+          if (hit || !c || c.type !== "file") return;
+          if ((place.docId && c.docId === place.docId) || c.name === place.file) hit = c;
+        });
+        return hit ? { name: hit.name, changed: !!place.mark && printOf(hit.content) !== place.mark } : null;
+      },
       take: function (thing) {
         if (!thing || typeof thing.text !== "string") return false;
         ensureLoaded();

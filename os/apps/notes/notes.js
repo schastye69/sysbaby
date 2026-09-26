@@ -251,9 +251,24 @@
 
   /* -------------------------------------------------------------- render */
 
-  function listMarkup(rows) {
+  /* ── СПИСОК СТРОИТ ТОЛЬКО ТО, ЧТО ВИДНО (D-295) ──────────────────────
+     Час живого сеанса (perf-soak, 25.09.2026) показал: утечки нет, но
+     открытие Записей растёт вместе с числом записей — 108 мс при пустых,
+     151 мс при 326, потому что комната строила строку (и разбирала срок) для
+     каждой записи. У человека за год их тысячи. Теперь строится первая
+     порция и запись, открытая сейчас, где бы она ни стояла; остальное — по
+     кнопке «Показать ещё». Поиск ищет по всем записям, как и прежде.
+     Охраняется tools/notes-scale-check.mjs. */
+  var LIST_STEP = 60; /* ПОСТОЯННАЯ: строк за раз — два-три экрана списка и на телефоне, и на компьютере. */
+  function shownOf(win, rows) {
+    var n = Math.max(LIST_STEP, (win && win._notesShown) || 0);
+    for (var i = n; i < rows.length; i++) if (rows[i].id === activeId) { n = i + 1; break; }
+    return rows.slice(0, n);
+  }
+  function listMarkup(rows, win) {
     if (!rows.length) return '<div class="notes-empty-list">' + esc(t("nt.emptyList")) + "</div>";
-    return rows.map(function (n) {
+    var shown = shownOf(win, rows), rest = rows.length - shown.length;
+    return shown.map(function (n) {
       var preview = previewOf(n.text);
       /* ── СРОК ВИДЕН И В СПИСКЕ (v71) ────────────────────────────────────
          Срок читается из слов самой заметки (sbNoteDue в desktop.js) — тем
@@ -273,7 +288,8 @@
         (preview ? '<div class="notes-row-prev" data-sb-userdata>' + esc(preview) + "</div>" : "") +
         '<div class="notes-row-time">' + dueMark + esc(timeAgo(n.updatedAt)) + "</div>" +
         "</div>";
-    }).join("");
+    }).join("") +
+      (rest > 0 ? '<button type="button" class="notes-more" id="notesMore" data-rest="' + rest + '">' + esc(t("nt.more", { n: rest })) + "</button>" : "");
   }
 
   function editorMarkup(note) {
@@ -344,7 +360,7 @@
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5.5v13M5.5 12h13"/></svg>' +
             "</button>" +
           "</div>" +
-          '<div class="notes-list" id="notesList">' + listMarkup(rows) + "</div>" +
+          '<div class="notes-list" id="notesList">' + listMarkup(rows, win) + "</div>" +
         "</aside>" +
         '<section class="notes-editor" id="notesEditor">' + editorMarkup(active) + "</section>" +
       "</div>";
@@ -361,7 +377,7 @@
     /* Прокрутка человека переживает перерисовку — средство оболочки,
      общее для всех приложений (D-099). */
     var _sbKeep = window.sbKeepScroll ? window.sbKeepScroll(listEl.parentNode || listEl) : null;
-    listEl.innerHTML = listMarkup(filtered(sorted(), win._notesFilter || ""));
+    listEl.innerHTML = listMarkup(filtered(sorted(), win._notesFilter || ""), win);
     if (_sbKeep) _sbKeep();
     wireRows(win, listEl);
   }
@@ -369,6 +385,11 @@
   /* --------------------------------------------------------------- wiring */
 
   function wireRows(win, listEl) {
+    var more = listEl.querySelector("#notesMore");
+    if (more) more.addEventListener("click", function () {
+      win._notesShown = Math.max(LIST_STEP, win._notesShown || 0) + LIST_STEP;
+      refreshList(win);
+    });
     listEl.querySelectorAll(".notes-row").forEach(function (row) {
       row.addEventListener("click", function () {
         if (suppressClick) return;
@@ -384,6 +405,8 @@
     if (search) {
       search.addEventListener("input", function () {
         win._notesFilter = search.value;
+        /* Новый поиск — снова с первой порции. */
+        win._notesShown = 0;
         refreshList(win);
       });
     }

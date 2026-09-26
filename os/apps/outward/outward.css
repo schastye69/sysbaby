@@ -73,3 +73,23 @@
   border: 1px solid var(--line); border-left: 2px solid var(--accent-ring);
   background: rgba(255, 255, 255, .018); max-width: 78ch;
 }
+
+/* ── СВИДЕТЕЛЬ (D-291): что ушло на самом деле — этот вход и прошлый.
+   Опись выше говорит, что МОЖЕТ уйти; здесь — учёт самого браузера.
+   Выход вне описи горит цветом тревоги: его не должно быть никогда. */
+.ow-witness {
+  padding: 14px 15px 15px; border-radius: var(--r-card);
+  border: 1px solid var(--line); background: rgba(255, 255, 255, .026);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.ow-witness h3 { margin: 0; font-size: var(--f-lead); font-weight: 650; color: var(--ink); }
+.ow-wit-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.ow-wit { padding: 10px 12px; border-radius: var(--r-ctrl); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.ow-wit.is-bad { border-color: rgba(255, 150, 90, .55); }
+.ow-wit h4 { margin: 0; font-size: var(--f-micro); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
+.ow-wit-facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 3px 12px; }
+.ow-wit-facts dt { font-size: var(--f-ui); color: var(--ink-2); }
+.ow-wit-facts dd { margin: 0; font-size: var(--f-ui); color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ow-wit.is-bad .ow-wit-facts dd:nth-of-type(2) { color: rgb(255, 168, 112); }
+.ow-wit-none { margin: 0; font-size: var(--f-ui); color: var(--ink-2); }
+.ow-wit-limit { margin: 0; font-size: var(--f-ui); line-height: 1.6; color: var(--ink-2); max-width: 78ch; }

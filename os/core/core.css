@@ -2542,6 +2542,25 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
   margin-right: max(0px, calc(var(--fab-inset) + var(--fab-size) + var(--desk-row-gap) - (100vw - min(560px, 100vw - 32px)) / 2));
 }
 .toast-warn { border-color: rgba(255, 214, 10, .45); }
+/* ── КАК ПОСТАВИТЬ НА ЭКРАН, ГДЕ КНОПКИ НЕТ (D-293) ──────────────────────
+   Safari и Firefox странице кнопки не дают: два шага называются словами,
+   одним листом поверх стола, и закрываются одним нажатием. */
+.sb-install-guide {
+  position: fixed; inset: 0; z-index: var(--z-veil); display: grid; place-items: center;
+  padding: 20px; background: rgba(4, 5, 8, .62);
+}
+.sig-box {
+  width: min(420px, 100%); display: flex; flex-direction: column; gap: 12px;
+  padding: 20px; border-radius: var(--r-window); background: var(--glass-2);
+  border: 1px solid var(--line); box-shadow: var(--shadow);
+}
+.sig-box h3 { margin: 0; font-size: var(--f-lead); font-weight: 700; color: var(--ink); }
+.sig-box ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: var(--f-read); line-height: 1.5; color: var(--ink); }
+.sig-warn {
+  margin: 0; font-size: var(--f-ui); line-height: 1.55; color: var(--ink-2);
+  padding: 10px 12px; border-radius: var(--r-ctrl); border: 1px solid var(--line); border-left: 2px solid var(--accent-ring);
+}
+.sig-close { align-self: flex-end; min-height: 40px; padding: 0 18px; }
 /* Спокойное извещение (D-183): им говорится то, что НЕ является бедой. Потеря
    сети для этой системы — родное состояние, и цвет тревоги здесь был бы
    враньём вида. Оно берёт свет комнаты, а не жёлтый цвет предупреждения. */

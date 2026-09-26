@@ -7,7 +7,7 @@
      именно его метку читают снаружи: ежедневный наблюдатель, восьмой шаг
      выкладки и закон тестового контура. Ставится не руками, а
      tools/stamp-build.mjs — из единственного объявления версии. -->
-<meta name="sysbaby-build" content="v150">
+<meta name="sysbaby-build" content="v153">
 <title>sys.baby OS</title>
 <!-- ЗНАК. Один квадрат и он же, сдвинутый на 1,988 — та же величина, на которой
      построено поле обоев. Пересечение выбито: пустота в середине — это точка из
@@ -64,33 +64,39 @@
      build-stamp.mjs — ресурс без метки валит сборку. -->
 <!-- Растяжка памятью (D-275) грузится ДО хранилища: замок спрашивает её
      уже при первой двери. Свой код, в дереве, без WebAssembly. -->
-<script src="core/argon2.js?b=v150"></script>
-<script src="core/store.js?b=v150"></script>
+<script src="core/argon2.js?b=v153"></script>
+<script src="core/store.js?b=v153"></script>
 <!-- «В дом» (D-287): вещь из меню «Поделиться» берётся из памяти страницы
      сразу после хранилища и ждёт, пока встанет стол и откроется дверь. -->
-<script src="core/share.js?b=v150"></script>
+<script src="core/share.js?b=v153"></script>
+<!-- Свидетель (D-291): учёт запросов браузера читается с самого начала —
+     до оболочки, чтобы ни один запрос входа не прошёл мимо. -->
+<script src="core/witness.js?b=v153"></script>
+<!-- Поставить на экран (D-293): событие браузера beforeinstallprompt приходит
+     рано — модуль слушает его до оболочки, чтобы не пропустить. -->
+<script src="core/install.js?b=v153"></script>
 
-<link rel="stylesheet" href="core/core.css?b=v150" />
-<link rel="stylesheet" href="apps/files/files.css?b=v150" />
-<link rel="stylesheet" href="apps/browser/browser.css?b=v150" />
-<link rel="stylesheet" href="apps/player/player.css?b=v150" />
-<link rel="stylesheet" href="apps/viewer/viewer.css?b=v150" />
-<link rel="stylesheet" href="apps/notes/notes.css?b=v150" />
-<link rel="stylesheet" href="apps/mail/mail.css?b=v150" />
-<link rel="stylesheet" href="apps/messenger/messenger.css?b=v150" />
-<link rel="stylesheet" href="apps/search/search.css?b=v150" />
-<link rel="stylesheet" href="../shared/portfolio.view.css?b=v150" />
-<link rel="stylesheet" href="apps/project/project.css?b=v150" />
-<link rel="stylesheet" href="apps/settings/settings.css?b=v150" />
-<link rel="stylesheet" href="apps/echoes/echoes.css?b=v150" />
-<link rel="stylesheet" href="apps/build/build.css?b=v150" />
-<link rel="stylesheet" href="apps/lantern/lantern.css?b=v150" />
-<link rel="stylesheet" href="apps/keys/keys.css?b=v150" />
-<link rel="stylesheet" href="apps/solitaire/solitaire.css?b=v150" />
-<link rel="stylesheet" href="apps/chest/chest.css?b=v150" />
-<link rel="stylesheet" href="apps/vault/vault.css?b=v150" />
-<link rel="stylesheet" href="apps/outward/outward.css?b=v150" />
-<link rel="stylesheet" href="apps/handoff/handoff.css?b=v150" />
+<link rel="stylesheet" href="core/core.css?b=v153" />
+<link rel="stylesheet" href="apps/files/files.css?b=v153" />
+<link rel="stylesheet" href="apps/browser/browser.css?b=v153" />
+<link rel="stylesheet" href="apps/player/player.css?b=v153" />
+<link rel="stylesheet" href="apps/viewer/viewer.css?b=v153" />
+<link rel="stylesheet" href="apps/notes/notes.css?b=v153" />
+<link rel="stylesheet" href="apps/mail/mail.css?b=v153" />
+<link rel="stylesheet" href="apps/messenger/messenger.css?b=v153" />
+<link rel="stylesheet" href="apps/search/search.css?b=v153" />
+<link rel="stylesheet" href="../shared/portfolio.view.css?b=v153" />
+<link rel="stylesheet" href="apps/project/project.css?b=v153" />
+<link rel="stylesheet" href="apps/settings/settings.css?b=v153" />
+<link rel="stylesheet" href="apps/echoes/echoes.css?b=v153" />
+<link rel="stylesheet" href="apps/build/build.css?b=v153" />
+<link rel="stylesheet" href="apps/lantern/lantern.css?b=v153" />
+<link rel="stylesheet" href="apps/keys/keys.css?b=v153" />
+<link rel="stylesheet" href="apps/solitaire/solitaire.css?b=v153" />
+<link rel="stylesheet" href="apps/chest/chest.css?b=v153" />
+<link rel="stylesheet" href="apps/vault/vault.css?b=v153" />
+<link rel="stylesheet" href="apps/outward/outward.css?b=v153" />
+<link rel="stylesheet" href="apps/handoff/handoff.css?b=v153" />
 <!-- ── СИСТЕМА ЖИВЁТ БЕЗ СЕТИ (D-145) ───────────────────────────────────────
      Основатель: «необходимо сделать так, что даже, когда интернета на телефоне
      или другом устройстве нет, сайт sys.baby должен продолжать работу».
@@ -691,58 +697,59 @@
 
 
 <!-- ================================================================== scripts -->
-<script src="../shared/outward.data.js?b=v150"></script>
-<script src="../shared/floor.data.js?b=v150"></script>
-<script src="core/seals.js?b=v150"></script>
-<script src="core/shell.js?b=v150"></script>
-<script src="core/panels.js?b=v150"></script>
-<script src="core/palette.js?b=v150"></script>
-<script src="core/desktop.js?b=v150"></script>
-<script src="core/alarm.js?b=v150"></script>
-<script src="core/topbar.js?b=v150"></script>
-<script src="core/terminal.js?b=v150"></script>
-<script src="core/hand.js?b=v150"></script>
+<script src="../shared/outward.data.js?b=v153"></script>
+<script src="../shared/floor.data.js?b=v153"></script>
+<script src="core/seals.js?b=v153"></script>
+<script src="core/shell.js?b=v153"></script>
+<script src="core/panels.js?b=v153"></script>
+<script src="core/palette.js?b=v153"></script>
+<script src="core/desktop.js?b=v153"></script>
+<script src="core/alarm.js?b=v153"></script>
+<script src="core/topbar.js?b=v153"></script>
+<script src="core/terminal.js?b=v153"></script>
+<script src="core/hand.js?b=v153"></script>
 <!-- Права комнат (D-242): после оболочки — ей нужен живой реестр — и ДО
      комнат: ящик спрашивается в тот миг, когда комната берётся за диск. -->
-<script src="core/rights.js?b=v150"></script>
+<script src="core/rights.js?b=v153"></script>
 <!-- Что сейчас живо (D-243): после прав — прибор диска пишет через ящик
      комнаты, — и до комнат: нужды спрашиваются у них при регистрации. -->
-<script src="core/alive.js?b=v150"></script>
-<script src="core/links.js?b=v150"></script>
-<script src="core/field.js?b=v150"></script>
+<script src="core/alive.js?b=v153"></script>
+<script src="core/links.js?b=v153"></script>
+<script src="core/field.js?b=v153"></script>
 <!-- Синхронизация копий (D-172): после store.js — ей нужен и склад, и
      выгрузка профиля, и замок. -->
-<script src="core/sync.js?b=v150"></script>
+<script src="core/sync.js?b=v153"></script>
 
-<script src="../shared/portfolio.data.js?b=v150"></script>
-<script src="../shared/portfolio.strings.js?b=v150"></script>
-<script src="../shared/pricing.data.js?b=v150"></script>
+<script src="../shared/portfolio.data.js?b=v153"></script>
+<script src="../shared/portfolio.strings.js?b=v153"></script>
+<script src="../shared/pricing.data.js?b=v153"></script>
 
-<script src="apps/files/files.js?b=v150"></script>
-<script src="apps/browser/browser.js?b=v150"></script>
-<script src="apps/player/player.js?b=v150"></script>
-<script src="apps/viewer/viewer.js?b=v150"></script>
-<script src="apps/notes/notes.js?b=v150"></script>
-<script src="apps/mail/mail.js?b=v150"></script>
-<script src="apps/messenger/messenger.js?b=v150"></script>
-<script src="apps/search/search.js?b=v150"></script>
-<script src="../shared/portfolio.view.js?b=v150"></script>
-<script src="apps/project/project.js?b=v150"></script>
-<script src="apps/settings/settings.js?b=v150"></script>
-<script src="apps/echoes/echoes.js?b=v150"></script>
-<script src="apps/build/build.js?b=v150"></script>
+<script src="apps/files/files.js?b=v153"></script>
+<script src="apps/browser/browser.js?b=v153"></script>
+<script src="apps/player/player.js?b=v153"></script>
+<script src="apps/viewer/viewer.js?b=v153"></script>
+<script src="apps/notes/notes.js?b=v153"></script>
+<script src="apps/mail/mail.js?b=v153"></script>
+<script src="apps/messenger/messenger.js?b=v153"></script>
+<script src="apps/search/search.js?b=v153"></script>
+<script src="../shared/portfolio.view.js?b=v153"></script>
+<script src="apps/project/project.js?b=v153"></script>
+<script src="apps/settings/settings.js?b=v153"></script>
+<script src="apps/echoes/echoes.js?b=v153"></script>
+<script src="apps/build/build.js?b=v153"></script>
 <!-- Фонарь (D-185): свод того, что нужно знать, когда сети нет. -->
-<script src="apps/lantern/lantern.js?b=v150"></script>
-<script src="apps/keys/keys.js?b=v150"></script>
-<script src="apps/vault/vault.js?b=v150"></script>
-<script src="apps/outward/outward.js?b=v150"></script>
-<script src="apps/handoff/handoff.js?b=v150"></script>
-<script src="apps/solitaire/solitaire.js?b=v150"></script>
-<script src="apps/chest/prizes.data.js?b=v150"></script>
-<script src="apps/chest/chest.js?b=v150"></script>
+<script src="apps/lantern/lantern.js?b=v153"></script>
+<script src="apps/keys/keys.js?b=v153"></script>
+<script src="apps/vault/vault.js?b=v153"></script>
+<script src="apps/outward/outward.js?b=v153"></script>
+<script src="apps/handoff/handoff.js?b=v153"></script>
+<script src="apps/solitaire/solitaire.js?b=v153"></script>
+<script src="apps/chest/prizes.data.js?b=v153"></script>
+<script src="apps/chest/chest.js?b=v153"></script>
 <!-- Эстафета (D-286): после всех комнат — продолжение спрашивает у каждой
      её место и возвращает в него; до того, как встанет стол. -->
-<script src="core/baton.js?b=v150"></script>
+<script src="core/baton.js?b=v153"></script>
+  <script src="core/friction.js?b=v153"></script>
 <!-- Скамейка (Experimental/Phosphor) выведена из клиентской витрины v20.9:
      витрина продаёт сданные системы, а самое интригующее имя на столе
      конкурировало с подсказкой №1 за первое касание. Папка приложения

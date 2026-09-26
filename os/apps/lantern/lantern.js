@@ -831,6 +831,30 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("lantern", {
+      /* МЕСТО ДЛЯ ЭСТАФЕТЫ (D-290): какая беда открыта и на каком шаге.
+         Тот, кто ушёл посреди шагов, возвращается на тот же шаг. */
+      where: function () {
+        var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("lantern") : null;
+        return win && openId ? { card: openId, step: stepAt } : null;
+      },
+      resume: function (win, place) {
+        if (!win || !place || !findCard(place.card)) return false;
+        openId = place.card;
+        stepAt = Math.max(0, Number(place.step) || 0);
+        render(win);
+        return true;
+      },
+      recall: function (place) {
+        var c = place && findCard(place.card);
+        if (!c) return null;
+        var L = lang();
+        /* ОТКАТ: перевода карточки нет — английский, как и в самой комнате. */
+        var body = c[L] || c.en;
+        /* ОТКАТ: слов комнаты на этом языке нет — английские. */
+        var t = UI[L] || UI.en;
+        var n = body.steps.length, i = Math.max(0, Math.min(Number(place.step) || 0, n - 1));
+        return { name: body.title + ", " + t.step.toLowerCase() + " " + (i + 1) + " " + t.of + " " + n };
+      },
       title: UI.en.title,
       label: UI.en.label,
       i18n: {

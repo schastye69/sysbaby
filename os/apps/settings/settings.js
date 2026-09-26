@@ -129,6 +129,7 @@
       return '<option value="' + esc(l.code) + '"' + (l.code === langNow ? " selected" : "") + ">" + esc(l.label) + "</option>";
     }).join("");
     return '<h2 class="st-title">' + esc(t("set.tab.general")) + "</h2>" +
+      installRow() +
       rowMarkup(esc(t("set.general.identity")),
         esc(t("set.general.identitySub", { mail: appName("mail"), messenger: appName("messenger") })),
         '<span class="st-username"><input type="text" id="stUsername" maxlength="18" spellcheck="false" autocomplete="off" value="' + esc(name) + '">' +
@@ -281,12 +282,41 @@
 
   function profilesApi() { return window.sbProfiles || null; }
 
+  /* Поставить систему на экран (D-293). Слова — у модуля install.js: у
+     него одного знание, какой браузер что умеет. */
+  function installRow() {
+    var I = window.sbInstall;
+    if (!I) return "";
+    var here = I.state() === "installed";
+    return rowMarkup(esc(I.t("row")), esc(I.t("rowSub")),
+      '<button type="button" class="st-btn' + (here ? "" : " primary") + '" id="stInstall"' + (here ? " disabled" : "") + ">" + esc(here ? I.t("here") : I.t("go")) + "</button>");
+  }
+
   /* Счёт ответов на вопрос эстафеты (D-289) — виден тому, чей он. */
   function batonCounts() {
     var c = null;
     try { c = window.sbBaton && window.sbBaton.counts ? window.sbBaton.counts() : null; } catch (err) { console.error("[settings] baton counts failed", err); }
     if (!c || !(c.go + c.release + c.later)) return "";
     return " " + esc(t("set.privacy.batonCounts", { go: c.go, release: c.release, later: c.later }));
+  }
+
+  /* Журнал трения (D-294): выключен по умолчанию. Всё, что он знает, видно
+     здесь же — числа и предложения; слова — у модуля friction.js. */
+  function frictionMarkup() {
+    var F = window.sbFriction;
+    if (!F) return "";
+    var L = null, offers = [];
+    try { L = F.ledger(); offers = F.offers(); } catch (err) { console.error("[settings] friction read failed", err); }
+    var sub = esc(F.t("rowSub")) + (L ? " " + esc(F.t("counts", { opens: L.opens, quick: L.quick })) : "");
+    var html = rowMarkup(esc(F.t("row")), sub,
+      (L ? '<button type="button" class="st-btn" id="stFrictionErase">' + esc(F.t("erase")) + "</button> " : "") + switchMarkup("friction"));
+    offers.forEach(function (o) {
+      html += '<div class="st-card st-friction" data-friction-offer="' + esc(o.id) + '" data-kind="' + esc(o.kind) + '">' +
+        "<p>" + esc(o.text) + "</p>" +
+        '<p><button type="button" class="st-btn primary" data-friction-yes="' + esc(o.id) + '">' + esc(F.t("accept")) + "</button> " +
+        '<button type="button" class="st-btn" data-friction-no="' + esc(o.id) + '">' + esc(F.t("decline")) + "</button></p></div>";
+    });
+    return html;
   }
 
   function privacyMarkup() {
@@ -323,6 +353,7 @@
       rowMarkup(esc(t("set.privacy.baton")), esc(t("set.privacy.batonSub")) + batonCounts(),
         (window.sbBaton && (window.sbBaton.peek() || batonCounts()) ? '<button type="button" class="st-btn" id="stBatonForget">' + esc(t("set.privacy.batonForget")) + "</button> " : "") +
         switchMarkup("baton")) +
+      frictionMarkup() +
       rowMarkup(esc(t("set.privacy.storage")), "", '<span class="st-value" id="stStorage">' + esc(t("set.storage.measuring")) + "</span>") +
       rowMarkup(esc(t("set.privacy.clear")), esc(t("set.privacy.clearSub")),
         '<button type="button" class="st-btn danger" id="stClearAll">' + esc(t("set.privacy.clearBtn")) + "</button>") +
@@ -564,6 +595,12 @@
   document.addEventListener("sysbaby:setting-changed", liveSync);
 
   function wireGeneral(win, host) {
+    var inst = host.querySelector("#stInstall");
+    if (inst && window.sbInstall) {
+      inst.addEventListener("click", function () {
+        Promise.resolve(window.sbInstall.go()).then(function () { render(win); }, function () { render(win); });
+      });
+    }
     var langSel = host.querySelector("#stLang");
     if (langSel) {
       langSel.addEventListener("change", function () {
@@ -722,6 +759,21 @@
   /* -------------------------------------------------------------- privacy */
 
   function wirePrivacy(win, host) {
+    var frictionErase = host.querySelector("#stFrictionErase");
+    if (frictionErase) {
+      frictionErase.addEventListener("click", function () {
+        try { if (window.sbFriction) window.sbFriction.erase(); } catch (err) { console.error("[settings] friction erase failed", err); }
+        render(win);
+      });
+    }
+    host.querySelectorAll("[data-friction-yes], [data-friction-no]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var yes = btn.hasAttribute("data-friction-yes");
+        var id = btn.getAttribute(yes ? "data-friction-yes" : "data-friction-no");
+        try { if (window.sbFriction) window.sbFriction.answer(id, yes); } catch (err) { console.error("[settings] friction answer failed", err); }
+        render(win);
+      });
+    });
     var batonForget = host.querySelector("#stBatonForget");
     if (batonForget) {
       batonForget.addEventListener("click", function () {
@@ -1015,6 +1067,20 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("settings", {
+      /* МЕСТО ДЛЯ ЭСТАФЕТЫ (D-290): открытый раздел. */
+      where: function () {
+        var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("settings") : null;
+        return win && win._settingsSection && win._settingsSection !== "general" ? { section: win._settingsSection } : null;
+      },
+      resume: function (win, place) {
+        if (!win || !place || !RENDERERS[place.section]) return false;
+        win._settingsSection = place.section;
+        render(win);
+        return true;
+      },
+      recall: function (place) {
+        return place && RENDERERS[place.section] ? { name: t("set.tab." + place.section) } : null;
+      },
       /* ЧТО НУЖНО, ЧТОБЫ ДЕЛАТЬ РАБОТУ (D-243). Комната НАЗЫВАЕТ нужду;
          есть ли она — измеряет прибор, а не она сама.
          Охраняется tools/alive-check.mjs. */

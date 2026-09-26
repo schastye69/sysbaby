@@ -114,6 +114,14 @@
 
 .notes-row-time { margin-top: 2px; font-size: var(--f-meta); color: var(--ink-3); }
 
+/* «Показать ещё» — продолжение списка, а не кнопка действия (D-295). */
+.notes-more {
+  display: block; width: 100%; margin-top: 6px; padding: 9px 10px;
+  border-radius: var(--r-card); border: 1px solid var(--line);
+  background: transparent; color: var(--ink-2); font: inherit; font-size: var(--f-ui);
+  cursor: pointer; text-align: center;
+}
+
 .notes-empty-list {
   padding: 22px 12px;
   text-align: center;

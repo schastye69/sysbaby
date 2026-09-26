@@ -1013,6 +1013,22 @@
 
   if (typeof window.registerApp === "function") {
     window.registerApp("messenger", {
+      /* МЕСТО ДЛЯ ЭСТАФЕТЫ (D-290): открытая переписка — указателем.
+         Пришли новые слова после ухода — карточка скажет, что менялась. */
+      where: function () {
+        var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("messenger") : null;
+        return win && activeId != null && byId(activeId) ? { id: String(activeId) } : null;
+      },
+      resume: function (win, place) {
+        return !!(win && place && window.sbMessengerOpenResult(win, { id: place.id }));
+      },
+      recall: function (place, since) {
+        var c = place && byId(place.id);
+        if (!c) return null;
+        var last = 0;
+        (c.messages || []).forEach(function (m) { if (m && m.ts > last) last = m.ts; });
+        return { name: c.name, changed: !!(since && last > since) };
+      },
       /* ЧЕМ ЭТА КОМНАТА ОТКРЫВАЕТСЯ СНАРУЖИ (D-245). Дверь, о которой хозяин
          не сказал, — незваная: ровно из таких выросли шестнадцать частных
          ходов, каждый правый в свой день. Охраняется tools/hand-check.mjs. */
