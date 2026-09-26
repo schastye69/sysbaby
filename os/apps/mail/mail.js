@@ -917,7 +917,7 @@
     if (navigator.onLine === false) { fail(t("ml.fail.offline")); return; }
 
     var fd = new FormData();
-    fd.append("_subject", "sys.baby OS letter — " + (fields.subject.trim() || "(no subject)"));
+    fd.append("_subject", "sys.baby private OS letter — " + (fields.subject.trim() || "(no subject)"));
     fd.append("_template", "table");
     fd.append("_captcha", "false");
     /* Ниже — не интерфейс, а полезная нагрузка письма к нам в почту.
@@ -927,7 +927,7 @@
     fd.append("Preferred reply channel", fields.channel || "(not specified)");
     fd.append("Reply contact", fields.contact.trim() || "(not provided)");
     fd.append("Sender profile", myAddress());
-    fd.append("Origin", "Letters · sys.baby OS");
+    fd.append("Origin", "Letters · sys.baby private OS");
 
     fetch(RELAY, { method: "POST", body: fd, headers: { Accept: "application/json" } })
       .then(function (response) {

@@ -7,8 +7,10 @@
      именно его метку читают снаружи: ежедневный наблюдатель, восьмой шаг
      выкладки и закон тестового контура. Ставится не руками, а
      tools/stamp-build.mjs — из единственного объявления версии. -->
-<meta name="sysbaby-build" content="v153">
-<title>sys.baby OS</title>
+<meta name="sysbaby-build" content="v155">
+<title>sys.baby private OS</title>
+<!-- Имя системы (D-298): одно объявление для страницы, его же несёт манифест. -->
+<meta name="application-name" content="sys.baby private OS">
 <!-- ЗНАК. Один квадрат и он же, сдвинутый на 1,988 — та же величина, на которой
      построено поле обоев. Пересечение выбито: пустота в середине — это точка из
      sys . baby, которой в словесном знаке дан воздух волосяными пробелами.
@@ -16,7 +18,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cstyle%3Epath%7Bfill:%23111318%7D@media(prefers-color-scheme:dark)%7Bpath%7Bfill:%23e9e9ec%7D%7D%3C/style%3E%3Cpath fill-rule='evenodd' d='M10.06 26.06a16 16 0 0 1 16-16H66.06V29.94H36.94a7 7 0 0 0-7 7V70.06H10.06ZM89.94 73.94a16 16 0 0 1-16 16H29.94V70.06H63.06a7 7 0 0 0 7-7V29.94H89.94Z'/%3E%3C/svg%3E">
 <link rel="mask-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cstyle%3Epath%7Bfill:%23111318%7D@media(prefers-color-scheme:dark)%7Bpath%7Bfill:%23e9e9ec%7D%7D%3C/style%3E%3Cpath fill-rule='evenodd' d='M10.06 26.06a16 16 0 0 1 16-16H66.06V29.94H36.94a7 7 0 0 0-7 7V70.06H10.06ZM89.94 73.94a16 16 0 0 1-16 16H29.94V70.06H63.06a7 7 0 0 0 7-7V29.94H89.94Z'/%3E%3C/svg%3E" color="#e0663c">
 
-<meta name="description" content="sys.baby OS — a desktop that shows what an automated business system feels like." />
+<meta name="description" content="sys.baby private OS — a private OS in your browser: nothing you make leaves your device in readable form." />
 <meta name="color-scheme" content="dark light" />
 <!-- Манифест (D-287): система ставится на телефон как приложение и стоит в
      меню «Поделиться». Значки — растр по необходимости: телефон не берёт
@@ -64,39 +66,40 @@
      build-stamp.mjs — ресурс без метки валит сборку. -->
 <!-- Растяжка памятью (D-275) грузится ДО хранилища: замок спрашивает её
      уже при первой двери. Свой код, в дереве, без WebAssembly. -->
-<script src="os/core/argon2.js?b=v153"></script>
-<script src="os/core/store.js?b=v153"></script>
+<script src="os/core/argon2.js?b=v155"></script>
+<script src="os/core/store.js?b=v155"></script>
 <!-- «В дом» (D-287): вещь из меню «Поделиться» берётся из памяти страницы
      сразу после хранилища и ждёт, пока встанет стол и откроется дверь. -->
-<script src="os/core/share.js?b=v153"></script>
+<script src="os/core/share.js?b=v155"></script>
 <!-- Свидетель (D-291): учёт запросов браузера читается с самого начала —
      до оболочки, чтобы ни один запрос входа не прошёл мимо. -->
-<script src="os/core/witness.js?b=v153"></script>
+<script src="os/core/witness.js?b=v155"></script>
 <!-- Поставить на экран (D-293): событие браузера beforeinstallprompt приходит
      рано — модуль слушает его до оболочки, чтобы не пропустить. -->
-<script src="os/core/install.js?b=v153"></script>
+<script src="os/core/install.js?b=v155"></script>
+<script src="os/core/survival.js?b=v155"></script>
 
-<link rel="stylesheet" href="os/core/core.css?b=v153" />
-<link rel="stylesheet" href="os/apps/files/files.css?b=v153" />
-<link rel="stylesheet" href="os/apps/browser/browser.css?b=v153" />
-<link rel="stylesheet" href="os/apps/player/player.css?b=v153" />
-<link rel="stylesheet" href="os/apps/viewer/viewer.css?b=v153" />
-<link rel="stylesheet" href="os/apps/notes/notes.css?b=v153" />
-<link rel="stylesheet" href="os/apps/mail/mail.css?b=v153" />
-<link rel="stylesheet" href="os/apps/messenger/messenger.css?b=v153" />
-<link rel="stylesheet" href="os/apps/search/search.css?b=v153" />
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v153" />
-<link rel="stylesheet" href="os/apps/project/project.css?b=v153" />
-<link rel="stylesheet" href="os/apps/settings/settings.css?b=v153" />
-<link rel="stylesheet" href="os/apps/echoes/echoes.css?b=v153" />
-<link rel="stylesheet" href="os/apps/build/build.css?b=v153" />
-<link rel="stylesheet" href="os/apps/lantern/lantern.css?b=v153" />
-<link rel="stylesheet" href="os/apps/keys/keys.css?b=v153" />
-<link rel="stylesheet" href="os/apps/solitaire/solitaire.css?b=v153" />
-<link rel="stylesheet" href="os/apps/chest/chest.css?b=v153" />
-<link rel="stylesheet" href="os/apps/vault/vault.css?b=v153" />
-<link rel="stylesheet" href="os/apps/outward/outward.css?b=v153" />
-<link rel="stylesheet" href="os/apps/handoff/handoff.css?b=v153" />
+<link rel="stylesheet" href="os/core/core.css?b=v155" />
+<link rel="stylesheet" href="os/apps/files/files.css?b=v155" />
+<link rel="stylesheet" href="os/apps/browser/browser.css?b=v155" />
+<link rel="stylesheet" href="os/apps/player/player.css?b=v155" />
+<link rel="stylesheet" href="os/apps/viewer/viewer.css?b=v155" />
+<link rel="stylesheet" href="os/apps/notes/notes.css?b=v155" />
+<link rel="stylesheet" href="os/apps/mail/mail.css?b=v155" />
+<link rel="stylesheet" href="os/apps/messenger/messenger.css?b=v155" />
+<link rel="stylesheet" href="os/apps/search/search.css?b=v155" />
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v155" />
+<link rel="stylesheet" href="os/apps/project/project.css?b=v155" />
+<link rel="stylesheet" href="os/apps/settings/settings.css?b=v155" />
+<link rel="stylesheet" href="os/apps/echoes/echoes.css?b=v155" />
+<link rel="stylesheet" href="os/apps/build/build.css?b=v155" />
+<link rel="stylesheet" href="os/apps/lantern/lantern.css?b=v155" />
+<link rel="stylesheet" href="os/apps/keys/keys.css?b=v155" />
+<link rel="stylesheet" href="os/apps/solitaire/solitaire.css?b=v155" />
+<link rel="stylesheet" href="os/apps/chest/chest.css?b=v155" />
+<link rel="stylesheet" href="os/apps/vault/vault.css?b=v155" />
+<link rel="stylesheet" href="os/apps/outward/outward.css?b=v155" />
+<link rel="stylesheet" href="os/apps/handoff/handoff.css?b=v155" />
 <!-- ── СИСТЕМА ЖИВЁТ БЕЗ СЕТИ (D-145) ───────────────────────────────────────
      Основатель: «необходимо сделать так, что даже, когда интернета на телефоне
      или другом устройстве нет, сайт sys.baby должен продолжать работу».
@@ -141,6 +144,14 @@
   if (!("serviceWorker" in navigator)) return;
   window.addEventListener("load", function () {
     navigator.serviceWorker.register("sw.js").then(function (reg) {
+      /* Прежние входы /os/ и /test/ оставили в браузерах своих работников
+         (D-297). Снимаются все работники ВНУТРИ своей области и только они:
+         копия в /test/ не снимет корень, корень снимет /os/ и /test/. */
+      if (navigator.serviceWorker.getRegistrations) {
+        navigator.serviceWorker.getRegistrations().then(function (list) {
+          list.forEach(function (r) { if (r.scope !== reg.scope && r.scope.indexOf(reg.scope) === 0) r.unregister(); });
+        }, function () { /* нечего снимать */ });
+      }
       function tellHim() {
         var w = reg.active || navigator.serviceWorker.controller;
         if (!w) return;
@@ -267,7 +278,7 @@
 <!-- ========================================================== boot progress -->
 <section id="sbBoot" aria-hidden="true">
   <div class="boot-mark"></div>
-  <p class="boot-name">sys.baby OS</p>
+  <p class="boot-name">sys.baby private OS</p>
   <p class="boot-status" id="bootStatus">Preparing your system</p>
   <div class="boot-track"><div class="boot-bar" id="bootBar"></div></div>
 </section>
@@ -304,7 +315,7 @@
          you watched arrive is what stays with you. The wordmark carries the
          domain, so the identity beside it is just the user — the bar reads
          "sys.baby / guest" rather than saying sys.baby twice. -->
-    <button class="tb-mark" id="sbTopMark" type="button" title="sys.baby OS — clear the desk: minimise every window" data-i18n-title="aria.minimizeAll" aria-label="sys.baby OS — clear the desk: minimise every window" data-i18n-aria="aria.minimizeAll">
+    <button class="tb-mark" id="sbTopMark" type="button" title="sys.baby private OS — clear the desk: minimise every window" data-i18n-title="aria.minimizeAll" aria-label="sys.baby private OS — clear the desk: minimise every window" data-i18n-aria="aria.minimizeAll">
       <span class="mark-word sb-wm" aria-label="sys.baby"><span class="sb-vh">sys.baby</span><svg class="sb-min" viewBox="0 0 100 100" aria-hidden="true"><path class="sb-hs" d="M10.06 26.06a16 16 0 0 1 16-16H66.06V29.94H36.94a7 7 0 0 0-7 7V70.06H10.06Z"/><path class="sb-hb" d="M89.94 73.94a16 16 0 0 1-16 16H29.94V70.06H63.06a7 7 0 0 0 7-7V29.94H89.94Z"/></svg></span>
     </button>
     <span class="tb-sep" aria-hidden="true"></span>
@@ -697,59 +708,59 @@
 
 
 <!-- ================================================================== scripts -->
-<script src="shared/outward.data.js?b=v153"></script>
-<script src="shared/floor.data.js?b=v153"></script>
-<script src="os/core/seals.js?b=v153"></script>
-<script src="os/core/shell.js?b=v153"></script>
-<script src="os/core/panels.js?b=v153"></script>
-<script src="os/core/palette.js?b=v153"></script>
-<script src="os/core/desktop.js?b=v153"></script>
-<script src="os/core/alarm.js?b=v153"></script>
-<script src="os/core/topbar.js?b=v153"></script>
-<script src="os/core/terminal.js?b=v153"></script>
-<script src="os/core/hand.js?b=v153"></script>
+<script src="shared/outward.data.js?b=v155"></script>
+<script src="shared/floor.data.js?b=v155"></script>
+<script src="os/core/seals.js?b=v155"></script>
+<script src="os/core/shell.js?b=v155"></script>
+<script src="os/core/panels.js?b=v155"></script>
+<script src="os/core/palette.js?b=v155"></script>
+<script src="os/core/desktop.js?b=v155"></script>
+<script src="os/core/alarm.js?b=v155"></script>
+<script src="os/core/topbar.js?b=v155"></script>
+<script src="os/core/terminal.js?b=v155"></script>
+<script src="os/core/hand.js?b=v155"></script>
 <!-- Права комнат (D-242): после оболочки — ей нужен живой реестр — и ДО
      комнат: ящик спрашивается в тот миг, когда комната берётся за диск. -->
-<script src="os/core/rights.js?b=v153"></script>
+<script src="os/core/rights.js?b=v155"></script>
 <!-- Что сейчас живо (D-243): после прав — прибор диска пишет через ящик
      комнаты, — и до комнат: нужды спрашиваются у них при регистрации. -->
-<script src="os/core/alive.js?b=v153"></script>
-<script src="os/core/links.js?b=v153"></script>
-<script src="os/core/field.js?b=v153"></script>
+<script src="os/core/alive.js?b=v155"></script>
+<script src="os/core/links.js?b=v155"></script>
+<script src="os/core/field.js?b=v155"></script>
 <!-- Синхронизация копий (D-172): после store.js — ей нужен и склад, и
      выгрузка профиля, и замок. -->
-<script src="os/core/sync.js?b=v153"></script>
+<script src="os/core/sync.js?b=v155"></script>
 
-<script src="shared/portfolio.data.js?b=v153"></script>
-<script src="shared/portfolio.strings.js?b=v153"></script>
-<script src="shared/pricing.data.js?b=v153"></script>
+<script src="shared/portfolio.data.js?b=v155"></script>
+<script src="shared/portfolio.strings.js?b=v155"></script>
+<script src="shared/pricing.data.js?b=v155"></script>
 
-<script src="os/apps/files/files.js?b=v153"></script>
-<script src="os/apps/browser/browser.js?b=v153"></script>
-<script src="os/apps/player/player.js?b=v153"></script>
-<script src="os/apps/viewer/viewer.js?b=v153"></script>
-<script src="os/apps/notes/notes.js?b=v153"></script>
-<script src="os/apps/mail/mail.js?b=v153"></script>
-<script src="os/apps/messenger/messenger.js?b=v153"></script>
-<script src="os/apps/search/search.js?b=v153"></script>
-<script src="shared/portfolio.view.js?b=v153"></script>
-<script src="os/apps/project/project.js?b=v153"></script>
-<script src="os/apps/settings/settings.js?b=v153"></script>
-<script src="os/apps/echoes/echoes.js?b=v153"></script>
-<script src="os/apps/build/build.js?b=v153"></script>
+<script src="os/apps/files/files.js?b=v155"></script>
+<script src="os/apps/browser/browser.js?b=v155"></script>
+<script src="os/apps/player/player.js?b=v155"></script>
+<script src="os/apps/viewer/viewer.js?b=v155"></script>
+<script src="os/apps/notes/notes.js?b=v155"></script>
+<script src="os/apps/mail/mail.js?b=v155"></script>
+<script src="os/apps/messenger/messenger.js?b=v155"></script>
+<script src="os/apps/search/search.js?b=v155"></script>
+<script src="shared/portfolio.view.js?b=v155"></script>
+<script src="os/apps/project/project.js?b=v155"></script>
+<script src="os/apps/settings/settings.js?b=v155"></script>
+<script src="os/apps/echoes/echoes.js?b=v155"></script>
+<script src="os/apps/build/build.js?b=v155"></script>
 <!-- Фонарь (D-185): свод того, что нужно знать, когда сети нет. -->
-<script src="os/apps/lantern/lantern.js?b=v153"></script>
-<script src="os/apps/keys/keys.js?b=v153"></script>
-<script src="os/apps/vault/vault.js?b=v153"></script>
-<script src="os/apps/outward/outward.js?b=v153"></script>
-<script src="os/apps/handoff/handoff.js?b=v153"></script>
-<script src="os/apps/solitaire/solitaire.js?b=v153"></script>
-<script src="os/apps/chest/prizes.data.js?b=v153"></script>
-<script src="os/apps/chest/chest.js?b=v153"></script>
+<script src="os/apps/lantern/lantern.js?b=v155"></script>
+<script src="os/apps/keys/keys.js?b=v155"></script>
+<script src="os/apps/vault/vault.js?b=v155"></script>
+<script src="os/apps/outward/outward.js?b=v155"></script>
+<script src="os/apps/handoff/handoff.js?b=v155"></script>
+<script src="os/apps/solitaire/solitaire.js?b=v155"></script>
+<script src="os/apps/chest/prizes.data.js?b=v155"></script>
+<script src="os/apps/chest/chest.js?b=v155"></script>
 <!-- Эстафета (D-286): после всех комнат — продолжение спрашивает у каждой
      её место и возвращает в него; до того, как встанет стол. -->
-<script src="os/core/baton.js?b=v153"></script>
-  <script src="os/core/friction.js?b=v153"></script>
+<script src="os/core/baton.js?b=v155"></script>
+  <script src="os/core/friction.js?b=v155"></script>
 <!-- Скамейка (Experimental/Phosphor) выведена из клиентской витрины v20.9:
      витрина продаёт сданные системы, а самое интригующее имя на столе
      конкурировало с подсказкой №1 за первое касание. Папка приложения

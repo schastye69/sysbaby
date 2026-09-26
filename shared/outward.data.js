@@ -156,15 +156,15 @@ window.SB_OUTWARD = {
         "ee": "Kirjad — saatmine"
       },
       "where": [
-        "os/apps/mail/mail.js:858"
+        "os/apps/mail/mail.js:930"
       ],
       "side": "third",
       "byHand": true,
       "host": "formsubmit.co",
       "what": {
-        "ru": "Весь текст письма, имя и обратный адрес, которые вы вписали, и метка «Letters · sys.baby OS».",
-        "en": "The full text of the letter, the name and reply address you entered, and the tag “Letters · sys.baby OS”.",
-        "ee": "Kirja kogu tekst, sinu sisestatud nimi ja vastusaadress ning silt „Letters · sys.baby OS“."
+        "ru": "Весь текст письма, имя и обратный адрес, которые вы вписали, и метка «Letters · sys.baby private OS».",
+        "en": "The full text of the letter, the name and reply address you entered, and the tag “Letters · sys.baby private OS”.",
+        "ee": "Kirja kogu tekst, sinu sisestatud nimi ja vastusaadress ning silt „Letters · sys.baby private OS“."
       },
       "who": {
         "ru": "Служба formsubmit.co и её владельцы — письмо проходит через их машину открытым, это не наш сервер. И почтовый ящик sys.baby, куда оно придёт.",

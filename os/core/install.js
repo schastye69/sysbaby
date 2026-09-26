@@ -47,6 +47,10 @@
       here: "Already on this screen", palette: "Put sys.baby on this screen",
       guideTitle: "Two taps, and it is on the screen",
       ios1: "Tap «Share» at the bottom of Safari (the square with the arrow).", ios2: "Choose «Add to Home Screen».",
+      ios1x: "In Chrome and other iPhone browsers tap «Share» — in Chrome it is on the right of the address bar.",
+      crWhy: "Chrome offers one-tap install once you have spent half a minute on the page and tapped it at least once — or it stays silent because sys.baby is already on this device. Until then, through its menu:",
+      cra1: "Tap ⋮ at the top right of Chrome.", cra2: "Choose «Install app» or «Add to Home screen».",
+      crd1: "Click the install icon at the right of the address bar (a screen with an arrow), or open the browser menu ⋮.", crd2: "Choose «Install sys.baby».",
       iosWarn: "On iPhone and iPad the icon gets its own storage, separate from Safari: what you wrote in Safari will not appear in it. To carry it over — Settings → Privacy: «Export this account's data» here, «Import a backup file» there.",
       mac1: "In Safari's menu choose «File».", mac2: "Choose «Add to Dock».",
       ff1: "Firefox on a Mac or on Linux does not put sites on the screen as apps.", ff2: "Open sys.baby in Chrome or Edge — the button there does it in one tap.",
@@ -60,6 +64,10 @@
       here: "Уже стоит на этом экране", palette: "Поставить sys.baby на экран",
       guideTitle: "Два нажатия — и она на экране",
       ios1: "Нажмите «Поделиться» внизу Safari (квадрат со стрелкой).", ios2: "Выберите «На экран Домой».",
+      ios1x: "В Chrome и других браузерах на iPhone нажмите «Поделиться» — в Chrome он справа в адресной строке.",
+      crWhy: "Chrome предлагает поставить одним нажатием, когда вы пробыли на странице полминуты и хотя бы раз нажали на неё, — или молчит, потому что sys.baby уже стоит на этом устройстве. До тех пор — через его меню:",
+      cra1: "Нажмите ⋮ справа вверху Chrome.", cra2: "Выберите «Установить приложение» или «Добавить на главный экран».",
+      crd1: "Нажмите значок установки справа в адресной строке (экран со стрелкой) или откройте меню браузера ⋮.", crd2: "Выберите «Установить sys.baby».",
       iosWarn: "На iPhone и iPad у значка своё хранилище, отдельное от Safari: написанное в Safari в нём не появится. Перенести — Настройки → Приватность: «Экспортировать данные аккаунта» здесь и «Импортировать резервную копию» там.",
       mac1: "В меню Safari выберите «Файл».", mac2: "Выберите «Добавить в Dock».",
       ff1: "Firefox на Mac и на Linux не ставит сайты на экран как приложения.", ff2: "Откройте sys.baby в Chrome или Edge — там кнопка сделает это одним нажатием.",
@@ -73,6 +81,10 @@
       here: "Juba sellel ekraanil", palette: "Pane sys.baby ekraanile",
       guideTitle: "Kaks puudutust ja see on ekraanil",
       ios1: "Puuduta Safari all «Jaga» (ruut noolega).", ios2: "Vali «Lisa avakuvale».",
+      ios1x: "Chrome'is ja teistes iPhone'i brauserites puuduta «Jaga» — Chrome'is on see aadressiriba paremal.",
+      crWhy: "Chrome pakub ühe puudutusega paigaldust, kui olete lehel olnud pool minutit ja seda vähemalt korra puudutanud, — või vaikib, sest sys.baby on selles seadmes juba olemas. Seni menüü kaudu:",
+      cra1: "Puuduta Chrome'i paremas ülanurgas ⋮.", cra2: "Vali «Installi rakendus» või «Lisa avakuvale».",
+      crd1: "Klõpsa aadressiriba paremas servas paigaldusikooni (ekraan noolega) või ava brauseri menüü ⋮.", crd2: "Vali «Installi sys.baby».",
       iosWarn: "iPhone'is ja iPadis saab ikoon oma salvestusruumi, Safarist eraldi: Safaris kirjutatu selles ei ilmu. Ülekandmiseks — Seaded → Privaatsus: «Ekspordi selle konto andmed» siin ja «Impordi varukoopia fail» seal.",
       mac1: "Vali Safari menüüs «Fail».", mac2: "Vali «Lisa Docki».",
       ff1: "Firefox Macis ja Linuxis ei pane saite ekraanile rakendustena.", ff2: "Ava sys.baby Chrome'is või Edge'is — seal teeb nupp seda ühe puudutusega.",
@@ -104,6 +116,10 @@
     if (/Firefox\//.test(ua) && /Windows/.test(ua)) return "firefox-win";
     if (/Firefox\//.test(ua) && !/Android/.test(ua)) return "firefox";
     if (/Macintosh/.test(ua) && /Safari\//.test(ua) && !/Chrome\/|Chromium\/|Edg\//.test(ua)) return "mac";
+    /* Chrome, Edge, Opera, Samsung Internet: ставят сами, но предлагают не
+       сразу (web.dev, «install criteria»: полминуты на странице и одно
+       нажатие) и молчат, если система уже стоит. Пока молчат — их меню. */
+    if (/Chrome\/|Chromium\/|Edg\/|OPR\/|SamsungBrowser\//.test(ua)) return "chromium";
     return "other";
   }
   function state() {
@@ -125,11 +141,21 @@
   /* Два шага у каждого пути. Ключи спрашивает и закон (keys) — слова
      подсказки берутся отсюда, а не из памяти закона. */
   var STEPS = { ios: ["ios1", "ios2"], mac: ["mac1", "mac2"], firefox: ["ff1", "ff2"], "firefox-win": ["ffw1", "ffw2"], other: ["other1", "other2"] };
+  /* Шаги, которые зависят не только от пути, но и от устройства: у Chrome
+     на Android меню справа вверху, на компьютере — значок в адресной строке;
+     на iPhone «Поделиться» у Safari внизу, у Chrome — в адресной строке. */
+  function stepsOf(p) {
+    var ua = String(navigator.userAgent || "");
+    if (p === "chromium") return /Android/.test(ua) ? ["cra1", "cra2"] : ["crd1", "crd2"];
+    if (p === "ios" && /CriOS|EdgiOS|FxiOS|OPiOS/.test(ua)) return ["ios1x", "ios2"];
+    return STEPS[p] || STEPS.other; /* ОТКАТ: путь не распознан — общий путь через меню браузера. */
+  }
   function keys() { return Object.keys(UI.en); }
   function guideHtml(p) {
-    var steps = STEPS[p] || STEPS.other; /* ОТКАТ: путь не распознан — общий путь через меню браузера. */
+    var steps = stepsOf(p);
     return '<div class="sb-install-guide" role="dialog" aria-modal="true" data-platform="' + p + '">' +
       '<div class="sig-box"><h3>' + esc(t("guideTitle")) + "</h3>" +
+      (p === "chromium" ? '<p class="sig-why">' + esc(t("crWhy")) + "</p>" : "") +
       "<ol>" + steps.map(function (k) { return "<li>" + esc(t(k)) + "</li>"; }).join("") + "</ol>" +
       (p === "ios" ? '<p class="sig-warn">' + esc(t("iosWarn")) + "</p>" : "") +
       '<button type="button" class="btn primary sig-close">' + esc(t("close")) + "</button></div></div>";

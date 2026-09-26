@@ -1,7 +1,7 @@
 {
-  "name": "sys.baby",
+  "name": "sys.baby private OS",
   "short_name": "sys.baby",
-  "description": "Your private system: it keeps your place and only you hold the key.",
+  "description": "A private OS in your browser: nothing you make leaves your device in readable form.",
   "id": "./",
   "start_url": "./",
   "scope": "./",

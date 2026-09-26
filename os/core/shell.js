@@ -969,9 +969,17 @@
        остаются прежними. Дороже это не стало: краска пишется на ОДИН элемент,
        а дорогая запись в корень (шов) по-прежнему случается раз в четыре
        градуса, то есть с той же частотой, что и раньше. */
-    var step = Math.max(250, Math.min(60000, Math.round(cyc / 720)));
+    var step = roomTick(mode);
     wpTimer = setInterval(function () { wpTick(false); }, step);
   }
+  /* Такт пружины — одна формула, спрашиваемая и ходом, и законом
+     room-and-seam: закон меряет шаг по всему кольцу и обязан знать тот же
+     такт, а не переписывать его себе. Порог в четверть секунды — D-158. */
+  function roomTick(mode) {
+    var cyc = window.sbMoodCycle(mode);
+    return Math.max(250, Math.min(60000, Math.round(cyc / 720)));
+  }
+  window.sbRoomTick = roomTick;
   /* ОСТАНОВИТЬ ХОД — НЕ ЗНАЧИТ ПОГАСИТЬ СВЕТ. Турбо замораживает комнату
      такой, какая она сейчас: краска остаётся, идёт только пружина. Гасить
      краску нужно лишь при полной разборке. */
@@ -5085,7 +5093,14 @@
     build: "v" + buildMeta,
     version: "0.0." + buildMeta,
     channel: "core",
-    stamp: function () { return "sys.baby OS " + this.version + " · " + this.channel + " " + this.build; },
+    /* Имя — у разметки (meta application-name), а та — вровень с манифестом
+       (D-298). Прежде здесь стояло «sys.baby OS» строкой. */
+    name: (function () {
+      var m = doc.querySelector('meta[name="application-name"]');
+      /* ОТКАТ: разметка без имени — само слово «sys.baby». */
+      return (m && m.content) || "sys.baby";
+    })(),
+    stamp: function () { return this.name + " " + this.version + " · " + this.channel + " " + this.build; },
     uptime: function () {
       var s = Math.floor((now() - bootStamp) / 1000);
       var m = Math.floor(s / 60);

@@ -319,6 +319,21 @@
     return html;
   }
 
+  /* Живучесть (D-299): где живёт система и что пропадёт вместе с этим
+     устройством. Слова и знание — у модуля survival.js; здесь только лист. */
+  function survivalMarkup() {
+    var S = window.sbSurvival;
+    if (!S) return "";
+    var r = null;
+    try { r = S.lines(); } catch (err) { console.error("[settings] survival read failed", err); return ""; }
+    return '<div class="st-card st-survival" id="stSurvival">' +
+      "<h3>" + esc(S.t("title")) + "</h3>" +
+      r.lines.map(function (l) { return '<p class="st-sv" data-sv="' + esc(l[0]) + '">' + esc(l[1]) + "</p>"; }).join("") +
+      '<p class="st-sv-bottom">' + esc(r.bottom) + "</p>" +
+      (r.canAsk ? '<p><button type="button" class="st-btn" id="stSurvivalAsk">' + esc(S.t("persistAsk")) + "</button></p>" : "") +
+      "</div>";
+  }
+
   function privacyMarkup() {
     var api = profilesApi();
     var record = null, list = [], currentProfileId = "local";
@@ -357,6 +372,7 @@
       rowMarkup(esc(t("set.privacy.storage")), "", '<span class="st-value" id="stStorage">' + esc(t("set.storage.measuring")) + "</span>") +
       rowMarkup(esc(t("set.privacy.clear")), esc(t("set.privacy.clearSub")),
         '<button type="button" class="st-btn danger" id="stClearAll">' + esc(t("set.privacy.clearBtn")) + "</button>") +
+      survivalMarkup() +
       '<div class="st-card">' +
         "<h3>" + esc(t("set.privacy.leavesTitle")) + "</h3>" +
         "<p>" + esc(t("set.privacy.leavesBody")) + "</p>" +
@@ -387,7 +403,8 @@
      joke spec sheet one click away from its prices: every line below is
      either measured live or verifiable by reading the page source. */
   function aboutMarkup() {
-    var build = "sys.baby OS";
+    /* ОТКАТ: печати сборки ещё нет — имя системы у ядра, иначе само слово. */
+    var build = (window.sbBuild && window.sbBuild.name) || "sys.baby";
     var registered = null, launchable = null;
     try {
       if (window.sbBuild && typeof window.sbBuild.stamp === "function") build = window.sbBuild.stamp();
@@ -759,6 +776,12 @@
   /* -------------------------------------------------------------- privacy */
 
   function wirePrivacy(win, host) {
+    var survivalAsk = host.querySelector("#stSurvivalAsk");
+    if (survivalAsk) {
+      survivalAsk.addEventListener("click", function () {
+        try { if (window.sbSurvival) window.sbSurvival.ask().then(function () { render(win); }); } catch (err) { console.error("[settings] survival ask failed", err); }
+      });
+    }
     var frictionErase = host.querySelector("#stFrictionErase");
     if (frictionErase) {
       frictionErase.addEventListener("click", function () {

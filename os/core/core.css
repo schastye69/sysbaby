@@ -2551,9 +2551,13 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
 }
 .sig-box {
   width: min(420px, 100%); display: flex; flex-direction: column; gap: 12px;
-  padding: 20px; border-radius: var(--r-window); background: var(--glass-2);
+  padding: 20px; border-radius: var(--r-window);
+  /* Лист непрозрачен (D-296): --glass-2 в тёмной теме — 10 % белого, и
+     строки Настроек проступали сквозь шаги (снимок основателя 26.09.2026). */
+  background: var(--bg-elev);
   border: 1px solid var(--line); box-shadow: var(--shadow);
 }
+.sig-why { margin: 0; font-size: var(--f-ui); line-height: 1.55; color: var(--ink-2); }
 .sig-box h3 { margin: 0; font-size: var(--f-lead); font-weight: 700; color: var(--ink); }
 .sig-box ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: var(--f-read); line-height: 1.5; color: var(--ink); }
 .sig-warn {
