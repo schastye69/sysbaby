@@ -232,7 +232,10 @@
          Охраняется tools/one-choice-check.mjs. */
       rowMarkup(esc(t("set.appearance.mood")),
         esc(t("set.appearance.moodSub")),
-        '<span class="st-chips">' + (moodChips || '<span class="st-muted">' + esc(t("set.appearance.moodNone")) + "</span>") + "</span>") +
+        /* st-chips-wide (D-302): у настроений плашек больше, чем входит в одну
+           строку карточки на планшете и даже на столе, — они переносятся под
+           описание, слева направо, а не уезжают за правую кромку. */
+        '<span class="st-chips st-chips-wide">' + (moodChips || '<span class="st-muted">' + esc(t("set.appearance.moodNone")) + "</span>") + "</span>") +
       rowMarkup(esc(t("set.appearance.brightness")), esc(t("set.appearance.brightnessSub")),
         /* Ползунок собственной постройки (D-162): здесь только место под него,
            узлы строит sbSlider при разводке — родного поля в системе больше нет. */

@@ -1108,7 +1108,21 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     if (window.sbBus && window.sbBus.emit) window.sbBus.emit("store:epoch", { epoch: readEpoch, why: why });
   }
   var vaultKeys = null;         /* набор ключей сеанса — только в памяти */
-  var vaultMaster = null;       /* мастер-ключ сеанса: нужен для смены пароля */
+  /* ── МАСТЕР В ПАМЯТИ — НЕ БАЙТАМИ (D-300, инвариант I13) ────────────────
+     Прежде мастер-ключ сеанса лежал в памяти страницы массивом байтов — ради
+     смены слова и вывода паролей «Ключей». Разбор «Шифр без театра» (Н9):
+     снимок памяти процесса, файл подкачки, отчёт о сбое — везде, где лежит
+     память страницы, лежал и мастер. Теперь байты живут мгновение: сразу
+     после развёртки из них делаются ключи WebCrypto, которые скрипт вынуть
+     не может (extractable=false), — основание HKDF для «Ключей» и ключ
+     сеанса, под которым мастер лежит запечатанным. Массив обнуляется тут же.
+     Смене слова нужны сами байты — она распечатывает их на один шаг и
+     обнуляет снова (withMaster). Чего это не даёт, вслух: ключи WebCrypto
+     тоже живут в памяти браузера — их не вынет скрипт страницы, но может
+     тот, кто читает память всего процесса.
+     Охраняется tools/key-extractable-check.mjs. */
+  var masterBox = null;         /* { key, iv, box } — мастер под ключом сеанса */
+  var siteBase = null;          /* основание HKDF для «Ключей» — неизвлекаемое */
   /* Через какую дверь вошли. НАРУЖУ НЕ ОТДАЁТСЯ НИКОГДА: система,
      умеющая ответить «ты в тревожном мире», не защищает ни от кого. */
   var vaultDoor = -1;
@@ -1119,6 +1133,33 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     try { return JSON.parse(lsGet(LOCK_KEY) || "null"); } catch (e) { return null; }
   }
   function vaultLocked() { return !!lockRecord(); }
+
+  function holdMaster(bytes) {
+    var subtle = window.crypto.subtle, iv = new Uint8Array(12);
+    window.crypto.getRandomValues(iv);
+    return Promise.all([
+      subtle.importKey("raw", bytes, "HKDF", false, ["deriveBits"]),
+      subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"])
+    ]).then(function (k) {
+      return subtle.encrypt({ name: "AES-GCM", iv: iv }, k[1], bytes).then(function (box) {
+        siteBase = k[0];
+        masterBox = { key: k[1], iv: iv, box: box };
+      });
+    }).then(function () { bytes.fill(0); }, function (e) { bytes.fill(0); throw e; });
+  }
+  function dropMaster() { masterBox = null; siteBase = null; }
+  /* Обнулить всё, что дверь отдала этому вызову, — на любом исходе (D-300). */
+  function zero() { for (var i = 0; i < arguments.length; i++) if (arguments[i] && arguments[i].fill) arguments[i].fill(0); }
+  /* Байты мастера — на один шаг и обратно в ноль, что бы шаг ни вернул. */
+  function withMaster(fn) {
+    if (!masterBox) return Promise.reject(new Error("closed"));
+    var mb = masterBox;
+    return window.crypto.subtle.decrypt({ name: "AES-GCM", iv: mb.iv }, mb.key, mb.box).then(function (buf) {
+      var m = new Uint8Array(buf);
+      return Promise.resolve().then(function () { return fn(m); })
+        .then(function (r) { m.fill(0); return r; }, function (e) { m.fill(0); throw e; });
+    });
+  }
 
   function b64(buf) {
     var b = new Uint8Array(buf), s = "", i;
@@ -1997,8 +2038,10 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     var a2 = todayA2();
     return deriveKEK(password, saltB64, null, null, fsec, a2).then(function (kek) {
       return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: wrapIv }, kek, master).then(function (wrapped) {
-        var second = duressPassword
-          ? makeDoor(duressPassword, (function () { var m = new Uint8Array(32); window.crypto.getRandomValues(m); return m; })(), saltB64, fsec, [KDF1_ITER, KDF2_ITER, a2])
+        var dm = null;
+        if (duressPassword) { dm = new Uint8Array(32); window.crypto.getRandomValues(dm); }
+        var second = dm
+          ? makeDoor(duressPassword, dm, saltB64, fsec, [KDF1_ITER, KDF2_ITER, a2]).then(function (d) { dm.fill(0); return d; })
           : Promise.resolve(randomDoor());
         return second.then(function (door2) {
         return subkeys(master).then(function (ks) {
@@ -2026,9 +2069,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             if (factorRec) body.factor = factorRec;
             lsSet(LOCK_KEY, JSON.stringify(body));
             for (i = 0; i < rows.length; i++) rawStore.del.call(window.localStorage, rows[i].from);
-            vaultMaster = new Uint8Array(master);
-            master.fill(0);
-            return levelDisk(ks).then(function () { return ks; });
+            return holdMaster(master).then(function () { return levelDisk(ks); }).then(function () { return ks; });
           });
         });
         });
@@ -2132,7 +2173,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         mem.clear();
         nameMap.clear();
         vaultKeys = null;
-        if (vaultMaster) { vaultMaster.fill(0); vaultMaster = null; }
+        dropMaster();
         vaultOpen = false;
         sealing = false;
         bumpEpoch("lock");
@@ -2160,17 +2201,14 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         if (!masterBuf) throw new Error("wrong");
         if (!factorOf(rec)) upgradeDoors(rec);
         upgradeSpare();
-        var master = new Uint8Array(masterBuf);
+        var master = masterBuf;
         return subkeys(master).then(function (ks) {
-          /* Мастер-ключ остаётся в памяти сеанса — ради смены пароля БЕЗ
-             перешифровки: меняется конверт, в котором он лежит, а не данные.
-             Ключи шифров всё равно выведены из него и живут рядом; прятать
-             от себя же исходник, из которого они получены, было бы обрядом,
-             а не защитой. */
-          vaultMaster = new Uint8Array(master);
-          master.fill(0);
-          return openAllSealed(ks);
-        });
+          /* Мастер-ключ остаётся в сеансе — ради смены пароля БЕЗ перешифровки:
+             меняется конверт, в котором он лежит, а не данные. Но остаётся не
+             байтами, а неизвлекаемыми ключами (holdMaster, D-300): массив,
+             отданный дверью, обнуляется здесь же. */
+          return holdMaster(master).then(function () { return openAllSealed(ks); });
+        }, function (e) { master.fill(0); throw e; });
       }).then(function () { return true; }, function () { return false; });
     },
 
@@ -2193,7 +2231,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         vaultOpen = false;
         vaultKeys = null;
         vaultDoor = -1;
-        if (vaultMaster) { vaultMaster.fill(0); vaultMaster = null; }
+        dropMaster();
         nameMap.clear();
         bumpEpoch("remove");
         if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: false });
@@ -2223,14 +2261,13 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     keyAlphabet: function () { return KEY_ALL; },
 
     siteKey: function (place, counter, length) {
-      if (!vaultOpen || !vaultMaster) return Promise.reject(new Error("closed"));
+      if (!vaultOpen || !siteBase) return Promise.reject(new Error("closed"));
       var want = Math.max(10, Math.min(64, parseInt(length, 10) || 20));
       var info = new TextEncoder().encode("sys.baby/site/v1/" + String(place) + "#" + (parseInt(counter, 10) || 0));
-      return window.crypto.subtle.importKey("raw", vaultMaster, "HKDF", false, ["deriveBits"])
-        .then(function (k) {
-          return window.crypto.subtle.deriveBits(
-            { name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info: info }, k, 8 * 256);
-        })
+      /* То же HKDF от того же мастера, что и прежде, — только основание уже
+         неизвлекаемый ключ сеанса (D-300): пароли мест не меняются. */
+      return window.crypto.subtle.deriveBits(
+        { name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info: info }, siteBase, 8 * 256)
         .then(function (bits) { return shapeKey(new Uint8Array(bits), want); });
     },
 
@@ -2300,12 +2337,13 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       window.crypto.getRandomValues(fsalt);
       var fsaltB64 = b64(fsalt);
       var master0 = null, master1 = null, fsec = null, fsecOld = null;
+      var scrub = function (r) { zero(master0, master1); return r; }, scrubErr = function (e) { zero(master0, master1); throw e; };
       return factorFor(rec, null).then(function (fo) {
         fsecOld = fo;
         return openDoors(rec, password, fsecOld);
       }).then(function (m) {
         if (!m) return false;
-        if (vaultDoor !== 0) return true;        /* из тревожного мира — молча «готово» */
+        if (vaultDoor !== 0) { zero(m); return true; }        /* из тревожного мира — молча «готово» */
         master0 = m;
         if (!duressPassword) return null;
         return openDoors(rec, duressPassword, fsecOld).then(function (m2) { master1 = m2; return null; });
@@ -2330,7 +2368,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             return true;
           });
         });
-      });
+      }).then(scrub, scrubErr);
     },
     clearSecondKey: function (password, fileBytes, duressPassword) {
       var rec = lockRecord();
@@ -2338,10 +2376,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       if (!factorOf(rec)) return Promise.resolve(true);
       var saltB64 = saltOf(rec);
       var master0 = null, master1 = null;
+      var scrub = function (r) { zero(master0, master1); return r; }, scrubErr = function (e) { zero(master0, master1); throw e; };
       return factorFor(rec, fileBytes).then(function (fsec) {
         return openDoors(rec, password, fsec).then(function (m) {
           if (!m) return false;
-          if (vaultDoor !== 0) return true;
+          if (vaultDoor !== 0) { zero(m); return true; }
           master0 = m;
           if (!duressPassword) return null;
           return openDoors(rec, duressPassword, fsec).then(function (m2) { master1 = m2; return null; });
@@ -2364,7 +2403,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           });
         });
         });
-      });
+      }).then(scrub, scrubErr);
     },
 
     /* ── УСИЛИТЬ ЗАМОК ПАМЯТЬЮ (D-275) ────────────────────────────────────
@@ -2389,16 +2428,17 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       var cost = costOf(rec);
       if (cost[2]) return Promise.resolve(true);
       var saltB64 = saltOf(rec), master0 = null, master1 = null, fsec = null;
+      var scrub = function (r) { zero(master0, master1); return r; }, scrubErr = function (e) { zero(master0, master1); throw e; };
       return factorFor(rec, secondKeyFile).then(function (fs) {
         fsec = fs;
         return openDoors(rec, password, fsec);
       }).then(function (m) {
         if (!m) return false;
-        if (vaultDoor !== 0) return true;
+        if (vaultDoor !== 0) { zero(m); return true; }
         master0 = m;
         if (!duressPassword) return null;
         return openDoors(rec, duressPassword, fsec).then(function (m2) {
-          if (!m2 || vaultDoor !== 1) return "duress-wrong";
+          if (!m2 || vaultDoor !== 1) { zero(m2); return "duress-wrong"; }
           master1 = m2;
           return null;
         });
@@ -2420,7 +2460,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             return true;
           });
         });
-      });
+      }).then(scrub, scrubErr);
     },
     /* ── КЛЮЧ УСТРОЙСТВА: состояние, вопрос, привязка, снятие (D-276) ───── */
     hwState: function () { var rec = lockRecord(); return { on: !!hwOf(rec), can: hwAvailable() }; },
@@ -2435,6 +2475,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       window.crypto.getRandomValues(prfSalt); window.crypto.getRandomValues(userId); window.crypto.getRandomValues(challenge);
       var rp = String(location.hostname || "");
       var cred = null, secret = null, fsecOld = null, master0 = null, master1 = null, fromDuress = false;
+      var scrub = function (r) { zero(master0, master1); return r; }, scrubErr = function (e) { zero(master0, master1); throw e; };
       return factorFor(rec, secondKeyFile).then(function (fo) {
         fsecOld = fo;
         return openDoors(rec, password, fsecOld);
@@ -2444,7 +2485,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         master0 = m;
         if (fromDuress || !duressPassword) return true;
         return openDoors(rec, duressPassword, fsecOld).then(function (m2) {
-          if (!m2 || vaultDoor !== 1) return "duress-wrong";
+          if (!m2 || vaultDoor !== 1) { zero(m2); return "duress-wrong"; }
           master1 = m2;
           return true;
         });
@@ -2510,23 +2551,24 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             });
           });
         });
-      });
+      }).then(scrub, scrubErr);
     },
     hwRemove: function (password, secondKeyFile, duressPassword) {
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
       if (!hwOf(rec)) return Promise.resolve(true);
       var fsecOld = null, master0 = null, master1 = null, fileSec = null;
+      var scrub = function (r) { zero(master0, master1); return r; }, scrubErr = function (e) { zero(master0, master1); throw e; };
       return factorFor(rec, secondKeyFile).then(function (fo) {
         fsecOld = fo;
         return openDoors(rec, password, fsecOld);
       }).then(function (m) {
         if (!m) return false;
-        if (vaultDoor !== 0) return true;
+        if (vaultDoor !== 0) { zero(m); return true; }
         master0 = m;
         if (!duressPassword) return null;
         return openDoors(rec, duressPassword, fsecOld).then(function (m2) {
-          if (!m2 || vaultDoor !== 1) return "duress-wrong";
+          if (!m2 || vaultDoor !== 1) { zero(m2); return "duress-wrong"; }
           master1 = m2; return null;
         });
       }).then(function (early) {
@@ -2552,7 +2594,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             });
           });
         });
-      });
+      }).then(scrub, scrubErr);
     },
 
     /* Сделан ли этот замок ценой с памятью — видно в его записи и так. */
@@ -2700,13 +2742,13 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       if (String(newPassword || "").length < 4) return Promise.reject(new Error("short"));
       var fsecNew = null;
       return window.sbVault.unlock(oldPassword, secondKeyFile).then(function (okp) {
-        if (!okp || !vaultMaster) return false;
+        if (!okp || !masterBox) return false;
         /* Второй ключ входит и в новую дверь: смена слова не снимает его
            (D-266 — прежде смена со вторым ключом не проходила вовсе, а если бы
            прошла, записала бы дверь без него и третью редакцию замка). */
         return factorFor(lockRecord(), secondKeyFile).then(function (f) { fsecNew = f; return true; });
       }).then(function (okp) {
-        if (!okp || !vaultMaster) return false;
+        if (!okp || !masterBox) return false;
         /* СОЛЬ ЗАМКА НЕ МЕНЯЕТСЯ ПРИ СМЕНЕ ПАРОЛЯ, и это выбор, а не небрежность.
            Соль общая на обе двери; сменить её значило бы заново завернуть и
            вторую дверь — а её пароль тому, кто меняет первый, неизвестен.
@@ -2721,7 +2763,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
            ею, и растяжка считается одна на все. */
         var cost = costOf(lockRecord() || {});
         return deriveKEK(newPassword, saltB64, cost[0], cost[1], fsecNew, cost[2]).then(function (kek) {
-          return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: wrapIv }, kek, vaultMaster);
+          return withMaster(function (m) { return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: wrapIv }, kek, m); });
         }).then(function (wrapped) {
           var next = lockRecord() || {};
           var doors = doorsOf(next).slice();
