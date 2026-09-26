@@ -41,8 +41,3 @@
 /*.svg
   Cache-Control: public, max-age=31536000, immutable
 
-# --- sys.baby/test · начало (ставит tools/deploy.mjs) ---
-/test/*
-  X-Robots-Tag: noindex, nofollow, noarchive
-  Cache-Control: no-store
-# --- sys.baby/test · конец ---
