@@ -873,12 +873,48 @@
     }
     var last = Date.now();
     function touch() { last = Date.now(); }
-    ["pointerdown", "keydown", "wheel", "touchstart"].forEach(function (e) { doc.addEventListener(e, touch, true); });
+    var EVENTS = ["pointerdown", "keydown", "wheel", "touchstart"];
+    EVENTS.forEach(function (e) { doc.addEventListener(e, touch, true); });
+    /* ── ДВИЖЕНИЕ ВНУТРИ ОКНА-РАМКИ ТОЖЕ ДВИЖЕНИЕ (D-254, поправка v159) ────
+       ПОВОД. Пока экран входа стоял поверх стола, его карточка ловила все
+       клики — и замок покоя «сбрасывался» ими случайно. Как только вход стали
+       честно убирать со стола (D-306), обнажилась рамка приложения «build»
+       (iframe): клик ВНУТРЬ неё уходит в её собственный документ и до сторожа
+       на родителе не доходит. Человек мог работать в приложении, а замок —
+       считать его ушедшим и запереться под руками. Рамка своего происхождения,
+       значит её документ нам доступен: вешаем на него тот же сторож. Чужую
+       рамку не трогаем — доступа к ней нет, и это правильно. */
+    var HDOC = "__sbIdleDoc";
+    function hookFrame(fr) {
+      try {
+        if (!fr) return;
+        var d = fr.contentDocument;
+        if (!d || fr[HDOC] === d) return;     /* нет доступа, или этот документ уже под сторожем */
+        /* Документ рамки меняется при её загрузке: сначала пустой, потом
+           настоящий. Сравниваем по документу, а не по флагу на рамке, — иначе
+           сторож остаётся на выброшенном пустом документе. */
+        EVENTS.forEach(function (e) { d.addEventListener(e, touch, true); });
+        fr[HDOC] = d;
+      } catch (e) { /* чужое происхождение — недоступно, и не наше дело */ }
+    }
+    function hookFrames() {
+      var frames = doc.getElementsByTagName("iframe"), i;
+      for (i = 0; i < frames.length; i++) hookFrame(frames[i]);
+    }
+    doc.addEventListener("load", function (ev) {
+      if (ev.target && ev.target.tagName === "IFRAME") hookFrame(ev.target);
+    }, true);
+    if (typeof window.MutationObserver === "function") {
+      try { new MutationObserver(hookFrames).observe(doc.documentElement, { childList: true, subtree: true }); }
+      catch (e) { /* без наблюдателя обойдёмся опросом в check() */ }
+    }
+    hookFrames();
     function shut() {
       if (window.sbDB && window.sbDB.flushSync) { try { window.sbDB.flushSync(); } catch (e) { /* ignore */ } }
       location.reload();
     }
     function check() {
+      hookFrames();                           /* рамки, появившиеся с тех пор */
       if (!V || !V.isLocked() || !V.isOpen()) return;
       var m = minutes();
       if (!(m > 0)) return;
@@ -1305,9 +1341,8 @@
   function accountBody() {
     var body = panelBody("sbAccountOverlay");
     if (!body) return;
-    var rec = (window.sbProfiles && window.sbProfiles.currentRecord) ? window.sbProfiles.currentRecord() : null;
-    var list = (window.sbProfiles && window.sbProfiles.list) ? window.sbProfiles.list() : [];
-    var cur = (window.sbProfiles && window.sbProfiles.current) ? window.sbProfiles.current() : "local";
+    /* Чужие системы устройства здесь не перечисляются (D-306): прежде окно
+       показывало их имена и входило в любую одним нажатием, без пароля. */
     var name = (window.sbGetUsername ? window.sbGetUsername() : "") || "";
 
     /* Титул, знак и номер — подарки Сундука (D-255): спрашиваются у него,
@@ -1320,7 +1355,6 @@
       (gift.sigil ? '<span class="acc-sigil" aria-hidden="true">' + gift.sigil + "</span>" : '<span class="acc-dot" aria-hidden="true"></span>') +
       '<span class="acc-who-text"><b>' + esc(name || tr("acc.guest")) + "</b>" +
       (gift.title ? '<span class="acc-who-sub acc-title">' + esc(gift.title) + "</span>" : "") +
-      (rec && rec.name ? '<span class="acc-who-sub">' + esc(rec.name) + "</span>" : "") +
       (gift.serial ? '<span class="acc-who-sub acc-serial" data-sb-nolang>' + esc(gift.serial) + "</span>" : "") +
       "</span></div>";
 
@@ -1331,15 +1365,6 @@
       '<p class="panel-copy dim">' + esc(tr("acc.nameSub")) + "</p>" +
       '<div class="acc-acts"><button type="button" class="btn ghost" id="sbAccSave">' + esc(tr("acc.save")) + "</button></div>";
 
-    var profiles = "";
-    if (list.length > 1) {
-      profiles = '<h4 class="panel-sub">' + esc(tr("acc.profile")) + '</h4><div class="acc-profiles">' +
-        list.map(function (p) {
-          return '<button type="button" class="chip' + (p.id === cur ? " on" : "") + '" data-profile="' + esc(p.id) + '">' +
-            esc(p.name || p.id) + "</button>";
-        }).join("") + "</div>";
-    }
-
     var leaving =
       '<h4 class="panel-sub">' + esc(tr("acc.leave")) + "</h4>" +
       '<p class="panel-copy">' + esc(tr("acc.leaveSub")) + "</p>" +
@@ -1349,7 +1374,7 @@
       '<p class="acc-truth">' + esc(tr("acc.truth")) + "</p>" +
       '<div class="acc-acts"><button type="button" class="btn link" id="sbAccSignOut">' + esc(tr("acc.signout")) + "</button></div>";
 
-    body.innerHTML = '<div class="panel-scroll">' + who + field + profiles +
+    body.innerHTML = '<div class="panel-scroll">' + who + field +
       '<div class="acc-sec">' + lockSection() + "</div>" +
       '<div class="acc-sec">' + backupSection() + "</div>" +
       '<div class="acc-sec">' + leaving + "</div>" +
@@ -1377,11 +1402,6 @@
       input.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); save.click(); } });
     }
 
-    body.querySelectorAll("[data-profile]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        if (window.sbProfiles) window.sbProfiles.switchTo(b.getAttribute("data-profile"));
-      });
-    });
 
     var exp = body.querySelector("#sbAccExport");
     if (exp) exp.addEventListener("click", function () {
@@ -1434,6 +1454,37 @@
 
   var accountPanel = window.sbRegisterPanel("sbAccountOverlay", "sbAccountClose", accountBody);
   if (accountPanel) window.sbOpenAccountPanel = function () { accountPanel.open(); };
+
+  /* ── «ПОСТАВИТЬ СЕЙЧАС» ИСПОЛНЯЕТСЯ (D-304) ─────────────────────────────
+     Повод — снимок-рассказ основателя 27.09.2026 с iPad: нажал «поставить
+     сейчас» и оказался на столе без замка. Кнопка знакомства запоминала выбор
+     в памяти страницы, а страница тут же перезагружалась при входе в свой
+     профиль — и выбор пропадал, не дойдя ни до кого. Теперь выбор лежит в
+     памяти СЕАНСА (переживает эту перезагрузку), и когда стол готов, система
+     открывает окно замка и ставит курсор в поле слова. Выбор исполняется один
+     раз. Замок молча не ставится — слово выбирает человек.
+     Охраняется tools/lock-at-signup-check.mjs. */
+  /* Открыть окно Учётной записи НА НУЖНОМ МЕСТЕ: первое из найденного по
+     списку селекторов прокручивается в середину и получает фокус. Этим зовут
+     «Поставить сейчас» и строки «Замок» и «Копии» в Настройках (D-305). */
+  window.sbOpenAccountAt = function (selectors) {
+    if (!window.sbOpenAccountPanel) return;
+    window.sbOpenAccountPanel();
+    setTimeout(function () {
+      var el = null, list = String(selectors || "").split(","), i;
+      for (i = 0; i < list.length && !el; i++) el = doc.querySelector(list[i].trim());
+      if (!el) return;
+      try { el.scrollIntoView({ block: "center" }); if (el.focus) el.focus(); } catch (e) { /* ignore */ }
+    }, 360);
+  };
+  var WANT_LOCK = "sysbaby.lock.wantNow";
+  function lockWhenAsked() {
+    var want = false;
+    try { want = window.sessionStorage.getItem(WANT_LOCK) === "1"; if (want) window.sessionStorage.removeItem(WANT_LOCK); } catch (e) { want = false; }
+    if (want) window.sbOpenAccountAt("#sbLockP1");
+  }
+  if (doc.documentElement.classList.contains("rv-icons")) setTimeout(lockWhenAsked, 0);
+  else doc.addEventListener("sysbaby:desktop-ready", lockWhenAsked, { once: true });
 
   /* ── ЗНАК ГОВОРИТ СОСТОЯНИЕМ, А НЕ ПОДПИСЬЮ ─────────────────────────────
      Читается без слов: лепестки раскрыты — прятать нечего; сомкнулись вокруг

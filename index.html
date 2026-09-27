@@ -7,7 +7,7 @@
      именно его метку читают снаружи: ежедневный наблюдатель, восьмой шаг
      выкладки и закон тестового контура. Ставится не руками, а
      tools/stamp-build.mjs — из единственного объявления версии. -->
-<meta name="sysbaby-build" content="v156">
+<meta name="sysbaby-build" content="v159">
 <title>sys.baby private OS</title>
 <!-- Имя системы (D-298): одно объявление для страницы, его же несёт манифест. -->
 <meta name="application-name" content="sys.baby private OS">
@@ -46,7 +46,22 @@
      имя» не встаёт между ним и переданным (D-279). Замок, если он есть,
      остаётся на месте — дверь спрашивает своё до всего. */
   var handed = /^#t=/.test(location.hash || "");
-  if (authed || entered || handed || /[?&]enter=1(&|$)/.test(location.search)) document.documentElement.classList.add("sb-has-session");
+  var entering = entered || handed || /[?&]enter=1(&|$)/.test(location.search);
+  /* ── ЗАПЕРТОЕ УСТРОЙСТВО ВСТРЕЧАЕТ ДВЕРЬЮ ЗАМКА (D-306) ─────────────────
+     Под замком список учёток лежит в конвертах: карточка входа не может
+     проверить за ним ничего, и рисовать её значило бы рисовать дверь.
+     Первым экраном такого устройства стоит сама дверь замка. */
+  var locked = false;
+  try { locked = !!localStorage.getItem(incog ? "sysbaby.incognito::sysbaby.lock.v1" : "sysbaby.lock.v1"); } catch (e) { locked = false; }
+  /* ── МИМО ДВЕРИ — ТОЛЬКО В ГОСТЯ (D-306) ─────────────────────────────────
+     Вышедший из своей системы оставлял за собой номер профиля, и адрес
+     ?enter=1, метка витрины или ссылка «Передать» вели прямо в него — без
+     пароля. Кто входит мимо карточки, входит гостем. Замок — не тот случай:
+     там дверью служит сам замок, и за ней открывается тот, кто его знает. */
+  if (!authed && entering && !locked) {
+    try { localStorage.removeItem(incog ? "sysbaby.incognito::sysbaby.activeProfile" : "sysbaby.activeProfile"); } catch (e) { /* ignore */ }
+  }
+  if (authed || entering || locked) document.documentElement.classList.add("sb-has-session");
   /* The visible URL is /os/ and stays /os/. Whatever the caller passed is read
      once, here, and kept in memory; the address bar is cleaned before first
      paint so no window or app state is ever spelled out in it. */
@@ -66,40 +81,40 @@
      build-stamp.mjs — ресурс без метки валит сборку. -->
 <!-- Растяжка памятью (D-275) грузится ДО хранилища: замок спрашивает её
      уже при первой двери. Свой код, в дереве, без WebAssembly. -->
-<script src="os/core/argon2.js?b=v156"></script>
-<script src="os/core/store.js?b=v156"></script>
+<script src="os/core/argon2.js?b=v159"></script>
+<script src="os/core/store.js?b=v159"></script>
 <!-- «В дом» (D-287): вещь из меню «Поделиться» берётся из памяти страницы
      сразу после хранилища и ждёт, пока встанет стол и откроется дверь. -->
-<script src="os/core/share.js?b=v156"></script>
+<script src="os/core/share.js?b=v159"></script>
 <!-- Свидетель (D-291): учёт запросов браузера читается с самого начала —
      до оболочки, чтобы ни один запрос входа не прошёл мимо. -->
-<script src="os/core/witness.js?b=v156"></script>
+<script src="os/core/witness.js?b=v159"></script>
 <!-- Поставить на экран (D-293): событие браузера beforeinstallprompt приходит
      рано — модуль слушает его до оболочки, чтобы не пропустить. -->
-<script src="os/core/install.js?b=v156"></script>
-<script src="os/core/survival.js?b=v156"></script>
+<script src="os/core/install.js?b=v159"></script>
+<script src="os/core/survival.js?b=v159"></script>
 
-<link rel="stylesheet" href="os/core/core.css?b=v156" />
-<link rel="stylesheet" href="os/apps/files/files.css?b=v156" />
-<link rel="stylesheet" href="os/apps/browser/browser.css?b=v156" />
-<link rel="stylesheet" href="os/apps/player/player.css?b=v156" />
-<link rel="stylesheet" href="os/apps/viewer/viewer.css?b=v156" />
-<link rel="stylesheet" href="os/apps/notes/notes.css?b=v156" />
-<link rel="stylesheet" href="os/apps/mail/mail.css?b=v156" />
-<link rel="stylesheet" href="os/apps/messenger/messenger.css?b=v156" />
-<link rel="stylesheet" href="os/apps/search/search.css?b=v156" />
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v156" />
-<link rel="stylesheet" href="os/apps/project/project.css?b=v156" />
-<link rel="stylesheet" href="os/apps/settings/settings.css?b=v156" />
-<link rel="stylesheet" href="os/apps/echoes/echoes.css?b=v156" />
-<link rel="stylesheet" href="os/apps/build/build.css?b=v156" />
-<link rel="stylesheet" href="os/apps/lantern/lantern.css?b=v156" />
-<link rel="stylesheet" href="os/apps/keys/keys.css?b=v156" />
-<link rel="stylesheet" href="os/apps/solitaire/solitaire.css?b=v156" />
-<link rel="stylesheet" href="os/apps/chest/chest.css?b=v156" />
-<link rel="stylesheet" href="os/apps/vault/vault.css?b=v156" />
-<link rel="stylesheet" href="os/apps/outward/outward.css?b=v156" />
-<link rel="stylesheet" href="os/apps/handoff/handoff.css?b=v156" />
+<link rel="stylesheet" href="os/core/core.css?b=v159" />
+<link rel="stylesheet" href="os/apps/files/files.css?b=v159" />
+<link rel="stylesheet" href="os/apps/browser/browser.css?b=v159" />
+<link rel="stylesheet" href="os/apps/player/player.css?b=v159" />
+<link rel="stylesheet" href="os/apps/viewer/viewer.css?b=v159" />
+<link rel="stylesheet" href="os/apps/notes/notes.css?b=v159" />
+<link rel="stylesheet" href="os/apps/mail/mail.css?b=v159" />
+<link rel="stylesheet" href="os/apps/messenger/messenger.css?b=v159" />
+<link rel="stylesheet" href="os/apps/search/search.css?b=v159" />
+<link rel="stylesheet" href="shared/portfolio.view.css?b=v159" />
+<link rel="stylesheet" href="os/apps/project/project.css?b=v159" />
+<link rel="stylesheet" href="os/apps/settings/settings.css?b=v159" />
+<link rel="stylesheet" href="os/apps/echoes/echoes.css?b=v159" />
+<link rel="stylesheet" href="os/apps/build/build.css?b=v159" />
+<link rel="stylesheet" href="os/apps/lantern/lantern.css?b=v159" />
+<link rel="stylesheet" href="os/apps/keys/keys.css?b=v159" />
+<link rel="stylesheet" href="os/apps/solitaire/solitaire.css?b=v159" />
+<link rel="stylesheet" href="os/apps/chest/chest.css?b=v159" />
+<link rel="stylesheet" href="os/apps/vault/vault.css?b=v159" />
+<link rel="stylesheet" href="os/apps/outward/outward.css?b=v159" />
+<link rel="stylesheet" href="os/apps/handoff/handoff.css?b=v159" />
 <!-- ── СИСТЕМА ЖИВЁТ БЕЗ СЕТИ (D-145) ───────────────────────────────────────
      Основатель: «необходимо сделать так, что даже, когда интернета на телефоне
      или другом устройстве нет, сайт sys.baby должен продолжать работу».
@@ -188,6 +203,15 @@
   <div class="login-card">
     <div class="login-mark" aria-hidden="true"><svg viewBox="0 0 100 100"><path class="sb-hs" d="M10.06 26.06a16 16 0 0 1 16-16H66.06V29.94H36.94a7 7 0 0 0-7 7V70.06H10.06Z"/><path class="sb-hb" d="M89.94 73.94a16 16 0 0 1-16 16H29.94V70.06H63.06a7 7 0 0 0 7-7V29.94H89.94Z"/></svg></div>
 
+    <!-- ── ПЕРВЫЙ ЭКРАН — ВХОД · решение D-306 ─────────────────────────────
+         Основатель: «первая страница должна быть обязательно входом для того,
+         чтобы посторонний даже не мог подозревать существует ли вообще аккаунт
+         у конкретного пользователя».
+         ПРЕЖДЕ здесь стояло «займите имя»: одно поле, и по нему экран сам
+         решал, вход это или регистрация, — и отвечал «с возвращением» чужому
+         имени. Теперь имя и пароль спрашиваются вместе, и любой отказ звучит
+         одинаково: «эта пара здесь ничего не открывает». Строки — на языке
+         устройства (как у двери замка, D-288); английские здесь — запасные. -->
     <div id="sbLoginStep1">
       <!-- СЛОГАН СИСТЕМЫ. Не переводится намеренно — как строка BABY на
            витрине. Решение основателя 19.08.2026: на входе стоит слоган, а не
@@ -196,43 +220,73 @@
            твоя и больше ничья, и это единственное обещание, которое ОС даёт
            до того, как человек в неё вошёл. Охраняется tools/os-identity-hint.mjs. -->
       <p class="login-decoding" id="sbNameDecoding">only you and your system, baby</p>
-      <h1 class="login-title">Your system is waiting</h1>
-      <p class="login-sub">Claim your name, and everything behind it is yours alone.</p>
+      <h1 class="login-title" data-gk="auth.in.title">Open your system</h1>
+      <p class="login-sub" data-gk="auth.in.sub">Name and password. This screen tells no one whether anything exists here.</p>
       <label class="login-field">
-        <span class="login-label">Username</span>
+        <span class="login-label" data-gk="auth.name">Name</span>
         <span class="login-input-wrap">
           <input id="sbLoginName" type="text" maxlength="18" placeholder="yourname" autocomplete="username"
                  autocapitalize="off" autocorrect="off" spellcheck="false" />
           <span class="login-suffix">.sys.baby</span>
         </span>
       </label>
-      <p class="login-err" id="sbLoginNameErr" role="alert"></p>
-      <button class="btn primary wide" type="button" id="sbLoginNext">Continue</button>
-      <p class="login-foot">Your account lives in this browser's own database — private by default, and it never leaves this machine.</p>
-      <button class="btn link" type="button" id="sbLoginGuest">Continue as guest</button>
+      <label class="login-field">
+        <span class="login-label" data-gk="auth.pw">Password</span>
+        <span class="login-input-wrap">
+          <input id="sbLoginPw" type="password" autocomplete="current-password" />
+          <button class="login-eye" type="button" id="sbLoginEye" aria-pressed="false" aria-label="Show password" data-gk-aria="auth.eye">👁</button>
+        </span>
+      </label>
+      <p class="login-err" id="sbLoginErr" role="alert"></p>
+      <button class="btn primary wide" type="button" id="sbLoginContinue" data-gk="auth.in.go">Open</button>
+      <div class="login-row">
+        <button class="btn link" type="button" id="sbLoginForgot" data-gk="auth.forgot">Forgot password?</button>
+        <button class="btn link" type="button" id="sbLoginGuest" data-gk="auth.guest">Continue as guest</button>
+      </div>
+      <p class="login-foot" id="sbLoginForgotMsg"></p>
+      <!-- ── «ПЕРВОЕ СЛОВО» — ТАК ЗДЕСЬ ЗОВЁТСЯ РЕГИСТРАЦИЯ (D-306) ──────────
+           Основатель просил назвать регистрацию «интеллектуально, уникально и
+           концептуально». Регистрация — это запись в чужой список. У sys.baby
+           списка нет и сервера нет: никто не вписывает вас никуда. Система
+           появляется, когда вы скажете ей первое слово — имя и пароль, — как
+           ребёнок, у которого первое слово и есть начало речи. Отсюда и имя
+           системы, baby, и слово «слово», которым она уже называет пароль
+           замка. -->
+      <div class="login-found">
+        <p class="login-found-lead" data-gk="auth.found.lead">No system of your own yet?</p>
+        <button class="btn ghost wide" type="button" id="sbLoginFound" data-gk="auth.found">First word</button>
+      </div>
+      <p class="login-foot" data-gk="auth.foot">Your system lives in this browser's own database — private by default, and it never leaves this machine.</p>
     </div>
 
     <div id="sbLoginStep2" hidden>
-      <h1 class="login-title">Enter your password</h1>
-      <p class="login-sub">Welcome back</p>
-      <div class="login-chip-row">
-        <span class="login-chip" id="sbLoginChip">guest.sys.baby</span>
-        <button class="btn link" type="button" id="sbLoginEdit">Edit</button>
-      </div>
+      <h1 class="login-title" data-gk="auth.found">First word</h1>
+      <p class="login-sub" data-gk="auth.found.sub">Registering means being written into someone's list. There is no list here and no server: a system comes into being the moment you say its first word — a name and a password. No one but this device will know it exists, and no screen here can be asked whether a name is taken.</p>
       <label class="login-field">
-        <span class="login-label">Password</span>
+        <span class="login-label" data-gk="auth.name">Name</span>
         <span class="login-input-wrap">
-          <input id="sbLoginPw" type="password" autocomplete="current-password" />
-          <button class="login-eye" type="button" id="sbLoginEye" aria-pressed="false" aria-label="Show password">👁</button>
+          <input id="sbFoundName" type="text" maxlength="18" placeholder="yourname" autocomplete="username"
+                 autocapitalize="off" autocorrect="off" spellcheck="false" />
+          <span class="login-suffix">.sys.baby</span>
         </span>
       </label>
-      <p class="login-err" id="sbLoginPwErr" role="alert"></p>
-      <button class="btn primary wide" type="button" id="sbLoginContinue">Continue</button>
+      <label class="login-field">
+        <span class="login-label" data-gk="auth.pw">Password</span>
+        <span class="login-input-wrap">
+          <input id="sbFoundPw" type="password" autocomplete="new-password" />
+        </span>
+      </label>
+      <label class="login-field">
+        <span class="login-label" data-gk="auth.pw2">Password again</span>
+        <span class="login-input-wrap">
+          <input id="sbFoundPw2" type="password" autocomplete="new-password" />
+        </span>
+      </label>
+      <p class="login-err" id="sbFoundErr" role="alert"></p>
+      <button class="btn primary wide" type="button" id="sbFoundGo" data-gk="auth.found.go">Say the first word</button>
       <div class="login-row">
-        <button class="btn link" type="button" id="sbLoginBack">Back</button>
-        <button class="btn link" type="button" id="sbLoginForgot">Forgot password?</button>
+        <button class="btn link" type="button" id="sbFoundBack" data-gk="auth.found.back">I already have a system</button>
       </div>
-      <p class="login-foot" id="sbLoginForgotMsg"></p>
     </div>
 
     <!-- ── О ЗАМКЕ ГОВОРЯТ ПРИ ЗНАКОМСТВЕ · решение D-171 ────────────────────
@@ -708,59 +762,59 @@
 
 
 <!-- ================================================================== scripts -->
-<script src="shared/outward.data.js?b=v156"></script>
-<script src="shared/floor.data.js?b=v156"></script>
-<script src="os/core/seals.js?b=v156"></script>
-<script src="os/core/shell.js?b=v156"></script>
-<script src="os/core/panels.js?b=v156"></script>
-<script src="os/core/palette.js?b=v156"></script>
-<script src="os/core/desktop.js?b=v156"></script>
-<script src="os/core/alarm.js?b=v156"></script>
-<script src="os/core/topbar.js?b=v156"></script>
-<script src="os/core/terminal.js?b=v156"></script>
-<script src="os/core/hand.js?b=v156"></script>
+<script src="shared/outward.data.js?b=v159"></script>
+<script src="shared/floor.data.js?b=v159"></script>
+<script src="os/core/seals.js?b=v159"></script>
+<script src="os/core/shell.js?b=v159"></script>
+<script src="os/core/panels.js?b=v159"></script>
+<script src="os/core/palette.js?b=v159"></script>
+<script src="os/core/desktop.js?b=v159"></script>
+<script src="os/core/alarm.js?b=v159"></script>
+<script src="os/core/topbar.js?b=v159"></script>
+<script src="os/core/terminal.js?b=v159"></script>
+<script src="os/core/hand.js?b=v159"></script>
 <!-- Права комнат (D-242): после оболочки — ей нужен живой реестр — и ДО
      комнат: ящик спрашивается в тот миг, когда комната берётся за диск. -->
-<script src="os/core/rights.js?b=v156"></script>
+<script src="os/core/rights.js?b=v159"></script>
 <!-- Что сейчас живо (D-243): после прав — прибор диска пишет через ящик
      комнаты, — и до комнат: нужды спрашиваются у них при регистрации. -->
-<script src="os/core/alive.js?b=v156"></script>
-<script src="os/core/links.js?b=v156"></script>
-<script src="os/core/field.js?b=v156"></script>
+<script src="os/core/alive.js?b=v159"></script>
+<script src="os/core/links.js?b=v159"></script>
+<script src="os/core/field.js?b=v159"></script>
 <!-- Синхронизация копий (D-172): после store.js — ей нужен и склад, и
      выгрузка профиля, и замок. -->
-<script src="os/core/sync.js?b=v156"></script>
+<script src="os/core/sync.js?b=v159"></script>
 
-<script src="shared/portfolio.data.js?b=v156"></script>
-<script src="shared/portfolio.strings.js?b=v156"></script>
-<script src="shared/pricing.data.js?b=v156"></script>
+<script src="shared/portfolio.data.js?b=v159"></script>
+<script src="shared/portfolio.strings.js?b=v159"></script>
+<script src="shared/pricing.data.js?b=v159"></script>
 
-<script src="os/apps/files/files.js?b=v156"></script>
-<script src="os/apps/browser/browser.js?b=v156"></script>
-<script src="os/apps/player/player.js?b=v156"></script>
-<script src="os/apps/viewer/viewer.js?b=v156"></script>
-<script src="os/apps/notes/notes.js?b=v156"></script>
-<script src="os/apps/mail/mail.js?b=v156"></script>
-<script src="os/apps/messenger/messenger.js?b=v156"></script>
-<script src="os/apps/search/search.js?b=v156"></script>
-<script src="shared/portfolio.view.js?b=v156"></script>
-<script src="os/apps/project/project.js?b=v156"></script>
-<script src="os/apps/settings/settings.js?b=v156"></script>
-<script src="os/apps/echoes/echoes.js?b=v156"></script>
-<script src="os/apps/build/build.js?b=v156"></script>
+<script src="os/apps/files/files.js?b=v159"></script>
+<script src="os/apps/browser/browser.js?b=v159"></script>
+<script src="os/apps/player/player.js?b=v159"></script>
+<script src="os/apps/viewer/viewer.js?b=v159"></script>
+<script src="os/apps/notes/notes.js?b=v159"></script>
+<script src="os/apps/mail/mail.js?b=v159"></script>
+<script src="os/apps/messenger/messenger.js?b=v159"></script>
+<script src="os/apps/search/search.js?b=v159"></script>
+<script src="shared/portfolio.view.js?b=v159"></script>
+<script src="os/apps/project/project.js?b=v159"></script>
+<script src="os/apps/settings/settings.js?b=v159"></script>
+<script src="os/apps/echoes/echoes.js?b=v159"></script>
+<script src="os/apps/build/build.js?b=v159"></script>
 <!-- Фонарь (D-185): свод того, что нужно знать, когда сети нет. -->
-<script src="os/apps/lantern/lantern.js?b=v156"></script>
-<script src="os/apps/keys/keys.js?b=v156"></script>
-<script src="os/apps/vault/vault.js?b=v156"></script>
-<script src="os/apps/outward/outward.js?b=v156"></script>
-<script src="os/apps/handoff/handoff.js?b=v156"></script>
-<script src="os/apps/solitaire/solitaire.js?b=v156"></script>
-<script src="os/apps/chest/prizes.data.js?b=v156"></script>
-<script src="os/apps/chest/chest.js?b=v156"></script>
+<script src="os/apps/lantern/lantern.js?b=v159"></script>
+<script src="os/apps/keys/keys.js?b=v159"></script>
+<script src="os/apps/vault/vault.js?b=v159"></script>
+<script src="os/apps/outward/outward.js?b=v159"></script>
+<script src="os/apps/handoff/handoff.js?b=v159"></script>
+<script src="os/apps/solitaire/solitaire.js?b=v159"></script>
+<script src="os/apps/chest/prizes.data.js?b=v159"></script>
+<script src="os/apps/chest/chest.js?b=v159"></script>
 <!-- Эстафета (D-286): после всех комнат — продолжение спрашивает у каждой
      её место и возвращает в него; до того, как встанет стол. -->
-<script src="os/core/baton.js?b=v156"></script>
-  <script src="os/core/friction.js?b=v156"></script>
+<script src="os/core/baton.js?b=v159"></script>
+  <script src="os/core/friction.js?b=v159"></script>
 <!-- Скамейка (Experimental/Phosphor) выведена из клиентской витрины v20.9:
      витрина продаёт сданные системы, а самое интригующее имя на столе
      конкурировало с подсказкой №1 за первое касание. Папка приложения

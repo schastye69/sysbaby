@@ -337,36 +337,67 @@
       "</div>";
   }
 
+  /* ── ЗАМОК И КОПИИ ВИДНЫ ИЗ НАСТРОЕК (D-305) ─────────────────────────────
+     Два самых важных параметра системы жили только в окне Учётной записи, и
+     в Настройках их не было вовсе. Строка здесь ГОВОРИТ состояние, спрошенное
+     у самой системы (sbVault, sbIdleLock, sbBackup), и ОТКРЫВАЕТ настоящее
+     управление на нужном месте. Второго набора кнопок нет — иначе появилась
+     бы вторая правда, которая однажды разойдётся с первой.
+     Охраняется tools/settings-reach-check.mjs. */
+  function whenOf(ts) {
+    var l = window.sbLang ? window.sbLang() : "en";
+    try { return new Date(ts).toLocaleString(l === "ee" ? "et" : l, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); }
+    catch (err) { return new Date(ts).toISOString().slice(0, 16).replace("T", " "); }
+  }
+  function reachMarkup() {
+    var V = window.sbVault, B = window.sbBackup;
+    var can = false, locked = false, idle = 0;
+    try { can = !!(V && V.available()); locked = can && V.isLocked(); } catch (err) { can = false; }
+    try { idle = window.sbIdleLock ? Number(window.sbIdleLock.minutes()) || 0 : 0; } catch (err) { idle = 0; }
+    var lockSub = !can ? t("set.privacy.lockCant")
+      : !locked ? t("set.privacy.lockOff")
+      : idle > 0 ? t("set.privacy.lockOnIdle", { n: idle }) : t("set.privacy.lockOnNoIdle");
+    var copySub, copyCan = false, hasFolder = false, st = {};
+    try { copyCan = !!(B && B.supported()); hasFolder = copyCan && B.hasFolder(); st = (B && B.state && B.state()) || {}; } catch (err) { copyCan = false; }
+    if (!copyCan) copySub = esc(t("set.privacy.copiesCant"));
+    else if (!hasFolder) copySub = esc(t("set.privacy.copiesNone"));
+    else {
+      /* Имя папки — данные человека, не строка интерфейса. */
+      var fname = (B.folderName && B.folderName()) || st.dirName || "—";
+      copySub = esc(t("set.privacy.copiesFolder", { name: "\u0000" })).replace("\u0000", '<span data-sb-userdata>' + esc(fname) + "</span>") + " " +
+        esc(st.lastOk ? t("set.privacy.copiesLast", { when: whenOf(st.lastOk) }) : t("set.privacy.copiesNever"));
+    }
+    return '<div id="stLockRow">' + rowMarkup(esc(t("set.privacy.lock")), esc(lockSub),
+        can ? '<button type="button" class="st-btn" id="stLockOpen">' + esc(t("set.privacy.lockOpen")) + "</button>" : "") + "</div>" +
+      '<div id="stCopiesRow">' + rowMarkup(esc(t("set.privacy.copies")), copySub,
+        '<button type="button" class="st-btn" id="stCopiesOpen">' + esc(t("set.privacy.copiesOpen")) + "</button>") + "</div>";
+  }
+
   function privacyMarkup() {
     var api = profilesApi();
-    var record = null, list = [], currentProfileId = "local";
+    var currentProfileId = "local";
     if (api) {
       try {
-        record = typeof api.currentRecord === "function" ? api.currentRecord() : null;
-        list = typeof api.list === "function" ? (api.list() || []) : [];
         currentProfileId = typeof api.current === "function" ? api.current() : "local";
       } catch (err) { console.error("[settings] profiles read failed", err); }
     }
-    var signedIn = record && record.email ? record.email : t("set.privacy.guest");
-
-    var chips = list.map(function (p) {
-      var isCurrent = p.id === currentProfileId;
-      var canDelete = !isCurrent && p.id !== "local";
-      return '<span class="st-profile' + (isCurrent ? " active" : "") + '">' +
-        '<button type="button" class="st-profile-btn" data-profile="' + esc(p.id) + '" title="' + esc(p.email || p.name || p.id) + '">' + esc(p.name || p.id) + "</button>" +
-        (canDelete ? '<button type="button" class="st-profile-x" data-profile-del="' + esc(p.id) + '" title="' + esc(t("set.privacy.profileDelete")) + '" aria-label="' + esc(t("set.privacy.profileDelete")) + '">✕</button>' : "") +
-      "</span>";
-    }).join("");
+    /* ── ЧУЖИХ СИСТЕМ ОТСЮДА НЕ ВИДНО (D-306) ───────────────────────────
+       Прежде здесь стоял список всех профилей устройства по именам — с
+       кнопкой, которая входила в любой из них без пароля, и крестиком,
+       который удалял чужой. Основатель: «посторонний даже не мог подозревать
+       существует ли вообще аккаунт». Теперь строка говорит правду о том, как
+       открыть другую систему: выйти к двери и назвать её имя и пароль. */
+    var signedIn = currentProfileId !== "local" && window.sbGetUsername ? window.sbGetUsername() + ".sys.baby" : t("set.privacy.guest");
 
     /* Почта аккаунта — данные посетителя: data-sb-userdata говорит закону
        покрытия, что эту строку переводить нечем и не нужно. */
     return '<h2 class="st-title">' + esc(t("set.tab.privacy")) + "</h2>" +
       rowMarkup(esc(t("set.privacy.signedIn")), '<span data-sb-userdata>' + esc(signedIn) + "</span>",
         '<button type="button" class="st-btn danger" id="stSignOut">' + esc(t("set.privacy.signOut")) + "</button>") +
+      reachMarkup() +
       rowMarkup(esc(t("set.privacy.profiles")),
         esc(t("set.privacy.profilesSub")),
-        '<span class="st-profiles" data-sb-userdata>' + chips +
-          '<button type="button" class="st-chip" id="stAddAccount">' + esc(t("set.privacy.addAccount")) + "</button></span>") +
+        '<button type="button" class="st-btn" id="stToDoor">' + esc(t("set.privacy.toDoor")) + "</button>") +
       /* Эстафета (D-286): что хранится, где и как забыть — в одной строке. */
       rowMarkup(esc(t("set.privacy.baton")), esc(t("set.privacy.batonSub")) + batonCounts(),
         (window.sbBaton && (window.sbBaton.peek() || batonCounts()) ? '<button type="button" class="st-btn" id="stBatonForget">' + esc(t("set.privacy.batonForget")) + "</button> " : "") +
@@ -779,6 +810,15 @@
   /* -------------------------------------------------------------- privacy */
 
   function wirePrivacy(win, host) {
+    /* Замок и копии (D-305): строка ведёт к настоящему управлению. */
+    var lockOpen = host.querySelector("#stLockOpen");
+    if (lockOpen) lockOpen.addEventListener("click", function () {
+      if (window.sbOpenAccountAt) window.sbOpenAccountAt("#sbLockP1, #sbLockCur");
+    });
+    var copiesOpen = host.querySelector("#stCopiesOpen");
+    if (copiesOpen) copiesOpen.addEventListener("click", function () {
+      if (window.sbOpenAccountAt) window.sbOpenAccountAt("#sbBkPick, #sbAccExport");
+    });
     var survivalAsk = host.querySelector("#stSurvivalAsk");
     if (survivalAsk) {
       survivalAsk.addEventListener("click", function () {
@@ -818,45 +858,14 @@
       });
     }
 
-    host.querySelectorAll("[data-profile]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var api = profilesApi();
-        if (!api || typeof api.switchTo !== "function") return;
-        try { api.switchTo(btn.getAttribute("data-profile")); }
-        catch (err) { console.error("[settings] profile switch failed", err); }
-      });
-    });
-
-    host.querySelectorAll("[data-profile-del]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var api = profilesApi();
-        if (!api || typeof api.remove !== "function") return;
-        var id = btn.getAttribute("data-profile-del");
-        var name = btn.parentNode && btn.parentNode.querySelector("[data-profile]");
-        var label = name ? name.textContent : id;
-        if (!window.confirm(t("set.privacy.profileDeleteConfirm", { name: label }))) return;
-        try { api.remove(id); } catch (err) { console.error("[settings] profile delete failed", err); return; }
-        render(win);
-      });
-    });
-
-    var add = host.querySelector("#stAddAccount");
-    if (add) {
-      add.addEventListener("click", function () {
-        var api = profilesApi();
-        if (!api || typeof api.findOrCreateByEmail !== "function") return;
-        var email = window.prompt(t("set.privacy.addPrompt"));
-        if (email == null) return;
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
-          toast(t("set.privacy.emailBadTitle"), t("set.privacy.emailBadBody"));
-          return;
-        }
-        var profile;
-        try { profile = api.findOrCreateByEmail(String(email).trim()); }
-        catch (err) { console.error("[settings] profile create failed", err); return; }
-        if (profile && profile.id && typeof api.switchTo === "function") {
-          try { api.switchTo(profile.id); } catch (err) { console.error("[settings] profile switch failed", err); }
-        }
+    var toDoor = host.querySelector("#stToDoor");
+    if (toDoor) {
+      toDoor.addEventListener("click", function () {
+        dbFlush();
+        if (typeof window.sbSignOut === "function") { window.sbSignOut(); return; }
+        try { localStorage.removeItem(AUTHED_KEY); }
+        catch (err) { console.error("[settings] to-door failed", err); }
+        location.reload();
       });
     }
 

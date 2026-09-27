@@ -247,6 +247,14 @@
       return true;
     },
     flushSync: function () { flush(); },
+    /* Записать в ЧУЖОЕ пространство — в профиль, куда человек сейчас войдёт.
+       Нужно двери (D-306): имя входящего кладётся в его профиль, а не в тот,
+       из которого он уходит. Прежняя дверь писала имя в текущий — и гость
+       видел в полосе имя того, кто заводился последним. */
+    setIn: function (profileId, key, value) {
+      if (!profileId || profileId === activeProfile()) { sbDB.set(key, value); return true; }
+      return lsSet(nsKeyFor(profileId, key), String(value));
+    },
     activeProfile: activeProfile,
     nsKey: nsKey,
     /* ── ЭПОХА ХРАНИЛИЩА (D-274) ─────────────────────────────────────────
@@ -399,7 +407,7 @@
     return toHex(a.buffer);
   }
 
-  function derive(password, saltHex) {
+  function derive(password, saltHex, iterations) {
     var enc = new TextEncoder();
     return window.crypto.subtle
       .importKey("raw", enc.encode(String(password)), { name: "PBKDF2" }, false, ["deriveBits"])
@@ -407,7 +415,7 @@
         return window.crypto.subtle.deriveBits({
           name: "PBKDF2",
           salt: enc.encode(saltHex),
-          iterations: AUTH_ITER,
+          iterations: iterations || AUTH_ITER,
           hash: "SHA-256"
         }, key, 256);
       })
@@ -427,47 +435,124 @@
 
   function emailOf(name) { return String(name || "").toLowerCase() + "@sys.baby"; }
 
+  /* ═══════════ ДВЕРЬ НЕ ЗНАЕТ ИМЁН · решение D-306 (v159) ════════════════
+     ПОВОД, дословно от основателя: «первая страница должна быть обязательно
+     входом для того, чтобы посторонний даже не мог подозревать существует ли
+     вообще аккаунт у конкретного пользователя».
+     ЧТО БЫЛО. Учётка лежала в общем списке под своим именем и почтой, а у
+     двери был вопрос has(имя) — «занято ли». Экран отвечал на него любому:
+     «Welcome back» чужому имени, «This name is free» — свободному.
+     ЧТО СТАЛО. Учётку находят не по имени, а по ОТПЕЧАТКУ ПАРЫ: PBKDF2 от
+     пароля с солью «соль устройства ‖ имя». В записи нет ни имени, ни почты —
+     только этот отпечаток. Отсюда три свойства сразу:
+       · спросить «есть ли здесь juri», не зная пароля, нельзя — ни у экрана,
+         ни у списка на диске: вопроса has() больше нет вовсе;
+       · одно имя с двумя паролями — две разные системы, и «Первое слово»
+         никогда не отвечает «занято»;
+       · работа у двери одна и та же для любого имени: один вывод ключа (и ещё
+         один, пока на устройстве живы записи прежней сборки, — для любого
+         имени, а не только для старого).
+     Соль устройства — случайные 16 байт, одни на устройство: заранее
+     посчитанные таблицы «имя + пароль» с чужих устройств здесь бесполезны.
+     Под замком и соль, и список лежат в конвертах, как всё остальное.
+     ЧЕГО ЭТО НЕ ДАЁТ, ВСЛУХ. Без замка имя человека лежит открыто внутри его
+     собственного профиля (как и его заметки), а число записей видно по
+     диску. Экран не выдаёт ничего; диск без замка выдаёт всё — это сказано
+     в карточке «Живучесть».
+     Охраняется tools/first-door-check.mjs. */
+  var AUTH_SALT_KEY = "sysbaby.auth.salt";
+  function deviceSalt() {
+    var s = lsGet(AUTH_SALT_KEY);
+    if (!s) { s = randomSaltHex(); lsSet(AUTH_SALT_KEY, s); }
+    return s;
+  }
+  function doorTag(name, password) {
+    return derive(password, deviceSalt() + "\u0000" + String(name || "").toLowerCase());
+  }
+  function legacyAuthed(list) {
+    return list.filter(function (p) { return p && p.auth && p.auth.hash && p.auth.salt; });
+  }
+  /* Одна попытка — одна и та же работа при любом имени. Возвращает запись,
+     которую открывает пара, или null. Запись прежней сборки, открытая своим
+     паролем, тут же переезжает: имя и почта из неё уходят. */
+  function doorPair(name, password) {
+    if (!subtleOk()) return Promise.resolve({ prof: null, tag: null });
+    var list = readProfiles();
+    var olds = legacyAuthed(list);
+    var old = null, i;
+    if (olds.length) {
+      var e = emailOf(name);
+      for (i = 0; i < olds.length; i++) if (olds[i].email === e) old = olds[i];
+    }
+    var jobs = [doorTag(name, password)];
+    /* Пока на устройстве есть хоть одна старая запись, второй вывод делается
+       ВСЕГДА — по её соли или по пустой. Иначе время ответа говорило бы,
+       старое ли это имя. */
+    /* ОТКАТ: у старой записи без числа проходов — число той сборки, 150 000. */
+    if (olds.length) jobs.push(derive(password, old ? old.auth.salt : randomSaltHex(), old ? (old.auth.iterations || AUTH_ITER) : AUTH_ITER));
+    return Promise.all(jobs).then(function (r) {
+      var tag = r[0], found = null, j;
+      for (j = 0; j < list.length; j++) {
+        if (list[j] && list[j].auth && list[j].auth.tag && sameSecret(list[j].auth.tag, tag)) found = list[j];
+      }
+      if (!found && old && r.length > 1 && sameSecret(r[1], old.auth.hash)) {
+        for (j = 0; j < list.length; j++) {
+          if (list[j].id === old.id) {
+            list[j].auth = { algo: "PBKDF2-SHA256", iterations: AUTH_ITER, v: 2, tag: tag };
+            delete list[j].name;
+            delete list[j].email;
+            found = list[j];
+          }
+        }
+        writeProfiles(list);
+      }
+      return { prof: found, tag: tag };
+    });
+  }
+
   var sbAuth = {
     available: subtleOk,
     iterations: AUTH_ITER,
 
-    /* Заведена ли учётная запись с таким именем на ЭТОМ устройстве. */
-    has: function (name) {
-      var p = sbProfiles.findByEmail(emailOf(name));
-      return !!(p && p.auth && p.auth.hash);
+    /* ВХОД: пара открывает систему — вернуть её; нет — null. Почему нет, не
+       сообщается никому: ни экрану, ни вызывающему. */
+    open: function (name, password) {
+      return doorPair(name, password).then(function (r) { return r.prof; });
     },
 
-    register: function (name, password) {
+    /* «ПЕРВОЕ СЛОВО»: завести систему. Если пара уже открывает систему, это
+       её хозяин — он знает пароль, и ему отдаётся его же система; тому, кто
+       пароля не знает, этот путь не говорит ничего. «Занято» не бывает. */
+    found: function (name, password) {
       if (!subtleOk()) return Promise.reject(new Error("no-subtle"));
       if (String(password || "").length < 4) return Promise.reject(new Error("short"));
-      if (sbAuth.has(name)) return Promise.reject(new Error("exists"));
-      var salt = randomSaltHex();
-      return derive(password, salt).then(function (hash) {
-        var prof = sbProfiles.findByEmail(emailOf(name)) || sbProfiles.create(name, emailOf(name));
-        var list = readProfiles(), i;
-        for (i = 0; i < list.length; i++) {
-          if (list[i].id === prof.id) {
-            list[i].auth = { algo: "PBKDF2-SHA256", iterations: AUTH_ITER, salt: salt, hash: hash };
-            list[i].name = String(name).slice(0, 30);
-          }
-        }
+      return doorPair(name, password).then(function (r) {
+        if (r.prof) return r.prof;
+        var list = readProfiles();
+        var rec = { id: makeId(), createdAt: Date.now(), auth: { algo: "PBKDF2-SHA256", iterations: AUTH_ITER, v: 2, tag: r.tag } };
+        list.push(rec);
         writeProfiles(list);
-        return sbProfiles.findByEmail(emailOf(name));
+        return rec;
       });
-    },
-
-    verify: function (name, password) {
-      var p = sbProfiles.findByEmail(emailOf(name));
-      if (!p || !p.auth || !p.auth.hash) return Promise.resolve(false);
-      if (!subtleOk()) return Promise.resolve(false);
-      return derive(password, p.auth.salt).then(function (hash) {
-        return sameSecret(hash, p.auth.hash);
-      });
-    },
-
-    profileOf: function (name) { return sbProfiles.findByEmail(emailOf(name)); }
+    }
   };
   window.sbAuth = sbAuth;
+
+  /* ── ИМЯ, ПОПАВШЕЕ ГОСТЮ ПО ОШИБКЕ (D-306) ────────────────────────────────
+     Прежняя дверь писала имя заводящегося в ТЕКУЩИЙ профиль — то есть гостю
+     устройства, — а уже потом переключалась. Гость видел в верхней полосе имя
+     того, кто заводился последним: ровно то, чего посторонний знать не должен.
+     Сборка v159 пишет имя туда, куда входят (sbDB.setIn), а оставшееся у
+     гостя имя стирает, если оно совпадает с именем учётки прежней сборки. */
+  (function forgetMisplacedName() {
+    try {
+      var guestName = lsGet("sysbaby.username");
+      if (!guestName) return;
+      var g = String(guestName).toLowerCase();
+      var hit = readProfiles().some(function (p) { return !!(p && p.auth && p.name && String(p.name).toLowerCase() === g); });
+      if (hit) lsDel("sysbaby.username");
+    } catch (e) { /* хранилище закрыто — стирать нечего */ }
+  })();
 
   /* ------------------------------- 5. profile key enumerator §1.4 (canonical) */
   function enumerateProfileKeys(profileId) {
@@ -760,7 +845,9 @@
       app: "sysbaby-os",
       version: 1,
       createdAt: new Date().toISOString(),
-      profile: { id: pid, name: (rec && rec.name) || "This computer", email: (rec && rec.email) || null },
+      /* Имени в записи учётки нет с v159 (D-306): оно живёт в самом профиле. */
+      /* ОТКАТ: у гостя без имени — «This computer», как и прежде. */
+      profile: { id: pid, name: (rec && rec.name) || (pid !== "local" && lsGet(nsKeyFor(pid, "sysbaby.username"))) || "This computer", email: (rec && rec.email) || null },
       keys: keys
     };
   }
@@ -1200,6 +1287,70 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     return (window.sbArgon2 && typeof window.sbArgon2.hash === "function") ? { m: A2_M, t: A2_T, p: A2_P } : null;
   }
   function a2Label(a2) { return "ARGON2ID:m=" + a2.m + ",t=" + a2.t + ",p=" + a2.p; }
+
+  /* ── ЦЕНА ПОД ЭТО УСТРОЙСТВО (D-303, план Н11) ────────────────────────────
+     ПОВОД: на iPad в Safari единая цена растяжки открывала замок минуту (шапка
+     adaptive-cost-check). Здесь система один раз мерит устройство и подбирает
+     цену под БЮДЖЕТ в несколько секунд. Память Argon2id (64 МиБ) — защита от
+     перебора видеокартой — НЕ трогается; подбирается только ВРЕМЯ: число
+     проходов Argon2id и счётчики PBKDF2, с полом, ниже которого не опускаемся,
+     и потолком сегодняшних значений (быстрый устройство не делается медленнее).
+     Меряется один раз за сеанс. Цена записывается в замок и оттуда берётся
+     снятием — поэтому медленный замок и открывается быстро.
+
+     ПОЧЕМУ ЦЕЛЬ — ОТНОШЕНИЕ, А НЕ СЕКУНДЫ. Обещание системы (kdf-cost-check,
+     прежняя просьба основателя) — одна попытка подбора стоит не меньше ДЕСЯТИ
+     эталонов OWASP (600 000 × PBKDF2-SHA-256). Это обещание — пол, ниже
+     которого спешка не опускается: цель — тринадцать эталонов (запас над
+     десятью на дрожь замера). На быстрой машине тринадцать эталонов — это
+     секунды; на медленной — те же тринадцать, но абсолютное время больше.
+     Мгновенным открытие быть не может, не нарушив обещания, — и Совет об этом
+     говорит вслух, а не прячет.
+
+     ГДЕ ЛЕЖИТ ЦЕНА. Память Argon2id (64 МиБ) не трогается — это защита от
+     видеокарты. Проходов памяти — два (пол): каждый лишний проход на iPad
+     считается чистым JS и стоит дорого временем, а отношение дешевле набрать
+     родным PBKDF2. Поэтому Argon2id держит память, а до тринадцати эталонов
+     добирает PBKDF2, у которого цена времени на любом устройстве честная.
+     ПОСТОЯННАЯ: цель 13 эталонов; эталон OWASP 600 000; проходов Argon2id 2. */
+  var COST_TARGET = 13, OWASP_REF = 600000, A2_PASSES = 2, IT_FLOOR = 600000;
+  var calibrated = null;
+  function calibrateCost() {
+    if (calibrated) return Promise.resolve(calibrated);
+    var full = todayA2();
+    if (!full) { calibrated = { it1: KDF1_ITER, it2: KDF2_ITER, a2: null }; return Promise.resolve(calibrated); }
+    var subtle = window.crypto.subtle, enc = new TextEncoder();
+    var salt = new Uint8Array(16); window.crypto.getRandomValues(salt);
+    var PROBE = 100000;   /* проба PBKDF2 — по ней ms на итерацию */
+    var per512 = 0, per256 = 0;
+    return subtle.importKey("raw", enc.encode("sys.baby/calibrate"), { name: "PBKDF2" }, false, ["deriveBits"]).then(function (base) {
+      var t0 = performance.now();
+      return subtle.deriveBits({ name: "PBKDF2", salt: salt, iterations: PROBE, hash: "SHA-512" }, base, 512).then(function () {
+        per512 = (performance.now() - t0) / PROBE;
+        var t1 = performance.now();
+        return subtle.deriveBits({ name: "PBKDF2", salt: salt, iterations: PROBE, hash: "SHA-256" }, base, 256).then(function () {
+          per256 = (performance.now() - t1) / PROBE;
+          var t2 = performance.now();
+          return window.sbArgon2.hash(new Uint8Array(32), salt, { m: full.m, t: 1, p: full.p, tagLength: 32 }).then(function () {
+            var perPass = performance.now() - t2;
+            /* Один эталон OWASP в мс на этом устройстве — им и мерим отношение,
+               ровно как kdf-cost-check: те же 600 000 × SHA-256. */
+            var owaspMs = OWASP_REF * per256;
+            var t = A2_PASSES;
+            var argonRatio = (t * perPass) / Math.max(1e-4, owaspMs);   /* сколько эталонов уже даёт память */
+            var need = Math.max(0, COST_TARGET - argonRatio);           /* остаток добираем PBKDF2 */
+            var clamp = function (v, cap) { return Math.max(IT_FLOOR, Math.min(cap, Math.round(v))); };
+            /* Разложение остатка: 40 % на SHA-512, 60 % на SHA-256. it/OWASP_REF
+               эталонов для SHA-256; для SHA-512 — через отношение времён. */
+            var it2 = clamp(0.6 * need * OWASP_REF, KDF2_ITER);
+            var it1 = clamp((0.4 * need * owaspMs) / Math.max(1e-4, per512), KDF1_ITER);
+            calibrated = { it1: it1, it2: it2, a2: { m: full.m, t: t, p: full.p } };
+            return calibrated;
+          });
+        });
+      });
+    }, function () { calibrated = { it1: KDF1_ITER, it2: KDF2_ITER, a2: full }; return calibrated; });
+  }
   function a2Parse(s) {
     var m = /^ARGON2ID:m=(\d+),t=(\d+),p=(\d+)$/.exec(String(s || ""));
     return m ? { m: parseInt(m[1], 10), t: parseInt(m[2], 10), p: parseInt(m[3], 10) } : null;
@@ -2035,13 +2186,14 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     var fsaltB64 = b64(fsalt);
     var factorRec = factorFile ? { kind: "file", salt: fsaltB64 } : null;
     return (factorFile ? factorSecret(factorFile, fsaltB64) : Promise.resolve(null)).then(function (fsec) {
-    var a2 = todayA2();
-    return deriveKEK(password, saltB64, null, null, fsec, a2).then(function (kek) {
+    return calibrateCost().then(function (cost) {
+    var a2 = cost.a2;
+    return deriveKEK(password, saltB64, cost.it1, cost.it2, fsec, a2).then(function (kek) {
       return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: wrapIv }, kek, master).then(function (wrapped) {
         var dm = null;
         if (duressPassword) { dm = new Uint8Array(32); window.crypto.getRandomValues(dm); }
         var second = dm
-          ? makeDoor(duressPassword, dm, saltB64, fsec, [KDF1_ITER, KDF2_ITER, a2]).then(function (d) { dm.fill(0); return d; })
+          ? makeDoor(duressPassword, dm, saltB64, fsec, [cost.it1, cost.it2, a2]).then(function (d) { dm.fill(0); return d; })
           : Promise.resolve(randomDoor());
         return second.then(function (door2) {
         return subkeys(master).then(function (ks) {
@@ -2057,7 +2209,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
                открытые копии, а замка нет — потерять нечего. */
             var body = {
               v: factorRec ? 4 : 3,
-              kdf: ["PBKDF2-SHA512:" + KDF1_ITER, "PBKDF2-SHA256:" + KDF2_ITER].concat(a2 ? [a2Label(a2)] : []),
+              kdf: ["PBKDF2-SHA512:" + cost.it1, "PBKDF2-SHA256:" + cost.it2].concat(a2 ? [a2Label(a2)] : []),
               ciphers: ["AES-256-CTR", "AES-256-GCM"],
               mac: "HMAC-SHA-512",
               names: "HMAC-SHA-256",
@@ -2074,6 +2226,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         });
         });
       });
+    });
     });
     });
   }

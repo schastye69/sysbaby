@@ -241,7 +241,7 @@
   cursor: pointer;
 }
 
-.st-chips, .st-profiles { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+.st-chips { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
 
 .st-chip {
   padding: 5px 10px;
@@ -263,46 +263,6 @@
   :where(html:not([data-input="touch"])) .st-chip:hover { background: rgba(255, 255, 255, .12); }
 }
 .st-chip.active { background: var(--accent, #e0663c); border-color: transparent; color: #fff; font-weight: 600; }
-
-.st-profile {
-  display: inline-flex;
-  align-items: center;
-  border-radius: var(--r-pill);
-  border: 1px solid rgba(255, 255, 255, .13);
-  background: rgba(255, 255, 255, .05);
-  overflow: hidden;
-}
-
-.st-profile.active { border-color: transparent; background: var(--accent, #e0663c); }
-
-.st-profile-btn {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: var(--f-meta);
-  padding: 5px 10px;
-  cursor: pointer;
-}
-
-.st-profile-x {
-  border: 0;
-  border-left: 1px solid rgba(255, 255, 255, .16);
-  background: transparent;
-  color: var(--ink-2);
-  font-size: var(--f-micro);
-  padding: 5px 8px;
-  cursor: pointer;
-}
-
-/* Наведение — это про мышь. На устройстве без мыши :hover включается по
-   касанию и держится до следующего касания где-нибудь ещё: человек видит
-   предмет в состоянии, которого не выбирал. Повод — снимок основателя
-   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
-   Охраняется tools/hover-is-not-touch-check.mjs. */
-@media (hover: hover) {
-  :where(html:not([data-input="touch"])) .st-profile-x:hover { color: var(--danger, #ff453a); background: rgba(255, 69, 58, .16); }
-}
 
 .st-card {
   padding: 13px;

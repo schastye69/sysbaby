@@ -4697,70 +4697,75 @@
       loginSuccess();
       return;
     }
+    /* ── ПЕРВЫЙ ЭКРАН — ВХОД, И ОН НЕ ВЫДАЁТ ИМЁН · решение D-306 ──────────
+       Основатель: «первая страница должна быть обязательно входом для того,
+       чтобы посторонний даже не мог подозревать существует ли вообще аккаунт
+       у конкретного пользователя». Имя и пароль спрашиваются ВМЕСТЕ. Любой
+       отказ звучит одинаково и стоит одинаково: система не знает ответа на
+       вопрос «есть ли здесь такое имя», пока не услышала пару (sbAuth.open).
+       Регистрация зовётся «Первое слово» и никогда не отвечает «занято»:
+       одно имя с другим паролем — это другая система (sbAuth.found).
+       Строки — на языке устройства, как у двери замка (D-288): язык системы
+       лежит внутри неё, а до входа спрашивать его не у кого.
+       Охраняется tools/first-door-check.mjs и tools/os-auth-check.mjs. */
     var step1 = $("#sbLoginStep1"), step2 = $("#sbLoginStep2");
-    var nameInput = $("#sbLoginName"), nameErr = $("#sbLoginNameErr");
-    var pwInput = $("#sbLoginPw"), pwErr = $("#sbLoginPwErr");
-    var chip = $("#sbLoginChip"), cont = $("#sbLoginContinue"), guest = $("#sbLoginGuest");
-    var back = $("#sbLoginBack"), edit = $("#sbLoginEdit"), next = $("#sbLoginNext");
+    var nameInput = $("#sbLoginName"), pwInput = $("#sbLoginPw"), err = $("#sbLoginErr");
+    var cont = $("#sbLoginContinue"), guest = $("#sbLoginGuest"), foundBtn = $("#sbLoginFound");
     var forgot = $("#sbLoginForgot"), forgotMsg = $("#sbLoginForgotMsg"), eye = $("#sbLoginEye");
-    var chosen = "";
+    var fName = $("#sbFoundName"), fPw = $("#sbFoundPw"), fPw2 = $("#sbFoundPw2"), fErr = $("#sbFoundErr");
+    var fGo = $("#sbFoundGo"), fBack = $("#sbFoundBack");
 
-    function toStep2(name) {
-      chosen = name;
-      if (chip) chip.textContent = name + ".sys.baby";
+    /* Ряд языков у входа — тот же, что у двери замка; выбор живёт только в
+       памяти страницы (gatePick). */
+    var mark = $(".login-mark", card);
+    if (mark && !$(".vg-langs", card)) mark.insertAdjacentHTML("afterend", gateLangRow());
+    gateResay(card);
+    card.addEventListener("click", function (ev) {
+      var b = ev.target && ev.target.closest ? ev.target.closest("[data-gate-lang]") : null;
+      if (!b) return;
+      gatePick = b.getAttribute("data-gate-lang");
+      gateResay(card);
+      if (err) err.textContent = "";
+      if (fErr) fErr.textContent = "";
+      if (forgotMsg) forgotMsg.textContent = "";
+    });
+
+    function cleanName(input) {
+      if (!input) return;
+      input.addEventListener("input", function () {
+        var pos = input.selectionStart;
+        input.value = sanitizeUser(input.value);
+        try { input.setSelectionRange(pos, pos); } catch (e) { /* ignore */ }
+      });
+    }
+    cleanName(nameInput);
+    cleanName(fName);
+    function onEnter(input, btn) {
+      if (input && btn) input.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); btn.click(); } });
+    }
+    onEnter(nameInput, cont); onEnter(pwInput, cont);
+    onEnter(fName, fGo); onEnter(fPw, fGo); onEnter(fPw2, fGo);
+
+    function toFound() {
       if (step1) step1.hidden = true;
       if (step2) step2.hidden = false;
-      if (pwInput) setTimeout(function () { pwInput.focus(); }, 60);
+      if (fErr) fErr.textContent = "";
+      /* Набранное у входа имя переносится — человек не набирает его дважды. */
+      if (fName && nameInput && !fName.value) fName.value = nameInput.value;
+      if (fName) setTimeout(function () { (fName.value ? fPw : fName).focus(); }, 60);
     }
-    function toStep1() {
+    function toDoor() {
       if (step2) step2.hidden = true;
       if (step1) step1.hidden = false;
-      if (nameInput) nameInput.focus();
+      if (err) err.textContent = "";
+      if (nameInput) setTimeout(function () { nameInput.focus(); }, 60);
     }
-
-    if (nameInput) {
-      nameInput.addEventListener("input", function () {
-        var pos = nameInput.selectionStart;
-        nameInput.value = sanitizeUser(nameInput.value);
-        try { nameInput.setSelectionRange(pos, pos); } catch (e) { /* ignore */ }
-        if (nameErr) nameErr.textContent = "";
-      });
-      nameInput.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); if (next) next.click(); } });
-    }
-    /* Одно поле имени решает, что будет дальше: если такая запись на этом
-       устройстве есть — это ВХОД, если нет — РЕГИСТРАЦИЯ. Второго экрана и
-       второй кнопки не нужно: человек и так знает, заводил он себя здесь или
-       нет, а система это ЗНАЕТ ТОЧНО. */
-    var registering = false;
-
-    if (next) {
-      next.addEventListener("click", function () {
-        var v = sanitizeUser(nameInput ? nameInput.value : "");
-        if (v.length < 2) {
-          if (nameErr) nameErr.textContent = "Enter at least 2 characters — letters, numbers, . _ or -";
-          return;
-        }
-        if (window.sbAuth && !window.sbAuth.available()) {
-          if (nameErr) nameErr.textContent = "This page is not on a secure connection, so a password cannot be protected here. Continue as guest.";
-          return;
-        }
-        registering = !(window.sbAuth && window.sbAuth.has(v));
-        toStep2(v);
-        var title = $(".login-title", step2), sub = $(".login-sub", step2);
-        if (title) title.textContent = registering ? "Choose your password" : "Enter your password";
-        if (sub) sub.textContent = registering
-          ? "This name is free on this device. The password is stored as a hash — never as itself."
-          : "Welcome back";
-        if (cont) cont.textContent = registering ? "Create account" : "Continue";
-      });
-    }
-    if (edit) edit.addEventListener("click", toStep1);
-    if (back) back.addEventListener("click", toStep1);
+    if (foundBtn) foundBtn.addEventListener("click", toFound);
+    if (fBack) fBack.addEventListener("click", toDoor);
     /* Правда вместо «Demo mode» (v47). Сервера нет — восстанавливать пароль
        некому и нечем. Единственные настоящие выходы названы прямо. */
     if (forgot) forgot.addEventListener("click", function () {
-      if (forgotMsg) forgotMsg.textContent =
-        "There is no server, so nobody can reset it — not even us. Enter as guest, or claim another name; this account's data stays on this device.";
+      if (forgotMsg) forgotMsg.textContent = gateText("auth.forgot.msg");
     });
     if (eye && pwInput) {
       eye.addEventListener("click", function () {
@@ -4769,7 +4774,6 @@
         eye.setAttribute("aria-pressed", showing ? "false" : "true");
       });
     }
-    if (pwInput) pwInput.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); if (cont) cont.click(); } });
 
     /* Показать дверь замка и дождаться ответа. Если криптографии браузера
        нет — двери нет тоже: нарисованный замок хуже отсутствующего. */
@@ -4795,59 +4799,89 @@
     function finish(profileId, username) {
       rawSet("sysbaby.authed", "1");
       try { sessionStorage.setItem("sysbaby.session.active", "1"); } catch (e) { /* ignore */ }
-      if (username && window.sbSetUsername) window.sbSetUsername(username);
+      /* Имя — в тот профиль, КУДА входят (D-306). Прежде оно писалось в
+         текущий, то есть гостю, и гость видел в полосе чужое имя. */
+      if (username && window.sbDB && window.sbDB.setIn && profileId && profileId !== "local") window.sbDB.setIn(profileId, "sysbaby.username", username);
       if (window.sbDB) window.sbDB.flushSync();
       if (profileId && window.sbProfiles && profileId !== window.sbProfiles.current()) {
         window.sbProfiles.switchTo(profileId);
         return;
       }
+      if (username && window.sbSetUsername && profileId && profileId !== "local") window.sbSetUsername(username);
       card.classList.add("out");
       setTimeout(function () { if (card.parentNode) card.parentNode.removeChild(card); }, 480);
       root.classList.add("sb-has-session");
       loginSuccess();
     }
 
+    function busy(btn, key) { var was = btn.textContent; btn.disabled = true; btn.textContent = gateText(key); return function () { btn.disabled = false; btn.textContent = was; }; }
+    function unavailable(out) {
+      if (window.sbAuth && !window.sbAuth.available()) { out.textContent = gateText("auth.err.insecure"); return true; }
+      if (!window.sbAuth) { out.textContent = gateText("auth.err.unavailable"); return true; }
+      return false;
+    }
+
+    /* ВХОД. Один ответ на любой промах: ни экран, ни время не говорят,
+       чем именно пара не подошла. */
     if (cont) {
       cont.addEventListener("click", function () {
-        if (!pwInput || !pwInput.value) { if (pwErr) pwErr.textContent = "Enter your password."; return; }
-        if (!window.sbAuth) { if (pwErr) pwErr.textContent = "Sign-in is unavailable here. Continue as guest."; return; }
-        if (pwErr) pwErr.textContent = "";
+        if (!err) return;
+        err.textContent = "";
+        var name = sanitizeUser(nameInput ? nameInput.value : "");
+        if (name.length < 2) { err.textContent = gateText("auth.err.name"); return; }
+        if (!pwInput || !pwInput.value) { err.textContent = gateText("auth.err.pwEmpty"); return; }
+        if (unavailable(err)) return;
         var pw = pwInput.value;
-        var was = cont.textContent;
-        cont.disabled = true;
-        cont.textContent = registering ? "Creating…" : "Checking…";
+        var done = busy(cont, "auth.in.busy");
+        window.sbAuth.open(name, pw).then(function (prof) {
+          if (!prof) {
+            done();
+            err.textContent = gateText("auth.err.pair");
+            pwInput.value = "";
+            pwInput.focus();
+            return;
+          }
+          finish(prof.id, name);
+        })["catch"](function () {
+          done();
+          err.textContent = gateText("auth.err.pair");
+          pwInput.value = "";
+          pwInput.focus();
+        });
+      });
+    }
 
-        function refuse(msg) {
-          cont.disabled = false;
-          cont.textContent = was;
-          if (pwErr) pwErr.textContent = msg;
-          if (pwInput) { pwInput.value = ""; pwInput.focus(); }
-        }
-
-        if (registering) {
-          if (pw.length < 4) { refuse("At least 4 characters."); return; }
-          window.sbAuth.register(chosen, pw).then(function (prof) {
-            /* ── О ЗАМКЕ ГОВОРЯТ ПРИ ЗНАКОМСТВЕ (D-171) ────────────────────
-               Не требование, а дверь, которую показали: «сейчас» или «потом».
-               Заставить человека завести второй пароль в ту же минуту, когда
-               он завёл первый, — почти наверняка получить тот же пароль
-               дважды, а это хуже, чем никакого замка. */
-            offerLock(function (wantsNow) {
-              if (wantsNow) window.sbWantsLockNow = true;
-              finish(prof ? prof.id : null, chosen);
-            });
-          })["catch"](function (err) {
-            refuse(err && err.message === "exists" ? "That name is taken on this device." : "Could not create the account here.");
+    /* «ПЕРВОЕ СЛОВО». Занятого имени не бывает: та же пара — та же система
+       (её хозяин знает пароль), другая пара — другая система. */
+    if (fGo) {
+      fGo.addEventListener("click", function () {
+        if (!fErr) return;
+        fErr.textContent = "";
+        var name = sanitizeUser(fName ? fName.value : "");
+        if (name.length < 2) { fErr.textContent = gateText("auth.err.name"); return; }
+        var pw = fPw ? fPw.value : "";
+        if (!pw) { fErr.textContent = gateText("auth.err.pwEmpty"); return; }
+        if (pw.length < 4) { fErr.textContent = gateText("auth.err.short"); return; }
+        if (!fPw2 || fPw2.value !== pw) { fErr.textContent = gateText("auth.err.mismatch"); if (fPw2) { fPw2.value = ""; fPw2.focus(); } return; }
+        if (unavailable(fErr)) return;
+        var done = busy(fGo, "auth.found.busy");
+        window.sbAuth.found(name, pw).then(function (prof) {
+          /* ── О ЗАМКЕ ГОВОРЯТ ПРИ ЗНАКОМСТВЕ (D-171) ──────────────────────
+             Не требование, а дверь, которую показали: «сейчас» или «потом».
+             Заставить человека завести второй пароль в ту же минуту, когда
+             он завёл первый, — почти наверняка получить тот же пароль
+             дважды, а это хуже, чем никакого замка. */
+          offerLock(function (wantsNow) {
+            /* Выбор «сейчас» — в память сеанса: вход в свой профиль
+               перезагружает страницу, и память страницы его теряла.
+               Исполняет его окно замка, когда встанет стол (D-304). */
+            if (wantsNow) { try { sessionStorage.setItem("sysbaby.lock.wantNow", "1"); } catch (e) { /* ignore */ } }
+            finish(prof ? prof.id : null, name);
           });
-          return;
-        }
-
-        /* ВХОД. Неверный пароль не пускает — в этом весь смысл двери. */
-        window.sbAuth.verify(chosen, pw).then(function (okPw) {
-          if (!okPw) { refuse("Wrong password."); return; }
-          var prof = window.sbAuth.profileOf(chosen);
-          finish(prof ? prof.id : null, chosen);
-        })["catch"](function () { refuse("Could not check the password here."); });
+        })["catch"](function () {
+          done();
+          fErr.textContent = gateText("auth.err.found");
+        });
       });
     }
     if (guest) {

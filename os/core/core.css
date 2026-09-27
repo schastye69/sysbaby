@@ -891,6 +891,11 @@ html.sb-incognito .wp-layer > * { display: none !important; }
      вырез значило бы делать это второй раз за браузером. */
   padding: max(16px, var(--safe-top)) 16px max(16px, env(safe-area-inset-bottom));
   transition: opacity var(--t-scene) ease;
+  /* Вход и «Первое слово» спрашивают больше, чем прежнее одно поле (D-306):
+     на низком телефоне карточка выше экрана. Экран прокручивается, а поля
+     авто у карточки держат её посередине, пока она помещается, и отпускают
+     к верху, когда нет, — середина не уезжает за кромку. */
+  overflow-y: auto;
 }
 #sbLogin.out { opacity: 0; pointer-events: none; }
 html.sb-has-session #sbLogin { display: none; }
@@ -905,7 +910,7 @@ html.sb-has-session #sbLogin { display: none; }
      умолчательный минимум. Первый экран, который видит человек, обязан
      помещаться в самый узкий телефон — иначе всё остальное неважно. */
   min-width: 0; max-width: 100%;
-  width: min(420px, 100%); padding: 28px;
+  width: min(420px, 100%); padding: 28px; margin: auto;
   background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-card);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   box-shadow: var(--shadow);
@@ -934,8 +939,10 @@ html.sb-has-session #sbLogin { display: none; }
 .login-err { min-height: 18px; margin: 4px 0 10px; color: var(--danger); font-size: var(--f-ui); }
 .login-foot { margin: 14px 0 6px; color: var(--ink-3); font-size: var(--f-ui); line-height: 1.5; }
 .login-row { display: flex; justify-content: space-between; margin-top: 8px; }
-.login-chip-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.login-chip { padding: 7px 12px; border-radius: var(--r-pill); background: var(--glass-2); font-family: var(--mono); font-size: var(--f-read); }
+/* «Первое слово» отделено чертой: это другая дверь той же страницы (D-306). */
+.login-found { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.login-found-lead { margin: 0 0 8px; color: var(--ink-3); font-size: var(--f-ui); }
+#sbLogin .vg-langs { justify-content: flex-start; margin: 0 0 14px; }
 
 /* ============================================ boot progress (engine kept) */
 #sbBoot { display: none; }
@@ -2663,7 +2670,6 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .acc-field input:focus { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
 .acc-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 2px; }
 .acc-acts .btn { flex: 1 1 150px; }
-.acc-profiles { display: flex; flex-wrap: wrap; gap: 6px; }
 /* Взведённая кнопка сообщает о себе цветом, а не только словом: тот, кто
    нажал случайно, должен УВИДЕТЬ, что дальше произойдёт непоправимое. */
 .btn.danger.armed { border-color: rgba(255, 69, 58, .8); background: rgba(255, 69, 58, .16); color: #fff; }

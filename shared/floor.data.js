@@ -68,6 +68,13 @@ window.SB_FLOOR = {
       "where": "os/core/alarm.js:33"
     },
     {
+      "id": "sysbaby.auth.salt",
+      "kind": "служебное",
+      "what": "Соль входа этого устройства: с ней пара «имя + пароль» превращается в отпечаток, по которому дверь находит систему, не храня имён (D-306).",
+      "rooms": ["ядро"],
+      "where": "os/core/store.js:463"
+    },
+    {
       "id": "sysbaby.authed",
       "kind": "служебное",
       "what": "Вошли ли вы в систему в этом браузере.",
@@ -381,6 +388,13 @@ window.SB_FLOOR = {
       "what": "Какие работы витрины вы уже смотрели.",
       "rooms": ["project"],
       "where": "os/apps/project/project.js:18"
+    },
+    {
+      "id": "sysbaby.lock.wantNow",
+      "kind": "служебное",
+      "what": "На минуту между знакомством и столом: человек нажал «Поставить сейчас». Стол, встав, открывает окно замка и стирает эту отметку.",
+      "rooms": ["ядро"],
+      "where": "os/core/panels.js:1447"
     },
     {
       "id": "sysbaby.session.active",
