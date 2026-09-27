@@ -87,6 +87,59 @@
 
   function panelBody(overlayId) { var o = doc.getElementById(overlayId); return o ? o.querySelector(".panel-body") : null; }
 
+  /* ── СПРОСИТЬ ПОДТВЕРЖДЕНИЕ ПЕРЕД ОПАСНЫМ · решение D-308 ──────────────────
+     Обещание true/false. Пока замок открыт и подтверждение свежее — сразу true;
+     иначе окно: слово этого мира (проверяется отпечатком в памяти, presence.
+     byWord) или ключ устройства. Без замка — true. */
+  window.sbAskPresence = function () {
+    var V = window.sbVault;
+    if (!V || !V.isLocked || !V.isLocked()) return Promise.resolve(true);
+    if (V.presence && V.presence.fresh()) return Promise.resolve(true);
+    if (!V.presence) return Promise.resolve(false);
+    return new Promise(function (resolve) {
+      var back = doc.createElement("div");
+      back.className = "sb-confirm-back";
+      back.setAttribute("role", "dialog"); back.setAttribute("aria-modal", "true");
+      var canDev = V.presence.canDevice && V.presence.canDevice();
+      back.innerHTML = '<div class="sb-confirm">' +
+        '<h3>' + esc(tr("confirm.title")) + "</h3>" +
+        '<p class="sb-confirm-why">' + esc(tr("confirm.why")) + "</p>" +
+        '<input type="password" id="sbConfirmWord" autocomplete="current-password" aria-label="' + esc(tr("confirm.word")) + '" placeholder="' + esc(tr("confirm.word")) + '">' +
+        '<p class="sb-confirm-err" id="sbConfirmErr" role="alert"></p>' +
+        '<div class="sb-confirm-acts">' +
+          '<button type="button" class="btn primary" id="sbConfirmGo">' + esc(tr("confirm.go")) + "</button>" +
+          (canDev ? '<button type="button" class="btn ghost" id="sbConfirmDev">' + esc(tr("confirm.device")) + "</button>" : "") +
+          '<button type="button" class="btn link" id="sbConfirmCancel">' + esc(tr("confirm.cancel")) + "</button>" +
+        "</div></div>";
+      doc.body.appendChild(back);
+      var word = back.querySelector("#sbConfirmWord");
+      var err = back.querySelector("#sbConfirmErr");
+      var done = false;
+      function finish(v) { if (done) return; done = true; if (back.parentNode) back.parentNode.removeChild(back); resolve(v); }
+      function tryWord() {
+        var w = word ? word.value : "";
+        if (!w) { if (word) word.focus(); return; }
+        V.presence.byWord(w).then(function (okp) {
+          if (okp) { finish(true); return; }
+          if (err) err.textContent = tr("confirm.wrong");
+          if (word) { word.value = ""; word.focus(); }
+        });
+      }
+      var go = back.querySelector("#sbConfirmGo");
+      if (go) go.addEventListener("click", tryWord);
+      if (word) word.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); tryWord(); } });
+      var dev = back.querySelector("#sbConfirmDev");
+      if (dev) dev.addEventListener("click", function () {
+        dev.disabled = true;
+        V.presence.byDevice().then(function (okp) { dev.disabled = false; if (okp) { finish(true); return; } if (err) err.textContent = tr("confirm.deviceNo"); });
+      });
+      var cancel = back.querySelector("#sbConfirmCancel");
+      if (cancel) cancel.addEventListener("click", function () { finish(false); });
+      back.addEventListener("pointerdown", function (ev) { if (ev.target === back) finish(false); });
+      if (word) setTimeout(function () { word.focus(); }, 60);
+    });
+  };
+
   /* ===================================================== 1. shortcuts §6.1 */
   /* The chord is the same everywhere; what it does is a sentence, so it is a
      key rather than the sentence itself. */
@@ -1003,6 +1056,15 @@
   }
 
   /* ── РАЗДЕЛ «ЗАМОК» ─────────────────────────────────────────────────────── */
+  /* Правдивая строка о ключе устройства (D-310): «этого устройства» или
+     «аккаунта, который копируется», по флагу, снятому при привязке. */
+  function hwStateLine(V) {
+    var h = V.hwState();
+    if (!h.on) return h.can ? tr("lock.hwNone") : tr("lock.hwCant");
+    if (h.synced === true) return tr("lock.hwOnAccount");
+    if (h.synced === false) return tr("lock.hwOnDevice");
+    return tr("lock.hwOn");
+  }
   function lockSection() {
     var V = window.sbVault;
     if (!V) return "";
@@ -1065,6 +1127,8 @@
            утечка, ради предотвращения которой всё это построено. */
         keyRow +
         '<p class="panel-copy dim">' + esc(tr("lock.duressWhat")) + "</p>" +
+        /* Честная строка о пределе тревожного слова (D-310). */
+        '<p class="panel-copy dim">' + esc(tr("lock.duressCant")) + "</p>" +
         /* ── УСИЛЕНИЕ ПАМЯТЬЮ (D-275) — только у замка прежней цены. Что он
            прежней цены, видно в записи замка и так (строка шифра выше). */
         (V.strengthen && V.strong && !V.strong() ? '<p class="panel-copy dim" id="sbLockStrongWhat">' + esc(tr("lock.strongWhat")) + "</p>" : "") +
@@ -1072,7 +1136,7 @@
            спрашивает, видно в записи замка и так; строка это называет. */
         (V.hwState ? '<h4 class="panel-sub">' + esc(tr("lock.hw")) + "</h4>" +
           '<p class="panel-copy dim">' + esc(tr("lock.hwWhat")) + "</p>" +
-          '<p class="panel-copy" id="sbLockHwState">' + esc(V.hwState().on ? tr("lock.hwOn") : (V.hwState().can ? tr("lock.hwNone") : tr("lock.hwCant"))) + "</p>" : "") +
+          '<p class="panel-copy" id="sbLockHwState">' + esc(hwStateLine(V)) + "</p>" : "") +
         idleRow() +
         '<div class="lock-acts">' +
           '<button type="button" class="btn ghost" id="sbLockChange">' + esc(tr("lock.change")) + "</button>" +
@@ -1089,7 +1153,15 @@
           '<input type="password" id="sbLockP1" autocomplete="new-password" placeholder="' + esc(tr("lock.new")) + '" aria-label="' + esc(tr("lock.new")) + '">' +
           '<input type="password" id="sbLockP2" autocomplete="new-password" placeholder="' + esc(tr("lock.again")) + '" aria-label="' + esc(tr("lock.again")) + '">' +
         "</div>" +
-        '<div class="lock-acts"><button type="button" class="btn primary" id="sbLockDo">' + esc(tr("lock.set")) + "</button></div>");
+        /* ── ФРАЗА И ЧЕСТНАЯ ЦЕНА КОРОТКОГО СЛОВА (D-309) ───────────────────── */
+        (V.phrase ? '<p class="panel-copy dim">' + esc(tr("lock.phraseHint")) + "</p>" +
+          '<div class="lock-acts"><button type="button" class="btn ghost" id="sbLockPhrase">' + esc(tr("lock.phrase")) + "</button></div>" +
+          '<p class="lock-phrase" id="sbLockPhraseOut" hidden data-sb-nolang></p>' : "") +
+        '<p class="lock-warn" id="sbLockWeak" hidden>' + esc(tr("lock.weakWarn")) + "</p>" +
+        '<div class="lock-acts">' +
+          '<button type="button" class="btn primary" id="sbLockDo">' + esc(tr("lock.set")) + "</button>" +
+          '<button type="button" class="btn ghost" id="sbLockDoAnyway" hidden>' + esc(tr("lock.setAnyway")) + "</button>" +
+        "</div>");
   }
 
   function wireLockBody(body) {
@@ -1109,20 +1181,43 @@
       if (!f) return Promise.resolve(null);
       return f.arrayBuffer().then(function (b) { return new Uint8Array(b); }, function () { return null; });
     }
+    var phraseBtn = body.querySelector("#sbLockPhrase");
+    if (phraseBtn && V.phrase) phraseBtn.addEventListener("click", function () {
+      var words = V.phrase(6) || [];
+      if (!words.length) return;
+      var phrase = words.join(" ");
+      var p1 = body.querySelector("#sbLockP1"), p2 = body.querySelector("#sbLockP2");
+      if (p1) p1.value = phrase;
+      if (p2) p2.value = phrase;
+      var out = body.querySelector("#sbLockPhraseOut");
+      if (out) { out.textContent = phrase; out.hidden = false; }
+      var weak = body.querySelector("#sbLockWeak"); if (weak) weak.hidden = true;
+      var anyway = body.querySelector("#sbLockDoAnyway"); if (anyway) anyway.hidden = true;
+      say("");
+    });
+    /* Слабое слово не запирается молча (D-309): первая попытка показывает
+       предупреждение и «всё равно», запирает — только она. Заперто — значит
+       заперто с этого мига (D-166): setLock перезагружает страницу. */
     var doBtn = body.querySelector("#sbLockDo");
-    if (doBtn) doBtn.addEventListener("click", function () {
+    var anywayBtn = body.querySelector("#sbLockDoAnyway");
+    function setLock(p1) {
+      busy(true);
+      V.lock(p1).then(function () { window.location.reload(); }, function () { busy(false); say(tr("lock.failed")); });
+    }
+    function trySet(force) {
       var p1 = body.querySelector("#sbLockP1").value;
       var p2 = body.querySelector("#sbLockP2").value;
       if (String(p1).length < 4) { say(tr("lock.short")); return; }
       if (p1 !== p2) { say(tr("lock.mismatch")); return; }
-      busy(true);
-      V.lock(p1).then(function () {
-        /* Заперто — значит заперто с этого мига: сеанс закрыт, ключей в памяти
-           нет. Перезагрузка — единственный честный способ показать запертую
-           систему, не оставив на экране ни строчки из уже закрытого (D-166). */
-        window.location.reload();
-      }, function () { busy(false); say(tr("lock.failed")); });
-    });
+      if (!force && V.weakWord && V.weakWord(p1)) {
+        var weak = body.querySelector("#sbLockWeak"); if (weak) weak.hidden = false;
+        if (anywayBtn) anywayBtn.hidden = false;
+        return;
+      }
+      setLock(p1);
+    }
+    if (doBtn) doBtn.addEventListener("click", function () { trySet(false); });
+    if (anywayBtn) anywayBtn.addEventListener("click", function () { trySet(true); });
     var changeBtn = body.querySelector("#sbLockChange");
     var newField = body.querySelector("#sbLockNew");
     if (changeBtn && newField) changeBtn.addEventListener("click", function () {
@@ -1403,19 +1498,20 @@
     }
 
 
+    /* Выгрузка: подтверждение, затем конверт (D-307, D-308). */
     var exp = body.querySelector("#sbAccExport");
     if (exp) exp.addEventListener("click", function () {
-      var trigger = doc.getElementById("sbCcExport");
-      if (trigger) { trigger.click(); return; }
-      if (typeof window.sbExportProfile !== "function") return;
-      try {
-        var blob = new Blob([JSON.stringify(window.sbExportProfile(), null, 2)], { type: "application/json" });
-        var a = doc.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "sysbaby-profile.json";
-        a.click();
-        setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
-      } catch (e) { say(String((e && e.message) || e)); }
+      if (typeof window.sbDownloadExport !== "function") { say("—"); return; }
+      Promise.resolve(window.sbDownloadExport()).then(function (res) {
+        if (res && res.presence) {
+          return window.sbAskPresence().then(function (okp) { return okp ? window.sbDownloadExport() : null; });
+        }
+        return res;
+      }).then(function (res) {
+        if (!res) return;
+        if (res.ok && window.showToast) window.showToast(tr("bk.title"), (res.sealed ? tr("bk.sealed") + " · " : "") + res.count, "");
+        else if (res.error) say(res.error);
+      });
     });
 
     var out = body.querySelector("#sbAccSignOut");

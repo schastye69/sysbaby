@@ -141,6 +141,13 @@
       .then(function (v) { return v; }, function () { return null; });
   }
 
+  /* Спросить подтверждение перед показом или копированием (D-308). Без замка
+     и при свежем подтверждении — сразу; иначе окно слова или ключа устройства. */
+  function confirmPresence(then) {
+    if (typeof window.sbAskPresence !== "function") { then(); return; }
+    window.sbAskPresence().then(function (okp) { if (okp) then(); });
+  }
+
   function copyOut(text, say) {
     var done = function () {
       say();
@@ -332,19 +339,27 @@
           var act = b.getAttribute("data-act");
           if (act === "show") {
             if (shown[id]) { delete shown[id]; render(win); return; }
-            secretOf(rec).then(function (v) {
-              if (v == null) { say(t.needLock); return; }
-              shown[id] = true;
-              render(win);
-              var el = host.querySelector('[data-secret="' + id + '"]');
-              if (el) el.textContent = v;
+            /* ── ПОКАЗ — ТОЛЬКО ПОСЛЕ ПОДТВЕРЖДЕНИЯ (D-308, план Н8) ────────
+               Оставленный открытым телефон больше не отдаёт пароли чужим
+               рукам: при замке показ и копирование спрашивают слово или ключ
+               устройства (свежесть держится две минуты). */
+            confirmPresence(function () {
+              secretOf(rec).then(function (v) {
+                if (v == null) { say(t.needLock); return; }
+                shown[id] = true;
+                render(win);
+                var el = host.querySelector('[data-secret="' + id + '"]');
+                if (el) el.textContent = v;
+              });
             });
             return;
           }
           if (act === "copy") {
-            secretOf(rec).then(function (v) {
-              if (v == null) { say(t.needLock); return; }
-              copyOut(v, function () { say(t.copied); });
+            confirmPresence(function () {
+              secretOf(rec).then(function (v) {
+                if (v == null) { say(t.needLock); return; }
+                copyOut(v, function () { say(t.copied); });
+              });
             });
             return;
           }

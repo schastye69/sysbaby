@@ -863,7 +863,27 @@
     return "sysbaby-profile-" + name + "-" + env.createdAt.slice(0, 10) + ".json";
   };
 
+  function saveText(name, text) {
+    var blob = new Blob([text], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 400);
+  }
   window.sbDownloadExport = function (profileId) {
+    /* ── ПРИ ЗАМКЕ — КОНВЕРТ И ТОЛЬКО ПОСЛЕ ПОДТВЕРЖДЕНИЯ (D-307, D-308) ──
+       Без свежего подтверждения выгрузка не делается вовсе: ответ говорит,
+       что нужно подтверждение, и окно его спрашивает (sbExportNow). */
+    if (window.sbVault && window.sbVault.isLocked()) {
+      if (!window.sbVault.presence.fresh()) return Promise.resolve({ ok: false, presence: true, error: "Confirm it is you first." });
+      var count = Object.keys(buildExport(profileId).keys).length;
+      return window.sbVault.exportText(profileId).then(function (r) {
+        var sealedName = "sysbaby-sealed-" + new Date().toISOString().slice(0, 10) + ".json";
+        try { saveText(sealedName, r.text); } catch (e) { return { ok: false, error: "Could not create the export file in this browser." }; }
+        return { ok: true, name: sealedName, count: count, sealed: true };
+      }, function () { return { ok: false, error: "The lock is shut — open it first." }; });
+    }
     var env = buildExport(profileId);
     var name = window.sbExportFileName(profileId);
     try {
@@ -887,6 +907,9 @@
     }
     if (!env || typeof env !== "object" || Array.isArray(env)) return { ok: false, error: "That file isn't a sys.baby export." };
     if (env.app !== "sysbaby-os") return { ok: false, error: "That file isn't a sys.baby export." };
+    /* Запечатанная выгрузка (D-307) открывается словом или кодом раньше, чем
+       входит сюда: нести её конверт в хранилище как ключи нельзя. */
+    if (env.kind === "sealed-export") return { ok: false, sealed: true, error: "This export is sealed — it opens with the lock's word or the recovery code." };
     var v = Number(env.version);
     if (!(v >= 1)) return { ok: false, error: "That export has no readable version." };
     if (v > 1) return { ok: false, error: "That export was made by a newer version of sys.baby (v" + env.version + ")." };
@@ -1234,7 +1257,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       });
     }).then(function () { bytes.fill(0); }, function (e) { bytes.fill(0); throw e; });
   }
-  function dropMaster() { masterBox = null; siteBase = null; }
+  function dropMaster() { masterBox = null; siteBase = null; wordCheck = null; presentAt = 0; }
   /* Обнулить всё, что дверь отдала этому вызову, — на любом исходе (D-300). */
   function zero() { for (var i = 0; i < arguments.length; i++) if (arguments[i] && arguments[i].fill) arguments[i].fill(0); }
   /* Байты мастера — на один шаг и обратно в ноль, что бы шаг ни вернул. */
@@ -2231,6 +2254,160 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     });
   }
 
+  /* ═══════ СВЕЖЕЕ ПОДТВЕРЖДЕНИЕ ПЕРЕД ОПАСНЫМ · решение D-308 (план Н8) ═══════
+     Разбор «Шифр без театра», Н8: открытый телефон, минута без присмотра — и
+     уносилась выгрузка и все пароли «Ключей». Теперь выгрузка при замке, показ
+     и копирование пароля идут только после свежего подтверждения: слово этого
+     мира или ключ устройства. Свежим подтверждение остаётся PRESENCE_MS.
+     КАК ПРОВЕРЯЕТСЯ СЛОВО. Не новой растяжкой (это секунды на каждое нажатие),
+     а по отпечатку, который живёт только в памяти этого сеанса: при открытии
+     замка слово подписывается ключом HMAC, который браузер не отдаёт скрипту
+     (extractable=false). На диске от него нет ничего; закрыл замок или страницу —
+     отпечатка нет. Это слово ТОГО мира, который открыт: в тревожном мире
+     подтверждает тревожное слово, главное — нет.
+     ЧЕГО ЭТО НЕ ДАЁТ, вслух: от вредного кода внутри открытой страницы
+     подтверждение не спасает — он видит то же, что человек. Оно закрывает
+     одно: чужие руки на оставленном открытым устройстве.
+     Охраняется tools/fresh-presence-check.mjs. */
+  /* ПОСТОЯННАЯ: две минуты — столько живёт подтверждение, чтобы показать и
+     скопировать пароль одним заходом, но не дольше, чем человек отходит от
+     стола. */
+  var PRESENCE_MS = 120000;
+  var presentAt = 0;
+  var wordCheck = null;          /* { key: HMAC неизвлекаемый, mac } — только память сеанса */
+  function wordMac(key, word) {
+    return window.crypto.subtle.sign("HMAC", key, new TextEncoder().encode(String(word || ""))).then(function (m) { return new Uint8Array(m); });
+  }
+  function rememberWord(word) {
+    return window.crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, false, ["sign"]).then(function (k) {
+      return wordMac(k, word).then(function (mac) { wordCheck = { key: k, mac: mac }; });
+    })["catch"](function () { wordCheck = null; });
+  }
+  function sameBytes(a, b) {
+    if (!a || !b || a.length !== b.length) return false;
+    var d = 0, i;
+    for (i = 0; i < a.length; i++) d |= a[i] ^ b[i];
+    return d === 0;
+  }
+  function presenceFresh() {
+    if (!vaultLocked()) return true;
+    return !!vaultOpen && presentAt > 0 && (Date.now() - presentAt) < PRESENCE_MS;
+  }
+  function presenceByWord(word) {
+    if (!vaultLocked()) return Promise.resolve(true);
+    if (!vaultOpen || !wordCheck) return Promise.resolve(false);
+    var wc = wordCheck;
+    return wordMac(wc.key, word).then(function (mac) {
+      var okp = sameBytes(mac, wc.mac);
+      if (okp) presentAt = Date.now();
+      return okp;
+    }, function () { return false; });
+  }
+  function presenceByDevice() {
+    var rec = lockRecord();
+    if (!vaultOpen || !hwOf(rec) || !hwSecret) return Promise.resolve(false);
+    var before = new Uint8Array(hwSecret);
+    return hwAsk(rec).then(function (answered) {
+      var okp = !!answered && sameBytes(before, hwSecret);
+      if (!okp) hwSecret = before;          /* чужой ответ не заменяет свой */
+      if (okp) presentAt = Date.now();
+      return okp;
+    });
+  }
+
+  /* ═══════ ВЫГРУЗКА ПРИ ЗАМКЕ — ЗАПЕЧАТАННАЯ · решение D-307 (план Н1) ═══════
+     Разбор «Шифр без театра», Н1: копии в папку были запечатаны, а ручная
+     выгрузка при стоящем замке писала открытый JSON. Тот, кто получил файл,
+     читал всё, и двух дверей для него не существовало.
+     Теперь при замке выгрузка — конверт: внутри запись замка (соль, цена,
+     завёрнутый мастер-ключ за каждой дверью, запасная дверь кода) и сам
+     профиль, запечатанный ключами открытого мира. Открывается на ЛЮБОМ
+     устройстве словом этого мира или кодом восстановления (sbVault.openExport)
+     — ровно той же растяжкой, что замок. Лёгкой двери рядом с тяжёлой нет.
+     В имени файла нет имени человека.
+     ЧЕГО ЭТО НЕ ДАЁТ, вслух: выгрузка главного мира под тревожным словом не
+     откроется — это различитель миров, пока не построен общий слой (план T,
+     пункт 3); у тревожного слова об этом сказано.
+     Без замка выгрузка по-прежнему открыта: запечатывать её нечем, и это
+     сказано в ответе системы, а не спрятано.
+     Охраняется tools/sealed-export-check.mjs. */
+  function exportText(profileId) {
+    var plain = JSON.stringify(buildExport(profileId), null, 2);
+    if (!vaultLocked()) return Promise.resolve({ text: plain, sealed: false });
+    if (!vaultOpen || !vaultKeys) return Promise.reject(new Error("closed"));
+    var rec = lockRecord();
+    return sealPair(vaultKeys, "export", plain).then(function (body) {
+      return {
+        sealed: true,
+        text: JSON.stringify({ app: "sysbaby-os", kind: "sealed-export", version: 1, createdAt: new Date().toISOString(), lock: rec, body: body })
+      };
+    });
+  }
+  function spareMaster(rec, code) {
+    var sp = rec && rec.spare;
+    if (!sp) return Promise.resolve(null);
+    var sk = costOf({ kdf: sp.kdf });
+    return deriveKEK(spareSecret(spareNorm(code)), saltOf(rec), sk[0], sk[1], null).then(function (kek) {
+      var wrapped, iv;
+      try { wrapped = unb64(sp.wrap); iv = unb64(sp.wrapIv); } catch (e) { return null; }
+      return window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, kek, wrapped)
+        .then(function (buf) { return new Uint8Array(buf); }, function () { return null; });
+    });
+  }
+  /* Открыть запечатанную выгрузку. secret — слово, либо { code } — код
+     восстановления. opts.file — байты второго ключа, opts.device — спросить
+     ключ устройства той записи. Состояние открытого сеанса не меняется. */
+  function openExport(input, secret, opts) {
+    opts = opts || {};
+    var obj = input;
+    if (typeof input === "string") { try { obj = JSON.parse(input); } catch (e) { return Promise.resolve(null); } }
+    if (!obj || obj.kind !== "sealed-export" || !obj.lock || !obj.body) return Promise.resolve(null);
+    var rec = obj.lock;
+    var savedDoor = vaultDoor, savedHw = hwSecret;
+    var restore = function (v) { vaultDoor = savedDoor; hwSecret = savedHw; return v; };
+    var viaCode = !!(secret && typeof secret === "object" && secret.code);
+    var ask = (!viaCode && hwOf(rec) && opts.device) ? hwAsk(rec) : Promise.resolve(true);
+    return ask.then(function () {
+      if (viaCode) return spareMaster(rec, secret.code);
+      return factorFor(rec, opts.file || null).then(function (fsec) { return openDoors(rec, String(secret || ""), fsec); });
+    }).then(function (m) {
+      restore();
+      if (!m) return null;
+      return subkeys(m).then(function (ks) {
+        m.fill(0);
+        return openPair(ks, obj.body).then(function (p) { return p.value; }, function () { return null; });
+      });
+    }, function () { restore(); return null; });
+  }
+
+  /* ═══════ ФРАЗА ИЗ ШЕСТИ СЛОВ · решение D-309 (план Н6) ═══════
+     Слова — из общего списка window.SB_WORDS (core/words.js). Выбор каждого
+     слова — crypto.getRandomValues с отбраковкой: без перекоса к началу
+     списка. Сила фразы считается из длины списка, а не пишется числом. */
+  function phraseWords(n) {
+    var list = window.SB_WORDS || [];
+    var out = [], L = list.length, lim, buf = new Uint32Array(1), i;
+    if (L < 2) return [];
+    lim = Math.floor(0x100000000 / L) * L;
+    for (i = 0; i < (n || 6); i++) {
+      do { window.crypto.getRandomValues(buf); } while (buf[0] >= lim);
+      out.push(list[buf[0] % L]);
+    }
+    return out;
+  }
+  function phraseBits(n) {
+    var L = (window.SB_WORDS || []).length;
+    return L > 1 ? Math.floor((n || 6) * Math.log(L) / Math.LN2) : 0;
+  }
+  /* ПОСТОЯННАЯ: двенадцать знаков — порог, ниже которого слово без ключа
+     устройства принимается только после честного предупреждения (разбор
+     «Шифр без театра», инвариант I14: 12 случайных знаков — уже десятки бит). */
+  var WEAK_BELOW = 12;
+  function wordIsWeak(word) {
+    if (hwOf(lockRecord())) return false;
+    return String(word || "").length < WEAK_BELOW;
+  }
+
   window.sbVault = {
     available: vaultAvailable,
     isLocked: vaultLocked,
@@ -2362,7 +2539,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
              отданный дверью, обнуляется здесь же. */
           return holdMaster(master).then(function () { return openAllSealed(ks); });
         }, function (e) { master.fill(0); throw e; });
-      }).then(function () { return true; }, function () { return false; });
+      }).then(function () { return rememberWord(password); }).then(function () { return true; }, function () { return false; });
     },
 
     /* Снять замок совсем: слова возвращаются в хранилище открытыми. Требует
@@ -2616,7 +2793,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       }).then(scrub, scrubErr);
     },
     /* ── КЛЮЧ УСТРОЙСТВА: состояние, вопрос, привязка, снятие (D-276) ───── */
-    hwState: function () { var rec = lockRecord(); return { on: !!hwOf(rec), can: hwAvailable() }; },
+    hwState: function () { var rec = lockRecord(); var h = hwOf(rec); return { on: !!h, can: hwAvailable(), synced: h && typeof h.synced === "boolean" ? h.synced : null }; },
     hwAsk: function () { return hwAsk(lockRecord()); },
     hwEnroll: function (password, secondKeyFile, duressPassword) {
       var rec = lockRecord();
@@ -2628,6 +2805,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       window.crypto.getRandomValues(prfSalt); window.crypto.getRandomValues(userId); window.crypto.getRandomValues(challenge);
       var rp = String(location.hostname || "");
       var cred = null, secret = null, fsecOld = null, master0 = null, master1 = null, fromDuress = false;
+      var syncedFlag = null;   /* флаг Backup Eligible, снятый ниже (D-310) */
       var scrub = function (r) { zero(master0, master1); return r; }, scrubErr = function (e) { zero(master0, master1); throw e; };
       return factorFor(rec, secondKeyFile).then(function (fo) {
         fsecOld = fo;
@@ -2675,6 +2853,19 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           });
         }).then(function (sec) {
           secret = sec;
+          /* ── ПРАВДА О ТОМ, ГДЕ ЖИВЁТ КЛЮЧ (D-310, план Н7) ──────────────────
+             Флаг Backup Eligible в данных устройства говорит, МОЖЕТ ЛИ ключ
+             копироваться: у ключа-брелока в связке аккаунта (iCloud Keychain,
+             Google Password Manager) он поднят, у ключа, привязанного к чипу
+             одного устройства, — нет. Мы его читаем один раз, здесь, и
+             сохраняем, чтобы подпись у двери не лгала «чип этого телефона» про
+             ключ, который на самом деле копируется. Флага нет — не утверждаем
+             ни того, ни другого. */
+          syncedFlag = null;
+          try {
+            var adFn = cred && cred.response && cred.response.getAuthenticatorData;
+            if (adFn) { var ad = new Uint8Array(cred.response.getAuthenticatorData()); if (ad.length > 32) syncedFlag = (ad[32] & 0x08) !== 0; }
+          } catch (e) { syncedFlag = null; }
           /* Из тревожного мира — учётка заведена (снаружи это видно и так),
              а замок не тронут: признаться, что мир не первый, значило бы
              отдать главный (D-203). */
@@ -2693,6 +2884,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
                 next.v = 5;
                 next.salt = saltB64;
                 next.hw = { kind: "webauthn-prf", id: b64(new Uint8Array(cred.rawId)), salt: b64(prfSalt), rp: rp };
+                if (syncedFlag === true) next.hw.synced = true; else if (syncedFlag === false) next.hw.synced = false;
                 next.doors = [door0, door1];
                 delete next.wrapIv; delete next.wrap;
                 lsSet(LOCK_KEY, JSON.stringify(next));
@@ -2835,6 +3027,22 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         });
       });
     },
+    /* Свежее подтверждение (D-308) и запечатанная выгрузка (D-307). */
+    presence: {
+      fresh: presenceFresh,
+      byWord: presenceByWord,
+      byDevice: presenceByDevice,
+      canDevice: function () { return !!(vaultOpen && hwOf(lockRecord()) && hwSecret); },
+      forget: function () { presentAt = 0; },
+      windowMs: function () { return PRESENCE_MS; }
+    },
+    exportText: exportText,
+    openExport: openExport,
+    /* Фраза и честная цена короткого слова (D-309). */
+    phrase: function (n) { return phraseWords(n || 6); },
+    phraseBits: phraseBits,
+    weakWord: wordIsWeak,
+    weakBelow: function () { return WEAK_BELOW; },
     recoveryState: function () {
       if (!vaultOpen) return null;
       var at = parseInt(lsGet(SPARE_KEY) || "", 10);
@@ -2935,7 +3143,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           next.doors = doors;
           delete next.wrapIv; delete next.wrap;
           lsSet(LOCK_KEY, JSON.stringify(next));
-          return true;
+          /* Подтверждение (D-308) отныне узнаёт новое слово, а не прежнее. */
+          return rememberWord(newPassword).then(function () { return true; });
         });
       });
     }

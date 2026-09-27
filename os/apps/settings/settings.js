@@ -996,6 +996,22 @@
       var res = null;
       try { res = window.sbDownloadExport(); }
       catch (err) { console.error("[settings] shell export failed — using local envelope", err); }
+      /* При замке выгрузка запечатана и требует подтверждения (D-307, D-308):
+         sbDownloadExport вернёт обещание и, без свежего подтверждения,
+         {presence:true}. Тогда спрашиваем и повторяем. */
+      if (res && typeof res.then === "function") {
+        res.then(function (r) {
+          if (r && r.presence && window.sbAskPresence) {
+            return window.sbAskPresence().then(function (okp) { return okp ? window.sbDownloadExport() : null; });
+          }
+          return r;
+        }).then(function (r) {
+          if (!r) return;
+          if (r.ok) toast(t("set.export.readyTitle"), t("set.export.readyBody", { count: r.count }));
+          else if (r.error) toast(t("set.export.failTitle"), r.error);
+        });
+        return;
+      }
       if (res && res.ok) {
         toast(t("set.export.readyTitle"), t("set.export.readyBody", { count: res.count }));
         return;

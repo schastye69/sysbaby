@@ -2732,6 +2732,31 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
   padding: 9px 11px; border-radius: var(--r-ctrl);
   background: rgba(255, 69, 58, .07); border: 1px solid rgba(255, 69, 58, .22);
 }
+/* Фраза замка (D-309): её надо прочитать и записать, поэтому крупно и в моно. */
+.lock-phrase {
+  font-family: var(--mono); font-size: var(--f-read); line-height: 1.7;
+  color: var(--ink); padding: 10px 12px; border-radius: var(--r-ctrl);
+  background: var(--glass-2); border: 1px solid var(--line); word-spacing: .2em;
+}
+/* Окно подтверждения перед опасным (D-308). */
+.sb-confirm-back {
+  position: fixed; inset: 0; z-index: var(--z-login); display: grid; place-items: center;
+  padding: max(16px, var(--safe-top)) 16px 16px; background: rgba(4, 5, 8, .6); backdrop-filter: blur(8px);
+}
+.sb-confirm {
+  width: min(400px, 100%); max-width: 100%; min-width: 0;
+  background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-card);
+  box-shadow: var(--shadow); padding: 22px; display: flex; flex-direction: column; gap: 10px;
+}
+.sb-confirm h3 { margin: 0; font-size: var(--f-title); font-weight: 600; }
+.sb-confirm-why { margin: 0; color: var(--ink-2); font-size: var(--f-read); line-height: 1.5; }
+.sb-confirm input {
+  width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: var(--r-ctrl);
+  background: rgba(255, 255, 255, .04); outline: none; font-size: var(--f-lead);
+}
+.sb-confirm input:focus { border-color: var(--accent-ring); }
+.sb-confirm-err { min-height: 16px; margin: 0; color: var(--danger); font-size: var(--f-ui); }
+.sb-confirm-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
 /* ================================================================= panels §6 */
 .panel-overlay {
