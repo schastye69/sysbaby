@@ -1042,6 +1042,14 @@
      правда: остаётся запись замка, номер профиля, отметка входа и указатель
      на папку копий. Список не пишется здесь — он спрашивается у замка
      (neverLocked) и у копий (hasFolder); здесь только человеческие слова. */
+  /* Строка стука в окне замка (D-341): последние стуки и честная граница. */
+  function knockLine() {
+    var K = window.sbKnock;
+    if (!K) return "";
+    var list = K.last();
+    var text = list.length ? tr("knock.line", { n: list.length, when: knockWhen(list[list.length - 1]) }) : tr("knock.lineNone");
+    return '<p class="panel-copy dim" id="sbKnockLine">' + esc(text + " " + tr("knock.limit", { max: K.max })) + "</p>";
+  }
   function staysList(V) {
     var keys = [];
     try { keys = V.neverLocked ? V.neverLocked() : []; } catch (e) { keys = []; }
@@ -1083,6 +1091,7 @@
       '<p class="panel-copy">' + esc(tr("lock.what")) + "</p>" +
       '<p class="panel-copy dim">' + esc(tr("lock.accounts")) + "</p>" +
       (locked ? staysList(V) : "") +
+      (locked ? knockLine() : "") +
       '<pre class="lock-cipher">' + esc(cipherLine()) + "</pre>" +
       '<p class="lock-warn">' + esc(tr("lock.warn")) + "</p>";
     /* ── ФАЙЛ ВТОРОГО КЛЮЧА — ТАМ ЖЕ, ГДЕ СЛОВО (D-266) ──────────────────
@@ -1641,6 +1650,35 @@
     ev.preventDefault();
     window.sbOpenAccountAt("#sbLockP1, #sbLockCur");
   });
+
+  /* ── «КТО СТУЧАЛСЯ» — СКАЗАТЬ ПОСЛЕ ОТКРЫТИЯ (D-341) ─────────────────────
+     Замок открыт — система распечатывает след стука и говорит, сколько раз и
+     когда стучались с тех пор, как ЭТА система смотрела в последний раз.
+     Извещение идёт и в «Не беспокоить»: это о безопасности, а не новость.
+     Сказанное отмечается в конвертах этой системы и не повторяется. */
+  function knockWhen(ts) {
+    var l = window.sbLang ? window.sbLang() : "en";
+    var d = new Date(ts), now = new Date();
+    var same = d.toDateString() === now.toDateString();
+    try {
+      return same ? d.toLocaleTimeString(l === "ee" ? "et" : l, { hour: "2-digit", minute: "2-digit" })
+        : d.toLocaleString(l === "ee" ? "et" : l, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    } catch (e) {
+      /* ОТКАТ: браузер без часовых слов для этого языка — время пишется цифрами (ГГГГ-ММ-ДД ЧЧ:ММ, UTC), а не пропадает. */
+      return d.toISOString().slice(0, 16).replace("T", " ");
+    }
+  }
+  function tellKnocks() {
+    var K = window.sbKnock;
+    if (!K || !window.sbVault || !window.sbVault.isOpen || !window.sbVault.isOpen()) return;
+    K.fresh().then(function (fresh) {
+      if (!fresh.length) return;
+      var shown = fresh.slice(-3).map(knockWhen).join(", ");
+      if (window.showToast) window.showToast(tr("knock.title"), tr("knock.body", { n: fresh.length, when: shown }), "", true, "", "event");
+      K.seen();
+    });
+  }
+  if (window.sbBus && window.sbBus.on) window.sbBus.on("vault:change", function (e) { if (e && e.open) setTimeout(tellKnocks, 900); });
 
   var WANT_LOCK = "sysbaby.lock.wantNow";
   function lockWhenAsked() {

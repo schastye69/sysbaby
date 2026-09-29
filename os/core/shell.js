@@ -4682,6 +4682,8 @@
         busy = false;
         gate.classList.remove("vg-work");
         if (!okp) {
+          /* Стук: время, и только время, запечатанное (D-341). */
+          if (window.sbKnock) window.sbKnock.note();
           gate.classList.add("vg-wrong");
           errEl.textContent = gateText("lock.wrong");
           errEl.hidden = false;
@@ -4779,6 +4781,7 @@
         busy = false;
         gate.classList.remove("vg-work");
         if (!okp) {
+          if (window.sbKnock) window.sbKnock.note();
           gate.classList.add("vg-wrong");
           errEl.textContent = gateText("lock.codeWrong");
           errEl.hidden = false;

@@ -836,7 +836,9 @@
      своих не стирает. Минуты покоя до запирания — выбор человека, он едет. */
   var DENY_EXACT = ["sysbaby.activeProfile", "sysbaby.profiles.v1", "sysbaby.authed",
     "sysbaby.sync.url", "sysbaby.incognito.pwhash", "sysbaby.incognito.timerPref",
-    "sysbaby.lock.v1", "sysbaby.lock.spareAt", "sysbaby.lock.wantNow", "sysbaby.auth.salt"];
+    "sysbaby.lock.v1", "sysbaby.lock.spareAt", "sysbaby.lock.wantNow", "sysbaby.auth.salt",
+    /* Отметка «след стука уже видел» — о двери ЭТОГО устройства (D-341). */
+    "sysbaby.knock.seen"];
   var DENY_PREFIX = ["sysbaby.sync.token::", "sysbaby.incognito::", "sysbaby.i18n.cache."];
 
   function denied(key) {
@@ -1924,6 +1926,170 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   function spareSecret(norm) { return "sys.baby/spare/v1:" + norm; }
   function spareKdf() { return ["PBKDF2-SHA512:" + KDF1_ITER, "PBKDF2-SHA256:" + KDF2_ITER]; }
   function randomSpare() { var d = randomDoor(); d.kdf = spareKdf(); return d; }
+
+  /* ── «КТО СТУЧАЛСЯ» — ЗАПЕЧАТАННЫЙ СЛЕД СТУКА (D-341) ─────────────────────
+     Подарок людям, выбранный основателем 28.09.2026 (вариант 20). Неверное
+     слово у двери замка и неверный код восстановления оставляют ВРЕМЯ — и
+     только время; самих слов нет нигде.
+     ТРЕБОВАНИЕ ОСНОВАТЕЛЯ D-164: пока замок заперт, на диске читаемо только
+     то, без чего замок не открыть. Поэтому след пишется сразу ЗАПЕЧАТАННЫМ:
+     в записи замка лежит открытый ключ (ECDH P-256), и каждый стук ставит в
+     конец ряда из двадцати слотов время, зашифрованное к этому ключу, а самый
+     старый слот уходит из начала: внутри — ровно последние стуки. Закрытый ключ
+     завёрнут под мастер-ключ мира — прочесть след может только открытая
+     система. Слоты заполнены шифром нуля с первой минуты замка: снаружи
+     запись одинакова, стучались или нет. Второй завёрнутый ключ — у
+     тревожного мира, а без него — случайные байты той же длины: запись не
+     говорит, есть ли второй мир. Новой открытой записи на диске нет.
+     ЧЕГО ЭТО НЕ ДАЁТ, вслух (сказано и в окне замка): перебор снятой копии
+     диска следа не оставляет; стёртое хранилище браузера стирает и след; по
+     двум снимкам диска видно, что запись замка менялась и сколько стуков
+     легло между снимками, — но не их время и не слова.
+     Охраняется tools/knock-check.mjs. */
+  var KNOCK_SLOTS = 20; /* ПОСТОЯННАЯ: двадцать слотов — хватает, чтобы увидеть осаду, и запись замка не растёт. */
+  var KNOCK_SEEN = "sysbaby.knock.seen";
+  var knockLast = [];
+  function knockAes(bits, info) {
+    var subtle = window.crypto.subtle, enc = new TextEncoder();
+    return subtle.importKey("raw", bits, "HKDF", false, ["deriveKey"]).then(function (k) {
+      return subtle.deriveKey({ name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info: enc.encode(info) }, k, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    });
+  }
+  /* Слот: эфемерный открытый ключ (65) · вектор (12) · шифр времени (8 + 16). */
+  function knockSeal(pubRaw, t) {
+    var subtle = window.crypto.subtle, curve = { name: "ECDH", namedCurve: "P-256" };
+    return Promise.all([
+      subtle.importKey("raw", pubRaw, curve, false, []),
+      subtle.generateKey(curve, true, ["deriveBits"])
+    ]).then(function (k) {
+      return Promise.all([subtle.deriveBits({ name: "ECDH", public: k[0] }, k[1].privateKey, 256), subtle.exportKey("raw", k[1].publicKey)]);
+    }).then(function (r) {
+      return knockAes(r[0], "sys.baby/knock/slot/v1").then(function (key) {
+        var iv = new Uint8Array(12), body = new Uint8Array(8);
+        window.crypto.getRandomValues(iv);
+        new DataView(body.buffer).setFloat64(0, t);
+        return subtle.encrypt({ name: "AES-GCM", iv: iv }, key, body).then(function (ct) {
+          var eph = new Uint8Array(r[1]), c = new Uint8Array(ct), out = new Uint8Array(eph.length + 12 + c.length);
+          out.set(eph, 0); out.set(iv, eph.length); out.set(c, eph.length + 12);
+          return b64(out);
+        });
+      });
+    });
+  }
+  function knockOpen(priv, slot) {
+    var subtle = window.crypto.subtle, raw = unb64(slot);
+    if (raw.length < 65 + 12 + 24) return Promise.resolve(0);
+    return subtle.importKey("raw", raw.slice(0, 65), { name: "ECDH", namedCurve: "P-256" }, false, []).then(function (eph) {
+      return subtle.deriveBits({ name: "ECDH", public: eph }, priv, 256);
+    }).then(function (bits) {
+      return knockAes(bits, "sys.baby/knock/slot/v1");
+    }).then(function (key) {
+      return subtle.decrypt({ name: "AES-GCM", iv: raw.slice(65, 77) }, key, raw.slice(77));
+    }).then(function (buf) { return new DataView(buf).getFloat64(0); });
+  }
+  function knockWrap(masterBytes, pkcs8) {
+    return knockAes(masterBytes, "sys.baby/knock/wrap/v1").then(function (key) {
+      var iv = new Uint8Array(12);
+      window.crypto.getRandomValues(iv);
+      return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, pkcs8).then(function (ct) { return { iv: b64(iv), ct: b64(ct) }; });
+    });
+  }
+  /* Второй завёрнутый ключ без второго мира: случайные байты той же длины. */
+  function knockNoise(like) {
+    var iv = new Uint8Array(12), ct = new Uint8Array(unb64(like.ct).length);
+    window.crypto.getRandomValues(iv); window.crypto.getRandomValues(ct);
+    return { iv: b64(iv), ct: b64(ct) };
+  }
+  function makeKnock(master0, master1) {
+    var subtle = window.crypto.subtle;
+    return subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]).then(function (kp) {
+      return Promise.all([subtle.exportKey("raw", kp.publicKey), subtle.exportKey("pkcs8", kp.privateKey)]);
+    }).then(function (r) {
+      var pubRaw = new Uint8Array(r[0]), pk = new Uint8Array(r[1]);
+      return knockWrap(master0, pk).then(function (w0) {
+        return (master1 ? knockWrap(master1, pk) : Promise.resolve(knockNoise(w0))).then(function (w1) {
+          pk.fill(0);
+          var jobs = [], i;
+          for (i = 0; i < KNOCK_SLOTS; i++) jobs.push(knockSeal(pubRaw, 0));
+          return Promise.all(jobs).then(function (slots) { return { pub: b64(pubRaw), wrap: [w0, w1], slots: slots }; });
+        });
+      }, function (e) { pk.fill(0); throw e; });
+    });
+  }
+  /* Закрытый ключ следа — развёрнутый мастером ОТКРЫТОГО мира, неизвлекаемый. */
+  function knockPrivate(rec) {
+    var door = (typeof vaultDoor === "number" && vaultDoor >= 0) ? vaultDoor : 0;
+    var w = rec && rec.knock && rec.knock.wrap && rec.knock.wrap[door];
+    if (!w) return Promise.resolve(null);
+    return withMaster(function (m) { return knockAes(m, "sys.baby/knock/wrap/v1"); }).then(function (key) {
+      return window.crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(w.iv) }, key, unb64(w.ct));
+    }).then(function (buf) {
+      var pk = new Uint8Array(buf);
+      return window.crypto.subtle.importKey("pkcs8", pk, { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"])
+        .then(function (priv) { pk.fill(0); return priv; }, function () { pk.fill(0); return null; });
+    }, function () { return null; });
+  }
+  /* Для тревожного мира: тот же закрытый ключ, завёрнутый под его мастер. */
+  function knockForWorld(masterBytes) {
+    var rec = lockRecord(), w = rec && rec.knock && rec.knock.wrap && rec.knock.wrap[0];
+    if (!w) return Promise.resolve(null);
+    var mc = new Uint8Array(masterBytes);
+    return withMaster(function (m) { return knockAes(m, "sys.baby/knock/wrap/v1"); }).then(function (key) {
+      return window.crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(w.iv) }, key, unb64(w.ct));
+    }).then(function (buf) {
+      var pk = new Uint8Array(buf);
+      return knockWrap(mc, pk).then(function (w1) { pk.fill(0); mc.fill(0); return w1; });
+    }).then(null, function () { mc.fill(0); return null; });
+  }
+  window.sbKnock = {
+    max: KNOCK_SLOTS,
+    /* Стук: время, запечатанное к открытому ключу, встаёт в конец ряда, а самый
+       старый слот уходит из начала. Ряд всегда длиной KNOCK_SLOTS, и все слоты
+       снаружи одинаковы; внутри — ровно последние стуки, ни один не ложится
+       поверх другого (первый вид клал стук в случайный слот и терял стуки). */
+    note: function () {
+      var rec = lockRecord();
+      if (!rec || !rec.knock || !rec.knock.pub || !Array.isArray(rec.knock.slots) || !rec.knock.slots.length) return Promise.resolve(false);
+      return knockSeal(unb64(rec.knock.pub), Date.now()).then(function (slot) {
+        var now = lockRecord();
+        if (!now || !now.knock || !Array.isArray(now.knock.slots) || !now.knock.slots.length) return false;
+        now.knock.slots = now.knock.slots.slice(1).concat([slot]);
+        lsSet(LOCK_KEY, JSON.stringify(now));
+        return true;
+      }, function () { return false; });
+    },
+    /* Прочесть след — только открытой системой. Замку, поставленному до
+       D-341, след заводится при первом открытии главным словом. */
+    read: function () {
+      var rec = lockRecord();
+      if (!vaultOpen || !rec) return Promise.resolve([]);
+      if (!rec.knock) {
+        if (vaultDoor !== 0) return Promise.resolve([]);
+        return withMaster(function (m) { return makeKnock(new Uint8Array(m), null); }).then(function (k) {
+          var now = lockRecord();
+          if (now && !now.knock && k) { now.knock = k; lsSet(LOCK_KEY, JSON.stringify(now)); }
+          knockLast = [];
+          return [];
+        }, function () { return []; });
+      }
+      return knockPrivate(rec).then(function (priv) {
+        if (!priv) return [];
+        return Promise.all(rec.knock.slots.map(function (s) { return knockOpen(priv, s).then(null, function () { return 0; }); }));
+      }).then(function (ts) {
+        knockLast = ts.filter(function (t) { return typeof t === "number" && isFinite(t) && t > 0; }).sort(function (a, b) { return a - b; });
+        return knockLast.slice();
+      }, function () { return []; });
+    },
+    last: function () { return knockLast.slice(); },
+    fresh: function () {
+      return window.sbKnock.read().then(function (list) {
+        var seen = 0;
+        try { seen = Number(window.localStorage.getItem(KNOCK_SEEN)) || 0; } catch (e) { seen = 0; }
+        return list.filter(function (t) { return t > seen; });
+      });
+    },
+    seen: function () { try { window.localStorage.setItem(KNOCK_SEEN, String(Date.now())); } catch (e) { /* место не далось — скажем ещё раз */ } }
+  };
   function makeSpare(code, master, saltB64) {
     var iv = new Uint8Array(12);
     window.crypto.getRandomValues(iv);
@@ -2345,10 +2511,16 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: wrapIv }, kek, master).then(function (wrapped) {
         var dm = null;
         if (duressPassword) { dm = new Uint8Array(32); window.crypto.getRandomValues(dm); }
+        /* След стука заводится вместе с замком (D-341): копии мастеров живут,
+           пока заворачивается ключ следа, и обнуляются на любом исходе. */
+        var kc0 = new Uint8Array(master), kc1 = dm ? new Uint8Array(dm) : null;
+        var knockMade = makeKnock(kc0, kc1).then(function (k) { kc0.fill(0); if (kc1) kc1.fill(0); return k; },
+          function () { kc0.fill(0); if (kc1) kc1.fill(0); return null; });
         var second = dm
           ? makeDoor(duressPassword, dm, saltB64, fsec, [cost.it1, cost.it2, a2]).then(function (d) { dm.fill(0); return d; })
           : Promise.resolve(randomDoor());
-        return second.then(function (door2) {
+        return Promise.all([second, knockMade]).then(function (made) {
+          var door2 = made[0], knock = made[1];
         return subkeys(master).then(function (ks) {
           var jobs = pairs.map(function (p) {
             return sealedName(ks, p.k).then(function (nm) {
@@ -2375,6 +2547,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
               doors: [{ wrapIv: b64(wrapIv), wrap: b64(wrapped) }, door2],
               spare: randomSpare()
             };
+            if (knock) body.knock = knock;
             if (factorRec) body.factor = factorRec;
             lsSet(LOCK_KEY, JSON.stringify(body));
             for (i = 0; i < rows.length; i++) rawStore.del.call(window.localStorage, rows[i].from);
@@ -3094,7 +3267,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         var next0 = lockRecord() || {};
         return factorFor(next0, secondKeyFile).then(function (fsec) {
         return makeDoor(duressPassword, m, saltOf(next0), fsec, costOf(next0)).then(function (door) {
+          return knockForWorld(m).then(function (w1) {
           var next = lockRecord() || {};
+          if (w1 && next.knock && Array.isArray(next.knock.wrap)) next.knock.wrap[1] = w1;
           var doors = doorsOf(next).map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; });
           while (doors.length < 2) doors.push(randomDoor());
           doors[1] = door;
@@ -3106,6 +3281,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           lsSet(LOCK_KEY, JSON.stringify(next));
           m.fill(0);
           return true;
+          });
         });
         });
       });
@@ -3126,6 +3302,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         var doors = doorsOf(next).map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; });
         while (doors.length < 2) doors.push(randomDoor());
         doors[1] = randomDoor();
+        if (next.knock && Array.isArray(next.knock.wrap) && next.knock.wrap[0]) next.knock.wrap[1] = knockNoise(next.knock.wrap[0]);
         /* Замок со вторым ключом остаётся четвёртой редакцией (D-266): понизить
            его здесь значило бы стереть запись о втором ключе при дверях,
            сделанных с ним, — и не открыть больше ничего. */
@@ -3231,7 +3408,10 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           var doors = doorsOf(next).map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; });
           while (doors.length < 2) doors.push(randomDoor());
           doors[0] = door0;
-          if (hadFactor) { doors[1] = randomDoor(); delete next.factor; delete next.hw; hwSecret = null; }
+          if (hadFactor) {
+            doors[1] = randomDoor(); delete next.factor; delete next.hw; hwSecret = null;
+            if (next.knock && Array.isArray(next.knock.wrap) && next.knock.wrap[0]) next.knock.wrap[1] = knockNoise(next.knock.wrap[0]);
+          }
           next.v = 3;
           next.salt = saltB64;
           next.doors = doors;
