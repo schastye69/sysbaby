@@ -1342,7 +1342,7 @@
     px = Math.max(0, Math.round(px || 0));
     if (px === kbLift) return;
     kbLift = px;
-    host.style.transition = "transform var(--t-touch) var(--ease)";
+    host.style.transition = "transform var(--t-touch) var(--ease-enter)";
     host.style.transform = px ? "translateY(" + (-px) + "px)" : "";
   }
   window.sbLiftNotes = liftNotes;
@@ -1796,8 +1796,11 @@
     if (Object.keys(wl).filter(function (k) { return k !== "__v"; }).length) {
       deskBits.push({ label: tr("menu.tidyWidgets"), run: function () { if (window.sbTidyWidgets) window.sbTidyWidgets(); } });
       deskBits.push({ label: tr("menu.saveWidgets"), run: function () {
-        var nm = window.prompt(tr("menu.nameLayout"));
-        if (nm && window.sbSaveCurrentWidgetLayout) window.sbSaveCurrentWidgetLayout(nm);
+        /* Имя спрашивается своим голосом (D-335), а не плашкой браузера. */
+        if (!window.sbAsk) return;
+        window.sbAsk({ title: tr("menu.nameLayout"), field: {}, ok: tr("ask.save") }).then(function (nm) {
+          if (nm && window.sbSaveCurrentWidgetLayout) window.sbSaveCurrentWidgetLayout(nm);
+        });
       } });
     }
     (window.sbGetSavedWidgetLayouts ? window.sbGetSavedWidgetLayouts() : []).forEach(function (L) {

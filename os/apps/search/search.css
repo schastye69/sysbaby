@@ -6,7 +6,7 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
-  color: var(--text, rgba(255, 255, 255, .92));
+  color: var(--ink);
 }
 
 .sk-field {
@@ -14,7 +14,7 @@
   align-items: center;
   gap: 10px;
   padding: 13px var(--pad-room);
-  border-bottom: 1px solid var(--hairline, rgba(255, 255, 255, .09));
+  border-bottom: 1px solid var(--hairline, rgba(var(--film-rgb), .09));
   flex: 0 0 auto;
 }
 
@@ -39,10 +39,10 @@
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: var(--f-micro);
   color: var(--ink-3);
-  border: 1px solid rgba(255, 255, 255, .16);
+  border: 1px solid rgba(var(--film-rgb), .16);
   border-radius: var(--r-tag);
   padding: 2px 6px;
-  background: rgba(255, 255, 255, .05);
+  background: rgba(var(--film-rgb), .05);
 }
 
 .sk-results { flex: 1; min-height: 0; overflow: auto; padding: 10px var(--pad-room) 16px; }
@@ -51,20 +51,20 @@
 .sk-count {
   font-size: var(--f-micro);
   text-transform: uppercase;
-  letter-spacing: .07em;
+  letter-spacing: var(--track-caps);
   color: var(--ink-3);
   margin: 8px 4px 7px;
 }
 
-.sk-count { text-transform: none; letter-spacing: 0; font-size: var(--f-ui); font-weight: 650; color: var(--ink); }
+.sk-count { text-transform: none; letter-spacing: 0; font-size: var(--f-ui); font-weight: var(--w-strong); color: var(--ink); }
 
 .sk-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 
 .sk-chip {
   padding: 6px 11px;
   border-radius: var(--r-pill);
-  border: 1px solid rgba(255, 255, 255, .12);
-  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(var(--film-rgb), .12);
+  background: rgba(var(--film-rgb), .05);
   color: inherit;
   font: inherit;
   font-size: var(--f-ui);
@@ -77,7 +77,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .sk-chip:hover { background: rgba(255, 255, 255, .12); }
+  :where(html:not([data-input="touch"])) .sk-chip:hover { background: rgba(var(--film-rgb), .12); }
 }
 
 .sk-rows { display: flex; flex-direction: column; gap: 3px; }
@@ -103,7 +103,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .sk-row:hover { background: rgba(255, 255, 255, .07); border-color: rgba(255, 255, 255, .1); }
+  :where(html:not([data-input="touch"])) .sk-row:hover { background: rgba(var(--film-rgb), .07); border-color: rgba(var(--film-rgb), .1); }
 }
 
 .sk-tile {
@@ -126,7 +126,7 @@
   flex: 0 0 auto;
   font-size: var(--f-micro);
   text-transform: uppercase;
-  letter-spacing: .05em;
+  letter-spacing: var(--track-caps);
   color: var(--ink-3);
 }
 

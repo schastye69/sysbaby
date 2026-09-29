@@ -48,7 +48,7 @@
     en: {
       title: "Lock", label: "Lock",
       lead: "This is not a picture of encryption. Every tile below is a real envelope lying on this disk right now, and its face is drawn from its bytes.",
-      nolock: "There is nothing to reflect yet: your system is not locked. Set a password in Settings — then this window starts showing your own disk.",
+      nolock: "There is nothing to reflect yet: your system is not locked. Set the lock — then this window starts showing your own disk.",
       onDisk: "On the disk", envelopes: "envelopes", decoys: "of them decoys", real: "real records",
       stepNote: "The count is always a multiple of {step}. Adding a record does not change it — a decoy makes room. From outside, nobody can tell how much you keep.",
       turning: "Turning", turnNote: "{at} envelopes are re-sealed with fresh randomness every {sec} seconds, while the system is open. The contents stay; the bytes change completely.",
@@ -75,7 +75,7 @@
     ru: {
       title: "Замок", label: "Замок",
       lead: "Это не картинка про шифрование. Каждая плитка ниже — настоящий конверт, лежащий на этом диске прямо сейчас, и её лицо выведено из его байтов.",
-      nolock: "Пока отражать нечего: система не заперта. Поставьте пароль в настройках — и это окно начнёт показывать ваш собственный диск.",
+      nolock: "Пока отражать нечего: система не заперта. Поставьте замок — и это окно начнёт показывать ваш собственный диск.",
       onDisk: "На диске", envelopes: "конвертов", decoys: "из них пустышек", real: "настоящих записей",
       stepNote: "Число всегда кратно {step}. Новая запись его не меняет — место уступает пустышка. Снаружи нельзя сказать, сколько вы храните.",
       turning: "Оборот", turnNote: "Пока система открыта, каждые {sec} секунд {at} конверта запечатываются заново со свежими случайными числами. Содержимое то же, байты другие целиком.",
@@ -102,7 +102,7 @@
     ee: {
       title: "Lukk", label: "Lukk",
       lead: "See ei ole pilt krüpteerimisest. Iga plaat allpool on päris ümbrik, mis on praegu sellel kettal, ja ta nägu on tuletatud tema baitidest.",
-      nolock: "Praegu pole midagi peegeldada: süsteem ei ole lukus. Pane seadetes parool — siis hakkab see aken näitama sinu enda ketast.",
+      nolock: "Praegu pole midagi peegeldada: süsteem ei ole lukus. Pane lukk — siis hakkab see aken näitama sinu enda ketast.",
       onDisk: "Kettal", envelopes: "ümbrikku", decoys: "neist peibutist", real: "päris kirjet",
       stepNote: "Arv on alati {step} kordne. Uus kirje seda ei muuda — koha annab peibutis. Väljastpoolt ei saa öelda, kui palju sa hoiad.",
       turning: "Pööre", turnNote: "Kuni süsteem on avatud, pitseeritakse iga {sec} sekundi järel {at} ümbrikku uue juhuslikkusega. Sisu jääb, baidid muutuvad täielikult.",
@@ -152,7 +152,9 @@
       var keep0 = window.sbKeepScroll ? window.sbKeepScroll(host) : null;
       host.innerHTML = '<div class="vw-wrap"><div class="vw-head"><h2 class="vw-title">' + esc(t.title) + '</h2>' +
         '<p class="vw-lead">' + esc(t.lead) + '</p></div>' +
-        '<p class="vw-nolock">' + esc(t.nolock) + '</p></div>';
+        /* Причина — и сразу дорога к замку, одна на всю систему (D-317). */
+        '<div class="vw-nolock"><p class="vw-nolock-p">' + esc(t.nolock) + '</p>' +
+        (window.sbLockCallHtml ? window.sbLockCallHtml() : "") + '</div></div>';
       if (keep0) keep0();
       return;
     }
@@ -291,7 +293,7 @@
         cell.style.animation = "none";
         /* принудительная перерисовка, иначе повтор анимации не запустится */
         void cell.offsetWidth;
-        cell.style.animation = "vwFlip .74s cubic-bezier(.22,.8,.2,1) " + (shown * FLIP_STEP) + "ms both";
+        cell.style.animation = "vwFlip .74s var(--ease-move) " + (shown * FLIP_STEP) + "ms both";
         shown++;
       });
       var badge = host.querySelector('[data-num="turned"]');

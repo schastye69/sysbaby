@@ -6,7 +6,7 @@
   min-width: 0;
   min-height: 0;
   font: inherit;
-  color: var(--text, rgba(255, 255, 255, .92));
+  color: var(--ink);
 }
 
 .notes-side {
@@ -15,8 +15,8 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-right: 1px solid var(--hairline, rgba(255, 255, 255, .09));
-  background: rgba(255, 255, 255, .02);
+  border-right: 1px solid var(--hairline, rgba(var(--film-rgb), .09));
+  background: rgba(var(--film-rgb), .02);
 }
 
 .notes-side-top {
@@ -24,7 +24,7 @@
   gap: 8px;
   align-items: center;
   padding: 10px 10px 8px;
-  border-bottom: 1px solid var(--hairline, rgba(255, 255, 255, .07));
+  border-bottom: 1px solid var(--hairline, rgba(var(--film-rgb), .07));
 }
 
 .notes-search {
@@ -32,8 +32,8 @@
   min-width: 0;
   padding: 7px 10px;
   border-radius: var(--r-ctrl);
-  border: 1px solid rgba(255, 255, 255, .1);
-  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(var(--film-rgb), .1);
+  background: rgba(var(--film-rgb), .05);
   color: inherit;
   font: inherit;
   font-size: var(--f-read);
@@ -48,8 +48,8 @@
   display: grid;
   place-items: center;
   border-radius: var(--r-ctrl);
-  border: 1px solid rgba(255, 255, 255, .12);
-  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(var(--film-rgb), .12);
+  background: rgba(var(--film-rgb), .06);
   color: inherit;
   cursor: pointer;
 }
@@ -60,7 +60,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .notes-add:hover { background: rgba(255, 255, 255, .12); }
+  :where(html:not([data-input="touch"])) .notes-add:hover { background: rgba(var(--film-rgb), .12); }
 }
 .notes-add svg { width: 17px; height: 17px; }
 
@@ -70,6 +70,9 @@
   overflow: auto;
   padding: 6px;
 }
+/* Пустой и не искали — список молчит (D-318) и места не занимает: иначе
+   на телефоне под поиском стояли две черты с пустой полосой между ними. */
+.notes-list:empty { display: none; }
 
 .notes-row {
   padding: 9px 10px;
@@ -85,19 +88,19 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .notes-row:hover { background: rgba(255, 255, 255, .05); }
+  :where(html:not([data-input="touch"])) .notes-row:hover { background: rgba(var(--film-rgb), .05); }
 }
 
 .notes-row.active {
-  background: rgba(255, 255, 255, .09);
-  border-color: rgba(255, 255, 255, .12);
+  background: rgba(var(--film-rgb), .09);
+  border-color: rgba(var(--film-rgb), .12);
 }
 
 .notes-row.dragging-source { opacity: .4; }
 
 .notes-row-title {
   font-size: var(--f-read);
-  font-weight: 600;
+  font-weight: var(--w-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -150,7 +153,7 @@
   display: grid;
   place-items: center;
   border-radius: var(--r-ctrl);
-  border: 1px solid rgba(255, 255, 255, .1);
+  border: 1px solid rgba(var(--film-rgb), .1);
   background: transparent;
   color: var(--ink-2);
   cursor: pointer;
@@ -162,7 +165,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .notes-del:hover { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .5); }
+  :where(html:not([data-input="touch"])) .notes-del:hover { color: var(--bad-ink); border-color: rgba(var(--bad-rgb), .5); }
 }
 .notes-del svg { width: 16px; height: 16px; }
 
@@ -172,7 +175,7 @@
   color: inherit;
   font: inherit;
   font-size: var(--f-title);
-  font-weight: 650;
+  font-weight: var(--w-strong);
   padding: 6px 0 8px;
   outline: none;
 }
@@ -185,7 +188,7 @@
   color: inherit;
   font: inherit;
   font-size: var(--f-read);
-  line-height: 1.6;
+  line-height: var(--lh-read);
   resize: none;
   outline: none;
 }
@@ -216,9 +219,9 @@
   max-width: 240px;
   padding: 8px 11px;
   border-radius: var(--r-card);
-  border: 1px solid rgba(255, 255, 255, .16);
-  background: rgba(24, 25, 30, .92);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .45);
+  border: 1px solid rgba(var(--film-rgb), .16);
+  background: rgba(var(--well-rgb), .92);
+  box-shadow: 0 12px 34px rgba(var(--shade-rgb), calc(.45 * var(--shade-k)));
   font-size: var(--f-ui);
   color: var(--ink);
   display: flex;
@@ -235,20 +238,22 @@
 }
 
 .notes-row-ghost.armed {
-  border-color: rgba(176, 140, 255, .8);
-  box-shadow: 0 0 0 2px rgba(140, 100, 255, .35), 0 12px 34px rgba(0, 0, 0, .45);
+  border-color: rgba(var(--violet-rgb), .8);
+  box-shadow: 0 0 0 2px rgba(var(--violet-rgb), .35), 0 12px 34px rgba(var(--shade-rgb), calc(.45 * var(--shade-k)));
 }
 
 @media (max-width: 620px) {
   .app-notes { flex-direction: column; }
-  .notes-side { width: auto; flex: 0 0 auto; max-height: 44%; border-right: 0; border-bottom: 1px solid rgba(255, 255, 255, .09); }
+  .notes-side { width: auto; flex: 0 0 auto; max-height: 44%; border-right: 0; border-bottom: 1px solid rgba(var(--film-rgb), .09); }
+  /* Списка нет — черта одна: нижняя граница самой колонки. */
+  .notes-side-top:has(+ .notes-list:empty) { border-bottom: 0; }
 }
 
 /* Срок в списке записей — тот же разбор, что на столе (см. notes.js). */
 .notes-row-due {
   display: inline-block; margin-right: 7px; padding: 2px 7px;
   border-radius: var(--r-pill); font-size: var(--f-micro); color: var(--ink-2);
-  background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+  background: rgba(var(--film-rgb), .05); border: 1px solid var(--line);
 }
 .notes-row-due.now { color: var(--ink); border-color: var(--accent-ring); background: var(--accent-soft); }
-.notes-row-due.late { color: #ff9b8f; border-color: rgba(255, 69, 58, .42); background: rgba(255, 69, 58, .12); }
+.notes-row-due.late { color: var(--bad-ink); border-color: rgba(var(--bad-rgb), .42); background: rgba(var(--bad-rgb), .12); }

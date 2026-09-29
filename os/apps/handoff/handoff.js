@@ -250,10 +250,12 @@
              свёрнута до его же просьбы (D-279). */
           '<button type="button" class="hf-act hf-own" data-act="hf-own">' + esc(t.own) + '</button>' : '') +
         '<section class="hf-out"' + (incoming ? ' hidden' : '') + '>' +
+          /* У каждой ручки есть имя (D-321): подпись над полем и слова перед
+             списком видны глазом — и слышны теми же словами. */
           '<label class="hf-lab">' + esc(t.text) + '</label>' +
-          '<textarea class="hf-text" rows="5" maxlength="' + MAX + '"></textarea>' +
+          '<textarea class="hf-text" rows="5" maxlength="' + MAX + '" aria-label="' + esc(t.text) + '"></textarea>' +
           '<div class="hf-pick"><span class="hf-pick-l">' + esc(t.pick) + '</span>' +
-            '<select class="hf-src"><option value="">—</option></select></div>' +
+            '<select class="hf-src" aria-label="' + esc(t.pick) + '"><option value="">—</option></select></div>' +
           '<label class="hf-mode"><input type="radio" name="hfmode" value="k" checked> ' + esc(t.modeKey) + '</label>' +
           '<label class="hf-mode"><input type="radio" name="hfmode" value="w"> ' + esc(t.modeWord) + '</label>' +
           '<input type="text" class="hf-sendword" placeholder="' + esc(t.word) + '" hidden>' +
@@ -319,7 +321,14 @@
         var name = picked && picked.text === text ? picked.name : null;
         seal(text, word, name).then(function (payload) {
           b.disabled = false;
-          var url = window.location.origin + window.location.pathname + "#t=" + payload;
+          /* В КОВЧЕГЕ (D-314) у страницы нет адреса в сети: ссылка ведёт туда,
+             откуда ковчег собран, если он собран с защищённого адреса. ОТКАТ:
+             такого адреса нет — ссылка на сам файл, и она сработает только
+             на этом компьютере (это сказано в ковчеге). */
+          var base = window.SB_ARK
+            ? (window.SB_ARK.from || window.location.href.split("#")[0].split("?")[0])
+            : window.location.origin + window.location.pathname;
+          var url = base + "#t=" + payload;
           /* Предел меряется на ГОТОВОЙ ссылке, а не на длине текста: сколько
              займёт конверт, заранее не знает никто. */
           if (url.length > URL_MAX) { say.textContent = fill(t.tooBig, { n: url.length }); return; }

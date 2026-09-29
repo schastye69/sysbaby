@@ -380,17 +380,66 @@
      Первая — тема по умолчанию: неизвестное имя приводит к ней. */
   var THEMES = ["dark", "light"];
   window.sbThemes = function () { return THEMES.slice(); };
-  window.setTheme = function (t) {
+  /* ── ПЕРЕХОД МЕЖДУ КОМНАТАМИ — СТАВНИ (D-326) ──────────────────────────
+     Основатель: «продумайте переход между тёмной и светлой». Переход — не
+     затемнение экрана, а то, что случается с комнатой, когда открывают
+     ставни: свет входит СО СТОРОНЫ СОЛНЦА (утром слева, вечером справа, в
+     полдень и ночью — сверху) и мягким краем проходит комнату. Закрыли —
+     тьма приходит с другой стороны, а свет уходит к окну.
+     Переход вида делает браузер: снимок старой комнаты, новая под ним,
+     маска едет (core.css, «ставни»). Где перехода вида нет, или движение
+     снято, или включён Турбо — тема меняется мгновенно, без подделки. */
+  function shuttersAllowed() {
+    return typeof doc.startViewTransition === "function" && !systemReduced() &&
+      root.getAttribute("data-motion") !== "reduced" && !root.classList.contains("sb-turbo") &&
+      doc.visibilityState === "visible" && root.classList.contains("rv-icons");
+  }
+  function relight() {
+    /* Шов и свет надеваются заново под новую комнату: у Светлицы шов —
+       глина, у Очага — угли; солнце светит только в Светлице. */
+    if (typeof wpTick === "function") { try { wpTick(true); } catch (e) { console.error("[theme] relight failed", e); } }
+  }
+  /* setTheme(t) надевает тему сразу — так её зовут код и законы. Ставнями
+     она идёт, только когда тему выбрал человек (setTheme(t, { shutters: true })
+     из Настроек, панели и терминала): переход — ответ на действие, а не
+     свойство функции. */
+  window.setTheme = function (t, opts) {
     var mode = THEMES.indexOf(t) !== -1 ? t : THEMES[0];
     if (window.sbIncognitoActive) mode = "dark";            /* incognito forces dark */
-    root.setAttribute("data-theme", mode);
+    var prev = root.getAttribute("data-theme") || THEMES[0];
+    /* Выбранная тема известна сразу, хотя надевается она на следующем кадре
+       перехода: читатели (Настройки, панель) спрашивают её, а не атрибут. */
+    themeChosen = mode;
+    var put = function () { root.setAttribute("data-theme", mode); relight(); };
+    if (prev !== mode && opts && opts.shutters && shuttersAllowed()) {
+      var sun = window.sbSunAt ? window.sbSunAt(Date.now()) : { up: false, s: 0 };
+      var side = !sun.up ? "top" : (sun.s < -0.34 ? "left" : (sun.s > 0.34 ? "right" : "top"));
+      /* Тьма приходит с противоположной стороны: свет уходит к окну. */
+      if (mode !== "light") side = side === "left" ? "right" : (side === "right" ? "left" : "bottom");
+      root.setAttribute("data-shutters", (mode === "light" ? "open-" : "close-") + side);
+      try {
+        var tr = doc.startViewTransition(put);
+        var done = function () { root.removeAttribute("data-shutters"); };
+        if (tr && tr.finished && typeof tr.finished.then === "function") tr.finished.then(done, done);
+        else setTimeout(done, 1600);
+      } catch (e) { root.removeAttribute("data-shutters"); put(); }
+    } else {
+      put();
+    }
     if (window.sbDB) window.sbDB.set(THEME_KEY, mode);      /* persisted (deviation, §16.3 #2) */
     $$(".theme-btn").forEach(function (b) { b.setAttribute("data-theme-state", mode); });
     $$('[data-theme-chip]').forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-theme-chip") === mode); });
     announceSetting("theme", { mode: mode });
     return mode;
   };
-  window.sbGetTheme = function () { return root.getAttribute("data-theme") || "dark"; };
+  var themeChosen = null;
+  window.sbGetTheme = function () { return themeChosen || root.getAttribute("data-theme") || THEMES[0]; };
+  /* Живой чип настроения показывает свет своего часа тем веществом, каким он
+     будет в этой комнате: углями в Очаге, глиной в Светлице (D-325). */
+  window.sbMoodChipLight = function (w) {
+    var seam = window.sbSeamForRoom({ hue: w.hue, sat: w.sat || 73, level: w.level }, window.sbGetTheme());
+    return { a1: seam.a1, a2: seam.a2 };
+  };
 
   /* Clay — the seam — is the system's own colour and the default. The rest
      are the visitor's to choose: their desktop, not our brand. */
@@ -502,14 +551,23 @@
      это и случилось с часами: шов на кромке менялся раз в девять секунд, а
      свет часов пересчитывался непрерывно и писал в корень куда чаще (D-143). */
   var wpSeam = null;
-  function applyAccent(a1, a2) {
+  function applyAccent(a1, a2, ember) {
     wpSeam = { a1: a1, a2: a2 };
     var c = hexToRgb(a1), st = root.style;
+    /* Плёнка шва на кальке заметнее, чем на графите: доля тише (D-325). */
+    var soft = root.getAttribute("data-theme") === "light" ? ".13" : ".18";
     st.setProperty("--accent", a1);
     st.setProperty("--accent-2", a2);
     st.setProperty("--accent-rgb", c.r + "," + c.g + "," + c.b);
-    st.setProperty("--accent-soft", "rgba(" + c.r + "," + c.g + "," + c.b + ",.18)");
+    st.setProperty("--accent-soft", "rgba(" + c.r + "," + c.g + "," + c.b + "," + soft + ")");
     st.setProperty("--accent-ring", "rgba(" + c.r + "," + c.g + "," + c.b + ",.55)");
+    /* Угли Очага — всегда: ими светятся островки тьмы (дверь, занавес). */
+    if (ember) {
+      var e = hexToRgb(ember);
+      if (st.getPropertyValue("--ember") !== ember) st.setProperty("--ember", ember);
+      var er = e.r + "," + e.g + "," + e.b;
+      if (st.getPropertyValue("--ember-rgb") !== er) st.setProperty("--ember-rgb", er);
+    }
   }
 
   /* ═══════════════ КОМНАТА И ШОВ — ОДНО (D-141) ═══════════════════════════
@@ -716,15 +774,169 @@
     return [rgb(w.hue, -10), rgb(w.hue - 24, -22), rgb(w.hue + 28, 6)];
   };
 
-  window.sbSeamForRoom = function (w) {
+  window.sbSeamForRoom = function (w, theme) {
     var sat = (w && w.sat) || 73;
     var hue = (w && w.hue) || 0;
+    var ember = hslHex(hue, sat, driftLight(hue));
+    var day = (theme || (root.getAttribute("data-theme") === "light" ? "light" : "dark")) === "light";
+    if (day) {
+      /* В Светлице шов — глина: тот же тон, но пигмент, а не свет (D-325).
+         Светлота подбирается под КОНТРАСТ к стене, как кривая LIGHT подобрана
+         под контраст к полю (D-107), — только решается на месте: у настоящего
+         тона и настоящей насыщенности комнаты, а не по таблице. */
+      /* Вторая краска — соседний пигмент той же земли (+14°), а не свет:
+         в Очаге a2 светлее, потому что там шов горит; здесь он лежит. */
+      return { a1: clayFor(hue, sat), a2: clayFor(hue + 14, sat), hue: hue, ember: ember };
+    }
     return {
-      a1: hslHex(hue, sat, driftLight(hue)),
+      a1: ember,
       a2: hslHex(hue + 28, sat, Math.min(92, driftLight(hue + 28) + 10)),
-      hue: hue
+      hue: hue,
+      ember: ember
     };
   };
+
+  /* ═══════════════ СВЕТЛИЦА: ГЛИНА И СОЛНЦЕ · решение D-325 ═══════════════
+     ПОВОД, дословно от основателя 27.09.2026: «свет как материал, а не
+     „белый“… эмоциональная идентичность во времени».
+     В Очаге свет рождается внутри комнаты — горит шов, дышит поле. В Светлице
+     свет приходит СНАРУЖИ: солнце стоит по местным часам, пятно его лежит на
+     стене с той стороны, где окно, а тени падают от него. Цвет солнцу даёт
+     комната (настроение — это стекло окна), силу — её свет (level), место —
+     час. Один источник, как требует D-141: комната, шов и солнце — один свет.
+     Охраняется tools/sun-check.mjs. */
+  var CLAY_TARGET = 4.7;          /* ПОСТОЯННАЯ: мера 4.5 с запасом на плёнку кальки */
+  function wallRgb() {
+    /* Стена спрашивается у словаря (--day-wall — одно число на обе темы), а
+       не помнится здесь и не кэшируется: запомнив стену, увиденную в Очаге,
+       шов однажды решил глину против чёрного поля и стал чёрным. */
+    var v = getComputedStyle(root).getPropertyValue("--day-wall").trim();
+    var c = hexToRgb(v || "#e1e2dd"); /* ОТКАТ: словарь не прочитан — число Светлицы, то же, что в core.css */
+    return [c.r, c.g, c.b];
+  }
+  function lin(v) { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+  function lum(r, g, b) { return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b); }
+  function clayFor(hue, sat, k) {
+    var w = wallRgb(), yw = lum(w[0], w[1], w[2]);
+    /* контраст к стене у светлоты L: ищем самую светлую глину, которая
+       держит меру, — светлее значит живее, темнее не нужно */
+    var lo = 1, hi = 90;
+    for (var i = 0; i < 28; i++) {
+      var mid = (lo + hi) / 2, c = hexToRgb(hslHex(hue, sat, mid));
+      var y = lum(c.r, c.g, c.b);
+      if ((yw + 0.05) / (y + 0.05) >= CLAY_TARGET) lo = mid; else hi = mid;
+    }
+    return hslHex(hue, sat, Math.round(lo * (k || 1) * 10) / 10);
+  }
+  window.sbClayFor = clayFor;
+  /* Солнце в миг ms: s — путь с востока (-1) на запад (+1), e — высота (1 в
+     полдень), up — над горизонтом ли. Чистая функция: закон проходит любой
+     час, не переводя часов машины. */
+  window.sbSunAt = function (ms) {
+    var d = new Date(typeof ms === "number" ? ms : Date.now());
+    var h = d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
+    var s = Math.max(-1, Math.min(1, (h - 13) / 7));
+    var up = h >= 6 && h <= 20;
+    var e = up ? Math.cos(s * Math.PI / 2) : 0;
+    /* Тень от солнца: утром вправо, вечером влево; длиннее, когда солнце
+       низко. Ночью — лампа под потолком: тень прямо вниз. */
+    var dx = up ? -s * 0.9 : 0, dy = up ? 0.45 + 0.55 * (1 - e) : 0.7;
+    return {
+      s: Math.round(s * 1000) / 1000, e: Math.round(e * 1000) / 1000, up: up,
+      dx: Math.round(dx * 20) / 20, dy: Math.round(dy * 20) / 20,
+      x: Math.round(50 + s * 34), y: Math.round(26 + (1 - e) * 22)
+    };
+  };
+  function hslRgb(h, s, l) { var c = hexToRgb(hslHex(h, s, l)); return c.r + "," + c.g + "," + c.b; }
+  /* Цвет солнца — стекло окна: тон комнаты, почти выбеленный, и тёплый
+     дневной свет поверх. У Моно стекло бесцветное. */
+  function sunRgb(w) {
+    var sat = Math.max(4, Math.min(46, ((w && w.sat) || 60) * 0.6));
+    var c = hexToRgb(hslHex((w && w.hue) || 30, sat, 88));
+    var mix = function (a, b) { return Math.round(a * 0.55 + b * 0.45); };
+    return mix(c.r, 255) + "," + mix(c.g, 244) + "," + mix(c.b, 226);
+  }
+  /* Рисунок солнца на стене. Пишется в тот же один элемент, что и свет Очага
+     (#sbMoodTint), и с той же частотой: корень не трогается (D-093). */
+  /* Свет окна на стене — четыре створки, разделённые переплётом, с мягким
+     краем полутени. Рисуется ОДНОЙ картинкой (svg в data:), которую браузер
+     растрирует раз на шаг солнца — то есть раз в минуты, а не в кадр. Утром
+     окно слева и свет наклонён от него, вечером — справа; чем ниже солнце,
+     тем длиннее и ниже пятно. */
+  function windowLight(sun, c, a) {
+    var cx = sun.x, cy = sun.y + 12;
+    var w = 22 + 14 * (1 - sun.e), h = 38 - 10 * (1 - sun.e);
+    var lean = -sun.s * 14;                  /* верх пятна ближе к окну */
+    var gx = 1.3, gy = 1.9;                  /* переплёт: вертикаль и перекладина */
+    var x0 = cx - w / 2, y0 = cy - h / 2, hw = (w - gx) / 2, hh = (h - gy) / 2;
+    var pane = function (ix, iy) {
+      var px = x0 + ix * (hw + gx), py = y0 + iy * (hh + gy);
+      var k0 = lean * (1 - (py - y0) / h), k1 = lean * (1 - (py + hh - y0) / h);
+      var r = function (v) { return Math.round(v * 10) / 10; };
+      return "<polygon points='" + r(px + k0) + "," + r(py) + " " + r(px + hw + k0) + "," + r(py) + " " +
+        r(px + hw + k1) + "," + r(py + hh) + " " + r(px + k1) + "," + r(py + hh) + "'/>";
+    };
+    var svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'>" +
+      "<filter id='p' x='-20%' y='-20%' width='140%' height='140%'><feGaussianBlur stdDeviation='1.15'/></filter>" +
+      "<g filter='url(%23p)' fill='rgb(" + c + ")' fill-opacity='" + a + "'>" + pane(0, 0) + pane(1, 0) + pane(0, 1) + pane(1, 1) + "</g></svg>";
+    return "url(\"data:image/svg+xml;utf8," + svg.replace(/</g, "%3C").replace(/>/g, "%3E") + "\")";
+  }
+  function sunPaint(w, ms) {
+    var sun = window.sbSunAt(ms), c = sunRgb(w);
+    var lvl = (w && typeof w.level === "number") ? w.level : 0.4;
+    var parts = [];
+    if (sun.up) {
+      var a = Math.round((0.64 + 0.3 * lvl) * (0.62 + 0.38 * sun.e) * 100) / 100;
+      var W = Math.round(1100 + 420 * (1 - sun.e)), H = Math.round(720 + 160 * sun.e);
+      parts.push(windowLight(sun, c, a));
+      /* рассеянный свет вокруг пятна — стена у окна светлее */
+      parts.push("radial-gradient(" + W + "px " + H + "px at " + sun.x + "% " + sun.y + "%, rgba(" + c + "," + (Math.round(a * 0.55 * 100) / 100) + "), transparent 72%)");
+      /* дальняя от окна часть стены — в тени неба: прохладнее и тише */
+      parts.push("radial-gradient(1400px 1000px at " + (100 - sun.x) + "% 100%, rgba(40,50,66," + (Math.round((0.05 + 0.05 * (1 - sun.e)) * 1000) / 1000) + "), transparent 70%)");
+    } else {
+      /* ночью солнца нет: стена в сумерках, тёплая лампа низко у стола */
+      parts.push("radial-gradient(1100px 700px at 50% 112%, rgba(255,220,176," + (Math.round((0.16 + 0.12 * lvl) * 100) / 100) + "), transparent 72%)");
+      parts.push("linear-gradient(rgba(40,50,66,.08), rgba(40,50,66,.08))");
+    }
+    /* дальний угол — в тон комнаты: свет, отражённый от её стекла */
+    var wash = hslRgb((w && w.hue) || 30, Math.min(58, ((w && w.sat) || 60) * 0.8), 60);
+    parts.push("radial-gradient(1000px 760px at " + (100 - sun.x) + "% 96%, rgba(" + wash + "," + (Math.round((0.05 + 0.06 * lvl) * 1000) / 1000) + "), transparent 70%)");
+    return { image: parts.join(","), sun: sun, rgb: c };
+  }
+  window.sbSunPaint = function (ms, moodId) {
+    return sunPaint(window.sbRoomLight(typeof ms === "number" ? ms : Date.now(), moodId), ms);
+  };
+  /* Тень от солнца и свет, которым освещены заметки и речь стола, — в корень,
+     но только на шаге шва и только если сдвиг виден: число округлено до
+     двадцатой, и за час солнце меняет его несколько раз. */
+  var sunLast = "";
+  function sunVars(w, ms) {
+    var st = root.style;
+    if (root.getAttribute("data-theme") !== "light") {
+      if (sunLast) {
+        ["--sun-dx", "--sun-dy", "--sun-rgb"].forEach(function (k) { st.removeProperty(k); });
+        sunLast = "";
+        if (window.sbField && typeof window.sbField.mood === "function") {
+          try { window.sbField.mood(window.sbGetWallpaperMood()); } catch (e) { /* ignore */ }
+        }
+      }
+      return;
+    }
+    var sun = window.sbSunAt(ms), c = sunRgb(w);
+    var key = sun.dx + "|" + sun.dy + "|" + c;
+    if (key === sunLast) return;
+    sunLast = key;
+    st.setProperty("--sun-dx", String(sun.dx));
+    st.setProperty("--sun-dy", String(sun.dy));
+    st.setProperty("--sun-rgb", c);
+    /* Заметки, подсказка и речь стола освещены обоями (--wp-light*). В
+       Светлице обои — это солнце, и светят они его светом. */
+    st.setProperty("--wp-light-rgb", c);
+    st.setProperty("--wp-light", "rgb(" + c + ")");
+    var clay = hexToRgb(clayFor((w && w.hue) || 30, (w && w.sat) || 60));
+    st.setProperty("--wp-light-2-rgb", clay.r + "," + clay.g + "," + clay.b);
+    st.setProperty("--wp-light-2", "rgb(" + clay.r + "," + clay.g + "," + clay.b + ")");
+  }
 
   /* ============================================ суточная комната (D-127) §
 
@@ -792,6 +1004,7 @@
     return {
       hue: hue,
       level: lvl,
+      sat: DRIFT_SAT,
       c1: hslHex(hue, DRIFT_SAT, driftLight(hue)),
       c2: hslHex(hue + 28, DRIFT_SAT, Math.min(92, driftLight(hue + 28) + 10)),
       c3: hslHex(hue, WP_WASH_SAT, WP_WASH_LIGHT),
@@ -840,7 +1053,7 @@
     var r2 = function (v) { return Math.round(v * 1000) / 1000; };
     var mix = function (p) { return r2(p[0] + (p[1] - p[0]) * lvl); };
     return {
-      hue: hue, level: lvl,
+      hue: hue, level: lvl, sat: DRIFT_SAT,
       c1: hslHex(hue, DRIFT_SAT, driftLight(hue)),
       c2: hslHex(hue + 28, DRIFT_SAT, Math.min(92, driftLight(hue + 28) + 10)),
       c3: hslHex(hue, WP_WASH_SAT, WP_WASH_LIGHT),
@@ -855,8 +1068,20 @@
   /* Вынесено наружу ровно затем, чтобы закон мог сфотографировать любой час,
      не переводя часов машины, и фотографировал при этом НАСТОЯЩИЙ красящий
      ход, а не свою копию его замысла. */
-  function paintTint(w) {
+  /* Солнце перерисовывается, только когда сдвиг виден: место — до процента,
+     сила — до сотой, цвет — от тона, округлённого до шести градусов. Пятно с
+     полутенью растрирует браузер, и делать это на каждом такте пружины
+     (у Студии — раз в три секунды) значило бы платить за невидимое. */
+  var sunPainted = "";
+  function paintTint(w, ms) {
     var el = doc.getElementById("sbMoodTint");
+    if (el && root.getAttribute("data-theme") === "light") {
+      var q = { hue: Math.round(((w && w.hue) || 0) / 6) * 6, sat: w && w.sat, level: Math.round(((w && w.level) || 0) * 50) / 50 };
+      var img = sunPaint(q, typeof ms === "number" ? ms : Date.now()).image;
+      if (img !== sunPainted || el.style.backgroundImage === "") { sunPainted = img; el.style.backgroundImage = img; }
+      return w;
+    }
+    sunPainted = "";
     if (el) {
       el.style.backgroundImage =
         "radial-gradient(900px 640px at 76% 16%, " + tintRgba(w.c1, w.a1) + ", transparent 64%)," +
@@ -865,14 +1090,14 @@
     }
     return w;
   }
-  window.sbTherapyApply = function (ms) { return paintTint(window.sbTherapyForTime(ms)); };
+  window.sbTherapyApply = function (ms) { return paintTint(window.sbTherapyForTime(ms), ms); };
   /* Из света комнаты — её краска: два пятна и мягкая заливка во весь стол. */
   function tintOf(w) {
     var r2 = function (v) { return Math.round(v * 1000) / 1000; };
     var lvl = w.level;
     var mix = function (p) { return r2(p[0] + (p[1] - p[0]) * lvl); };
     return {
-      hue: w.hue, level: lvl,
+      hue: w.hue, level: lvl, sat: w.sat,
       c1: hslHex(w.hue, w.sat, driftLight(w.hue)),
       c2: hslHex(w.hue + 28, w.sat, Math.min(92, driftLight(w.hue + 28) + 10)),
       c3: hslHex(w.hue, WP_WASH_SAT, WP_WASH_LIGHT),
@@ -883,6 +1108,7 @@
   window.sbWallpaperApply = function (ms) {
     var w = window.sbWallpaperForTime(ms);
     var el = doc.getElementById("sbMoodTint");
+    if (el && root.getAttribute("data-theme") === "light") { paintTint(w, ms); return w; }
     if (el) {
       el.style.backgroundImage =
         "radial-gradient(900px 640px at 76% 16%, " + tintRgba(w.c1, w.a1) + ", transparent 64%)," +
@@ -928,12 +1154,14 @@
     var hue = Math.round(w.hue), lvl = Math.round(w.level * 200);
     if (!force && hue === wpLastHue && lvl === wpLastLvl) return;
     wpLastHue = hue; wpLastLvl = lvl;
-    paintTint(tintOf(w));
+    var tickAt = Date.now();
+    paintTint(tintOf(w), tickAt);
     var step = Math.round(w.hue / 4);
     if (force || step !== wpLastSeam) {
       wpLastSeam = step;
       var seam = window.sbSeamForRoom(w);
-      applyAccent(seam.a1, seam.a2);
+      applyAccent(seam.a1, seam.a2, seam.ember);
+      sunVars(w, tickAt);
       if (window.sbClockLight) window.sbClockLight();
       /* И живой фон: его палитра — тот же свет (D-159). Зовём на шаге ШВА, а
          не на каждом такте пружины: поле само доводит цвет плавно, и чаще
@@ -1118,6 +1346,9 @@
     };
     t.addEventListener("click", function (ev) {
       if (ev.target && ev.target.closest && ev.target.closest("button.toast-action")) return;
+      /* Вопрос (D-335) сам знает, что касание мимо кнопок — отказ: ему
+         надо не только уйти, но и ответить тому, кто спросил. */
+      if (t.classList.contains("toast-ask")) return;
       kill();
     });
     /* Бессрочное извещение (D-286) ждёт ответа и не снимается по часам. */
@@ -1176,6 +1407,179 @@
     handle = mountToast(t, Infinity);
     return handle;
   };
+
+  /* ── ВОПРОС ЗАДАЁТСЯ СВОИМ ГОЛОСОМ (D-335) ──────────────────────────────
+     ПОВОД — задание основателя «AESTHETIC SINGULARITY», §5 и §35: «dialogs»,
+     «стандартный browser-like элемент», «каждая деталь должна принадлежать
+     одному миру». Перепись 28.09.2026: четырнадцать мест спрашивали
+     «удалить?», «выйти?», «как назвать?» через window.confirm и
+     window.prompt — плашкой браузера: чужой шрифт, чужие кнопки «ОК /
+     Отмена», чужое место на экране, и всё это посреди среды, которая всё
+     остальное говорит сама и с одной линии (v66: одно место речи).
+     Теперь вопрос — извещение, которое ждёт ответа (D-286): та же линия,
+     те же кнопки-действия. Разница с D-286 в одном: вопрос задан В ОТВЕТ
+     НА НАЖАТИЕ САМОГО ЧЕЛОВЕКА, поэтому «Не беспокоить» его не глушит —
+     молчание здесь означало бы, что нажатие пропало.
+     Ответ — обещание: да/нет; с полем — строка или null (отказ).
+     Клавиатура: Enter — согласие, Escape — отказ. Фокус уходит на вопрос и
+     возвращается туда, откуда пришёл. Второй вопрос сменяет первый, и
+     первый получает отказ: два вопроса разом — это уже не разговор.
+     Охраняется tools/ask-voice-check.mjs. */
+  var askOpen = null;
+  window.sbAsk = function (opts) {
+    opts = opts || {};
+    /* Вопрос одной строкой «Удалить? Это навсегда.»: до знака вопроса —
+       заголовок, после — последствие. Так написаны все вопросы словаря. */
+    if (opts.question && !opts.title) {
+      var q = String(opts.question), cut = q.indexOf("? ");
+      opts.title = cut < 0 ? q : q.slice(0, cut + 1);
+      opts.text = cut < 0 ? "" : q.slice(cut + 2);
+    }
+    return new Promise(function (resolve) {
+      if (askOpen) askOpen.cancel();
+      var back = doc.activeElement;
+      var t = buildToast(opts.title || "", opts.text || "", ICONS.window, "toast-standing toast-ask" + (opts.danger ? " toast-ask-danger" : ""), "event");
+      t.setAttribute("role", "alertdialog");
+      t.setAttribute("aria-live", "assertive");
+      var field = null;
+      if (opts.field) {
+        field = doc.createElement("input");
+        field.type = "text";
+        field.className = "toast-field";
+        field.setAttribute("aria-label", opts.title || "");
+        if (opts.field.placeholder) field.placeholder = opts.field.placeholder;
+        field.value = opts.field.value || "";
+        field.setAttribute("autocomplete", "off");
+        t.appendChild(field);
+      }
+      var row = doc.createElement("div");
+      row.className = "toast-actions";
+      var handle = null, settled = false;
+      var done = function (answer) {
+        if (settled) return;
+        settled = true;
+        askOpen = null;
+        doc.removeEventListener("keydown", onKey, true);
+        if (handle) handle.dismiss();
+        try { if (back && back.focus && doc.contains(back)) back.focus({ preventScroll: true }); } catch (e) { /* фокусу некуда вернуться — стол */ }
+        resolve(answer);
+      };
+      var yes = function () { done(field ? field.value : true); };
+      var no = function () { done(field ? null : false); };
+      var onKey = function (ev) {
+        if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); no(); return; }
+        if (ev.key === "Enter" && (ev.target === field || (ev.target && ev.target.closest && ev.target.closest(".toast-ask")))) {
+          if (ev.target && ev.target.closest && ev.target.closest("button.toast-action.quiet")) return;
+          ev.preventDefault(); ev.stopPropagation(); yes();
+        }
+      };
+      var okBtn = doc.createElement("button");
+      okBtn.type = "button";
+      okBtn.className = "toast-action";
+      okBtn.setAttribute("data-act", "yes");
+      okBtn.textContent = opts.ok || tr("ask.ok");
+      okBtn.addEventListener("click", yes);
+      var noBtn = doc.createElement("button");
+      noBtn.type = "button";
+      noBtn.className = "toast-action quiet";
+      noBtn.setAttribute("data-act", "no");
+      noBtn.textContent = opts.cancel || tr("ask.cancel");
+      noBtn.addEventListener("click", no);
+      row.appendChild(okBtn);
+      row.appendChild(noBtn);
+      t.appendChild(row);
+      handle = mountToast(t, Infinity);
+      if (!handle) { done(field ? null : false); return; }
+      /* Касание мимо кнопок снимает извещение (D-286) — для вопроса это отказ. */
+      t.addEventListener("click", function (ev) {
+        if (ev.target && ev.target.closest && ev.target.closest("button.toast-action, .toast-field")) return;
+        no();
+      });
+      doc.addEventListener("keydown", onKey, true);
+      askOpen = { cancel: no, el: t };
+      requestAnimationFrame(function () { try { (field || okBtn).focus({ preventScroll: true }); } catch (e) { /* фокус не обязателен */ } });
+    });
+  };
+  window.sbAskOpen = function () { return !!askOpen; };
+
+  /* ── ПОДСКАЗКА СВОИМ ГОЛОСОМ (D-339) ─────────────────────────────────────
+     ПОВОД — задание основателя «AESTHETIC SINGULARITY», §6: «tooltips» в
+     списке незаметных мест, где живут «самые дешёвые на вид решения».
+     Перепись 28.09.2026: 61 кнопка носила подпись в title — и подсказку к
+     ней рисовал браузер: жёлтой или серой плашкой своего шрифта, спустя
+     свою секунду, в своём углу. Единственная надпись среды, которую среда
+     не писала сама.
+     Теперь подпись читается из title в миг, когда указатель пришёл на
+     предмет, — раньше, чем браузер успевает показать своё, — и title
+     снимается: браузер больше не при чём. Слово остаётся доступным: оно
+     переезжает в data-tip, а кнопке без своих букв даётся aria-label.
+     Подсказка показывается указателем мыши (наведение — про мышь, D-272)
+     и клавиатурным фокусом; палец её не зовёт. Пишется на поверхности речи
+     стола (--voice), тем же шрифтом, что всё; уходит по уходу указателя,
+     по нажатию и по Escape. Охраняется tools/tip-voice-check.mjs. */
+  var tipEl = null, tipTimer = null, tipAt = null;
+  function tipText(el) {
+    var t = el.getAttribute("data-tip");
+    if (t) return t;
+    var ti = el.getAttribute("title");
+    if (!ti) return "";
+    el.setAttribute("data-tip", ti);
+    if (!el.getAttribute("aria-label") && !(el.textContent || "").trim()) el.setAttribute("aria-label", ti);
+    el.removeAttribute("title");
+    return ti;
+  }
+  function tipHide() {
+    if (tipTimer) { clearTimeout(tipTimer); tipTimer = null; }
+    tipAt = null;
+    if (tipEl) tipEl.classList.remove("on");
+  }
+  function tipShow(el, text) {
+    if (!doc.contains(el)) return;
+    if (!tipEl) { tipEl = doc.createElement("div"); tipEl.className = "sb-tip"; tipEl.setAttribute("role", "tooltip"); doc.body.appendChild(tipEl); }
+    tipEl.textContent = text;
+    tipEl.classList.remove("on");
+    var r = el.getBoundingClientRect();
+    var W = tipEl.offsetWidth, H = tipEl.offsetHeight, gap = 8;
+    var x = Math.round(r.left + r.width / 2 - W / 2);
+    x = Math.max(8, Math.min(x, window.innerWidth - W - 8));
+    var y = Math.round(r.bottom + gap);
+    if (y + H > window.innerHeight - 8) y = Math.round(r.top - gap - H);
+    tipEl.style.left = x + "px";
+    tipEl.style.top = y + "px";
+    tipEl.classList.add("on");
+  }
+  function tipArm(el, delay) {
+    var text = tipText(el);
+    if (!text) return;
+    tipAt = el;
+    if (tipTimer) clearTimeout(tipTimer);
+    tipTimer = setTimeout(function () { tipTimer = null; if (tipAt === el) tipShow(el, text); }, delay);
+  }
+  doc.addEventListener("pointerover", function (ev) {
+    if (ev.pointerType && ev.pointerType !== "mouse") return;
+    var el = ev.target && ev.target.closest ? ev.target.closest("[title], [data-tip]") : null;
+    if (!el || el.tagName === "IFRAME") { if (!el) tipHide(); return; }
+    if (el === tipAt) return;
+    tipHide();
+    tipArm(el, 500);
+  }, true);
+  doc.addEventListener("pointerout", function (ev) {
+    var el = ev.target && ev.target.closest ? ev.target.closest("[data-tip]") : null;
+    if (el && el === tipAt && !(ev.relatedTarget && el.contains(ev.relatedTarget))) tipHide();
+  }, true);
+  doc.addEventListener("focusin", function (ev) {
+    var el = ev.target;
+    if (!el || !el.matches || !el.matches("[title], [data-tip]") || el.tagName === "IFRAME") return;
+    if (!el.matches(":focus-visible")) return;
+    tipHide();
+    tipArm(el, 500);
+  }, true);
+  doc.addEventListener("focusout", function () { tipHide(); }, true);
+  doc.addEventListener("pointerdown", function () { tipHide(); }, true);
+  doc.addEventListener("keydown", function (ev) { if (ev.key === "Escape") tipHide(); }, true);
+  window.addEventListener("scroll", tipHide, true);
+  /* Подпись, поставленная разметкой ПОСЛЕ прихода указателя (перерисовка
+     комнаты), ловится тем же путём — при следующем движении. */
 
   function showUndoToast(title, text, onUndo) {
     if (dnd()) return null;
@@ -1712,7 +2116,7 @@
     el.style.transform = "translate3d(" + Math.round(fromX - cx) + "px," + Math.round(fromY - cy) + "px,0) scale(.94)";
     el.style.opacity = "0";
     requestAnimationFrame(function () {
-      el.style.transition = "transform 120ms cubic-bezier(.16,1,.3,1), opacity 100ms ease";
+      el.style.transition = "transform 120ms var(--ease-enter), opacity 100ms var(--ease-move)";
       el.style.transform = "translate3d(0,0,0) scale(1)";
       el.style.opacity = "1";
       setTimeout(function () {
@@ -1814,7 +2218,7 @@
     var el = win.el;
     el.classList.add("closing", "traveling");
     if (!reduced() && !systemReduced()) {
-      el.style.transition = "transform 100ms cubic-bezier(.16,1,.3,1), opacity 80ms ease";
+      el.style.transition = "transform 100ms var(--ease-enter), opacity 80ms var(--ease-move)";
       el.style.transform = "scale(.96)";
       el.style.opacity = "0";
     }
@@ -1867,7 +2271,7 @@
          родилось у открытия и законом window-motion-check распространено на
          все пути: счёт композитору один и тот же, где бы окно ни летело. */
       el.classList.add("traveling");
-      el.style.transition = "transform 110ms cubic-bezier(.16,1,.3,1), opacity 90ms ease";
+      el.style.transition = "transform 110ms var(--ease-enter), opacity 90ms var(--ease-move)";
       el.style.transformOrigin = "center center";
       el.style.transform = "translate3d(" + Math.round(r.left + r.width / 2 - cx) + "px," + Math.round(r.top + r.height / 2 - cy) + "px,0) scale(.12)";
       el.style.opacity = "0";
@@ -1892,7 +2296,7 @@
     if (!reduced() && !systemReduced()) {
       el.classList.add("traveling");
       requestAnimationFrame(function () {
-        el.style.transition = "transform 110ms cubic-bezier(.16,1,.3,1), opacity 90ms ease";
+        el.style.transition = "transform 110ms var(--ease-enter), opacity 90ms var(--ease-move)";
         el.style.transform = "translate3d(0,0,0) scale(1)";
         el.style.opacity = "1";
         /* После полёта — ни следа: transition, transform и traveling
@@ -1981,7 +2385,7 @@
     el.style.transformOrigin = "0 0";
     el.style.transform = "translate3d(" + dx + "px," + dy + "px,0) scale(" + sx + "," + sy + ")";
     void el.offsetWidth;                       /* стартовый кадр зафиксирован */
-    el.style.transition = "transform 130ms cubic-bezier(.16,1,.3,1)";
+    el.style.transition = "transform 130ms var(--ease-enter)";
     el.style.transform = "translate3d(0,0,0) scale(1)";
     clearTimeout(win.__flyTimer);
     win.__flyTimer = setTimeout(function () {
@@ -3559,11 +3963,15 @@
     fly.style.offsetPath = path;
     fly.style.offsetRotate = "0deg";
     var DUR = 640;
+    /* Полёт идёт по кривой перемещения среды (D-336): у брошенной вещи та же
+       физика, что у всего, что движется. Web Animations слов не читает —
+       число берётся у корня. */
+    var curve = (getComputedStyle(root).getPropertyValue("--ease-move") || "").trim() || "ease";
     var anim = fly.animate(
       [{ offsetDistance: "0%", opacity: 1, scale: "1" },
        { offsetDistance: "62%", opacity: .95, scale: ".62", offset: .62 },
        { offsetDistance: "100%", opacity: 0, scale: ".16" }],
-      { duration: DUR, easing: "cubic-bezier(.34,.02,.28,1)", fill: "forwards" });
+      { duration: DUR, easing: curve, fill: "forwards" });
     /* Отклик встречает предмет чуть раньше касания — так две части движения
        читаются как одно: значок уже подался навстречу, когда предмет входит. */
     var meet = setTimeout(echoCatch, Math.round(DUR * 0.78));
@@ -3811,6 +4219,9 @@
   doc.addEventListener("keydown", function (ev) {
     if (ev.key !== "Escape") return;
     /* single target, in priority order */
+    /* Открытый вопрос (D-335) отвечает на Escape сам — отказом; окно под
+       ним не закрывается: человек отказался от вопроса, а не от комнаты. */
+    if (askOpen) return;
     if (window.sbPaletteIsOpen && window.sbPaletteIsOpen()) { ev.preventDefault(); window.sbClosePalette(); return; }
     if (window.sbAnyPanelOpen && window.sbAnyPanelOpen()) { ev.preventDefault(); if (window.sbCloseAllPanels) window.sbCloseAllPanels(); return; }
     if (anyFullscreen()) { ev.preventDefault(); exitFullscreen(); return; }
@@ -4078,6 +4489,20 @@
     } catch (e) { /* ignore */ }
     return "en";
   }
+  /* ── СИСТЕМА БЕЗ СВОЕГО СЛОВА О ЯЗЫКЕ ГОВОРИТ НА ЯЗЫКЕ ДВЕРИ ─────────────
+     (D-327 для новой системы; D-334 — и для тревожной.) Тревожная система
+     рождается пустой, и после открытия вторым словом падала на английский,
+     хотя дверь и главная говорили по-русски: смена языка ровно после
+     «другого» слова выдавала её. Язык главной лежит в её конвертах, и
+     тревожная его не читает — поэтому берётся язык двери, как у любой новой
+     системы. Своё слово о языке, если оно есть, не трогается.
+     Охраняется tools/duress-language-check.mjs. */
+  function adoptDoorLangIfNone() {
+    var own = null;
+    try { own = localStorage.getItem("sysbaby.i18n.lang"); } catch (e) { own = null; }
+    if (own || typeof window.sbSetLang !== "function") return;
+    window.sbSetLang(gateLang());
+  }
   function gateText(key) {
     if (typeof window.sbTIn === "function") {
       try { return window.sbTIn(gateLang(), key); } catch (e) { /* ignore */ }
@@ -4264,6 +4689,7 @@
           field.focus();
           return;
         }
+        adoptDoorLangIfNone();
         /* Верный пароль: диафрагма расходится, и сквозь неё проступает свет
            комнаты. Дверь снимается ПОСЛЕ того, как она открылась, — иначе
            открылась бы не дверь, а пустота на её месте. */
@@ -4714,6 +5140,21 @@
     var forgot = $("#sbLoginForgot"), forgotMsg = $("#sbLoginForgotMsg"), eye = $("#sbLoginEye");
     var fName = $("#sbFoundName"), fPw = $("#sbFoundPw"), fPw2 = $("#sbFoundPw2"), fErr = $("#sbFoundErr");
     var fGo = $("#sbFoundGo"), fBack = $("#sbFoundBack");
+    /* Отложенный фокус не выхватывает поле из-под пальцев (v167). Карточка
+       ставит фокус таймером; под нагрузкой и на слабом телефоне таймер
+       срабатывает позже, чем человек начал печатать в другом поле, — и
+       остаток набранного уходил в соседнее поле («Пароли не совпадают» у
+       «Первого слова»). Фокус ставится, только если человек ещё не стоит ни
+       в одном видимом поле этой карточки. Охраняется tools/door-focus-check.mjs. */
+    var loginCard = document.getElementById("sbLogin");
+    function focusSoon(pick, ms) {
+      setTimeout(function () {
+        var a = document.activeElement;
+        if (a && loginCard && loginCard.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.offsetParent !== null) return;
+        var el = pick();
+        if (el) { try { el.focus(); } catch (e) { /* поля уже нет — ставить фокус некуда */ } }
+      }, ms);
+    }
 
     /* Ряд языков у входа — тот же, что у двери замка; выбор живёт только в
        памяти страницы (gatePick). */
@@ -4752,13 +5193,13 @@
       if (fErr) fErr.textContent = "";
       /* Набранное у входа имя переносится — человек не набирает его дважды. */
       if (fName && nameInput && !fName.value) fName.value = nameInput.value;
-      if (fName) setTimeout(function () { (fName.value ? fPw : fName).focus(); }, 60);
+      if (fName) focusSoon(function () { return fName.value ? fPw : fName; }, 60);
     }
     function toDoor() {
       if (step2) step2.hidden = true;
       if (step1) step1.hidden = false;
       if (err) err.textContent = "";
-      if (nameInput) setTimeout(function () { nameInput.focus(); }, 60);
+      if (nameInput) focusSoon(function () { return nameInput; }, 60);
     }
     if (foundBtn) foundBtn.addEventListener("click", toFound);
     if (fBack) fBack.addEventListener("click", toDoor);
@@ -4813,6 +5254,19 @@
       root.classList.add("sb-has-session");
       loginSuccess();
     }
+
+    /* ── НОВАЯ СИСТЕМА ГОВОРИТ НА ЯЗЫКЕ ДВЕРИ (D-327) ─────────────────────
+       Дверь говорит на языке устройства или на выбранном у неё (D-288), и
+       человек заводит систему, читая её слова. Своего языка у новой системы
+       нет — и прежде она молча брала английский: русская дверь, английский
+       стол. Теперь система без своего языка берёт язык двери; система со
+       своим языком говорит на своём — дверь его не трогает. Язык системы —
+       одно слово устройства (sysbaby.i18n.lang, под замком — в конверте):
+       его спрашивает полоса, его пишет выбор в Настройках. Выбор у двери
+       по-прежнему живёт в памяти страницы, пока человек не вошёл: язык
+       записывается, как любое слово системы, в миг входа — и только если
+       своего ещё нет. Охраняется tools/first-word-language-check.mjs. */
+    function adoptDoorLang() { adoptDoorLangIfNone(); }
 
     function busy(btn, key) { var was = btn.textContent; btn.disabled = true; btn.textContent = gateText(key); return function () { btn.disabled = false; btn.textContent = was; }; }
     function unavailable(out) {
@@ -4876,6 +5330,7 @@
                перезагружает страницу, и память страницы его теряла.
                Исполняет его окно замка, когда встанет стол (D-304). */
             if (wantsNow) { try { sessionStorage.setItem("sysbaby.lock.wantNow", "1"); } catch (e) { /* ignore */ } }
+            if (prof && prof.id) adoptDoorLang();
             finish(prof ? prof.id : null, name);
           });
         })["catch"](function () {
@@ -4887,10 +5342,11 @@
     if (guest) {
       guest.addEventListener("click", function () {
         guest.disabled = true;
+        adoptDoorLang();
         finish("local", null);
       });
     }
-    if (nameInput) setTimeout(function () { nameInput.focus(); }, 120);
+    if (nameInput) focusSoon(function () { return nameInput; }, 120);
   }
 
   /* sign-out farewell (§2.1) */

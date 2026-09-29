@@ -984,7 +984,12 @@
     };
     return;
   }
-  var SRC = (document.currentScript && document.currentScript.src) || "";
+  /* В КОВЧЕГЕ (D-314) у этого файла нет адреса — он лежит внутри страницы.
+     Поток поднимается из его же текста: ковчег даёт на это Blob, и поток
+     считает то же самое, что считал бы по адресу. ОТКАТ: не вышло — пусто, и
+     счёт идёт в главном потоке, как без потока всегда. */
+  var SRC = (document.currentScript && (document.currentScript.src ||
+    (window.SB_ARK && typeof window.SB_ARK.self === "function" ? window.SB_ARK.self(document.currentScript) : ""))) || "";
   var worker = null, seq = 0, waiting = {}, usedWorker = 0;
   function getWorker() {
     if (worker !== null) return worker;

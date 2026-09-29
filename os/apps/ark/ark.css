@@ -1,0 +1,103 @@
+/* Ковчег — вся система в одном файле (D-314).
+   Вид подчинён одному: человек за секунду понимает, что он забирает с собой
+   ВСЮ систему, и за ту же секунду — что его вещи едут только запечатанными.
+   Только токены цвета: комната живёт в свете системы, а не в своём. */
+
+/* Колонка встаёт посередине развёрнутого окна (D-273). */
+.ak-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: var(--room-col); margin-inline: auto; }
+.ak-head { padding: 2px 2px 0; }
+.ak-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: var(--w-strong); letter-spacing: var(--track-tight); }
+.ak-lead { margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2); max-width: 62ch; }
+
+.ak-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.ak-card, .ak-copy {
+  display: flex; flex-direction: column; gap: 9px; padding: 15px 16px;
+  border-radius: var(--r-card); border: 1px solid var(--line); background: var(--glass);
+}
+.ak-card.cargo { border-color: var(--accent-ring); background: var(--glass-tint); }
+.ak-copy { border-left: 2px solid var(--accent-ring); }
+.ak-card-h { margin: 0; font-size: var(--f-lead); font-weight: var(--w-strong); color: var(--ink); }
+.ak-card-p { margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); flex: 1 1 auto; }
+
+.ak-btn {
+  align-self: flex-start; font: inherit; font-size: var(--f-read); font-weight: var(--w-strong); padding: 10px 16px; cursor: pointer;
+  color: var(--ink); background: var(--accent-soft); border: 1px solid var(--accent-ring); border-radius: var(--r-ctrl);
+  font-variant-numeric: tabular-nums;
+}
+.ak-btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; color: var(--on-accent); }
+.ak-btn.ghost { background: transparent; border-color: var(--line-2); color: var(--ink-2); font-weight: var(--w-text); }
+/* Покой отключённой кнопки — одним словом ядра (--rest, D-340): button:disabled в core.css. */
+.ak-btn:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
+.ak-cargo-why { margin: 0; font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-3); }
+
+.ak-err:empty { display: none; }
+.ak-err {
+  margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink);
+  padding: 10px 12px; border-radius: var(--r-ctrl);
+  background: color-mix(in srgb, var(--danger) 12%, transparent); border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+/* Собранный ковчег: имя, вес, число частей, ссылок наружу — всё измерено. */
+.ak-done {
+  display: flex; flex-direction: column; gap: 7px; padding: 13px 14px; margin-top: 4px;
+  border-radius: var(--r-card); border: 1px solid color-mix(in srgb, var(--good) 45%, transparent);
+  background: color-mix(in srgb, var(--good) 9%, transparent);
+}
+.ak-done-h { margin: 0; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ok-ink); font-weight: var(--w-strong); }
+.ak-done-line { margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.ak-done-where { margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); }
+
+.ak-sub { margin: 0 0 8px; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ink-3); font-weight: var(--w-strong); }
+.ak-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ak-chip {
+  font-size: var(--f-meta); padding: 4px 10px; border-radius: var(--r-pill);
+  border: 1px solid var(--line); background: var(--glass); color: var(--ink-2);
+}
+
+.ak-limits { padding: 13px 15px; border-radius: var(--r-card); border: 1px solid var(--line); background: var(--glass); }
+.ak-limits ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.ak-limits li { font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); }
+
+/* Разгрузка в копии. */
+.ak-unpack { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+.ak-word {
+  flex: 1 1 220px; min-width: 0; font: inherit; font-size: var(--f-read); padding: 10px 12px; color: var(--ink);
+  background: var(--glass); border: 1px solid var(--line-2); border-radius: var(--r-ctrl);
+}
+.ak-word:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 1px; }
+.ak-unpacked {
+  margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink);
+  padding: 12px 14px; border-radius: var(--r-card);
+  border: 1px solid color-mix(in srgb, var(--good) 45%, transparent); background: color-mix(in srgb, var(--good) 9%, transparent);
+}
+
+/* Наведение — только для мыши (hover-is-not-touch-check). */
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .ak-btn:not([disabled]):hover { border-color: var(--accent); }
+  :where(html:not([data-input="touch"])) .ak-btn.ghost:not([disabled]):hover { color: var(--ink); }
+}
+
+/* Комната с рамкой сайта в копии: слово вместо пустой рамки. Лежит в
+   теле чужой комнаты, поэтому класс общий, с приставкой системы. */
+.sb-ark-noframe {
+  display: flex; align-items: flex-start; gap: 12px; margin: 18px auto; max-width: min(560px, calc(100% - 32px));
+  padding: 16px 18px; border-radius: var(--r-card); border: 1px solid var(--line); background: var(--glass);
+}
+.sb-ark-noframe p { margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2); }
+.sb-ark-noframe-i { flex: 0 0 auto; width: 26px; height: 26px; color: var(--accent); }
+.sb-ark-noframe-i svg { width: 100%; height: 100%; display: block; }
+
+/* Зачем, если сайт и так работает без сети (D-328): свёрнутый вопрос до
+   кнопок. Кто знает, зачем пришёл, проходит мимо одной строкой. */
+.ak-why { border-radius: var(--r-card); border: 1px solid var(--line); background: var(--glass); }
+.ak-why > summary {
+  cursor: pointer; padding: 11px 14px; font-size: var(--f-read); font-weight: var(--w-strong); color: var(--ink);
+  list-style-position: inside; border-radius: var(--r-card);
+}
+.ak-why > summary:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
+.ak-why ul { margin: 0; padding: 0 16px 0 34px; display: flex; flex-direction: column; gap: 7px; }
+.ak-why li { font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); }
+.ak-why-not { margin: 10px 16px 14px; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink); }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .ak-why > summary:hover { color: var(--accent-ink); }
+}

@@ -308,11 +308,14 @@
     });
     host.querySelectorAll("[data-silence-file]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        /* «Навсегда» спрашивается второй раз: первый был при удалении. */
-        if (!window.confirm(t("ec.silenceAsk"))) return;
-        try { if (window.sbFilesSilence) window.sbFilesSilence(btn.getAttribute("data-silence-file")); }
-        catch (err) { console.error("[echoes] file silence failed", err); return; }
-        render(win);
+        /* «Навсегда» спрашивается второй раз: первый был при удалении.
+           Своим голосом (D-335), а не плашкой браузера. */
+        window.sbAsk({ question: t("ec.silenceAsk"), ok: t("ask.delete"), danger: true }).then(function (yes) {
+          if (!yes) return;
+          try { if (window.sbFilesSilence) window.sbFilesSilence(btn.getAttribute("data-silence-file")); }
+          catch (err) { console.error("[echoes] file silence failed", err); return; }
+          render(win);
+        });
       });
     });
     host.querySelectorAll("[data-restore]").forEach(function (btn) {
@@ -330,10 +333,12 @@
       btn.addEventListener("click", function () {
         var s = store();
         if (!s) return;
-        if (!window.confirm(t("ec.confirm.one"))) return;
-        try { s.purge(btn.getAttribute("data-silence")); }
-        catch (err) { console.error("[echoes] purge failed", err); return; }
-        render(win);
+        window.sbAsk({ question: t("ec.confirm.one"), ok: t("ask.silence"), danger: true }).then(function (yes) {
+          if (!yes) return;
+          try { s.purge(btn.getAttribute("data-silence")); }
+          catch (err) { console.error("[echoes] purge failed", err); return; }
+          render(win);
+        });
       });
     });
 
@@ -342,12 +347,14 @@
       all.addEventListener("click", function () {
         var s = store();
         if (!s) return;
-        if (!window.confirm(t("ec.confirm.all", { n: echoCount }))) return;
-        /* Touches the notes store only — hidden apps live in shell storage this
-         * button cannot reach. There must be no way for it to remove an app. */
-        try { s.purgeAllDeleted(); }
-        catch (err) { console.error("[echoes] purge-all failed", err); return; }
-        render(win);
+        window.sbAsk({ question: t("ec.confirm.all", { n: echoCount }), ok: t("ask.silence"), danger: true }).then(function (yes) {
+          if (!yes) return;
+          /* Touches the notes store only — hidden apps live in shell storage this
+           * button cannot reach. There must be no way for it to remove an app. */
+          try { s.purgeAllDeleted(); }
+          catch (err) { console.error("[echoes] purge-all failed", err); return; }
+          render(win);
+        });
       });
     }
 

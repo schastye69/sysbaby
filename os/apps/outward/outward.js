@@ -152,8 +152,10 @@
           '<dt>' + esc(t.where) + '</dt><dd class="ow-mono">' + esc((d.where || []).join(' · ')) + '</dd>' +
         '</dl>' +
         (d.toggle
+          /* У каждой ручки есть имя (D-321): переключатель называется
+             выходом, который он держит, — на слух так же, как глазом. */
           ? '<div class="ow-switch"><button type="button" class="ow-sw' + (on ? " on" : "") +
-            '" role="switch" aria-checked="' + (on ? "true" : "false") + '" data-toggle="' + esc(d.toggle) + '"><i></i></button>' +
+            '" role="switch" aria-checked="' + (on ? "true" : "false") + '" aria-label="' + esc(titleOf(d)) + '" data-toggle="' + esc(d.toggle) + '"><i></i></button>' +
             '<span>' + esc(on ? t.on : t.off) + '</span>' +
             (d.defaultWhy ? '<span class="ow-why">' + esc(byLang(d.defaultWhy)) + '</span>' : '') + '</div>'
           : (d.noToggleWhy

@@ -24,8 +24,8 @@
 .pf-intro {
   margin: 0 0 14px;
   font-size: 12.5px;
-  line-height: 1.65;
-  color: rgba(255, 255, 255, .68);
+  line-height: var(--lh-read, 1.55);
+  color: var(--text-2, rgba(255, 255, 255, .68));
 }
 
 .pf-replay {
@@ -37,8 +37,8 @@
   padding: 10px 13px;
   margin-bottom: 16px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, .13);
-  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(var(--film-rgb, 255, 255, 255), .13);
+  background: rgba(var(--film-rgb, 255, 255, 255), .05);
   color: inherit;
   font: inherit;
   cursor: pointer;
@@ -48,15 +48,15 @@
    устройству, и системе — чем её коснулись последним. На витрине признак
    рода касания ставит её же первый сценарий. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .pf-replay:hover { background: rgba(255, 255, 255, .1); }
+  :where(html:not([data-input="touch"])) .pf-replay:hover { background: rgba(var(--film-rgb, 255, 255, 255), .1); }
 }
-.pf-replay-title { font-size: 12.5px; font-weight: 650; }
-.pf-replay-sub { font-size: 11px; color: rgba(255, 255, 255, .48); }
+.pf-replay-title { font-size: 12.5px; font-weight: var(--w-strong, 600); }
+.pf-replay-sub { font-size: 11px; color: var(--text-3, rgba(255, 255, 255, .48)); }
 
 .pf-card {
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, .1);
-  background: rgba(255, 255, 255, .035);
+  border: 1px solid rgba(var(--film-rgb, 255, 255, 255), .1);
+  background: rgba(var(--film-rgb, 255, 255, 255), .035);
   padding: 0 0 14px;
   margin-bottom: 16px;
   overflow: hidden;
@@ -66,7 +66,8 @@
   position: relative;
   height: 170px;
   overflow: hidden;
-  border-bottom: 1px solid rgba(255, 255, 255, .09);
+  border-bottom: 1px solid rgba(var(--film-rgb, 255, 255, 255), .09);
+  /* своя краска: экран превью тёмный, как выключенный монитор; в нём чужой сайт */
   background: #0b0c0f;
 }
 
@@ -80,7 +81,7 @@
   transform: scale(.357);
   transform-origin: 0 0;
   pointer-events: none;
-  transition: transform .5s cubic-bezier(.16, 1, .3, 1);
+  transition: transform .5s var(--ease-move, cubic-bezier(.2, .8, .2, 1)); /* запас — число системного слоя: вид стоит и на витрине, где слов ОС нет */
 }
 
 @media (hover: hover) {
@@ -92,6 +93,7 @@
   position: absolute;
   inset: auto 0 0 0;
   height: 56px;
+  /* своя краска: сход к тому же экрану */
   background: linear-gradient(180deg, rgba(11, 12, 15, 0), rgba(11, 12, 15, .95));
   pointer-events: none;
 }
@@ -106,13 +108,14 @@
   display: none;
   align-items: center;
   font-size: 10px;
-  letter-spacing: .06em;
+  letter-spacing: var(--track-caps, .08em);
   text-transform: uppercase;
   padding: 3px 8px;
   border-radius: 999px;
+  /* своя краска: ярлык на тёмном экране превью */
   background: rgba(8, 9, 12, .82);
-  border: 1px solid rgba(255, 214, 10, .38);
-  color: rgba(255, 255, 255, .7);
+  border: 1px solid rgba(var(--star-rgb, 255, 214, 10), .38);
+  color: var(--text-2, rgba(255, 255, 255, .7));
 }
 .pf-preview.unreachable .pf-unreachable { display: inline-flex; }
 .pf-preview.unreachable .pf-live { display: none; }
@@ -121,7 +124,8 @@
   content: "";
   position: absolute; inset: 0; z-index: 1;
   background:
-    repeating-linear-gradient(135deg, rgba(255,255,255,.022) 0 8px, transparent 8px 16px),
+    /* своя краска: штриховка по тёмному экрану */
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, .022) 0 8px, transparent 8px 16px),
     rgba(10, 11, 15, .9);
 }
 
@@ -134,13 +138,14 @@
   align-items: center;
   gap: 5px;
   font-size: 10px;
-  letter-spacing: .06em;
+  letter-spacing: var(--track-caps, .08em);
   text-transform: uppercase;
   padding: 3px 8px;
   border-radius: 999px;
+  /* своя краска: ярлык на тёмном экране превью */
   background: rgba(8, 9, 12, .78);
-  border: 1px solid rgba(48, 209, 88, .4);
-  color: rgba(255, 255, 255, .82);
+  border: 1px solid rgba(var(--ok-rgb, 48, 209, 88), .4);
+  color: var(--text-2, rgba(255, 255, 255, .82));
 }
 
 .pf-live i {
@@ -152,8 +157,8 @@
 }
 
 @keyframes pfPulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(48, 209, 88, .5); }
-  50% { opacity: .55; box-shadow: 0 0 0 5px rgba(48, 209, 88, 0); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(var(--ok-rgb, 48, 209, 88), .5); }
+  50% { opacity: .55; box-shadow: 0 0 0 5px rgba(var(--ok-rgb, 48, 209, 88), 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -177,7 +182,7 @@
   padding: 13px 14px 0;
 }
 
-.app-portfolio .pf-name { flex: 1 1 11em; min-width: 0; margin: 0; font-size: 14.5px; font-weight: 650; line-height: 1.35; letter-spacing: 0; }
+.app-portfolio .pf-name { flex: 1 1 11em; min-width: 0; margin: 0; font-size: 14.5px; font-weight: var(--w-strong, 600); line-height: var(--lh-ui, 1.25); letter-spacing: 0; }
 
 .pf-badge {
   flex: 0 0 auto;
@@ -186,19 +191,19 @@
   overflow-wrap: anywhere;
   font-size: 9.5px;
   text-transform: uppercase;
-  letter-spacing: .05em;
+  letter-spacing: var(--track-caps, .08em);
   padding: 3px 7px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, .14);
-  color: rgba(255, 255, 255, .6);
+  border: 1px solid rgba(var(--film-rgb, 255, 255, 255), .14);
+  color: var(--text-2, rgba(255, 255, 255, .6));
 }
 
-.pf-badge.conf { border-color: rgba(242, 242, 240, .22); color: rgba(242, 242, 240, .66); }
+.pf-badge.conf { border-color: rgba(var(--ink-rgb, 242, 242, 240), .22); color: var(--text-2, rgba(242, 242, 240, .66)); }
 
 .app-portfolio .pf-meta, .app-portfolio .pf-scale, .app-portfolio .pf-goal,
 .app-portfolio .pf-results, .app-portfolio .pf-results-source { margin: 6px 14px 0; }
-.pf-meta { font-size: 12px; color: rgba(255, 255, 255, .62); }
-.pf-scale { font-size: 11.5px; color: rgba(255, 255, 255, .45); }
+.pf-meta { font-size: 12px; color: var(--text-2, rgba(255, 255, 255, .62)); }
+.pf-scale { font-size: 11.5px; color: var(--text-3, rgba(255, 255, 255, .45)); }
 
 .pf-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 9px 14px 0; }
 
@@ -206,22 +211,22 @@
   font-size: 10.5px;
   padding: 3px 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, .07);
-  border: 1px solid rgba(255, 255, 255, .09);
-  color: rgba(255, 255, 255, .7);
+  background: rgba(var(--film-rgb, 255, 255, 255), .07);
+  border: 1px solid rgba(var(--film-rgb, 255, 255, 255), .09);
+  color: var(--text-2, rgba(255, 255, 255, .7));
 }
 
 .app-portfolio .pf-sub {
   margin: 14px 14px 5px;
   font-size: 10.5px;
   text-transform: uppercase;
-  letter-spacing: .07em;
-  color: rgba(255, 255, 255, .42);
+  letter-spacing: var(--track-caps, .08em);
+  color: var(--text-3, rgba(255, 255, 255, .42));
 }
 
-.app-portfolio .pf-list { margin: 0 14px; padding-left: 17px; font-size: 12px; line-height: 1.65; color: rgba(255, 255, 255, .78); }
-.pf-goal, .pf-results { font-size: 12.5px; line-height: 1.6; color: rgba(255, 255, 255, .82); }
-.pf-results-source { font-size: 11.5px; color: rgba(255, 255, 255, .48); }
+.app-portfolio .pf-list { margin: 0 14px; padding-left: 17px; font-size: 12px; line-height: var(--lh-read, 1.55); color: var(--text-2, rgba(255, 255, 255, .78)); }
+.pf-goal, .pf-results { font-size: 12.5px; line-height: var(--lh-read, 1.55); color: var(--text-2, rgba(255, 255, 255, .82)); }
+.pf-results-source { font-size: 11.5px; color: var(--text-3, rgba(255, 255, 255, .48)); }
 
 .pf-primary { padding: 14px 14px 0; }
 
@@ -239,9 +244,9 @@
   box-sizing: border-box;
   text-align: center;
   text-decoration: none;
-  line-height: 1.35;
-  border: 1px solid rgba(255, 255, 255, .14);
-  background: rgba(255, 255, 255, .05);
+  line-height: var(--lh-ui, 1.25);
+  border: 1px solid rgba(var(--film-rgb, 255, 255, 255), .14);
+  background: rgba(var(--film-rgb, 255, 255, 255), .05);
   color: inherit;
   font: inherit;
   font-size: 12px;
@@ -251,21 +256,21 @@
 }
 
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .pf-btn:hover { background: rgba(255, 255, 255, .12); }
+  :where(html:not([data-input="touch"])) .pf-btn:hover { background: rgba(var(--film-rgb, 255, 255, 255), .12); }
 }
 
 .pf-btn.primary {
   background: var(--accent, #e0663c);
   border-color: transparent;
-  color: #0a0a0b;
-  font-weight: 600;
+  color: var(--on-accent, #0a0a0b);
+  font-weight: var(--w-strong, 600);
 }
 
 @media (hover: hover) {
   :where(html:not([data-input="touch"])) .pf-btn.primary:hover { filter: brightness(1.1); }
 }
 
-.pf-note { font-size: 11.5px; color: rgba(255, 255, 255, .5); }
+.pf-note { font-size: 11.5px; color: var(--text-3, rgba(255, 255, 255, .5)); }
 
 .pf-footer {
   display: flex;
@@ -274,14 +279,14 @@
   gap: 8px;
   margin: 14px 14px 0;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, .08);
+  border-top: 1px solid rgba(var(--film-rgb, 255, 255, 255), .08);
 }
 
 .pf-footer-label {
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: .07em;
-  color: rgba(255, 255, 255, .38);
+  letter-spacing: var(--track-caps, .08em);
+  color: var(--text-3, rgba(255, 255, 255, .38));
 }
 
 /* DEMONSTRATION PAUSED
@@ -292,8 +297,8 @@
   display: none;
   margin: 0;
   font-size: 12px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, .58);
+  line-height: var(--lh-read, 1.55);
+  color: var(--text-2, rgba(255, 255, 255, .58));
   max-width: 60ch;
 }
 .pf-card.offline .pf-btn.primary { display: none; }
@@ -310,7 +315,7 @@
   margin: 12px 14px 0;
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: .1em;
+  letter-spacing: var(--track-caps, .08em);
   text-transform: uppercase;
   color: var(--ink-3);
 }
@@ -336,9 +341,9 @@
   text-align: right;
   font-family: var(--mono);
   font-size: 30px;
-  font-weight: 300;
-  line-height: 1;
-  letter-spacing: -.02em;
+  font-weight: var(--w-text, 400);
+  line-height: var(--lh-one, 1);
+  letter-spacing: var(--track-tight, -.01em);
   color: var(--ink-2);
   /* tabular, so a two-digit count does not shift the column it sits in */
   font-variant-numeric: tabular-nums;
@@ -350,8 +355,8 @@
   margin: 0 0 4px;
   font-family: var(--mono);
   font-size: 10.5px;
-  font-weight: 500;
-  letter-spacing: .17em;
+  font-weight: var(--w-strong, 600);
+  letter-spacing: var(--track-caps, .08em);
   text-transform: uppercase;
   color: var(--ink-3);
 }
@@ -359,7 +364,7 @@
 .app-portfolio .pf-pipe-note {
   margin: 0;
   font-size: 12.5px;
-  line-height: 1.55;
+  line-height: var(--lh-read, 1.55);
   color: var(--ink-3);
   max-width: 58ch;
 }
@@ -387,9 +392,9 @@
   padding: 8px 15px;
   border-radius: 11px;
   background: var(--accent, #e0663c);
-  color: #0a0a0b;
+  color: var(--on-accent, #0a0a0b);
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: var(--w-strong, 600);
   text-decoration: none;
 }
 
@@ -404,7 +409,7 @@
   gap: 10px;
   padding: 60px 22px;
   text-align: center;
-  color: rgba(255, 255, 255, .5);
+  color: var(--text-3, rgba(255, 255, 255, .5));
   font-size: 12.5px;
 }
 

@@ -6,7 +6,7 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
-  color: var(--text, rgba(255, 255, 255, .92));
+  color: var(--ink);
 }
 
 .fv-bar {
@@ -17,7 +17,7 @@
   flex-wrap: wrap;
   gap: 10px;
   padding: 9px 12px;
-  border-bottom: 1px solid var(--hairline, rgba(255, 255, 255, .09));
+  border-bottom: 1px solid var(--hairline, rgba(var(--film-rgb), .09));
   flex: 0 0 auto;
 }
 
@@ -48,9 +48,9 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .fv-crumb:hover { background: rgba(255, 255, 255, .07); color: inherit; }
+  :where(html:not([data-input="touch"])) .fv-crumb:hover { background: rgba(var(--film-rgb), .07); color: inherit; }
 }
-.fv-crumb.current { color: inherit; font-weight: 600; cursor: default; }
+.fv-crumb.current { color: inherit; font-weight: var(--w-strong); cursor: default; }
 .fv-crumb-sep { color: var(--ink-3); font-size: var(--f-ui); }
 
 .fv-tools { display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto; min-width: 0; }
@@ -61,8 +61,8 @@
   gap: 6px;
   padding: 6px 10px;
   border-radius: var(--r-ctrl);
-  border: 1px solid rgba(255, 255, 255, .12);
-  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(var(--film-rgb), .12);
+  background: rgba(var(--film-rgb), .05);
   color: inherit;
   font: inherit;
   font-size: var(--f-ui);
@@ -75,7 +75,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .fv-tool:hover { background: rgba(255, 255, 255, .11); }
+  :where(html:not([data-input="touch"])) .fv-tool:hover { background: rgba(var(--film-rgb), .11); }
 }
 .fv-tool svg { width: 15px; height: 15px; }
 
@@ -109,10 +109,10 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .fv-item:hover { background: rgba(255, 255, 255, .05); }
+  :where(html:not([data-input="touch"])) .fv-item:hover { background: rgba(var(--film-rgb), .05); }
 }
-.fv-item.selected { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .14); }
-.fv-item:focus-visible { outline: 2px solid var(--accent, #e0663c); outline-offset: 2px; }
+.fv-item.selected { background: rgba(var(--film-rgb), .1); border-color: rgba(var(--film-rgb), .14); }
+.fv-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .fv-tile {
   width: 44px;
@@ -120,16 +120,16 @@
   display: grid;
   place-items: center;
   border-radius: var(--r-card);
-  border: 1px solid rgba(255, 255, 255, .1);
-  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(var(--film-rgb), .1);
+  background: rgba(var(--film-rgb), .06);
 }
 
-.fv-tile.folder { background: linear-gradient(160deg, rgba(242, 242, 240, .16), rgba(242, 242, 240, .05)); }
+.fv-tile.folder { background: linear-gradient(160deg, rgba(var(--ink-rgb), .16), rgba(var(--ink-rgb), .05)); }
 .fv-tile svg { width: 23px; height: 23px; }
 
 .fv-name {
   font-size: var(--f-meta);
-  line-height: 1.3;
+  line-height: var(--lh-ui);
   text-align: center;
   word-break: break-word;
   max-height: 30px;
@@ -143,8 +143,8 @@
   width: 100%;
   padding: 2px 4px;
   border-radius: var(--r-tag);
-  border: 1px solid var(--accent, #e0663c);
-  background: rgba(0, 0, 0, .35);
+  border: 1px solid var(--accent);
+  background: rgba(var(--shade-rgb), calc(.35 * var(--sink-k)));
   color: inherit;
   outline: none;
 }
@@ -173,8 +173,8 @@
   display: grid;
   place-items: center;
   border-radius: var(--r-tag);
-  border: 1px solid rgba(255, 255, 255, .14);
-  background: rgba(12, 13, 16, .8);
+  border: 1px solid rgba(var(--film-rgb), .14);
+  background: rgba(var(--well-rgb), .8);
   color: var(--ink-2);
   cursor: pointer;
   padding: 0;
@@ -186,7 +186,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .fv-mini-btn:hover { background: rgba(255, 255, 255, .16); color: #fff; }
+  :where(html:not([data-input="touch"])) .fv-mini-btn:hover { background: rgba(var(--film-rgb), .16); color: var(--ink); }
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -194,7 +194,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .fv-mini-btn.danger:hover { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .55); }
+  :where(html:not([data-input="touch"])) .fv-mini-btn.danger:hover { color: var(--bad-ink); border-color: rgba(var(--bad-rgb), .55); }
 }
 .fv-mini-btn svg { width: 13px; height: 13px; }
 
@@ -212,8 +212,8 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-top: 1px solid var(--hairline, rgba(255, 255, 255, .1));
-  background: rgba(255, 255, 255, .03);
+  border-top: 1px solid var(--hairline, rgba(var(--film-rgb), .1));
+  background: rgba(var(--film-rgb), .03);
 }
 
 .fv-preview-head {
@@ -222,16 +222,16 @@
   justify-content: space-between;
   gap: 10px;
   padding: 8px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, .07);
+  border-bottom: 1px solid rgba(var(--film-rgb), .07);
 }
 
-.fv-preview-name { font-size: var(--f-ui); font-weight: 600; }
+.fv-preview-name { font-size: var(--f-ui); font-weight: var(--w-strong); }
 .fv-preview-actions { display: flex; align-items: center; gap: 8px; }
 
 .fv-open-real {
-  border: 1px solid rgba(58, 208, 168, .45);
-  background: rgba(58, 208, 168, .13);
-  color: #8ff0d4;
+  border: 1px solid rgba(var(--teal-rgb), .45);
+  background: rgba(var(--teal-rgb), .13);
+  color: var(--teal-ink);
   font: inherit;
   font-size: var(--f-meta);
   padding: 4px 9px;
@@ -245,7 +245,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .fv-open-real:hover { background: rgba(58, 208, 168, .22); }
+  :where(html:not([data-input="touch"])) .fv-open-real:hover { background: rgba(var(--teal-rgb), .22); }
 }
 
 .fv-edit {
@@ -254,8 +254,8 @@
   display: grid;
   place-items: center;
   border-radius: var(--r-ctrl);
-  border: 1px solid rgba(255, 255, 255, .12);
-  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(var(--film-rgb), .12);
+  background: rgba(var(--film-rgb), .05);
   color: inherit;
   cursor: pointer;
   padding: 0;
@@ -267,7 +267,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .fv-edit:hover { background: rgba(255, 255, 255, .12); }
+  :where(html:not([data-input="touch"])) .fv-edit:hover { background: rgba(var(--film-rgb), .12); }
 }
 .fv-edit svg { width: 14px; height: 14px; }
 
@@ -280,7 +280,7 @@
   padding: 10px 13px 13px;
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: var(--f-meta);
-  line-height: 1.6;
+  line-height: var(--lh-read);
   white-space: pre-wrap;
   word-break: break-word;
   color: var(--ink);
@@ -288,7 +288,7 @@
 
 .fv-preview-edit {
   border: 0;
-  background: rgba(0, 0, 0, .22);
+  background: rgba(var(--shade-rgb), calc(.22 * var(--sink-k)));
   resize: none;
   outline: none;
   width: 100%;
@@ -298,10 +298,10 @@
   margin: 0;
   padding: 9px 14px;
   font-size: var(--f-ui);
-  color: #ffd8a8;
-  background: rgba(255, 157, 60, .14);
-  border-bottom: 1px solid rgba(255, 157, 60, .3);
-  transition: opacity var(--t-move) ease;
+  color: var(--heed-ink);
+  background: rgba(var(--heed-rgb), .14);
+  border-bottom: 1px solid rgba(var(--heed-rgb), .3);
+  transition: opacity var(--t-move) var(--ease-move);
 }
 
 .fv-miss.fading { opacity: 0; }
@@ -320,11 +320,11 @@
 }
 .fv-thing-view {
   display: grid; place-items: center; min-height: 120px; padding: 12px;
-  background: rgba(255, 255, 255, .03); border-radius: var(--r-card);
+  background: rgba(var(--film-rgb), .03); border-radius: var(--r-card);
 }
 .fv-thing-view img {
   max-width: 100%; max-height: 46vh; display: block;
-  border-radius: var(--r-ctrl); background: rgba(0, 0, 0, .25);
+  border-radius: var(--r-ctrl); background: rgba(var(--shade-rgb), calc(.25 * var(--sink-k)));
   /* Мелкая картинка не растягивается до мыла: показывается как есть. */
   image-rendering: auto;
 }

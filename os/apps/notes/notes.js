@@ -266,7 +266,16 @@
     return rows.slice(0, n);
   }
   function listMarkup(rows, win) {
-    if (!rows.length) return '<div class="notes-empty-list">' + esc(t("nt.emptyList")) + "</div>";
+    /* ПУСТОЙ СПИСОК ГОВОРИТ ПРАВДУ (D-318). «Ничего не найдено» значит
+       «искали» — и говорится, только когда искали. Когда не искали и
+       записей нет, список молчит: правду «записей пока нет» уже говорит
+       окно записи рядом, и две строки на одном экране не спорят.
+       Охраняется tools/notes-empty-check.mjs. */
+    if (!rows.length) {
+      var asked = String((win && win._notesFilter) || "").trim();
+      /* Промах называет искомое — как Письма, Разговор и Поиск (D-320). */
+      return asked ? '<div class="notes-empty-list" role="status">' + esc(t("nt.emptyList", { q: asked })) + "</div>" : "";
+    }
     var shown = shownOf(win, rows), rest = rows.length - shown.length;
     return shown.map(function (n) {
       var preview = previewOf(n.text);

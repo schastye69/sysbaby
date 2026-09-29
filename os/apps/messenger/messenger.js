@@ -500,7 +500,12 @@
                 '<span class="mg-attach-name">' + esc(f.name) + "</span>" +
                 '<span class="mg-attach-path" data-sb-userdata>' + esc((f.path || []).slice(0, -1).join(" / ") || t("fv.home")) + "</span></button>";
             }).join("")
-          : '<div class="mg-attach-empty">' + esc(t("mg.attachEmpty")) + "</div>") +
+          /* «Пусто» и «не найдено» — разные правды (D-320): не искали —
+             сказано, что файлов пока нет и где они живут; искали мимо —
+             промах с искомым. */
+          : '<div class="mg-attach-empty">' + esc(needle
+              ? t("mg.attachMiss", { q: query.trim() })
+              : t("mg.attachNone", { files: appName("files") })) + "</div>") +
       "</div>" +
     "</div>";
   }
@@ -606,12 +611,15 @@
         ev.stopPropagation();
         var c = byId(btn.getAttribute("data-del-convo"));
         if (!c) return;
-        if (!window.confirm(t("mg.confirm.delConvo", { name: c.name }))) return;
-        var wasActive = String(c.id) === String(activeId);
-        convos = convos.filter(function (x) { return String(x.id) !== String(c.id); });
-        if (wasActive) activeId = convos.length ? convos[0].id : null;
-        write();
-        render(win);
+        /* Вопрос своим голосом (D-335), а не плашкой браузера. */
+        window.sbAsk({ question: t("mg.confirm.delConvo", { name: c.name }), ok: t("ask.delete"), danger: true }).then(function (yes) {
+          if (!yes) return;
+          var wasActive = String(c.id) === String(activeId);
+          convos = convos.filter(function (x) { return String(x.id) !== String(c.id); });
+          if (wasActive) activeId = convos.length ? convos[0].id : null;
+          write();
+          render(win);
+        });
       });
     });
 

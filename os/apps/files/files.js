@@ -789,19 +789,26 @@
       ? t("fv.confirm.folder", { name: node.name })
       : t("fv.confirm.file", { name: node.name });
     var extra = (node.type === "folder" && (node.children || []).length) ? t("fv.confirm.nested") : "";
-    if (!window.confirm(question + extra)) return;
-    /* Путь запоминается ИМЕНАМИ, а не ссылками: папку, в которой лежал файл,
-       к моменту возврата могут переименовать или выбросить, и держаться за
-       узел, которого может не быть, значило бы потерять вещь молча. */
-    var where = pathStack.slice(1).map(function (f) { return f.name; });
-    goneList().unshift({ id: goneId(), at: Date.now(), path: where, node: node });
-    folder.children.splice(idx, 1);
-    persist();
-    selectedIndex = -1;
-    previewIndex = -1;
-    editing = false;
-    render(win);
-    toast(t("fv.toast.title"), t("fv.toast.deleted", { name: node.name }));
+    /* Вопрос своим голосом (D-335), а не плашкой браузера. */
+    window.sbAsk({ question: question + extra, ok: t("ask.delete"), danger: true }).then(function (yes) {
+      if (!yes) return;
+      /* Между вопросом и ответом папка могла измениться: вещь ищется заново. */
+      var now = currentFolder();
+      var at = (now.children || []).indexOf(node);
+      if (at < 0) return;
+      /* Путь запоминается ИМЕНАМИ, а не ссылками: папку, в которой лежал файл,
+         к моменту возврата могут переименовать или выбросить, и держаться за
+         узел, которого может не быть, значило бы потерять вещь молча. */
+      var where = pathStack.slice(1).map(function (f) { return f.name; });
+      goneList().unshift({ id: goneId(), at: Date.now(), path: where, node: node });
+      now.children.splice(at, 1);
+      persist();
+      selectedIndex = -1;
+      previewIndex = -1;
+      editing = false;
+      render(win);
+      toast(t("fv.toast.title"), t("fv.toast.deleted", { name: node.name }));
+    });
   }
 
   /* Наружу — для «Эха», которое показывает выброшенное, и для закона. */

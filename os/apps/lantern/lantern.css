@@ -6,37 +6,37 @@
    ширины колонки комнат и не дальше. Охраняется room-center-check. */
 .lt-wrap { padding: 4px var(--pad-room) 18px; width: 100%; max-width: var(--room-col); margin-inline: auto; }
 .lt-head { padding: 2px 2px 10px; }
-.lt-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: 700; letter-spacing: -.01em; }
-.lt-lead { margin: 0 0 10px; font-size: var(--f-read); line-height: 1.6; color: var(--ink-2); }
+.lt-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: var(--w-strong); letter-spacing: var(--track-tight); }
+.lt-lead { margin: 0 0 10px; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2); }
 .lt-warn {
-  margin: 0; font-size: var(--f-ui); line-height: 1.6; color: var(--ink-2);
+  margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2);
   padding: 10px 12px; border-radius: var(--r-ctrl);
-  background: rgba(255, 69, 58, .07); border: 1px solid rgba(255, 69, 58, .22);
+  background: rgba(var(--bad-rgb), .07); border: 1px solid rgba(var(--bad-rgb), .22);
 }
 .lt-group {
-  margin: 20px 2px 8px; font-size: var(--f-meta); font-weight: 600;
-  text-transform: uppercase; letter-spacing: .09em; color: var(--ink-3);
+  margin: 20px 2px 8px; font-size: var(--f-meta); font-weight: var(--w-strong);
+  text-transform: uppercase; letter-spacing: var(--track-caps); color: var(--ink-3);
 }
 .lt-cards { display: flex; flex-direction: column; gap: 10px; }
 .lt-card {
   padding: 13px 14px; border-radius: var(--r-card);
-  background: rgba(255, 255, 255, .028); border: 1px solid var(--line);
+  background: rgba(var(--film-rgb), .028); border: 1px solid var(--line);
 }
-.lt-card-title { margin: 0 0 8px; font-size: var(--f-lead); font-weight: 650; color: var(--ink); }
+.lt-card-title { margin: 0 0 8px; font-size: var(--f-lead); font-weight: var(--w-strong); color: var(--ink); }
 /* Шаги пронумерованы не для красоты: в плохую минуту человек возвращается
    глазом к строке, на которой остановился, и номер — единственное, за что
    можно зацепиться. */
 .lt-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 7px; }
-.lt-steps li { font-size: var(--f-read); line-height: 1.55; color: var(--ink); }
-.lt-steps li::marker { color: var(--accent); font-variant-numeric: tabular-nums; }
-.lt-src { margin: 10px 0 0; font-size: var(--f-meta); line-height: 1.5; color: var(--ink-3); overflow-wrap: anywhere; }
+.lt-steps li { font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink); }
+.lt-steps li::marker { color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+.lt-src { margin: 10px 0 0; font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-3); overflow-wrap: anywhere; }
 .lt-src a { color: var(--ink-3); text-decoration: underline; text-underline-offset: 2px; }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал (общее правило системы,
    hover-is-not-touch-check). */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .lt-src a:hover { color: var(--accent); }
+  :where(html:not([data-input="touch"])) .lt-src a:hover { color: var(--accent-ink); }
 }
 @media (max-width: 520px) {
   .lt-title { font-size: var(--f-title); }
@@ -48,25 +48,72 @@
    крупно: человек в плохую минуту держит телефон одной рукой и не читает
    списков. Размеры здесь намеренно больше, чем везде в системе, — это не
    рассогласование стиля, а требование задачи. */
-.lt-card { cursor: pointer; transition: border-color var(--t-rise), background var(--t-rise); }
+.lt-card { cursor: pointer; transition: border-color var(--t-rise) var(--ease-enter), background var(--t-rise) var(--ease-enter); }
 .lt-card:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .lt-card:hover { border-color: var(--accent-ring); background: rgba(255, 255, 255, .05); }
+  :where(html:not([data-input="touch"])) .lt-card:hover { border-color: var(--accent-ring); background: rgba(var(--film-rgb), .05); }
 }
 .lt-card-hint { margin: 0 0 6px; font-size: var(--f-ui); color: var(--ink-3); }
-.lt-has-tool { color: var(--accent); }
+.lt-has-tool { color: var(--accent-ink); }
 
 .lt-head-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .lt-torch-btns { display: flex; gap: 6px; }
 .lt-tb {
   font: inherit; font-size: var(--f-meta); padding: 5px 10px; cursor: pointer;
-  color: var(--ink-2); background: rgba(255, 255, 255, .04);
+  color: var(--ink-2); background: rgba(var(--film-rgb), .04);
   border: 1px solid var(--line); border-radius: var(--r-ctrl);
 }
-.lt-tb.night { color: #ff9b8f; border-color: rgba(255, 69, 58, .3); }
+.lt-tb.night { color: var(--bad-ink); border-color: rgba(var(--bad-rgb), .3); }
+
+/* ── «ЧТО СЛУЧИЛОСЬ?» (D-312) ─────────────────────────────────────────────
+   Самое верхнее в окне — вопрос и поле. Крупнее имени комнаты: человек в
+   беде не читает заголовков, он говорит, что случилось. Ответ появляется
+   под полем с каждой буквой; первое подобранное — большая кнопка, остальное
+   — меньше. Ничего из написанного не уходит с устройства и не ложится в
+   хранилище — это правило комнаты, а не стиля, но стиль его не нарушает:
+   ни одной картинки снаружи, ни одного шрифта по сети. */
+.lt-ask { padding: 8px 2px 14px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.lt-ask-q { display: block; margin: 0 0 10px; font-size: var(--f-title); font-weight: var(--w-strong); letter-spacing: var(--track-tight); color: var(--ink); }
+.lt-ask-row { display: flex; gap: 8px; align-items: stretch; }
+.lt-ask-in {
+  flex: 1 1 auto; min-width: 0; font: inherit; font-size: var(--f-lead); line-height: var(--lh-ui);
+  padding: 12px 14px; color: var(--ink); background: rgba(var(--film-rgb), .05);
+  border: 1px solid var(--accent-ring); border-radius: var(--r-ctrl); outline: none;
+}
+/* Подсказка поля — вторыми чернилами (D-323): тусклые на стекле поля не держали меру. */
+.lt-ask-in::placeholder { color: var(--ink-2); }
+.lt-ask-in:focus-visible { box-shadow: 0 0 0 3px var(--accent-soft); }
+.lt-ask-go {
+  flex: 0 0 auto; font: inherit; font-size: var(--f-read); font-weight: var(--w-strong); padding: 0 16px; cursor: pointer;
+  color: var(--ink); background: var(--accent-soft); border: 1px solid var(--accent-ring); border-radius: var(--r-ctrl);
+}
+.lt-ask-out:empty { display: none; }
+.lt-ask-out { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.lt-ask-cap { margin: 4px 0 0; font-size: var(--f-meta); font-weight: var(--w-strong); text-transform: uppercase; letter-spacing: var(--track-caps); color: var(--ink-3); }
+.lt-ask-hit {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left;
+  font: inherit; cursor: pointer; color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--r-card); background: rgba(var(--film-rgb), .028);
+  transition: border-color var(--t-rise) var(--ease-move), background var(--t-rise) var(--ease-move);
+}
+.lt-ask-hit.top { padding: 15px 16px; font-size: var(--f-title); font-weight: var(--w-strong); background: var(--accent-soft); border-color: var(--accent-ring); }
+.lt-ask-hit.more { padding: 10px 14px; font-size: var(--f-read); font-weight: var(--w-text); }
+.lt-ask-hit-go { flex: 0 0 auto; font-size: var(--f-ui); font-weight: var(--w-strong); color: var(--accent-ink); white-space: nowrap; }
+.lt-ask-hit:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .lt-ask-hit:hover { border-color: var(--accent-ring); background: rgba(var(--film-rgb), .05); }
+  :where(html:not([data-input="touch"])) .lt-ask-hit.top:hover { background: var(--accent-soft); }
+}
+/* Честный промах: сказано, что не нашёл, и назван 112. Полка ниже. */
+.lt-ask-none {
+  margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2);
+  padding: 10px 12px; border-radius: var(--r-ctrl);
+  background: rgba(var(--bad-rgb), .07); border: 1px solid rgba(var(--bad-rgb), .22);
+}
 
 /* Открытая беда ЗАМЕНЯЕТ полку, а не ложится поверх: никакой глубины здесь
    не нужно, а полка остаётся в разметке — закрыл, и ты там же, где был. */
+.lt-wrap.is-open .lt-ask,
 .lt-wrap.is-open .lt-head,
 .lt-wrap.is-open .lt-group,
 .lt-wrap.is-open .lt-cards { display: none; }
@@ -77,15 +124,15 @@
 .lt-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .lt-back, .lt-small, .lt-big {
   font: inherit; cursor: pointer; border-radius: var(--r-ctrl);
-  border: 1px solid var(--line); background: rgba(255, 255, 255, .04); color: var(--ink);
+  border: 1px solid var(--line); background: rgba(var(--film-rgb), .04); color: var(--ink);
 }
 .lt-back, .lt-small { font-size: var(--f-read); padding: 7px 12px; color: var(--ink-2); }
 .lt-count { font-size: var(--f-ui); color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.lt-open-title { margin: 0; font-size: var(--f-lead); font-weight: 600; color: var(--ink-3); letter-spacing: .04em; text-transform: uppercase; }
+.lt-open-title { margin: 0; font-size: var(--f-lead); font-weight: var(--w-strong); color: var(--ink-3); letter-spacing: var(--track-caps); text-transform: uppercase; }
 /* Один шаг — и он крупный. Это главная строка приложения. */
-.lt-step { margin: 0; font-size: var(--f-title); line-height: 1.38; font-weight: 500; color: var(--ink); text-wrap: pretty; }
+.lt-step { margin: 0; font-size: var(--f-title); line-height: var(--lh-ui); font-weight: var(--w-strong); color: var(--ink); text-wrap: pretty; }
 .lt-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; }
-.lt-big { font-size: var(--f-lead); font-weight: 600; padding: 13px 20px; }
+.lt-big { font-size: var(--f-lead); font-weight: var(--w-strong); padding: 13px 20px; }
 .lt-big.next { background: var(--accent-soft); border-color: var(--accent-ring); }
 .lt-tap { margin: 0; font-size: var(--f-meta); color: var(--ink-3); text-align: center; }
 
@@ -93,21 +140,32 @@
 .lt-tool {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
   padding: 14px; border-radius: var(--r-card);
-  border: 1px solid var(--line); background: rgba(255, 255, 255, .03); cursor: default;
+  border: 1px solid var(--line); background: rgba(var(--film-rgb), .03); cursor: default;
 }
 .lt-tool-note { margin: 0; font-size: var(--f-ui); color: var(--ink-3); text-align: center; }
 .lt-pulse {
   width: 92px; height: 92px; border-radius: var(--r-round);
   display: flex; align-items: center; justify-content: center;
   border: 2px solid var(--accent-ring); background: var(--accent-soft);
-  font-size: var(--f-title); font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums;
+  font-size: var(--f-title); font-weight: var(--w-strong); color: var(--ink); font-variant-numeric: tabular-nums;
 }
-.lt-pulse.hit { animation: lt-beat var(--t-rise); }
+.lt-pulse.hit { animation: lt-beat var(--t-rise) var(--ease-enter); }
 @keyframes lt-beat { from { transform: scale(1.16); } to { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .lt-pulse.hit { animation: none; } }
-.lt-time { font-size: var(--f-hero); font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
-.lt-clock.done .lt-time { color: #7ee081; }
+.lt-time { font-size: var(--f-hero); font-weight: var(--w-strong); color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: var(--track-air); }
+.lt-clock.done .lt-time { color: var(--ok-ink); }
 .lt-clock-btns { display: flex; gap: 8px; }
+
+/* «Где я» (D-331): числа — крупно, как на табло: их диктуют вслух. */
+.lt-where-out { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+.lt-where-out:empty { display: none; }
+.lt-where-nums { display: flex; flex-direction: column; gap: 4px; width: 100%; max-width: 420px; }
+.lt-where-row { margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.lt-where-k { font-size: var(--f-ui); color: var(--ink-2); }
+.lt-where-v { font-size: var(--f-title); font-weight: var(--w-strong); color: var(--ink); font-variant-numeric: tabular-nums; }
+.lt-where-dms, .lt-where-acc { margin: 0; font-size: var(--f-ui); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.lt-where-say { margin: 4px 0 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink); text-align: center; }
+.lt-where-wait, .lt-where-err { margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink); text-align: center; }
 
 /* ── СВЕТ (D-281) ──────────────────────────────────────────────────────────
    Слой на весь экран поверх всей системы — лежит в <body>, а не в окне:
@@ -119,12 +177,12 @@
   overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
   clip-path: circle(0 at var(--ox, 50%) var(--oy, 50%));
-  transition: clip-path var(--t-drift) cubic-bezier(.2, .7, .2, 1);
+  transition: clip-path var(--t-drift) var(--ease-enter);
 }
 .sb-torch.on { clip-path: circle(150vmax at var(--ox, 50%) var(--oy, 50%)); }
 @media (prefers-reduced-motion: reduce) { .sb-torch { transition: none; } }
-.sb-torch.white { background: #fff; }
-.sb-torch.night { background: #560000; }
+.sb-torch.white { /* своя краска: фонарь светит белым в обеих темах */ background: #fff; }
+.sb-torch.night { /* своя краска: ночной свет — тёмно-красный, не будит глаза */ background: #560000; }
 .sb-torch-field { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 /* Единственная кнопка. Белый свет — светлое стекло и тёмная подпись; ночной
    — тёмно-красное стекло и тусклая красная подпись: ни одного белого
@@ -133,11 +191,11 @@
   position: absolute; left: 50%; bottom: max(30px, calc(env(safe-area-inset-bottom) + 22px));
   transform: translateX(-50%);
   min-width: 132px; padding: 13px 26px; border-radius: var(--r-pill);
-  font: inherit; font-size: var(--f-read); font-weight: 600; letter-spacing: .04em; cursor: pointer;
+  font: inherit; font-size: var(--f-read); font-weight: var(--w-strong); letter-spacing: var(--track-caps); cursor: pointer;
   backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur));
 }
-.sb-torch.white .sb-torch-off { color: #4a3a2e; background: rgba(255, 255, 255, .58); border: 1px solid rgba(74, 58, 46, .16); }
-.sb-torch.night .sb-torch-off { color: #d2331f; background: rgba(40, 0, 0, .5); border: 1px solid rgba(210, 51, 31, .28); }
+.sb-torch.white .sb-torch-off { /* своя краска: кнопка на белом свете */ color: #4a3a2e; /* своя краска: стекло кнопки на белом свете */ background: rgba(255, 255, 255, .58); /* своя краска: её кромка */ border: 1px solid rgba(74, 58, 46, .16); }
+.sb-torch.night .sb-torch-off { /* своя краска: кнопка на ночном свете */ color: #d2331f; /* своя краска: стекло кнопки на ночном свете */ background: rgba(40, 0, 0, .5); /* своя краска: её кромка */ border: 1px solid rgba(210, 51, 31, .28); }
 .sb-torch-off:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 
 @media (max-width: 420px) {

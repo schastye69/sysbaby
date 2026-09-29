@@ -737,12 +737,15 @@
     var purge = host.querySelector("#mlPurge");
     if (purge && m) {
       purge.addEventListener("click", function () {
-        if (!window.confirm(t("ml.confirm.purge", { subject: m.subject || t("ml.thisMessage") }))) return;
-        state.data = state.data.filter(function (x) { return x.id !== m.id; });
-        selectedId = null;
-        write();
-        pushBadge();
-        render(win);
+        /* Вопрос своим голосом (D-335), а не плашкой браузера. */
+        window.sbAsk({ question: t("ml.confirm.purge", { subject: m.subject || t("ml.thisMessage") }), ok: t("ask.delete"), danger: true }).then(function (yes) {
+          if (!yes) return;
+          state.data = state.data.filter(function (x) { return x.id !== m.id; });
+          selectedId = null;
+          write();
+          pushBadge();
+          render(win);
+        });
       });
     }
 

@@ -7,29 +7,29 @@
    колонок: одна ширина, одна ось. Охраняется room-center-check. */
 .ow-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: var(--room-col); margin-inline: auto; }
 .ow-top { position: relative; padding: 2px 2px 0; }
-.ow-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: 700; letter-spacing: -.01em; }
-.ow-lead { margin: 0; font-size: var(--f-read); line-height: 1.6; color: var(--ink-2); max-width: 62ch; }
+.ow-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: var(--w-strong); letter-spacing: var(--track-tight); }
+.ow-lead { margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2); max-width: 62ch; }
 .ow-count {
   position: absolute; top: 0; right: 4px; margin: 0;
-  font-size: var(--f-figure); font-weight: 700; line-height: 1; color: var(--ink-3);
+  font-size: var(--f-figure); font-weight: var(--w-strong); line-height: var(--lh-one); color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
 
 .ow-row {
   padding: 14px 15px 15px; border-radius: var(--r-card);
-  border: 1px solid var(--line); background: rgba(255, 255, 255, .026);
+  border: 1px solid var(--line); background: rgba(var(--film-rgb), .026);
   display: flex; flex-direction: column; gap: 8px;
 }
 /* Чужой хозяин виден раньше, чем прочитан текст: у описи есть цвет тревоги,
    и он стоит только там, где данные уходят к посторонним. */
-.ow-row[data-side="third"] { border-left: 2px solid rgba(255, 150, 90, .55); }
+.ow-row[data-side="third"] { border-left: 2px solid rgba(var(--heed-rgb), .55); }
 .ow-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.ow-head h3 { margin: 0; font-size: var(--f-lead); font-weight: 650; color: var(--ink); }
+.ow-head h3 { margin: 0; font-size: var(--f-lead); font-weight: var(--w-strong); color: var(--ink); }
 .ow-side {
-  font-size: var(--f-micro); letter-spacing: .07em; text-transform: uppercase;
+  font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase;
   color: var(--ink-3); white-space: nowrap;
 }
-.ow-side.ow-third { color: rgb(255, 168, 112); }
+.ow-side.ow-third { color: var(--heed-ink); }
 /* «Только по вашей руке» и ярлыки описи — это ответ на вопрос «что уходит
    и кто это увидит». Их читают, а не проглядывают. Тусклые чернила давали
    2.79 и 3.32 на карточке описи, которая сама светлее стола (D-234).
@@ -38,40 +38,40 @@
 
 .ow-facts { margin: 2px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; }
 .ow-facts dt {
-  font-size: var(--f-micro); letter-spacing: .07em; text-transform: uppercase;
+  font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase;
   color: var(--ink-2); padding-top: 3px; white-space: nowrap;
 }
-.ow-facts dd { margin: 0; font-size: var(--f-ui); line-height: 1.6; color: var(--ink-2); }
+.ow-facts dd { margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); }
 .ow-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--f-meta); overflow-wrap: anywhere; }
 
 .ow-switch { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 2px; }
 .ow-sw {
   width: 38px; height: 22px; padding: 0; cursor: pointer; flex: none;
   border-radius: var(--r-pill); border: 1px solid var(--line);
-  background: rgba(255, 255, 255, .05); position: relative;
+  background: rgba(var(--film-rgb), .05); position: relative;
 }
 .ow-sw i {
   position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
   border-radius: var(--r-round); background: var(--ink-3);
-  transition: transform var(--t-move) ease, background var(--t-move) ease;
+  transition: transform var(--t-move) var(--ease-move), background var(--t-move) var(--ease-move);
 }
 .ow-sw.on { background: var(--accent-soft); border-color: var(--accent-ring); }
 .ow-sw.on i { transform: translateX(16px); background: var(--accent); }
 .ow-switch > span { font-size: var(--f-ui); color: var(--ink-2); }
-.ow-why { flex: 1 1 100%; font-size: var(--f-ui); line-height: 1.6; color: var(--ink-3); }
+.ow-why { flex: 1 1 100%; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-3); }
 .ow-noswitch {
-  margin: 2px 0 0; font-size: var(--f-ui); line-height: 1.6; color: var(--ink-3);
+  margin: 2px 0 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-3);
   padding: 10px 12px; border-radius: var(--r-ctrl);
-  background: rgba(255, 255, 255, .02); border: 1px solid var(--line);
+  background: rgba(var(--film-rgb), .02); border: 1px solid var(--line);
 }
 .ow-noswitch b { color: var(--ink-2); }
 
 .ow-none { margin: 0; font-size: var(--f-read); color: var(--ink-2); }
 .ow-honest {
-  margin: 2px 0 0; font-size: var(--f-ui); line-height: 1.7; color: var(--ink-2);
+  margin: 2px 0 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2);
   padding: 13px 15px; border-radius: var(--r-card);
   border: 1px solid var(--line); border-left: 2px solid var(--accent-ring);
-  background: rgba(255, 255, 255, .018); max-width: 78ch;
+  background: rgba(var(--film-rgb), .018); max-width: 78ch;
 }
 
 /* ── СВИДЕТЕЛЬ (D-291): что ушло на самом деле — этот вход и прошлый.
@@ -79,17 +79,17 @@
    Выход вне описи горит цветом тревоги: его не должно быть никогда. */
 .ow-witness {
   padding: 14px 15px 15px; border-radius: var(--r-card);
-  border: 1px solid var(--line); background: rgba(255, 255, 255, .026);
+  border: 1px solid var(--line); background: rgba(var(--film-rgb), .026);
   display: flex; flex-direction: column; gap: 10px;
 }
-.ow-witness h3 { margin: 0; font-size: var(--f-lead); font-weight: 650; color: var(--ink); }
+.ow-witness h3 { margin: 0; font-size: var(--f-lead); font-weight: var(--w-strong); color: var(--ink); }
 .ow-wit-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
 .ow-wit { padding: 10px 12px; border-radius: var(--r-ctrl); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
-.ow-wit.is-bad { border-color: rgba(255, 150, 90, .55); }
-.ow-wit h4 { margin: 0; font-size: var(--f-micro); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
+.ow-wit.is-bad { border-color: rgba(var(--heed-rgb), .55); }
+.ow-wit h4 { margin: 0; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ink-2); font-weight: var(--w-strong); }
 .ow-wit-facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 3px 12px; }
 .ow-wit-facts dt { font-size: var(--f-ui); color: var(--ink-2); }
 .ow-wit-facts dd { margin: 0; font-size: var(--f-ui); color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.ow-wit.is-bad .ow-wit-facts dd:nth-of-type(2) { color: rgb(255, 168, 112); }
+.ow-wit.is-bad .ow-wit-facts dd:nth-of-type(2) { color: var(--heed-ink); }
 .ow-wit-none { margin: 0; font-size: var(--f-ui); color: var(--ink-2); }
-.ow-wit-limit { margin: 0; font-size: var(--f-ui); line-height: 1.6; color: var(--ink-2); max-width: 78ch; }
+.ow-wit-limit { margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); max-width: 78ch; }

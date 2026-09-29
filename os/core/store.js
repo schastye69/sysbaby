@@ -825,8 +825,18 @@
   setTimeout(function () { purgeDiskLeaks(); }, 0);
 
   /* ------------------------------------------------ 7. EXPORT / IMPORT §1.5 */
+  /* ── МАШИНЕРИЯ УСТРОЙСТВА НЕ ЕДЕТ (D-314) ─────────────────────────────
+     Найдено законом ковчега: открытая выгрузка, снятая под замком, везла
+     ЗАПИСЬ ЗАМКА этого устройства (соли и обёртку ключа). Восстановление на
+     другом устройстве клало её поверх открытых данных — там вставала дверь
+     чужого замка, а за ней лежало незапертое. Запись замка, соль входа,
+     дата кода восстановления и минутная отметка «поставить сейчас» —
+     свойства ЭТОГО устройства, а не вещи человека: в выгрузку они не
+     попадают, а восстановление их не трогает — ни чужих не кладёт, ни
+     своих не стирает. Минуты покоя до запирания — выбор человека, он едет. */
   var DENY_EXACT = ["sysbaby.activeProfile", "sysbaby.profiles.v1", "sysbaby.authed",
-    "sysbaby.sync.url", "sysbaby.incognito.pwhash", "sysbaby.incognito.timerPref"];
+    "sysbaby.sync.url", "sysbaby.incognito.pwhash", "sysbaby.incognito.timerPref",
+    "sysbaby.lock.v1", "sysbaby.lock.spareAt", "sysbaby.lock.wantNow", "sysbaby.auth.salt"];
   var DENY_PREFIX = ["sysbaby.sync.token::", "sysbaby.incognito::", "sysbaby.i18n.cache."];
 
   function denied(key) {
@@ -834,6 +844,9 @@
     for (var i = 0; i < DENY_PREFIX.length; i++) if (key.indexOf(DENY_PREFIX[i]) === 0) return true;
     return false;
   }
+  /* Одно знание на всю систему: Настройки спрашивают его здесь, а не держат
+     свой список (два списка уже разошлись — у Настроек не было машинерии). */
+  window.sbExportDenied = denied;
 
   function buildExport(profileId) {
     var pid = profileId || activeProfile();
@@ -1114,17 +1127,23 @@
 
      Полученный ключ (KEK) НЕ шифрует данные. Он открывает конверт с
      МАСТЕР-КЛЮЧОМ — 32 случайными байтами, которые не выводятся ни из чего.
-     Из мастер-ключа по HKDF-SHA-256 расходятся четыре разных ключа: для
-     первого шифра, для второго, для подписи и для имён. Смена пароля поэтому
-     не требует перешифровывать данные — переклеивается один конверт.
+     Из мастер-ключа по HKDF-SHA-256 расходятся ключ подписи, ключ имён и
+     основание, из которого КАЖДАЯ ЗАПИСЬ ПРИ КАЖДОЙ ЗАПИСИ получает свою пару
+     ключей — по имени места и метке в 128 случайных бит (третья редакция
+     конверта, D-311). Прежде на все записи были одни и те же два ключа шифров;
+     теперь повтор пары «ключ + число» невозможен по устройству. Смена пароля
+     по-прежнему не требует перешифровывать данные — переклеивается один
+     конверт мастер-ключа.
 
-     ДВА ШИФРА ПОДРЯД, НЕ ОДИН:
+     ДВА ШИФРА ПОДРЯД, НЕ ОДИН (слово основателя: «пускай их будет несколько»):
        слой 1: AES-256-CTR
        слой 2: AES-256-GCM поверх первого
        подпись: HMAC-SHA-512 поверх всего конверта (encrypt-then-MAC)
-     Пробитый один шифр не отдаёт ничего: под ним лежит второй, на
-     независимом ключе. Подпись проверяется ДО расшифровки — испорченный или
-     подложенный конверт не доходит до расшифровщика вовсе.
+     Оба ключа шифров выведены из одного мастера, и независимой защиты друг от
+     друга они не дают — это сказано вслух (разбор «Шифр без театра», Н10);
+     второй слой оставлен по слову основателя, вреда от него нет. Подпись
+     проверяется ДО расшифровки — испорченный или подложенный конверт не
+     доходит до расшифровщика вовсе.
 
      ДЛИНА ТОЖЕ ПРЯЧЕТСЯ. Открытый текст добивается нулями до кратности 256
      байт. Иначе по размеру конверта видно, сколько человек написал, — а это
@@ -1514,10 +1533,35 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       d("sys.baby/ctr/v2", { name: "AES-CTR", length: 256 }, ["encrypt", "decrypt"]),
       d("sys.baby/gcm/v2", { name: "AES-GCM", length: 256 }, ["encrypt", "decrypt"]),
       d("sys.baby/mac/v2", { name: "HMAC", hash: "SHA-512", length: 512 }, ["sign", "verify"]),
-      d("sys.baby/name/v2", { name: "HMAC", hash: "SHA-256", length: 256 }, ["sign"])
+      d("sys.baby/name/v2", { name: "HMAC", hash: "SHA-256", length: 256 }, ["sign"]),
+      /* Основание для ключей ТРЕТЬЕЙ редакции (D-311): из него по HKDF
+         выводится свой ключ на каждую запись при каждой записи. Неизвлекаемое. */
+      subtle.importKey("raw", master, "HKDF", false, ["deriveKey"])
     ]).then(function (k) {
-      return { ctr: k[0], gcm: k[1], mac: k[2], name: k[3] };
+      return { ctr: k[0], gcm: k[1], mac: k[2], name: k[3], base: k[4] };
     });
+  }
+
+  /* ── КЛЮЧИ ЗАПИСИ ТРЕТЬЕЙ РЕДАКЦИИ (D-311, план T1) ─────────────────────
+     Каждая запись при каждой записи шифруется СВОИМ ключом: HKDF от мастера по
+     имени места на диске и метке в 128 случайных бит. Повтор пары «ключ +
+     число GCM» невозможен по устройству — ключи разные. Метка случайная, а не
+     счётчик правок: счётчик на диске рассказывал бы, сколько раз правили
+     запись. Имя места входит в вывод ключа — конверт, переложенный под чужое
+     имя, не откроется. */
+  /* Имя места — одной строкой в одном месте: так его пишут и в ключ, и в AAD. */
+  function recLabel(label) { return String(label); }
+  function recKeys(ks, label, slot) {
+    var subtle = window.crypto.subtle, enc = new TextEncoder(), empty = new Uint8Array(0);
+    var tail = "|" + recLabel(label) + "|" + b64(slot);
+    return Promise.all([
+      subtle.deriveKey({ name: "HKDF", hash: "SHA-256", salt: empty, info: enc.encode("sys.baby/rec/v3/ctr" + tail) }, ks.base, { name: "AES-CTR", length: 256 }, false, ["encrypt", "decrypt"]),
+      subtle.deriveKey({ name: "HKDF", hash: "SHA-256", salt: empty, info: enc.encode("sys.baby/rec/v3/gcm" + tail) }, ks.base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"])
+    ]).then(function (k) { return { ctr: k[0], gcm: k[1] }; });
+  }
+  /* Дополнительные данные GCM третьей редакции: род, метка, имя места. */
+  function recAad(label, slot) {
+    return cat(new Uint8Array([4]), slot, new TextEncoder().encode(recLabel(label)));
   }
 
   /* ── ДЛИНА ПРЯЧЕТСЯ ───────────────────────────────────────────────────── */
@@ -1545,8 +1589,17 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       .then(function (sig) { return SEAL_PFX + b64url(new Uint8Array(sig).subarray(0, 16)); });
   }
 
-  /* ── КОНВЕРТ: имя и значение под двумя шифрами и подписью ─────────────── */
-  function sealPair(ks, name, text) {
+  /* ── КОНВЕРТ: имя и значение под двумя шифрами и подписью ───────────────
+     ТРЕТЬЯ РЕДАКЦИЯ (D-311). Снаружи форма прежняя — пять частей за цифрой
+     «2»: цифра на диске называет ФОРМУ, а не шифр внутри. Редакция шифра
+     стоит ПОД ПОДПИСЬЮ (первый байт подписанного: 2 — прежняя, 4 — третья;
+     3 занято вещами, D-265): диск не говорит, какой записи сколько лет и в
+     каком она мире, а читатель узнаёт редакцию по подписи, не по надписи.
+     Первая часть в третьей редакции — метка ключа этой записи (и счётчик
+     CTR); ключи выводятся recKeys. Писатель пишет ТОЛЬКО третью редакцию;
+     читатель читает обе — читать старое всегда. */
+  function sealPair(ks, name, text, label) {
+    if (label == null) return sealedName(ks, name).then(function (nm) { return sealPair(ks, name, text, nm); });
     var enc = new TextEncoder();
     var nameBytes = enc.encode(String(name));
     var valBytes = enc.encode(String(text));
@@ -1555,49 +1608,61 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     head[0] = (nameBytes.length >>> 8) & 255;
     head[1] = nameBytes.length & 255;
     var body = padBytes(cat(head, nameBytes, valBytes));
-    var ctr = new Uint8Array(16);
+    var slot = new Uint8Array(16);
     var iv = new Uint8Array(12);
-    window.crypto.getRandomValues(ctr);
+    window.crypto.getRandomValues(slot);
     window.crypto.getRandomValues(iv);
     var subtle = window.crypto.subtle;
-    return subtle.encrypt({ name: "AES-CTR", counter: ctr, length: 64 }, ks.ctr, body)
-      .then(function (mid) {
-        return subtle.encrypt({ name: "AES-GCM", iv: iv, additionalData: ctr }, ks.gcm, new Uint8Array(mid));
-      })
-      .then(function (outer) {
-        var o = new Uint8Array(outer);
-        var signed = cat(new Uint8Array([2]), ctr, iv, o);
-        return subtle.sign("HMAC", ks.mac, signed).then(function (tag) {
-          return "2." + b64(ctr) + "." + b64(iv) + "." + b64(o) + "." + b64(new Uint8Array(tag));
-        });
+    return recKeys(ks, label, slot).then(function (rk) {
+      return subtle.encrypt({ name: "AES-CTR", counter: slot, length: 64 }, rk.ctr, body).then(function (mid) {
+        return subtle.encrypt({ name: "AES-GCM", iv: iv, additionalData: recAad(label, slot) }, rk.gcm, new Uint8Array(mid));
       });
+    }).then(function (outer) {
+      var o = new Uint8Array(outer);
+      var signed = cat(new Uint8Array([4]), slot, iv, o);
+      return subtle.sign("HMAC", ks.mac, signed).then(function (tag) {
+        return "2." + b64(slot) + "." + b64(iv) + "." + b64(o) + "." + b64(new Uint8Array(tag));
+      });
+    });
   }
-  function openPair(ks, envelope) {
+  function unpackBody(body) {
+    var flat = unpadBytes(new Uint8Array(body));
+    if (flat.length < 2) throw new Error("shape");
+    var nlen = (flat[0] << 8) | flat[1];
+    if (nlen > flat.length - 2) throw new Error("shape");
+    var dec = new TextDecoder();
+    return { name: dec.decode(flat.subarray(2, 2 + nlen)), value: dec.decode(flat.subarray(2 + nlen)) };
+  }
+  function openPair(ks, envelope, label) {
     var parts = String(envelope || "").split(".");
     if (parts.length !== 5 || parts[0] !== "2") return Promise.reject(new Error("shape"));
-    var ctr, iv, o, tag;
-    try { ctr = unb64(parts[1]); iv = unb64(parts[2]); o = unb64(parts[3]); tag = unb64(parts[4]); }
+    var slot, iv, o, tag;
+    try { slot = unb64(parts[1]); iv = unb64(parts[2]); o = unb64(parts[3]); tag = unb64(parts[4]); }
     catch (e) { return Promise.reject(new Error("shape")); }
     var subtle = window.crypto.subtle;
-    var signed = cat(new Uint8Array([2]), ctr, iv, o);
     /* Подпись — ПЕРВОЙ. Расшифровывать неподписанное значит впускать в
-       расшифровщик чужие байты; encrypt-then-MAC затем и придуман. */
-    return subtle.verify("HMAC", ks.mac, tag, signed).then(function (good) {
-      if (!good) throw new Error("mac");
-      return subtle.decrypt({ name: "AES-GCM", iv: iv, additionalData: ctr }, ks.gcm, o);
-    }).then(function (mid) {
-      return subtle.decrypt({ name: "AES-CTR", counter: ctr, length: 64 }, ks.ctr, new Uint8Array(mid));
-    }).then(function (body) {
-      var flat = unpadBytes(new Uint8Array(body));
-      if (flat.length < 2) throw new Error("shape");
-      var nlen = (flat[0] << 8) | flat[1];
-      if (nlen > flat.length - 2) throw new Error("shape");
-      var dec = new TextDecoder();
-      return {
-        name: dec.decode(flat.subarray(2, 2 + nlen)),
-        value: dec.decode(flat.subarray(2 + nlen))
-      };
-    });
+       расшифровщик чужие байты; encrypt-then-MAC затем и придуман. Сперва
+       пробуется третья редакция (её пишет система), затем прежняя. */
+    function third() {
+      if (label == null) return Promise.reject(new Error("label"));
+      return subtle.verify("HMAC", ks.mac, tag, cat(new Uint8Array([4]), slot, iv, o)).then(function (good) {
+        if (!good) throw new Error("mac");
+        return recKeys(ks, label, slot);
+      }).then(function (rk) {
+        return subtle.decrypt({ name: "AES-GCM", iv: iv, additionalData: recAad(label, slot) }, rk.gcm, o).then(function (mid) {
+          return subtle.decrypt({ name: "AES-CTR", counter: slot, length: 64 }, rk.ctr, new Uint8Array(mid));
+        });
+      }).then(function (body) { var r = unpackBody(body); r.edition = 3; return r; });
+    }
+    function second() {
+      return subtle.verify("HMAC", ks.mac, tag, cat(new Uint8Array([2]), slot, iv, o)).then(function (good) {
+        if (!good) throw new Error("mac");
+        return subtle.decrypt({ name: "AES-GCM", iv: iv, additionalData: slot }, ks.gcm, o);
+      }).then(function (mid) {
+        return subtle.decrypt({ name: "AES-CTR", counter: slot, length: 64 }, ks.ctr, new Uint8Array(mid));
+      }).then(function (body) { var r = unpackBody(body); r.edition = 2; return r; });
+    }
+    return third().then(null, function () { return second(); });
   }
 
   /* ── ВЕЩЬ В КОНВЕРТЕ (D-265) ──────────────────────────────────────────
@@ -1982,12 +2047,35 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      число: «не больше тридцати двух» вместо «сорок три». Два мира на 43
      записи и один мир на 20 выглядят одинаково. Но ступень видна, и при
      двухстах записях в главном мире тревожный мир в трёх записях всё ещё
-     прячется, а вот при пустом главном — нет: у человека, который только
-     завёл систему, тридцать два конверта. Это цена ступени, и она названа.
+     прячется, а вот при пустом главном прятался плохо: у человека, который
+     только завёл систему, было тридцать два конверта. С D-316 первая
+     ступень — шестьдесят четыре (ниже), и цена стала меньше.
 
      Охраняется tools/decoy-count-check.mjs. */
 
   var DECOY_STEP = 32;
+
+  /* ── ПЕРВАЯ СТУПЕНЬ — ШЕСТЬДЕСЯТ ЧЕТЫРЕ; ПОДСЫПКА ВО ВРЕМЕНИ (D-316) ─────
+     План T7 разбора «Шифр без театра», находка Н12: «ступень пустышек
+     выдаёт новичка». У того, кто только завёл замок, лежало ровно тридцать
+     два конверта — и маленький тревожный мир рядом с пустым главным
+     выталкивал число на вторую ступень: считающий видел, что за второй
+     дверью что-то есть. Теперь первая ступень — две обычных: шестьдесят
+     четыре. Мир из нескольких записей прячется в ней целиком.
+     И второе. Ступень переходилась ТОЛЬКО записью человека: скачок числа на
+     диске значил «здесь писали». Теперь число изредка вырастает само — на
+     целую ступень, в случайный миг оборота, — и скачок больше не выдаёт
+     запись. Подсыпка ограничена двумя ступенями сверх нужного: диск не
+     растёт без конца. Убирать по-прежнему нельзя — ни одной строкой.
+     ЧЕГО ЭТО НЕ ДАЁТ, вслух: мир в сотни записей не спрячется в первой
+     ступени, и тот, кто видит ЖИВОЕ устройство изнутри, видит больше, чем
+     считающий конверты. Это закрывает счёт, а не всё.
+     ПОСТОЯННАЯ: 64 — две ступени; 2 — предел подсыпки в ступенях; 4 из 256 —
+     доля оборотов, на которых подсыпка случается (в среднем раз в полтора
+     часа открытого сеанса). Охраняется tools/decoy-count-check.mjs. */
+  var FIRST_STEP = 64;
+  var SPRINKLE_MAX = 2;
+  var SPRINKLE_ODDS = 4;
 
   function randBytes(n) { var u = new Uint8Array(n); window.crypto.getRandomValues(u); return u; }
 
@@ -2036,11 +2124,16 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     return Promise.all(jobs);
   }
 
-  function levelDisk(ks) {
+  /* floor — самая низкая допустимая ступень. Новый замок ставится сразу на
+     первую ступень (64); в остальных местах — только круглое число: диск,
+     пришедший с тридцатью двумя, поднимается до первой ступени не у двери,
+     а подсыпкой на первом обороте (sprinkle), — так подъём не совпадает ни
+     с открытием, ни с записью. */
+  function levelDisk(ks, floor) {
     if (!vaultLocked() || !ks) return Promise.resolve();
     var n = sealedNamesNow().length;
     if (!n) return Promise.resolve();
-    var target = Math.max(DECOY_STEP, Math.ceil(n / DECOY_STEP) * DECOY_STEP);
+    var target = Math.max(floor || DECOY_STEP, Math.ceil(n / DECOY_STEP) * DECOY_STEP);
     if (n >= target) return Promise.resolve();
     var need = target - n;
     return decoyRoll(ks, target + DECOY_STEP).then(function (names) {
@@ -2141,8 +2234,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       var jobs = pick.map(function (phys) {
         var raw = rawStore.get.call(window.localStorage, phys);
         if (raw == null) return Promise.resolve(null);
-        return openPair(ks, raw).then(function (p) {
-          return sealPair(ks, p.name, p.value).then(function (env) {
+        return openPair(ks, raw, phys).then(function (p) {
+          return sealPair(ks, p.name, p.value, phys).then(function (env) {
             /* Замок мог быть снят, пока шифровали. Тогда писать некуда. */
             if (!vaultLocked() || rawStore.get.call(window.localStorage, phys) == null) return null;
             rawStore.set.call(window.localStorage, phys, env);
@@ -2165,13 +2258,50 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     });
   }
 
+  /* Своих настоящих записей этого мира — сколько имён открыто и лежит. */
+  function realOwn() {
+    var r = 0;
+    nameMap.forEach(function (phys) { if (rawStore.get.call(window.localStorage, phys) != null) r++; });
+    return r;
+  }
+  /* ПОДСЫПКА: ровно одна ступень своих пустышек, если диск круглый и ниже
+     предела. Не вышло целиком (место кончилось) — только что положенное
+     своё снимается обратно: число остаётся круглым. Чужого не трогает. */
+  function sprinkle(ks) {
+    if (!vaultLocked() || !ks || sealing) return Promise.resolve(false);
+    var n = sealedNamesNow().length;
+    if (n % DECOY_STEP !== 0) return Promise.resolve(false);
+    var need = Math.max(FIRST_STEP, Math.ceil(realOwn() / DECOY_STEP) * DECOY_STEP);
+    if (n >= need + SPRINKLE_MAX * DECOY_STEP) return Promise.resolve(false);
+    return decoyRoll(ks, n + 2 * DECOY_STEP).then(function (names) {
+      if (!vaultLocked() || sealedNamesNow().length !== n) return false;
+      var sizes = envelopeBodySizes(), made = [], i;
+      for (i = 0; i < names.length && made.length < DECOY_STEP; i++) {
+        if (rawStore.get.call(window.localStorage, names[i]) != null) continue;
+        try { rawStore.set.call(window.localStorage, names[i], makeDecoy(sizes).env); made.push(names[i]); }
+        catch (e) { break; }
+      }
+      if (made.length === DECOY_STEP) return true;
+      made.forEach(function (nm) { try { rawStore.del.call(window.localStorage, nm); } catch (e) { /* ignore */ } });
+      return false;
+    });
+  }
+
   function rollKeep(ks) {
     if (rollTimer) clearInterval(rollTimer);
+    var first = true;
     rollTimer = setInterval(function () {
       if (!vaultOpen || !vaultKeys) { clearInterval(rollTimer); rollTimer = null; return; }
       rollOnce(vaultKeys);
+      /* Диск ниже первой ступени (пришёл с тридцатью двумя) поднимается на
+         первом обороте; дальше — изредка и случайно (D-316). */
+      var below = first && sealedNamesNow().length < FIRST_STEP;
+      first = false;
+      if (below || randBytes(1)[0] < SPRINKLE_ODDS) sprinkle(vaultKeys);
     }, ROLL_EVERY);
   }
+  /* Наружу — для закона и для окна: подсыпать одну ступень сейчас. */
+  window.sbVaultSprinkle = function () { return sprinkle(vaultKeys); };
 
   /* Наружу — чтобы окно аккаунта ПОКАЗЫВАЛО оборот настоящими числами,
      а не рисовало его. */
@@ -2193,7 +2323,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       if (rawStore.get.call(window.localStorage, phys) != null) real++;
     });
     return { total: total, real: real, decoy: Math.max(0, total - real), step: DECOY_STEP,
-             at: ROLL_AT_ONCE, every: ROLL_EVERY };
+             first: FIRST_STEP, at: ROLL_AT_ONCE, every: ROLL_EVERY };
   };
 
   function buildLock(password, pairs, keepMaster, duressPassword, factorFile) {
@@ -2221,8 +2351,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         return second.then(function (door2) {
         return subkeys(master).then(function (ks) {
           var jobs = pairs.map(function (p) {
-            return Promise.all([sealedName(ks, p.k), sealPair(ks, p.k, p.v)])
-              .then(function (r) { return { name: r[0], env: r[1], from: p.k }; });
+            return sealedName(ks, p.k).then(function (nm) {
+              return sealPair(ks, p.k, p.v, nm).then(function (env) { return { name: nm, env: env, from: p.k }; });
+            });
           });
           return Promise.all(jobs).then(function (rows) {
             var i;
@@ -2236,6 +2367,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
               ciphers: ["AES-256-CTR", "AES-256-GCM"],
               mac: "HMAC-SHA-512",
               names: "HMAC-SHA-256",
+              /* Редакция конверта записей (D-311): ключи на каждую запись. Не
+                 ниже третьей — метка против понижения (I11). */
+              record: 3,
               pad: PAD_BLOCK,
               salt: saltB64,
               doors: [{ wrapIv: b64(wrapIv), wrap: b64(wrapped) }, door2],
@@ -2244,7 +2378,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             if (factorRec) body.factor = factorRec;
             lsSet(LOCK_KEY, JSON.stringify(body));
             for (i = 0; i < rows.length; i++) rawStore.del.call(window.localStorage, rows[i].from);
-            return holdMaster(master).then(function () { return levelDisk(ks); }).then(function () { return ks; });
+            return holdMaster(master).then(function () { return levelDisk(ks, FIRST_STEP); }).then(function () { return ks; });
           });
         });
         });
@@ -2336,7 +2470,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     if (!vaultLocked()) return Promise.resolve({ text: plain, sealed: false });
     if (!vaultOpen || !vaultKeys) return Promise.reject(new Error("closed"));
     var rec = lockRecord();
-    return sealPair(vaultKeys, "export", plain).then(function (body) {
+    return sealPair(vaultKeys, "export", plain, "export").then(function (body) {
       return {
         sealed: true,
         text: JSON.stringify({ app: "sysbaby-os", kind: "sealed-export", version: 1, createdAt: new Date().toISOString(), lock: rec, body: body })
@@ -2375,7 +2509,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       if (!m) return null;
       return subkeys(m).then(function (ks) {
         m.fill(0);
-        return openPair(ks, obj.body).then(function (p) { return p.value; }, function () { return null; });
+        return openPair(ks, obj.body, "export").then(function (p) { return p.value; }, function () { return null; });
       });
     }, function () { restore(); return null; });
   }
@@ -2424,11 +2558,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
        и это сказано человеку прямо в окне. */
     seal: function (text) {
       if (!vaultOpen || !vaultKeys) return Promise.reject(new Error("closed"));
-      return sealPair(vaultKeys, "backup", text);
+      return sealPair(vaultKeys, "backup", text, "backup");
     },
     openSealed: function (envelope) {
       if (!vaultOpen || !vaultKeys) return Promise.reject(new Error("closed"));
-      return openPair(vaultKeys, envelope).then(function (p) { return p.value; });
+      return openPair(vaultKeys, envelope, "backup").then(function (p) { return p.value; });
     },
     /* Чем именно заперто — не тайна: тайна это ключ, а не имя шифра. */
     cipher: function () {
@@ -2467,7 +2601,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         return extra.reduce(function (chain, p) {
           return chain.then(function () {
             if (p.v == null) return null;
-            return Promise.all([sealedName(ks, p.k), sealPair(ks, p.k, p.v)]).then(function (r) {
+            return sealedName(ks, p.k).then(function (nm) {
+              return sealPair(ks, p.k, p.v, nm).then(function (env) { return [nm, env]; });
+            }).then(function (r) {
               var fresh = rawStore.get.call(window.localStorage, r[0]) == null;
               return (fresh ? makeRoom(ks) : Promise.resolve()).then(function () {
                 rawStore.set.call(window.localStorage, r[0], r[1]);
@@ -2482,7 +2618,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
            ПОКА СЧИТАЛСЯ КЛЮЧ, — и число снова переставало быть круглым.
            Прибор поймал это на первом же прогоне: тридцать шесть конвертов
            вместо тридцати двух. Выравнивать надо там, где запись кончается. */
-        return levelDisk(sealedWith);
+        return levelDisk(sealedWith, FIRST_STEP);
       }).then(function () {
         /* Вещи склада уходят в конверты ТЕМ ЖЕ поворотом ключа, и старые
            открытые снимки вычищаются: замок держит весь диск (D-265). */
@@ -3038,6 +3174,27 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     },
     exportText: exportText,
     openExport: openExport,
+    /* Редакции конвертов этого мира (D-311): сколько мест ещё ждут переезда и
+       сколько уже третьей редакции. Спрашивается у состояния, не помнится. */
+    formats: function () {
+      var legacy = legacyPlaces().length, real = 0;
+      nameMap.forEach(function (ph) { if (rawStore.get.call(window.localStorage, ph) != null) real++; });
+      return { v2: legacy, v3: Math.max(0, real - legacy) };
+    },
+    /* Имена мест записей этого мира: логическое имя → имя конверта на диске.
+       Только при открытом сеансе; законы сверяют по нему привязку. */
+    places: function () {
+      var out = {};
+      if (!vaultOpen) return out;
+      nameMap.forEach(function (ph, k) { out[k] = ph; });
+      return out;
+    },
+    /* Открыть конверт ключами сеанса под названным местом — без побочных
+       действий; чужое место или порча дают null. Для законов о привязке. */
+    probeOpen: function (label, envelope) {
+      if (!vaultOpen || !vaultKeys) return Promise.resolve(null);
+      return openPair(vaultKeys, envelope, label).then(function (p) { return { name: p.name, value: p.value, edition: p.edition }; }, function () { return null; });
+    },
     /* Фраза и честная цена короткого слова (D-309). */
     phrase: function (n) { return phraseWords(n || 6); },
     phraseBits: phraseBits,
@@ -3151,13 +3308,43 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   };
 
   /* ── ОТКРЫТЬ ВСЕ КОНВЕРТЫ И РАССТАВИТЬ ПО ПАМЯТИ ──────────────────────── */
+  /* ── ПЕРЕЕЗД НА ТРЕТЬЮ РЕДАКЦИЮ — ПРИ ОТКРЫТИИ, ПО ОДНОЙ ЗАПИСИ (D-311) ──
+     Конверт прежней редакции, открывшийся верным ключом, тут же запечатывается
+     заново третьей — под тем же именем места. Прежде чем лечь на диск, новый
+     конверт ОТКРЫВАЕТСЯ и сверяется с прочитанным знак в знак; не сошлось —
+     остаётся старый, и он читается всегда. Замена одной записи в хранилище
+     неделима: в любой миг на месте лежит либо целый старый, либо целый новый
+     конверт. Чужие конверты (второй мир, пустышки) не открываются — и не
+     трогаются. Число конвертов не меняется. */
+  var editionAt = {};           /* место → редакция конверта, какой она НАБЛЮДАЛАСЬ при открытии или записи */
+  function legacyPlaces() {
+    var out = [];
+    nameMap.forEach(function (ph) { if (editionAt[ph] === 2 && rawStore.get.call(window.localStorage, ph) != null) out.push(ph); });
+    return out;
+  }
+  function migratePair(ks, phys, raw, row) {
+    return sealPair(ks, row.k, row.v, phys).then(function (env) {
+      return openPair(ks, env, phys).then(function (back) {
+        if (back.edition !== 3 || back.name !== row.k || back.value !== row.v) throw new Error("verify");
+        if (!vaultLocked() || rawStore.get.call(window.localStorage, phys) !== raw) return false;
+        rawStore.set.call(window.localStorage, phys, env);
+        editionAt[phys] = 3;
+        return true;
+      });
+    }).then(null, function () { return false; });
+  }
   function openAllSealed(ks) {
     var names = sealedNamesNow();
+    editionAt = {};
     var jobs = names.map(function (phys) {
       var raw = rawStore.get.call(window.localStorage, phys);
       if (raw == null) return Promise.resolve(null);
-      return openPair(ks, raw).then(function (p) { return { phys: phys, k: p.name, v: p.value }; },
-        function () { return null; });
+      return openPair(ks, raw, phys).then(function (p) {
+        var row = { phys: phys, k: p.name, v: p.value, edition: p.edition };
+        editionAt[phys] = p.edition;
+        if (p.edition === 3) return row;
+        return migratePair(ks, phys, raw, row).then(function () { return row; });
+      }, function () { return null; });
     });
     return Promise.all(jobs).then(function (rows) {
       var pfx = activeProfile() === "local" ? "" : PROFILE_PREFIX + activeProfile() + ".";
@@ -3190,6 +3377,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       }
       vaultKeys = ks;
       vaultOpen = true;
+      /* Метка редакции в записи замка — когда прежних конвертов этого мира не
+         осталось (D-311). Понижения не бывает: писатель пишет только третью. */
+      if (!legacyPlaces().length) {
+        try { var lr = lockRecord(); if (lr && lr.record !== 3) { lr.record = 3; lsSet(LOCK_KEY, JSON.stringify(lr)); } } catch (e) { /* ignore */ }
+      }
       /* Главный мир запечатывает все открытые вещи: открытая вещь на диске
          запертой системы — утечка, чья бы она ни была. Второй мир — только
          свои: запечатать чужую вещь чужим ключом значило бы отнять её у
@@ -3302,13 +3494,14 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         if (val == null) { rawStore.del.call(window.localStorage, phys); return null; }
         var fresh = rawStore.get.call(window.localStorage, phys) == null;
         var keys = vaultKeys;
-        return sealPair(keys, k, val).then(function (env) {
+        return sealPair(keys, k, val, phys).then(function (env) {
           /* СРАЗУ, А НЕ ОТЛОЖЕННО. Отложенная подсыпка оставляла окно в
              четыреста миллисекунд, в котором число конвертов не круглое —
              и в это окно диск говорит правду. Окна быть не должно вовсе.
              Новый конверт при этом занимает место СВОЕЙ пустышки. */
           return (fresh ? makeRoom(keys) : Promise.resolve()).then(function () {
             rawStore.set.call(window.localStorage, phys, env);
+            editionAt[phys] = 3;          /* записано третьей редакцией */
             /* ── МИГ ЗАПЕЧАТЫВАНИЯ ОБЪЯВЛЯЕТСЯ НАРУЖУ (D-219) ─────────────
                Человек дописал строку — и она ушла в конверт. До сих пор это
                было совершенно невидимо: система делала самое важное молча.

@@ -25,7 +25,7 @@
   --bg: #0a0a0b;
   --bg-elev: #121214;
   --ink: #f2f2f0;
-  --ink-2: rgba(242, 242, 240, .62);
+  --ink-2: rgba(242, 242, 240, .70);
   /* ТУСКЛЫЕ ЧЕРНИЛА ПОДНЯТЫ С .36 ДО .52 (D-233). Замер пикселями на
      настоящем экране: ядро буквы 110 на фоне 40 — контраст 2.8–3.0 при
      общепринятой мере 4.5. Этим цветом набраны не украшения, а ссылки на
@@ -33,7 +33,12 @@
      увидит») и «Здесь пока пусто» в Ключах. Иерархия сохранена: главные 1,
      вторые .62, тусклые .52 — по-прежнему на убыль.
      Охраняется tools/legible-check.mjs. */
-  --ink-3: rgba(242, 242, 240, .52);
+  /* И ЕЩЁ РАЗ — ДО .61, А ВТОРЫЕ ДО .70 (D-323). Закон light-contrast-check
+     кладёт объявленный цвет на настоящий фон под каждой буквой и меряет
+     общепринятой мерой без скидок. На стекле окна и на плашках панели фон
+     светлее поля (55–66 против 40), и там .52 давали 3.8–4.0, а вторые .62 —
+     4.45. Ступени по-прежнему на убыль: 1 · .70 · .61. */
+  --ink-3: rgba(242, 242, 240, .61);
   --line: rgba(242, 242, 240, .09);
   --line-2: rgba(242, 242, 240, .16);
   /* ── СТЕКЛО ТОНЬШЕ, И В НЁМ ЕСТЬ КОМНАТА (D-147) ────────────────────────
@@ -62,9 +67,116 @@
   --accent-rgb: 224, 102, 60;
   --accent-soft: rgba(224, 102, 60, .18);
   --accent-ring: rgba(224, 102, 60, .55);
+  /* Шов как БУКВА (D-323). Кривая LIGHT держит шов на 5.78 к полю, но буквы
+     лежат не на поле, а на стекле окна — оно светлее, и там шов-буква давал
+     3.9. Буква шва — тот же тон, светлее на пятую часть. В Светлице глина
+     уже держит меру и на кальке, и на извести. */
+  --accent-ink: color-mix(in srgb, var(--accent) 78%, #fff);
+  /* Стена Светлицы — одно число на обе темы (обе темы: глину для Светлицы
+     шов готовит и тогда, когда на документе ещё Очаг, — в миг перехода и в
+     живом чипе настроения; спрашивать ему стену не у кого, кроме этого
+     слова. В Светлице --bg и есть эта стена). */
+  --day-wall: #e1e2dd;
+  /* Шов по кривой Очага — всегда (D-323). В тёмной теме он и есть шов; в
+     Светлице шов становится глиной, а угли остаются островкам тьмы — двери,
+     занавесу, прощанию (обе темы: это один и тот же огонь, его пишет sbSun
+     на каждом шаге шва). */
+  --ember: #e0663c;
+  --ember-rgb: 224, 102, 60;
   --danger: #d05a4e;
   --warn: #c9a227;
   --good: #4ea87a;
+
+  /* ══════════════ СЛОВАРЬ КРАСКИ · решение D-322 ════════════════════════════
+     ПОВОД, дословно от основателя 27.09.2026: «Создайте для sys.baby новую
+     светлую визуальную среду». Условие её возврата Совет записал сам, снимая
+     светлую тему в третий раз (D-168): «перевод всех приложений на токены
+     плюс закон, меряющий контраст в обеих темах на каждом экране».
+     ЧТО БЫЛО. 665 цветов в стилях голыми числами — и каждое знало ровно одну
+     тему. Светлая, включённая поверх них, давала белый текст на белом.
+     ЧТО СТАЛО. Комнаты говорят словами; слово объявлено здесь — для Очага — и
+     ещё раз ниже, для Светлицы. Числа здесь ровно те, что стояли в стилях:
+     перевод на слова не сдвинул тёмную комнату.
+     ТРИ ОСНОВЫ ВМЕСТО СОТЕН ЧИСЕЛ:
+       --film-rgb  плёнка — чем поверхность приподнята над той, что под ней;
+       --shade-rgb тень — чем вещь отделена от того, на чём стоит;
+       --ink-rgb   чернила — из чего сделаны буквы.
+     Доля прозрачности остаётся у места: у плашки своя доля плёнки, и она
+     одна в обеих темах. Меняется вещество, а не пропорция.
+     Охраняется tools/paint-tokens-check.mjs. */
+  --ink-rgb: 242, 242, 240;
+  --film-rgb: 255, 255, 255;
+  --shade-rgb: 0, 0, 0;
+  /* Подложка под тем, что сейчас важнее (панель, палитра, Exposé), и плотный
+     колодец — мини-кнопки, реакции, поле письма поверх окна. */
+  --veil-rgb: 4, 5, 8;
+  --well-rgb: 12, 13, 16;
+  --menu-bg: #1c1d22;
+  /* Надпись на шве пишется цветом поля (D-324). Кривая LIGHT держит шов
+     на контрасте 5.78 именно к полю — для каждого тона круга. Белая буква на
+     шве держала 3.4 на глине и падала до 1.6 на жёлтом часе Дневного света:
+     шов живой, а белая буква — нет. Витрина пишет по шву тёмным давно
+     (.pf-btn.primary) — теперь одинаково во всей системе. */
+  --on-accent: var(--bg);
+  /* Общий вид (shared/portfolio.view.css) стоит и на витрине, где слов ОС нет:
+     он говорит --text-* с запасным числом, а здесь эти слова — чернила. */
+  --text: var(--ink);
+  --text-2: var(--ink-2);
+  --text-3: var(--ink-3);
+  /* Состояния — не бренд (system.css): правда о том, что случилось. Прежде
+     каждая комната писала их своим числом — красный чужой системы #ff453a
+     в шести местах, зелёный в пяти, жёлтый, янтарь, бирюза, фиалка. Теперь у
+     каждого состояния одно слово на всю систему и светлая пара.
+       bad — беда, ok — живо и цело, star — отмечено, heed — внимание,
+       teal — настоящее снаружи (живой адрес), violet — Эхо и печати. */
+  --bad: #ff453a;
+  --bad-rgb: 255, 69, 58;
+  --bad-ink: #ff9b8f;
+  --ok: #30d158;
+  --ok-rgb: 48, 209, 88;
+  --ok-ink: #7de08a;
+  --star: #ffd60a;
+  --star-rgb: 255, 214, 10;
+  --heed-rgb: 255, 157, 60;
+  --heed-ink: #ffb46e;
+  --teal: #3ad0a8;
+  --teal-rgb: 58, 208, 168;
+  --teal-ink: #8ff0d4;
+  --violet: #8f7bff;
+  --violet-rgb: 143, 123, 255;
+  --violet-ink: #a794ff;
+  /* Ручка переключателя — белая в обеих темах (обе темы: ручка лежит на
+     собственной дорожке, а не на поле, и видна на глине и на сером). */
+  --knob: #fff;
+  /* Дерево Сундука (D-255): на тёмном — морёное, в Светлице — светлее. */
+  --wood: #a56a2c;
+  --wood-line: #3a2410;
+  /* Свет комнаты по умолчанию — Студия (D-322): два тела света и пол.
+     Настроения переопределяют эти слова в своих блоках ниже (раздел обоев). */
+  --wp-g1: rgba(var(--accent-rgb), .09);
+  --wp-g2: rgba(var(--ink-rgb), .05);
+  --wp-f1: #111114;
+  --wp-f2: #0b0b0d;
+  --wp-f3: #070708;
+  --tint-1: rgba(var(--accent-rgb), .16);
+  --tint-2: rgba(var(--ink-rgb), .09);
+  --stone: rgba(0, 0, 0, .55);
+  --breath: #18181c;
+  /* Окно позади фокусного накрывается плёнкой цвета поля (D-251): .78 —
+     порог, при котором вторые чернила верхнего окна читаются. */
+  --behind: rgba(10, 10, 11, .78);
+  /* Воздух верхней полосы (D-147): чернила наверху, книзу в ноль. */
+  --air-rgb: 8, 9, 12;
+  /* Блик по верхней кромке окна: свет падает сверху. */
+  --glint: rgba(255, 255, 255, .16);
+  /* Сила тени и колодца. Доля тени у места одна в обеих темах, а сила у
+     темы своя: чёрное на графите почти не видно, синеватое на извести
+     видно втрое сильнее (D-323). В Очаге — единица, ничего не сдвинуто. */
+  --shade-k: 1;
+  --sink-k: 1;
+  /* Затихшая полка (D-285): яркостью, а не прозрачностью. В Светлице затихать
+     значит бледнеть к стене — не темнеть. */
+  --away-filter: brightness(.55);
   /* Honest corners: a friendly-app 24px radius belongs to somebody else's
      operating system. Same ladder as the landing's windows. */
   /* ── ЧЕТЫРЕ УГЛА И ДВЕ ФОРМЫ (v66) ──────────────────────────────────────
@@ -152,6 +264,40 @@
   --f-title: 22px;
   --f-figure: 30px;
   --f-hero: 40px;
+  /* ── ТИПОГРАФИКА ГОВОРИТ СЛОВАМИ: ВЕС, РАЗРЯДКА, ИНТЕРЛИНЬЯЖ · D-337 ────
+     ПОВОД — задание основателя «AESTHETIC SINGULARITY» 28.09.2026, §10–11:
+     «visual weight», «typography as architecture: weight, tracking,
+     line-height… особенно маленький текст». Перепись 28.09: у размера буквы
+     шкала была (D-230), а рядом с ней — пять весов (400·500·600·650·700),
+     шестнадцать разрядок (от −.02em до .17em; семь разных чисел у одной и
+     той же роли — служебной подписи заглавными) и двенадцать интерлиньяжей
+     (1 · 1.25 · 1.3 · 1.35 · 1.38 · 1.4 · 1.45 · 1.5 · 1.55 · 1.6 · 1.65 ·
+     1.7). Это не двенадцать решений, а одно, принятое двенадцать раз.
+     Слова выведены из того, где числа уже жили, — как ступени размера:
+       вес         --w-text 400 · --w-strong 600 — два, как объявил системный
+                   слой («два веса текста»); заголовок отличается размером,
+                   а не третьим весом;
+       разрядка    --track-tight −.01em (заголовок, крупное число) ·
+                   --track-air .03em (код, цифры, моно) ·
+                   --track-caps .08em (служебная подпись заглавными —
+                   разрядка подписей и есть подпись системы);
+       интерлиньяж --lh-one 1 (число, знак) · --lh-ui 1.25 (строка
+                   интерфейса) · --lh-read 1.55 (то, что читают глазами).
+     Ноль — не слово, а его отсутствие, и остаётся числом.
+     1.25 у строки интерфейса — не вкус: это число подписи значка стола,
+     которое прибор значков (D-285) уже мерил по пикселям: при 1.3 буквы
+     подписи вставали на полпикселя и давали «плёнку».
+     Охраняется tools/type-words-check.mjs. */
+  --w-text: 400;
+  --w-strong: 600;
+  --track-tight: -.01em;
+  --track-air: .03em;
+  --track-caps: .08em;
+  --lh-one: 1;
+  --lh-ui: 1.25;
+  --lh-read: 1.55;
+  /* Покой отключённого — одно число на всех (D-340). */
+  --rest: .45;
   --shadow: 0 24px 60px rgba(0, 0, 0, .55), 0 4px 14px rgba(0, 0, 0, .4);
   --shadow-soft: 0 12px 34px rgba(0, 0, 0, .38);
   /* ── ВЕЩЕСТВО ЗНАЧКА — НЕПРОЗРАЧНОЕ (D-285) ────────────────────────────
@@ -181,12 +327,33 @@
      кольцом в 1 px; при плотности экрана 1 и 1.5 такое кольцо целиком
      состоит из полупрозрачных пикселей — плёнки. */
   --tile-dot-min: #5a5758;
-  --ease: cubic-bezier(.16, 1, .3, 1);
-  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  /* ── ОДНА ФИЗИКА: ТРИ КРИВЫЕ · решение D-336 ──────────────────────────
+     ПОВОД — задание основателя «AESTHETIC SINGULARITY» 28.09.2026, §16:
+     «у системы должен быть свой movement signature». Перепись 28.09: из
+     93 переходов в стилях ОС 38 шли по кривой системы, 52 — по кривой
+     браузера (слово ease или вовсе без слова, что то же самое), и ещё
+     были две упругости с разными числами. Подпись движения принадлежала
+     браузеру: любой сайт двигается так же.
+     Системный слой (shared/system.css) давно сказал: «Три кривые. Больше не
+     бывает: четвёртая означала бы, что в среде действует ещё одна физика,
+     а физика в мире одна». Здесь те же три кривые теми же числами — ОС
+     обязана вставать из своей папки, потому числа повторены, а закон
+     сверяет их с системным слоем:
+       move  — отклик и перемещение: цвет под пальцем, сдвиг, размер;
+       enter — то, что появляется и оседает: окно, слой стола, извещение;
+       pull  — то, что человек тянет рукой: единственная упругость.
+     Слежение за рукой (--t-track) идёт без кривой — linear: кривая там
+     и есть рука. Дыхание фона (animation с числом секунд) — не ответ и
+     живёт своим темпом: та же граница, что у скоростей (v65).
+     Охраняется tools/easing-scale-check.mjs. */
+  --ease-move: cubic-bezier(.2, .8, .2, 1);
+  --ease-enter: cubic-bezier(.16, 1, .3, 1);
+  --ease-pull: cubic-bezier(.34, 1.4, .64, 1);
   --font: system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo, monospace;
   /* Цвет бренда. Неподвижен: им красится знак, и только он. Шов (--accent)
-     живёт вместе с комнатой — это разные вещи, и у них разные имена. */
+     живёт вместе с комнатой — это разные вещи, и у них разные имена.
+     (обе темы: имя бренда не зависит ни от обоев, ни от света — D-141.) */
   --brand: #e0663c;
   --topbar-h: 44px;
   /* ── ВЫРЕЗ СЧИТАЕТСЯ ТОЛЬКО ТАМ, ГДЕ ОН НАШ · решение D-177 ───────────────
@@ -310,40 +477,196 @@
 }
 html.sb-fullscreen { --safe-top: env(safe-area-inset-top, 0px); }
 
+/* ═════════════════════════ СВЕТЛИЦА · решение D-323 ═════════════════════════
+   ПОВОД, дословно от основателя 27.09.2026: «SYS.BABY — LIGHT ENVIRONMENT
+   SINGULARITY… не light mode, не инверсия тёмной… свет как материал, а не
+   „белый“… узнаваемо без логотипа… характерно, запоминаемо, своё».
+
+   ОДНОЙ СТРОКОЙ. В темноте sys.baby светит сама — шов горит, как угли в
+   очаге. На свету её освещает солнце из окна — и шов перестаёт светиться:
+   он становится глиной. Светлица — старое имя самой светлой комнаты в доме.
+
+   ЗАКОНЫ ЭТОЙ КОМНАТЫ (полностью — SVETLITSA.md в корне дерева):
+     1. ИСТОЧНИК ОДИН — СОЛНЦЕ. Оно входит с той стороны, где стоит по часам
+        (sbSun, shell.js): утром слева, вечером справа, ночью его нет.
+     2. ТЕНЬ ХОЛОДНАЯ, СВЕТ ТЁПЛЫЙ. Тень освещена небом, а не солнцем, — у неё
+        синеватое вещество (--shade-rgb); тёплым бывает только пятно солнца.
+     3. РАССТОЯНИЕ — ДЫМКА. Дальнее бледнеет: окно позади, стол под панелью
+        уходят в дымку цвета стены, а не в темноту.
+     4. ВЕЩЕСТВО: стена — известь, окна — калька, буквы — графит, шов —
+        глина. Калька пропускает свет, но не картинку.
+     5. ЦВЕТ — ТОЛЬКО ТАМ, ГДЕ ЖИВО (system.css), и живого здесь два: шов и
+        солнце. Всё остальное ахроматично.
+   Числа ниже — не вкус: каждая пара «буква на поверхности» измерена законом
+   tools/light-contrast-check.mjs (мера 4.5 / 3), слово-цвет Очага без пары
+   здесь не пропустит tools/paint-tokens-check.mjs. */
 html[data-theme="light"] {
-  --bg: #eef0f5;
-  --bg-elev: #ffffff;
-  --ink: rgba(12, 14, 20, .92);
-  --ink-2: rgba(12, 14, 20, .62);
-  --ink-3: rgba(12, 14, 20, .38);
-  --line: rgba(12, 14, 20, .10);
-  --line-2: rgba(12, 14, 20, .16);
-  /* Прозрачность — приём для тёмного поля, и только для него.
-     На тёмном фоне сквозь стекло проходит темнота, и панель остаётся
-     читаемой. На светлом сквозь те же 62% проходит цветная подложка: окно
-     Seek на снимке основателя залито розово-бежевым, читать нечем. Свет
-     нельзя приглушить прозрачностью — его можно только закрыть.
-     Поэтому в светлой теме панели почти непрозрачны; размытие остаётся ради
-     мягкости краёв, но работу по читаемости делает не оно. */
-  --glass: rgba(255, 255, 255, .93);
-  --glass-2: rgba(255, 255, 255, .975);
-  --voice: rgba(255, 255, 255, .96);
-  --shadow: 0 20px 50px rgba(20, 24, 40, .18), 0 3px 10px rgba(20, 24, 40, .12);
-  --shadow-soft: 0 10px 26px rgba(20, 24, 40, .12);
-  /* Вещество значка в светлой теме (D-285): те же доли чернил, что были
-     плёнкой, пересчитаны над полем #eef0f5 в непрозрачный цвет. */
-  --tile-top: #fbfbfc;
-  --tile-bottom: #eceef2;
-  --tile-edge: #d9dbe1;
+  --bg: var(--day-wall);
+  --bg-elev: #f6f6f3;
+  --ink-rgb: 30, 29, 26;
+  --ink: #1e1d1a;
+  --ink-2: rgba(30, 29, 26, .76);
+  --ink-3: rgba(30, 29, 26, .66);
+  --line: rgba(30, 29, 26, .12);
+  --line-2: rgba(30, 29, 26, .21);
+  --film-rgb: 30, 29, 26;
+  --shade-rgb: 40, 50, 66;
+  --veil-rgb: 226, 227, 222;
+  --well-rgb: 247, 247, 244;
+  --menu-bg: #fbfbf9;
+  /* Калька: плотнее тёмного стекла втрое — свет нельзя приглушить
+     прозрачностью, его можно только закрыть (это знание стояло здесь с
+     первой светлой темы и остаётся верным). Сквозь кальку видно свет и
+     пятно солнца, но не подписи стола. */
+  --glass: rgba(250, 250, 247, .82);
+  --glass-2: rgba(252, 252, 250, .93);
+  --glass-tint: rgba(var(--sun-rgb), .26);
+  --voice: rgba(250, 250, 247, .96);
+  --sun-rgb: 255, 240, 214;
+  --on-accent: #fbfaf7;
+  --accent: #a8431c;
+  --accent-2: #b0502a;
+  --accent-rgb: 168, 67, 28;
+  --accent-soft: rgba(168, 67, 28, .14);
+  --accent-ring: rgba(168, 67, 28, .55);
+  --accent-ink: var(--accent);
+  --danger: #b03a2e;
+  --warn: #8a6a00;
+  --good: #2d7a52;
+  --bad: #b3261e;
+  --bad-rgb: 179, 38, 30;
+  --bad-ink: #a4281f;
+  --ok: #1e8449;
+  --ok-rgb: 30, 132, 73;
+  --ok-ink: #1b7040;
+  --star: #a87f00;
+  --star-rgb: 168, 127, 0;
+  --heed-rgb: 176, 98, 18;
+  --heed-ink: #8c4d0e;
+  --teal: #11785f;
+  --teal-rgb: 17, 120, 95;
+  --teal-ink: #0e6450;
+  --violet: #5a44c8;
+  --violet-rgb: 90, 68, 200;
+  --violet-ink: #4e3ab0;
+  /* Тень лежит ОТ солнца (sbSun пишет --sun-dx/--sun-dy на шаге шва): утром
+     вправо, вечером влево, в полдень короткая и вниз. Длина растёт, когда
+     солнце садится. */
+  --shadow: calc(var(--sun-dx, 0) * 22px) calc(var(--sun-dy, .6) * 24px) 52px -20px rgba(var(--shade-rgb), .34), 0 1px 3px rgba(var(--shade-rgb), .12);
+  --shadow-soft: calc(var(--sun-dx, 0) * 12px) calc(var(--sun-dy, .6) * 13px) 30px -12px rgba(var(--shade-rgb), .24);
+  --behind: rgba(237, 238, 234, .74);
+  --air-rgb: 250, 250, 247;
+  /* Кромка кальки ловит солнце: белый волосок на бумаге. */
+  --glint: rgba(255, 255, 255, .9);
+  --shade-k: .34;
+  --sink-k: .2;
+  --away-filter: contrast(.58) brightness(1.08);
+  --stone: rgba(40, 50, 66, .12);
+  --breath: transparent;
+  --wp-g1: transparent;
+  --wp-g2: rgba(40, 50, 66, .05);
+  --wp-f1: #e4e5e0;
+  --wp-f2: #dcddd7;
+  --wp-f3: #d2d3cd;
+  --tint-1: rgba(255, 246, 228, .5);
+  --tint-2: transparent;
+  /* Вещество значка (D-285) — непрозрачное и здесь: калька на извести. */
+  --tile-top: #f8f8f5;
+  --tile-bottom: #ecece8;
+  --tile-edge: #cfd0ca;
   --tile-top-on: #ffffff;
-  --tile-bottom-on: #f3f4f7;
-  --tile-edge-on: #c9ccd4;
-  --tile-label: #626469;
-  --tile-label-on: #1e2026;
-  --tile-halo: #f4f5f8;
-  --tile-dot: #979aa0;
-  --tile-dot-min: #c6c9cf;
+  --tile-bottom-on: #f2f2ef;
+  --tile-edge-on: #bcbdb7;
+  --tile-label: #45443f;
+  --tile-label-on: #1e1d1a;
+  --tile-halo: #e9eae5;
+  --tile-dot: #8e8d88;
+  --tile-dot-min: #c4c4be;
+  --wood: #c98a45;
+  --wood-line: #4a2e14;
 }
+/* Свет комнаты в Светлице — один для всех настроений: пол известковый, тела
+   света рисует солнце (sbSun). :root + атрибут весомее блока настроения
+   html[data-wp-mood], поэтому переопределение не зависит от порядка. */
+:root[data-theme="light"] {
+  --wp-g1-size: 1100px 760px; --wp-g1-at: 28% 26%; --wp-g1: transparent;
+  --wp-g2-size: 900px 700px; --wp-g2-at: 88% 92%; --wp-g2: rgba(40, 50, 66, .05);
+  --wp-f1: #e4e5e0; --wp-f-mid: 58%; --wp-f2: #dcddd7; --wp-f3: #d2d3cd;
+  --tint-blend: normal; --tint-opacity: 1;
+  --tint-1-size: 1100px 760px; --tint-1-at: 28% 26%; --tint-1-stop: 66%; --tint-1: rgba(255, 246, 228, .5);
+  --tint-2: transparent;
+  --grain-opacity: .07; --grain-blend: multiply;
+}
+/* ── ОСТРОВКИ ТЬМЫ ───────────────────────────────────────────────────────────
+   Дверь замка, занавес загрузки, прощание, заставка — тёмные в ОБЕИХ темах.
+   Дверь — диафрагма: сквозь её лепестки проступает свет комнаты, и в
+   Светлице это буквально утренний свет за тёмной дверью. Занавес — вторая
+   глава фразы витрины, у него свой мир. Поэтому здесь им возвращены слова
+   Очага; числа обязаны совпадать с корнем — это проверяет
+   tools/paint-tokens-check.mjs (п. «островки»), а шов им даёт --ember: шов
+   по кривой Очага, который sbSun пишет всегда. */
+html[data-theme="light"] :is(#sbVaultGate, #sbCurtain, #sbFarewell, #sbSaver, #sbBreathMinute) {
+  color-scheme: dark;
+  --bg: #0a0a0b;
+  --bg-elev: #121214;
+  --ink-rgb: 242, 242, 240;
+  --ink: #f2f2f0;
+  --ink-2: rgba(242, 242, 240, .70);
+  --ink-3: rgba(242, 242, 240, .61);
+  --line: rgba(242, 242, 240, .09);
+  --line-2: rgba(242, 242, 240, .16);
+  --film-rgb: 255, 255, 255;
+  --shade-rgb: 0, 0, 0;
+  --glass: rgba(242, 242, 240, .04);
+  --glass-2: rgba(242, 242, 240, .10);
+  --on-accent: var(--bg);
+  --accent: var(--ember);
+  --accent-rgb: var(--ember-rgb);
+  --accent-soft: rgba(var(--ember-rgb), .18);
+  --accent-ring: rgba(var(--ember-rgb), .55);
+  --bad-ink: #ff9b8f;
+  color: var(--ink);
+}
+/* ── СТАВНИ · решение D-326 ────────────────────────────────────────────────
+   Смена комнаты — не вспышка экрана. Открыть Светлицу — открыть ставни:
+   свет входит со стороны солнца мягким краем и проходит комнату за одну
+   секунду подъёма (--t-rise). Закрыть — тьма приходит с другой стороны за
+   медленное проявление (--t-drift). Направление ставит setTheme (shell.js)
+   меткой data-shutters по часу; снимки старой и новой комнаты делает сам
+   браузер (переход вида). Маска — только прозрачность, не краска.
+   Со снятым движением и в Турбо перехода нет вовсе — это решает код.
+   Охраняется tools/theme-choice-check.mjs. */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+html[data-shutters]::view-transition-new(root) {
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  animation-duration: var(--t-rise); animation-timing-function: var(--ease-enter); animation-fill-mode: both;
+}
+html[data-shutters^="close"]::view-transition-new(root) { animation-duration: var(--t-drift); }
+html[data-shutters$="-left"]::view-transition-new(root) {
+  -webkit-mask-image: linear-gradient(90deg, #000 40%, transparent 60%); mask-image: linear-gradient(90deg, #000 40%, transparent 60%);
+  -webkit-mask-size: 300% 100%; mask-size: 300% 100%; animation-name: sbShutL;
+}
+html[data-shutters$="-right"]::view-transition-new(root) {
+  -webkit-mask-image: linear-gradient(270deg, #000 40%, transparent 60%); mask-image: linear-gradient(270deg, #000 40%, transparent 60%);
+  -webkit-mask-size: 300% 100%; mask-size: 300% 100%; animation-name: sbShutR;
+}
+html[data-shutters$="-top"]::view-transition-new(root) {
+  -webkit-mask-image: linear-gradient(180deg, #000 40%, transparent 60%); mask-image: linear-gradient(180deg, #000 40%, transparent 60%);
+  -webkit-mask-size: 100% 300%; mask-size: 100% 300%; animation-name: sbShutT;
+}
+html[data-shutters$="-bottom"]::view-transition-new(root) {
+  -webkit-mask-image: linear-gradient(0deg, #000 40%, transparent 60%); mask-image: linear-gradient(0deg, #000 40%, transparent 60%);
+  -webkit-mask-size: 100% 300%; mask-size: 100% 300%; animation-name: sbShutB;
+}
+@keyframes sbShutL { from { -webkit-mask-position: 100% 0; mask-position: 100% 0; } to { -webkit-mask-position: 0 0; mask-position: 0 0; } }
+@keyframes sbShutR { from { -webkit-mask-position: 0 0; mask-position: 0 0; } to { -webkit-mask-position: 100% 0; mask-position: 100% 0; } }
+@keyframes sbShutT { from { -webkit-mask-position: 0 100%; mask-position: 0 100%; } to { -webkit-mask-position: 0 0; mask-position: 0 0; } }
+@keyframes sbShutB { from { -webkit-mask-position: 0 0; mask-position: 0 0; } to { -webkit-mask-position: 0 100%; mask-position: 0 100%; } }
+/* В Светлице цифры часов не светятся: их освещает солнце, а не они комнату.
+   Свет остаётся в самом штрихе (--lit-ink — графит, тронутый глиной). */
+html[data-theme="light"] .tb-clock,
+html[data-theme="light"] .pl-time,
+html[data-theme="light"] .time-big { filter: none; }
 
 html.sb-incognito {
   --bg: #000;
@@ -471,6 +794,9 @@ html, body { -webkit-user-select: none; user-select: none; }
   ::selection { background: rgba(var(--accent-rgb), .14); }
 }
 
+/* Жирное браузера (b, strong, заголовки) — 700 по умолчанию: третий вес,
+   которого у среды нет. Сильное здесь одно — --w-strong (D-337). */
+b, strong, h1, h2, h3, h4, h5, h6, th { font-weight: var(--w-strong); }
 html, body {
   margin: 0;
   height: 100%;
@@ -483,6 +809,69 @@ html, body {
 }
 
 button, input, select, textarea { font: inherit; color: inherit; }
+/* ── РОДНЫХ ЭЛЕМЕНТОВ БРАУЗЕРА В СРЕДЕ НЕТ · решение D-338 ───────────────
+   ПОВОД — задание основателя «AESTHETIC SINGULARITY» 28.09.2026, §32:
+   «один стандартный browser-like элемент» — и §1: «каждая деталь должна
+   принадлежать одному миру». Перепись 28.09: выпадающий список языка в
+   панели, список источников в «Передать» и таймер замка рисовал браузер
+   своей стрелкой; переключатели «Передать» и «Ключей» — его кружки;
+   галочка слияния в панели — его квадрат; у поисковых полей WebKit ставит
+   свой крестик, у числовых — свои стрелочки; полосу прокрутки красил он же
+   (в Светлице — тёмную по светлой стене). Один список в Настройках был
+   нарисован сам, но стрелка в нём была белой картинкой — и в Светлице
+   исчезала на бумаге.
+   Стрелка списка — две тонкие линии тем же цветом, что буквы (currentColor
+   через градиент, без картинки и без числа краски), той же толщины, что
+   штрих значков. Точка и галочка — глина: то, что выбрано, живо.
+   Полоса прокрутки — тонкая, плёнкой чернил, без дорожки.
+   Правила стоят на элементах, а не на классах: новое поле в новой комнате
+   получает их само. Комната, красящая список shorthand-ом background,
+   стёрла бы стрелку, — потому здесь background-image, а комнаты говорят
+   background-color (закон это стережёт на экране: стрелка обязана быть).
+   Охраняется tools/native-control-check.mjs. */
+select {
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+  padding-right: 28px;
+  background-image:
+    linear-gradient(45deg, transparent calc(50% - .8px), currentColor calc(50% - .8px), currentColor calc(50% + .8px), transparent calc(50% + .8px)),
+    linear-gradient(135deg, transparent calc(50% - .8px), currentColor calc(50% - .8px), currentColor calc(50% + .8px), transparent calc(50% + .8px));
+  background-size: 6px 6px, 6px 6px; background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-repeat: no-repeat;
+}
+select option { background: var(--menu-bg); color: var(--ink); }
+input[type="radio"], input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none; margin: 0; flex: none;
+  width: 16px; height: 16px; display: inline-grid; place-content: center; vertical-align: -3px;
+  border: 1.5px solid var(--line-2); border-radius: var(--r-round); background: transparent; cursor: pointer;
+  transition: border-color var(--t-touch) var(--ease-move), background var(--t-touch) var(--ease-move);
+}
+input[type="checkbox"] { border-radius: var(--r-tag); }
+input[type="radio"]::before {
+  content: ""; width: 8px; height: 8px; border-radius: var(--r-round); background: var(--accent);
+  transform: scale(0); transition: transform var(--t-touch) var(--ease-enter);
+}
+input[type="radio"]:checked::before { transform: scale(1); }
+input[type="radio"]:checked { border-color: var(--accent-ring); }
+input[type="checkbox"]::before {
+  content: ""; width: 5px; height: 9px; border: solid var(--on-accent); border-width: 0 1.8px 1.8px 0;
+  transform: translateY(-1px) rotate(45deg) scale(0); transition: transform var(--t-touch) var(--ease-enter);
+}
+input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+input[type="checkbox"]:checked::before { transform: translateY(-1px) rotate(45deg) scale(1); }
+input[type="radio"]:focus-visible, input[type="checkbox"]:focus-visible { outline: none; border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
+input[type="search"] { appearance: none; -webkit-appearance: none; }
+input[type="search"]::-webkit-search-decoration, input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webkit-search-results-button { -webkit-appearance: none; display: none; }
+input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+:root { scrollbar-width: thin; scrollbar-color: rgba(var(--film-rgb), .22) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(var(--film-rgb), .22); border-radius: var(--r-pill); border: 2px solid transparent; background-clip: padding-box; }
+/* Подсказка в пустом поле — вторыми чернилами шкалы (D-323). Прежде её
+   цвет выбирал браузер: серый #757575 на любом поле, 2.1 на тёмном стекле и
+   3.7 на кальке. Закон контраста нашёл это в семи полях поиска разом. Поле
+   светлее стекла под ним, поэтому тусклых чернил здесь мало: подсказку от
+   набранного отличает плотность (.70 против 1), а не слепота. */
+::placeholder { color: var(--ink-2); opacity: 1; }
 button { cursor: pointer; background: none; border: 0; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-ctrl); }
 kbd { font-family: var(--mono); font-size: var(--f-ui); }
@@ -491,7 +880,7 @@ kbd { font-family: var(--mono); font-size: var(--f-ui); }
 .btn {
   padding: 9px 14px; border-radius: var(--r-ctrl);
   background: var(--glass); border: 1px solid var(--line);
-  color: var(--ink); transition: background var(--t-touch) ease, transform var(--t-touch) var(--ease);
+  color: var(--ink); transition: background var(--t-touch) var(--ease-move), transform var(--t-touch) var(--ease-enter);
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -502,17 +891,37 @@ kbd { font-family: var(--mono); font-size: var(--f-ui); }
   :where(html:not([data-input="touch"])) .btn:hover { background: var(--glass-2); }
 }
 .btn:active { transform: scale(.98); }
-.btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; color: #fff; }
+/* ── ПОД ПАЛЬЦЕМ И В ПОКОЕ · решение D-340 ───────────────────────────────
+   ПОВОД — задание основателя «AESTHETIC SINGULARITY» 28.09.2026, §19–20:
+   «каждое действие должно иметь правильный ответ… первые 50 мс», §6:
+   «pressed, disabled» среди незаметных мест. Перепись 28.09: нажатие
+   отвечало у пяти кнопок из сотен (.btn, кнопка стола, знак, язык,
+   сундук) — остальные под пальцем не менялись ничем. Отключённое гасло
+   пятью разными числами (.35 .5 .5 .55 .6) и в браузере держало курсор-
+   руку над тем, что нажать нельзя.
+   Ответ под пальцем один на всех: предмет чуть подаётся (.98) за --t-touch
+   и возвращается той же кривой появления. Правило стоит на элементе, а не
+   на классе, и потому кнопка, заведённая завтра, отвечает сама. Плитка дока
+   исключена: у неё своя хореография (подхват .86, прыжок).
+   Покой один на всех: отключённое затихает одним словом (--rest) и не
+   зовёт руку. Подсказка в поле, которое ей мало, кончается многоточием, а
+   не обрывом буквы. Слово --rest объявлено в словаре корня. */
+button, [role="button"] { transition: transform var(--t-touch) var(--ease-enter); }
+button:not(:disabled):not(.dock-item):active, [role="button"]:not([aria-disabled="true"]):active { transform: scale(.98); }
+button:disabled, [aria-disabled="true"], input:disabled, select:disabled, textarea:disabled { opacity: var(--rest); cursor: default; }
+input, textarea { text-overflow: ellipsis; }
+input::placeholder, textarea::placeholder { text-overflow: ellipsis; }
+.btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; color: var(--on-accent); }
 .btn.wide { width: 100%; }
 .btn.link { background: none; border: 0; color: var(--ink-2); padding: 6px 2px; text-decoration: underline; text-underline-offset: 3px; }
 .btn.ghost { background: transparent; }
-.btn.danger { color: var(--danger); }
+.btn.danger { color: var(--bad-ink); }
 .btn.tiny { padding: 5px 10px; font-size: var(--f-ui); border-radius: var(--r-ctrl); }
 
 .field { display: flex; flex-direction: column; gap: 5px; margin: 10px 0; font-size: var(--f-read); color: var(--ink-2); }
 .field input, .field select {
   padding: 9px 11px; border-radius: var(--r-ctrl);
-  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink);
+  background-color: rgba(var(--film-rgb), .04); border: 1px solid var(--line); color: var(--ink);
 }
 .check { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: var(--f-read); color: var(--ink-2); }
 .check.small { font-size: var(--f-ui); }
@@ -522,77 +931,71 @@ kbd { font-family: var(--mono); font-size: var(--f-ui); }
    a low clay ember, the seam's own colour, sitting where the dock lives. The
    navy default this replaced was the reference's, not this brand's. Ocean is
    still one chip away. */
+/* ── СВЕТ НАСТРОЕНИЯ — ДАННЫЕ, А НЕ ПРАВИЛА (D-322) ───────────────────────
+   У каждого настроения пять чисел: два тела света и три ступени пола. Прежде
+   это были пятнадцать правил с цветами внутри — и светлая тема перекрывала
+   их одним правилом с тремя своими числами, то есть одинаково для всех
+   комнат. Теперь рисунок один, а цвета стоят словами в блоке настроения:
+   Очаг читает их отсюда, Светлица переопределяет слова разом (см. блок
+   «Светлица» в начале таблицы) и рисует свет солнцем (sbSun в shell.js).
+   Геометрия у настроения своя там, где была своя: слова *-size, *-at, *-stop. */
 .wp-layer {
   position: absolute; inset: 0; z-index: var(--z-flat); pointer-events: none;
   background:
-    radial-gradient(900px 620px at 78% 18%, rgba(224, 102, 60, .09), transparent 62%),
-    radial-gradient(760px 560px at 14% 82%, rgba(242, 242, 240, .05), transparent 60%),
-    linear-gradient(168deg, #111114 0%, #0b0b0d 52%, #070708 100%);
+    radial-gradient(var(--wp-g1-size, 900px 620px) at var(--wp-g1-at, 78% 18%), var(--wp-g1), transparent var(--wp-g1-stop, 62%)),
+    radial-gradient(var(--wp-g2-size, 760px 560px) at var(--wp-g2-at, 14% 82%), var(--wp-g2), transparent var(--wp-g2-stop, 60%)),
+    linear-gradient(168deg, var(--wp-f1) 0%, var(--wp-f2) var(--wp-f-mid, 52%), var(--wp-f3) 100%);
 }
-html[data-wp-mood="ocean"] .wp-layer {
-  background:
-    radial-gradient(900px 620px at 78% 18%, rgba(58, 92, 226, .16), transparent 62%),
-    radial-gradient(760px 560px at 14% 82%, rgba(96, 120, 255, .12), transparent 60%),
-    linear-gradient(168deg, #0a0d16 0%, #060709 52%, #04050a 100%);
+html[data-wp-mood="ocean"] {
+  --wp-g1: rgba(58, 92, 226, .16); --wp-g2: rgba(96, 120, 255, .12);
+  --wp-f1: #0a0d16; --wp-f2: #060709; --wp-f3: #04050a;
 }
-html[data-theme="light"] .wp-layer {
-  background:
-    radial-gradient(900px 620px at 78% 18%, rgba(var(--accent-rgb), .18), transparent 62%),
-    radial-gradient(760px 560px at 14% 82%, rgba(120, 160, 255, .16), transparent 60%),
-    linear-gradient(168deg, #f2f4fa 0%, #e9ecf4 52%, #eef0f6 100%);
+html[data-wp-mood="aurora"] {
+  --wp-g1-size: 820px 600px; --wp-g1-at: 70% 12%; --wp-g1-stop: 60%; --wp-g1: rgba(72, 226, 190, .16);
+  --wp-g2-size: 720px 560px; --wp-g2-at: 18% 86%; --wp-g2-stop: 62%; --wp-g2: rgba(120, 90, 255, .16);
+  --wp-f1: #06120f; --wp-f-mid: 60%; --wp-f2: #05070c; --wp-f3: #04050a;
 }
-html[data-wp-mood="aurora"] .wp-layer {
-  background:
-    radial-gradient(820px 600px at 70% 12%, rgba(72, 226, 190, .16), transparent 60%),
-    radial-gradient(720px 560px at 18% 86%, rgba(120, 90, 255, .16), transparent 62%),
-    linear-gradient(168deg, #06120f 0%, #05070c 60%, #04050a 100%);
-}
-html[data-wp-mood="sunset"] .wp-layer {
-  background:
-    radial-gradient(860px 620px at 76% 16%, rgba(255, 140, 80, .18), transparent 62%),
-    radial-gradient(700px 540px at 16% 84%, rgba(255, 80, 140, .14), transparent 60%),
-    linear-gradient(168deg, #150a08 0%, #0a0608 58%, #050406 100%);
+html[data-wp-mood="sunset"] {
+  --wp-g1-size: 860px 620px; --wp-g1-at: 76% 16%; --wp-g1: rgba(255, 140, 80, .18);
+  --wp-g2-size: 700px 540px; --wp-g2-at: 16% 84%; --wp-g2: rgba(255, 80, 140, .14);
+  --wp-f1: #150a08; --wp-f-mid: 58%; --wp-f2: #0a0608; --wp-f3: #050406;
 }
 /* ── КОМНАТЫ, ПОДАРЕННЫЕ СУНДУКОМ (D-255) ─────────────────────────────────
    Своя комната берёт тон из переменной, которую ставит Сундук из имени
    человека; четыре остальные — как прежние: свой нижний слой, свой свет. */
-html[data-wp-mood="own"] .wp-layer {
-  background:
-    radial-gradient(900px 620px at 78% 18%, hsla(var(--sb-own-hue, 22), 62%, 58%, .16), transparent 62%),
-    radial-gradient(760px 560px at 14% 82%, hsla(var(--sb-own-hue, 22), 50%, 72%, .10), transparent 60%),
-    linear-gradient(168deg, #0e0e12 0%, #09090c 52%, #050507 100%);
+html[data-wp-mood="own"] {
+  --wp-g1: hsla(var(--sb-own-hue, 22), 62%, 58%, .16); --wp-g2: hsla(var(--sb-own-hue, 22), 50%, 72%, .10);
+  --wp-f1: #0e0e12; --wp-f2: #09090c; --wp-f3: #050507;
 }
-html[data-wp-mood="midnight"] .wp-layer {
-  background:
-    radial-gradient(900px 620px at 78% 18%, rgba(70, 92, 210, .14), transparent 62%),
-    radial-gradient(760px 560px at 14% 82%, rgba(40, 60, 160, .12), transparent 60%),
-    linear-gradient(168deg, #07091a 0%, #05060f 52%, #030308 100%);
+html[data-wp-mood="midnight"] {
+  --wp-g1: rgba(70, 92, 210, .14); --wp-g2: rgba(40, 60, 160, .12);
+  --wp-f1: #07091a; --wp-f2: #05060f; --wp-f3: #030308;
 }
-html[data-wp-mood="garden"] .wp-layer {
-  background:
-    radial-gradient(900px 620px at 78% 18%, rgba(110, 200, 120, .14), transparent 62%),
-    radial-gradient(760px 560px at 14% 82%, rgba(60, 140, 90, .12), transparent 60%),
-    linear-gradient(168deg, #08110b 0%, #060a07 52%, #040604 100%);
+html[data-wp-mood="garden"] {
+  --wp-g1: rgba(110, 200, 120, .14); --wp-g2: rgba(60, 140, 90, .12);
+  --wp-f1: #08110b; --wp-f2: #060a07; --wp-f3: #040604;
 }
-html[data-wp-mood="lavender"] .wp-layer {
-  background:
-    radial-gradient(900px 620px at 78% 18%, rgba(160, 120, 240, .15), transparent 62%),
-    radial-gradient(760px 560px at 14% 82%, rgba(120, 80, 200, .12), transparent 60%),
-    linear-gradient(168deg, #0f0a17 0%, #09060f 52%, #050408 100%);
+html[data-wp-mood="lavender"] {
+  --wp-g1: rgba(160, 120, 240, .15); --wp-g2: rgba(120, 80, 200, .12);
+  --wp-f1: #0f0a17; --wp-f2: #09060f; --wp-f3: #050408;
 }
-html[data-wp-mood="honey"] .wp-layer {
-  background:
-    radial-gradient(900px 620px at 78% 18%, rgba(240, 190, 80, .18), transparent 62%),
-    radial-gradient(760px 560px at 14% 82%, rgba(220, 150, 50, .12), transparent 60%),
-    linear-gradient(168deg, #16110a 0%, #0c0906 52%, #070504 100%);
+html[data-wp-mood="honey"] {
+  --wp-g1: rgba(240, 190, 80, .18); --wp-g2: rgba(220, 150, 50, .12);
+  --wp-f1: #16110a; --wp-f2: #0c0906; --wp-f3: #070504;
 }
-html[data-wp-mood="mono"] .wp-layer {
-  background:
-    radial-gradient(900px 620px at 74% 18%, rgba(255, 255, 255, .07), transparent 62%),
-    linear-gradient(168deg, #0c0d10 0%, #08090c 60%, #050507 100%);
+html[data-wp-mood="mono"] {
+  --wp-g1-at: 74% 18%; --wp-g1: rgba(var(--film-rgb), .07); --wp-g2: transparent;
+  --wp-f1: #0c0d10; --wp-f-mid: 60%; --wp-f2: #08090c; --wp-f3: #050507;
 }
-html.sb-incognito .wp-layer {
-  background: radial-gradient(800px 560px at 72% 14%, rgba(160, 107, 255, .14), transparent 60%), #000;
+/* Живые комнаты (суточная и светотерапия): пол без своего света — свет у
+   них пишут часы в #sbMoodTint. */
+html[data-wp-mood="therapy"], html[data-wp-mood="daylight"] {
+  --wp-g1: transparent; --wp-g2: rgba(var(--ink-rgb), .04);
+  --wp-f1: #101013; --wp-f2: #0a0a0c; --wp-f3: #070708;
+}
+html.sb-incognito {
+  --wp-g1-size: 800px 560px; --wp-g1-at: 72% 14%; --wp-g1-stop: 60%; --wp-g1: rgba(160, 107, 255, .14);
+  --wp-g2: transparent; --wp-f1: #000; --wp-f2: #000; --wp-f3: #000;
 }
 
 /* --------------------------------------------------- wallpaper: the field */
@@ -620,8 +1023,8 @@ html.sb-incognito .wp-layer {
    ещё до того, как назовёт пароль. */
 /* Пояснение и предупреждение в блоке замка (D-161): цена названа рядом с
    кнопкой, а не в справке, — читать её будут только здесь. */
-.cc-note { font-size: var(--f-ui); line-height: 1.45; color: var(--ink-2); margin: 2px 0 0; }
-.cc-warn { font-size: var(--f-ui); line-height: 1.45; color: #ffb4a6; margin: 4px 0 8px; }
+.cc-note { font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); margin: 2px 0 0; }
+.cc-warn { font-size: var(--f-ui); line-height: var(--lh-read); color: var(--bad-ink); margin: 4px 0 8px; }
 
 #sbVaultGate {
   position: fixed; inset: 0; z-index: var(--z-door);
@@ -630,6 +1033,7 @@ html.sb-incognito .wp-layer {
      «забыли слово?» она выше телефонного экрана, и кнопка «Открыть кодом»
      оказывалась за нижним краем — недостижимой пальцем. */
   overflow-y: auto; overscroll-behavior: contain;
+  /* своя краска: дверь замка тёмная в обеих темах — сквозь её лепестки проступает свет комнаты */
   background: rgba(6, 7, 10, .92);
   backdrop-filter: blur(calc(var(--glass-blur) * 1.2));
   -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.2));
@@ -661,7 +1065,7 @@ html.sb-incognito .wp-layer {
 .vg-iris .vgi-glow {
   fill: var(--accent);
   opacity: 0;
-  transition: opacity var(--t-scene) ease;
+  transition: opacity var(--t-scene) var(--ease-enter);
 }
 /* ── ДИАФРАГМА ЕСТЬ ДИСК С ОТВЕРСТИЕМ, А НЕ ШЕСТЬ ОСТРИЁВ · D-190 ──────────
    Первая редакция рисовала шесть лепестков-секторов, повёрнутых вокруг
@@ -672,31 +1076,31 @@ html.sb-incognito .wp-layer {
    котором маской вырезано шестиугольное ОТВЕРСТИЕ. Закрытие — сжатие
    отверстия, то есть буквально «сколько света пройдёт». Швы лежат ПОД диском
    и видны ровно настолько, насколько отверстие открылось. */
-.vg-iris .vgi-disc { fill: rgba(255, 255, 255, .05); }
+.vg-iris .vgi-disc { fill: rgba(var(--film-rgb), .05); }
 .vg-iris .vgi-hole {
   transform-box: view-box; transform-origin: 100px 100px;
   transform: scale(var(--vg-open, .08));
-  transition: transform var(--t-rise) cubic-bezier(.16, 1, .3, 1);
+  transition: transform var(--t-rise) var(--ease-enter);
 }
 .vg-iris .vgi-seams line { stroke: rgba(var(--accent-rgb), .35); stroke-width: 1; }
 .vg-claim {
-  margin: 2px 0 4px; font-family: var(--mono); font-size: var(--f-ui); line-height: 1.7;
-  color: var(--ink-2); letter-spacing: .01em;
+  margin: 2px 0 4px; font-family: var(--mono); font-size: var(--f-ui); line-height: var(--lh-read);
+  color: var(--ink-2); letter-spacing: var(--track-air);
 }
 /* Второй ключ у двери. Поле стоит рядом со словом и выглядит частью замка,
    а не дополнением: без файла ключ не выводится вовсе. */
 .vg-key {
   display: flex; flex-direction: column; gap: 6px; width: 100%;
-  font-size: var(--f-meta); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+  font-size: var(--f-meta); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ink-3);
 }
 .vg-key input[type="file"] {
   font: inherit; font-size: var(--f-ui); text-transform: none; letter-spacing: 0;
   color: var(--ink-2); padding: 9px 10px;
-  background: rgba(255, 255, 255, .03);
+  background: rgba(var(--film-rgb), .03);
   border: 1px dashed rgba(var(--accent-rgb), .45); border-radius: var(--r-ctrl);
 }
 .vg-keynote {
-  margin: -2px 0 2px; font-size: var(--f-meta); line-height: 1.6; color: var(--ink-3); max-width: 44ch;
+  margin: -2px 0 2px; font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-3); max-width: 44ch;
 }
 /* Забытое слово — тихая строка под кнопкой, а не вторая кнопка: дверь
    открывается словом, код — запасной ход (D-266). */
@@ -712,7 +1116,7 @@ html.sb-incognito .wp-layer {
 .vg-langs { display: flex; justify-content: center; gap: 6px; }
 .vg-lang {
   min-width: 44px; min-height: 32px; padding: 0 10px; border-radius: var(--r-pill);
-  font-family: var(--mono); font-size: var(--f-micro); letter-spacing: .08em;
+  font-family: var(--mono); font-size: var(--f-micro); letter-spacing: var(--track-caps);
   color: var(--ink-3); border: 1px solid var(--line); background: transparent;
 }
 .vg-lang.on { color: var(--ink); border-color: var(--line-2); background: var(--glass); }
@@ -724,13 +1128,13 @@ html.sb-incognito .wp-layer {
 .vg-spare[hidden] { display: none; }
 .vg-spare input {
   width: 100%; padding: 11px 12px; font-size: var(--f-read); border-radius: var(--r-ctrl);
-  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
+  background: rgba(var(--film-rgb), .04); border: 1px solid var(--line); color: var(--ink); outline: none;
 }
 .vg-spare input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-#sbVaultCode { font-family: var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+#sbVaultCode { font-family: var(--mono); letter-spacing: var(--track-caps); text-transform: uppercase; }
 .vg-iris .vgi-rim {
   fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: .5;
-  transition: stroke var(--t-move) ease, opacity var(--t-move) ease;
+  transition: stroke var(--t-move) var(--ease-move), opacity var(--t-move) var(--ease-move);
 }
 /* Ключ поворачивается — и это видно. Оборот медленный: он показывает работу,
    а не торопит. */
@@ -741,30 +1145,30 @@ html.sb-incognito .wp-layer {
 @keyframes vgTurn { to { transform: rotate(360deg); } }
 /* Верный пароль: лепестки расходятся, свет проступает. */
 #sbVaultGate.vg-open .vgi-hole { --vg-open: 1; }
-#sbVaultGate.vg-open .vgi-disc { fill: rgba(255, 255, 255, .02); }
+#sbVaultGate.vg-open .vgi-disc { fill: rgba(var(--film-rgb), .02); }
 #sbVaultGate.vg-open .vgi-glow { opacity: .5; }
 #sbVaultGate.vg-open .vgi-rim { opacity: .18; }
 /* Неверный: сжимается на волос и один раз холодеет. */
 #sbVaultGate.vg-wrong .vgi-hole { --vg-open: .03; }
-#sbVaultGate.vg-wrong .vgi-rim { animation: vgCold var(--t-scene) ease; }
-@keyframes vgCold { 50% { stroke: #8fb6ff; opacity: 1; } }
+#sbVaultGate.vg-wrong .vgi-rim { animation: vgCold var(--t-scene) var(--ease-enter); }
+@keyframes vgCold { 50% { /* своя краска: холод неверного слова на тёмной двери */ stroke: #8fb6ff; opacity: 1; } }
 /* Турбо и снятое движение своё возьмут сами: html.sb-turbo * уже снимает и
    длительности переходов, и анимации (см. раздел Турбо). Повторять это здесь
    значило бы завести второе знание об одном правиле — и, как показала доска,
    ещё и голую длительность мимо шкалы. */
 html[data-motion="reduced"] #sbVaultGate.vg-work .vgi-seams { animation: none; }
-.vg-title { font-size: var(--f-title); font-weight: 700; letter-spacing: -.01em; margin: 0; }
-.vg-sub { font-size: var(--f-read); line-height: 1.5; color: var(--ink-2); margin: 0; }
+.vg-title { font-size: var(--f-title); font-weight: var(--w-strong); letter-spacing: var(--track-tight); margin: 0; }
+.vg-sub { font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2); margin: 0; }
 #sbVaultPass {
   width: 100%; height: 44px; padding: 0 14px;
   border-radius: var(--r-ctrl); border: 1px solid var(--line);
   background: var(--glass); color: var(--ink); font: inherit; font-size: var(--f-lead);
 }
 #sbVaultPass:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.vg-err { font-size: var(--f-ui); color: #ff8a8a; margin: 0; }
+.vg-err { font-size: var(--f-ui); color: var(--bad-ink); margin: 0; }
 
 #sbMoodTint {
-  mix-blend-mode: screen; opacity: .55;
+  mix-blend-mode: var(--tint-blend, screen); opacity: var(--tint-opacity, .55);
   /* ── ЗДЕСЬ СТОЯЛ ПЕРЕХОД, И ОН НЕ РАБОТАЛ (D-158) ──────────────────────
      Первым лекарством от мерцания Совет поставил transition: background-image
      — расчёт был на то, что браузер сам пройдёт промежуточные цвета между
@@ -776,29 +1180,23 @@ html[data-motion="reduced"] #sbVaultGate.vg-work .vgi-seams { animation: none; }
      объяснением, как оно помогает, — это комментарий, который врёт.
      Настоящее лекарство оказалось не в CSS, а в шаге пружины (см. wpStart в
      os/core/shell.js): мелкие шаги вместо редких больших. */
-  /* studio: clay ember low, neutral light high — the room is warm, not painted */
+  /* studio: clay ember low, neutral light high — the room is warm, not painted.
+     Цвета — слова настроения (D-322), рисунок один на все комнаты. */
   background:
-    radial-gradient(900px 640px at 76% 16%, rgba(224, 102, 60, .16), transparent 64%),
-    radial-gradient(760px 580px at 16% 84%, rgba(242, 242, 240, .09), transparent 62%);
+    radial-gradient(var(--tint-1-size, 900px 640px) at var(--tint-1-at, 76% 16%), var(--tint-1), transparent var(--tint-1-stop, 64%)),
+    radial-gradient(var(--tint-2-size, 760px 580px) at var(--tint-2-at, 16% 84%), var(--tint-2), transparent var(--tint-2-stop, 62%));
 }
-html[data-wp-mood="ocean"] #sbMoodTint {
-  background:
-    radial-gradient(900px 640px at 76% 16%, rgba(58, 92, 226, .30), transparent 64%),
-    radial-gradient(760px 580px at 16% 84%, rgba(96, 120, 255, .20), transparent 62%);
+html[data-wp-mood="ocean"] { --tint-1: rgba(58, 92, 226, .30); --tint-2: rgba(96, 120, 255, .20); }
+html[data-wp-mood="aurora"] {
+  --tint-1-size: 880px 640px; --tint-1-at: 70% 12%; --tint-1-stop: 62%; --tint-1: rgba(46, 214, 170, .30);
+  --tint-2-at: 18% 86%; --tint-2: rgba(128, 92, 255, .24);
 }
-html[data-wp-mood="aurora"] #sbMoodTint {
-  background:
-    radial-gradient(880px 640px at 70% 12%, rgba(46, 214, 170, .30), transparent 62%),
-    radial-gradient(760px 580px at 18% 86%, rgba(128, 92, 255, .24), transparent 62%);
+html[data-wp-mood="sunset"] {
+  --tint-1-at: 76% 14%; --tint-1-stop: 62%; --tint-1: rgba(255, 138, 78, .32);
+  --tint-2-size: 740px 560px; --tint-2-at: 16% 86%; --tint-2: rgba(214, 68, 122, .24);
 }
-html[data-wp-mood="sunset"] #sbMoodTint {
-  background:
-    radial-gradient(900px 640px at 76% 14%, rgba(255, 138, 78, .32), transparent 62%),
-    radial-gradient(740px 560px at 16% 86%, rgba(214, 68, 122, .24), transparent 62%);
-}
-html[data-wp-mood="mono"] #sbMoodTint {
-  opacity: .34;
-  background: radial-gradient(920px 660px at 74% 18%, rgba(206, 212, 226, .26), transparent 64%);
+html[data-wp-mood="mono"] {
+  --tint-opacity: .34; --tint-1-size: 920px 660px; --tint-1-at: 74% 18%; --tint-1: rgba(206, 212, 226, .26); --tint-2: transparent;
 }
 
 /* Daylight — суточная комната (D-127).
@@ -807,12 +1205,7 @@ html[data-wp-mood="mono"] #sbMoodTint {
    объявлен только запасной вид — на тот случай, если стиль ещё не написан
    (первые миги загрузки, выключенный скрипт): пусть это будет Studio, а не
    пустота. */
-html[data-wp-mood="daylight"] #sbMoodTint {
-  opacity: .82;
-  background:
-    radial-gradient(900px 640px at 76% 16%, rgba(224, 102, 60, .16), transparent 64%),
-    radial-gradient(760px 580px at 16% 84%, rgba(242, 242, 240, .09), transparent 62%);
-}
+html[data-wp-mood="daylight"] { --tint-opacity: .82; }
 /* ПЕРЕХОДА ЗДЕСЬ НЕТ, И ЭТО РЕШЕНИЕ. Совет сперва приписал сюда плавный
    переход — рефлексом, а не мыслью, — и duration-scale-check его отверг за
    голую длительность. Проверка правила показала, что дело не в записи числа:
@@ -822,18 +1215,7 @@ html[data-wp-mood="daylight"] #sbMoodTint {
    слабом телефоне. Правило убрано целиком, а не переписано в токен. */
 /* Светотерапия — сеанс (D-131). Рисунок так же пишут часы, здесь только
    запасной вид и общая яркость: лампа светлее, чем комната по часам. */
-html[data-wp-mood="therapy"] #sbMoodTint {
-  opacity: .9;
-  background:
-    radial-gradient(900px 640px at 76% 16%, rgba(224, 102, 60, .3), transparent 64%),
-    radial-gradient(760px 580px at 16% 84%, rgba(242, 242, 240, .18), transparent 62%);
-}
-html[data-wp-mood="therapy"] .wp-layer,
-html[data-wp-mood="daylight"] .wp-layer {
-  background:
-    radial-gradient(760px 560px at 14% 82%, rgba(242, 242, 240, .04), transparent 60%),
-    linear-gradient(168deg, #101013 0%, #0a0a0c 52%, #070708 100%);
-}
+html[data-wp-mood="therapy"] { --tint-opacity: .9; --tint-1: rgba(var(--accent-rgb), .3); --tint-2: rgba(var(--ink-rgb), .18); }
 
 /* Плёночное зерно: бесшовная плитка 180px серой турбулентности.
    -------------------------------------------------------------------------
@@ -859,11 +1241,20 @@ html[data-wp-mood="daylight"] .wp-layer {
 @media (min-resolution: 1.5dppx) { #sbGrain { background-size: 120px 120px; } }
 @media (min-resolution: 2.5dppx) { #sbGrain { background-size: 66px 66px; } }
 @media (min-resolution: 3.5dppx) { #sbGrain { background-size: 50px 50px; } }
-/* the vault: a top-anchored vignette, darkening the bottom corners hardest */
-#sbStone { background: radial-gradient(140% 115% at 50% 4%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, .55) 100%); }
+#sbGrain {
+  opacity: var(--grain-opacity, .028); mix-blend-mode: var(--grain-blend, normal);
+  background-size: 180px 180px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='180' height='180' filter='url(%23n)' opacity='.55'/></svg>");
+}
+@media (min-resolution: 1.5dppx) { #sbGrain { background-size: 120px 120px; } }
+@media (min-resolution: 2.5dppx) { #sbGrain { background-size: 66px 66px; } }
+@media (min-resolution: 3.5dppx) { #sbGrain { background-size: 50px 50px; } }
+/* the vault: a top-anchored vignette, darkening the bottom corners hardest.
+   В Светлице это углы комнаты: туда свет из окна доходит слабее. */
+#sbStone { background: radial-gradient(140% 115% at 50% 4%, transparent 52%, var(--stone) 100%); }
 /* the breath: shown only while the field is NOT running — see field.js */
 #sbBreath {
-  background: radial-gradient(110% 74% at 50% -14%, #18181c 0%, rgba(24, 24, 28, 0) 58%);
+  background: radial-gradient(110% 74% at 50% -14%, var(--breath) 0%, transparent 58%);
   opacity: .32;
   animation: sbBreath 8.4s ease-in-out infinite alternate;
 }
@@ -875,10 +1266,12 @@ html[data-motion="reduced"] #sbBreath { opacity: .38; animation: none }
    breath holds still for the same reason the field does. */
 html.wp-parked #sbBreath { animation-play-state: paused }
 
-/* The field is a dark-navy picture with no light counterpart. In the light
-   theme, and in incognito — whose whole point is looking unlike the normal
-   desktop — the gradient wallpaper above stays in charge, unchanged. */
-html[data-theme="light"] .wp-layer > *,
+/* Поле — тёмная картина без светлой пары, а инкогнито нарочно не похоже на
+   обычный стол: там остаётся только пол. В Светлице поля и дыхания нет —
+   свет в комнату приносит солнце (#sbMoodTint, sbSun), а зерно и углы
+   остаются: это вещество стены, а не освещение. */
+html[data-theme="light"] #sbField,
+html[data-theme="light"] #sbBreath,
 html.sb-incognito .wp-layer > * { display: none !important; }
 
 /* ============================================================== login §2.1 */
@@ -890,7 +1283,7 @@ html.sb-incognito .wp-layer > * { display: none !important; }
      экран входа — обычная страница во вкладке, и резервировать там место под
      вырез значило бы делать это второй раз за браузером. */
   padding: max(16px, var(--safe-top)) 16px max(16px, env(safe-area-inset-bottom));
-  transition: opacity var(--t-scene) ease;
+  transition: opacity var(--t-scene) var(--ease-enter);
   /* Вход и «Первое слово» спрашивают больше, чем прежнее одно поле (D-306):
      на низком телефоне карточка выше экрана. Экран прокручивается, а поля
      авто у карточки держат её посередине, пока она помещается, и отпускают
@@ -923,21 +1316,21 @@ html.sb-has-session #sbLogin { display: none; }
    называть себя одинаково. */
 .login-mark { width: 40px; height: 40px; margin-bottom: 18px; color: var(--accent); }
 .login-mark svg { width: 100%; height: 100%; display: block; }
-.login-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: 600; letter-spacing: -.2px; }
+.login-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: var(--w-strong); letter-spacing: var(--track-tight); }
 .login-sub { margin: 0 0 20px; color: var(--ink-2); font-size: var(--f-read); }
 .login-field { display: block; margin-bottom: 8px; }
 .login-label { display: block; font-size: var(--f-ui); color: var(--ink-3); margin-bottom: 6px; }
 .login-input-wrap {
   display: flex; align-items: center; gap: 6px;
   border: 1px solid var(--line); border-radius: var(--r-ctrl);
-  background: rgba(255, 255, 255, .04); padding: 0 12px;
+  background: rgba(var(--film-rgb), .04); padding: 0 12px;
 }
 .login-input-wrap:focus-within { border-color: var(--accent-ring); }
 .login-input-wrap input { flex: 1; min-width: 0; padding: 11px 0; background: none; border: 0; outline: none; font-size: var(--f-lead); }
 .login-suffix { color: var(--ink-3); font-family: var(--mono); font-size: var(--f-read); }
 .login-eye { color: var(--ink-3); padding: 6px; }
-.login-err { min-height: 18px; margin: 4px 0 10px; color: var(--danger); font-size: var(--f-ui); }
-.login-foot { margin: 14px 0 6px; color: var(--ink-3); font-size: var(--f-ui); line-height: 1.5; }
+.login-err { min-height: 18px; margin: 4px 0 10px; color: var(--bad-ink); font-size: var(--f-ui); }
+.login-foot { margin: 14px 0 6px; color: var(--ink-3); font-size: var(--f-ui); line-height: var(--lh-read); }
 .login-row { display: flex; justify-content: space-between; margin-top: 8px; }
 /* «Первое слово» отделено чертой: это другая дверь той же страницы (D-306). */
 .login-found { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
@@ -965,8 +1358,9 @@ html.sb-has-session #sbLogin { display: none; }
 #sbCurtain {
   position: fixed; inset: 0; z-index: var(--z-scene);
   display: grid; place-items: center;
+  /* своя краска: занавес — вторая глава фразы витрины, тёмный в обеих темах */ 
   background: radial-gradient(120% 90% at 50% 40%, #0b0c11 0%, #020203 70%);
-  transition: opacity var(--t-rise) var(--ease);
+  transition: opacity var(--t-rise) var(--ease-enter);
 }
 #sbCurtain.lifting { opacity: 0; pointer-events: none; }
 
@@ -974,7 +1368,7 @@ html.sb-has-session #sbLogin { display: none; }
    1.25x is a hairline, and it costs four fifths less to draw */
 #sbCurtainNet {
   position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: var(--z-flat);
-  opacity: 0; transition: opacity var(--t-rise) ease; pointer-events: none;
+  opacity: 0; transition: opacity var(--t-rise) var(--ease-enter); pointer-events: none;
 }
 #sbCurtainNet.on { opacity: 1; }
 html[data-motion="reduced"] #sbCurtainNet { display: none; }
@@ -983,16 +1377,16 @@ html[data-motion="reduced"] #sbCurtainNet { display: none; }
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   display: flex; flex-direction: column; gap: .42em;
   font-family: var(--mono);
-  font-size: clamp(7.5px, 2.1vw, var(--f-ui)); line-height: 1.25; letter-spacing: .02em;
-  white-space: pre; text-align: left; color: #e8967a;
-  opacity: .30; transition: opacity var(--t-rise) var(--ease); pointer-events: none;
+  font-size: clamp(7.5px, 2.1vw, var(--f-ui)); line-height: var(--lh-ui); letter-spacing: var(--track-air);
+  white-space: pre; text-align: left; /* своя краска: занавес — вторая глава фразы витрины, тёмный в обеих темах */ color: #e8967a;
+  opacity: .30; transition: opacity var(--t-rise) var(--ease-enter); pointer-events: none;
 }
 #sbCurtain.said .cur-log { opacity: .08; }
 html[data-motion="reduced"] .cur-log { display: none; }
-.cur-log-line { opacity: 0; transform: translateY(5px); transition: opacity var(--t-scene) var(--ease), transform var(--t-scene) var(--ease); }
+.cur-log-line { opacity: 0; transform: translateY(5px); transition: opacity var(--t-scene) var(--ease-enter), transform var(--t-scene) var(--ease-enter); }
 /* Неудавшийся шаг загрузки остаётся на экране и назван собой. Скрыть его
    значило бы вернуться к заставке, которая рассказывает, а не показывает. */
-.cur-log-line.failed { color: #e0663c; opacity: .95; }
+.cur-log-line.failed { color: var(--accent); opacity: .95; }
 .cur-log-line.on { opacity: 1; transform: none; }
 
 /* the mark is lifted out of flow so the SENTENCE, not the logo and sentence
@@ -1013,7 +1407,7 @@ html[data-motion="reduced"] .cur-log { display: none; }
   display: flex; align-items: center; justify-content: center;
   color: var(--accent);
   opacity: 0; transform: translateX(-50%) scale(.86);
-  animation: curMarkIn 1s var(--ease) .15s forwards;
+  animation: curMarkIn 1s var(--ease-enter) .15s forwards;
 }
 .cur-mark svg { width: 56px; height: 56px; display: block; }
 @keyframes curMarkIn { to { opacity: 1; transform: translateX(-50%) scale(1); } }
@@ -1021,23 +1415,23 @@ html[data-motion="reduced"] .cur-mark { animation-duration: .4s !important; }
 
 .cur-cells {
   display: flex; justify-content: center;
-  font-family: var(--mono); font-size: clamp(8.5px, 2.85vw, var(--f-lead)); font-weight: 600;
-  letter-spacing: .03em; white-space: pre; line-height: 1.5;
-  opacity: 0; animation: curRunIn .9s var(--ease) .12s forwards;
+  font-family: var(--mono); font-size: clamp(8.5px, 2.85vw, var(--f-lead)); font-weight: var(--w-strong);
+  letter-spacing: var(--track-air); white-space: pre; line-height: var(--lh-read);
+  opacity: 0; animation: curRunIn .9s var(--ease-enter) .12s forwards;
 }
 @keyframes curRunIn { to { opacity: 1; } }
 .cur-cell {
   display: inline-block; width: 1ch; text-align: center;
   /* unresolved: the material, still cooling */
-  color: #e8967a; opacity: .72;
-  text-shadow: 0 0 9px rgba(224, 102, 60, .5), 0 0 2px rgba(236, 138, 95, .8);
-  transition: color var(--t-move) ease, text-shadow var(--t-move) ease, opacity var(--t-touch) ease, transform var(--t-touch) ease;
+  /* своя краска: занавес — вторая глава фразы витрины, тёмный в обеих темах */ color: #e8967a; opacity: .72;
+  /* своя краска: занавес — вторая глава фразы витрины, тёмный в обеих темах */ text-shadow: 0 0 9px rgba(var(--accent-rgb), .5), 0 0 2px rgba(236, 138, 95, .8);
+  transition: color var(--t-move) var(--ease-move), text-shadow var(--t-move) var(--ease-move), opacity var(--t-touch) var(--ease-move), transform var(--t-touch) var(--ease-move);
 }
 /* resolved: the sentence, clean and unlit — the message is never a neon sign */
-.cur-cell.locked { color: #fff; opacity: 1; text-shadow: none; font-weight: 650; }
+.cur-cell.locked { color: var(--ink); opacity: 1; text-shadow: none; font-weight: var(--w-strong); }
 /* coming apart: the character lets go before it drops back into the flow */
 .cur-cell.broken { opacity: .15; transform: translateY(-2px) scale(.9); }
-.cur-cell.settle { animation: curSettle .34s var(--spring); }
+.cur-cell.settle { animation: curSettle .34s var(--ease-pull); }
 @keyframes curSettle { 0% { transform: scale(1); } 42% { transform: scale(1.18); } 100% { transform: scale(1); } }
 html[data-motion="reduced"] .cur-cell { transition-duration: var(--t-touch) !important; }
 html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
@@ -1048,35 +1442,35 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
 #sbGhostLine {
   position: fixed; inset: 0; z-index: var(--z-lift);
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: clamp(8.5px, 2.85vw, var(--f-lead)); font-weight: 600;
-  letter-spacing: .03em; white-space: pre; line-height: 1.5;
-  color: #fff; opacity: .13; pointer-events: none; transition: opacity var(--t-rise) var(--ease);
+  font-family: var(--mono); font-size: clamp(8.5px, 2.85vw, var(--f-lead)); font-weight: var(--w-strong);
+  letter-spacing: var(--track-air); white-space: pre; line-height: var(--lh-read);
+  color: var(--ink); opacity: .13; pointer-events: none; transition: opacity var(--t-rise) var(--ease-enter);
 }
 #sbGhostLine.out { opacity: 0; }
 
 /* farewell + failure surfaces */
 #sbFarewell {
-  position: fixed; inset: 0; z-index: var(--z-blackout); background: #000; color: var(--ink);
+  position: fixed; inset: 0; z-index: var(--z-blackout); /* своя краска: прощание — чёрный экран в обеих темах */ background: #000; color: var(--ink);
   display: grid; place-items: center; gap: 20px; grid-auto-flow: row;
-  opacity: 0; transition: opacity var(--t-scene) ease;
+  opacity: 0; transition: opacity var(--t-scene) var(--ease-enter);
 }
 #sbFarewell.on { opacity: 1; }
 /* Четвёртый — и по обходу всех градиентных плиток последний — предмет прежней
    личности. То же правило, что у входа и занавеса: знак, акцент, без подложки. */
 .farewell-mark { width: 44px; height: 44px; color: var(--accent); }
 .farewell-mark svg { width: 100%; height: 100%; display: block; }
-.farewell-line { font-family: var(--mono); font-size: var(--f-read); letter-spacing: .02em; }
+.farewell-line { font-family: var(--mono); font-size: var(--f-read); letter-spacing: var(--track-air); }
 #sbBootFail {
   position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: var(--z-player);
   padding: 14px 16px; border-radius: var(--r-card); white-space: pre-wrap;
-  background: rgba(60, 10, 12, .94); border: 1px solid rgba(255, 69, 58, .5);
-  color: #ffd9d6; font-family: var(--mono); font-size: var(--f-ui); line-height: 1.6;
+  /* своя краска: аварийная плашка одна на обе темы — её читают, когда система не встала */ background: rgba(60, 10, 12, .94); border: 1px solid rgba(var(--bad-rgb), .5);
+  /* своя краска: та же плашка */ color: #ffd9d6; font-family: var(--mono); font-size: var(--f-ui); line-height: var(--lh-read);
 }
 #sbQuotaBanner {
   position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: var(--z-playerbed);
   padding: 12px 14px; border-radius: var(--r-card);
-  background: rgba(70, 40, 0, .94); border: 1px solid rgba(255, 214, 10, .45);
-  color: #ffe9b0; font-family: var(--mono); font-size: var(--f-ui);
+  /* своя краска: аварийная плашка одна на обе темы */ background: rgba(70, 40, 0, .94); border: 1px solid rgba(var(--star-rgb), .45);
+  /* своя краска: та же плашка */ color: #ffe9b0; font-family: var(--mono); font-size: var(--f-ui);
 }
 
 /* =============================================================== topbar §5 */
@@ -1111,12 +1505,12 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
      часы — читаться. */
   background:
     linear-gradient(180deg, rgba(var(--accent-rgb), .10), rgba(var(--accent-rgb), .02) 62%, transparent),
-    linear-gradient(180deg, rgba(8, 9, 12, .42), rgba(8, 9, 12, .14) 58%, transparent);
+    linear-gradient(180deg, rgba(var(--air-rgb), .42), rgba(var(--air-rgb), .14) 58%, transparent);
   backdrop-filter: blur(calc(var(--glass-blur) * 1.35)) saturate(1.7);
   -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.35)) saturate(1.7);
   border-bottom: 0;
   opacity: 0; transform: translateY(-8px);
-  transition: opacity var(--t-scene) ease, transform var(--t-scene) var(--ease);
+  transition: opacity var(--t-scene) var(--ease-enter), transform var(--t-scene) var(--ease-enter);
 }
 /* Волосок вместо шва: ярче в середине, в ноль к краям. Он не отделяет полосу
    от стола — он лишь намекает, где кончается стекло, и на телефоне его почти
@@ -1125,7 +1519,7 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
   content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
   pointer-events: none;
   background: linear-gradient(90deg,
-    transparent, rgba(var(--accent-rgb), .16) 22%, rgba(255, 255, 255, .10) 50%,
+    transparent, rgba(var(--accent-rgb), .16) 22%, rgba(var(--film-rgb), .1) 50%,
     rgba(var(--accent-rgb), .16) 78%, transparent);
 }
 /* Без размытия прозрачность превращается в дырку: там, где стекло не
@@ -1135,7 +1529,7 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
   #topbar {
     background:
       linear-gradient(180deg, rgba(var(--accent-rgb), .16), rgba(var(--accent-rgb), .04) 62%, transparent),
-      linear-gradient(180deg, rgba(8, 9, 12, .72), rgba(8, 9, 12, .34) 58%, rgba(8, 9, 12, .12));
+      linear-gradient(180deg, rgba(var(--air-rgb), .72), rgba(var(--air-rgb), .34) 58%, rgba(var(--air-rgb), .12));
   }
 }
 html.rv-topbar #topbar { opacity: 1; transform: none; }
@@ -1151,7 +1545,7 @@ html.topbar-hidden.topbar-peek #topbar { transform: none; }
    the landing's, character for character (hair spaces included) — one brand,
    two surfaces, no second drawing of it anywhere. */
 .tb-mark { display: inline-flex; align-items: center; gap: 7px; padding-left: 2px; flex: none;
-  transform-origin: left center; transition: transform var(--t-move) var(--ease); }
+  transform-origin: left center; transition: transform var(--t-move) var(--ease-enter); }
 /* ── ЗНАК В ПОЛНОМ ЭКРАНЕ ЧУТЬ КРУПНЕЕ (v61) ─────────────────────────────
    Повод от основателя: «иконка логотипа в режиме на весь экран должна стать
    слегка больше и если на неё нажать еще раз, то она уменьшится».
@@ -1178,10 +1572,10 @@ html[data-motion="reduced"] .tb-mark { transition: none; }
    В узкой полосе слово уступает: остаётся только знак — тот же объект,
    последний оставшийся масштаб. */
 .sb-wm { display: inline-flex; align-items: center; white-space: nowrap; }
-.sb-lock { height: 16px; width: auto; display: block; animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both; }
+.sb-lock { height: 16px; width: auto; display: block; animation: markIn .68s var(--ease-enter) both; }
 /* В панели — только знак, на любой ширине (D-128). Раньше здесь стояло
    обратное: длинное слово везде и знак только на телефоне. */
-.sb-min { display: block; width: 17px; height: 17px; animation: markIn .68s cubic-bezier(.2, .7, .2, 1) both; }
+.sb-min { display: block; width: 17px; height: 17px; animation: markIn .68s var(--ease-enter) both; }
 .sb-ls, .sb-hs { fill: var(--ink); }
 /* ── ЗНАК НЕ ДРЕЙФУЕТ (D-141) ───────────────────────────────────────────
    Крюк брал цвет у шва — и это было верно, пока шов был неподвижной краской
@@ -1191,7 +1585,7 @@ html[data-motion="reduced"] .tb-mark { transition: none; }
    Основатель просил живых акцентов; про знак он этого не просил, и закон о
    знаке существует ровно затем, чтобы такое не проходило молча.
    У бренда своё имя, и оно неподвижно на обеих поверхностях. */
-.sb-lb, .sb-hb { fill: var(--brand, #e0663c); }
+.sb-lb, .sb-hb { fill: var(--brand); }
 /* ── ЗНАК В ПОЛОСЕ ЖИВЁТ ВМЕСТЕ С КОМНАТОЙ (D-149) ────────────────────────
    Основатель: «иконка логотипа должна тоже меняться в зависимости от
    wallpaper». Выше записано обратное — и записано честно: тогда он этого
@@ -1229,7 +1623,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 @media (hover: hover) {
   :where(html:not([data-input="touch"])) .tb-identity:hover { background: var(--glass); }
 }
-.id-name { font-weight: 600; }
+.id-name { font-weight: var(--w-strong); }
 .tb-btn {
   position: relative; display: inline-grid; place-items: center;
   width: 30px; height: 28px; border-radius: var(--r-ctrl); color: var(--ink-2);
@@ -1246,7 +1640,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 .tb-btn.on, .tb-btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
 .tb-badge {
   position: absolute; top: 1px; right: 1px; min-width: 14px; height: 14px; padding: 0 3px;
-  border-radius: var(--r-pill); background: var(--danger); color: #fff; font-size: var(--f-micro);
+  border-radius: var(--r-pill); background: var(--danger); color: var(--on-accent); font-size: var(--f-micro);
   display: grid; place-items: center;
 }
 .tb-sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; }
@@ -1300,7 +1694,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 .clock-glyph line {
   stroke: currentColor; stroke-width: 13.5; stroke-linecap: round;
   opacity: .035;
-  transition: opacity var(--t-touch) ease;
+  transition: opacity var(--t-touch) var(--ease-move);
 }
 /* ИМЯ --lit В СИСТЕМЕ УЖЕ ЗАНЯТО: так называется освещённость вещества
    заметок. Свет часов назван --lit-ink, чтобы два разных знания не делили
@@ -1313,7 +1707,7 @@ html[data-motion="reduced"] .sb-lock { animation: none }
 .pl-time { filter: drop-shadow(0 0 calc(var(--lit-blur, 0px) * 1.2) var(--lit-glow, transparent)); }
 .time-big { filter: drop-shadow(0 0 calc(var(--lit-blur, 0px) * 2.6) var(--lit-glow, transparent)); }
 html[data-motion="reduced"] .clock-glyph line { transition: none; }
-.clock-cell.roll { animation: cellRoll .32s var(--ease); }
+.clock-cell.roll { animation: cellRoll .32s var(--ease-enter); }
 @keyframes cellRoll { from { transform: translateY(-45%); opacity: .2; } to { transform: none; opacity: 1; } }
 .cc-trigger { width: auto; gap: 5px; padding: 0 7px; display: inline-flex; }
 /* ── ПИТАНИЕ И СЕТЬ — ОДИН ЗНАК ИЗ НАШЕГО ЖЕ МАТЕРИАЛА (D-139) ───────────
@@ -1341,7 +1735,7 @@ html[data-motion="reduced"] .clock-glyph line { transition: none; }
 .pw-off { width: 100%; background: currentColor; opacity: .12; }
 .pw-on {
   width: var(--fill, 60%); max-width: 100%; background: currentColor;
-  transition: width var(--t-move) var(--ease);
+  transition: width var(--t-move) var(--ease-enter);
 }
 .pw-glyph.charging .pw-on { background: var(--good); }
 .pw-glyph.warn .pw-on { background: var(--warn); }
@@ -1372,22 +1766,22 @@ html[data-motion="reduced"] .pw-on { transition: none; }
   background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-card);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.5); box-shadow: var(--shadow);
   opacity: 0; transform: translateY(-6px) scale(.99);
-  transition: opacity var(--t-touch) ease, transform var(--t-touch) var(--ease);
+  transition: opacity var(--t-touch) var(--ease-move), transform var(--t-touch) var(--ease-enter);
 }
 #sbControlCenter.open { opacity: 1; transform: none; }
 .cc-grid { display: flex; flex-direction: column; gap: 12px; }
 .cc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .cc-stat {
-  padding: 10px 12px; border-radius: var(--r-ctrl); background: rgba(255, 255, 255, .04); border: 1px solid var(--line);
+  padding: 10px 12px; border-radius: var(--r-ctrl); background: rgba(var(--film-rgb), .04); border: 1px solid var(--line);
   display: flex; flex-direction: column; gap: 2px;
 }
-.cc-k { font-size: var(--f-meta); color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
-.cc-v { font-size: var(--f-lead); font-weight: 600; }
+.cc-k { font-size: var(--f-meta); color: var(--ink-3); text-transform: uppercase; letter-spacing: var(--track-caps); }
+.cc-v { font-size: var(--f-lead); font-weight: var(--w-strong); }
 .cc-line { font-size: var(--f-meta); color: var(--ink-3); }
 .cc-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .cc-toggle {
   padding: 10px 12px; border-radius: var(--r-ctrl); text-align: left; font-size: var(--f-ui);
-  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink-2);
+  background: rgba(var(--film-rgb), .04); border: 1px solid var(--line); color: var(--ink-2);
 }
 .cc-toggle.on { background: var(--accent-soft); border-color: var(--accent-ring); color: var(--ink); }
 .cc-slider, .cc-select { display: flex; flex-direction: column; gap: 6px; font-size: var(--f-ui); color: var(--ink-2); }
@@ -1415,7 +1809,7 @@ html[data-motion="reduced"] .pw-on { transition: none; }
 .sb-range-track {
   position: absolute; left: 0; right: 0; top: 50%; height: 3px;
   transform: translateY(-50%);
-  border-radius: var(--r-pill); background: rgba(255, 255, 255, .10);
+  border-radius: var(--r-pill); background: rgba(var(--film-rgb), .1);
   overflow: hidden; display: block;
 }
 .sb-range-fill {
@@ -1428,33 +1822,29 @@ html[data-motion="reduced"] .pw-on { transition: none; }
   transform: translate(-50%, -50%);
   border-radius: var(--r-pill); background: var(--lit-ink, var(--ink));
   filter: drop-shadow(0 0 var(--lit-blur, 0px) var(--lit-glow, transparent));
-  transition: height var(--t-touch) var(--ease);
+  transition: height var(--t-touch) var(--ease-enter);
 }
 .sb-range.held .sb-range-stick, .sb-range:focus-visible .sb-range-stick { height: 26px; }
 .sb-range:focus-visible .sb-range-stick { background: var(--accent); }
 html[data-motion="reduced"] .sb-range-stick { transition: none; }
-.cc-select select { padding: 8px 10px; border-radius: var(--r-ctrl); background: rgba(255, 255, 255, .04); border: 1px solid var(--line); }
+.cc-select select { padding: 8px 10px; border-radius: var(--r-ctrl); background-color: rgba(var(--film-rgb), .04); border: 1px solid var(--line); }
 .cc-block { display: flex; flex-direction: column; gap: 7px; }
 .cc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
   padding: 6px 11px; border-radius: var(--r-pill); font-size: var(--f-ui); color: var(--ink-2);
-  background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+  background: rgba(var(--film-rgb), .05); border: 1px solid var(--line);
 }
 .chip.on { background: var(--accent-soft); border-color: var(--accent-ring); color: var(--ink); }
-.cc-accents { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.accent-sw { width: 26px; height: 26px; border-radius: var(--r-round); border: 2px solid transparent; }
-.accent-sw.on { border-color: #fff; box-shadow: 0 0 0 2px rgba(0, 0, 0, .35); }
-.accent-custom { width: 30px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: var(--r-ctrl); background: none; }
 .cc-buttons { display: flex; flex-direction: column; gap: 6px; }
 .cc-buttons .btn { text-align: left; }
 
 /* ============================================================== desktop §4 */
-#desktop { position: fixed; inset: 0; z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) ease; }
+#desktop { position: fixed; inset: 0; z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) var(--ease-enter); }
 html.rv-scene #desktop { opacity: 1; }
 #sbIconLayer, #sbWidgetLayer, #sbNoteLayer { position: absolute; inset: var(--topbar-box) 0 0 0; }
-#sbIconLayer { z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) ease; }
+#sbIconLayer { z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) var(--ease-enter); }
 html.rv-icons #sbIconLayer { opacity: 1; }
-#sbWidgetLayer { z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) ease; pointer-events: none; }
+#sbWidgetLayer { z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) var(--ease-enter); pointer-events: none; }
 html.rv-widgets #sbWidgetLayer { opacity: 1; }
 #sbWidgetLayer > * { pointer-events: auto; }
 #sbNoteLayer { z-index: var(--z-inside); pointer-events: none; }
@@ -1464,7 +1854,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
 .desk-icon {
   position: absolute; width: 80px; height: 92px; display: flex; flex-direction: column;
   align-items: center; gap: 6px; padding: 6px 2px; border-radius: var(--r-card);
-  transition: background var(--t-touch) ease, transform var(--t-touch) var(--ease);
+  transition: background var(--t-touch) var(--ease-move), transform var(--t-touch) var(--ease-enter);
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -1472,11 +1862,11 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .desk-icon:hover { background: rgba(255, 255, 255, .06); }
+  :where(html:not([data-input="touch"])) .desk-icon:hover { background: rgba(var(--film-rgb), .06); }
 }
 .desk-icon.selected { background: var(--accent-soft); outline: 1px solid var(--accent-ring); }
 .desk-icon.dragging { opacity: .85; transition: none; z-index: var(--z-lift); }
-.desk-icon.settling { transition: left var(--t-move) var(--spring), top var(--t-move) var(--spring); }
+.desk-icon.settling { transition: left var(--t-move) var(--ease-pull), top var(--t-move) var(--ease-pull); }
 .desk-icon.hidden-icon { display: none; }
 .desk-icon.drop-target, .desk-icon.armed { outline: 2px solid var(--accent); }
 /* The tile is graphite: the environment is achromatic, and ten simultaneous
@@ -1501,12 +1891,12 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
 .icon-tile {
   width: 46px; height: 46px; border-radius: var(--r-card); display: grid; place-items: center;
   color: var(--ink);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07);
+  box-shadow: inset 0 1px 0 rgba(var(--film-rgb), .07);
   background: linear-gradient(155deg, var(--tile-top), var(--tile-bottom));
   border: 1px solid var(--tile-edge);
 }
 .desk-icon.active-app .icon-tile {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+  box-shadow: inset 0 1px 0 rgba(var(--film-rgb), .12);
   background: linear-gradient(155deg, var(--tile-top-on), var(--tile-bottom-on));
   border-color: var(--tile-edge-on);
 }
@@ -1517,7 +1907,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
   :where(html:not([data-input="touch"])) .desk-icon:hover .icon-tile {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+  box-shadow: inset 0 1px 0 rgba(var(--film-rgb), .12);
   background: linear-gradient(155deg, var(--tile-top-on), var(--tile-bottom-on));
   border-color: var(--tile-edge-on);
 }
@@ -1534,7 +1924,8 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
    Обводка шрифта (-webkit-text-stroke) была первой попыткой и снята: её
    острые углы давали шипы под «t» и «w» — прибор нашёл их как плёнку. */
 .icon-label {
-  font-size: var(--f-meta); color: var(--tile-label); text-align: center; line-height: 1.25;
+  font-size: var(--f-meta); color: var(--tile-label); text-align: center;
+  line-height: var(--lh-ui);
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   text-shadow:
     1px 0 0 var(--tile-halo), -1px 0 0 var(--tile-halo), 0 1px 0 var(--tile-halo), 0 -1px 0 var(--tile-halo),
@@ -1543,7 +1934,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
 .desk-icon.active-app .icon-label { color: var(--tile-label-on); }
 .icon-spark {
   position: absolute; top: 2px; right: 4px; width: 18px; height: 18px; border-radius: var(--r-round);
-  display: grid; place-items: center; color: var(--ink-3); opacity: 0; transition: opacity var(--t-touch) ease;
+  display: grid; place-items: center; color: var(--ink-3); opacity: 0; transition: opacity var(--t-touch) var(--ease-move);
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -1557,7 +1948,7 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
 .icon-capsule {
   position: absolute; top: calc(100% - 4px); left: 50%; transform: translateX(-50%) scaleY(.9);
   transform-origin: top center; width: 200px; z-index: var(--z-desk); opacity: 0; pointer-events: none;
-  transition: opacity var(--t-touch) ease, transform var(--t-touch) var(--ease);
+  transition: opacity var(--t-touch) var(--ease-move), transform var(--t-touch) var(--ease-enter);
 }
 .desk-icon.capsule-open .icon-capsule { opacity: 1; pointer-events: auto; transform: translateX(-50%) scaleY(1); }
 .icon-capsule input {
@@ -1605,17 +1996,17 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
     /* the lit edge, on the side the light comes from */
     inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), calc(.10 + .16 * var(--lit))),
     /* and the shadow it casts, away from it */
-    0 14px 34px -18px rgba(0, 0, 0, .72),
+    0 14px 34px -18px rgba(var(--shade-rgb), calc(.72 * var(--shade-k))),
     0 2px 10px -6px rgba(var(--wp-light-rgb, 91, 124, 255), calc(.10 * var(--lit)));
-  transition: left var(--t-move) var(--ease), top var(--t-move) var(--ease),
-              border-color var(--t-scene) ease, box-shadow var(--t-scene) ease, background var(--t-scene) ease;
+  transition: left var(--t-move) var(--ease-enter), top var(--t-move) var(--ease-enter),
+              border-color var(--t-scene) var(--ease-enter), box-shadow var(--t-scene) var(--ease-enter), background var(--t-scene) var(--ease-enter);
 }
 /* Writing brings the light up, the way leaning toward a lamp does. */
 .sticky-note.focused {
   border-color: rgba(var(--wp-light-rgb, 91, 124, 255), .52);
   box-shadow:
     inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), .26),
-    0 18px 44px -20px rgba(0, 0, 0, .8),
+    0 18px 44px -20px rgba(var(--shade-rgb), calc(.8 * var(--shade-k))),
     0 0 26px -10px rgba(var(--wp-light-rgb, 91, 124, 255), .34);
 }
 /* Lifted: nothing moves under the hand, so the transition comes off, and the
@@ -1624,9 +2015,9 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
   transition: none;
   box-shadow:
     inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), .22),
-    0 26px 54px -22px rgba(0, 0, 0, .84);
+    0 26px 54px -22px rgba(var(--shade-rgb), calc(.84 * var(--shade-k)));
 }
-.sticky-note.settling { transition: left var(--t-move) var(--ease), top var(--t-move) var(--ease); }
+.sticky-note.settling { transition: left var(--t-move) var(--ease-enter), top var(--t-move) var(--ease-enter); }
 .sticky-note.selected { outline: 1px solid rgba(var(--wp-light-rgb, 91, 124, 255), .5); }
 html[data-motion="reduced"] .sticky-note { transition: none; }
 /* ВСЯ ЗАМЕТКА — РУЧКА, ПОКА ЕЁ НЕ ПРАВЯТ (v47). Прежде здесь было обратное, и
@@ -1653,14 +2044,14 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
    tools/note-window-check.mjs с четырёх сторон. */
 .note-text {
   width: 100%; min-height: 20px; max-height: 260px; resize: none; border: 0; outline: none;
-  background: none; color: var(--ink); font-size: var(--f-read); line-height: 1.45;
+  background: none; color: var(--ink); font-size: var(--f-read); line-height: var(--lh-read);
   padding: 0; margin: 0; display: block;
 }
 .note-del { position: absolute; top: 4px; right: 6px; color: var(--ink-3); font-size: var(--f-ui); padding: 4px; }
 .note-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .note-chip {
   display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: var(--r-pill);
-  font-size: var(--f-meta); color: var(--ink-2); background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+  font-size: var(--f-meta); color: var(--ink-2); background: rgba(var(--film-rgb), .05); border: 1px solid var(--line);
 }
 .note-chip.live { border-color: var(--accent-ring); }
 .chip-tile { width: 10px; height: 10px; border-radius: var(--r-tag); }
@@ -1688,7 +2079,7 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
   position: fixed; z-index: var(--z-desk); display: flex; align-items: center; gap: 9px;
   width: 196px; padding: 10px 11px 9px 11px;
   border-radius: var(--r-card);
-  font-size: var(--f-read); line-height: 1.45; color: var(--ink-2);
+  font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2);
   background:
     radial-gradient(140% 120% at calc(var(--nx) * 100%) -30%,
       rgba(var(--wp-light-rgb, 91, 124, 255), calc(.10 * var(--lit))), transparent 62%),
@@ -1703,9 +2094,9 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
   box-shadow:
     inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), calc(.10 + .16 * var(--lit))),
-    0 14px 34px -18px rgba(0, 0, 0, .72),
+    0 14px 34px -18px rgba(var(--shade-rgb), calc(.72 * var(--shade-k))),
     0 2px 10px -6px rgba(var(--wp-light-rgb, 91, 124, 255), calc(.10 * var(--lit)));
-  animation: fadeIn .18s ease;
+  animation: fadeIn .18s var(--ease-enter);
   cursor: pointer;
 }
 .note-invite:focus-visible {
@@ -1727,7 +2118,7 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
 }
 .invite-plus {
   width: 20px; height: 20px; flex: none; border-radius: var(--r-round); display: grid; place-items: center;
-  color: var(--accent); font-size: var(--f-lead); line-height: 1;
+  color: var(--accent-ink); font-size: var(--f-lead); line-height: var(--lh-one);
   border: 1px dashed rgba(var(--wp-light-rgb, 91, 124, 255), .42);
 }
 .invite-word { min-width: 0; }
@@ -1757,7 +2148,7 @@ html[data-motion="reduced"] .sticky-note { transition: none; }
 .note-lights {
   position: absolute; bottom: calc(100% + 5px); left: 0; z-index: var(--z-inside);
   opacity: 0; pointer-events: none;
-  transition: opacity var(--t-touch) var(--ease);
+  transition: opacity var(--t-touch) var(--ease-enter);
 }
 .sticky-note.lights-below .note-lights { bottom: auto; top: calc(100% + 5px); }
 html[data-controls="right"] .note-lights { left: auto; right: 0; }
@@ -1796,7 +2187,7 @@ html[data-controls="right"] .titlebar .tb-right { order: 2; }
 .sticky-note.focused .note-lights.lights,
 .sticky-note.dragging .note-lights.lights,
 .sticky-note.lights-held .note-lights.lights,
-.sticky-note.full .note-lights.lights { border-color: var(--line-2); background: rgba(255, 255, 255, .07); }
+.sticky-note.full .note-lights.lights { border-color: var(--line-2); background: rgba(var(--film-rgb), .07); }
 .sticky-note.focused .note-lights .light,
 .sticky-note.dragging .note-lights .light,
 .sticky-note.lights-held .note-lights .light,
@@ -1838,7 +2229,7 @@ html[data-motion="reduced"] .note-lights { transition: none; }
   transition: none;
 }
 .sticky-note.full .note-text {
-  font-size: var(--f-title); font-weight: 600; letter-spacing: -.2px; line-height: 1.3;
+  font-size: var(--f-title); font-weight: var(--w-strong); letter-spacing: var(--track-tight); line-height: var(--lh-ui);
   min-height: 0; max-height: none;
   /* Место под кнопки резервируется С ТОЙ СТОРОНЫ, ГДЕ ОНИ СТОЯТ (D-155).
      Здесь стояло глухое padding-right: 78px — оно было верным, пока кнопки
@@ -1849,7 +2240,7 @@ html[data-controls="right"] .sticky-note.full .note-text { padding-left: 0; padd
 .sticky-note.full .note-body {
   display: block; flex: 1; min-height: 0;
   width: 100%; resize: none; border: 0; outline: none; background: none;
-  color: var(--ink-2); font-size: var(--f-read); line-height: 1.55;
+  color: var(--ink-2); font-size: var(--f-read); line-height: var(--lh-read);
   overflow: auto;
 }
 /* ── РАЗВЁРНУТУЮ ЗАМЕТКУ НАДО МОЧЬ СВЕРНУТЬ (D-155) ───────────────────────
@@ -1870,7 +2261,7 @@ html[data-controls="right"] .sticky-note.full .note-lights { left: auto; right: 
    по-прежнему тот же стол, просто сейчас говорят не с ним. */
 html.sb-note-full #sbNoteLayer { z-index: var(--z-curtain); }
 html.sb-note-full #sbIconLayer,
-html.sb-note-full #sbDeskHint { opacity: .28; transition: opacity var(--t-touch) var(--ease); }
+html.sb-note-full #sbDeskHint { opacity: .28; transition: opacity var(--t-touch) var(--ease-enter); }
 html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
 
 /* widgets */
@@ -1884,7 +2275,7 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 9px 12px; cursor: grab; border-bottom: 1px solid var(--line);
 }
-.sb-widget-title { font-size: var(--f-ui); color: var(--ink-3); text-transform: uppercase; letter-spacing: .07em; }
+.sb-widget-title { font-size: var(--f-ui); color: var(--ink-3); text-transform: uppercase; letter-spacing: var(--track-caps); }
 .sb-widget-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
 .sb-widget-resize { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; }
 .sb-widget-resize::after { content: ""; position: absolute; right: 4px; bottom: 4px; width: 7px; height: 7px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); }
@@ -1893,7 +2284,7 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
 .align-guide.h { left: 0; right: 0; height: 1px; }
 .cap-form input {
   width: 100%; padding: 9px 11px; border-radius: var(--r-ctrl); font-size: var(--f-read);
-  background: rgba(255, 255, 255, .05); border: 1px solid var(--line); color: var(--ink); outline: none;
+  background: rgba(var(--film-rgb), .05); border: 1px solid var(--line); color: var(--ink); outline: none;
 }
 .cap-recent { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
 .cap-recent li { font-size: var(--f-meta); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1920,11 +2311,8 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
 }
 .window::before {
-  content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: rgba(255, 255, 255, .16); pointer-events: none;
+  content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: var(--glint); pointer-events: none;
 }
-/* Белый блик по верхней кромке невидим на белой панели и только размывает
-   край. В светлой теме кромка обязана быть темнее панели, а не светлее. */
-html[data-theme="light"] .window::before { background: rgba(12, 14, 20, .08); }
 /* ── ПОКА ОКНО ЛЕТИТ, ОНО НЕ РАЗМЫВАЕТ (v47.1 открытие; v47.2 все пути) ──
    Полёт идёт переносом и прозрачностью — этим двум композитор рад. Но у
    окна есть backdrop-filter, и он превращает дешёвую анимацию в дорогую:
@@ -1941,7 +2329,7 @@ html[data-theme="light"] .window::before { background: rgba(12, 14, 20, .08); }
   backdrop-filter: none; -webkit-backdrop-filter: none;
   /* Свет комнаты летит вместе с окном (D-272): градиент не стоит кадров,
      и окно не «загорается» в конце полёта. */
-  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--bg-elev, #14100f);
+  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--bg-elev);
   will-change: transform, opacity;
 }
 /* ── ОКНО ПОЗАДИ ПРИГЛУШАЕТСЯ · D-251 ─────────────────────────────────────
@@ -1961,18 +2349,17 @@ html[data-theme="light"] .window::before { background: rgba(12, 14, 20, .08); }
 .window .window-body { position: relative; }
 .window .window-body::after {
   content: ""; position: absolute; inset: 0; pointer-events: none; z-index: var(--z-veil);
-  background: rgba(10, 10, 11, 0);
-  transition: background var(--t-touch) ease;
+  background: rgba(var(--shade-rgb), 0);
+  transition: background var(--t-touch) var(--ease-move);
 }
 /* Гаснет окно ПОЗАДИ ФОКУСНОГО; нет фокусного — не гаснет никто (D-259). */
-#windowLayer.sb-window-focused .window:not(.focused) .window-body::after { background: rgba(10, 10, 11, .78); }
+#windowLayer.sb-window-focused .window:not(.focused) .window-body::after { background: var(--behind); }
 /* Заголовок неактивного окна лишь чуть тише — его читают, чтобы найти окно. */
 #windowLayer.sb-window-focused .window:not(.focused) .titlebar { opacity: .72; }
 /* Пока окно летит, плёнка не участвует: полёт и так без размытия (см. выше). */
 .window.opening .window-body::after, .window.traveling .window-body::after { display: none; }
-/* В светлой теме плёнка светлая: приглушить — значит приблизить к полю, а
-   поле там белое. Тёмная плёнка на белом окне читалась бы как поломка. */
-html[data-theme="light"] #windowLayer.sb-window-focused .window:not(.focused) .window-body::after { background: rgba(255, 255, 255, .78); }
+/* В Светлице плёнка — дымка цвета стены (--behind): дальнее бледнеет, а не
+   темнеет. Тёмная плёнка на кальке читалась бы как поломка. */
 .window.focused { border-color: rgba(var(--accent-rgb), .45); box-shadow: 0 0 0 1px var(--accent-soft), var(--shadow); }
 .window.focused::before { background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .5), transparent); }
 .window.minimized { display: none; }
@@ -1992,7 +2379,7 @@ html[data-theme="light"] #windowLayer.sb-window-focused .window:not(.focused) .w
    sat exactly on the close key. */
 html.sb-fullscreen-window #topbar {
   transform: translateY(-110%); opacity: 0; pointer-events: none;
-  transition: transform var(--t-move) ease, opacity var(--t-move) ease;
+  transition: transform var(--t-move) var(--ease-move), opacity var(--t-move) var(--ease-move);
 }
 .window.drop-target { outline: 2px solid var(--accent); }
 html.dragging .window { backdrop-filter: blur(6px); }
@@ -2008,13 +2395,13 @@ html.dragging .window { backdrop-filter: blur(6px); }
 .lights {
   display: flex; align-items: center; gap: 2px;
   padding: 2px; border-radius: var(--r-ctrl);
-  background: rgba(255, 255, 255, .045);
+  background: rgba(var(--film-rgb), .045);
   border: 1px solid var(--line);
 }
 .light {
   width: 22px; height: 18px; border-radius: var(--r-tag); display: grid; place-items: center;
   background: transparent; color: var(--ink-3);
-  transition: background var(--t-touch) ease, color var(--t-touch) ease;
+  transition: background var(--t-touch) var(--ease-move), color var(--t-touch) var(--ease-move);
 }
 .light svg { width: 11px; height: 11px; }
 .light:focus-visible { background: var(--glass-2); color: var(--ink); }
@@ -2026,16 +2413,16 @@ html.dragging .window { backdrop-filter: blur(6px); }
 @media (hover: hover) {
   :where(html:not([data-input="touch"])) .light:hover { background: var(--glass-2); color: var(--ink); }
 }
-.light.close:focus-visible { background: rgba(255, 69, 58, .18); color: #ff6a60; }
+.light.close:focus-visible { background: rgba(var(--bad-rgb), .18); color: var(--bad-ink); }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал. Повод — снимок основателя
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .light.close:hover { background: rgba(255, 69, 58, .18); color: #ff6a60; }
+  :where(html:not([data-input="touch"])) .light.close:hover { background: rgba(var(--bad-rgb), .18); color: var(--bad-ink); }
 }
-.window.focused .lights { border-color: var(--line-2); background: rgba(255, 255, 255, .07); }
+.window.focused .lights { border-color: var(--line-2); background: rgba(var(--film-rgb), .07); }
 .window.focused .light { color: var(--ink-2); }
 .win-title { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
 .win-chip {
@@ -2044,7 +2431,7 @@ html.dragging .window { backdrop-filter: blur(6px); }
   background: var(--glass); border: 1px solid var(--line);
 }
 .win-chip svg { width: 10px; height: 10px; }
-.win-name { font-size: var(--f-read); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.win-name { font-size: var(--f-read); font-weight: var(--w-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .win-brand { font-family: var(--mono); font-size: var(--f-meta); color: var(--ink-3); }
 /* ── КЛАВИША ПОКАЗЫВАЕТСЯ ТАМ, ГДЕ ЕЁ МОЖНО НАЖАТЬ (v70) ──────────────────
    ПОВОД — снимок основателя 25.08.2026 с телефона: в правом углу полосы окна
@@ -2097,14 +2484,14 @@ html:not(.is-compact) .window.maximized:not(.fullscreen) > .window-body {
   position: fixed; z-index: var(--z-desk); border-radius: var(--r-window); pointer-events: none; opacity: 0;
   background: var(--accent-soft); border: 1px solid var(--accent-ring);
   backdrop-filter: blur(8px);
-  transition: opacity var(--t-touch) ease, left var(--t-touch) var(--ease), top var(--t-touch) var(--ease), width var(--t-touch) var(--ease), height var(--t-touch) var(--ease);
+  transition: opacity var(--t-touch) var(--ease-move), left var(--t-touch) var(--ease-enter), top var(--t-touch) var(--ease-enter), width var(--t-touch) var(--ease-enter), height var(--t-touch) var(--ease-enter);
 }
 #sbSnapGhost.on { opacity: 1; }
 
 /* Exposé */
 #sbExpose {
   position: fixed; inset: 0; z-index: var(--z-veil); display: grid; place-items: center; padding: 60px 24px;
-  background: rgba(4, 5, 8, .72); backdrop-filter: blur(14px);
+  background: rgba(var(--veil-rgb), .72); backdrop-filter: blur(14px);
 }
 .expose-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
 .expose-card {
@@ -2157,12 +2544,12 @@ html:not(.is-compact) .window.maximized:not(.fullscreen) > .window-body {
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
   box-shadow:
     inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), .20),
-    0 16px 40px -20px rgba(0, 0, 0, .74),
+    0 16px 40px -20px rgba(var(--shade-rgb), calc(.74 * var(--shade-k))),
     0 2px 12px -7px rgba(var(--wp-light-rgb, 91, 124, 255), .22);
   /* It arrives from below, out of the dock it is standing on. */
   opacity: 0; transform: translate(-50%, 14px);
-  transition: opacity var(--t-scene) var(--ease), transform var(--t-scene) var(--ease),
-              border-color var(--t-drift) ease, box-shadow var(--t-drift) ease, background var(--t-drift) ease;
+  transition: opacity var(--t-scene) var(--ease-enter), transform var(--t-scene) var(--ease-enter),
+              border-color var(--t-drift) var(--ease-enter), box-shadow var(--t-drift) var(--ease-enter), background var(--t-drift) var(--ease-enter);
   pointer-events: none;
 }
 #sbDeskHint.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
@@ -2186,7 +2573,7 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); t
 }
 .dh-glyph svg { width: 17px; height: 17px; }
 .dh-text {
-  font-size: var(--f-ui); line-height: 1.45; color: var(--ink-2); min-width: 0;
+  font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .dh-close {
@@ -2214,7 +2601,7 @@ html[data-motion="reduced"] #sbDeskHint { transition-duration: var(--t-touch); t
 @media (max-width: 620px) {
   /* на телефоне полка ниже — запас до первой публикации --dock-h тоже */
   :root { --row-base: calc(max(14px, env(safe-area-inset-bottom)) + var(--dock-h, 62px) + 12px); }
-  .dh-text { white-space: normal; font-size: var(--f-ui); line-height: 1.4; }
+  .dh-text { white-space: normal; font-size: var(--f-ui); line-height: var(--lh-ui); }
 
   /* ── ПОДСКАЗКА ВСТАЁТ В ОДИН РЯД С ПЛЮСОМ (v53) ──────────────────────
      Повод от основателя 21.08.2026, со снимком: «подсказки должны быть на
@@ -2272,7 +2659,7 @@ html.dock-empty {
 #dock {
   position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%);
   z-index: var(--z-shelf); display: flex; flex-direction: column; align-items: center; gap: 6px;
-  transition: transform var(--t-move) var(--ease), opacity var(--t-move) ease;
+  transition: transform var(--t-move) var(--ease-enter), opacity var(--t-move) var(--ease-move);
 }
 /* ── ПУСТОЙ ПОЛКИ НЕТ НИ НА ОДНОМ ЭКРАНЕ (D-272) ─────────────────────────
    ПОВОД, дословно от основателя 23.09.2026, со снимком планшета: «док
@@ -2299,10 +2686,10 @@ html.dock-empty #dock {
    наведением, и после касания она не затихает (D-272). Признак рода касания
    ставит shell.js; тот же вопрос задают все правила наведения. */
 html.dock-away:where(:not([data-input="touch"])) #dock { transform: translate(-50%, 5px) scale(.975); }
-html.dock-away:where(:not([data-input="touch"])) .dock-shelf { background: rgba(16, 13, 12, .74); }
+html.dock-away:where(:not([data-input="touch"])) .dock-shelf { background: rgba(var(--well-rgb), .74); }
 /* Приглушение — яркостью, а не прозрачностью (D-285): полупрозрачная
    плитка снова стала бы плёнкой, чей цвет решает поле под ней. */
-html.dock-away:where(:not([data-input="touch"])) #dock .dock-tile, html.dock-away:where(:not([data-input="touch"])) #dock .dock-label { filter: brightness(.55); }
+html.dock-away:where(:not([data-input="touch"])) #dock .dock-tile, html.dock-away:where(:not([data-input="touch"])) #dock .dock-label { filter: var(--away-filter); }
 html.dock-away #dock:focus-within { transform: translate(-50%, 0); }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -2370,7 +2757,7 @@ html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within 
      transform-origin остаётся здесь: он не меняется никогда и потому в
      обработчике ему делать нечего. */
   width: 46px; padding: 0; transform: scale(1); transform-origin: bottom center;
-  transition: width var(--t-move) var(--ease), opacity var(--t-move) ease, margin var(--t-move) var(--ease), transform var(--t-track) linear;
+  transition: width var(--t-move) var(--ease-enter), opacity var(--t-move) var(--ease-move), margin var(--t-move) var(--ease-enter), transform var(--t-track) linear;
 }
 /* ЗАКРЫТОЕ ПРИЛОЖЕНИЕ ЗАНИМАЕТ РОВНО НОЛЬ (v47.1).
    Ширину ему обнуляли, а ПРОМЕЖУТОК между ним и соседом — нет: отрицательное
@@ -2407,13 +2794,13 @@ html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within 
 /* То же самое в списке открытых окон наверху: приглушение уже было, но без
    имени состояния. Теперь у него есть и знак. */
 .seq-item.dim::after { content: "·"; margin-left: 2px; opacity: .8; }
-.dock-item.bounce .dock-tile { animation: dockBounce .6s var(--spring); }
+.dock-item.bounce .dock-tile { animation: dockBounce .6s var(--ease-pull); }
 .dock-item.catch .dock-tile { transform: scale(.86); }
 .dock-item.release .dock-tile { transform: scale(1.06); }
 @keyframes dockBounce { 0% { transform: translateY(0); } 40% { transform: translateY(-16px); } 100% { transform: translateY(0); } }
 .dock-badge {
   position: absolute; top: -3px; right: 2px; min-width: 17px; height: 17px; padding: 0 4px;
-  border-radius: var(--r-pill); background: var(--danger); color: #fff; font-size: var(--f-micro);
+  border-radius: var(--r-pill); background: var(--danger); color: var(--on-accent); font-size: var(--f-micro);
   display: grid; place-items: center;
 }
 /* Круглая кнопка — деталь рабочего стола. Открытое окно её убирает: класс
@@ -2429,7 +2816,7 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
    только размер и знак внутри. Круг снят намеренно: скругление 14 — то же,
    что у подсказки, и именно оно делает их родственниками. */
 #sbFab {
-  transition: opacity var(--t-move) ease, transform var(--t-move) ease, border-color var(--t-drift) ease, background var(--t-drift) ease;
+  transition: opacity var(--t-move) var(--ease-move), transform var(--t-move) var(--ease-move), border-color var(--t-drift) var(--ease-enter), background var(--t-drift) var(--ease-enter);
   position: fixed; z-index: var(--z-float); border-radius: var(--r-card);
   /* ── КНОПКА СТОИТ В РЯДУ, А НЕ ГДЕ ПРИДЁТСЯ (v54) ────────────────────
      Все четыре числа — из §1, оттуда же их читает подсказка. Своих чисел
@@ -2437,7 +2824,7 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
      мнением о линии, на которой она стоит. Мнение теперь одно. */
   right: var(--fab-inset); bottom: var(--desk-row-b);
   width: var(--fab-size); height: var(--fab-size);
-  display: grid; place-items: center; line-height: 1; color: var(--ink);
+  display: grid; place-items: center; line-height: var(--lh-one); color: var(--ink);
   background:
     radial-gradient(160% 180% at 12% -40%,
       rgba(var(--wp-light-rgb, 91, 124, 255), .13), transparent 64%),
@@ -2447,7 +2834,7 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
   box-shadow:
     inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), .20),
-    0 16px 40px -20px rgba(0, 0, 0, .74),
+    0 16px 40px -20px rgba(var(--shade-rgb), calc(.74 * var(--shade-k))),
     0 2px 12px -7px rgba(var(--wp-light-rgb, 91, 124, 255), .22);
 }
 /* Шов — единственное цветное в кнопке: цвет здесь значит «можно действовать»
@@ -2494,7 +2881,7 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
   box-shadow:
     inset 0 1px 0 rgba(var(--wp-light-2-rgb, 143, 168, 242), .20),
-    0 16px 40px -20px rgba(0, 0, 0, .74),
+    0 16px 40px -20px rgba(var(--shade-rgb), calc(.74 * var(--shade-k))),
     0 2px 12px -7px rgba(var(--wp-light-rgb, 91, 124, 255), .22);
   /* ── ПРАВИЛЬНОЕ МЕСТО НЕ ЗАВИСИТ ОТ ТОГО, БЫЛ ЛИ КАДР · решение D-176 ────
      Здесь стояло opacity: 0; transform: translateY(14px), а прийти на место
@@ -2514,18 +2901,18 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
    нет, класса нет, и извещение просто стоит на своём месте видимым. Замороженная
    анимация иначе держала бы его в своём первом кадре — невидимым и на 14 точек
    ниже, — и это ровно то, что доска ловила дважды. */
-.toast.enter { animation: toastIn var(--t-move) var(--ease); }
+.toast.enter { animation: toastIn var(--t-move) var(--ease-enter); }
 @keyframes toastIn { from { opacity: 0; transform: translateY(14px); } }
 .toast.out {
   opacity: 0; transform: translateY(14px);
-  transition: opacity var(--t-move) ease, transform var(--t-move) var(--ease);
+  transition: opacity var(--t-move) var(--ease-move), transform var(--t-move) var(--ease-enter);
 }
 /* Извещений на экране не больше трёх: четвёртое не информирует, а заслоняет.
    Правило стоит в вёрстке, а не в скрипте, — оно про место, а не про смысл. */
 #toastLayer .toast:nth-child(n + 4) { display: none; }
 .toast-icon { color: var(--ink-2); }
 .toast-icon svg { width: 18px; height: 18px; }
-.toast-title { font-size: var(--f-read); font-weight: 600; }
+.toast-title { font-size: var(--f-read); font-weight: var(--w-strong); }
 .toast-text { font-size: var(--f-ui); color: var(--ink-2); margin-top: 2px; }
 .toast-action {
   grid-column: 2; justify-self: start; margin-top: 8px; padding: 5px 11px; border-radius: var(--r-ctrl);
@@ -2539,6 +2926,31 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
 .toast-actions { grid-column: 2; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .toast-actions .toast-action { margin-top: 0; min-height: 36px; padding: 6px 14px; }
 .toast-action.quiet { background: transparent; border-color: var(--line-2); color: var(--ink-2); }
+/* ── ВОПРОС СВОИМ ГОЛОСОМ (D-335) ─────────────────────────────────────────
+   Вопрос — то же извещение, которое ждёт ответа. Непоправимое действие
+   отмечено цветом беды на кнопке согласия — тихо, плёнкой и обводкой, а не
+   красной плашкой: человек должен увидеть, ЧТО произойдёт, не пугаясь.
+   Поле для строки (имя раскладки, нить «зачем») стоит между вопросом и
+   кнопками; Enter в нём — согласие. */
+.toast-ask-danger .toast-action[data-act="yes"] { background: rgba(var(--bad-rgb), .12); border-color: rgba(var(--bad-rgb), .55); }
+.toast-field {
+  grid-column: 2; margin-top: 8px; width: 100%; box-sizing: border-box; font: inherit; font-size: var(--f-read);
+  padding: 8px 10px; border-radius: var(--r-ctrl); color: var(--ink);
+  background: rgba(var(--film-rgb), .06); border: 1px solid var(--line-2);
+}
+.toast-field:focus-visible { outline: none; border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
+/* ── ПОДСКАЗКА СВОИМ ГОЛОСОМ (D-339) ─────────────────────────────────────
+   Плашка браузера над кнопкой заменена словом среды: поверхность речи
+   стола, шрифт и размер строки интерфейса, углы управления. Появляется
+   проявлением, а не прыжком; уходит так же. Указателя не ловит. */
+.sb-tip {
+  position: fixed; left: 0; top: 0; z-index: var(--z-hint); pointer-events: none;
+  max-width: 32ch; padding: 6px 10px; border-radius: var(--r-ctrl);
+  background: var(--voice); color: var(--ink); border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft); font-size: var(--f-ui); line-height: var(--lh-ui);
+  opacity: 0; transform: translateY(-2px); transition: opacity var(--t-touch) var(--ease-enter), transform var(--t-touch) var(--ease-enter);
+}
+.sb-tip.on { opacity: 1; transform: none; }
 /* Вторая строка эстафеты — недописанная мысль (D-289): перенос строки в
    тексте извещения — это её граница, а не случайный пробел. */
 .toast-baton .toast-text { white-space: pre-line; }
@@ -2548,13 +2960,13 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
 #toastLayer .toast-standing {
   margin-right: max(0px, calc(var(--fab-inset) + var(--fab-size) + var(--desk-row-gap) - (100vw - min(560px, 100vw - 32px)) / 2));
 }
-.toast-warn { border-color: rgba(255, 214, 10, .45); }
+.toast-warn { border-color: rgba(var(--star-rgb), .45); }
 /* ── КАК ПОСТАВИТЬ НА ЭКРАН, ГДЕ КНОПКИ НЕТ (D-293) ──────────────────────
    Safari и Firefox странице кнопки не дают: два шага называются словами,
    одним листом поверх стола, и закрываются одним нажатием. */
 .sb-install-guide {
   position: fixed; inset: 0; z-index: var(--z-veil); display: grid; place-items: center;
-  padding: 20px; background: rgba(4, 5, 8, .62);
+  padding: 20px; background: rgba(var(--veil-rgb), .62);
 }
 .sig-box {
   width: min(420px, 100%); display: flex; flex-direction: column; gap: 12px;
@@ -2564,11 +2976,11 @@ html.has-windows #sbFab { opacity: 0; pointer-events: none; transform: translate
   background: var(--bg-elev);
   border: 1px solid var(--line); box-shadow: var(--shadow);
 }
-.sig-why { margin: 0; font-size: var(--f-ui); line-height: 1.55; color: var(--ink-2); }
-.sig-box h3 { margin: 0; font-size: var(--f-lead); font-weight: 700; color: var(--ink); }
-.sig-box ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: var(--f-read); line-height: 1.5; color: var(--ink); }
+.sig-why { margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); }
+.sig-box h3 { margin: 0; font-size: var(--f-lead); font-weight: var(--w-strong); color: var(--ink); }
+.sig-box ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink); }
 .sig-warn {
-  margin: 0; font-size: var(--f-ui); line-height: 1.55; color: var(--ink-2);
+  margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2);
   padding: 10px 12px; border-radius: var(--r-ctrl); border: 1px solid var(--line); border-left: 2px solid var(--accent-ring);
 }
 .sig-close { align-self: flex-end; min-height: 40px; padding: 0 18px; }
@@ -2609,19 +3021,19 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .id-mark svg.iris { width: 18px; height: 18px; overflow: visible; display: block; }
 .tb-identity .iris-rim {
   fill: none; stroke: currentColor; stroke-width: 1.2; opacity: .38;
-  transition: stroke var(--t-move) ease, opacity var(--t-move) ease;
+  transition: stroke var(--t-move) var(--ease-move), opacity var(--t-move) var(--ease-move);
 }
 .tb-identity .iris-seams line {
   stroke: currentColor; stroke-width: 1; opacity: .22;
-  transition: opacity var(--t-move) ease;
+  transition: opacity var(--t-move) var(--ease-move);
 }
 .tb-identity .iris-blades {
   fill: none; stroke: currentColor; stroke-width: 1.5; opacity: .45;
   transform-box: view-box; transform-origin: 12px 12px;
   transform: scale(.95);
-  transition: transform var(--t-scene) cubic-bezier(.16, 1, .3, 1), opacity var(--t-move) ease, stroke-width var(--t-move) ease;
+  transition: transform var(--t-scene) var(--ease-enter), opacity var(--t-move) var(--ease-move), stroke-width var(--t-move) var(--ease-move);
 }
-.tb-identity .iris-pupil { fill: var(--accent); transition: fill var(--t-move) ease; }
+.tb-identity .iris-pupil { fill: var(--accent); transition: fill var(--t-move) var(--ease-move); }
 .tb-identity[data-state="open"] { color: var(--accent); }
 .tb-identity[data-state="open"] .iris-blades { transform: scale(.44); opacity: .95; stroke-width: 2.1; }
 .tb-identity[data-state="open"] .iris-rim { opacity: .8; }
@@ -2653,30 +3065,30 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .acc-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; }
 .acc-row .acc-k { font-size: var(--f-read); color: var(--ink-2); }
 .acc-row .acc-v { font-size: var(--f-ui); color: var(--ink-3); text-align: right; overflow-wrap: anywhere; }
-.acc-hint { font-size: var(--f-ui); color: var(--ink-3); line-height: 1.55; margin: 2px 0 6px; }
+.acc-hint { font-size: var(--f-ui); color: var(--ink-3); line-height: var(--lh-read); margin: 2px 0 6px; }
 .acc-who { display: flex; align-items: center; gap: 10px; padding: 4px 2px 12px; }
 .acc-dot { width: 10px; height: 10px; border-radius: var(--r-round); background: var(--accent); flex: none; }
 .acc-who-text { display: flex; flex-direction: column; min-width: 0; font-size: var(--f-read); }
 .acc-who-sub { font-size: var(--f-meta); color: var(--ink-3); }
 .acc-sigil { width: 28px; height: 28px; flex: none; color: var(--accent); }
 .acc-sigil svg { width: 100%; height: 100%; display: block; }
-.acc-serial { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
+.acc-serial { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: var(--track-caps); }
 .acc-field { display: flex; flex-direction: column; gap: 6px; }
-.acc-label { font-size: var(--f-meta); text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
+.acc-label { font-size: var(--f-meta); text-transform: uppercase; letter-spacing: var(--track-caps); color: var(--ink-3); }
 .acc-field input {
   width: 100%; padding: 10px 12px; font-size: var(--f-read); border-radius: var(--r-ctrl);
-  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
+  background: rgba(var(--film-rgb), .04); border: 1px solid var(--line); color: var(--ink); outline: none;
 }
 .acc-field input:focus { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
 .acc-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 2px; }
 .acc-acts .btn { flex: 1 1 150px; }
 /* Взведённая кнопка сообщает о себе цветом, а не только словом: тот, кто
    нажал случайно, должен УВИДЕТЬ, что дальше произойдёт непоправимое. */
-.btn.danger.armed { border-color: rgba(255, 69, 58, .8); background: rgba(255, 69, 58, .16); color: #fff; }
+.btn.danger.armed { border-color: rgba(var(--bad-rgb), .8); background: rgba(var(--bad-rgb), .16); color: var(--ink); }
 .acc-truth {
-  font-size: var(--f-meta); line-height: 1.6; color: var(--ink-3);
+  font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-3);
   padding: 10px 11px; border-radius: var(--r-ctrl);
-  background: rgba(255, 255, 255, .028); border: 1px solid var(--line);
+  background: rgba(var(--film-rgb), .028); border: 1px solid var(--line);
 }
 
 /* ── ОКНО ЗАМКА · решение D-165 ───────────────────────────────────────────── */
@@ -2687,11 +3099,11 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
   font-size: var(--f-read); color: var(--ink);
 }
 .lock-state .lk-dot { width: 8px; height: 8px; border-radius: var(--r-round); background: var(--accent); flex: none; }
-.lock-state.off { background: rgba(255, 255, 255, .03); border-color: var(--line); color: var(--ink-2); }
+.lock-state.off { background: rgba(var(--film-rgb), .03); border-color: var(--line); color: var(--ink-2); }
 .lock-state.off .lk-dot { background: var(--ink-3); }
 .lock-cipher {
-  font-family: var(--mono); font-size: var(--f-meta); line-height: 1.7; color: var(--ink-3);
-  padding: 9px 11px; border-radius: var(--r-ctrl); background: rgba(255, 255, 255, .028);
+  font-family: var(--mono); font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-3);
+  padding: 9px 11px; border-radius: var(--r-ctrl); background: rgba(var(--film-rgb), .028);
   border: 1px solid var(--line); overflow-wrap: anywhere;
   /* <pre> по умолчанию НЕ переносит строк: на телефоне имя шифра уезжало за
      правый край окна и обрывалось на PBKDF2-SHA256:60000 (снимок основателя).
@@ -2702,77 +3114,77 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .lock-field { display: flex; flex-direction: column; gap: 7px; }
 .lock-field input {
   width: 100%; padding: 11px 12px; font-size: var(--f-read); border-radius: var(--r-ctrl);
-  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
+  background: rgba(var(--film-rgb), .04); border: 1px solid var(--line); color: var(--ink); outline: none;
 }
 .lock-field input:focus { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
 .lock-idle { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .lock-idle select {
   padding: 8px 10px; font-size: var(--f-ui); border-radius: var(--r-ctrl);
-  background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--ink); outline: none;
+  background-color: rgba(var(--film-rgb), .04); border: 1px solid var(--line); color: var(--ink); outline: none;
 }
 .lock-idle select:focus { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
-.lock-stays { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; font-size: var(--f-meta); line-height: 1.5; color: var(--ink-3); }
+.lock-stays { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-3); }
 .lock-acts { display: flex; flex-wrap: wrap; gap: 8px; }
 .lock-acts .btn { flex: 1 1 140px; }
 /* Файл второго ключа и код восстановления в окне аккаунта (D-266). */
 .lock-keyfile { display: flex; flex-direction: column; gap: 6px; }
 .lock-keyfile input[type="file"] {
   font: inherit; font-size: var(--f-ui); color: var(--ink-2); padding: 9px 10px;
-  background: rgba(255, 255, 255, .03); border: 1px dashed rgba(var(--accent-rgb), .45); border-radius: var(--r-ctrl);
+  background: rgba(var(--film-rgb), .03); border: 1px dashed rgba(var(--accent-rgb), .45); border-radius: var(--r-ctrl);
 }
 .lock-spare-out { display: flex; flex-direction: column; gap: 8px; }
 .lock-spare-code {
-  margin: 0; padding: 12px; font-family: var(--mono); font-size: var(--f-read); line-height: 1.6;
-  letter-spacing: .08em; color: var(--ink); text-align: center; white-space: pre-wrap; overflow-wrap: anywhere;
+  margin: 0; padding: 12px; font-family: var(--mono); font-size: var(--f-read); line-height: var(--lh-read);
+  letter-spacing: var(--track-caps); color: var(--ink); text-align: center; white-space: pre-wrap; overflow-wrap: anywhere;
   background: rgba(var(--accent-rgb), .07); border: 1px solid var(--accent-ring); border-radius: var(--r-ctrl);
   user-select: all;
 }
 .lock-warn {
-  font-size: var(--f-ui); line-height: 1.55; color: var(--danger);
+  font-size: var(--f-ui); line-height: var(--lh-read); color: var(--bad-ink);
   padding: 9px 11px; border-radius: var(--r-ctrl);
-  background: rgba(255, 69, 58, .07); border: 1px solid rgba(255, 69, 58, .22);
+  background: rgba(var(--bad-rgb), .07); border: 1px solid rgba(var(--bad-rgb), .22);
 }
 /* Фраза замка (D-309): её надо прочитать и записать, поэтому крупно и в моно. */
 .lock-phrase {
-  font-family: var(--mono); font-size: var(--f-read); line-height: 1.7;
+  font-family: var(--mono); font-size: var(--f-read); line-height: var(--lh-read);
   color: var(--ink); padding: 10px 12px; border-radius: var(--r-ctrl);
   background: var(--glass-2); border: 1px solid var(--line); word-spacing: .2em;
 }
 /* Окно подтверждения перед опасным (D-308). */
 .sb-confirm-back {
   position: fixed; inset: 0; z-index: var(--z-login); display: grid; place-items: center;
-  padding: max(16px, var(--safe-top)) 16px 16px; background: rgba(4, 5, 8, .6); backdrop-filter: blur(8px);
+  padding: max(16px, var(--safe-top)) 16px 16px; background: rgba(var(--veil-rgb), .6); backdrop-filter: blur(8px);
 }
 .sb-confirm {
   width: min(400px, 100%); max-width: 100%; min-width: 0;
   background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-card);
   box-shadow: var(--shadow); padding: 22px; display: flex; flex-direction: column; gap: 10px;
 }
-.sb-confirm h3 { margin: 0; font-size: var(--f-title); font-weight: 600; }
-.sb-confirm-why { margin: 0; color: var(--ink-2); font-size: var(--f-read); line-height: 1.5; }
+.sb-confirm h3 { margin: 0; font-size: var(--f-title); font-weight: var(--w-strong); }
+.sb-confirm-why { margin: 0; color: var(--ink-2); font-size: var(--f-read); line-height: var(--lh-read); }
 .sb-confirm input {
   width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: var(--r-ctrl);
-  background: rgba(255, 255, 255, .04); outline: none; font-size: var(--f-lead);
+  background: rgba(var(--film-rgb), .04); color: var(--ink); outline: none; font-size: var(--f-lead);
 }
 .sb-confirm input:focus { border-color: var(--accent-ring); }
-.sb-confirm-err { min-height: 16px; margin: 0; color: var(--danger); font-size: var(--f-ui); }
+.sb-confirm-err { min-height: 16px; margin: 0; color: var(--bad-ink); font-size: var(--f-ui); }
 .sb-confirm-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
 /* ================================================================= panels §6 */
 .panel-overlay {
   position: fixed; inset: 0; z-index: var(--z-panel); display: none; place-items: center; padding: 20px;
-  background: rgba(4, 5, 8, .55); backdrop-filter: blur(8px);
+  background: rgba(var(--veil-rgb), .55); backdrop-filter: blur(8px);
 }
 .panel-overlay.open { display: grid; }
 .panel {
   width: min(520px, 100%); max-height: 84vh; display: flex; flex-direction: column; overflow: hidden;
   border-radius: var(--r-card); background: var(--glass); border: 1px solid var(--line);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.5); box-shadow: var(--shadow);
-  animation: panelIn .2s var(--ease);
+  animation: panelIn .2s var(--ease-enter);
 }
 @keyframes panelIn { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: none; } }
 .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
-.panel-head h3 { margin: 0; font-size: var(--f-read); font-weight: 600; }
+.panel-head h3 { margin: 0; font-size: var(--f-read); font-weight: var(--w-strong); }
 .panel-close { color: var(--ink-3); padding: 4px 6px; border-radius: var(--r-ctrl); }
 /* ── СОДЕРЖИМОЕ ОКНА ОБЯЗАНО БЫТЬ ДОСТИЖИМО · решение D-175 ───────────────
    ПОВОД, дословно от основателя 27.08.2026, со снимком окна замка на телефоне:
@@ -2794,22 +3206,22 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 }
 /* REQUIRED cap: panel lists always stay reachable (§6.0) */
 .panel-scroll { max-height: min(56vh, 420px); overflow: auto; padding-right: 4px; }
-.panel-sub { margin: 12px 0 6px; font-size: var(--f-meta); text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
+.panel-sub { margin: 12px 0 6px; font-size: var(--f-meta); text-transform: uppercase; letter-spacing: var(--track-caps); color: var(--ink-3); }
 .panel-empty { color: var(--ink-3); font-size: var(--f-read); padding: 10px 2px; }
-.panel-copy { font-size: var(--f-read); color: var(--ink-2); line-height: 1.55; margin: 0 0 10px; }
+.panel-copy { font-size: var(--f-read); color: var(--ink-2); line-height: var(--lh-read); margin: 0 0 10px; }
 .panel-copy.dim { color: var(--ink-3); font-size: var(--f-ui); }
-.panel-err { color: var(--danger); font-size: var(--f-ui); min-height: 16px; }
+.panel-err { color: var(--bad-ink); font-size: var(--f-ui); min-height: 16px; }
 .panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
 .foot-note { font-size: var(--f-meta); color: var(--ink-3); }
 .kv-row { display: flex; align-items: center; gap: 12px; padding: 7px 2px; font-size: var(--f-read); color: var(--ink-2); }
-.kv-row kbd { min-width: 74px; padding: 3px 7px; border-radius: var(--r-tag); background: rgba(255, 255, 255, .07); border: 1px solid var(--line); text-align: center; }
+.kv-row kbd { min-width: 74px; padding: 3px 7px; border-radius: var(--r-tag); background: rgba(var(--film-rgb), .07); border: 1px solid var(--line); text-align: center; }
 .kv-row.wide { justify-content: space-between; }
 .kv-k { color: var(--ink-3); }
 .kv-v { text-align: right; max-width: 62%; overflow-wrap: anywhere; }
 .diag-err { font-family: var(--mono); font-size: var(--f-meta); color: var(--ink-2); padding: 5px 2px; overflow-wrap: anywhere; }
 .notif-row, .task-row, .clip-row {
   display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--r-ctrl);
-  background: rgba(255, 255, 255, .03); border: 1px solid var(--line); margin-bottom: 6px; cursor: pointer;
+  background: rgba(var(--film-rgb), .03); border: 1px solid var(--line); margin-bottom: 6px; cursor: pointer;
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -2817,14 +3229,14 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .notif-row:hover, :where(html:not([data-input="touch"])) .task-row:hover, :where(html:not([data-input="touch"])) .clip-row:hover { background: rgba(255, 255, 255, .06); }
+  :where(html:not([data-input="touch"])) .notif-row:hover, :where(html:not([data-input="touch"])) .task-row:hover, :where(html:not([data-input="touch"])) .clip-row:hover { background: rgba(var(--film-rgb), .06); }
 }
 .notif-main { flex: 1; min-width: 0; }
 .notif-title { font-size: var(--f-read); }
 .notif-text, .task-sub, .notif-time, .clip-time { font-size: var(--f-meta); color: var(--ink-3); }
 .notif-x, .task-x { color: var(--ink-3); padding: 3px 6px; }
 .task-tile, .lay-tile { width: 16px; height: 16px; border-radius: var(--r-tag); flex: none; }
-.widget-tile { background: linear-gradient(160deg, #7f8794, #40454f); }
+.widget-tile { /* своя краска: лицо виджета, как лица приложений в плитках */ background: linear-gradient(160deg, #7f8794, #40454f); }
 .lay-tiles { display: flex; gap: 3px; }
 .task-name { flex: 1; font-size: var(--f-read); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clip-text { flex: 1; font-size: var(--f-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2834,20 +3246,20 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
   font-family: var(--mono); font-size: var(--f-ui); color: var(--ink-2);
   background: var(--glass-2); border: 1px solid var(--line); backdrop-filter: blur(var(--glass-blur));
 }
-.fixed-badge.urgent { color: #fff; background: rgba(255, 69, 58, .8); border-color: rgba(255, 69, 58, .9); animation: pulseUrgent 1s infinite; }
+.fixed-badge.urgent { color: var(--ink); background: rgba(var(--bad-rgb), .8); border-color: rgba(var(--bad-rgb), .9); animation: pulseUrgent 1s infinite; }
 @keyframes pulseUrgent { 50% { opacity: .55; } }
 
 /* ================================================================ palette §8 */
 #sbCmdk {
   position: fixed; inset: 0; z-index: var(--z-palette); display: none; justify-content: center; align-items: flex-start;
-  padding: 14vh 20px 20px; background: rgba(4, 5, 8, .5); backdrop-filter: blur(8px);
+  padding: 14vh 20px 20px; background: rgba(var(--veil-rgb), .5); backdrop-filter: blur(8px);
 }
 #sbCmdk.open { display: flex; }
 .cmdk-box {
   width: min(560px, 100%); border-radius: var(--r-card); overflow: hidden;
   background: var(--glass); border: 1px solid var(--line);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.5); box-shadow: var(--shadow);
-  animation: panelIn .18s var(--ease);
+  animation: panelIn .18s var(--ease-enter);
 }
 #sbCmdkInput { width: 100%; padding: 16px 18px; font-size: var(--f-lead); background: none; border: 0; border-bottom: 1px solid var(--line); outline: none; }
 #sbCmdkList { list-style: none; margin: 0; padding: 6px; max-height: min(52vh, 400px); overflow: auto; }
@@ -2876,21 +3288,21 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 @media (hover: hover) {
   :where(html:not([data-input="touch"])) .ctx-item:hover { background: var(--accent-soft); }
 }
-.ctx-check { color: var(--accent); }
+.ctx-check { color: var(--accent-ink); }
 .ctx-sep { height: 1px; margin: 5px 8px; background: var(--line); }
 
 /* ================================================================= terminal */
 .term-host, .sb-terminal { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; }
-.sb-terminal { padding: 12px var(--pad-room); font-family: var(--mono); font-size: var(--f-ui); background: rgba(0, 0, 0, .28); }
+.sb-terminal { padding: 12px var(--pad-room); font-family: var(--mono); font-size: var(--f-ui); background: rgba(var(--shade-rgb), calc(.28 * var(--sink-k))); }
 .term-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-.term-chip { padding: 3px 9px; border-radius: var(--r-pill); font-size: var(--f-meta); color: var(--ink-3); background: rgba(255, 255, 255, .05); border: 1px solid var(--line); }
-.term-out { flex: 1; min-height: 0; overflow: auto; line-height: 1.55; }
+.term-chip { padding: 3px 9px; border-radius: var(--r-pill); font-size: var(--f-meta); color: var(--ink-3); background: rgba(var(--film-rgb), .05); border: 1px solid var(--line); }
+.term-out { flex: 1; min-height: 0; overflow: auto; line-height: var(--lh-read); }
 .term-row { white-space: pre-wrap; overflow-wrap: anywhere; }
 .term-echo { color: var(--ink-3); }
 .term-dim { color: var(--ink-3); }
-.term-welcome { color: var(--accent); }
+.term-welcome { color: var(--accent-ink); }
 .term-line { display: flex; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
-.term-prompt { color: var(--accent); }
+.term-prompt { color: var(--accent-ink); }
 .term-input { flex: 1; background: none; border: 0; outline: none; font-family: var(--mono); font-size: var(--f-ui); }
 
 /* ================================================================= motion */
@@ -2924,7 +3336,7 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
   .window {
     box-shadow: none;
     backdrop-filter: none; -webkit-backdrop-filter: none;
-    background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--bg-elev, #14100f);
+    background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--bg-elev);
   }
   .resize-handle { display: none; }
 }
@@ -3045,7 +3457,7 @@ html.is-compact .titlebar { cursor: default; }
    (#sbBoot) скрыт стилями, и строка в нём не была бы видна никому. */
 .login-decoding {
   margin: 0 0 10px; font-family: var(--mono, ui-monospace, Menlo, monospace);
-  font-size: var(--f-meta); letter-spacing: .04em; color: var(--ink-3); text-align: center;
+  font-size: var(--f-meta); letter-spacing: var(--track-caps); color: var(--ink-3); text-align: center;
 }
 
 /* ── Язык: один код, который и есть кнопка (v47, вторая редакция) ─────────
@@ -3078,10 +3490,10 @@ html.is-compact .titlebar { cursor: default; }
    буквы, правый угол экрана. */
 .tb-lang-now {
   padding: 4px 7px; cursor: pointer;
-  font-family: var(--mono); font-size: var(--f-meta); letter-spacing: .06em; line-height: 1;
-  color: var(--ink-2, var(--ink));
+  font-family: var(--mono); font-size: var(--f-meta); letter-spacing: var(--track-caps); line-height: var(--lh-one);
+  color: var(--ink-2);
   background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-tag);
-  transition: color var(--t-touch) ease, background var(--t-touch) ease, border-color var(--t-touch) ease, transform var(--t-touch) var(--ease);
+  transition: color var(--t-touch) var(--ease-move), background var(--t-touch) var(--ease-move), border-color var(--t-touch) var(--ease-move), transform var(--t-touch) var(--ease-enter);
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -3108,7 +3520,7 @@ html.is-compact .titlebar { cursor: default; }
 .tb-lang-item {
   display: flex; align-items: center; gap: 9px; width: 100%;
   padding: 7px 9px; border: 0; border-radius: var(--r-ctrl); background: none; cursor: pointer;
-  color: var(--ink-2, var(--ink)); text-align: left; font-size: var(--f-ui); line-height: 1;
+  color: var(--ink-2); text-align: left; font-size: var(--f-ui); line-height: var(--lh-one);
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -3119,8 +3531,8 @@ html.is-compact .titlebar { cursor: default; }
   :where(html:not([data-input="touch"])) .tb-lang-item:hover { background: var(--glass-2); color: var(--ink); }
 }
 .tb-lang-item.is-active { color: var(--ink); }
-.tb-lang-item.is-active .tb-lang-code { color: var(--accent); }
-.tb-lang-code { font-family: var(--mono); font-size: var(--f-meta); letter-spacing: .06em; min-width: 20px; }
+.tb-lang-item.is-active .tb-lang-code { color: var(--accent-ink); }
+.tb-lang-code { font-family: var(--mono); font-size: var(--f-meta); letter-spacing: var(--track-caps); min-width: 20px; }
 
 /* ── ЗНАЧОК СИСТЕМЫ — ВТОРАЯ РУКА «УБРАТЬ ВСЁ» (v47.1) ────────────────────
    Голосование выбрало пустое место стола, основатель поправил: выбирать
@@ -3135,7 +3547,7 @@ button.tb-mark {
   border: 0; background: none; padding: 4px 2px; margin: 0; cursor: pointer;
   display: inline-flex; align-items: center; min-width: 26px; min-height: 26px;
   border-radius: var(--r-ctrl); color: inherit; font: inherit;
-  transition: background var(--t-touch) ease, transform var(--t-touch) var(--ease);
+  transition: background var(--t-touch) var(--ease-move), transform var(--t-touch) var(--ease-enter);
 }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -3168,7 +3580,7 @@ button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset:
 .desk-icon::after {
   content: ""; position: absolute; left: 50%; bottom: 2px; width: 4px; height: 4px;
   margin-left: -2px; border-radius: var(--r-round); background: var(--tile-dot);
-  opacity: 0; transition: opacity var(--t-touch) ease;
+  opacity: 0; transition: opacity var(--t-touch) var(--ease-move);
   pointer-events: none;
 }
 .desk-icon.running::after { opacity: 1; }
@@ -3190,17 +3602,17 @@ button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset:
   display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 8px; border-radius: var(--r-pill);
   font-size: var(--f-meta); color: var(--ink-2);
-  background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+  background: rgba(var(--film-rgb), .05); border: 1px solid var(--line);
 }
 .note-due svg { width: 11px; height: 11px; flex: none; }
 .note-due.now { color: var(--ink); border-color: var(--accent-ring); background: var(--accent-soft); }
-.note-due.late { color: #ff9b8f; border-color: rgba(255, 69, 58, .42); background: rgba(255, 69, 58, .12); }
+.note-due.late { color: var(--bad-ink); border-color: rgba(var(--bad-rgb), .42); background: rgba(var(--bad-rgb), .12); }
 /* Последний час до названной минуты и сама минута. Цифры не прыгают:
    метка считает минуты, и ширина не должна дышать вместе со счётом. */
 .note-due.soon { color: var(--ink); border-color: var(--accent-ring); background: var(--accent-soft); font-variant-numeric: tabular-nums; }
 .note-due.strike { color: var(--ink); border-color: var(--accent-ring); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent-ring) inset; }
 .sticky-note.is-due { border-color: rgba(var(--accent-rgb), .48); }
-.sticky-note.is-late { border-color: rgba(255, 69, 58, .40); }
+.sticky-note.is-late { border-color: rgba(var(--bad-rgb), .4); }
 
 /* Те же два знака в Центре управления — один рисунок на оба места. */
 .chip.is-drift, .chip.is-session { display: inline-flex; align-items: center; }
@@ -3224,7 +3636,7 @@ button.tb-mark:focus-visible { outline: 2px solid var(--accent); outline-offset:
 }
 .sb-flyer > * { pointer-events: none; }
 /* Эхо принимает: короткий вдох значка. Не пульс без конца — один ответ. */
-.echo-catch { animation: echoCatch .62s cubic-bezier(.2, .8, .3, 1) both; }
+.echo-catch { animation: echoCatch .62s var(--ease-enter) both; }
 @keyframes echoCatch {
   0%   { transform: scale(1); }
   38%  { transform: scale(1.16); }
@@ -3243,9 +3655,9 @@ html[data-motion="reduced"] .echo-catch { animation: none; }
 .tb-clock-btn {
   display: inline-flex; align-items: center; height: 26px; padding: 0 6px;
   border-radius: var(--r-ctrl); border: 1px solid transparent; background: transparent;
-  color: inherit; transition: background var(--t-touch) ease, border-color var(--t-touch) ease;
+  color: inherit; transition: background var(--t-touch) var(--ease-move), border-color var(--t-touch) var(--ease-move);
 }
-@media (hover: hover) { :where(html:not([data-input="touch"])) .tb-clock-btn:hover { background: rgba(255, 255, 255, .06); border-color: var(--line); } }
+@media (hover: hover) { :where(html:not([data-input="touch"])) .tb-clock-btn:hover { background: rgba(var(--film-rgb), .06); border-color: var(--line); } }
 .tb-clock-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* ── ОДНА ЛИНЕЙКА НА КОМНАТУ И НА ОКНО · решение D-169 ────────────────────
    ПОВОД: снимок основателя с календарём и слова «окно должно быть идеально по
@@ -3266,20 +3678,20 @@ html[data-motion="reduced"] .echo-catch { animation: none; }
 .time-big { display: flex; align-items: center; justify-content: center; gap: 3px; padding: 12px 0 4px; color: var(--ink); }
 .time-cell { display: inline-flex; align-items: center; }
 .time-cell .clock-glyph { height: 44px; width: 28px; }
-.time-cell.colon { font-family: var(--mono); font-size: var(--f-figure); line-height: 1; opacity: .32; padding: 0 2px; }
+.time-cell.colon { font-family: var(--mono); font-size: var(--f-figure); line-height: var(--lh-one); opacity: .32; padding: 0 2px; }
 .time-sub { text-align: center; font-size: var(--f-ui); color: var(--ink-3); padding-bottom: 14px; }
 .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 2px 10px; }
-.cal-title { font-size: var(--f-read); font-weight: 600; color: var(--ink-2); text-transform: capitalize; }
+.cal-title { font-size: var(--f-read); font-weight: var(--w-strong); color: var(--ink-2); text-transform: capitalize; }
 .cal-step {
   width: 30px; height: 30px; display: grid; place-items: center; font-size: var(--f-lead);
   border-radius: var(--r-ctrl); border: 1px solid var(--line);
-  background: rgba(255, 255, 255, .04); color: var(--ink-2);
+  background: rgba(var(--film-rgb), .04); color: var(--ink-2);
 }
 @media (hover: hover) { :where(html:not([data-input="touch"])) .cal-step:hover { background: var(--glass); color: var(--ink); } }
 .cal-head, .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
 .cal-head { padding-bottom: 5px; }
 .cal-head span {
-  text-align: center; font-size: var(--f-micro); letter-spacing: .05em; text-transform: uppercase;
+  text-align: center; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase;
   color: var(--ink-3);
 }
 .cal-day, .cal-pad {
@@ -3288,7 +3700,7 @@ html[data-motion="reduced"] .echo-catch { animation: none; }
   border-radius: var(--r-ctrl);
 }
 .cal-day.today {
-  color: #fff; font-weight: 700;
+  color: var(--on-accent); font-weight: var(--w-strong);
   background: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
 }
@@ -3299,11 +3711,11 @@ html[data-motion="reduced"] .echo-catch { animation: none; }
    выключил движение — видит ровно ту же вспышку без движения. */
 .note-due[data-arm] { cursor: pointer; font: inherit; border: 0; background: none; padding: 0; color: inherit; }
 .note-due .note-bell { width: 12px; height: 12px; margin-left: 3px; vertical-align: -2px; }
-.note-due.armed { color: var(--accent); }
+.note-due.armed { color: var(--accent-ink); }
 body.sb-alarm-flash::after {
   content: ""; position: fixed; inset: 0; z-index: var(--z-veil); pointer-events: none;
   background: radial-gradient(60% 50% at 50% 42%, rgba(var(--accent-rgb), .30), transparent 70%);
-  animation: sbAlarmFlash 1.4s ease-out both;
+  animation: sbAlarmFlash 1.4s var(--ease-enter) both;
 }
 @keyframes sbAlarmFlash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
 .sticky-note.is-ringing { outline: 2px solid var(--accent); outline-offset: 3px; z-index: var(--z-float); }
@@ -3321,7 +3733,7 @@ body.sb-alarm-flash::after {
   position: absolute; inset: 0; z-index: var(--z-under);
   width: 100%; height: 100%; display: block;
   opacity: .20; filter: blur(.3px);
-  transition: opacity var(--t-rise) ease, filter var(--t-rise) ease;
+  transition: opacity var(--t-rise) var(--ease-enter), filter var(--t-rise) var(--ease-enter);
   pointer-events: none;
 }
 /* Машина считает ключ — поле светлеет и дышит быстрее. Ровно столько, сколько
@@ -3329,8 +3741,8 @@ body.sb-alarm-flash::after {
 #sbVaultGate.vg-work .vg-field { opacity: .40; filter: blur(0); }
 #sbVaultGate.vg-open .vg-field { opacity: 0; }
 .vg-cost, .vg-sealed {
-  margin: 4px 0 0; font-family: var(--mono); font-size: var(--f-meta); line-height: 1.7;
-  color: var(--ink-3); letter-spacing: .01em; max-width: 46ch;
+  margin: 4px 0 0; font-family: var(--mono); font-size: var(--f-meta); line-height: var(--lh-read);
+  color: var(--ink-3); letter-spacing: var(--track-air); max-width: 46ch;
 }
 .vg-cost { color: var(--ink-2); }
 
@@ -3341,7 +3753,7 @@ body.sb-alarm-flash::after {
 .note-seal {
   position: absolute; right: 6px; bottom: 6px; width: 16px; height: 16px;
   color: hsl(var(--h), 70%, 68%); opacity: 0; pointer-events: none;
-  animation: noteSeal 1.5s ease-out both;
+  animation: noteSeal 1.5s var(--ease-enter) both;
 }
 .note-seal svg { display: block; width: 100%; height: 100%; }
 .note-seal path { fill: currentColor; }
@@ -3367,8 +3779,8 @@ body.sb-alarm-flash::after {
    «Передать в…» стояла мельче и бледнее «Новой папки» рядом — одна полоса
    инструментов говорила двумя голосами. Кегль и поле — как у кнопок комнат. */
 .sb-hand-btn {
-  border: 1px solid rgba(255, 255, 255, .14);
-  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(var(--film-rgb), .14);
+  background: rgba(var(--film-rgb), .05);
   color: var(--ink);
   font: inherit;
   font-size: var(--f-ui);
@@ -3379,7 +3791,7 @@ body.sb-alarm-flash::after {
 }
 
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .sb-hand-btn:hover { background: rgba(255, 255, 255, .1); color: var(--ink); }
+  :where(html:not([data-input="touch"])) .sb-hand-btn:hover { background: rgba(var(--film-rgb), .1); color: var(--ink); }
 }
 
 .sb-hand-menu {
@@ -3392,8 +3804,8 @@ body.sb-alarm-flash::after {
   min-width: 150px;
   padding: 4px;
   border-radius: var(--r-card);
-  border: 1px solid rgba(255, 255, 255, .12);
-  background: var(--glass-2, rgba(24, 24, 28, .96));
+  border: 1px solid rgba(var(--film-rgb), .12);
+  background: var(--glass-2);
   box-shadow: var(--shadow-soft);
 }
 
@@ -3410,7 +3822,7 @@ body.sb-alarm-flash::after {
 }
 
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .sb-hand-to:hover { background: rgba(255, 255, 255, .08); color: var(--ink); }
+  :where(html:not([data-input="touch"])) .sb-hand-to:hover { background: rgba(var(--film-rgb), .08); color: var(--ink); }
 }
 
 /* Живая копия (D-267): строка о происхождении копии. Устаревшая говорит
@@ -3418,8 +3830,8 @@ body.sb-alarm-flash::after {
 .sb-hand-src {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
   margin: 6px 0; padding: 7px 10px; border-radius: var(--r-ctrl);
-  font-size: var(--f-meta); line-height: 1.5; color: var(--ink-3);
-  background: rgba(255, 255, 255, .03); border: 1px solid var(--line);
+  font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-3);
+  background: rgba(var(--film-rgb), .03); border: 1px solid var(--line);
 }
 .sb-hand-src[data-state="changed"] { color: var(--ink-2); border-color: var(--accent-ring); background: rgba(var(--accent-rgb), .06); }
 .sb-hand-src-take {
@@ -3427,3 +3839,42 @@ body.sb-alarm-flash::after {
   font: inherit; font-size: var(--f-meta); padding: 4px 9px; border-radius: var(--r-ctrl); cursor: pointer;
 }
 .sb-hand-src-take:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── «НУЖЕН ЗАМОК» — ОДНА КНОПКА НА ВСЮ СИСТЕМУ (D-317) ────────────────────
+   Разметку отдаёт ядро (sbLockCallHtml), поэтому и вид живёт в ядре: кнопка
+   одна и та же в Ковчеге, Ключах и комнате «Замок», и выглядит одинаково.
+   Встаёт сразу под причиной, по левому краю, своим ростом.
+   Охраняется tools/lock-call-check.mjs. */
+.sb-lock-call {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 10px; padding: 8px 14px; cursor: pointer; white-space: nowrap;
+  font: inherit; font-size: var(--f-ui); font-weight: var(--w-strong); line-height: var(--lh-ui);
+  color: var(--ink); background: var(--accent-soft);
+  border: 1px solid var(--accent-ring); border-radius: var(--r-ctrl);
+}
+.sb-lock-call-i { flex: 0 0 auto; width: 15px; height: 15px; color: var(--accent); }
+.sb-lock-call-i svg { width: 100%; height: 100%; display: block; }
+.sb-lock-call:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .sb-lock-call:hover { border-color: var(--accent); }
+}
+
+/* ── БУМАЖНАЯ КОПИЯ КОДА ВОССТАНОВЛЕНИЯ (D-332) ────────────────────────────
+   Лист существует только на время печати. На экране его не видно никогда;
+   в печати виден только он. Бумага печатается чёрным по белому в любой теме:
+   это вещество листа, а не комнаты. Охраняется tools/paper-copy-check.mjs. */
+#sbPaperSheet { display: none; }
+@media print {
+  body > *:not(#sbPaperSheet) { display: none !important; }
+  html, body { /* своя краска: лист бумаги белый в любой теме */ background: #fff !important; }
+  #sbPaperSheet {
+    display: block !important; position: static; padding: 18mm 16mm;
+    /* своя краска: печать чёрным по белому в любой теме */ color: #000;
+    font-family: var(--mono); font-size: var(--f-read); line-height: var(--lh-read);
+  }
+  .sb-paper-mark { margin: 0 0 6mm; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase; }
+  .sb-paper-title { margin: 0 0 8mm; font-size: var(--f-title); font-weight: var(--w-strong); }
+  .sb-paper-code { margin: 0 0 10mm; font-size: var(--f-hero); font-weight: var(--w-strong); letter-spacing: var(--track-caps); word-spacing: .4em; overflow-wrap: anywhere; }
+  .sb-paper-what, .sb-paper-keep { margin: 0 0 5mm; }
+  .sb-paper-line { margin: 14mm 0 0; }
+}

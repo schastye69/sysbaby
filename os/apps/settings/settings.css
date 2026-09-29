@@ -5,7 +5,7 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
-  color: var(--text, rgba(255, 255, 255, .92));
+  color: var(--ink);
 }
 
 .st-side {
@@ -15,8 +15,8 @@
   flex-direction: column;
   gap: 2px;
   padding: 10px 8px;
-  border-right: 1px solid var(--hairline, rgba(255, 255, 255, .09));
-  background: rgba(255, 255, 255, .02);
+  border-right: 1px solid var(--hairline, rgba(var(--film-rgb), .09));
+  background: rgba(var(--film-rgb), .02);
   overflow: auto;
 }
 
@@ -41,18 +41,18 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .st-side-item:hover { background: rgba(255, 255, 255, .06); color: inherit; }
+  :where(html:not([data-input="touch"])) .st-side-item:hover { background: rgba(var(--film-rgb), .06); color: inherit; }
 }
 /* Выбранный раздел назван подложкой, рамкой и чернилами — не жирностью
    (D-273): на телефоне полоса разделов прокручивается и не переносит
    подписи, и жирная подпись шире обычной — полоса вздрагивала на 6 px при
    каждом касании (no-teleport-check). Один вид на всех ширинах. */
-.st-side-item.active { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .12); color: var(--ink); }
+.st-side-item.active { background: rgba(var(--film-rgb), .1); border-color: rgba(var(--film-rgb), .12); color: var(--ink); }
 .st-side-icon { display: grid; place-items: center; }
 .st-side-icon svg { width: 15px; height: 15px; }
 
 .st-pane { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 14px 16px 20px; }
-.st-title { margin: 0 0 12px; font-size: var(--f-lead); font-weight: 650; }
+.st-title { margin: 0 0 12px; font-size: var(--f-lead); font-weight: var(--w-strong); }
 
 /* ── У ОПИСАНИЯ ЕСТЬ ПОЛ, А У СТРОКИ — МЕРА (D-231) ───────────────────────
    Здесь ячейка описания стояла на min-width: 0 и отдавала всё место
@@ -71,19 +71,19 @@
   gap: 14px;
   padding: 11px 13px;
   border-radius: var(--r-card);
-  border: 1px solid rgba(255, 255, 255, .08);
-  background: rgba(255, 255, 255, .035);
+  border: 1px solid rgba(var(--film-rgb), .08);
+  background: rgba(var(--film-rgb), .035);
   margin-bottom: 8px;
 }
 
 .st-row-text { flex: 1 1 260px; min-width: 200px; }
-.st-row-label { font-size: var(--f-ui); font-weight: 600; }
+.st-row-label { font-size: var(--f-ui); font-weight: var(--w-strong); }
 /* Описание настройки — то, по чему человек решает, трогать её или нет.
    Стояло на собственных .48 мимо шкалы чернил и давало 3.44 на карточке,
    которая сама светлее стола: на светлой поверхности тусклое проседает
    сильнее (D-234). Отдано вторым чернилам системы.
    Охраняется tools/legible-check.mjs. */
-.st-row-sub { font-size: var(--f-meta); line-height: 1.5; color: var(--ink-2); margin-top: 3px; }
+.st-row-sub { font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-2); margin-top: 3px; }
 /* ── ЯЧЕЙКА НЕ ШИРЕ СВОЕЙ КАРТОЧКИ (D-302) ─────────────────────────────────
    «По содержимому» значило: ячейка берёт ширину всех своих плашек в одну
    строку и не сжимается никогда. Пока плашек две-три, это незаметно. У
@@ -109,12 +109,12 @@
   width: 42px;
   height: 24px;
   border-radius: var(--r-pill);
-  border: 1px solid rgba(255, 255, 255, .14);
-  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(var(--film-rgb), .14);
+  background: rgba(var(--film-rgb), .08);
   cursor: pointer;
   padding: 0;
   position: relative;
-  transition: background var(--t-touch) ease;
+  transition: background var(--t-touch) var(--ease-move);
 }
 
 .st-switch i {
@@ -124,16 +124,16 @@
   width: 18px;
   height: 18px;
   border-radius: var(--r-pill);
-  background: #fff;
-  transition: transform var(--t-touch) cubic-bezier(.16, 1, .3, 1);
+  background: var(--knob);
+  transition: transform var(--t-touch) var(--ease-move);
 }
 
-.st-switch.on { background: var(--accent, #e0663c); border-color: transparent; }
+.st-switch.on { background: var(--accent); border-color: transparent; }
 .st-switch.on i { transform: translateX(18px); }
 
 .st-btn {
-  border: 1px solid rgba(255, 255, 255, .14);
-  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(var(--film-rgb), .14);
+  background: rgba(var(--film-rgb), .05);
   color: inherit;
   font: inherit;
   font-size: var(--f-ui);
@@ -149,16 +149,16 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .st-btn:hover { background: rgba(255, 255, 255, .12); }
+  :where(html:not([data-input="touch"])) .st-btn:hover { background: rgba(var(--film-rgb), .12); }
 }
-.st-btn.danger { color: var(--danger, #ff453a); border-color: rgba(255, 69, 58, .4); }
+.st-btn.danger { color: var(--bad-ink); border-color: rgba(var(--bad-rgb), .4); }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал. Повод — снимок основателя
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .st-btn.danger:hover { background: rgba(255, 69, 58, .16); }
+  :where(html:not([data-input="touch"])) .st-btn.danger:hover { background: rgba(var(--bad-rgb), .16); }
 }
 
 .st-username { display: inline-flex; align-items: center; gap: 4px; }
@@ -167,8 +167,8 @@
   width: 116px;
   padding: 6px 9px;
   border-radius: var(--r-ctrl);
-  border: 1px solid rgba(255, 255, 255, .12);
-  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(var(--film-rgb), .12);
+  background: rgba(var(--film-rgb), .05);
   color: inherit;
   font: inherit;
   font-size: var(--f-ui);
@@ -183,71 +183,39 @@
 
 .st-saved {
   font-size: var(--f-micro);
-  color: var(--good, #30d158);
+  color: var(--good);
   opacity: 0;
-  transition: opacity var(--t-touch) ease;
+  transition: opacity var(--t-touch) var(--ease-move);
 }
 
 .st-saved.show { opacity: 1; }
 
-.st-segment { display: inline-flex; border-radius: var(--r-pill); border: 1px solid rgba(255, 255, 255, .13); overflow: hidden; }
+.st-segment { display: inline-flex; border-radius: var(--r-pill); border: 1px solid rgba(var(--film-rgb), .13); overflow: hidden; }
 
 .st-seg {
   border: 0;
   background: transparent;
   color: var(--ink-2);
   font: inherit;
-  font-size: var(--f-micro);
-  letter-spacing: .06em;
-  padding: 6px 13px;
+  /* Сегмент — орган управления, а не подпись: буква строки интерфейса,
+     без разрядки подписи (аудит мелкого текста, 28.09.2026). */
+  font-size: var(--f-ui);
+  padding: 5px 13px;
   cursor: pointer;
 }
 
-.st-seg.active { background: rgba(255, 255, 255, .16); color: inherit; font-weight: 700; }
+.st-seg.active { background: rgba(var(--film-rgb), .16); color: inherit; font-weight: var(--w-strong); }
 
-.st-swatches { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
-
-.st-swatch {
-  width: 22px;
-  height: 22px;
-  border-radius: var(--r-pill);
-  border: 2px solid transparent;
-  cursor: pointer;
-  padding: 0;
-}
-
-.st-swatch.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(0, 0, 0, .4); }
-/* ── ХОД ОТЛИЧАЕТСЯ ОТ КРАСОК ОДНОЙ ЧЕРТОЙ (v62) ────────────────────────
-   Он стоит в одном ряду с ними и обязан читаться как их родственник, но
-   он не краска, а ход: цвет в нём меняется сам, полный круг за сутки.
-   Разница показана самым тихим из возможных способов — тонкой дугой по
-   краю, как стрелка, обошедшая циферблат. Ни подписи, ни второго значка:
-   человек, выбравший его однажды, узнаёт кружок, а не читает пояснение. */
-.st-swatch.is-drift { position: relative; }
-.st-swatch.is-drift::after {
-  content: ""; position: absolute; inset: -4px; border-radius: var(--r-round);
-  border: 1px solid currentColor; opacity: .5;
-  border-left-color: transparent; border-bottom-color: transparent;
-  transform: rotate(-38deg); pointer-events: none;
-}
-
-.st-color {
-  width: 26px;
-  height: 24px;
-  padding: 0;
-  border: 1px solid rgba(255, 255, 255, .18);
-  border-radius: var(--r-tag);
-  background: transparent;
-  cursor: pointer;
-}
+/* Ряд красок (.st-swatch, .st-color) снят вместе с выбором краски (D-141):
+   ни одна разметка его больше не рисует, а мёртвый стиль лжёт, что он бывает. */
 
 .st-chips { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
 
 .st-chip {
   padding: 5px 10px;
   border-radius: var(--r-pill);
-  border: 1px solid rgba(255, 255, 255, .13);
-  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(var(--film-rgb), .13);
+  background: rgba(var(--film-rgb), .05);
   color: inherit;
   font: inherit;
   font-size: var(--f-meta);
@@ -260,21 +228,21 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .st-chip:hover { background: rgba(255, 255, 255, .12); }
+  :where(html:not([data-input="touch"])) .st-chip:hover { background: rgba(var(--film-rgb), .12); }
 }
-.st-chip.active { background: var(--accent, #e0663c); border-color: transparent; color: #fff; font-weight: 600; }
+.st-chip.active { background: var(--accent); border-color: transparent; color: var(--on-accent); font-weight: var(--w-strong); }
 
 .st-card {
   padding: 13px;
   border-radius: var(--r-window);
-  border: 1px solid rgba(255, 255, 255, .09);
-  background: rgba(255, 255, 255, .03);
+  border: 1px solid rgba(var(--film-rgb), .09);
+  background: rgba(var(--film-rgb), .03);
   margin-bottom: 10px;
 }
 
-.st-card h3 { margin: 0 0 6px; font-size: var(--f-ui); font-weight: 650; }
+.st-card h3 { margin: 0 0 6px; font-size: var(--f-ui); font-weight: var(--w-strong); }
 .st-card h3 + p { margin-top: 0; }
-.st-card p { margin: 0 0 10px; font-size: var(--f-meta); line-height: 1.6; color: var(--ink-3); }
+.st-card p { margin: 0 0 10px; font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-3); }
 
 .st-check {
   display: inline-flex;
@@ -291,19 +259,19 @@
 .st-note {
   padding: 11px 13px;
   border-radius: var(--r-card);
-  border: 1px dashed rgba(255, 255, 255, .13);
-  background: rgba(255, 255, 255, .02);
+  border: 1px dashed rgba(var(--film-rgb), .13);
+  background: rgba(var(--film-rgb), .02);
 }
 
-.st-note p { margin: 0; font-size: var(--f-meta); line-height: 1.6; color: var(--ink-3); }
+.st-note p { margin: 0; font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-3); }
 
 .st-hero { text-align: center; padding: 14px 0 18px; }
-.st-hero-logo { display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: var(--r-window); background: linear-gradient(160deg, #a6aab3, #3a3c44); color: #fff; }
+.st-hero-logo { display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: var(--r-window); /* своя краска: лицо приложения Настройки — одно в обеих темах, как в плитке */ background: linear-gradient(160deg, #a6aab3, #3a3c44); /* своя краска: знак на своём лице */ color: #fff; }
 .st-hero-logo svg { width: 26px; height: 26px; }
-.st-hero-name { margin-top: 9px; font-size: var(--f-lead); font-weight: 700; letter-spacing: -.01em; }
+.st-hero-name { margin-top: 9px; font-size: var(--f-lead); font-weight: var(--w-strong); letter-spacing: var(--track-tight); }
 .st-hero-version { font-size: var(--f-meta); color: var(--ink-3); }
 
-.st-specs { border-radius: var(--r-card); border: 1px solid rgba(255, 255, 255, .08); overflow: hidden; margin-bottom: 12px; }
+.st-specs { border-radius: var(--r-card); border: 1px solid rgba(var(--film-rgb), .08); overflow: hidden; margin-bottom: 12px; }
 
 .st-spec {
   display: flex;
@@ -311,8 +279,8 @@
   gap: 12px;
   padding: 9px 13px;
   font-size: var(--f-ui);
-  background: rgba(255, 255, 255, .03);
-  border-bottom: 1px solid rgba(255, 255, 255, .06);
+  background: rgba(var(--film-rgb), .03);
+  border-bottom: 1px solid rgba(var(--film-rgb), .06);
 }
 
 .st-spec:last-child { border-bottom: 0; }
@@ -320,7 +288,7 @@
 
 @media (max-width: 620px) {
   .app-settings { flex-direction: column; }
-  .st-side { width: auto; flex: 0 0 auto; flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid rgba(255, 255, 255, .09); }
+  .st-side { width: auto; flex: 0 0 auto; flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid rgba(var(--film-rgb), .09); }
   /* Вкладка — одна строка: полоса прокручивается вбок, а подпись не
      ломается в столбик «Звук / и / фокус» (найдено обходом комнат, D-273). */
   .st-side-item { flex: 0 0 auto; white-space: nowrap; }
@@ -335,23 +303,19 @@
 }
 
 /* v21 — parity controls (language select, sliders shared with the Control Center) */
+/* Стрелка списка и его поведение — у ядра (D-338); здесь только плёнка и отступы. */
 .st-select {
-  appearance: none; -webkit-appearance: none;
-  background: rgba(255, 255, 255, .08); color: inherit;
-  border: 1px solid rgba(255, 255, 255, .14); border-radius: var(--r-ctrl);
-  font: inherit; font-size: var(--f-ui); padding: 6px 26px 6px 10px; cursor: pointer;
-  background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff88' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 8px center; background-size: 12px;
+  background-color: rgba(var(--film-rgb), .08); color: inherit;
+  border: 1px solid rgba(var(--film-rgb), .14); border-radius: var(--r-ctrl);
+  font: inherit; font-size: var(--f-ui); padding: 6px 28px 6px 10px;
 }
-.st-select:focus-visible { outline: 2px solid var(--accent, #e0663c); outline-offset: 1px; }
-.st-select option { background: #1c1d22; color: #fff; }
+.st-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.st-select option { background: var(--menu-bg); color: var(--ink); }
 
 .st-range {
-  width: 150px; accent-color: var(--accent, #e0663c);
+  width: 150px; accent-color: var(--accent);
   background: transparent; cursor: pointer;
 }
-html[data-theme="light"] .st-select { border-color: rgba(0, 0, 0, .18); background-color: rgba(0, 0, 0, .05); }
-html[data-theme="light"] .st-select option { background: #fff; color: #16171a; }
 
 /* Суточное настроение обоев — тот же знак, что у суточной краски: дуга,
    обошедшая циферблат. Знак один на две вещи, потому что вещь одна: свет,
@@ -414,4 +378,4 @@ html[data-theme="light"] .st-select option { background: #fff; color: #16171a; }
 .st-survival .st-sv[data-sv="ok"]::before { background: var(--good); }
 .st-survival .st-sv[data-sv="warn"]::before { background: var(--warn); }
 .st-survival .st-sv[data-sv="no"]::before { background: var(--danger); }
-.st-survival .st-sv-bottom { font-weight: 600; }
+.st-survival .st-sv-bottom { font-weight: var(--w-strong); }

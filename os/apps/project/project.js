@@ -159,6 +159,10 @@
     }
 
     var url = embedUrl(entry, view);
+    /* В КОВЧЕГЕ (D-314) работ витрины нет — только их описание; рамка не
+       рисуется, на её месте сказано, где работа живёт. */
+    var inArk = !!(window.SB_ARK && typeof window.sbArkNoFrameHtml === "function");
+    if (inArk) url = "";
     var context = [view.projectType, view.industry].filter(Boolean).join(" · ");
 
     /* Прокрутка человека переживает перерисовку — средство оболочки,
@@ -203,7 +207,8 @@
         "</details>" +
         '<div class="pj-stage">' +
           (url ? '<iframe class="pj-frame" id="pjFrame" src="' + esc(url) + '" title="' + esc(view.name) + '"></iframe>' : "") +
-          '<div class="pj-placeholder" id="pjPlaceholder">' +
+          (inArk ? window.sbArkNoFrameHtml("project") : "") +
+          '<div class="pj-placeholder" id="pjPlaceholder"' + (inArk ? " hidden" : "") + '>' +
             '<div class="pj-spinner"></div>' +
             '<p class="pj-ph-name">' + esc(view.name) + "</p>" +
             (view.lookFor ? '<p class="pj-ph-hint">' + esc(view.lookFor) + "</p>" : "") +

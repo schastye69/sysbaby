@@ -104,6 +104,26 @@
     "</div>";
   }
 
+  /* ── У КАЖДОЙ РУЧКИ ЕСТЬ ИМЯ (D-321) ────────────────────────────────────
+     Переключатель, поле и список строки называются подписью своей строки:
+     VoiceOver на iPad читает «Системный звук, переключатель, включено», а не
+     безымянное «переключатель, включено», за которым человек не знает, что
+     включает. Ручка со своими словами («Открыть замок») держит свои.
+     Охраняется tools/every-control-named-check.mjs. */
+  var rowSeq = 0;
+  function nameRowControls(host) {
+    host.querySelectorAll(".st-row").forEach(function (row) {
+      var label = row.querySelector(".st-row-label");
+      if (!label) return;
+      if (!label.id) label.id = "stRowLabel" + (++rowSeq);
+      row.querySelectorAll(".st-row-control button, .st-row-control input, .st-row-control select, .st-row-control textarea").forEach(function (c) {
+        if (c.hasAttribute("aria-label") || c.hasAttribute("aria-labelledby")) return;
+        if (c.tagName === "BUTTON" && String(c.textContent || "").trim()) return;
+        c.setAttribute("aria-labelledby", label.id);
+      });
+    });
+  }
+
   function switchMarkup(key) {
     var on = toggleState(key);
     return '<button type="button" class="st-switch' + (on ? " on" : "") + '" role="switch" aria-checked="' + (on ? "true" : "false") + '" data-toggle="' + esc(key) + '"><i></i></button>';
@@ -166,8 +186,32 @@
     try { return window.sbGetWallpaperMood() || ""; } catch (err) { console.error("[settings] mood read failed", err); return ""; }
   }
 
+  /* ── РЯД «СВЕТ» ВЕРНУЛСЯ · решение D-326 ────────────────────────────────
+     Его сняли (D-168), когда выбирать было не из чего: одна нажатая кнопка
+     «Dark» — вид выбора без выбора. Условие возврата стояло здесь же:
+     «перевод всех приложений на токены плюс закон, меряющий контраст в обеих
+     темах на каждом экране». Выполнено: tools/paint-tokens-check.mjs и
+     tools/light-contrast-check.mjs. Кнопки — из объявления системы
+     (sbThemes), имена — словами системы на языке человека. В инкогнито
+     комната всегда тёмная, и вместо переключателя сказано почему.
+     Охраняется tools/theme-choice-check.mjs и tools/one-choice-check.mjs. */
+  function themeRowMarkup() {
+    var themes = typeof window.sbThemes === "function" ? window.sbThemes() : [];
+    if (window.sbIncognitoActive) {
+      return rowMarkup(esc(t("set.appearance.theme")), esc(t("set.appearance.themeIncog")),
+        '<span class="st-muted" id="stThemeRow">' + esc(t("theme.dark")) + "</span>");
+    }
+    if (themes.length < 2) return "";
+    var now = typeof window.sbGetTheme === "function" ? window.sbGetTheme() : themes[0];
+    var seg = themes.map(function (id) {
+      var on = id === now;
+      return '<button type="button" class="st-seg' + (on ? " active" : "") + '" data-theme="' + esc(id) + '" aria-pressed="' + (on ? "true" : "false") + '">' + esc(t("theme." + id)) + "</button>";
+    }).join("");
+    return rowMarkup(esc(t("set.appearance.theme")), esc(t("set.appearance.themeSub")),
+      '<span class="st-segment" id="stThemeRow">' + seg + "</span>");
+  }
+
   function appearanceMarkup() {
-    var theme = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
     /* РЯДА КРАСОК ЗДЕСЬ БОЛЬШЕ НЕТ (D-141). Шов приходит от обоев: выбор
        комнаты и есть выбор цвета. Пока выборов было два, они могли встать в
        ссору — и вставали. */
@@ -191,7 +235,10 @@
       if (m.drift && typeof read === "function") {
         try {
           var w = read();
-          live = ' style="background:linear-gradient(135deg,' + esc(w.c1) + ',' + esc(w.c2) + ');border-color:transparent;color:#fff"';
+          /* Надпись по свету часа — цветом поля (D-324), чип — веществом этой
+             комнаты: углями или глиной (sbMoodChipLight, D-325). */
+          var pv = window.sbMoodChipLight ? window.sbMoodChipLight(w) : { a1: w.c1, a2: w.c2 };
+          live = ' style="background:linear-gradient(135deg,' + esc(pv.a1) + ',' + esc(pv.a2) + ');border-color:transparent;color:var(--on-accent)"';
         } catch (err) { console.error("[settings] mood preview failed", err); }
       }
       var mk = m.session ? " is-session" : (m.drift ? " is-drift" : "");
@@ -200,36 +247,18 @@
 
     var brightness = typeof window.sbGetBrightness === "function" ? window.sbGetBrightness() : 100;
 
-    /* Светлая тема снята с интерфейса — снова.
-       -----------------------------------------------------------------------
-       Она уже была снята однажды: «Light mode is withdrawn from the interface
-       for this release» — записано в apps-harness. Потом переключатель вернулся
-       в настройки, а приложения так и остались написанными под тёмное поле.
-
-       12.08 замер: **313 зашитых светлых цветов** в десяти таблицах стилей
-       приложений, и только две из них вообще знают про data-theme="light".
-       На снимке основателя это выглядело так: белый текст на белой панели.
-       Ни одной строки не прочесть.
-
-       Это не настройка оттенков. Светлой темы **нет** — есть токены ядра и
-       ни одного переведённого приложения. Выбор между «выкатить половину» и
-       «сказать правду» в этом проекте решён давно.
-
-       Возврат — отдельной работой: перевод всех приложений на токены плюс
-       закон, меряющий контраст в обеих темах на каждом экране. До тех пор
-       строка ниже говорит, как есть. */
+    /* Светлая тема снималась дважды — 12.08 и 27.08 (D-168): 313, а к
+       сентябрю 665 голых цветов знали одну тёмную комнату, и светлая давала
+       белый текст на белом. Условие возврата было записано здесь: «перевод
+       всех приложений на токены плюс закон, меряющий контраст в обеих темах
+       на каждом экране». 27.09.2026 оно выполнено (D-322, D-323): комнаты
+       говорят словами словаря, Светлица объявлена в ядре, а контраст каждой
+       надписи в обеих темах меряет закон. Ряд «Свет» стоит первым. */
     return '<h2 class="st-title">' + esc(t("set.tab.appearance")) + "</h2>" +
-      /* ── РЯД «ТЕМА» СНЯТ · решение D-168 ────────────────────────────────
-         Основатель, со снимком быстрой панели: «Здесь бардак. Appearance
-         временно убрать. из настроек тоже».
-         Здесь стоял сегмент из ОДНОЙ кнопки «Dark», уже нажатой. Светлая тема
-         снята с интерфейса раньше — приложения написаны под тёмное поле.
-         Осталась подпись, объясняющая, почему выбирать не из чего, и орган
-         управления, который нельзя перевести никуда. Выбор из одного — не
-         выбор, а его вид; это та же ошибка, что и утверждение, которое не
-         может провалиться. ВРЕМЕННО, по слову основателя: ряд вернётся вместе
-         со светлой темой, то есть когда выбирать станет из чего.
-         Охраняется tools/one-choice-check.mjs. */
+      themeRowMarkup() +
+      /* Ряд «Тема» из одной кнопки был снят по слову основателя (D-168):
+         выбор из одного — не выбор, а его вид. Вернулся рядом «Свет», когда
+         выбирать стало из чего (D-326, themeRowMarkup выше). */
       rowMarkup(esc(t("set.appearance.mood")),
         esc(t("set.appearance.moodSub")),
         /* st-chips-wide (D-302): у настроений плашек больше, чем входит в одну
@@ -567,6 +596,7 @@
 
     if (_sbKeep) _sbKeep();
 
+    nameRowControls(host);
     wire(win, host);
     /* Заполнение ползунков (D-156): разметка приходит готовой, а «input» до
        первого касания не случается. */
@@ -699,7 +729,7 @@
     host.querySelectorAll("[data-theme]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         if (typeof window.setTheme !== "function") return;
-        try { window.setTheme(btn.getAttribute("data-theme")); }
+        try { window.setTheme(btn.getAttribute("data-theme"), { shutters: true }); }
         catch (err) { console.error("[settings] setTheme failed", err); }
         render(win);
       });
@@ -850,11 +880,14 @@
     var signOut = host.querySelector("#stSignOut");
     if (signOut) {
       signOut.addEventListener("click", function () {
-        if (!window.confirm(t("set.privacy.signOutConfirm"))) return;
-        dbFlush();
-        try { localStorage.removeItem(AUTHED_KEY); }
-        catch (err) { console.error("[settings] sign-out failed", err); }
-        location.reload();
+        /* Вопрос своим голосом (D-335), а не плашкой браузера. */
+        window.sbAsk({ question: t("set.privacy.signOutConfirm"), ok: t("ask.signOut") }).then(function (yes) {
+          if (!yes) return;
+          dbFlush();
+          try { localStorage.removeItem(AUTHED_KEY); }
+          catch (err) { console.error("[settings] sign-out failed", err); }
+          location.reload();
+        });
       });
     }
 
@@ -872,10 +905,12 @@
     var clearAll = host.querySelector("#stClearAll");
     if (clearAll) {
       clearAll.addEventListener("click", function () {
-        if (!window.confirm(t("set.privacy.clearConfirm"))) return;
-        clearNamespace(localStorage);
-        clearNamespace(typeof sessionStorage !== "undefined" ? sessionStorage : null);
-        toast(t("set.privacy.clearedTitle"), t("set.privacy.clearedBody"));
+        window.sbAsk({ question: t("set.privacy.clearConfirm"), ok: t("ask.clear"), danger: true }).then(function (yes) {
+          if (!yes) return;
+          clearNamespace(localStorage);
+          clearNamespace(typeof sessionStorage !== "undefined" ? sessionStorage : null);
+          toast(t("set.privacy.clearedTitle"), t("set.privacy.clearedBody"));
+        });
       });
     }
 
@@ -958,6 +993,10 @@
   ];
 
   function isDenied(key) {
+    /* Список «что не едет» — одно знание ядра (D-314): там же и машинерия
+       устройства (замок, соль входа). ОТКАТ: ядро не поднялось — свой
+       прежний список, чтобы окно хотя бы посчитало профиль. */
+    if (typeof window.sbExportDenied === "function") return window.sbExportDenied(key);
     if (EXPORT_DENY.indexOf(key) !== -1) return true;
     if (key.indexOf("sysbaby.sync.token::") === 0) return true;
     if (key.indexOf("sysbaby.incognito::") === 0) return true;
@@ -1084,8 +1123,16 @@
         toast(t("set.import.failTitle"), t("set.import.newer"));
         return;
       }
-      if (!window.confirm(t("set.import.confirm"))) return;
-
+      /* Вопрос своим голосом (D-335), а не плашкой браузера. */
+      window.sbAsk({ question: t("set.import.confirm"), ok: t("ask.replace"), danger: true }).then(function (yes) {
+        if (yes) applyImport(envelope);
+      });
+    };
+    reader.readAsText(file);
+  }
+  function applyImport(envelope) {
+    /* Заменяется только после согласия — вопрос задан в importProfile. */
+    {
       /* Shell signature is sbImportProfile(textOrObject, {mode, profileId?, reload?})
        * — an options object, not a bare mode string (os-shell.md §1.5). */
       if (typeof window.sbImportProfile === "function") {
@@ -1110,8 +1157,7 @@
         return;
       }
       location.reload();
-    };
-    reader.readAsText(file);
+    }
   }
 
   /* ------------------------------------------------------- registration */

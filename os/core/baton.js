@@ -55,7 +55,7 @@
       now: "just now", min: "{n} min ago", hour: "{n} h ago", day: "{n} d ago", since: "since {date}",
       changed: "changed since", q: "“{s}”", thought: "“…{s}”",
       why: "What for: {s}", whyAsk: "What is this for? One line in your own words — the system will say it back when you return.",
-      whyCmd: "Thread: what for…",
+      whySave: "Save", whyCmd: "Thread: what for…",
       palette: "Continue where you stopped", paletteSub: "Where you stopped"
     },
     ru: {
@@ -65,7 +65,7 @@
       now: "только что", min: "{n} мин назад", hour: "{n} ч назад", day: "{n} дн. назад", since: "с {date}",
       changed: "менялась с тех пор", q: "«{s}»", thought: "«…{s}»",
       why: "Зачем: {s}", whyAsk: "Зачем вы это делаете? Одна строка своими словами — система скажет её вам, когда вернётесь.",
-      whyCmd: "Нить: зачем…",
+      whySave: "Сохранить", whyCmd: "Нить: зачем…",
       palette: "Продолжить с того места", paletteSub: "Где вы остановились"
     },
     ee: {
@@ -75,7 +75,7 @@
       now: "just nüüd", min: "{n} min tagasi", hour: "{n} h tagasi", day: "{n} p tagasi", since: "alates {date}",
       changed: "on vahepeal muutunud", q: "„{s}“", thought: "„…{s}“",
       why: "Milleks: {s}", whyAsk: "Milleks te seda teete? Üks rida oma sõnadega — süsteem ütleb selle teile tagasi, kui naasete.",
-      whyCmd: "Niit: milleks…",
+      whySave: "Salvesta", whyCmd: "Niit: milleks…",
       palette: "Jätka sealt, kus pooleli jäi", paletteSub: "Kus te pooleli jäite"
     }
   };
@@ -293,10 +293,13 @@
   function askWhy() {
     var w = readWhy(), b = read();
     var cur = (b && b.why) || (w && w.why) || "";
-    var v = null;
-    try { v = window.prompt(t("whyAsk"), cur); } catch (e) { v = null; }
-    if (v === null) return false;
-    return setWhy(v);
+    /* Вопрос своим голосом (D-335), а не плашкой браузера: строка мысли
+       пишется в поле извещения, которое ждёт ответа. */
+    if (!window.sbAsk) return false;
+    return window.sbAsk({ title: t("whyAsk"), field: { value: cur }, ok: t("whySave") }).then(function (v) {
+      if (v === null) return false;
+      return setWhy(v);
+    });
   }
 
   var card = null;

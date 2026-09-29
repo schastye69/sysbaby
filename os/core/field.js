@@ -124,7 +124,12 @@
 
   var doc = document;
   /* Адрес этого же файла — чтобы запустить его потоком поля. */
-  var FIELD_SRC = (doc.currentScript && doc.currentScript.src) || "";
+  /* В КОВЧЕГЕ (D-314) у этого файла нет адреса — он лежит внутри страницы.
+     Поток поднимается из его же текста: ковчег даёт на это Blob, и поток
+     считает то же самое, что считал бы по адресу. ОТКАТ: не вышло — пусто, и
+     счёт идёт в главном потоке, как без потока всегда. */
+  var FIELD_SRC = (doc.currentScript && (doc.currentScript.src ||
+    (window.SB_ARK && typeof window.SB_ARK.self === "function" ? window.SB_ARK.self(doc.currentScript) : ""))) || "";
 
   function q(sel) { return doc.querySelector(sel); }
 
@@ -451,6 +456,9 @@
        стоит», четыре штуки. Спрашиваем у корня, что там сейчас, и пишем
        только новое: ровно тот же приём, что у света часов. */
     publishLight: function (p) {
+      /* В Светлице мебель стола освещает солнце, а не поле: его свет пишет
+         sbSun (shell.js, D-325). Поле там спит и чужой свет не публикует. */
+      if (doc.documentElement.getAttribute("data-theme") === "light") return;
       var st = doc.documentElement.style;
       var put = function (key, value) {
         if (st.getPropertyValue(key) === value) return;

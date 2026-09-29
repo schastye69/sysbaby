@@ -91,6 +91,11 @@
     if (_sbKeep) _sbKeep();
     body.classList.add("build-body");
 
+    /* В КОВЧЕГЕ (D-314) витрины нет: она живёт на сайте и в файл не входит.
+       Пустая рамка с «файл не найден» была бы враньём видом; вместо неё —
+       слово о том, где витрина и что ей нужно. */
+    if (window.SB_ARK && typeof window.sbArkNoFrame === "function") { window.sbArkNoFrame(body, "build"); return; }
+
     var frame = document.createElement("iframe");
     frame.className = "build-frame";
     frame.id = "sbBuildFrame";
@@ -231,6 +236,10 @@
        витриной: окно build вставало ПОВЕРХ присланного, и человек за дверью
        своего замка видел не то, ради чего открыл ссылку (D-279). */
     if (/^#t=/.test(location.hash || "")) return;
+    /* В КОВЧЕГЕ (D-314) витрины нет — она на сайте. Окно, которое встало бы
+       первым, сказало бы только это, и встало бы поверх Ковчега, который
+       спрашивает слово от вещей человека. */
+    if (window.SB_ARK) return;
     try {
       if (box().get(CLOSED_KEY) === "1") return;
     } catch (e) { /* сессия закрыта — открываем */ }

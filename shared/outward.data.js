@@ -297,6 +297,30 @@ window.SB_OUTWARD = {
       }
     },
     {
+      "id": "ark-self",
+      "title": {
+        "ru": "Ковчег — сборка системы в один файл",
+        "en": "Ark — building the system into one file",
+        "ee": "Laev — süsteemi kokkupanek ühte faili"
+      },
+      "where": [
+        "os/apps/ark/ark.js:272"
+      ],
+      "side": "self",
+      "byHand": true,
+      "host": "",
+      "what": {
+        "ru": "Когда вы нажимаете «Собрать ковчег», система берёт свои же файлы — страницу, стили, код комнат — там, откуда они уже пришли: у работника, если он их сохранил, иначе у своего адреса. Ничего не уходит: только забирается своё.",
+        "en": "When you press “Build the ark”, the system takes its own files — the page, the styles, the rooms' code — from where they already came: from the service worker if it kept them, otherwise from its own address. Nothing leaves: it only fetches its own.",
+        "ee": "Kui vajutad «Pane laev kokku», võtab süsteem oma failid — lehe, stiilid, tubade koodi — sealt, kust need juba tulid: teenustöötajalt, kui see need hoidis, muidu oma aadressilt. Midagi ei lähe välja: ainult oma tuuakse ära."
+      },
+      "who": {
+        "ru": "Тот, кто держит sys.baby, — или никто, если файлы уже в запасе. Чужих хозяев нет.",
+        "en": "Whoever hosts sys.baby — or nobody, if the files are already in reserve. No outside owners.",
+        "ee": "See, kes sys.baby-d hoiab — või mitte keegi, kui failid on juba varus. Võõraid omanikke pole."
+      }
+    },
+    {
       "id": "build-frame",
       "title": {
         "ru": "Build — витрина внутри окна",
@@ -366,6 +390,31 @@ window.SB_OUTWARD = {
         "ru": "Тот, кто держит sys.baby.",
         "en": "Whoever hosts sys.baby.",
         "ee": "See, kes sys.baby-d hoiab."
+      }
+    },
+    {
+      "id": "lantern-where",
+      "title": {
+        "ru": "Фонарь — «Где я»",
+        "en": "Lantern — “Where am I”",
+        "ee": "Latern — «Kus ma olen»"
+      },
+      "where": [
+        "os/apps/lantern/lantern.js:1340"
+      ],
+      "side": "third",
+      "byHand": true,
+      "browser": true,
+      "host": "Google / Apple",
+      "what": {
+        "ru": "Сама система не отправляет ничего: она просит место у устройства, и координаты видны только на экране — на диск они не пишутся. Телефон с GPS находит место и без сети. Компьютер и телефон без GPS спрашивают службу местоположения своего браузера: браузер отдаёт ей видимые сети Wi-Fi и адрес подключения, чтобы узнать место.",
+        "en": "The system itself sends nothing: it asks the device for its location, and the coordinates are shown only on screen — they are not written to disk. A phone with GPS finds the place without a network. A computer, or a phone without GPS, asks its browser's location service: the browser gives it the visible Wi-Fi networks and the connection address to learn the place.",
+        "ee": "Süsteem ise ei saada midagi: see küsib asukohta seadmelt ja koordinaadid on näha ainult ekraanil — kettale neid ei kirjutata. GPS-iga telefon leiab koha ka võrguta. Arvuti või GPS-ita telefon küsib oma brauseri asukohateenuselt: brauser annab sellele nähtavad Wi-Fi võrgud ja ühenduse aadressi, et koht teada saada."
+      },
+      "who": {
+        "ru": "Служба местоположения вашего браузера (у Chrome — Google, у Safari — Apple) — и только когда вы нажали «Где я» и разрешили доступ к месту.",
+        "en": "Your browser's location service (Google for Chrome, Apple for Safari) — and only when you pressed “Where am I” and allowed access to your location.",
+        "ee": "Sinu brauseri asukohateenus (Chrome'il Google, Safaril Apple) — ja ainult siis, kui vajutasid «Kus ma olen» ja lubasid asukohale juurdepääsu."
       }
     }
   ]

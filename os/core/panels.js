@@ -1110,7 +1110,9 @@
         '<div class="lock-spare-out" id="sbLockSpareOut" hidden>' +
           '<pre class="lock-spare-code" id="sbLockSpareCode" data-sb-nolang></pre>' +
           '<p class="lock-warn">' + esc(tr("lock.spareDone")) + "</p>" +
-          '<div class="lock-acts"><button type="button" class="btn ghost" id="sbLockSpareSave">' + esc(tr("lock.spareSave")) + "</button></div>" +
+          /* Бумага — первой (D-332): лист не оставляет в системе ничего, файл — оставляет. */
+          '<div class="lock-acts"><button type="button" class="btn ghost" id="sbLockSparePrint">' + esc(tr("lock.sparePrint")) + "</button>" +
+            '<button type="button" class="btn ghost" id="sbLockSpareSave">' + esc(tr("lock.spareSave")) + "</button></div>" +
         "</div>"
       : "";
     return head + (locked
@@ -1355,6 +1357,47 @@
       doc.body.appendChild(a); a.click();
       setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
     });
+    /* ── БУМАЖНАЯ КОПИЯ (D-332) ──────────────────────────────────────────
+       Подарок людям, выбранный основателем 28.09.2026. Код восстановления —
+       это ключ от всей системы, и лучшее место для него — бумага вдали от
+       устройства: её не взломать по сети, и она переживает любой диск.
+       Файл кода остаётся в «Загрузках» и в облаке, куда их выгружает
+       телефон; напечатанный лист не оставляет в системе ничего. Лист
+       собирается на время печати и сразу разбирается: код живёт только в
+       памяти этого окна, пока оно открыто, — как и до сих пор.
+       Охраняется tools/paper-copy-check.mjs. */
+    var sparePrint = body.querySelector("#sbLockSparePrint");
+    if (sparePrint) sparePrint.addEventListener("click", function () {
+      if (!spareCode) return;
+      var old = doc.getElementById("sbPaperSheet");
+      if (old) old.remove();
+      /* Дата — на языке системы, а не браузера; код — как его показала
+         система, со своими чёрточками: перегруппировать его значило бы
+         напечатать не тот код, который потом наберут у двери. */
+      var l = window.sbLang ? window.sbLang() : "en";
+      var d = "";
+      try { d = new Date().toLocaleDateString(l === "ee" ? "et" : l); } catch (e) { d = new Date().toISOString().slice(0, 10); }
+      var grouped = spareCode;
+      var sheet = doc.createElement("div");
+      sheet.id = "sbPaperSheet";
+      sheet.className = "sb-paper";
+      sheet.setAttribute("aria-hidden", "true");
+      sheet.innerHTML =
+        '<p class="sb-paper-mark">sys.baby</p>' +
+        '<h1 class="sb-paper-title">' + esc(tr("lock.paperTitle")) + "</h1>" +
+        '<p class="sb-paper-code" data-sb-nolang>' + esc(grouped) + "</p>" +
+        '<p class="sb-paper-what">' + esc(tr("lock.paperWhat", { d: d })) + "</p>" +
+        '<p class="sb-paper-keep">' + esc(tr("lock.paperKeep")) + "</p>" +
+        '<p class="sb-paper-line">' + esc(tr("lock.paperWhere")) + "</p>";
+      doc.body.appendChild(sheet);
+      var gone = false;
+      var drop = function () { if (gone) return; gone = true; sheet.remove(); };
+      window.addEventListener("afterprint", drop, { once: true });
+      /* ОТКАТ: браузер без события «после печати» — лист разбирается сам через
+         минуту: окно печати к этому времени лист уже забрало. */
+      setTimeout(drop, 60000);
+      try { window.print(); } catch (e) { drop(); }
+    });
     var nowBtn = body.querySelector("#sbLockNow");
     if (nowBtn) nowBtn.addEventListener("click", function () { window.location.reload(); });
     var idleSel = body.querySelector("#sbLockIdle");
@@ -1573,6 +1616,32 @@
       try { el.scrollIntoView({ block: "center" }); if (el.focus) el.focus(); } catch (e) { /* ignore */ }
     }, 360);
   };
+
+  /* ── «НУЖЕН ЗАМОК» ВЕДЁТ К ЗАМКУ (D-317) ────────────────────────────────
+     Повод — обход всех комнат 28.09.2026: три комнаты говорили «нужен
+     замок» и ни одна не давала дороги. Ковчег посылал «в комнату «Замок»»,
+     комната «Замок» — «в настройки», Ключи — никуда. Теперь дорога одна на
+     всю систему: комната кладёт эту кнопку сразу после своей причины, а
+     нажатие ведёт ядро — к полю нового слова в окне учётной записи (или к
+     полю нынешнего, если замок уже стоит). Своей дороги комната не заводит:
+     три дороги разошлись бы, как разошлись три слова.
+     kind "open" — подпись «Открыть замок» (как строка «Замок» в Настройках):
+     для случая, когда замок есть, но в нём надо что-то поменять.
+     Охраняется tools/lock-call-check.mjs. */
+  var LOCK_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+    '<rect x="5" y="10.5" width="14" height="9.5" rx="2.2"/><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"/></svg>';
+  window.sbLockCallHtml = function (kind) {
+    var label = kind === "open" ? tr("set.privacy.lockOpen") : tr("lock.call");
+    return '<button type="button" class="sb-lock-call" data-sb-lock-call>' +
+      '<span class="sb-lock-call-i" aria-hidden="true">' + LOCK_GLYPH + "</span>" + esc(label) + "</button>";
+  };
+  doc.addEventListener("click", function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest("[data-sb-lock-call]") : null;
+    if (!b || b.disabled) return;
+    ev.preventDefault();
+    window.sbOpenAccountAt("#sbLockP1, #sbLockCur");
+  });
+
   var WANT_LOCK = "sysbaby.lock.wantNow";
   function lockWhenAsked() {
     var want = false;

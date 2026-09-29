@@ -1450,12 +1450,12 @@
   var justOpened = null, countdown = null;
   function chestSvg() {
     return '<svg class="ch-art" viewBox="0 0 160 120" aria-hidden="true">' +
-      '<g class="ch-lid"><path d="M18 46V38a22 22 0 0 1 22-22h80a22 22 0 0 1 22 22v8z" fill="var(--ch-wood)" stroke="var(--ch-line)" stroke-width="2"/>' +
-      '<path d="M72 46V16M88 46V16" stroke="var(--ch-line)" stroke-width="2"/></g>' +
+      '<g class="ch-lid"><path d="M18 46V38a22 22 0 0 1 22-22h80a22 22 0 0 1 22 22v8z" fill="var(--wood)" stroke="var(--wood-line)" stroke-width="2"/>' +
+      '<path d="M72 46V16M88 46V16" stroke="var(--wood-line)" stroke-width="2"/></g>' +
       '<g class="ch-glow"><ellipse cx="80" cy="48" rx="56" ry="10" fill="var(--accent)" opacity=".55"/></g>' +
-      '<rect x="18" y="46" width="124" height="60" rx="6" fill="var(--ch-wood)" stroke="var(--ch-line)" stroke-width="2"/>' +
-      '<path d="M72 46v60M88 46v60" stroke="var(--ch-line)" stroke-width="2"/>' +
-      '<rect x="72" y="52" width="16" height="16" rx="3" fill="var(--ch-line)"/><circle cx="80" cy="60" r="2.4" fill="var(--ch-wood)"/>' +
+      '<rect x="18" y="46" width="124" height="60" rx="6" fill="var(--wood)" stroke="var(--wood-line)" stroke-width="2"/>' +
+      '<path d="M72 46v60M88 46v60" stroke="var(--wood-line)" stroke-width="2"/>' +
+      '<rect x="72" y="52" width="16" height="16" rx="3" fill="var(--wood-line)"/><circle cx="80" cy="60" r="2.4" fill="var(--wood)"/>' +
       "</svg>";
   }
   function render(win) {

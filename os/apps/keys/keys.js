@@ -44,13 +44,13 @@
     en: {
       title: "Keys", label: "Keys",
       lead: "Passwords for places you keep. For places created here the password is not stored anywhere — it is derived from your locked vault, on this device, every time.",
-      needLock: "Derived keys need the lock. Set a password on your system first — then nothing here has to be stored at all.",
+      needLock: "Derived keys need the lock. Set it — and the passwords of places made here will not have to be stored at all: they will be derived from the lock.",
       addPlace: "New place", place: "Place", login: "Login or e-mail", note: "Note",
       modeDerived: "Derived — nothing is stored", modeStored: "My own — kept in an envelope",
       own: "The password you already have", save: "Save", cancel: "Cancel",
       show: "Show", hide: "Hide", copy: "Copy", copied: "Copied — the clipboard clears itself in 20 seconds",
       rotate: "New password", rotated: "Changed. The old one will never come back.",
-      remove: "Forget this place", search: "Search places", empty: "Nothing here yet.",
+      remove: "Forget this place", search: "Search places", empty: "Nothing here yet.", miss: "No places match “{q}”",
       counter: "change", derived: "derived", stored: "stored",
       honest: "What this cannot do: passwords made elsewhere cannot be derived — those are kept in an envelope like everything else. And one master word opens all of them at once: that is the price of having nothing to steal.",
             costTitle: "What actually protects all of this",
@@ -62,13 +62,13 @@
     ru: {
       title: "Ключи", label: "Ключи",
       lead: "Пароли мест, которые вы держите. Для мест, заведённых здесь, пароль не хранится нигде — он выводится из вашего запертого хранилища, на этом устройстве, каждый раз заново.",
-      needLock: "Выведенным ключам нужен замок. Сперва поставьте пароль на систему — и тогда здесь вообще нечего будет хранить.",
+      needLock: "Выведенным ключам нужен замок. Поставьте его — и пароли мест, заведённых здесь, не придётся хранить вовсе: они будут выводиться из замка.",
       addPlace: "Новое место", place: "Место", login: "Логин или почта", note: "Заметка",
       modeDerived: "Выведенный — не хранится нигде", modeStored: "Свой — лежит в конверте",
       own: "Пароль, который у вас уже есть", save: "Сохранить", cancel: "Отмена",
       show: "Показать", hide: "Скрыть", copy: "Копировать", copied: "Скопировано — буфер сотрётся через 20 секунд",
       rotate: "Новый пароль", rotated: "Сменён. Прежний не вернётся никогда.",
-      remove: "Забыть это место", search: "Поиск по местам", empty: "Здесь пока пусто.",
+      remove: "Забыть это место", search: "Поиск по местам", empty: "Здесь пока пусто.", miss: "Нет мест по запросу «{q}»",
       counter: "смена", derived: "выведенный", stored: "хранимый",
       honest: "Чего это не может: пароли, заведённые не здесь, вывести нельзя — они лежат в конверте, как всё остальное. И одно мастер-слово открывает их все разом: это и есть цена того, что красть нечего.",
             costTitle: "Что на самом деле держит всё это",
@@ -80,13 +80,13 @@
     ee: {
       title: "Võtmed", label: "Võtmed",
       lead: "Kohtade paroolid. Siin loodud kohtade parool ei ole kuskil salvestatud — see tuletatakse lukustatud hoidlast, selles seadmes, iga kord uuesti.",
-      needLock: "Tuletatud võtmed vajavad lukku. Pane esmalt süsteemile parool — siis pole siin üldse midagi hoida.",
+      needLock: "Tuletatud võtmed vajavad lukku. Pane see — ja siin loodud kohtade paroole ei pea üldse hoidma: need tuletatakse lukust.",
       addPlace: "Uus koht", place: "Koht", login: "Kasutaja või e-post", note: "Märkus",
       modeDerived: "Tuletatud — ei salvestata kuskil", modeStored: "Oma — hoitakse ümbrikus",
       own: "Parool, mis sul juba on", save: "Salvesta", cancel: "Loobu",
       show: "Näita", hide: "Peida", copy: "Kopeeri", copied: "Kopeeritud — lõikelaud tühjeneb 20 sekundiga",
       rotate: "Uus parool", rotated: "Muudetud. Vana enam ei naase.",
-      remove: "Unusta see koht", search: "Otsi kohti", empty: "Siin pole veel midagi.",
+      remove: "Unusta see koht", search: "Otsi kohti", empty: "Siin pole veel midagi.", miss: "Otsingule „{q}“ ei vasta ükski koht",
       counter: "vahetus", derived: "tuletatud", stored: "hoitud",
       honest: "Mida see ei suuda: mujal loodud paroole ei saa tuletada — need hoitakse ümbrikus nagu kõik muu. Ja üks peasõna avab need kõik korraga: see ongi hind selle eest, et varastada pole midagi.",
             costTitle: "Mis seda kõike tegelikult hoiab",
@@ -186,7 +186,9 @@
     out += '<header class="ky-head">' +
       '<h1 class="ky-title">' + esc(t.title) + "</h1>" +
       '<p class="ky-lead">' + esc(t.lead) + "</p>" +
-      (vaultOpen() ? "" : '<p class="ky-need">' + esc(t.needLock) + "</p>") +
+      /* Причина — и сразу дорога к замку, одна на всю систему (D-317). */
+      (vaultOpen() ? "" : '<div class="ky-need"><p class="ky-need-p">' + esc(t.needLock) + "</p>" +
+        (window.sbLockCallHtml ? window.sbLockCallHtml() : "") + "</div>") +
       "</header>";
 
     out += '<div class="ky-bar">' +
@@ -209,7 +211,12 @@
         "</form>";
     }
 
-    if (!mine.length) {
+    /* «Пусто» и «не найдено» — разные правды (D-320): искали и не нашли —
+       это промах с искомым, а не «здесь пусто»: иначе человек, у которого
+       места есть, решает, что его пароли пропали. */
+    if (!mine.length && q) {
+      out += '<p class="ky-empty ky-miss" role="status">' + esc(t.miss.replace("{q}", function () { return query.trim(); })) + "</p>";
+    } else if (!mine.length) {
       out += '<p class="ky-empty">' + esc(t.empty) + "</p>";
     } else {
       out += '<div class="ky-list">';
