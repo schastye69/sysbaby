@@ -1222,7 +1222,15 @@
       if (p1 !== p2) { say(tr("lock.mismatch")); return; }
       if (!force && V.weakWord && V.weakWord(p1)) {
         var weak = body.querySelector("#sbLockWeak"); if (weak) weak.hidden = false;
-        if (anywayBtn) anywayBtn.hidden = false;
+        /* «Всё равно» встаёт в поле зрения и принимает фокус (D-343). На
+           телефоне она появлялась ниже края окна аккаунта, и каждое следующее
+           «Запереть всё» показывало то же самое: «нажимаю — ничего не
+           происходит» (телефон основателя, 29.09.2026). */
+        if (anywayBtn) {
+          anywayBtn.hidden = false;
+          anywayBtn.scrollIntoView({ block: "nearest" });
+          anywayBtn.focus({ preventScroll: true });
+        }
         return;
       }
       setLock(p1);

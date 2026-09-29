@@ -1356,8 +1356,20 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      считается чистым JS и стоит дорого временем, а отношение дешевле набрать
      родным PBKDF2. Поэтому Argon2id держит память, а до тринадцати эталонов
      добирает PBKDF2, у которого цена времени на любом устройстве честная.
-     ПОСТОЯННАЯ: цель 13 эталонов; эталон OWASP 600 000; проходов Argon2id 2. */
+
+     ПОЛ ОБЕЩАНИЯ НЕ ДЕРЖИТСЯ НА ЗАМЕРЕ (D-344). Десять эталонов набирает
+     один PBKDF2-SHA-256: не меньше 10 × 600 000 проходов — тот же алгоритм,
+     что у эталона, поэтому это ровно десять эталонов на любом железе, у
+     человека и у нападающего. Argon2id и SHA-512 — сверху. Прежде пол стоял
+     на замере прохода Argon2id: медленный или холодный пробник засчитывал
+     памяти лишние эталоны, и настоящая цена падала до 8–9 (доски v170, v171);
+     а время Argon2id, посчитанного в JS на медленном устройстве, — вообще не
+     цена для нападающего: у него родной Argon2id. Цена: около секунды на
+     столе и две-три на iPad к каждому открытию — секунды, а не минута.
+     ПОСТОЯННАЯ: цель 13 эталонов; эталон OWASP 600 000; проходов Argon2id 2;
+     пол SHA-256 — десять эталонов (обещание основателя). */
   var COST_TARGET = 13, OWASP_REF = 600000, A2_PASSES = 2, IT_FLOOR = 600000;
+  var PROMISE = 10, IT2_FLOOR = PROMISE * OWASP_REF;
   var calibrated = null;
   function calibrateCost() {
     if (calibrated) return Promise.resolve(calibrated);
@@ -1383,10 +1395,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             var t = A2_PASSES;
             var argonRatio = (t * perPass) / Math.max(1e-4, owaspMs);   /* сколько эталонов уже даёт память */
             var need = Math.max(0, COST_TARGET - argonRatio);           /* остаток добираем PBKDF2 */
-            var clamp = function (v, cap) { return Math.max(IT_FLOOR, Math.min(cap, Math.round(v))); };
+            var clamp = function (v, cap, floor) { return Math.max(floor || IT_FLOOR, Math.min(cap, Math.round(v))); };
             /* Разложение остатка: 40 % на SHA-512, 60 % на SHA-256. it/OWASP_REF
-               эталонов для SHA-256; для SHA-512 — через отношение времён. */
-            var it2 = clamp(0.6 * need * OWASP_REF, KDF2_ITER);
+               эталонов для SHA-256; для SHA-512 — через отношение времён.
+               SHA-256 — не ниже пола обещания, что бы ни показал замер (D-344). */
+            var it2 = clamp(0.6 * need * OWASP_REF, KDF2_ITER, IT2_FLOOR);
             var it1 = clamp((0.4 * need * owaspMs) / Math.max(1e-4, per512), KDF1_ITER);
             calibrated = { it1: it1, it2: it2, a2: { m: full.m, t: t, p: full.p } };
             return calibrated;

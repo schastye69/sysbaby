@@ -64,6 +64,17 @@ self.addEventListener("message", function (ev) {
   );
 });
 
+/* Оболочка с полки: сам документ, иначе корень области, иначе index.html.
+   Каждая ступень ждёт ответа прежней — пустой ответ не должен выдать себя
+   за найденный. */
+function fromShelf(bare) {
+  return caches.match(bare).then(function (hit) {
+    return hit || caches.match(new URL("./", self.location.href).href);
+  }).then(function (hit) {
+    return hit || caches.match(new URL("index.html", self.location.href).href);
+  });
+}
+
 function sameOrigin(url) {
   try { return new URL(url, self.location.href).origin === self.location.origin; }
   catch (e) { return false; }
@@ -75,17 +86,33 @@ self.addEventListener("fetch", function (ev) {
   if (!sameOrigin(req.url)) return;                       /* наружу — только по-настоящему */
 
   /* ДОКУМЕНТ: сначала сеть, потом хранилище. Так новая сборка приходит сама,
-     как только сеть есть, и та же страница открывается, когда её нет. */
+     как только сеть есть, и та же страница открывается, когда её нет.
+     Документ кладётся в хранилище под адресом БЕЗ строки запроса: строка
+     запроса — это то, что человек принёс (?share&text=…), а не часть
+     оболочки, и на диске ей не место (D-345). */
   if (req.mode === "navigate") {
+    var nav = new URL(req.url);
+    var bare = nav.origin + nav.pathname;
+    /* ПРИШЕДШЕЕ ЧЕРЕЗ «ПОДЕЛИТЬСЯ» НЕ УХОДИТ ИЗ ТЕЛЕФОНА (D-345). Меню
+       «Поделиться» открывает систему адресом ./?share&text=…; раньше этот
+       адрес шёл «сначала в сеть» — текст уезжал на сервер строкой адреса и
+       ложился в хранилище под полным адресом, читаемо при запертом замке.
+       Теперь оболочка берётся с полки, а если её там нет — из сети по адресу
+       без строки запроса. Вещь читает сама страница из своего адреса. */
+    if (nav.searchParams.has("share")) {
+      ev.respondWith(fromShelf(bare).then(function (hit) {
+        return hit || fetch(bare, { credentials: "same-origin" });
+      }));
+      return;
+    }
     ev.respondWith(
       fetch(req).then(function (res) {
         var copy = res.clone();
-        caches.open(CACHE).then(function (c) { c.put(req, copy); });
+        if (res.ok) caches.open(CACHE).then(function (c) { c.put(bare, copy); });
         return res;
       }).catch(function () {
-        return caches.match(req).then(function (hit) {
-          return hit || caches.match("./") || caches.match("index.html") ||
-            new Response("", { status: 504 });
+        return fromShelf(bare).then(function (hit) {
+          return hit || new Response("", { status: 504 });
         });
       })
     );
