@@ -1115,6 +1115,9 @@
         toast(t("set.import.failTitle"), t("set.import.notBackup"));
         return;
       }
+      /* Запечатанная копия (D-346): её открывает слово мира, где она сделана,
+         или код восстановления — в одно поле; состояние сеанса не меняется. */
+      if (envelope && envelope.kind === "sealed-export") { importSealed(String(reader.result)); return; }
       if (!envelope || envelope.app !== EXPORT_APP || !envelope.keys || typeof envelope.keys !== "object") {
         toast(t("set.import.failTitle"), t("set.import.notBackup"));
         return;
@@ -1129,6 +1132,31 @@
       });
     };
     reader.readAsText(file);
+  }
+  /* ЗАПЕЧАТАННАЯ КОПИЯ ВОССТАНАВЛИВАЕТСЯ (D-346). Копия под замком — конверт
+     с записью замка; открыть его можно словом того мира или кодом
+     восстановления. Сперва пробуется слово, затем то же, как код. Неверное —
+     ничего не меняет и говорит об этом. Верное — тот же вопрос «заменить?»,
+     что у открытой копии. */
+  function importSealed(text) {
+    var V = window.sbVault;
+    if (!V || typeof V.openExport !== "function") { toast(t("set.import.failTitle"), t("set.import.notBackup")); return; }
+    window.sbAsk({ question: t("set.import.sealedAsk"), ok: t("ask.open"), field: { secret: true, placeholder: t("set.import.sealedHint") } }).then(function (secret) {
+      if (secret == null || !String(secret).length) return;
+      V.openExport(text, String(secret)).then(function (plain) {
+        return plain || V.openExport(text, { code: String(secret) });
+      }).then(function (plain) {
+        var envelope = null;
+        if (plain) { try { envelope = JSON.parse(plain); } catch (e) { envelope = null; } }
+        if (!envelope || envelope.app !== EXPORT_APP || !envelope.keys || typeof envelope.keys !== "object") {
+          toast(t("set.import.failTitle"), t("set.import.sealedWrong"));
+          return;
+        }
+        window.sbAsk({ question: t("set.import.confirm"), ok: t("ask.replace"), danger: true }).then(function (yes) {
+          if (yes) applyImport(envelope);
+        });
+      }, function () { toast(t("set.import.failTitle"), t("set.import.sealedWrong")); });
+    });
   }
   function applyImport(envelope) {
     /* Заменяется только после согласия — вопрос задан в importProfile. */

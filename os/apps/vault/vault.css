@@ -128,7 +128,7 @@
   background: rgba(var(--heed-rgb), .07); border: 1px solid rgba(var(--heed-rgb), .28);
 }
 .vw-keyform { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
-.vw-keypass {
+.vw-keypass, .vw-keyother {
   font: inherit; font-size: var(--f-read); padding: 9px 12px; color: var(--ink);
   background: rgba(var(--film-rgb), .04); border: 1px solid var(--line); border-radius: var(--r-ctrl);
 }

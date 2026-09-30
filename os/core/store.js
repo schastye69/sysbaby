@@ -2182,9 +2182,54 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       /* Promise.all, а не гонка: обе двери пробуются до конца всегда. */
       return Promise.all(jobs);
     }).then(function (res) {
-      for (var i = 0; i < res.length; i++) if (res[i]) { vaultDoor = i; return res[i]; }
-      vaultDoor = -1;
-      return null;
+      /* ── ДВЕРЬ ОТВЕЧАЕТ, А НЕ ПЕРЕКЛЮЧАЕТ (D-349) ────────────────────────
+         Здесь стояло «vaultDoor = i» при каждой пробе. Проба — это не только
+         вход: смена слова, второе слово, код, второй ключ, замер цены
+         заведомо неверным словом. Каждая такая проба переставляла номер
+         двери ВСЕГО сеанса: слово другого мира в окне аккаунта переключало
+         открытую систему на чужую дверь, а неудачный замер ставил −1, и
+         следующая смена слова переклеила бы главную дверь мастером второго
+         мира. Теперь проба только отвечает — какая дверь и какой мастер;
+         номер двери сеанса ставит один вход (unlock). */
+      var hit = null;
+      for (var i = 0; i < res.length; i++) {
+        if (!res[i]) continue;
+        if (!hit) hit = { i: i, m: res[i] }; else res[i].fill(0);
+      }
+      return hit;
+    });
+  }
+
+  /* ── ОДИН МИР НА СЕАНС (D-349) ─────────────────────────────────────────
+     Пока система открыта, слово в окне аккаунта обязано быть словом ЭТОГО
+     мира. Слово другого мира — «неверно», тем же ответом и за то же время,
+     что и любое чужое: обе двери считаются всегда. Иначе открытый мир можно
+     было подменить посреди сеанса, не закрыв его. */
+  function ownDoor(hit) {
+    if (!hit) return null;
+    if (vaultOpen && hit.i !== vaultDoor) { hit.m.fill(0); return null; }
+    return hit;
+  }
+  /* Второе слово обязано открыть ИМЕННО вторую дверь: опечатка или главное
+     слово ещё раз не становятся «вторым миром» и не стирают настоящий. */
+  function otherDoor(hit) {
+    if (hit && hit.i === 1) return hit;
+    if (hit) hit.m.fill(0);
+    return null;
+  }
+  /* Для действий, которые берут слово: открытая система сверяет его с
+     миром сеанса и НЕ открывает заново; закрытая — открывается им, как
+     прежде. Ответ — номер двери сеанса или −1. */
+  function enterOrConfirm(password, secondKeyFile) {
+    if (!vaultOpen) return window.sbVault.unlock(password, secondKeyFile).then(function (okp) { return okp ? vaultDoor : -1; });
+    var rec = lockRecord();
+    if (!rec) return Promise.resolve(-1);
+    return factorFor(rec, secondKeyFile).then(function (fsec) {
+      return openDoors(rec, password, fsec);
+    }).then(ownDoor).then(function (hit) {
+      if (!hit) return -1;
+      hit.m.fill(0);
+      return hit.i;
     });
   }
 
@@ -2683,13 +2728,14 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     if (typeof input === "string") { try { obj = JSON.parse(input); } catch (e) { return Promise.resolve(null); } }
     if (!obj || obj.kind !== "sealed-export" || !obj.lock || !obj.body) return Promise.resolve(null);
     var rec = obj.lock;
-    var savedDoor = vaultDoor, savedHw = hwSecret;
-    var restore = function (v) { vaultDoor = savedDoor; hwSecret = savedHw; return v; };
+    var savedHw = hwSecret;
+    var restore = function (v) { hwSecret = savedHw; return v; };
     var viaCode = !!(secret && typeof secret === "object" && secret.code);
     var ask = (!viaCode && hwOf(rec) && opts.device) ? hwAsk(rec) : Promise.resolve(true);
     return ask.then(function () {
       if (viaCode) return spareMaster(rec, secret.code);
-      return factorFor(rec, opts.file || null).then(function (fsec) { return openDoors(rec, String(secret || ""), fsec); });
+      return factorFor(rec, opts.file || null).then(function (fsec) { return openDoors(rec, String(secret || ""), fsec); })
+        .then(function (hit) { return hit ? hit.m : null; });
     }).then(function (m) {
       restore();
       if (!m) return null;
@@ -2849,6 +2895,14 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
          Дверей две, и считаются ОБЕ всегда — см. шапку про две двери. */
       return factorFor(rec, secondKeyFile).then(function (fsec) {
         return openDoors(rec, password, fsec);
+      }).then(function (hit) {
+        /* Открытая система другим миром не открывается (D-349): замер цены и
+           любые пробы идут мимо, а слово чужой двери — «неверно». Номер двери
+           сеанса ставится ТОЛЬКО здесь и только удачным входом. */
+        if (hit && vaultOpen && hit.i !== vaultDoor) { hit.m.fill(0); hit = null; }
+        if (!hit) throw new Error("wrong");
+        vaultDoor = hit.i;
+        return hit.m;
       }).then(function (masterBuf) {
         if (!masterBuf) throw new Error("wrong");
         if (!factorOf(rec)) upgradeDoors(rec);
@@ -2869,8 +2923,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     remove: function (password, secondKeyFile) {
       var rec = lockRecord();
       if (!rec) return Promise.resolve(true);
-      return window.sbVault.unlock(password, secondKeyFile).then(function (okp) {
-        if (!okp) return false;
+      return enterOrConfirm(password, secondKeyFile).then(function (door) {
+        if (door < 0) return false;
         return unsealThingsNow(vaultKeys).then(function () { return true; });
       }).then(function (okp) {
         if (!okp) return false;
@@ -2992,15 +3046,19 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       var scrub = function (r) { zero(master0, master1); return r; }, scrubErr = function (e) { zero(master0, master1); throw e; };
       return factorFor(rec, null).then(function (fo) {
         fsecOld = fo;
-        return openDoors(rec, password, fsecOld);
-      }).then(function (m) {
-        if (!m) return false;
-        if (vaultDoor !== 0) { zero(m); return true; }        /* из тревожного мира — молча «готово» */
-        master0 = m;
+        return openDoors(rec, password, fsecOld).then(ownDoor);
+      }).then(function (hit) {
+        if (!hit) return false;
+        if (hit.i !== 0) { zero(hit.m); return true; }        /* из тревожного мира — молча «готово» */
+        master0 = hit.m;
         if (!duressPassword) return null;
-        return openDoors(rec, duressPassword, fsecOld).then(function (m2) { master1 = m2; return null; });
+        return openDoors(rec, duressPassword, fsecOld).then(otherDoor).then(function (h2) {
+          if (!h2) return "duress-wrong";
+          master1 = h2.m; return null;
+        });
       }).then(function (early) {
         if (early === false || early === true) return early;
+        if (early === "duress-wrong") return Promise.reject(new Error("duress-wrong"));
         return factorSecret(fileBytes, fsaltB64).then(function (fs) {
           return mixFactors(fs, hwNow(rec));
         }).then(function (fs) {
@@ -3016,7 +3074,6 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             next.doors = [door0, door1];
             delete next.wrapIv; delete next.wrap;
             lsSet(LOCK_KEY, JSON.stringify(next));
-            vaultDoor = 0;
             return true;
           });
         });
@@ -3030,15 +3087,19 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       var master0 = null, master1 = null;
       var scrub = function (r) { zero(master0, master1); return r; }, scrubErr = function (e) { zero(master0, master1); throw e; };
       return factorFor(rec, fileBytes).then(function (fsec) {
-        return openDoors(rec, password, fsec).then(function (m) {
-          if (!m) return false;
-          if (vaultDoor !== 0) { zero(m); return true; }
-          master0 = m;
+        return openDoors(rec, password, fsec).then(ownDoor).then(function (hit) {
+          if (!hit) return false;
+          if (hit.i !== 0) { zero(hit.m); return true; }
+          master0 = hit.m;
           if (!duressPassword) return null;
-          return openDoors(rec, duressPassword, fsec).then(function (m2) { master1 = m2; return null; });
+          return openDoors(rec, duressPassword, fsec).then(otherDoor).then(function (h2) {
+            if (!h2) return "duress-wrong";
+            master1 = h2.m; return null;
+          });
         });
       }).then(function (early) {
         if (early === false || early === true) return early;
+        if (early === "duress-wrong") return Promise.reject(new Error("duress-wrong"));
         /* Снимается файл — ключ устройства остаётся (D-276). */
         return mixFactors(null, hwNow(rec)).then(function (fsecNo) {
         return makeDoor(password, master0, saltB64, fsecNo, costOf(rec)).then(function (door0) {
@@ -3050,7 +3111,6 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             delete next.factor;
             next.doors = [door0, door1];
             lsSet(LOCK_KEY, JSON.stringify(next));
-            vaultDoor = 0;
             return true;
           });
         });
@@ -3083,20 +3143,20 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       var scrub = function (r) { zero(master0, master1); return r; }, scrubErr = function (e) { zero(master0, master1); throw e; };
       return factorFor(rec, secondKeyFile).then(function (fs) {
         fsec = fs;
-        return openDoors(rec, password, fsec);
-      }).then(function (m) {
-        if (!m) return false;
-        if (vaultDoor !== 0) { zero(m); return true; }
-        master0 = m;
+        return openDoors(rec, password, fsec).then(ownDoor);
+      }).then(function (hit) {
+        if (!hit) return false;
+        if (hit.i !== 0) { zero(hit.m); return true; }
+        master0 = hit.m;
         if (!duressPassword) return null;
-        return openDoors(rec, duressPassword, fsec).then(function (m2) {
-          if (!m2 || vaultDoor !== 1) { zero(m2); return "duress-wrong"; }
-          master1 = m2;
+        return openDoors(rec, duressPassword, fsec).then(otherDoor).then(function (h2) {
+          if (!h2) return "duress-wrong";
+          master1 = h2.m;
           return null;
         });
       }).then(function (early) {
-        if (early === false || early === true) { vaultDoor = 0; return early; }
-        if (early === "duress-wrong") { vaultDoor = 0; return Promise.reject(new Error("duress-wrong")); }
+        if (early === false || early === true) return early;
+        if (early === "duress-wrong") return Promise.reject(new Error("duress-wrong"));
         var next = [cost[0], cost[1], a2];
         return makeDoor(password, master0, saltB64, fsec, next).then(function (door0) {
           var second = master1 ? makeDoor(duressPassword, master1, saltB64, fsec, next) : Promise.resolve(randomDoor());
@@ -3108,7 +3168,6 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             delete fresh.wrapIv; delete fresh.wrap;
             lsSet(LOCK_KEY, JSON.stringify(fresh));
             master0.fill(0); if (master1) master1.fill(0);
-            vaultDoor = 0;
             return true;
           });
         });
@@ -3131,19 +3190,18 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       var scrub = function (r) { zero(master0, master1); return r; }, scrubErr = function (e) { zero(master0, master1); throw e; };
       return factorFor(rec, secondKeyFile).then(function (fo) {
         fsecOld = fo;
-        return openDoors(rec, password, fsecOld);
-      }).then(function (m) {
-        if (!m) return false;
-        fromDuress = vaultDoor !== 0;
-        master0 = m;
+        return openDoors(rec, password, fsecOld).then(ownDoor);
+      }).then(function (hit) {
+        if (!hit) return false;
+        fromDuress = hit.i !== 0;
+        master0 = hit.m;
         if (fromDuress || !duressPassword) return true;
-        return openDoors(rec, duressPassword, fsecOld).then(function (m2) {
-          if (!m2 || vaultDoor !== 1) { zero(m2); return "duress-wrong"; }
-          master1 = m2;
+        return openDoors(rec, duressPassword, fsecOld).then(otherDoor).then(function (h2) {
+          if (!h2) return "duress-wrong";
+          master1 = h2.m;
           return true;
         });
       }).then(function (st) {
-        vaultDoor = fromDuress ? vaultDoor : 0;
         if (st === false) return false;
         if (st === "duress-wrong") return Promise.reject(new Error("duress-wrong"));
         /* Учётка заводится у устройства и ТУТ ЖЕ спрашивается: ключ, который
@@ -3212,7 +3270,6 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
                 lsSet(LOCK_KEY, JSON.stringify(next));
                 hwSecret = secret;
                 master0.fill(0); if (master1) master1.fill(0);
-                vaultDoor = 0;
                 return true;
               });
             });
@@ -3228,19 +3285,19 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       var scrub = function (r) { zero(master0, master1); return r; }, scrubErr = function (e) { zero(master0, master1); throw e; };
       return factorFor(rec, secondKeyFile).then(function (fo) {
         fsecOld = fo;
-        return openDoors(rec, password, fsecOld);
-      }).then(function (m) {
-        if (!m) return false;
-        if (vaultDoor !== 0) { zero(m); return true; }
-        master0 = m;
+        return openDoors(rec, password, fsecOld).then(ownDoor);
+      }).then(function (hit) {
+        if (!hit) return false;
+        if (hit.i !== 0) { zero(hit.m); return true; }
+        master0 = hit.m;
         if (!duressPassword) return null;
-        return openDoors(rec, duressPassword, fsecOld).then(function (m2) {
-          if (!m2 || vaultDoor !== 1) { zero(m2); return "duress-wrong"; }
-          master1 = m2; return null;
+        return openDoors(rec, duressPassword, fsecOld).then(otherDoor).then(function (h2) {
+          if (!h2) return "duress-wrong";
+          master1 = h2.m; return null;
         });
       }).then(function (early) {
         if (early === false || early === true) return early;
-        if (early === "duress-wrong") { vaultDoor = 0; return Promise.reject(new Error("duress-wrong")); }
+        if (early === "duress-wrong") return Promise.reject(new Error("duress-wrong"));
         var f = factorOf(rec);
         return (f ? factorSecret(secondKeyFile || new Uint8Array(0), f.salt) : Promise.resolve(null)).then(function (fs) {
           fileSec = fs;
@@ -3256,7 +3313,6 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
               lsSet(LOCK_KEY, JSON.stringify(next));
               hwSecret = null;
               master0.fill(0); if (master1) master1.fill(0);
-              vaultDoor = 0;
               return true;
             });
           });
@@ -3272,9 +3328,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       if (!rec) return Promise.reject(new Error("no-lock"));
       if (String(duressPassword || "").length < 4) return Promise.reject(new Error("short"));
       if (String(duressPassword) === String(mainPassword)) return Promise.reject(new Error("same"));
-      return window.sbVault.unlock(mainPassword, secondKeyFile).then(function (okp) {
-        if (!okp) return false;
-        if (vaultDoor !== 0) return true;          /* см. выше: молча и «готово» */
+      return enterOrConfirm(mainPassword, secondKeyFile).then(function (door) {
+        if (door < 0) return false;
+        if (door !== 0) return true;          /* см. выше: молча и «готово» */
         var m = new Uint8Array(32);
         window.crypto.getRandomValues(m);
         var next0 = lockRecord() || {};
@@ -3308,9 +3364,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     clearDuress: function (mainPassword, secondKeyFile) {
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
-      return window.sbVault.unlock(mainPassword, secondKeyFile).then(function (okp) {
-        if (!okp) return false;
-        if (vaultDoor !== 0) return true;
+      return enterOrConfirm(mainPassword, secondKeyFile).then(function (door) {
+        if (door < 0) return false;
+        if (door !== 0) return true;
         var next = lockRecord() || {};
         var doors = doorsOf(next).map(function (d) { return { wrapIv: d.wrapIv, wrap: d.wrap }; });
         while (doors.length < 2) doors.push(randomDoor());
@@ -3331,13 +3387,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
       if (!vaultOpen) return Promise.reject(new Error("closed"));
-      var saved = vaultDoor;
       return factorFor(rec, secondKeyFile).then(function (fsec) {
-        return openDoors(rec, password, fsec);
-      }).then(function (m) {
-        var door = vaultDoor;
-        vaultDoor = saved;
-        if (!m) return false;
+        return openDoors(rec, password, fsec).then(ownDoor);
+      }).then(function (hit) {
+        if (!hit) return false;
+        var m = hit.m, door = hit.i;
         var code = spareNew();
         /* Из тревожного мира — код, который выглядит кодом и не открывает
            ничего: запасная дверь главного мира не трогается, а признаться, что
@@ -3452,8 +3506,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       if (!rec) return Promise.reject(new Error("no-lock"));
       if (String(newPassword || "").length < 4) return Promise.reject(new Error("short"));
       var fsecNew = null;
-      return window.sbVault.unlock(oldPassword, secondKeyFile).then(function (okp) {
-        if (!okp || !masterBox) return false;
+      return enterOrConfirm(oldPassword, secondKeyFile).then(function (door) {
+        if (door < 0 || !masterBox) return false;
         /* Второй ключ входит и в новую дверь: смена слова не снимает его
            (D-266 — прежде смена со вторым ключом не проходила вовсе, а если бы
            прошла, записала бы дверь без него и третью редакцию замка). */

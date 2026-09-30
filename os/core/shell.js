@@ -1444,7 +1444,8 @@
       var field = null;
       if (opts.field) {
         field = doc.createElement("input");
-        field.type = "text";
+        /* Поле для слова или кода скрывает набранное (D-346). */
+        field.type = opts.field.secret ? "password" : "text";
         field.className = "toast-field";
         field.setAttribute("aria-label", opts.title || "");
         if (opts.field.placeholder) field.placeholder = opts.field.placeholder;
@@ -2563,6 +2564,8 @@
     else { win.snapped = zone; win.maximized = false; win.el.classList.add("snapped"); }
     applyRect(win, r, false);
     updateTopbarAutoHide();
+    /* Стол узнаёт, что человек это уже умеет (D-347): подсказка о прикреплении ему больше не нужна. */
+    sbBus.emit("window:snapped", { id: id, zone: zone });
     return true;
   };
   /* ── ОДНА ДВЕРЬ НА ОБА СМЫСЛА «ВЕРНУТЬ» (v47.2) ────────────────────────

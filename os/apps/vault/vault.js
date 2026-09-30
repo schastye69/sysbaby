@@ -65,6 +65,9 @@
       keyPass: "Your password", keyGo: "Continue", keyCancel: "Cancel",
       keyFile: "The key file", keyDone: "Done. The file has been saved — it is now required to open this system.",
       keyOff2: "Removed. The password alone opens this system again.", keyBad: "That did not work — nothing was changed.",
+      keyOther: "Word of the second world — if you have one",
+      keyOtherNote: "The second key changes both doors of this lock. If you have a second world, type its word here: without it the world behind the second door can never be opened again. No second world — leave this empty.",
+      keyOtherBad: "That word does not open the second door — nothing was changed.",
       tellTitle: "Tell them apart",
       tellLead: "One of these two fields is your life, sealed. The other is noise made up a second ago by this machine. Nothing marks which is which — not the drawing, not the lengths, not the letters. Look as long as you like.",
       tellShow: "Show me which", tellAgain: "Shuffle again", tellHide: "Hide again",
@@ -92,6 +95,9 @@
       keyPass: "Ваш пароль", keyGo: "Продолжить", keyCancel: "Отмена",
       keyFile: "Файл ключа", keyDone: "Готово. Файл сохранён — теперь без него эта система не открывается.",
       keyOff2: "Снят. Система снова открывается одним словом.", keyBad: "Не вышло — ничего не изменилось.",
+      keyOther: "Слово второго мира — если он есть",
+      keyOtherNote: "Второй ключ меняет обе двери этого замка. Если у вас есть второй мир, впишите его слово: без него мир за второй дверью больше не откроется никогда. Второго мира нет — оставьте поле пустым.",
+      keyOtherBad: "Это слово не открывает вторую дверь — ничего не изменилось.",
       tellTitle: "Отличите",
       tellLead: "Одно из этих двух полей — ваша жизнь, запечатанная. Второе — шум, придуманный этой машиной секунду назад. Ничто не говорит, где что: ни рисунок, ни длины, ни буквы. Смотрите сколько угодно.",
       tellShow: "Показать, где что", tellAgain: "Перемешать снова", tellHide: "Спрятать обратно",
@@ -119,6 +125,9 @@
       keyPass: "Sinu parool", keyGo: "Jätka", keyCancel: "Katkesta",
       keyFile: "Võtmefail", keyDone: "Valmis. Fail on salvestatud — ilma selleta süsteem enam ei avane.",
       keyOff2: "Eemaldatud. Süsteem avaneb jälle ainult sõnaga.", keyBad: "Ei õnnestunud — midagi ei muudetud.",
+      keyOther: "Teise maailma sõna — kui see on olemas",
+      keyOtherNote: "Teine võti muudab selle luku mõlemat ust. Kui sul on teine maailm, kirjuta siia selle sõna: ilma selleta ei avane teise ukse taga olev maailm enam kunagi. Teist maailma ei ole — jäta tühjaks.",
+      keyOtherBad: "See sõna ei ava teist ust — midagi ei muudetud.",
       tellTitle: "Eralda need",
       tellLead: "Üks neist kahest väljast on sinu elu, pitseeritud. Teine on müra, mille see masin tegi sekund tagasi. Miski ei ütle, kumb on kumb: ei muster, ei pikkused, ei tähed. Vaata nii kaua kui tahad.",
       tellShow: "Näita, kumb on kumb", tellAgain: "Sega uuesti", tellHide: "Peida tagasi",
@@ -208,6 +217,12 @@
             '<p class="vw-warn">' + esc(t.keyWarn) + '</p>' +
             '<form class="vw-keyform" hidden>' +
               '<input type="password" class="vw-keypass" placeholder="' + esc(t.keyPass) + '" autocomplete="current-password">' +
+              /* Слово второго мира — одно и то же поле в обоих мирах и при любом
+                 замке (D-349): ключ меняет обе двери, и без этого слова мир за
+                 второй дверью молча становился шумом. Поле не говорит, есть ли
+                 второй мир, — оно говорит, что будет, если он есть. */
+              '<input type="password" class="vw-keyother" placeholder="' + esc(t.keyOther) + '" autocomplete="off">' +
+              '<p class="vw-note vw-keyothernote">' + esc(t.keyOtherNote) + '</p>' +
               (second.on ? '<label class="vw-keyfile"><span>' + esc(t.keyFile) + '</span><input type="file" class="vw-keyinput"></label>' : '') +
               '<div class="vw-keyacts">' +
                 '<button type="button" class="vw-act" data-act="keygo">' + esc(t.keyGo) + '</button>' +
@@ -398,6 +413,8 @@
         var wrap2 = host.querySelector(".vw-keycard");
         var say = wrap2.querySelector(".vw-keysay");
         var pass = (wrap2.querySelector(".vw-keypass") || {}).value || "";
+        var other = (wrap2.querySelector(".vw-keyother") || {}).value || "";
+        var bad = function (e) { b.disabled = false; say.textContent = (e && e.message === "duress-wrong") ? t.keyOtherBad : t.keyBad; };
         b.disabled = true;
         say.textContent = "…";
         if (second.on) {
@@ -405,18 +422,18 @@
           var inp = wrap2.querySelector(".vw-keyinput");
           var file = inp && inp.files && inp.files[0];
           (file ? file.arrayBuffer() : Promise.resolve(null)).then(function (buf) {
-            return window.sbVault.clearSecondKey(pass, buf ? new Uint8Array(buf) : null);
+            return window.sbVault.clearSecondKey(pass, buf ? new Uint8Array(buf) : null, other || null);
           }).then(function (okp) {
             b.disabled = false;
             say.textContent = okp ? t.keyOff2 : t.keyBad;
             if (okp) render(win);
-          }, function () { b.disabled = false; say.textContent = t.keyBad; });
+          }, bad);
           return;
         }
         /* Завести: ключ рождается здесь, сразу отдаётся человеку файлом и
            только после этого становится обязательным. */
         var bytes = window.sbVault.newSecondKey();
-        window.sbVault.setSecondKey(pass, bytes).then(function (okp) {
+        window.sbVault.setSecondKey(pass, bytes, other || null).then(function (okp) {
           b.disabled = false;
           if (!okp) { say.textContent = t.keyBad; return; }
           try {
@@ -428,7 +445,7 @@
           } catch (e) { /* ignore */ }
           say.textContent = t.keyDone;
           render(win);
-        }, function () { b.disabled = false; say.textContent = t.keyBad; });
+        }, bad);
         return;
       }
 

@@ -29,13 +29,29 @@
 
    КОПИИ НАСЛЕДУЮТ ЗАМОК. Пока замок стоит, в папку уходит КОНВЕРТ, а не
    открытый текст: замок на диске и открытая копия рядом — это не замок.
-   Открывается такая копия тем же паролем, и об этом сказано в окне.
+   КОНВЕРТ САМОДОСТАТОЧЕН (D-346): это запечатанная выгрузка (exportText) —
+   в ней запись замка (соль, цена, завёрнутый мастер за каждой дверью,
+   запасная дверь кода) и профиль, запечатанный ключами открытого мира.
+   Открывается она на ЛЮБОМ устройстве словом этого мира или кодом
+   восстановления: Настройки → Импорт. Прежде копия запечатывалась ключами
+   сеанса без записи замка — после очистки браузера её нельзя было открыть
+   ничем, а копия нужна именно тогда.
+
+   ПОКОЛЕНИЯ — ПО ДНЯМ (D-346). Постоянное имя несёт самое свежее; рядом —
+   три поколения, по одному на день: запись за день переписывает
+   сегодняшнее, новый день берёт следующее место в кольце. Прежде кольцо
+   крутилось на каждой записи, и три правки за минуту вытесняли вчерашнюю
+   копию, которую окно обещало.
 
    КАК ЧАСТО. «Как можно чаще» имеет цену: каждая запись — это сериализация
    всего профиля и обращение к диску. Поэтому пишется НЕ ПО ЧАСАМ, А ПО
-   ИЗМЕНЕНИЮ: раз в двадцать секунд снимается дешёвый отпечаток хранилища, и
-   запись идёт только если он другой. Плюс немедленно — когда вкладку прячут
-   или закрывают: это последний миг, когда мы ещё живы.
+   ИЗМЕНЕНИЮ: раз в двадцать секунд снимается отпечаток профиля, и запись идёт
+   только если он другой. Отпечаток — от самих значений (FNV-1a), а не от их
+   длин: правка той же длины прежде не замечалась, а под замком, где записи
+   выровнены блоками, не замечалась почти любая (D-346). Плюс немедленно —
+   когда вкладку прячут или закрывают: это последний миг, когда мы ещё живы.
+   И ещё раз — когда замок открыт: до двери синхронизация не видит, что она
+   включена (это слово лежит в конверте), и прежде так и не вставала.
 
    Охраняется tools/backup-sync-check.mjs.
    ═════════════════════════════════════════════════════════════════════════ */
@@ -83,33 +99,42 @@
     return !!V.isOpen();
   }
 
-  /* Дешёвый отпечаток: длины значений, а не значения. Считать хеш всего
-     профиля двадцать раз в минуту дороже, чем сама запись. */
+  /* Отпечаток профиля — от ЗНАЧЕНИЙ (D-346). Берётся то же, что уйдёт в
+     копию: выгрузка профиля, открытым текстом в памяти, — поэтому замок с его
+     выровненными конвертами отпечатку не мешает. FNV-1a: дёшево и видит
+     правку той же длины. Раз в двадцать секунд это копейки. */
   function fingerprint() {
-    var n = 0, sum = 0, i, k, v;
+    var text;
     try {
-      for (i = 0; i < localStorage.length; i++) {
-        k = localStorage.key(i);
-        if (!k || k.indexOf("sysbaby.") !== 0) continue;
-        if (k === STATE_KEY) continue;          /* своё же эхо не считается */
-        v = localStorage.getItem(k);
-        n++;
-        sum += (v ? v.length : 0) + k.length;
+      if (typeof window.sbExportProfile !== "function") return null;
+      var obj = window.sbExportProfile() || {};
+      var keys = obj.keys || {}, names = Object.keys(keys).sort(), parts = [], i;
+      for (i = 0; i < names.length; i++) {
+        if (names[i] === STATE_KEY || names[i] === "backup.state") continue;   /* своё же эхо не считается */
+        parts.push(names[i] + "=" + String(keys[names[i]]));
       }
+      text = parts.join("\n");
     } catch (e) { return null; }
-    return n + ":" + sum;
+    var h = 0x811c9dc5, j;
+    for (j = 0; j < text.length; j++) { h ^= text.charCodeAt(j); h = Math.imul(h, 0x01000193) >>> 0; }
+    return text.length + ":" + h.toString(16);
   }
 
+  /* Под замком в папку идёт самодостаточный конверт — запечатанная выгрузка
+     с записью замка (D-346): открывается на любом устройстве словом или
+     кодом. Без замка — открытая выгрузка, и окно копий говорит это прямо. */
   function payload() {
-    if (typeof window.sbExportProfile !== "function") return Promise.reject(new Error("no-export"));
-    var text = JSON.stringify(window.sbExportProfile(), null, 1);
     var V = window.sbVault;
-    if (V && V.isLocked() && V.isOpen() && typeof V.seal === "function") {
-      return V.seal(text).then(function (env) {
-        return { text: env, sealed: true };
-      });
+    if (V && V.isLocked() && V.isOpen() && typeof V.exportText === "function") {
+      return V.exportText().then(function (r) { return { text: r.text, sealed: !!r.sealed }; });
     }
-    return Promise.resolve({ text: text, sealed: false });
+    if (typeof window.sbExportProfile !== "function") return Promise.reject(new Error("no-export"));
+    return Promise.resolve({ text: JSON.stringify(window.sbExportProfile(), null, 1), sealed: false });
+  }
+  /* День по местному времени: поколения меняются по дням, а не по записям. */
+  function dayKey() {
+    var d = new Date();
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
   }
 
   function ensurePermission(interactive) {
@@ -146,7 +171,9 @@
       }
       return payload().then(function (p) {
         var st = readState();
-        var ring = ((st.ring || 0) % RING) + 1;
+        var today = dayKey();
+        /* Новый день — следующее место в кольце; тот же день — то же место. */
+        var ring = (st.ring && st.ringDay === today) ? st.ring : ((st.ring || 0) % RING) + 1;
         var gen = "sysbaby-backup-" + ring + ".json";
         /* Сперва поколение, потом постоянное имя: обрыв посередине оставляет
            целым хотя бы одно. Наоборот было бы наоборот. */
@@ -156,7 +183,7 @@
             lastWrite = Date.now();
             lastPrint = fingerprint();
             writeState({
-              ring: ring, lastOk: lastWrite, bytes: p.text.length,
+              ring: ring, ringDay: today, lastOk: lastWrite, bytes: p.text.length,
               sealed: !!p.sealed, lastErr: null, dirName: dirHandle.name || ""
             });
             return { ok: true, sealed: !!p.sealed, bytes: p.text.length };
@@ -237,6 +264,10 @@
       return Promise.resolve(true);
     },
     saveNow: function () { return saveNow(true); },
+    /* Идёт ли синхронизация сейчас — и отпечаток, по которому она решает,
+       писать ли. Оба говорят о состоянии, ничего не меняя. */
+    running: function () { return !!timer; },
+    print: fingerprint,
 
     /* Восстановление указателя после перезагрузки. Разрешение может быть в
        состоянии «спросить» — тогда папка есть, но писать нельзя до первого
@@ -266,4 +297,9 @@
   } else {
     window.sbBackup.resume();
   }
+  /* Замок открыт — синхронизация встаёт снова (D-346): до двери слово
+     «копии включены» лежит в конверте, и первый запуск его не видит. */
+  if (window.sbBus && window.sbBus.on) window.sbBus.on("vault:change", function (e) {
+    if (e && e.open) window.sbBackup.resume();
+  });
 })();
