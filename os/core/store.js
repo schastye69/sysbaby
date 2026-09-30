@@ -2658,15 +2658,61 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     if (!vaultLocked()) return true;
     return !!vaultOpen && presentAt > 0 && (Date.now() - presentAt) < PRESENCE_MS;
   }
+  /* ── ДВЕРЬ ПОДТВЕРЖДЕНИЯ НЕ ПЕРЕБИРАЕТСЯ · решение D-350 ─────────────────
+     Слово здесь сверяется отпечатком — мгновенно, без растяжки двери. Прежде
+     на любое число неверных слов она отвечала сразу и молча: открытая система,
+     оставленная без присмотра, давала перебирать слово без цены и без следа.
+     Теперь промахи платят сами. Первый отвечается сразу — это опечатка; каждый
+     следующий подряд — дольше. Каждый оставляет стук (sbKnock.note, D-341), и
+     стук пишется ДО ответа. Пятый подряд закрывает сеанс: перезагрузка к
+     двери, где каждая попытка стоит полной растяжки. Верное слово обнуляет
+     счёт. Попытки идут по одной: следующая ждёт ответа предыдущей, иначе
+     паузу обходили бы вызовами разом.
+     ЧЕГО ЭТО НЕ ДАЁТ, вслух: от вредного кода внутри открытой страницы это не
+     спасает — он видит то же, что человек. Закрывает одно: чужие руки у
+     оставленного открытым устройства.
+     Охраняется tools/irreversible-word-check.mjs. */
+  /* ПОСТОЯННАЯ: пауза перед ответом на первый…четвёртый промах подряд —
+     первый сразу (опечатка), дальше вдвое; вместе около семи секунд: перебор
+     становится виден и долог, а человек, дважды ошибившийся, не ждёт минуту. */
+  var PRESENCE_MISS_WAIT = [0, 1000, 2000, 4000];
+  /* ПОСТОЯННАЯ: пятый промах подряд закрывает сеанс — на один больше пауз,
+     чтобы последняя пауза была последней, а не очередной. */
+  var PRESENCE_MISS_SHUT = 5;
+  var presenceMisses = 0, presenceQueue = Promise.resolve(), presenceShut = false;
+  /* ПОСТОЯННАЯ: секунда с небольшим — прочесть, почему сеанс закрывается;
+     слово за это время уже не принимается (presenceShut). */
+  var PRESENCE_SHUT_SAY_MS = 1200;
+  function presenceCloseSession() {
+    presenceShut = true;
+    if (window.sbDB && window.sbDB.flushSync) { try { window.sbDB.flushSync(); } catch (e) { /* закрываемся всё равно */ } }
+    setTimeout(function () { window.location.reload(); }, PRESENCE_SHUT_SAY_MS);
+  }
+  function presenceMiss() {
+    presenceMisses++;
+    var n = presenceMisses;
+    var knocked = window.sbKnock ? window.sbKnock.note().then(null, function () { return false; }) : Promise.resolve(false);
+    return knocked.then(function () {
+      if (n >= PRESENCE_MISS_SHUT) { presenceCloseSession(); return false; }
+      var wait = PRESENCE_MISS_WAIT[Math.min(n, PRESENCE_MISS_WAIT.length) - 1] || 0;
+      return new Promise(function (r) { setTimeout(function () { r(false); }, wait); });
+    });
+  }
   function presenceByWord(word) {
     if (!vaultLocked()) return Promise.resolve(true);
-    if (!vaultOpen || !wordCheck) return Promise.resolve(false);
-    var wc = wordCheck;
-    return wordMac(wc.key, word).then(function (mac) {
-      var okp = sameBytes(mac, wc.mac);
-      if (okp) presentAt = Date.now();
-      return okp;
-    }, function () { return false; });
+    var turn = presenceQueue.then(function () {
+      if (presenceShut || !vaultOpen || !wordCheck) return false;
+      var wc = wordCheck;
+      return wordMac(wc.key, word).then(function (mac) {
+        var okp = sameBytes(mac, wc.mac);
+        if (!okp) return presenceMiss();
+        presenceMisses = 0;
+        presentAt = Date.now();
+        return true;
+      }, function () { return false; });
+    });
+    presenceQueue = turn.then(null, function () { return false; });
+    return turn;
   }
   function presenceByDevice() {
     var rec = lockRecord();
@@ -3413,6 +3459,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       byWord: presenceByWord,
       byDevice: presenceByDevice,
       canDevice: function () { return !!(vaultOpen && hwOf(lockRecord()) && hwSecret); },
+      /* Сеанс закрывается после пятого промаха подряд (D-350). */
+      shutting: function () { return presenceShut; },
       forget: function () { presentAt = 0; },
       windowMs: function () { return PRESENCE_MS; }
     },
@@ -3822,7 +3870,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       });
       shadow("getItem", function (k) {
         if (!isOurs(this)) return rawStore.get.call(this, k);
-        if (vaultOpen && mem.has(String(k))) return mem.get(String(k));
+        /* После ухода и очистки (D-174, D-350) голос у диска, а не у памяти
+           сеанса: память уходящего мира не выдаётся за то, что лежит. */
+        if (vaultOpen && !window.sbVanishing && mem.has(String(k))) return mem.get(String(k));
         return rawStore.get.call(ls, k);
       });
       shadow("removeItem", function (k) {

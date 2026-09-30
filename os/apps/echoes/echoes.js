@@ -346,8 +346,9 @@
     if (all) {
       all.addEventListener("click", function () {
         var s = store();
-        if (!s) return;
-        window.sbAsk({ question: t("ec.confirm.all", { n: echoCount }), ok: t("ask.silence"), danger: true }).then(function (yes) {
+        if (!s || typeof window.sbAskIrreversible !== "function") return;
+        /* Всё разом и навсегда — при замке только словом (D-350). */
+        window.sbAskIrreversible({ question: t("ec.confirm.all", { n: echoCount }), ok: t("ask.silence") }).then(function (yes) {
           if (!yes) return;
           /* Touches the notes store only — hidden apps live in shell storage this
            * button cannot reach. There must be no way for it to remove an app. */

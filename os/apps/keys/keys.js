@@ -50,6 +50,8 @@
       own: "The password you already have", save: "Save", cancel: "Cancel",
       show: "Show", hide: "Hide", copy: "Copy", copied: "Copied — the clipboard clears itself in 20 seconds",
       rotate: "New password", rotated: "Changed. The old one will never come back.",
+      rotateAsk: "New password for {place}? The current one is no longer shown here and will not come back \u2014 change it on the site right after.",
+      removeAsk: "Forget {place}? The place and the password it keeps are gone for good.",
       remove: "Forget this place", search: "Search places", empty: "Nothing here yet.", miss: "No places match “{q}”",
       counter: "change", derived: "derived", stored: "stored",
       honest: "What this cannot do: passwords made elsewhere cannot be derived — those are kept in an envelope like everything else. And one master word opens all of them at once: that is the price of having nothing to steal.",
@@ -68,6 +70,8 @@
       own: "Пароль, который у вас уже есть", save: "Сохранить", cancel: "Отмена",
       show: "Показать", hide: "Скрыть", copy: "Копировать", copied: "Скопировано — буфер сотрётся через 20 секунд",
       rotate: "Новый пароль", rotated: "Сменён. Прежний не вернётся никогда.",
+      rotateAsk: "Новый пароль для {place}? Нынешний больше не покажется здесь и не вернётся \u2014 смените его на сайте сразу после.",
+      removeAsk: "Забыть {place}? Место и пароль, который оно хранит, исчезнут навсегда.",
       remove: "Забыть это место", search: "Поиск по местам", empty: "Здесь пока пусто.", miss: "Нет мест по запросу «{q}»",
       counter: "смена", derived: "выведенный", stored: "хранимый",
       honest: "Чего это не может: пароли, заведённые не здесь, вывести нельзя — они лежат в конверте, как всё остальное. И одно мастер-слово открывает их все разом: это и есть цена того, что красть нечего.",
@@ -86,6 +90,8 @@
       own: "Parool, mis sul juba on", save: "Salvesta", cancel: "Loobu",
       show: "Näita", hide: "Peida", copy: "Kopeeri", copied: "Kopeeritud — lõikelaud tühjeneb 20 sekundiga",
       rotate: "Uus parool", rotated: "Muudetud. Vana enam ei naase.",
+      rotateAsk: "Uus parool kohale {place}? Praegust siin enam ei näidata ja see ei naase \u2014 vaheta see saidil kohe pärast.",
+      removeAsk: "Kas unustada {place}? Koht ja selle hoitav parool kaovad jäädavalt.",
       remove: "Unusta see koht", search: "Otsi kohti", empty: "Siin pole veel midagi.", miss: "Otsingule „{q}“ ei vasta ükski koht",
       counter: "vahetus", derived: "tuletatud", stored: "hoitud",
       honest: "Mida see ei suuda: mujal loodud paroole ei saa tuletada — need hoitakse ümbrikus nagu kõik muu. Ja üks peasõna avab need kõik korraga: see ongi hind selle eest, et varastada pole midagi.",
@@ -370,21 +376,31 @@
             });
             return;
           }
-          if (act === "rotate") {
-            var list = readAll();
-            for (var i = 0; i < list.length; i++) {
-              if (list[i].id === id) { list[i].counter = (list[i].counter || 0) + 1; break; }
-            }
-            writeAll(list);
-            delete shown[id];
-            render(win);
-            say(t.rotated);
+          /* ── НОВЫЙ ПАРОЛЬ И «ЗАБЫТЬ» — НЕОБРАТИМЫ (D-350) ──────────────────
+             Прежний пароль места не возвращается, забытое место — тоже. При
+             замке — слово (свежее подтверждение не пропускает), без замка —
+             вопрос своим голосом. Прежде оба шли с одного касания. */
+          if (act === "rotate" || act === "remove") {
+            if (typeof window.sbAskIrreversible !== "function") return;
+            var q = String(act === "rotate" ? t.rotateAsk : t.removeAsk).replace("{place}", function () { return rec.place; });
+            window.sbAskIrreversible({ question: q, ok: act === "rotate" ? t.rotate : t.remove }).then(function (okp) {
+              if (!okp) return;
+              if (act === "rotate") {
+                var list = readAll();
+                for (var i = 0; i < list.length; i++) {
+                  if (list[i].id === id) { list[i].counter = (list[i].counter || 0) + 1; break; }
+                }
+                writeAll(list);
+                delete shown[id];
+                render(win);
+                say(t.rotated);
+                return;
+              }
+              writeAll(readAll().filter(function (r) { return r.id !== id; }));
+              delete shown[id];
+              render(win);
+            });
             return;
-          }
-          if (act === "remove") {
-            writeAll(readAll().filter(function (r) { return r.id !== id; }));
-            delete shown[id];
-            render(win);
           }
         });
       });

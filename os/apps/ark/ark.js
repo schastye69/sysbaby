@@ -106,6 +106,7 @@
       unpacking: "Opening… this takes a few seconds: the word is stretched just as in the lock.",
       badWord: "This word does not open the cargo. If the lock had a second key, it does not work in an ark.",
       unpackFail: "The cargo opened, but it could not be put in place: {why}",
+      mergeAsk: "Lay the cargo into this system? What it brings lands on top of what is here, and this cannot be taken apart again.",
       unpacked: "Your things are here (parts: {n}). The lock is the same: it opens with the same word.",
       unpackedLocked: "Your things are here (parts: {n}). They settled under this copy's lock.",
       copyLimits: [
@@ -167,6 +168,7 @@
       unpacking: "Открываю… это займёт несколько секунд: слово растягивается так же, как в замке.",
       badWord: "Это слово груз не открывает. Если у замка был второй ключ — в ковчеге он не работает.",
       unpackFail: "Груз открылся, но разложить его не вышло: {why}",
+      mergeAsk: "Разложить груз в эту систему? Привезённое ляжет поверх того, что здесь есть, и обратно это не разобрать.",
       unpacked: "Вещи на месте (частей: {n}). Замок — тот же: открывается тем же словом.",
       unpackedLocked: "Вещи на месте (частей: {n}). Они легли под замок этой копии.",
       copyLimits: [
@@ -228,6 +230,7 @@
       unpacking: "Avan… see võtab mõne sekundi: sõna venitatakse samamoodi nagu lukus.",
       badWord: "See sõna ei ava lasti. Kui lukul oli teine võti, laevas see ei tööta.",
       unpackFail: "Last avanes, kuid seda ei õnnestunud paigutada: {why}",
+      mergeAsk: "Kas paigutada last sellesse süsteemi? Toodu läheb siinse peale ja seda ei saa enam lahti võtta.",
       unpacked: "Sinu asjad on kohal (osi: {n}). Lukk on sama: avaneb sama sõnaga.",
       unpackedLocked: "Sinu asjad on kohal (osi: {n}). Need asusid selle koopia luku alla.",
       copyLimits: [
@@ -604,12 +607,19 @@
     var V = window.sbVault;
     V.openExport(node.textContent, word).then(function (plain) {
       if (!plain) { busy = null; err = t.badWord; rerender(); return null; }
-      var res = window.sbImportProfile ? window.sbImportProfile(plain, { mode: "merge", reload: false }) : null;
-      if (!res || !res.ok) { busy = null; err = fill(t.unpackFail, { why: (res && res.error) || "?" }); rerender(); return null; }
-      setFlag("unpacked");
-      if (V.isLocked()) return { n: res.count, relocked: false };
-      return V.lock(word).then(function () { return V.unlock(word); }).then(function (okp) {
-        return { n: res.count, relocked: !!okp };
+      /* Слияние ложится поверх того, что было, и назад не разбирается: в
+         систему, где стоит замок, — только словом ЭТОГО мира (D-350). Слово
+         груза — другое слово, оно открыло лишь груз. */
+      var door = V.isLocked() ? (window.sbAskIrreversible ? window.sbAskIrreversible({ question: t.mergeAsk }) : Promise.resolve(false)) : Promise.resolve(true);
+      return door.then(function (yes) {
+        if (!yes) { busy = null; err = ""; rerender(); return null; }
+        var res = window.sbImportProfile ? window.sbImportProfile(plain, { mode: "merge", reload: false }) : null;
+        if (!res || !res.ok) { busy = null; err = fill(t.unpackFail, { why: (res && res.error) || "?" }); rerender(); return null; }
+        setFlag("unpacked");
+        if (V.isLocked()) return { n: res.count, relocked: false };
+        return V.lock(word).then(function () { return V.unlock(word); }).then(function (okp) {
+          return { n: res.count, relocked: !!okp };
+        });
       });
     }).then(function (r) {
       if (!r) return;

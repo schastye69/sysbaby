@@ -905,11 +905,25 @@
     var clearAll = host.querySelector("#stClearAll");
     if (clearAll) {
       clearAll.addEventListener("click", function () {
-        window.sbAsk({ question: t("set.privacy.clearConfirm"), ok: t("ask.clear"), danger: true }).then(function (yes) {
+        if (typeof window.sbAskIrreversible !== "function") return;
+        /* Навсегда — при замке только словом (D-350), без замка своим голосом. */
+        window.sbAskIrreversible({ question: t("set.privacy.clearConfirm"), ok: t("ask.clear") }).then(function (yes) {
           if (!yes) return;
+          /* ── ПРИ ЗАМКЕ ОЧИСТКА ЗАКРЫВАЕТ СЕАНС (D-350, нашёл закон) ────────
+             Открытый мир живёт в памяти сеанса, а на диске — конвертами. Прежде
+             очистка стирала конверты и запись замка, а память оставалась: вещи
+             «удалённого» мира читались дальше, и сеанс писал новые конверты
+             без замка — мусор, который никто не откроет. Теперь с этого мига
+             система не пишет ничего (sbVanishing, D-174), чтение говорит
+             правду диска, и сеанс закрывается: система открывается заново. */
+          var V = window.sbVault;
+          var sealed = !!(V && V.isLocked && V.isLocked());
+          if (sealed) window.sbVanishing = true;
           clearNamespace(localStorage);
           clearNamespace(typeof sessionStorage !== "undefined" ? sessionStorage : null);
-          toast(t("set.privacy.clearedTitle"), t("set.privacy.clearedBody"));
+          toast(t("set.privacy.clearedTitle"), t(sealed ? "set.privacy.clearedLocked" : "set.privacy.clearedBody"));
+          /* ПОСТОЯННАЯ: две секунды — прочесть извещение до того, как сеанс закроется. */
+          if (sealed) setTimeout(function () { location.reload(); }, 2000);
         });
       });
     }
@@ -1126,10 +1140,9 @@
         toast(t("set.import.failTitle"), t("set.import.newer"));
         return;
       }
-      /* Вопрос своим голосом (D-335), а не плашкой браузера. */
-      window.sbAsk({ question: t("set.import.confirm"), ok: t("ask.replace"), danger: true }).then(function (yes) {
-        if (yes) applyImport(envelope);
-      });
+      /* Замена необратима: при замке — слово (D-350), без замка — вопрос
+         своим голосом (D-335), а не плашкой браузера. */
+      askReplace(envelope);
     };
     reader.readAsText(file);
   }
@@ -1152,14 +1165,19 @@
           toast(t("set.import.failTitle"), t("set.import.sealedWrong"));
           return;
         }
-        window.sbAsk({ question: t("set.import.confirm"), ok: t("ask.replace"), danger: true }).then(function (yes) {
-          if (yes) applyImport(envelope);
-        });
+        askReplace(envelope);
       }, function () { toast(t("set.import.failTitle"), t("set.import.sealedWrong")); });
     });
   }
+  /* Один вопрос «заменить?» для открытой и запечатанной копии (D-350). */
+  function askReplace(envelope) {
+    if (typeof window.sbAskIrreversible !== "function") return;
+    window.sbAskIrreversible({ question: t("set.import.confirm"), ok: t("ask.replace") }).then(function (yes) {
+      if (yes) applyImport(envelope);
+    });
+  }
   function applyImport(envelope) {
-    /* Заменяется только после согласия — вопрос задан в importProfile. */
+    /* Заменяется только после согласия — вопрос задан в askReplace. */
     {
       /* Shell signature is sbImportProfile(textOrObject, {mode, profileId?, reload?})
        * — an options object, not a bare mode string (os-shell.md §1.5). */

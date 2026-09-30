@@ -96,14 +96,45 @@
     if (!V || !V.isLocked || !V.isLocked()) return Promise.resolve(true);
     if (V.presence && V.presence.fresh()) return Promise.resolve(true);
     if (!V.presence) return Promise.resolve(false);
+    return wordWindow(V, null);
+  };
+
+  /* ── СЛОВО ПЕРЕД КАЖДЫМ НЕОБРАТИМЫМ · решение D-350 ────────────────────────
+     ПОВОД — основатель 29.09.2026: «при нажатии „стереть всё и уйти“
+     пользователю необходимо ввести пароль… сколько ещё похожих недоработок —
+     устранить». При стоящем замке стирание, удаление всех данных, замена при
+     импорте, «Заглушить всё», «Забыть место» и «Новый пароль», слияние груза
+     и «никогда» у самозапирания шли без слова.
+     Теперь при замке необратимое спрашивает слово ВСЕГДА — свежее
+     подтверждение (D-308) здесь не пропускает: оно держится две минуты ради
+     показа пароля, а стереть за эти две минуты мог бы кто угодно. Только
+     слово: ключ устройства отвечает на касание пальца, а необратимое просит
+     того, что знает человек. Что именно пропадёт, сказано в том же окне
+     (opts.question). Без замка слова нет — вопрос своим голосом (D-335).
+     Обещание true/false. Охраняется tools/irreversible-word-check.mjs. */
+  window.sbAskIrreversible = function (opts) {
+    opts = opts || {};
+    var V = window.sbVault;
+    if (!V || !V.isLocked || !V.isLocked()) {
+      if (typeof window.sbAsk !== "function") return Promise.resolve(false);
+      return window.sbAsk({ question: opts.question, ok: opts.ok, danger: true }).then(function (yes) { return !!yes; });
+    }
+    if (!V.presence || !V.isOpen || !V.isOpen()) return Promise.resolve(false);
+    return wordWindow(V, { question: opts.question || "" });
+  };
+
+  /* Окно слова — одно на оба вопроса. irr — необратимое: свой заголовок, что
+     пропадёт, и никакого ключа устройства. */
+  function wordWindow(V, irr) {
     return new Promise(function (resolve) {
       var back = doc.createElement("div");
       back.className = "sb-confirm-back";
       back.setAttribute("role", "dialog"); back.setAttribute("aria-modal", "true");
-      var canDev = V.presence.canDevice && V.presence.canDevice();
-      back.innerHTML = '<div class="sb-confirm">' +
-        '<h3>' + esc(tr("confirm.title")) + "</h3>" +
-        '<p class="sb-confirm-why">' + esc(tr("confirm.why")) + "</p>" +
+      var canDev = !irr && V.presence.canDevice && V.presence.canDevice();
+      back.innerHTML = '<div class="sb-confirm' + (irr ? " sb-confirm-irr" : "") + '">' +
+        '<h3>' + esc(tr(irr ? "confirm.irrTitle" : "confirm.title")) + "</h3>" +
+        (irr && irr.question ? '<p class="sb-confirm-what">' + esc(irr.question) + "</p>" : "") +
+        '<p class="sb-confirm-why">' + esc(tr(irr ? "confirm.irrWhy" : "confirm.why")) + "</p>" +
         '<input type="password" id="sbConfirmWord" autocomplete="current-password" aria-label="' + esc(tr("confirm.word")) + '" placeholder="' + esc(tr("confirm.word")) + '">' +
         '<p class="sb-confirm-err" id="sbConfirmErr" role="alert"></p>' +
         '<div class="sb-confirm-acts">' +
@@ -114,18 +145,27 @@
       doc.body.appendChild(back);
       var word = back.querySelector("#sbConfirmWord");
       var err = back.querySelector("#sbConfirmErr");
-      var done = false;
+      var done = false, asking = false;
+      var go = back.querySelector("#sbConfirmGo");
       function finish(v) { if (done) return; done = true; if (back.parentNode) back.parentNode.removeChild(back); resolve(v); }
+      /* Промах отвечается с паузой (D-350): пока ответа нет, второе слово не
+         отправляется — кнопка ждёт вместе с человеком. */
       function tryWord() {
         var w = word ? word.value : "";
+        if (asking) return;
         if (!w) { if (word) word.focus(); return; }
+        asking = true;
+        if (go) go.disabled = true;
         V.presence.byWord(w).then(function (okp) {
+          asking = false;
+          if (go) go.disabled = false;
           if (okp) { finish(true); return; }
-          if (err) err.textContent = tr("confirm.wrong");
+          var shut = V.presence.shutting && V.presence.shutting();
+          if (err) err.textContent = tr(shut ? "confirm.shut" : "confirm.wrong");
+          if (shut) { if (go) go.disabled = true; if (word) word.disabled = true; return; }
           if (word) { word.value = ""; word.focus(); }
         });
       }
-      var go = back.querySelector("#sbConfirmGo");
       if (go) go.addEventListener("click", tryWord);
       if (word) word.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); tryWord(); } });
       var dev = back.querySelector("#sbConfirmDev");
@@ -138,7 +178,7 @@
       back.addEventListener("pointerdown", function (ev) { if (ev.target === back) finish(false); });
       if (word) setTimeout(function () { word.focus(); }, 60);
     });
-  };
+  }
 
   /* ===================================================== 1. shortcuts §6.1 */
   /* The chord is the same everywhere; what it does is a sentence, so it is a
@@ -1149,6 +1189,9 @@
           '<p class="panel-copy dim">' + esc(tr("lock.hwWhat")) + "</p>" +
           '<p class="panel-copy" id="sbLockHwState">' + esc(hwStateLine(V)) + "</p>" : "") +
         idleRow() +
+        /* Что пропадёт при снятии замка — сказано до нажатия (D-350). Строка
+           одна при любом состоянии замка: есть ли второй мир, она не говорит. */
+        '<p class="panel-copy dim" id="sbLockRemoveWhat">' + esc(tr("lock.removeWhat")) + "</p>" +
         '<div class="lock-acts">' +
           '<button type="button" class="btn ghost" id="sbLockChange">' + esc(tr("lock.change")) + "</button>" +
           (V.strengthen && V.strong && !V.strong() ? '<button type="button" class="btn ghost" id="sbLockStrong">' + esc(tr("lock.strong")) + "</button>" : "") +
@@ -1417,9 +1460,17 @@
     });
     var nowBtn = body.querySelector("#sbLockNow");
     if (nowBtn) nowBtn.addEventListener("click", function () { window.location.reload(); });
+    /* «Никогда» снимает самозапирание — при замке только словом (D-350);
+       отмена возвращает прежний выбор, а не оставляет в поле неправду. */
     var idleSel = body.querySelector("#sbLockIdle");
     if (idleSel && window.sbIdleLock) idleSel.addEventListener("change", function () {
-      window.sbIdleLock.set(idleSel.value);
+      var want = idleSel.value;
+      if (Number(want) > 0 || !window.sbAskIrreversible) { window.sbIdleLock.set(want); return; }
+      var was = window.sbIdleLock.minutes();
+      window.sbAskIrreversible({ question: tr("lock.idleNeverAsk") }).then(function (okp) {
+        if (okp) { window.sbIdleLock.set(want); return; }
+        idleSel.value = String(was);
+      });
     });
   }
 
@@ -1585,12 +1636,23 @@
       window.sbVanish({ deep: false });
     });
 
-    /* ── А КНОПКА, КОТОРУЮ НЕЛЬЗЯ ОТМЕНИТЬ, ПЕРЕСПРАШИВАЕТ ВСЕГДА ────────── */
+    /* ── А КНОПКА, КОТОРУЮ НЕЛЬЗЯ ОТМЕНИТЬ, ПЕРЕСПРАШИВАЕТ ВСЕГДА ──────────
+       При замке — словом (D-350): второе касание чужой руки стирало всё.
+       Без замка слова нет — прежнее двойное касание. */
     var wipe = body.querySelector("#sbAccWipe");
     if (wipe) {
       var armed = false, disarm = null;
       wipe.addEventListener("click", function () {
         if (!window.sbVanish) return;
+        var V = window.sbVault;
+        if (V && V.isLocked && V.isLocked() && window.sbAskIrreversible) {
+          wipe.disabled = true;
+          window.sbAskIrreversible({ question: tr("acc.wipeSub") }).then(function (okp) {
+            if (!okp) { wipe.disabled = false; return; }
+            window.sbVanish({ deep: true });
+          });
+          return;
+        }
         if (!armed) {
           armed = true;
           say(tr("acc.wipeAsk"));
