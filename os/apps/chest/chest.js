@@ -95,8 +95,8 @@
       monthAgo: "a month ago", monthsAgo: "{n} months ago", yearAgo: "a year ago", yearsAgo: "{n} years ago",
       layoutLead: "The windows as they stand — which are open and where.", layoutSave: "Save this arrangement", layoutBack: "Bring it back", layoutSaved: "Saved: {n} windows, {when}.", layoutNone: "Nothing saved yet.",
       rememberLine: "Day {n} with your system · {k} chests opened. Missed days took nothing from you: the chest waited.",
-      keyLead: "Your lock and your envelopes, as they are right now.", keyLocked: "lock set, session open", keyShut: "lock set, session closed", keyNone: "no lock — the copy would be plain text",
-      keyEnvelopes: "{n} envelopes sealed on this disk", keyLast: "last copy: {when}", keyNever: "no copy saved yet", keySave: "Save a sealed copy", keySaved: "Saved: {name}",
+      keyLead: "Your lock and your carrier, as they are right now.", keyLocked: "lock set, session open", keyShut: "lock set, session closed", keyNone: "no lock — the copy would be plain text",
+      keyCarrier: "a sealed carrier of {mb} MiB on this disk", keyLast: "last copy: {when}", keyNever: "no copy saved yet", keySave: "Save a sealed copy", keySaved: "Saved: {name}",
       tidyLead: "Icons back to the grid, windows in a cascade — and one tap to put it all back.", tidyDo: "Tidy up", tidyUndo: "Put it back", tidyDone: "Moved {i} icons and {w} windows.", tidyNothing: "Nothing to tidy.",
       secretHint: "The terminal knows one more word than its help admits.",
       shotLead: "A real picture of the desk, saved to your device.", shotDo: "Take a snapshot", shotDone: "Saved: {name}", shotNo: "This browser cannot capture the screen — nothing was pretended.", shotRefused: "The screen was not shared — nothing was saved.",
@@ -106,7 +106,7 @@
       breathLead: "One minute: in, hold, out, rest. Any touch ends it early.", breathDo: "Breathe one minute", breathIn: "breathe in", breathHold: "hold", breathOut: "breathe out", breathRest: "rest", breathLeave: "touch anywhere to leave", breathDone: "One minute of breath. Nothing was measured.",
       firstLead: "Where it began.", firstBorn: "You began on {date} at {time} — day {n} today.", firstNote: "Your first note, {date}:", firstNone: "No notes yet — the chest invents nothing. Your first note will stand here.",
       mapLead: "Map of days", mapLine: "Days with the system: {n} · with a chest opened: {k}. Empty dots are just empty days: nothing is lost, nothing is owed.",
-      mileNote: "Day {n} with {name}.\n\n{notes} notes, {words} words, {envelopes} envelopes sealed, {chests} chests opened. Nothing here has left this device.\n\n— your system, on a round day",
+      mileNote: "Day {n} with {name}.\n\n{notes} notes, {words} words, {chests} chests opened. Nothing here leaves this device on its own — only what you send yourself.\n\n— your system, on a round day",
       morningTitle: "Good morning, {name}", morningLine: "Day {n} with your system. The night was spent in Ember; your room returns in {m} minutes.",
       line: {
         mood: "The room «{room}» is now among your rooms.",
@@ -145,7 +145,7 @@
         letter: "Write below. It comes back in {d} days.",
         systemletter: "A letter is in your Notes — read it there."
       },
-      sysLetter: "Dear {name},\n\nthis is the system you keep. We have been together {days} days. In that time you wrote {notes} notes and {words} words, and {envelopes} envelopes stand sealed on this disk. You opened {chests} chests.\n\nNothing here has left this device. Nothing here will.\n\n— your system, from the chest"
+      sysLetter: "Dear {name},\n\nthis is the system you keep. We have been together {days} days. In that time you wrote {notes} notes and {words} words. You opened {chests} chests.\n\nNothing here leaves this device on its own — only what you send yourself.\n\n— your system, from the chest"
     },
     ru: {
       title: "Сундук", label: "Сундук",
@@ -174,8 +174,8 @@
       monthAgo: "месяц назад", monthsAgo: "{n} мес. назад", yearAgo: "год назад", yearsAgo: "{n} г. назад",
       layoutLead: "Окна как они стоят — какие открыты и где.", layoutSave: "Сохранить расклад", layoutBack: "Вернуть", layoutSaved: "Сохранено: окон {n}, {when}.", layoutNone: "Пока ничего не сохранено.",
       rememberLine: "День {n} с вашей системой · открыто {k}. Пропущенные дни ничего не отняли: сундук ждал.",
-      keyLead: "Ваш замок и ваши конверты — как они есть сейчас.", keyLocked: "замок стоит, сеанс открыт", keyShut: "замок стоит, сеанс закрыт", keyNone: "замка нет — копия будет открытым текстом",
-      keyEnvelopes: "конвертов запечатано на этом диске: {n}", keyLast: "последняя копия: {when}", keyNever: "копия ещё не сохранялась", keySave: "Сохранить запечатанную копию", keySaved: "Сохранено: {name}",
+      keyLead: "Ваш замок и ваш носитель — как они есть сейчас.", keyLocked: "замок стоит, сеанс открыт", keyShut: "замок стоит, сеанс закрыт", keyNone: "замка нет — копия будет открытым текстом",
+      keyCarrier: "запечатанный носитель на этом диске: {mb} МиБ", keyLast: "последняя копия: {when}", keyNever: "копия ещё не сохранялась", keySave: "Сохранить запечатанную копию", keySaved: "Сохранено: {name}",
       tidyLead: "Значки на сетку, окна лесенкой — и одно касание, чтобы вернуть всё как было.", tidyDo: "Прибрать", tidyUndo: "Вернуть как было", tidyDone: "Переставлено: значков {i}, окон {w}.", tidyNothing: "Прибирать нечего.",
       secretHint: "Терминал знает на одно слово больше, чем признаёт его help.",
       shotLead: "Настоящая картинка стола, сохранённая на устройство.", shotDo: "Сделать снимок", shotDone: "Сохранено: {name}", shotNo: "Этот браузер не умеет снимать экран — ничего не изображалось.", shotRefused: "Экран не был показан — ничего не сохранено.",
@@ -185,7 +185,7 @@
       breathLead: "Минута: вдох, задержка, выдох, пауза. Любое касание заканчивает раньше.", breathDo: "Минуту дышать", breathIn: "вдох", breathHold: "задержка", breathOut: "выдох", breathRest: "пауза", breathLeave: "коснитесь, чтобы выйти", breathDone: "Минута дыхания. Ничего не измерялось.",
       firstLead: "Где всё началось.", firstBorn: "Вы начали {date} в {time} — сегодня день {n}.", firstNote: "Ваша первая запись, {date}:", firstNone: "Записей пока нет — сундук ничего не выдумывает. Первая запись встанет здесь.",
       mapLead: "Карта дней", mapLine: "Дней с системой: {n} · с открытым сундуком: {k}. Пустые точки — просто пустые дни: ничего не потеряно и никто ничего не должен.",
-      mileNote: "День {n} с {name}.\n\n{notes} записей, {words} слов, {envelopes} конвертов запечатано, {chests} сундуков открыто. Ничто отсюда не покинуло это устройство.\n\n— ваша система, в круглый день",
+      mileNote: "День {n} с {name}.\n\n{notes} записей, {words} слов, {chests} сундуков открыто. Ничто отсюда не уходит с этого устройства само — только то, что вы отправите сами.\n\n— ваша система, в круглый день",
       morningTitle: "Доброе утро, {name}", morningLine: "День {n} с вашей системой. Ночь прошла в Углях; ваша комната вернётся через {m} мин.",
       line: {
         mood: "Комната «{room}» теперь среди ваших комнат.",
@@ -224,7 +224,7 @@
         letter: "Напишите ниже. Оно вернётся через {d} дней.",
         systemletter: "Письмо лежит в Записях — прочтите его там."
       },
-      sysLetter: "Дорогой {name},\n\nэто система, которую вы держите. Мы вместе {days} дн. За это время вы написали {notes} записей и {words} слов, и {envelopes} конвертов стоят запечатанными на этом диске. Вы открыли {chests} сундуков.\n\nНичто отсюда не покидало это устройство. И не покинет.\n\n— ваша система, из сундука"
+      sysLetter: "Дорогой {name},\n\nэто система, которую вы держите. Мы вместе {days} дн. За это время вы написали {notes} записей и {words} слов. Вы открыли {chests} сундуков.\n\nНичто отсюда не уходит с этого устройства само — только то, что вы отправите сами.\n\n— ваша система, из сундука"
     },
     ee: {
       title: "Laegas", label: "Laegas",
@@ -253,8 +253,8 @@
       monthAgo: "kuu aega tagasi", monthsAgo: "{n} kuud tagasi", yearAgo: "aasta tagasi", yearsAgo: "{n} aastat tagasi",
       layoutLead: "Aknad nii, nagu need seisavad — millised on lahti ja kus.", layoutSave: "Salvesta paigutus", layoutBack: "Too tagasi", layoutSaved: "Salvestatud: {n} akent, {when}.", layoutNone: "Veel midagi pole salvestatud.",
       rememberLine: "Päev {n} sinu süsteemiga · avatud {k}. Vahele jäänud päevad ei võtnud midagi: laegas ootas.",
-      keyLead: "Sinu lukk ja sinu ümbrikud — nii nagu need praegu on.", keyLocked: "lukk peal, seanss avatud", keyShut: "lukk peal, seanss suletud", keyNone: "lukku pole — koopia oleks lihttekst",
-      keyEnvelopes: "sellel kettal pitseeritud ümbrikke: {n}", keyLast: "viimane koopia: {when}", keyNever: "koopiat pole veel salvestatud", keySave: "Salvesta pitseeritud koopia", keySaved: "Salvestatud: {name}",
+      keyLead: "Sinu lukk ja sinu kandja — nii nagu need praegu on.", keyLocked: "lukk peal, seanss avatud", keyShut: "lukk peal, seanss suletud", keyNone: "lukku pole — koopia oleks lihttekst",
+      keyCarrier: "sellel kettal pitseeritud kandja: {mb} MiB", keyLast: "viimane koopia: {when}", keyNever: "koopiat pole veel salvestatud", keySave: "Salvesta pitseeritud koopia", keySaved: "Salvestatud: {name}",
       tidyLead: "Ikoonid ruudustikku, aknad kaskaadi — ja üks puudutus, et kõik endiseks panna.", tidyDo: "Korrasta", tidyUndo: "Pane endiseks", tidyDone: "Liigutatud: ikoone {i}, aknaid {w}.", tidyNothing: "Pole midagi korrastada.",
       secretHint: "Terminal teab ühe sõna rohkem, kui tema help tunnistab.",
       shotLead: "Laua tõeline pilt, salvestatud seadmesse.", shotDo: "Tee hetkepilt", shotDone: "Salvestatud: {name}", shotNo: "See brauser ei oska ekraani pildistada — midagi ei teeseldud.", shotRefused: "Ekraani ei jagatud — midagi ei salvestatud.",
@@ -264,7 +264,7 @@
       breathLead: "Minut: sisse, hoia, välja, paus. Iga puudutus lõpetab varem.", breathDo: "Hinga üks minut", breathIn: "hinga sisse", breathHold: "hoia", breathOut: "hinga välja", breathRest: "paus", breathLeave: "puuduta, et lahkuda", breathDone: "Minut hingamist. Midagi ei mõõdetud.",
       firstLead: "Kus kõik algas.", firstBorn: "Sa alustasid {date} kell {time} — täna on päev {n}.", firstNote: "Sinu esimene märge, {date}:", firstNone: "Märkmeid veel pole — laegas ei mõtle midagi välja. Esimene märge seisab siin.",
       mapLead: "Päevade kaart", mapLine: "Päevi süsteemiga: {n} · avatud laekaga: {k}. Tühjad täpid on lihtsalt tühjad päevad: midagi pole kadunud ja keegi ei võlgne midagi.",
-      mileNote: "Päev {n} koos {name}.\n\n{notes} märget, {words} sõna, {envelopes} ümbrikku pitseeritud, {chests} laegast avatud. Miski siit pole sellest seadmest lahkunud.\n\n— sinu süsteem, ümmargusel päeval",
+      mileNote: "Päev {n} koos {name}.\n\n{notes} märget, {words} sõna, {chests} laegast avatud. Miski ei lahku siit seadmest iseenesest — ainult see, mille sa ise saadad.\n\n— sinu süsteem, ümmargusel päeval",
       morningTitle: "Tere hommikust, {name}", morningLine: "Päev {n} sinu süsteemiga. Öö möödus Hõõguses; sinu tuba tuleb tagasi {m} minuti pärast.",
       line: {
         mood: "Tuba «{room}» on nüüd sinu tubade seas.",
@@ -303,7 +303,7 @@
         letter: "Kirjuta allpool. See tuleb tagasi {d} päeva pärast.",
         systemletter: "Kiri on sinu Märkmetes — loe seda seal."
       },
-      sysLetter: "Kallis {name},\n\nsee on süsteem, mida sa hoiad. Oleme koos olnud {days} päeva. Selle aja jooksul kirjutasid sa {notes} märget ja {words} sõna ning {envelopes} ümbrikku seisavad sellel kettal pitseerituna. Sa avasid {chests} laegast.\n\nMiski siit pole sellest seadmest lahkunud. Ega lahku.\n\n— sinu süsteem, laekast"
+      sysLetter: "Kallis {name},\n\nsee on süsteem, mida sa hoiad. Oleme koos olnud {days} päeva. Selle aja jooksul kirjutasid sa {notes} märget ja {words} sõna. Sa avasid {chests} laegast.\n\nMiski ei lahku siit seadmest iseenesest — ainult see, mille sa ise saadad.\n\n— sinu süsteem, laekast"
     }
   };
   function T() { return UI[lang()] || UI.en; }
@@ -500,12 +500,11 @@
 
   /* ── ЧИСЛА СИСТЕМЫ — СПРОШЕНЫ, НЕ ЗАПОМНЕНЫ ─────────────────────────── */
   function numbers() {
-    var notes = [], words = 0, envelopes = 0, keys = 0;
+    var notes = [], words = 0, keys = 0;
     try { notes = window.sbNotesStore ? window.sbNotesStore.load() : []; } catch (e) { notes = []; }
     notes.forEach(function (n) { var t = String(n && n.text || "").trim(); if (t) words += t.split(/\s+/).length; });
-    try { envelopes = window.sbSeals ? window.sbSeals.names().length : 0; } catch (e) { envelopes = 0; }
     try { keys = window.sbKeysAll ? window.sbKeysAll().length : 0; } catch (e) { keys = 0; }
-    return { days: daysKept(), notes: notes.length, words: words, envelopes: envelopes, keys: keys, chests: state().opened.length };
+    return { days: daysKept(), notes: notes.length, words: words, keys: keys, chests: state().opened.length };
   }
 
   /* ── ЭХО: ОДНА СВОЯ СТРОЧКА В ДЕНЬ ───────────────────────────────────── */
@@ -551,7 +550,7 @@
   }
   function systemLetter() {
     var n = numbers(), t = T();
-    return fmt(t.sysLetter, { name: username(), days: n.days, notes: n.notes, words: n.words, envelopes: n.envelopes, chests: n.chests });
+    return fmt(t.sysLetter, { name: username(), days: n.days, notes: n.notes, words: n.words, chests: n.chests });
   }
 
   /* ── КОМНАТЫ, КОТОРЫЕ УМЕЕТ ДАТЬ СУНДУК ──────────────────────────────── */
@@ -675,7 +674,7 @@
       var n = numbers();
       io.writeLines([
         "day " + n.days + " with " + username() + ". born " + dateOf(birthMs()) + ".",
-        n.notes + " notes · " + n.words + " words · " + n.envelopes + " envelopes sealed · " + n.keys + " places in keys",
+        n.notes + " notes · " + n.words + " words · " + n.keys + " places in keys",
         n.chests + " chests opened of " + prizes().length + "."
       ]);
     } },
@@ -980,9 +979,11 @@
 
   /* ── КЛЮЧ СОХРАНЁН: СОСТОЯНИЕ ЗАМКА И ЗАПЕЧАТАННАЯ КОПИЯ ─────────────── */
   function keyState() {
-    var V = window.sbVault, out = { locked: false, open: false, envelopes: 0, last: 0 };
+    var V = window.sbVault, out = { locked: false, open: false, mb: 0, last: 0 };
     try { out.locked = !!(V && V.available() && V.isLocked()); out.open = !!(V && V.isOpen()); } catch (e) { /* ignore */ }
-    try { out.envelopes = window.sbSeals ? window.sbSeals.names().length : 0; } catch (e) { out.envelopes = 0; }
+    /* С носителем (D-351) считать «конверты» нечего: записи мира — в одном
+       носителе постоянного размера. Он и называется, если замок стоит. */
+    try { out.mb = (out.locked && window.sbCarrier && window.sbCarrier.tiles()) ? Math.round(window.sbCarrier.size() / 1048576) : 0; } catch (e) { out.mb = 0; }
     try { out.last = (window.sbBackup && window.sbBackup.state && window.sbBackup.state().lastOk) || 0; } catch (e) { out.last = 0; }
     return out;
   }
@@ -1245,7 +1246,7 @@
     MILESTONES.forEach(function (m) {
       if (n < m || st.milestones.indexOf(m) !== -1) return;
       var k = numbers();
-      window.sbAddQuickNote(fmt(T().mileNote, { n: m, name: username(), notes: k.notes, words: k.words, envelopes: k.envelopes, chests: k.chests }), { from: "chest" });
+      window.sbAddQuickNote(fmt(T().mileNote, { n: m, name: username(), notes: k.notes, words: k.words, chests: k.chests }), { from: "chest" });
       st.milestones.push(m); save();
     });
   }
@@ -1577,7 +1578,7 @@
   function keyHtml(t) {
     var k = keyState();
     return '<section class="ch-key"><p class="ch-key-k">' + esc(t.keyLead) + "</p>" +
-      '<p class="ch-key-state">' + esc(k.locked ? (k.open ? t.keyLocked : t.keyShut) : t.keyNone) + " · " + esc(fmt(t.keyEnvelopes, { n: k.envelopes })) + "</p>" +
+      '<p class="ch-key-state">' + esc(k.locked ? (k.open ? t.keyLocked : t.keyShut) : t.keyNone) + (k.mb ? " · " + esc(fmt(t.keyCarrier, { mb: k.mb })) : "") + "</p>" +
       '<p class="ch-key-last">' + esc(k.last ? fmt(t.keyLast, { when: dateOf(k.last) }) : t.keyNever) + "</p>" +
       '<div class="ch-focus-row"><button type="button" class="ch-seal" id="chKeySave">' + esc(t.keySave) + '</button><span class="ch-key-said" id="chKeySaid"></span></div></section>';
   }

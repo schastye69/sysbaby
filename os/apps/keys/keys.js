@@ -8,7 +8,7 @@
  *
  * ГЛАВНОЕ ЗДЕСЬ — ЧЕГО В НЁМ НЕТ. Пароля нет. Для мест, заведённых здесь,
  * он не хранится нигде: выводится из мастер-ключа хранилища, имени места и
- * счётчика. В конверте на диске лежит имя места — не пароль.
+ * счётчика. Под замком на диске лежит имя места — не пароль.
  *   · Красть нечего.
  *   · Терять нечего: новое устройство, то же слово — и всё вернулось.
  *   · Синхронизировать нечего: выводится одинаково везде.
@@ -16,8 +16,8 @@
  * трогая остальные: +1 — и это другой пароль навсегда.
  *
  * И ЧЕГО ЭТО НЕ ДАЁТ, сказано человеку прямо на экране, а не в примечании:
- * пароли, заведённые НЕ здесь, вывести нельзя — их приходится хранить, и для
- * них остаётся обычный конверт. И если мастер-слово утечёт, утечёт всё разом.
+ * пароли, заведённые НЕ здесь, вывести нельзя — их приходится хранить, как
+ * любую запись мира. И если мастер-слово утечёт, утечёт всё разом.
  *
  * Охраняется tools/keys-check.mjs.
  */
@@ -46,7 +46,7 @@
       lead: "Passwords for places you keep. For places created here the password is not stored anywhere — it is derived from your locked vault, on this device, every time.",
       needLock: "Derived keys need the lock. Set it — and the passwords of places made here will not have to be stored at all: they will be derived from the lock.",
       addPlace: "New place", place: "Place", login: "Login or e-mail", note: "Note",
-      modeDerived: "Derived — nothing is stored", modeStored: "My own — kept in an envelope",
+      modeDerived: "Derived — nothing is stored", modeStored: "My own — stored here",
       own: "The password you already have", save: "Save", cancel: "Cancel",
       show: "Show", hide: "Hide", copy: "Copy", copied: "Copied — the clipboard clears itself in 20 seconds",
       rotate: "New password", rotated: "Changed. The old one will never come back.",
@@ -54,7 +54,7 @@
       removeAsk: "Forget {place}? The place and the password it keeps are gone for good.",
       remove: "Forget this place", search: "Search places", empty: "Nothing here yet.", miss: "No places match “{q}”",
       counter: "change", derived: "derived", stored: "stored",
-      honest: "What this cannot do: passwords made elsewhere cannot be derived — those are kept in an envelope like everything else. And one master word opens all of them at once: that is the price of having nothing to steal.",
+      honest: "What this cannot do: passwords made elsewhere cannot be derived — those are stored, like everything else — sealed while the lock stands. And one master word opens all of them at once: that is the price of having nothing to steal.",
             costTitle: "What actually protects all of this",
       costBody: "One attempt at your master word costs {ms} ms on this very device — measured just now, not promised. A machine a thousand times faster still needs {years} to walk through a six-word phrase.",
       costHonest: "And this is the honest part: the strength of the generated password barely matters. Nobody attacks it — they attack the one word you type. Make that one long.",
@@ -66,7 +66,7 @@
       lead: "Пароли мест, которые вы держите. Для мест, заведённых здесь, пароль не хранится нигде — он выводится из вашего запертого хранилища, на этом устройстве, каждый раз заново.",
       needLock: "Выведенным ключам нужен замок. Поставьте его — и пароли мест, заведённых здесь, не придётся хранить вовсе: они будут выводиться из замка.",
       addPlace: "Новое место", place: "Место", login: "Логин или почта", note: "Заметка",
-      modeDerived: "Выведенный — не хранится нигде", modeStored: "Свой — лежит в конверте",
+      modeDerived: "Выведенный — не хранится нигде", modeStored: "Свой — хранится здесь",
       own: "Пароль, который у вас уже есть", save: "Сохранить", cancel: "Отмена",
       show: "Показать", hide: "Скрыть", copy: "Копировать", copied: "Скопировано — буфер сотрётся через 20 секунд",
       rotate: "Новый пароль", rotated: "Сменён. Прежний не вернётся никогда.",
@@ -74,7 +74,7 @@
       removeAsk: "Забыть {place}? Место и пароль, который оно хранит, исчезнут навсегда.",
       remove: "Забыть это место", search: "Поиск по местам", empty: "Здесь пока пусто.", miss: "Нет мест по запросу «{q}»",
       counter: "смена", derived: "выведенный", stored: "хранимый",
-      honest: "Чего это не может: пароли, заведённые не здесь, вывести нельзя — они лежат в конверте, как всё остальное. И одно мастер-слово открывает их все разом: это и есть цена того, что красть нечего.",
+      honest: "Чего это не может: пароли, заведённые не здесь, вывести нельзя — они хранятся, как всё остальное, — запечатанными, пока стоит замок. И одно мастер-слово открывает их все разом: это и есть цена того, что красть нечего.",
             costTitle: "Что на самом деле держит всё это",
       costBody: "Одна попытка подобрать ваше мастер-слово стоит {ms} мс на этом самом устройстве — измерено сейчас, а не обещано. Машине в тысячу раз быстрее на перебор фразы из шести слов нужно {years}.",
       costHonest: "И вот честная часть: стойкость выданного пароля почти ничего не решает. Его никто не подбирает — подбирают то единственное слово, которое вы набираете руками. Сделайте его длинным.",
@@ -86,7 +86,7 @@
       lead: "Kohtade paroolid. Siin loodud kohtade parool ei ole kuskil salvestatud — see tuletatakse lukustatud hoidlast, selles seadmes, iga kord uuesti.",
       needLock: "Tuletatud võtmed vajavad lukku. Pane see — ja siin loodud kohtade paroole ei pea üldse hoidma: need tuletatakse lukust.",
       addPlace: "Uus koht", place: "Koht", login: "Kasutaja või e-post", note: "Märkus",
-      modeDerived: "Tuletatud — ei salvestata kuskil", modeStored: "Oma — hoitakse ümbrikus",
+      modeDerived: "Tuletatud — ei salvestata kuskil", modeStored: "Oma — hoitakse siin",
       own: "Parool, mis sul juba on", save: "Salvesta", cancel: "Loobu",
       show: "Näita", hide: "Peida", copy: "Kopeeri", copied: "Kopeeritud — lõikelaud tühjeneb 20 sekundiga",
       rotate: "Uus parool", rotated: "Muudetud. Vana enam ei naase.",
@@ -94,7 +94,7 @@
       removeAsk: "Kas unustada {place}? Koht ja selle hoitav parool kaovad jäädavalt.",
       remove: "Unusta see koht", search: "Otsi kohti", empty: "Siin pole veel midagi.", miss: "Otsingule „{q}“ ei vasta ükski koht",
       counter: "vahetus", derived: "tuletatud", stored: "hoitud",
-      honest: "Mida see ei suuda: mujal loodud paroole ei saa tuletada — need hoitakse ümbrikus nagu kõik muu. Ja üks peasõna avab need kõik korraga: see ongi hind selle eest, et varastada pole midagi.",
+      honest: "Mida see ei suuda: mujal loodud paroole ei saa tuletada — need hoitakse nagu kõik muu — pitseerituna, kuni lukk seisab. Ja üks peasõna avab need kõik korraga: see ongi hind selle eest, et varastada pole midagi.",
             costTitle: "Mis seda kõike tegelikult hoiab",
       costBody: "Üks katse sinu peasõna ära arvata maksab sellessamas seadmes {ms} ms — mõõdetud praegu, mitte lubatud. Tuhat korda kiiremal masinal kulub kuuesõnalise fraasi läbikäimiseks {years}.",
       costHonest: "Ja aus osa: loodud parooli tugevus ei otsusta peaaegu midagi. Seda ei murra keegi — murtakse seda ühte sõna, mille sa käsitsi kirjutad. Tee see pikaks.",

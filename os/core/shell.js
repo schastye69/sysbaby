@@ -4496,7 +4496,7 @@
      (D-327 для новой системы; D-334 — и для тревожной.) Тревожная система
      рождается пустой, и после открытия вторым словом падала на английский,
      хотя дверь и главная говорили по-русски: смена языка ровно после
-     «другого» слова выдавала её. Язык главной лежит в её конвертах, и
+     «другого» слова выдавала её. Язык главной лежит в её ячейке, и
      тревожная его не читает — поэтому берётся язык двери, как у любой новой
      системы. Своё слово о языке, если оно есть, не трогается.
      Охраняется tools/duress-language-check.mjs. */
@@ -4530,6 +4530,7 @@
     $$("[data-gk]", gate).forEach(function (el) {
       var v = gateText(el.getAttribute("data-gk"));
       if (el.hasAttribute("data-gk-n")) v = v.replace("{n}", el.getAttribute("data-gk-n"));
+      if (el.hasAttribute("data-gk-mb")) v = v.replace("{mb}", el.getAttribute("data-gk-mb"));
       el.textContent = v;
     });
     $$("[data-gk-ph]", gate).forEach(function (el) { el.setAttribute("placeholder", gateText(el.getAttribute("data-gk-ph"))); });
@@ -4554,12 +4555,26 @@
     /* ── ЗА ДИАФРАГМОЙ — НАСТОЯЩЕЕ ПОЛЕ КОНВЕРТОВ (D-216) ──────────────────
        До пароля система не знает о своих записях НИЧЕГО, кроме того, что они
        лежат и сколько их. Ровно это и рисуется: каждая плитка — настоящий
-       конверт с этого диска, её лицо выведено из его байтов. Ни одного
+       кусок носителя (или прежний конверт) с этого диска, её лицо выведено
+       из его байтов. Ни одного
        открытого значения здесь нет и быть не может — ключа ещё нет.
        Поле тёмное и почти неразличимое: это не витрина, а правда о том, где
        человек стоит. */
     var sealCount = 0;
     var fieldHtml = "";
+    /* ── НОСИТЕЛЬ ЗА ДВЕРЬЮ (D-351) ──────────────────────────────────────────
+       С одной дверью записи лежат в носителе фиксированного размера, и дверь
+       говорит о нём: сколько мебибайт и сколько плиток — и что ни одна не
+       читается. Прежние конверты, если остались, названы как прежде. */
+    function sealedLine(n) {
+      var C = window.sbCarrier, tiles = C ? C.tiles() : 0;
+      if (tiles) {
+        var mb = String(Math.round(C.size() / 1048576));
+        return '<p class="vg-sealed" data-gk="lock.sealedCarrier" data-gk-n="' + tiles + '" data-gk-mb="' + mb + '">' +
+          escapeHtml(gateText("lock.sealedCarrier").replace("{n}", String(tiles)).replace("{mb}", mb)) + "</p>";
+      }
+      return '<p class="vg-sealed" data-gk="lock.sealed" data-gk-n="' + n + '">' + escapeHtml(gateText("lock.sealed").replace("{n}", String(n))) + "</p>";
+    }
     try {
       if (window.sbSeals) {
         sealCount = window.sbSeals.names().length;
@@ -4631,7 +4646,7 @@
            а миллисекунды замеряются на этой попытке. Появляется ПОСЛЕ, а не
            до: обещать цену заранее значило бы обещать. */
         '<p class="vg-cost" id="sbVaultCost" hidden></p>' +
-        (sealCount ? '<p class="vg-sealed" data-gk="lock.sealed" data-gk-n="' + sealCount + '">' + escapeHtml(gateText("lock.sealed").replace("{n}", String(sealCount))) + "</p>" : "") +
+        (sealCount ? sealedLine(sealCount) : "") +
       "</div>";
     doc.body.appendChild(gate);
     gate.setAttribute("lang", gateLang() === "ee" ? "et" : gateLang());
@@ -4643,13 +4658,37 @@
     });
     /* Поле оживает СРАЗУ и живёт, пока стоит дверь: это не заставка, а
        диск, который лежит за ней прямо сейчас. */
-    var fieldCanvas = gate.querySelector("#sbVaultField");
-    if (fieldCanvas && window.sbSeals) {
+    function liveField() {
+      var fieldCanvas = gate.querySelector("#sbVaultField");
+      if (!fieldCanvas || !window.sbSeals) return;
       try {
         window.sbSeals.paint(fieldCanvas, window.sbSeals.plan(), { phase: 0 });
         window.sbSeals.animate(fieldCanvas, function () { return window.sbSeals.plan(); },
           { every: gate.classList.contains("vg-work") ? 60 : 110 });
       } catch (e) { /* ignore */ }
+    }
+    liveField();
+    /* Носитель читается из базы не сразу: поле и строка встают, когда он
+       прочитан, — и только если дверь ещё стоит. */
+    if (!sealCount && window.sbCarrier && window.sbSeals) {
+      window.sbCarrier.load().then(function (has) {
+        if (!has || !gate.parentNode || gate.querySelector("#sbVaultField")) return;
+        var n = window.sbSeals.names().length;
+        if (!n) return;
+        var cv = doc.createElement("canvas");
+        cv.className = "vg-field"; cv.id = "sbVaultField"; cv.setAttribute("aria-hidden", "true");
+        gate.insertBefore(cv, gate.firstChild);
+        var box = gate.querySelector(".vg-box");
+        var err = gate.querySelector("#sbVaultErr");
+        if (box) {
+          var tmp = doc.createElement("div");
+          tmp.innerHTML = sealedLine(n);
+          var line = tmp.firstChild;
+          var cost = gate.querySelector("#sbVaultCost");
+          box.insertBefore(line, cost ? cost.nextSibling : (err ? err.nextSibling : null));
+        }
+        liveField();
+      });
     }
 
     var field = gate.querySelector("#sbVaultPass");
@@ -4809,7 +4848,7 @@
   /* ── ВИД СИСТЕМЫ ВОССТАНАВЛИВАЕТСЯ ОДНОЙ ФУНКЦИЕЙ (D-164) ────────────────
      Раньше это делал только загрузчик, и одного раза хватало: настройки
      лежали открыто и были доступны с первого мига. С поправкой основателя
-     («абсолютно все данные должны быть не видны!») они лежат в конверте, и до
+     («абсолютно все данные должны быть не видны!») они лежат под замком, и до
      пароля система не знает ни обоев, ни языка. Значит восстановление вида
      случается ДВАЖДЫ — при загрузке и при открытии замка, — а раз так, оно
      обязано быть ОДНОЙ функцией: два места разошлись бы в первый же выпуск.
@@ -5267,7 +5306,7 @@
        нет — и прежде она молча брала английский: русская дверь, английский
        стол. Теперь система без своего языка берёт язык двери; система со
        своим языком говорит на своём — дверь его не трогает. Язык системы —
-       одно слово устройства (sysbaby.i18n.lang, под замком — в конверте):
+       одно слово устройства (sysbaby.i18n.lang, под замком — в ячейке):
        его спрашивает полоса, его пишет выбор в Настройках. Выбор у двери
        по-прежнему живёт в памяти страницы, пока человек не вошёл: язык
        записывается, как любое слово системы, в миг входа — и только если

@@ -300,12 +300,15 @@
            когда оно перестаёт быть правдой. Теперь терминал не обещает — он
            СПРАШИВАЕТ У ОПИСИ и называет число.
 
-           И второе. Замок платит обманками за то, чтобы число ключей было
-           постоянным: 33 и при пустом профиле, и при сорока записях. А вес
-           обманками не замаскирован — 17 КБ пусто, 260 КБ полно. Печатать
-           его под замком значило отменять одной строкой всё, за что
-           заплачено. Под замком вес не называется, и СКАЗАНО ПОЧЕМУ:
-           пропавшее число неотличимо от сломанной команды.
+           И второе. Под замком число ключей постоянно, а вес слов не
+           называется. До v177 число держали обманки, а вес ими не был
+           замаскирован (17 КБ пусто, 260 КБ полно) — печатать его значило
+           отменять одной строкой всё, за что заплачено. С носителем (D-351)
+           записи лежат в IndexedDB в носителе одного размера, и ключей
+           хранилища под замком — одни служебные. Вес слов под замком
+           по-прежнему не называется: терминал его не знает, а число,
+           названное за них, было бы ложью. И СКАЗАНО ПОЧЕМУ: пропавшее число
+           неотличимо от сломанной команды.
            Охраняется tools/terminal-truth-check.mjs (D-228). */
         case "storage": {
           var count = 0, bytes = 0;
@@ -321,8 +324,8 @@
 
           var shut = !!(window.sbVault && typeof window.sbVault.isLocked === "function" && window.sbVault.isLocked());
           if (shut) {
-            write("sysbaby.* keys: " + count + " — the same number whether this profile holds nothing or forty notes. the decoys see to that.");
-            write("the weight is not told while the lock is on: the count is camouflaged, the weight is not. saying it would undo what the decoys pay for.", "term-dim");
+            write("sysbaby.* keys: " + count + " — the same number whether this profile holds nothing or forty notes. the records live in one sealed carrier of one size.");
+            write("the weight of your words is not told while the lock is on: they are sealed in the carrier, and this terminal cannot count them from outside.", "term-dim");
           } else {
             write("sysbaby.* keys: " + count + " · ~" + (bytes >= 1024 ? Math.round(bytes / 1024) + " KB" : bytes + " B") + " of text");
           }

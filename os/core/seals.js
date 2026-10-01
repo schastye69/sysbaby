@@ -8,7 +8,7 @@
  * бы «настоящими». Вынесено.
  *
  * ЧТО ЗДЕСЬ ЕСТЬ И ЧЕГО НЕТ. Есть чтение диска сырыми средствами и вывод
- * лица конверта из его байтов. НЕТ ключей, нет расшифровки, нет ничего, что
+ * лица плитки носителя (или прежнего конверта) из её байтов. НЕТ ключей, нет расшифровки, нет ничего, что
  * требовало бы открытого замка: за дверью, до пароля, система не знает о
  * своих записях ничего, кроме того, что они лежат и сколько их. Именно это и
  * рисуется.
@@ -22,20 +22,32 @@
 
   /* Сырое чтение: окно и дверь обязаны видеть ровно то, что увидел бы чужой
      с этим диском в руках, а не то, что система готова показать. */
+  /* ── НОСИТЕЛЬ — ПЛИТКАМИ (D-351) ─────────────────────────────────────────
+     С одной дверью записи лежат не конвертами, а в носителе фиксированного
+     размера. Он рисуется плитками: «carrier:N» — N-я плитка его НАСТОЯЩИХ
+     байтов (sbCarrier.tile). Остаток прежних конвертов, если он есть,
+     рисуется рядом, как прежде. */
+  var TILE = "carrier:";
   function rawGet(k) {
+    if (String(k).indexOf(TILE) === 0) {
+      var C = window.sbCarrier;
+      return C ? C.tile(parseInt(String(k).slice(TILE.length), 10) || 0) : null;
+    }
     try {
       var g = Object.getOwnPropertyDescriptor(Storage.prototype, "getItem").value;
       return g.call(window.localStorage, k);
     } catch (e) { return null; }
   }
   function names() {
-    var out = [], i, k;
+    var out = [], tiles = [], i, k;
     try {
       var key = Object.getOwnPropertyDescriptor(Storage.prototype, "key").value;
       var len = Object.getOwnPropertyDescriptor(Storage.prototype, "length").get.call(window.localStorage);
       for (i = 0; i < len; i++) { k = key.call(window.localStorage, i); if (k && k.indexOf(PREFIX) === 0) out.push(k); }
     } catch (e) { /* ignore */ }
-    return out.sort();
+    var n = window.sbCarrier ? window.sbCarrier.tiles() : 0;
+    for (i = 0; i < n; i++) tiles.push(TILE + i);
+    return tiles.concat(out.sort());
   }
 
   /* Одна и та же строка всегда даёт один и тот же рисунок, а изменение хотя
@@ -80,7 +92,7 @@
      дожидаясь, пока основатель упрётся в него на телефоне. Холст стоит одного
      узла вместо трёх тысяч.
      ЧТО НЕ ИЗМЕНИЛОСЬ: рисунок по-прежнему выведен из НАСТОЯЩИХ байтов
-     конверта. Что именно нарисовано, объявляется наружу через plan() —
+     (с v177 — плитки носителя, до того — конверта). Что именно нарисовано, объявляется наружу через plan() —
      закон сверяет список с диском, а пиксели с байтами. */
   var painters = [];
 
@@ -107,7 +119,7 @@
   }
 
   /* Рисуется СТРОКА, а не имя: одним и тем же кодом рисуются и настоящие
-     конверты, и свежий шум. Иначе «отличите» было бы подстроено рисованием,
+     байты носителя, и свежий шум. Иначе «отличите» было бы подстроено рисованием,
      а не свойством шифра. */
   function paintStrings(canvas, bodies, opts) {
     return paintInner(canvas, bodies, opts);
@@ -145,7 +157,7 @@
       var side = Math.max(1, cell - pad * 2);
       var step = side / 4;
       ctx.fillStyle = "hsla(" + f.hue + ", 60%, 62%, " + (f.glow * breath * (o.alpha == null ? 1 : o.alpha)).toFixed(3) + ")";
-      /* Шестнадцать клеток лица — шестнадцать бит, снятых с байтов конверта. */
+      /* Шестнадцать клеток лица — шестнадцать бит, снятых с байтов плитки. */
       for (var k = 0; k < 16; k++) {
         if (!(f.bits >>> k & 1)) continue;
         var bx = cx + pad + (k % 4) * step;
@@ -163,9 +175,9 @@
     var o = opts || {};
     function frame(now) {
       if (stop || !canvas.isConnected) return;
-      /* Чем больше конвертов, тем реже кадр: дыхание поля замедляется, а
+      /* Чем больше клеток, тем реже кадр: дыхание поля замедляется, а
          машина остаётся свободной. Число выведено из замера, а не выбрано:
-         на тысяче конвертов постоянный шаг стоил трети кадров. */
+         на тысяче клеток постоянный шаг стоил трети кадров. */
       var every = (o.every || 84) + Math.round(getList().length / 6);
       if (!document.hidden && now - last > every) {
         last = now;
@@ -192,7 +204,7 @@
     cipher: cipherOf,
     paint: paint,
     paintStrings: paintStrings,
-    /* Свежий шум той же формы, что и настоящий конверт: те же длины, тот же
+    /* Свежий шум той же формы, что и настоящая клетка: те же длины, тот же
        алфавит. Сравнивать разное было бы подлогом. */
     noise: function (sizes) {
       return (sizes || []).map(function (len) {

@@ -6,11 +6,13 @@
  * красивых, дорогих и гипнотизирующие».
  *
  * ЧЕГО ЗДЕСЬ НЕТ, И ЭТО ГЛАВНОЕ. Здесь нет ни одной анимации, придуманной
- * ради красоты. Каждая ячейка решётки — настоящий конверт, лежащий на диске
- * прямо сейчас; её рисунок выведен из его байтов. Когда ячейка переворачи-
- * вается, это значит, что ИМЕННО ЭТОТ конверт только что перезаписан свежими
- * случайными числами. Число конвертов, число пустышек, цена одной попытки —
- * всё спрошено у системы в этот миг, ничего не написано заранее.
+ * ради красоты. Каждая ячейка решётки — настоящий кусок диска, лежащий там
+ * прямо сейчас; её рисунок выведен из его байтов. С одной дверью (D-351)
+ * ячейка решётки — плитка носителя: кусок его настоящих байтов (до v177 —
+ * конверт). Когда плитка
+ * переворачивается, это значит, что ИМЕННО ЭТОТ кусок только что перезаписан
+ * свежими случайными числами. Размер носителя, число плиток, цена одной
+ * попытки — всё спрошено у системы в этот миг, ничего не написано заранее.
  *
  * ПОЧЕМУ ТАК СТРОГО. Просьбу про «шок от анимаций» можно выполнить за вечер и
  * соврать: нарисовать бегущие нули и единицы поверх ничего. Именно так
@@ -30,7 +32,7 @@
 
   /* ЗДЕСЬ СТОЯЛО var PREFIX = приставка конвертов замка — объявленное и НИ
      РАЗУ НЕ ИСПОЛЬЗОВАННОЕ (D-242). Имя claimило место на диске, которого
-     эта комната не трогает: конверты кладут core/seals.js и core/store.js.
+     эта комната не трогает: на диск кладёт core/store.js, рисует core/seals.js.
      Опись прав нашла его первым же прогоном. Комната Замка права на диск не
      имеет и не должна: она показывает состояние, а запирает ядро. */
   var FLIP_STEP = 38;          /* сдвиг между поворотами соседних ячеек, мс */
@@ -47,17 +49,17 @@
   var UI = {
     en: {
       title: "Lock", label: "Lock",
-      lead: "This is not a picture of encryption. Every tile below is a real envelope lying on this disk right now, and its face is drawn from its bytes.",
+      lead: "This is not a picture of encryption. Every tile below is a real piece of the carrier lying on this disk right now, and its face is drawn from its bytes.",
       nolock: "There is nothing to reflect yet: your system is not locked. Set the lock — then this window starts showing your own disk.",
-      onDisk: "On the disk", envelopes: "envelopes", decoys: "of them decoys", real: "real records",
-      stepNote: "The count is always a multiple of {step}. Adding a record does not change it — a decoy makes room. From outside, nobody can tell how much you keep.",
-      turning: "Turning", turnNote: "{at} envelopes are re-sealed with fresh randomness every {sec} seconds, while the system is open. The contents stay; the bytes change completely.",
+      onDisk: "On the disk", envelopes: "tiles", own: "your cell", other: "the second cell — whether a world lives there, nothing here can tell",
+      stepNote: "The carrier is always {mb} MiB. A new record does not change that. From outside, nobody can tell how much you keep.",
+      turning: "Turning", turnNote: "While the system is open, every {sec} seconds your cell ({at} tiles) is re-sealed with fresh randomness. The contents stay; the bytes change completely.",
       next: "next in", waiting: "waiting for the first turn", now: "Turn now",
       turned: "turned just now: {n}",
       cost: "One guess costs", measure: "Measure it", measuring: "grinding…",
       costNote: "Measured on this device, this minute — not promised. That is what one attempt at your word costs an attacker, and they need millions.",
-      doors: "Two doors", doorsNote: "Both are always computed, every single time. One opens your world. Which one — the disk does not say.",
-      honest: "What this does not give you. The turning hides WHEN you wrote, not WHAT. Anyone who takes this disk and learns your word reads everything: the key still comes from what you type. The decoys hide how much you keep, not what it is. And there is no recovery — a forgotten word is a closed door forever. This window shows you the real thing, including its edges.",
+      doors: "Two cells", doorsNote: "Both are always computed, every single time. One opens your world. Which one — the disk does not say.",
+      honest: "What this does not give you. The turning hides WHEN you wrote, not WHAT. Anyone who takes this disk and learns your word reads everything: the key still comes from what you type. The fixed size hides how much you keep, not what it is. And no server can give access back: a forgotten word is opened only by your recovery code, if you made one — without it the door is closed for good. This window shows you the real thing, including its edges.",
       keyTitle: "Second key", keyOn: "on", keyOff: "off",
       keyNote: "A file you keep away from this machine. Its bytes go INTO the key derivation — not into a check. Whoever takes this disk and learns your word still gets nothing without it.",
       keyWarn: "Losing the file is the same as forgetting the word: only your recovery code opens the system then. Save the file somewhere that is not this computer before you continue.",
@@ -66,28 +68,28 @@
       keyFile: "The key file", keyDone: "Done. The file has been saved — it is now required to open this system.",
       keyOff2: "Removed. The password alone opens this system again.", keyBad: "That did not work — nothing was changed.",
       keyOther: "Word of the second world — if you have one",
-      keyOtherNote: "The second key changes both doors of this lock. If you have a second world, type its word here: without it the world behind the second door can never be opened again. No second world — leave this empty.",
-      keyOtherBad: "That word does not open the second door — nothing was changed.",
+      keyOtherNote: "The second key changes how both cells of this lock are opened. If you have a second world, type its word here: without it the second world can never be opened again. No second world — leave this empty.",
+      keyOtherBad: "That word does not open the second world — nothing was changed.",
       tellTitle: "Tell them apart",
       tellLead: "One of these two fields is your life, sealed. The other is noise made up a second ago by this machine. Nothing marks which is which — not the drawing, not the lengths, not the letters. Look as long as you like.",
       tellShow: "Show me which", tellAgain: "Shuffle again", tellHide: "Hide again",
-      tellReal: "your envelopes", tellNoise: "noise, made a second ago",
+      tellReal: "your carrier", tellNoise: "noise, made a second ago",
       tellAfter: "That is what encryption actually means. Not a lock on a door — a life that cannot be told apart from randomness. Everything else on this page is detail.",
       alive: "reading the disk"
     },
     ru: {
       title: "Замок", label: "Замок",
-      lead: "Это не картинка про шифрование. Каждая плитка ниже — настоящий конверт, лежащий на этом диске прямо сейчас, и её лицо выведено из его байтов.",
+      lead: "Это не картинка про шифрование. Каждая плитка ниже — настоящий кусок носителя, лежащего на этом диске прямо сейчас, и её лицо выведено из его байтов.",
       nolock: "Пока отражать нечего: система не заперта. Поставьте замок — и это окно начнёт показывать ваш собственный диск.",
-      onDisk: "На диске", envelopes: "конвертов", decoys: "из них пустышек", real: "настоящих записей",
-      stepNote: "Число всегда кратно {step}. Новая запись его не меняет — место уступает пустышка. Снаружи нельзя сказать, сколько вы храните.",
-      turning: "Оборот", turnNote: "Пока система открыта, каждые {sec} секунд {at} конверта запечатываются заново со свежими случайными числами. Содержимое то же, байты другие целиком.",
+      onDisk: "На диске", envelopes: "плиток", own: "ваша ячейка", other: "вторая ячейка — есть ли в ней мир, отсюда не видно",
+      stepNote: "Носитель всегда {mb} МиБ. Новая запись этого не меняет. Снаружи нельзя сказать, сколько вы храните.",
+      turning: "Оборот", turnNote: "Пока система открыта, каждые {sec} секунд ваша ячейка ({at} плиток) запечатывается заново со свежими случайными числами. Содержимое то же, байты другие целиком.",
       next: "следующий через", waiting: "ждём первого оборота", now: "Повернуть сейчас",
       turned: "повернулось только что: {n}",
       cost: "Одна попытка стоит", measure: "Замерить", measuring: "считает…",
       costNote: "Замерено на этом устройстве в эту минуту, а не обещано. Столько стоит тому, кто подбирает, ОДНА попытка. А их нужны миллионы.",
-      doors: "Две двери", doorsNote: "Обе считаются всегда, при каждом открытии. Одна открывает ваш мир. Какая именно — диск не говорит.",
-      honest: "Чего это не даёт. Оборот прячет, КОГДА вы писали, а не ЧТО. Тот, кто забрал диск и узнал ваше слово, прочтёт всё: ключ по-прежнему выводится из того, что вы печатаете. Пустышки прячут, сколько вы храните, а не что именно. И восстановления нет — забытое слово это закрытая дверь навсегда. Это окно показывает настоящее, вместе с его границами.",
+      doors: "Две ячейки", doorsNote: "Обе считаются всегда, при каждом открытии. Одна открывает ваш мир. Какая именно — диск не говорит.",
+      honest: "Чего это не даёт. Оборот прячет, КОГДА вы писали, а не ЧТО. Тот, кто забрал диск и узнал ваше слово, прочтёт всё: ключ по-прежнему выводится из того, что вы печатаете. Неизменный размер прячет, сколько вы храните, а не что именно. И сервера, который вернул бы доступ, нет: забытое слово открывает только код восстановления, если вы его завели, — без него это закрытая дверь навсегда. Это окно показывает настоящее, вместе с его границами.",
       keyTitle: "Второй ключ", keyOn: "есть", keyOff: "нет",
       keyNote: "Файл, который вы держите отдельно от этой машины. Его байты входят В САМ ВЫВОД ключа, а не в проверку. Тот, кто унёс диск и узнал ваше слово, без файла не получает ничего.",
       keyWarn: "Потерять файл — то же самое, что забыть слово: открыть систему тогда сможет только ваш код восстановления. Сохраните файл туда, что не является этим компьютером, прежде чем продолжить.",
@@ -96,28 +98,28 @@
       keyFile: "Файл ключа", keyDone: "Готово. Файл сохранён — теперь без него эта система не открывается.",
       keyOff2: "Снят. Система снова открывается одним словом.", keyBad: "Не вышло — ничего не изменилось.",
       keyOther: "Слово второго мира — если он есть",
-      keyOtherNote: "Второй ключ меняет обе двери этого замка. Если у вас есть второй мир, впишите его слово: без него мир за второй дверью больше не откроется никогда. Второго мира нет — оставьте поле пустым.",
-      keyOtherBad: "Это слово не открывает вторую дверь — ничего не изменилось.",
+      keyOtherNote: "Второй ключ меняет то, чем открываются обе ячейки этого замка. Если у вас есть второй мир, впишите его слово: без него второй мир больше не откроется никогда. Второго мира нет — оставьте поле пустым.",
+      keyOtherBad: "Это слово не открывает второй мир — ничего не изменилось.",
       tellTitle: "Отличите",
       tellLead: "Одно из этих двух полей — ваша жизнь, запечатанная. Второе — шум, придуманный этой машиной секунду назад. Ничто не говорит, где что: ни рисунок, ни длины, ни буквы. Смотрите сколько угодно.",
       tellShow: "Показать, где что", tellAgain: "Перемешать снова", tellHide: "Спрятать обратно",
-      tellReal: "ваши конверты", tellNoise: "шум, сделанный секунду назад",
+      tellReal: "ваш носитель", tellNoise: "шум, сделанный секунду назад",
       tellAfter: "Вот что на самом деле значит шифрование. Не замок на двери — жизнь, которую нельзя отличить от случайности. Всё остальное на этой странице — подробности.",
       alive: "читает диск"
     },
     ee: {
       title: "Lukk", label: "Lukk",
-      lead: "See ei ole pilt krüpteerimisest. Iga plaat allpool on päris ümbrik, mis on praegu sellel kettal, ja ta nägu on tuletatud tema baitidest.",
+      lead: "See ei ole pilt krüpteerimisest. Iga plaat allpool on päris tükk kandjast, mis on praegu sellel kettal, ja ta nägu on tuletatud tema baitidest.",
       nolock: "Praegu pole midagi peegeldada: süsteem ei ole lukus. Pane lukk — siis hakkab see aken näitama sinu enda ketast.",
-      onDisk: "Kettal", envelopes: "ümbrikku", decoys: "neist peibutist", real: "päris kirjet",
-      stepNote: "Arv on alati {step} kordne. Uus kirje seda ei muuda — koha annab peibutis. Väljastpoolt ei saa öelda, kui palju sa hoiad.",
-      turning: "Pööre", turnNote: "Kuni süsteem on avatud, pitseeritakse iga {sec} sekundi järel {at} ümbrikku uue juhuslikkusega. Sisu jääb, baidid muutuvad täielikult.",
+      onDisk: "Kettal", envelopes: "plaati", own: "sinu lahter", other: "teine lahter — kas seal elab maailm, siit ei paista",
+      stepNote: "Kandja on alati {mb} MiB. Uus kirje seda ei muuda. Väljastpoolt ei saa öelda, kui palju sa hoiad.",
+      turning: "Pööre", turnNote: "Kuni süsteem on avatud, pitseeritakse iga {sec} sekundi järel sinu lahter ({at} plaati) uue juhuslikkusega. Sisu jääb, baidid muutuvad täielikult.",
       next: "järgmine", waiting: "ootame esimest pööret", now: "Pööra kohe",
       turned: "pöördus just: {n}",
       cost: "Üks katse maksab", measure: "Mõõda", measuring: "arvutab…",
       costNote: "Mõõdetud selles seadmes ja sel minutil, mitte lubatud. Nii palju maksab ründajale ÜKS katse. Neid on vaja miljoneid.",
-      doors: "Kaks ust", doorsNote: "Mõlemad arvutatakse alati, iga kord. Üks avab sinu maailma. Kumb — ketas ei ütle.",
-      honest: "Mida see ei anna. Pööre peidab, MILLAL sa kirjutasid, mitte MIDA. See, kes võtab ketta ja saab teada su sõna, loeb kõik: võti tuleb ikka sellest, mida sa trükid. Peibutised peidavad koguse, mitte sisu. Ja taastamist ei ole — unustatud sõna on igaveseks suletud uks. See aken näitab päris asja koos tema piiridega.",
+      doors: "Kaks lahtrit", doorsNote: "Mõlemad arvutatakse alati, iga kord. Üks avab sinu maailma. Kumb — ketas ei ütle.",
+      honest: "Mida see ei anna. Pööre peidab, MILLAL sa kirjutasid, mitte MIDA. See, kes võtab ketta ja saab teada su sõna, loeb kõik: võti tuleb ikka sellest, mida sa trükid. Muutumatu suurus peidab koguse, mitte sisu. Ja serverit, mis ligipääsu tagastaks, ei ole: unustatud sõna avab ainult taastekood, kui sa selle tegid — ilma selleta on uks igaveseks suletud. See aken näitab päris asja koos tema piiridega.",
       keyTitle: "Teine võti", keyOn: "on", keyOff: "ei ole",
       keyNote: "Fail, mida hoiad sellest masinast eemal. Tema baidid lähevad võtme TULETAMISSE, mitte kontrolli. Kes võtab ketta ja saab teada su sõna, ei saa ilma failita midagi.",
       keyWarn: "Faili kaotamine on sama mis sõna unustamine: siis avab süsteemi ainult sinu taastekood. Salvesta fail enne jätkamist kuhugi, mis ei ole see arvuti.",
@@ -126,12 +128,12 @@
       keyFile: "Võtmefail", keyDone: "Valmis. Fail on salvestatud — ilma selleta süsteem enam ei avane.",
       keyOff2: "Eemaldatud. Süsteem avaneb jälle ainult sõnaga.", keyBad: "Ei õnnestunud — midagi ei muudetud.",
       keyOther: "Teise maailma sõna — kui see on olemas",
-      keyOtherNote: "Teine võti muudab selle luku mõlemat ust. Kui sul on teine maailm, kirjuta siia selle sõna: ilma selleta ei avane teise ukse taga olev maailm enam kunagi. Teist maailma ei ole — jäta tühjaks.",
-      keyOtherBad: "See sõna ei ava teist ust — midagi ei muudetud.",
+      keyOtherNote: "Teine võti muudab seda, millega avanevad selle luku mõlemad lahtrid. Kui sul on teine maailm, kirjuta siia selle sõna: ilma selleta ei avane teine maailm enam kunagi. Teist maailma ei ole — jäta tühjaks.",
+      keyOtherBad: "See sõna ei ava teist maailma — midagi ei muudetud.",
       tellTitle: "Eralda need",
       tellLead: "Üks neist kahest väljast on sinu elu, pitseeritud. Teine on müra, mille see masin tegi sekund tagasi. Miski ei ütle, kumb on kumb: ei muster, ei pikkused, ei tähed. Vaata nii kaua kui tahad.",
       tellShow: "Näita, kumb on kumb", tellAgain: "Sega uuesti", tellHide: "Peida tagasi",
-      tellReal: "sinu ümbrikud", tellNoise: "müra, tehtud sekund tagasi",
+      tellReal: "sinu kandja", tellNoise: "müra, tehtud sekund tagasi",
       tellAfter: "Just see ongi krüpteerimine. Mitte lukk uksel — elu, mida ei saa juhuslikkusest eristada. Kõik muu sellel lehel on üksikasjad.",
       alive: "loeb ketast"
     }
@@ -139,7 +141,7 @@
   function T() { return UI[lang()] || UI.en; }
   function fill(s, o) { return String(s).replace(/\{(\w+)\}/g, function (m, k) { return o[k] == null ? m : o[k]; }); }
 
-  /* ── ЛИЦО КОНВЕРТА И ЧТЕНИЕ ДИСКА ЖИВУТ В ОДНОМ МЕСТЕ (D-216) ──────────
+  /* ── ЛИЦО ПЛИТКИ И ЧТЕНИЕ ДИСКА ЖИВУТ В ОДНОМ МЕСТЕ (D-216) ───────────
      Раньше они лежали здесь. Когда ту же решётку понадобилось поставить за
      дверью, переписывать её второй раз было нельзя: две «настоящие» решётки
      расходятся, и обе продолжают называться настоящими. Теперь источник
@@ -168,7 +170,7 @@
       return;
     }
 
-    var cen = window.sbVaultCensus ? window.sbVaultCensus() : { total: 0, real: 0, decoy: 0, step: 32, at: 4, every: 90000 };
+    var cen = window.sbVaultCensus ? window.sbVaultCensus() : { total: 0, own: 0, other: 0, size: 0, at: 0, every: 90000 };
     var names = diskNames();
     var cipher = {};
     try { cipher = window.sbVault.cipher() || {}; } catch (e) { cipher = {}; }
@@ -195,8 +197,8 @@
           '<section class="vw-card">' +
             '<h3>' + esc(t.onDisk) + '</h3>' +
             '<p class="vw-big"><b data-num="total">' + cen.total + '</b> <span>' + esc(t.envelopes) + '</span></p>' +
-            '<p class="vw-sub"><b data-num="decoy">' + cen.decoy + '</b> ' + esc(t.decoys) + ' · <b data-num="real">' + cen.real + '</b> ' + esc(t.real) + '</p>' +
-            '<p class="vw-note">' + esc(fill(t.stepNote, { step: cen.step })) + '</p>' +
+            '<p class="vw-sub"><b data-num="own">' + cen.own + '</b> ' + esc(t.own) + ' · <b data-num="other">' + cen.other + '</b> ' + esc(t.other) + '</p>' +
+            '<p class="vw-note">' + esc(fill(t.stepNote, { mb: Math.round((cen.size || 0) / 1048576) })) + '</p>' +
           '</section>' +
           '<section class="vw-card">' +
             '<h3>' + esc(t.turning) + '</h3>' +
@@ -218,8 +220,9 @@
             '<form class="vw-keyform" hidden>' +
               '<input type="password" class="vw-keypass" placeholder="' + esc(t.keyPass) + '" autocomplete="current-password">' +
               /* Слово второго мира — одно и то же поле в обоих мирах и при любом
-                 замке (D-349): ключ меняет обе двери, и без этого слова мир за
-                 второй дверью молча становился шумом. Поле не говорит, есть ли
+                 замке (D-349): ключ пересобирает обе ячейки носителя (до v177 —
+                 обе двери), и без этого слова ячейка второго мира становится
+                 шумом — прежде это случалось молча. Поле не говорит, есть ли
                  второй мир, — оно говорит, что будет, если он есть. */
               '<input type="password" class="vw-keyother" placeholder="' + esc(t.keyOther) + '" autocomplete="off">' +
               '<p class="vw-note vw-keyothernote">' + esc(t.keyOtherNote) + '</p>' +
@@ -243,7 +246,7 @@
            Самое сильное, что шифр может показать, — это НИЧЕГО. Два поля,
            одно из них настоящее; человек смотрит и не может сказать, какое.
            Здесь нет ни одной подсказки: рисует их один и тот же код, длины
-           взяты у настоящих конвертов, сторона выбирается случайно и в
+           взяты у настоящих плиток, сторона выбирается случайно и в
            разметке не лежит. */
         '<section class="vw-tell">' +
           '<h3>' + esc(t.tellTitle) + '</h3>' +
@@ -266,7 +269,7 @@
     var grid = host.querySelector(".vw-grid");
     var seq = 0;
     var lastRollAt = 0;
-    var turnedAt = {};      /* имя конверта → номер оборота, в котором он повернулся */
+    var turnedAt = {};      /* имя плитки → номер оборота, в котором она повернулась */
 
     /* ── РЕШЁТКА ОБЯЗАНА ОСТАВАТЬСЯ ПЕРЕПИСЬЮ, А НЕ СНИМКОМ ────────────────
        Первая редакция строила решётку один раз при открытии окна и обновляла
@@ -321,7 +324,7 @@
       if (!window.sbVaultCensus) return;
       var c = window.sbVaultCensus();
       var set = function (k, v) { var el = host.querySelector('[data-num="' + k + '"]'); if (el) el.textContent = String(v); };
-      set("total", c.total); set("decoy", c.decoy); set("real", c.real);
+      set("total", c.total); set("own", c.own); set("other", c.other);
       syncGrid();
     }
 
@@ -458,7 +461,7 @@
         /* ── ЦЕНА ПОПЫТКИ ЗАМЕРЯЕТСЯ НАСТОЯЩЕЙ ПОПЫТКОЙ ──────────────────
            Не оценкой и не таблицей: заведомо неверным словом открывается
            замок, и засекается, сколько это заняло ЗДЕСЬ. Слово случайное и
-           длинное — совпасть с чужой дверью оно не может. */
+           длинное — совпасть со словом какого-либо мира оно не может. */
         var word = "";
         var r = new Uint8Array(30);
         window.crypto.getRandomValues(r);
