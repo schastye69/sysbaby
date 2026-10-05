@@ -243,6 +243,9 @@
 .st-card h3 { margin: 0 0 6px; font-size: var(--f-ui); font-weight: var(--w-strong); }
 .st-card h3 + p { margin-top: 0; }
 .st-card p { margin: 0 0 10px; font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-3); }
+/* Адрес двери поддержки (D-356) — ссылка на чтение, а не кнопка: чернила
+   текста, подчёркнутые, без своего цвета мимо шкалы чернил. */
+.st-door-text a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
 
 .st-check {
   display: inline-flex;

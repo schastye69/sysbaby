@@ -58,10 +58,10 @@
     pulse: "settings", settings: "settings",
     bin: "echoes", trash: "echoes", echoes: "echoes",
     cli: "terminal", terminal: "terminal", shell: "terminal",
-    /* Портфолио снято с рабочего стола (D-066): слова остались, потому что
-       человек их знает и будет набирать, — но ведут они туда, где работы
-       теперь живут: в build. Терминал не делает вид, что приложение есть,
-       и не отвечает «не знаю такого» на законный вопрос. */
+    /* Портфолио снято с рабочего стола (D-066), а с 03.10.2026 работы
+       временно сняты и с витрины (D-354). Слова остались, потому что человек
+       их знает и будет набирать: они ведут в build на первый экран, а
+       терминал говорит правду о снятии и не отвечает «не знаю такого». */
     portfolio: "build", work: "build", cases: "build", build: "build",
     project: "project"
   };
@@ -82,7 +82,7 @@
     { d: "aug 2026", t: "the OS wallpaper — graphite, one clay lamp — reached the landing. the house was lit before the door was. fixed." },
     { d: "aug 2026", t: "calibrated the seam glow on desktop screenshots; a real OLED phone crushed it to black. lesson written into the changelog: calibrate on glass, not on instruments." },
     { d: "aug 2026", t: "removed the word 'applications' from the bottom of the landing. the light under the door says it better with no letters at all." },
-    { d: "aug 2026", t: "the experimental bench left the showcase. the shop window shows delivered systems; the workbench stays in the shop." },
+    { d: "aug 2026", t: "the experimental bench left the showcase. the shop window then showed delivered systems; the workbench stayed in the shop." },
     { d: "aug 2026", t: "settings learned to tell the truth in real time: change anything anywhere, watch it change everywhere. one source per setting, everyone listens." }
   ];
   window.sbJournal = JOURNAL;
@@ -566,20 +566,19 @@
             /* One name deserves a real answer instead of "no app called". */
             if (id === "experimental" || id === "phosphor") {
               write("the experimental bench was retired from the showcase in aug 2026.");
-              write("the shop window shows delivered systems; the workbench stays in the shop.", "term-dim");
+              write("the workbench stays in the shop; the works are off the shop window for now.", "term-dim");
               return;
             }
             write("no app called '" + want + "'. try 'apps' for the live registry.");
             return;
           }
-          /* Слова portfolio/work/cases ведут в build НА РАЗДЕЛ работ, а не на
-             первый экран витрины: человек спросил работы (D-066). Терминал
-             говорит об этом вслух — иначе выглядело бы, будто он не понял. */
-          var section = (want === "portfolio" || want === "work" || want === "cases") ? "cases" : null;
-          if (section && typeof window.sbOpenBuildAt === "function") window.sbOpenBuildAt(section);
-          else if (window.toggleApp) window.toggleApp(id);
+          /* Слова portfolio/work/cases: человек спросил работы. Их нет —
+             сняты (D-354); терминал говорит это вслух и открывает build на
+             первом экране, иначе выглядело бы, будто он не понял. */
+          var asked = (want === "portfolio" || want === "work" || want === "cases");
+          if (window.toggleApp) window.toggleApp(id);
           write("opening " + (window.sbAppTitle ? window.sbAppTitle(id) : (apps[id].title || id)) + "…");
-          if (section) write("selected work lives in build since aug 2026 — same cases, same renderer.", "term-dim");
+          if (asked) write("the portfolio and the works left build in oct 2026 — for now. build says what the studio makes.", "term-dim");
           return;
         }
         case "theme": {
@@ -760,7 +759,6 @@
       { name: "showToast", file: "core/shell.js", args: "title, text, iconSvg, force?, extraClass?, kind?", returns: "handle|null" },
       { name: "escapeHtml", file: "core/shell.js", args: "s:string", returns: "string" },
       { name: "sbAnimateFigure", file: "core/shell.js", args: "el, value|[lo,hi], fmt?", returns: "void" },
-      { name: "sbFetchWithTimeout", file: "core/shell.js", args: "url, opts|ms, ms?", returns: "Promise<Response>" },
       { name: "sbWallpaperPulse", file: "core/shell.js", args: "x:px, y:px", returns: "void (no-op)" },
       { name: "sbNoteGlowSet", file: "core/shell.js", args: "slot, x:frac, y:frac, intensity", returns: "void (no-op)" },
       { name: "sbDesktopGrid", file: "core/shell.js", args: "-", returns: "{originX,originY,cellW,cellH,cols,rows}" },

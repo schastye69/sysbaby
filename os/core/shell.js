@@ -173,16 +173,11 @@
   };
   window.sbBus = sbBus;
 
-  /* ============================================================== fetch/anim */
-  window.sbFetchWithTimeout = function (url, opts, ms) {
-    if (typeof opts === "number") { ms = opts; opts = {}; }
-    opts = opts || {}; ms = num(ms, 6000);
-    var ctrl = null;
-    try { ctrl = new AbortController(); } catch (e) { ctrl = null; }
-    if (ctrl) opts.signal = ctrl.signal;
-    var timer = setTimeout(function () { if (ctrl) { try { ctrl.abort(); } catch (e) { /* ignore */ } } }, ms);
-    return fetch(url, opts).then(function (r) { clearTimeout(timer); return r; }, function (err) { clearTimeout(timer); throw err; });
-  };
+  /* ==================================================================== anim
+     Здесь же жил sbFetchWithTimeout — общий запрос наружу с отсечкой. Его
+     единственным заказчиком была проба работ витрины; работы сняты (D-354),
+     и запрос без заказчика стал дверью наружу, которую никто не открывает.
+     Опись выходов описывает живое (D-235) — снят и он. */
 
   window.sbAnimateFigure = function (el, valueOrRange, fmt) {
     if (!el) return;
@@ -4330,11 +4325,12 @@
         /* Имена глобальных берутся из самих файлов данных, а не из памяти:
            первая версия этого шага спрашивала SYSBABY_PORTFOLIO, которого в
            проекте нет, — и честно покраснела на первом же прогоне. Ошибка
-           стоила минуты и доказала, что шаг измеряет, а не рассказывает. */
-        var pf = (window.sbPortfolio && window.sbPortfolio.length) || 0;
-        var pr = (typeof window.sbPricingBand === "function") ? 1 : 0;
-        if (!pf) throw new Error(tr("boot.noPortfolio"));
-        return tr("boot.works", { n: pf }) + "  ·  " + tr(pr ? "boot.priceOk" : "boot.priceNo");
+           стоила минуты и доказала, что шаг измеряет, а не рассказывает.
+           С D-354 (03.10.2026) данных работ в ОС нет — работы временно сняты
+           с витрины; шаг меряет то, что осталось: данные цен. Без них шаг
+           падает, а не рассказывает. */
+        if (typeof window.sbPricingBand !== "function") throw new Error(tr("boot.priceNo"));
+        return tr("boot.priceOk");
       } }
   ];
 
@@ -4544,7 +4540,33 @@
     try { gate.setAttribute("lang", cur === "ee" ? "et" : cur); } catch (e) { /* ignore */ }
   }
   function runVaultGate(onDone) {
+    /* Обрыв питания сразу после замка ведёт к двери, а не в открытую
+       систему (Г8): это решается до вопроса «заперто ли». Запись замка
+       восстановлена — страница поднимается заново, уже запертой: ни один
+       модуль не держит в памяти открытых записей до замка. */
+    var heal = window.sbVault && window.sbVault.crashHeal ? window.sbVault.crashHeal().then(null, function () { return false; }) : Promise.resolve(false);
+    heal.then(function (kind) {
+      if (kind === "orphan") { window.location.reload(); return; }
+      /* Лечить есть что, а лечит другая вкладка: система не поднимается
+         открытой поверх обрыва — занавес стоит, пока запись замка не ляжет
+         или право писателя не освободится; затем страница поднимается
+         заново (финальный разбор H1, п. 1). */
+      if (kind === "frozen" || kind === "frozen-room") {
+        var wait = window.sbVault && window.sbVault.crashWait ? window.sbVault.crashWait(kind === "frozen-room") : new Promise(function () { /* ждать нечем — занавес стоит */ });
+        wait.then(function () { window.location.reload(); });
+        return;
+      }
+      gateIfLocked(onDone);
+    });
+  }
+  function gateIfLocked(onDone) {
     if (!window.sbVault || !window.sbVault.isLocked() || !window.sbVault.available()) { onDone(); return; }
+    /* Что спросить — по носителю, прочитанному до двери (Г5): копия в записи
+       замка может отстать от него после обрыва питания. */
+    var ready = window.sbVault.requirements ? window.sbVault.requirements().then(null, function () { return null; }) : Promise.resolve(null);
+    ready.then(function () { buildVaultGate(onDone); });
+  }
+  function buildVaultGate(onDone) {
     var needsKey = false;
     try { needsKey = !!(window.sbVault.secondKey && window.sbVault.secondKey().on); } catch (e) { needsKey = false; }
     var gate = doc.createElement("div");
@@ -4724,6 +4746,10 @@
         busy = false;
         gate.classList.remove("vg-work");
         if (!okp) {
+          /* Отказ двери один на всё (D-349, D-353 разбор №3): неверное слово,
+             слово другого мира в открытой системе, мир прежнего вида, который
+             читающая вкладка не переносит, — ответ один, иначе он сказал бы,
+             что слово верно. */
           /* Стук: время, и только время, запечатанное (D-341). */
           if (window.sbKnock) window.sbKnock.note();
           gate.classList.add("vg-wrong");
@@ -4833,9 +4859,13 @@
         setTimeout(function () {
           if (window.showToast) window.showToast(tr("lock.spare"), tr("lock.codeUsed"), "", true, "", "event");
         }, 1400);
-      }, function () {
+      }, function (e) {
         busy = false;
         gate.classList.remove("vg-work");
+        /* Код не проверялся: писать сейчас может другая вкладка (D-353, шаг 4). */
+        if (e && e.message === "writer") { errEl.textContent = gateText("lock.readerDoor"); errEl.hidden = false; return; }
+        /* Без Web Locks код не проверялся и ничего не записано (A1). */
+        if (e && e.message === "nolocks") { errEl.textContent = gateText("lock.noLocks"); errEl.hidden = false; return; }
         gate.classList.add("vg-wrong");
         errEl.textContent = gateText("lock.codeWrong");
         errEl.hidden = false;
@@ -5533,12 +5563,24 @@
         window.sessionStorage.clear();
       } catch (e) { /* ignore */ }
       try { localStorage.removeItem("sysbaby.authed"); } catch (e) { /* ignore */ }
+      /* Стирать хранилище при замке вправе только писатель открытого мира
+         (D-353, шаг 4): иначе уход стёр бы поверх более нового состояния
+         другой вкладки. Остальное (работники, кэш, cookie, сеанс, адрес)
+         делается и так; отказ назван в отчёте. */
+      var V = window.sbVault;
+      if (deep && V && V.isLocked && V.isLocked() && V.mayErase && !V.mayErase()) { report.refused = "writer"; deep = false; }
       if (!deep) return null;
-      try {
-        report.local = window.localStorage.length;
-        window.localStorage.clear();
-      } catch (e) { /* ignore */ }
-      return killIdb();
+      /* При замке склады базы уходят сперва — одной транзакцией со сверкой
+         своей ячейки; не совпало — хранилище не стирается, отказ в отчёте. */
+      var stores = (V && V.isLocked && V.isLocked() && V.eraseAll) ? V.eraseAll().then(function () { return true; }, function () { return false; }) : Promise.resolve(true);
+      return stores.then(function (okp) {
+        if (!okp) { report.refused = "writer"; return null; }
+        try {
+          report.local = window.localStorage.length;
+          window.localStorage.clear();
+        } catch (e) { /* ignore */ }
+        return killIdb();
+      });
     }).then(function () {
       /* Подмена записи, до которой мы дотягиваемся. Заголовок браузер держит
          вместе с адресом, и он тоже наш до последнего кадра. */
@@ -5619,13 +5661,17 @@
    * vN → sys.baby OS 0.0.N. Обновляется везде разом, по построению.
    */
   var bootStamp = now();
+  /* Метка сборки — vN или vN-РЕДАКЦИЯ (основатель, 02.10.2026: «v178-H1» —
+     одна метка везде). Версия ОС — по числу N; метка — целиком. */
+  var buildLabel = "v0";
   var buildMeta = (function () {
     var m = doc.querySelector('meta[name="sysbaby-build"]');
-    var v = /^v(\d+)$/.exec((m && m.content) || "");
+    var v = /^v(\d+)(-[A-Za-z0-9]+)?$/.exec((m && m.content) || "");
+    if (v) buildLabel = "v" + v[1] + (v[2] || "");
     return v ? v[1] : "0";
   })();
   window.sbBuild = {
-    build: "v" + buildMeta,
+    build: buildLabel,
     version: "0.0." + buildMeta,
     channel: "core",
     /* Имя — у разметки (meta application-name), а та — вровень с манифестом

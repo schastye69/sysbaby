@@ -1256,7 +1256,21 @@
     var anywayBtn = body.querySelector("#sbLockDoAnyway");
     function setLock(p1) {
       busy(true);
-      V.lock(p1).then(function () { window.location.reload(); }, function () { busy(false); say(tr("lock.failed")); });
+      V.lock(p1).then(function () { window.location.reload(); }, function (e) {
+        var m = e && e.message;
+        /* Замок встал, хвост поворота уже под ним — как удача (Р-A5.2). */
+        if (m === "locked") { window.location.reload(); return; }
+        /* Замок встал, а последние правки ещё не под ним: мир открыт в этой
+           вкладке и держит их. Окно постановки замка больше не нужно. */
+        if (m === "kept") {
+          busy(false);
+          say(tr("lock.kept"));
+          ["#sbLockDo", "#sbLockDoAnyway", "#sbLockPhrase"].forEach(function (q) { var b = body.querySelector(q); if (b) b.disabled = true; });
+          return;
+        }
+        busy(false);
+        say(tr(m === "nolocks" ? "lock.noLocks" : m === "busy" ? "lock.quietBusy" : "lock.failed"));
+      });
     }
     function trySet(force) {
       var p1 = body.querySelector("#sbLockP1").value;
@@ -1295,7 +1309,7 @@
         newField.value = ""; newField.hidden = true;
         body.querySelector("#sbLockCur").value = "";
         if (window.sbPaintIris) window.sbPaintIris();
-      }, function () { busy(false); say(tr("lock.failed")); });
+      }, function (e) { busy(false); say(tr(e && e.message === "nolocks" ? "lock.noLocks" : "lock.failed")); });
     });
     var dField = body.querySelector("#sbLockDuress");
     var dSet = body.querySelector("#sbLockDuressSet");
@@ -1312,7 +1326,7 @@
         say(tr("lock.duressDone"));
         dField.value = ""; dField.hidden = true;
         body.querySelector("#sbLockCur").value = "";
-      }, function () { busy(false); say(tr("lock.failed")); });
+      }, function (e) { busy(false); say(tr(e && e.message === "nolocks" ? "lock.noLocks" : "lock.failed")); });
     });
     /* Усилить памятью: главное слово обязательно; тревожное — если заводили,
        иначе мир за ним будет потерян, и об этом сказано до нажатия. Первое
@@ -1332,7 +1346,7 @@
         if (dField) { dField.value = ""; dField.hidden = true; }
         if (window.showToast) window.showToast(tr("lock.title"), tr("lock.strongDone"), "");
         accountBody();
-      }, function (e) { busy(false); say(e && e.message === "duress-wrong" ? tr("lock.duressWrong") : tr("lock.failed")); });
+      }, function (e) { busy(false); say(e && e.message === "nolocks" ? tr("lock.noLocks") : e && e.message === "duress-wrong" ? tr("lock.duressWrong") : tr("lock.failed")); });
     });
     /* Привязать и отвязать ключ устройства — тем же порядком, что усиление:
        главное слово обязательно, тревожное — если заводили. */
@@ -1373,7 +1387,7 @@
            узнать, было ли что снимать. */
         say(tr("lock.duressDone"));
         body.querySelector("#sbLockCur").value = "";
-      }, function () { busy(false); say(tr("lock.failed")); });
+      }, function (e) { busy(false); say(tr(e && e.message === "nolocks" ? "lock.noLocks" : "lock.failed")); });
     });
     var removeBtn = body.querySelector("#sbLockRemove");
     if (removeBtn) removeBtn.addEventListener("click", function () {
@@ -1385,7 +1399,7 @@
         if (window.showToast) window.showToast(tr("lock.title"), tr("lock.removed"), "");
         accountBody();
         if (window.sbPaintIris) window.sbPaintIris();
-      }, function () { busy(false); say(tr("lock.failed")); });
+      }, function (e) { busy(false); say(tr(e && e.message === "nolocks" ? "lock.noLocks" : e && e.message === "room" ? "lock.removeRoom" : "lock.failed")); });
     });
     var spareBtn = body.querySelector("#sbLockSpare");
     var spareCode = "";
@@ -1405,7 +1419,7 @@
         if (stEl) stEl.textContent = tr("lock.spareOn", { d: new Date().toLocaleDateString() });
         body.querySelector("#sbLockCur").value = "";
         say("");
-      }, function () { busy(false); say(tr("lock.failed")); });
+      }, function (e) { busy(false); say(tr(e && e.message === "nolocks" ? "lock.noLocks" : "lock.failed")); });
     });
     var spareSave = body.querySelector("#sbLockSpareSave");
     if (spareSave) spareSave.addEventListener("click", function () {
@@ -1645,6 +1659,10 @@
       wipe.addEventListener("click", function () {
         if (!window.sbVanish) return;
         var V = window.sbVault;
+        /* Стирать при замке вправе только писатель открытого мира (D-353,
+           шаг 4): читающая или замёрзшая вкладка стёрла бы поверх более
+           нового состояния другой вкладки. */
+        if (V && V.isLocked && V.isLocked() && V.mayErase && !V.mayErase()) { say(tr("acc.wipeWriter")); return; }
         if (V && V.isLocked && V.isLocked() && window.sbAskIrreversible) {
           wipe.disabled = true;
           window.sbAskIrreversible({ question: tr("acc.wipeSub") }).then(function (okp) {

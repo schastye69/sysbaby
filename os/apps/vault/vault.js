@@ -52,12 +52,16 @@
       lead: "This is not a picture of encryption. Every tile below is a real piece of the carrier lying on this disk right now, and its face is drawn from its bytes.",
       nolock: "There is nothing to reflect yet: your system is not locked. Set the lock — then this window starts showing your own disk.",
       onDisk: "On the disk", envelopes: "tiles", own: "your cell", other: "the second cell — whether a world lives there, nothing here can tell",
-      stepNote: "The carrier is always {mb} MiB. A new record does not change that. From outside, nobody can tell how much you keep.",
+      stepNote: "The records carrier is always {mb} MiB; the things store is below. A new record does not change that. From outside, nobody can tell how much you keep.",
       turning: "Turning", turnNote: "While the system is open, every {sec} seconds your cell ({at} tiles) is re-sealed with fresh randomness. The contents stay; the bytes change completely.",
       next: "next in", waiting: "waiting for the first turn", now: "Turn now",
       turned: "turned just now: {n}",
       cost: "One guess costs", measure: "Measure it", measuring: "grinding…",
       costNote: "Measured on this device, this minute — not promised. That is what one attempt at your word costs an attacker, and they need millions.",
+      ms: "ms", sec: "s",
+      thingsTitle: "Things store", thingsUnit: "MiB per world", thingsUsed: "in use: {mb} MiB",
+      thingsNote: "The same size for everyone, always: it tells nobody how many things you keep or whether a second world exists. Every write rebuilds your half whole, so the weight of what you add is not visible either. One write on this device costs:",
+      tmeasure: "Measure a write",
       doors: "Two cells", doorsNote: "Both are always computed, every single time. One opens your world. Which one — the disk does not say.",
       honest: "What this does not give you. The turning hides WHEN you wrote, not WHAT. Anyone who takes this disk and learns your word reads everything: the key still comes from what you type. The fixed size hides how much you keep, not what it is. And no server can give access back: a forgotten word is opened only by your recovery code, if you made one — without it the door is closed for good. This window shows you the real thing, including its edges.",
       keyTitle: "Second key", keyOn: "on", keyOff: "off",
@@ -82,12 +86,16 @@
       lead: "Это не картинка про шифрование. Каждая плитка ниже — настоящий кусок носителя, лежащего на этом диске прямо сейчас, и её лицо выведено из его байтов.",
       nolock: "Пока отражать нечего: система не заперта. Поставьте замок — и это окно начнёт показывать ваш собственный диск.",
       onDisk: "На диске", envelopes: "плиток", own: "ваша ячейка", other: "вторая ячейка — есть ли в ней мир, отсюда не видно",
-      stepNote: "Носитель всегда {mb} МиБ. Новая запись этого не меняет. Снаружи нельзя сказать, сколько вы храните.",
+      stepNote: "Носитель записей всегда {mb} МиБ; склад вещей — ниже. Новая запись этого не меняет. Снаружи нельзя сказать, сколько вы храните.",
       turning: "Оборот", turnNote: "Пока система открыта, каждые {sec} секунд ваша ячейка ({at} плиток) запечатывается заново со свежими случайными числами. Содержимое то же, байты другие целиком.",
       next: "следующий через", waiting: "ждём первого оборота", now: "Повернуть сейчас",
       turned: "повернулось только что: {n}",
       cost: "Одна попытка стоит", measure: "Замерить", measuring: "считает…",
       costNote: "Замерено на этом устройстве в эту минуту, а не обещано. Столько стоит тому, кто подбирает, ОДНА попытка. А их нужны миллионы.",
+      ms: "мс", sec: "с",
+      thingsTitle: "Склад вещей", thingsUnit: "МиБ на мир", thingsUsed: "занято: {mb} МиБ",
+      thingsNote: "У всех и всегда один размер: по нему не видно, сколько у вас вещей и есть ли второй мир. Каждая запись пересобирает вашу половину целиком — вес положенного тоже не виден. Одна запись на этом устройстве стоит:",
+      tmeasure: "Замерить запись",
       doors: "Две ячейки", doorsNote: "Обе считаются всегда, при каждом открытии. Одна открывает ваш мир. Какая именно — диск не говорит.",
       honest: "Чего это не даёт. Оборот прячет, КОГДА вы писали, а не ЧТО. Тот, кто забрал диск и узнал ваше слово, прочтёт всё: ключ по-прежнему выводится из того, что вы печатаете. Неизменный размер прячет, сколько вы храните, а не что именно. И сервера, который вернул бы доступ, нет: забытое слово открывает только код восстановления, если вы его завели, — без него это закрытая дверь навсегда. Это окно показывает настоящее, вместе с его границами.",
       keyTitle: "Второй ключ", keyOn: "есть", keyOff: "нет",
@@ -112,12 +120,16 @@
       lead: "See ei ole pilt krüpteerimisest. Iga plaat allpool on päris tükk kandjast, mis on praegu sellel kettal, ja ta nägu on tuletatud tema baitidest.",
       nolock: "Praegu pole midagi peegeldada: süsteem ei ole lukus. Pane lukk — siis hakkab see aken näitama sinu enda ketast.",
       onDisk: "Kettal", envelopes: "plaati", own: "sinu lahter", other: "teine lahter — kas seal elab maailm, siit ei paista",
-      stepNote: "Kandja on alati {mb} MiB. Uus kirje seda ei muuda. Väljastpoolt ei saa öelda, kui palju sa hoiad.",
+      stepNote: "Kirjete kandja on alati {mb} MiB; asjade ladu on allpool. Uus kirje seda ei muuda. Väljastpoolt ei saa öelda, kui palju sa hoiad.",
       turning: "Pööre", turnNote: "Kuni süsteem on avatud, pitseeritakse iga {sec} sekundi järel sinu lahter ({at} plaati) uue juhuslikkusega. Sisu jääb, baidid muutuvad täielikult.",
       next: "järgmine", waiting: "ootame esimest pööret", now: "Pööra kohe",
       turned: "pöördus just: {n}",
       cost: "Üks katse maksab", measure: "Mõõda", measuring: "arvutab…",
       costNote: "Mõõdetud selles seadmes ja sel minutil, mitte lubatud. Nii palju maksab ründajale ÜKS katse. Neid on vaja miljoneid.",
+      ms: "ms", sec: "s",
+      thingsTitle: "Asjade ladu", thingsUnit: "MiB maailma kohta", thingsUsed: "kasutusel: {mb} MiB",
+      thingsNote: "Kõigil ja alati ühesuurune: selle järgi ei näe, kui palju asju sul on ega seda, kas on teine maailm. Iga kirjutus ehitab sinu poole tervikuna uuesti — ka lisatu kaal ei paista. Üks kirjutus maksab selles seadmes:",
+      tmeasure: "Mõõda kirjutust",
       doors: "Kaks lahtrit", doorsNote: "Mõlemad arvutatakse alati, iga kord. Üks avab sinu maailma. Kumb — ketas ei ütle.",
       honest: "Mida see ei anna. Pööre peidab, MILLAL sa kirjutasid, mitte MIDA. See, kes võtab ketta ja saab teada su sõna, loeb kõik: võti tuleb ikka sellest, mida sa trükid. Muutumatu suurus peidab koguse, mitte sisu. Ja serverit, mis ligipääsu tagastaks, ei ole: unustatud sõna avab ainult taastekood, kui sa selle tegid — ilma selleta on uks igaveseks suletud. See aken näitab päris asja koos tema piiridega.",
       keyTitle: "Teine võti", keyOn: "on", keyOff: "ei ole",
@@ -174,9 +186,15 @@
     var names = diskNames();
     var cipher = {};
     try { cipher = window.sbVault.cipher() || {}; } catch (e) { cipher = {}; }
-    var doors = (cipher.doors && cipher.doors.length) || 2;
+    /* Сколько ячеек — спрашивается у носителя (D-351), а не у записи замка: дверей в ней больше нет. */
+    var doors = cen.regions;
     var second = { on: false };
     try { second = window.sbVault.secondKey(); } catch (e) { second = { on: false }; }
+    var tcap = { halfMb: 0, usedMb: "0" };
+    try {
+      var cap0 = window.sbThings.capacity();
+      tcap = { halfMb: Math.round(cap0.half / 1048576), usedMb: (cap0.used / 1048576).toFixed(1) };
+    } catch (e) { tcap = { halfMb: 0, usedMb: "0" }; }
 
     /* Полная перерисовка корпуса обязана вернуть прокрутку человеку: она дело
        системы, а прокрутка — дело руки (no-teleport-check). */
@@ -208,9 +226,19 @@
           '</section>' +
           '<section class="vw-card">' +
             '<h3>' + esc(t.cost) + '</h3>' +
-            '<p class="vw-big"><b data-num="cost" data-ms="0">—</b> <span>мс</span></p>' +
+            '<p class="vw-big"><b data-num="cost" data-ms="0">—</b> <span>' + esc(t.ms) + '</span></p>' +
             '<p class="vw-note">' + esc(t.costNote) + '</p>' +
             '<button type="button" class="vw-act" data-act="measure">' + esc(t.measure) + '</button>' +
+          '</section>' +
+          /* Склад вещей (D-352): размер — у самого склада, цена записи —
+             настоящей пересборкой своей половины на этом устройстве. */
+          '<section class="vw-card vw-thingscard">' +
+            '<h3>' + esc(t.thingsTitle) + '</h3>' +
+            '<p class="vw-big"><b data-num="tsize" data-mb="' + tcap.halfMb + '">' + tcap.halfMb + '</b> <span>' + esc(t.thingsUnit) + '</span></p>' +
+            '<p class="vw-sub" data-num="tused">' + esc(fill(t.thingsUsed, { mb: tcap.usedMb })) + '</p>' +
+            '<p class="vw-note">' + esc(t.thingsNote) + '</p>' +
+            '<p class="vw-big"><b data-num="tcost" data-ms="0">—</b> <span>' + esc(t.sec) + '</span></p>' +
+            '<button type="button" class="vw-act" data-act="tmeasure">' + esc(t.tmeasure) + '</button>' +
           '</section>' +
           '<section class="vw-card vw-keycard">' +
             '<h3>' + esc(t.keyTitle) + '</h3>' +
@@ -449,6 +477,25 @@
           say.textContent = t.keyDone;
           render(win);
         }, bad);
+        return;
+      }
+
+      if (act === "tmeasure") {
+        if (b.disabled) return;
+        var tout = host.querySelector('[data-num="tcost"]');
+        b.disabled = true;
+        if (tout) tout.textContent = t.measuring;
+        /* ── ЦЕНА ЗАПИСИ СКЛАДА — НАСТОЯЩЕЙ ПЕРЕСБОРКОЙ (D-352) ─────────────
+           Своя половина пересобирается целиком, как при любой записи вещи, и
+           засекается, сколько это заняло ЗДЕСЬ. Вещи при этом те же. */
+        window.sbThings.measure().then(function (ms) {
+          b.disabled = false;
+          if (!tout) return;
+          if (ms > 0) { tout.textContent = (ms / 1000).toFixed(1); tout.setAttribute("data-ms", String(ms)); }
+          else tout.textContent = "—";
+          var used = host.querySelector('[data-num="tused"]');
+          try { if (used) used.textContent = fill(t.thingsUsed, { mb: (window.sbThings.capacity().used / 1048576).toFixed(1) }); } catch (e) { /* ignore */ }
+        }, function () { b.disabled = false; if (tout) tout.textContent = "—"; });
         return;
       }
 

@@ -51,13 +51,13 @@ header('Content-Type: text/html; charset=utf-8');
 
 <!-- sysbaby build v20.5 · строка ниже — единственный источник номера сборки.
      Проверка того, что реально задеплоено: view-source → найти sysbaby-build. -->
-<meta name="sysbaby-build" content="v177">
+<meta name="sysbaby-build" content="v178-H1">
 <meta name="description" content="A systems studio in Tallinn. We build the software your business runs on — quotes, records, invoices — and hand you the keys. No subscription, no per-seat pricing. Fixed price, fixed date, yours outright.">
 <!-- Шрифты больше не приезжают с чужого сервера. Страница, которая продаёт
      независимость от внешних сервисов, не имеет права зависеть от Google
      ради собственных букв: та же системная гарнитура, что и в OS, — одна
      типографика на обе поверхности, ноль сетевых запросов за шрифтами. -->
-<link rel="stylesheet" href="shared/system.css?b=v177">
+<link rel="stylesheet" href="shared/system.css?b=v178-H1">
 <!-- Pre-paint only: read an introduction off the address bar and clean it out
      again before anything renders. The OS does exactly this for its own entry
      parameter, and the reason is the same: a link may CARRY state, but the
@@ -157,11 +157,7 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
-<script src="shared/portfolio.data.js?b=v177"></script>
-<script src="shared/portfolio.strings.js?b=v177"></script>
-<link rel="stylesheet" href="shared/portfolio.view.css?b=v177" />
-<script src="shared/portfolio.view.js?b=v177"></script>
-<script src="shared/pricing.data.js?b=v177"></script>
+<script src="shared/pricing.data.js?b=v178-H1"></script>
 <style>
 /* Android рисует поверх любого нажатия свой бирюзовый блик. В OS это отключено
    с прошлого прохода; на лендинге правила не было, и на телефоне каждое
@@ -648,10 +644,6 @@ html[data-anim="paused"] .sb-dot svg{animation:none}
 .hero .explore-note,.hero .hero-note{font-size:12.5px;color:var(--muted);max-width:640px;line-height:1.6;margin:0 0 12px}
 .hero .hero-note{display:flex;align-items:flex-start;gap:7px;margin-top:14px}
 .hero .hero-note svg{width:13px;height:13px;flex:none;margin-top:2px;color:var(--accent)}
-.hero-proof{display:none;border-left:2px solid var(--accent);padding:2px 0 2px 12px;margin:18px 0 0;max-width:620px}
-.hero-proof.is-shown{display:block}
-.hero-proof .p-main{font-size:13.5px;line-height:1.55}
-.hero-proof .p-src{font-size:11.5px;color:var(--muted);margin-top:4px}
 /* staggered reveal after boot */
 .reveal{opacity:0;transform:translateY(16px);filter:blur(6px)}
 .is-revealed .reveal{opacity:1;transform:none;filter:none;transition:opacity .7s var(--ease),transform .7s var(--ease),filter .7s var(--ease)}
@@ -1014,22 +1006,6 @@ html[data-anim="paused"] .dock-flare{display:none}
 .panel-list li::before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:.7}
 .panel-list li.plain::before{display:none}
 .panel-list li.plain{padding-left:0}
-.case-goal{color:var(--text);font-weight:600}
-.case-meta{font-size:12px}
-.case-result{color:var(--text);margin-top:6px;display:block}
-.case-note{font-size:11.5px;opacity:.72}
-/* work in approval (§16) — a rule and a numeral, not another case entry: the
-   list above it is things that exist and can be opened, and this is not one */
-.case-pipeline{border-top:1px solid var(--border);padding-top:14px;margin-top:6px}
-.case-pipe-count{
-  font-family:var(--mono);font-size:22px;font-weight:300;line-height:1;
-  color:var(--text);margin-right:10px;font-variant-numeric:tabular-nums;
-}
-.case-pipe-label{
-  font-family:var(--mono);font-size:10px;letter-spacing:.17em;text-transform:uppercase;color:var(--muted);
-}
-.case-pipeline .case-note{display:inline-block;margin-top:6px}
-
 /* introductions (§3) — the quiet layer.
    No card, no bordered box, no accent fill: a rule and a paragraph, the same
    way work-in-approval is drawn above. If this ever starts to look like a
@@ -1147,7 +1123,6 @@ html[data-anim="paused"] .dock-flare{display:none}
 .form-status .rescue a{background:var(--btn-bg);color:var(--btn-fg);border-color:transparent}
 
 /* --- roi --------------------------------------------------------------- */
-.roi-anchor{border-left:2px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 18px;font-size:12.5px;line-height:1.6}
 .slider{margin:16px 0}
 .slider .s-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:7px}
 .slider .s-label{font-size:12.5px;color:var(--text)}
@@ -1164,45 +1139,6 @@ html[data-anim="paused"] .dock-flare{display:none}
 .roi-fig .f-sub{font-size:11.5px;line-height:1.55;margin-top:5px}
 .roi-fig .f-sub.is-warn{color:var(--text)}
 .roi-cta{margin-top:22px;width:100%}
-
-/* ── первый продукт в окне ───────────────────────────────────────────────
-   Рамка занимает почти всю высоту окна: человек пришёл работать, а не читать.
-   Граница (класс D) стоит ПОД рамкой и набрана так же заметно, как обещания:
-   система, прячущая свои пределы, врёт даже когда всё сказанное истинно. */
-.product-frame{position:relative;height:min(58vh,420px);margin:14px 0 12px;
-  border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--void)}
-.product-frame iframe{width:100%;height:100%;border:0;display:block;background:#fff}
-.product-note{display:flex;gap:9px;align-items:flex-start;font-size:12px;line-height:1.55;color:var(--muted)}
-.product-note .d-mark{flex:none;width:18px;height:18px;border-radius:6px;display:grid;place-items:center;
-  font-family:var(--mono);font-size:10px;font-weight:700;color:var(--void);background:var(--muted)}
-/* Полоса спроса ЛИПНЕТ КО ДНУ окна. Причина снята со снимка телефона: она
-   стояла в конце потока, ниже рамки, и до неё надо было доскроллить — то есть
-   единственная кнопка, ради которой всё это построено, была не видна в момент,
-   когда человек только что сделал работу. Липкость решает это без отъёма
-   места у продукта; фон непрозрачный, иначе под ней просвечивает рамка. */
-/* ── ЛИПНЕТ ОДНА СТРОКА (D-284) ──────────────────────────────────────────
-   В полосе лежала и оговорка о данных — пять строк. На 320×568 и 360×640
-   полоса выходила выше 200 px и закрывала саму систему целиком (прибор:
-   0 px видимой демонстрации). Теперь липнет одна строка — вопрос и кнопка
-   рядом, — а оговорка стоит перед системой в потоке.
-   Охраняется tools/demo-visible-check.mjs. */
-.product-note-before{margin:4px 0 0}
-.product-ask{position:sticky;bottom:0;display:flex;flex-direction:row;gap:12px;align-items:center;
-  margin-top:12px;padding:10px 0 2px;border-top:1px solid var(--border);background:var(--win-strong)}
-.product-ask b{flex:none;font-size:14px;color:var(--text)}
-.product-ask .btn{height:46px;flex:1 1 auto}
-/* На узком экране клавиша во всю ширину ПЕРЕНОСИТ подпись: общий запрет
-   переноса у .btn держал «Рассказать основателю одной строкой» в одну
-   строку, и на 320 px буквы выходили за оба края клавиши (D-277). */
-@media (max-width:620px){ .product-frame{height:min(52vh,340px)}
-  .product-ask .btn{min-width:0;height:auto;min-height:46px;padding-top:8px;padding-bottom:8px;
-    white-space:normal;text-align:center;line-height:1.3} }
-/* На узком телефоне вопрос «Получилось?» рядом с кнопкой ужимал её до
-   четырёх строк, и липкая полоса снова вырастала. Там вопрос остаётся для
-   читающих экран (он — подпись полосы), а глазу хватает самой кнопки. */
-@media (max-width:420px){
-  .product-ask b{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
-  .product-ask .btn{width:100%} }
 
 /* Расшифровка имени в «О нас»: моноширинная, приглушённая, с выделенной
    второй половиной. Она объясняет имя, а не продаёт — потому и набрана
@@ -1461,11 +1397,14 @@ html[data-anim="paused"] .dock-flare{display:none}
          Строка намеренно не переводится: буквы работают только в английском,
          перевод разрушил бы соответствие имени. Для скринридера — цельный
          текст в aria-label, размеченный побуквенный вариант скрыт.
+         Непереводимость объявлена атрибутом data-sb-nolang: закон переводов
+         (tools/os-i18n-coverage.mjs) снимает первый экран витрины в окне
+         build на каждом языке ОС и такую строку английской не считает.
          Слова разнесены по узлам .w: строка обязана быть ровно той же
          ширины, что и самая длинная строка заголовка, а разгон трекинга
          считается по измерению — см. fitHeroName(). -->
     <div class="hero-head">
-      <p class="hero-name-line reveal" id="heroName" aria-label="Building Automated Business for You"><span class="w" aria-hidden="true"><b>B</b>uilding</span><span class="w" aria-hidden="true"><b>A</b>utomated</span><span class="w" aria-hidden="true"><b>B</b>usiness</span><span class="w" aria-hidden="true">for</span><span class="w" aria-hidden="true"><b>Y</b>ou</span></p>
+      <p class="hero-name-line reveal" id="heroName" data-sb-nolang aria-label="Building Automated Business for You"><span class="w" aria-hidden="true"><b>B</b>uilding</span><span class="w" aria-hidden="true"><b>A</b>utomated</span><span class="w" aria-hidden="true"><b>B</b>usiness</span><span class="w" aria-hidden="true">for</span><span class="w" aria-hidden="true"><b>Y</b>ou</span></p>
       <h1 class="reveal" id="heroTitle"></h1>
     </div>
     <p class="hero-text reveal" id="heroText"></p>
@@ -1478,10 +1417,6 @@ html[data-anim="paused"] .dock-flare{display:none}
          собственность. Значения приходят из источника, не из вёрстки. -->
     <div class="hero-spec reveal" id="heroSpec"></div>
     <p class="explore-note reveal" id="exploreNote"></p>
-    <div class="hero-proof reveal" id="heroProof">
-      <div class="p-main" id="heroProofMain"></div>
-      <div class="p-src" id="heroProofSrc"></div>
-    </div>
     <p class="hero-note reveal" id="heroNote">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 12 5 5L20 6"/></svg>
       <span id="heroNoteText"></span>
@@ -1509,8 +1444,9 @@ html[data-anim="paused"] .dock-flare{display:none}
          по слову «слоган built around your business должен быть только в
          приложении build». Приложение то же, место в нём другое.
 
-         Не переводится: она пара к непереводимой расшифровке имени. -->
-    <p class="hero-built-line reveal" id="heroBuilt" aria-hidden="false">built around your business</p>
+         Не переводится: она пара к непереводимой расшифровке имени, и это
+         объявлено тем же атрибутом data-sb-nolang. -->
+    <p class="hero-built-line reveal" id="heroBuilt" data-sb-nolang aria-hidden="false">built around your business</p>
     </div>
    <!-- ОБЪЕКТ. Единственный растр на странице, и он объявлен явно: это
         ИЗОБРАЖЕНИЕ знака, а не сам знак. Знак остаётся геометрией везде,
@@ -1521,7 +1457,7 @@ html[data-anim="paused"] .dock-flare{display:none}
      <picture>
        <source media="(max-width:980px)" srcset="art/hero-object-sm.webp" type="image/webp">
        <source srcset="art/hero-object.webp" type="image/webp">
-       <img src="art/hero-object.png" alt="" width="900" height="930" decoding="async" fetchpriority="high">
+       <img src="art/hero-object.webp" alt="" width="900" height="930" decoding="async" fetchpriority="high">
      </picture>
    </div>
   </div>
@@ -1581,7 +1517,7 @@ html[data-anim="paused"] .dock-flare{display:none}
         "hero_text": "We design automation systems that quietly take repetitive work off your team's plate — scoped from a written brief, delivered without long contracts.",
         "cta_request": "Get a Free Quote",
         "cta_explore": "Open sys.baby",
-        "explore_note": "Not screenshots — a working desktop, with a real client system in it, open and usable. Anything you type there stays in your browser.",
+        "explore_note": "Not screenshots — a working desktop, open and usable. Anything you type there stays in your browser.",
         "hero_note": "No cost, no obligation — tell us what's slowing you down and we'll reply with honest options."
       },
       "ru": {
@@ -1589,7 +1525,7 @@ html[data-anim="paused"] .dock-flare{display:none}
         "hero_text": "Мы создаём системы автоматизации, которые забирают рутину у вашей команды — оценка по письменному брифу, без долгосрочных контрактов.",
         "cta_request": "Бесплатная оценка",
         "cta_explore": "Открыть sys.baby",
-        "explore_note": "Не скриншоты — работающая среда, и настоящая клиентская система внутри открывается и работает. Всё, что вы там напишете, остаётся в вашем браузере.",
+        "explore_note": "Не скриншоты — работающая среда: она открывается и работает. Всё, что вы там напишете, остаётся в вашем браузере.",
         "hero_note": "Без оплаты и обязательств — расскажите, что тормозит вашу команду, и мы ответим честными вариантами."
       },
       "ee": {
@@ -1597,7 +1533,7 @@ html[data-anim="paused"] .dock-flare{display:none}
         "hero_text": "Ehitame automatiseerimissüsteeme, mis võtavad korduva töö teie meeskonna käest — hindame lähteülesande põhjal, tarnime ilma pikaajalise lepinguta.",
         "cta_request": "Tasuta hinnapakkumine",
         "cta_explore": "Ava sys.baby",
-        "explore_note": "Mitte ekraanipildid — töötav töölaud, kus päris kliendisüsteem avaneb ja töötab. Kõik, mida te seal kirjutate, jääb teie brauserisse.",
+        "explore_note": "Mitte ekraanipildid — töötav töölaud, mis avaneb ja töötab. Kõik, mida te seal kirjutate, jääb teie brauserisse.",
         "hero_note": "Tasuta ja siduma kohustusteta — kirjuta, mis teie tööd aeglustab, ja vastame ausate valikutega."
       },
       "fi": {
@@ -1605,7 +1541,7 @@ html[data-anim="paused"] .dock-flare{display:none}
         "hero_text": "Rakennamme automaatiojärjestelmiä, jotka siirtävät toistuvan työn pois tiimin harteilta — laajuus kirjallisen tehtävänannon pohjalta, ilman pitkiä sopimuksia.",
         "cta_request": "Pyydä maksuton arvio",
         "cta_explore": "Avaa sys.baby",
-        "explore_note": "Ei kuvakaappauksia — toimiva työpöytä, jossa oikea asiakasjärjestelmä on auki ja käytettävissä. Kaikki, mitä siellä kirjoitatte, jää selaimeenne.",
+        "explore_note": "Ei kuvakaappauksia — toimiva työpöytä, auki ja käytettävissä. Kaikki, mitä siellä kirjoitatte, jää selaimeenne.",
         "hero_note": "Maksutta ja sitoumuksetta — kertokaa, mikä hidastaa työtänne, niin vastaamme rehellisillä vaihtoehdoilla."
       }
     },
@@ -1622,44 +1558,6 @@ html[data-anim="paused"] .dock-flare{display:none}
       "fi": "fi-FI"
     },
     "appData": {
-      "product": {
-        "en": {
-          "label": "Estimate",
-          "title": "ESTIMATE — A LIVE SYSTEM",
-          "intro": "Not a screenshot and not a demo reel. Inside is the system we built for a body shop: it prices, prints and files an estimate right here in your browser. Try it — fill in a line or two and press calculate.",
-          "note": "Everything you type stays in your browser and goes nowhere. Which also means it is not kept by us: keeping and handing your data back is the job of your own system, not of this showcase.",
-          "askIntro": "Did it work for you?",
-          "ask": "Tell the founder in one line",
-          "prefill": "I opened Estimate on sys.baby and tried it: "
-        },
-        "ru": {
-          "label": "Смета",
-          "title": "СМЕТА — ЖИВАЯ СИСТЕМА",
-          "intro": "Это не скриншот и не ролик. Внутри — та самая система, которую мы построили кузовному цеху: считает, печатает и подшивает смету прямо в вашем браузере. Попробуйте: заполните пару строк и нажмите расчёт.",
-          "note": "Всё, что вы введёте, остаётся в вашем браузере и никуда не уходит. Это же значит, что у нас оно не хранится: хранить и отдавать вам данные будет ваша система, а не эта витрина.",
-          "askIntro": "Получилось?",
-          "ask": "Рассказать основателю одной строкой",
-          "prefill": "Я открыл «Смету» на sys.baby и попробовал: "
-        },
-        "ee": {
-          "label": "Hinnang",
-          "title": "HINNANG — ELUS SÜSTEEM",
-          "intro": "See ei ole ekraanipilt ega video. Sees on seesama süsteem, mille ehitasime kereremonditöökojale: arvutab, prindib ja arhiveerib pakkumise otse teie brauseris. Proovige: täitke paar rida ja vajutage arvutamist.",
-          "note": "Kõik, mida sisestate, jääb teie brauserisse ega lähe kuhugi. See tähendab ka, et meie seda ei hoia: teie andmeid hoiab ja tagastab teie oma süsteem, mitte see vitriin.",
-          "askIntro": "Kas see töötas?",
-          "ask": "Öelge asutajale ühe reaga",
-          "prefill": "Avasin sys.baby lehel „Hinnangu“ ja proovisin: "
-        },
-        "fi": {
-          "label": "Arvio",
-          "title": "ARVIO — ELÄVÄ JÄRJESTELMÄ",
-          "intro": "Tämä ei ole kuvakaappaus eikä video. Sisällä on sama järjestelmä, jonka rakensimme korjaamolle: se laskee, tulostaa ja arkistoi tarjouksen suoraan selaimessasi. Kokeile: täytä pari riviä ja paina laskentaa.",
-          "note": "Kaikki, mitä kirjoitat, jää selaimeesi eikä lähde minnekään. Se tarkoittaa myös, ettemme säilytä sitä: tietojesi säilyttäminen ja palauttaminen on oman järjestelmäsi tehtävä, ei tämän näyteikkunan.",
-          "askIntro": "Toimiko se?",
-          "ask": "Kerro perustajalle yhdellä rivillä",
-          "prefill": "Avasin sys.babyn Arvion ja kokeilin: "
-        }
-      },
       "services": {
         "en": {
           "label": "Services",
@@ -1716,32 +1614,6 @@ html[data-anim="paused"] .dock-flare{display:none}
             "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Avaa se ja käytä — se on käynnissä →<\/a>",
             "Rakennamme tarkoituksella tylsälle perustalle: sillä, millä järjestelmä on kirjoitettu, on paljon vähemmän merkitystä kuin sillä, toimiiko se yhä viiden vuoden päästä ja pystyykö tavallinen kehittäjä korjaamaan sen, kun jokin ympärillä muuttuu varoittamatta."
           ]
-        }
-      },
-      "cases": {
-        "en": {
-          "label": "Cases",
-          "title": "Selected Work",
-          "intro": "We're a hands-on studio and client work stays confidential by default. Below is what we've built — client systems at the level each client permits, and our own builds, marked as such.",
-          "items": []
-        },
-        "ru": {
-          "label": "Кейсы",
-          "title": "Избранные проекты",
-          "intro": "Мы работаем с полным вовлечением, и работа клиентов конфиденциальна по умолчанию. Ниже то, что мы построили: клиентские системы — на уровне, который разрешает клиент, и наши собственные разработки, отмеченные отдельно.",
-          "items": []
-        },
-        "ee": {
-          "label": "Juhtumid",
-          "title": "Valitud tööd",
-          "intro": "Oleme praktiline stuudio ja kliendi töö jääb vaikimisi konfidentsiaalseks. Allpool on see, mille oleme ehitanud: kliendisüsteemid sellisel tasemel, nagu klient lubab, ja meie enda ehitatud lahendused, eraldi märgituna.",
-          "items": []
-        },
-        "fi": {
-          "label": "Työt",
-          "title": "Valittuja töitä",
-          "intro": "Olemme käytännön studio, ja asiakastyö pysyy oletuksena luottamuksellisena. Alla on se, mitä olemme rakentaneet: asiakasjärjestelmät sillä tarkkuudella kuin kukin asiakas sallii, ja omat rakennuksemme erikseen merkittyinä.",
-          "items": []
         }
       },
       "about": {
@@ -1850,7 +1722,6 @@ html[data-anim="paused"] .dock-flare{display:none}
       },
       "roi": {
         "en": {
-          "anchor": "In one delivered system, preparing a customer quote went from about an hour to 15 minutes. We know because we worked in that trade before building it. The sliders below are a model; that is not.",
           "label": "Payback",
           "title": "Automation payback estimate",
           "intro": "A deliberately cautious estimate — cautious enough that it will tell you when automating is not worth it yet. Move the sliders to match your team. Everything below is a range, because an honest estimate always is; we confirm real figures against your actual process before quoting.",
@@ -1877,7 +1748,6 @@ html[data-anim="paused"] .dock-flare{display:none}
           "cta": "Get a tailored proposal"
         },
         "ru": {
-          "anchor": "В одной сданной системе подготовка сметы сократилась примерно с часа до 15 минут. Мы знаем это, потому что работали в этом деле до того, как её построили. Ползунки ниже — модель; это не модель.",
           "label": "Окупаемость",
           "title": "Оценка окупаемости автоматизации",
           "intro": "Намеренно осторожная оценка — настолько, что вполне может отговорить. Подвиньте ползунки под свою команду. Ниже везде диапазоны, потому что честная оценка всегда диапазон; точные цифры считаем по вашему реальному процессу до коммерческого предложения.",
@@ -1904,7 +1774,6 @@ html[data-anim="paused"] .dock-flare{display:none}
           "cta": "Запросить предложение"
         },
         "ee": {
-          "anchor": "Ühes üleantud süsteemis lühenes hinnapakkumise koostamine umbes tunnist 15 minutini. Teame seda, sest töötasime selles valdkonnas enne selle ehitamist. Allolevad liugurid on mudel; see ei ole.",
           "label": "Tasuvus",
           "title": "Automatiseerimise tasuvuse hinnang",
           "intro": "Teadlikult ettevaatlik hinnang — nii ettevaatlik, et see ütleb ka siis, kui automatiseerimine veel ei tasu ära. Liigutage liugureid oma meeskonna järgi. Kõik allpool on vahemikud, sest aus hinnang ongi alati vahemik; täpsed numbrid arvutame teie tegeliku protsessi pealt enne pakkumist.",
@@ -1931,7 +1800,6 @@ html[data-anim="paused"] .dock-flare{display:none}
           "cta": "Küsi pakkumist"
         },
         "fi": {
-          "anchor": "Yhdessä toimitetussa järjestelmässä asiakastarjouksen laatiminen lyheni noin tunnista 15 minuuttiin. Tiedämme sen, koska teimme itse tuota työtä ennen järjestelmän rakentamista. Alla olevat liukusäätimet ovat malli; tuo luku ei ole.",
           "label": "Takaisinmaksu",
           "title": "Automaation takaisinmaksuarvio",
           "intro": "Tarkoituksella varovainen arvio — niin varovainen, että se kertoo myös silloin, kun automatisointi ei vielä kannata. Siirtäkää säätimet vastaamaan tiimiänne. Kaikki alla on vaihteluväli, koska rehellinen arvio on aina sitä; varmistamme todelliset luvut prosessianne vasten ennen tarjousta.",
@@ -2044,8 +1912,7 @@ html[data-anim="paused"] .dock-flare{display:none}
                 "A working system for your trade, configured from one we have already built",
                 "Quotes or estimates, priced documents, signature, payment request, archive",
                 "Delivered in one week on a fixed date, for a fixed price",
-                "You own the source. No subscription, no external service to depend on",
-                "You can see it running for another business before you decide"
+                "You own the source. No subscription, no external service to depend on"
               ]
             },
             {
@@ -2131,8 +1998,7 @@ html[data-anim="paused"] .dock-flare{display:none}
                 "Рабочая система для вашего дела, настроенная из уже построенной",
                 "Сметы или предложения, документы с ценами, подпись, запрос оплаты, архив",
                 "Неделя, фиксированная дата, фиксированная цена",
-                "Исходный код у вас. Ни подписки, ни внешнего сервиса, от которого зависите",
-                "До решения можно посмотреть, как она работает у другого бизнеса"
+                "Исходный код у вас. Ни подписки, ни внешнего сервиса, от которого зависите"
               ]
             },
             {
@@ -2218,8 +2084,7 @@ html[data-anim="paused"] .dock-flare{display:none}
                 "Töötav süsteem teie valdkonnale, seadistatud juba ehitatud süsteemist",
                 "Hinnapakkumised, hinnastatud dokumendid, allkiri, maksenõue, arhiiv",
                 "Üks nädal, kindel kuupäev, kindel hind",
-                "Lähtekood kuulub teile. Ei tellimust ega välist teenust, millest sõltuda",
-                "Enne otsustamist näete, kuidas see teise ettevõtte juures töötab"
+                "Lähtekood kuulub teile. Ei tellimust ega välist teenust, millest sõltuda"
               ]
             },
             {
@@ -2305,8 +2170,7 @@ html[data-anim="paused"] .dock-flare{display:none}
                 "Toimiva järjestelmä alallenne, konfiguroituna jo rakentamastamme",
                 "Tarjoukset tai arviot, hinnoitellut asiakirjat, allekirjoitus, maksupyyntö, arkisto",
                 "Toimitus yhdessä viikossa kiinteänä päivänä ja kiinteään hintaan",
-                "Omistatte lähdekoodin. Ei tilausmaksua, ei ulkoista palvelua josta riippua",
-                "Voitte nähdä sen toiminnassa toisella yrityksellä ennen päätöstä"
+                "Omistatte lähdekoodin. Ei tilausmaksua, ei ulkoista palvelua josta riippua"
               ]
             },
             {
@@ -2465,54 +2329,6 @@ html[data-anim="paused"] .dock-flare{display:none}
         "msg": "Ready"
       }
     ],
-    "portfolioCaseLabels": {
-      "en": {
-        "reported": "First-hand — we worked in this trade before building the system.",
-        "built": "Built",
-        "withheld": "Client name withheld at their request.",
-        "notasked": "Named on publication — permission not yet requested.",
-        "ownBuild": "Our own build for a private dental practice — we deliberately stopped short of rollout. It turned out that people with thirty years of writing by hand fill a card faster than they type, and one fast young person does not compensate for that: transcribing another shift's handwritten notes doubles the work instead of removing it. We paid for that finding ourselves, and it is now the first question we ask every client: who exactly will be entering the data. We show the system on request; there is no public demo."
-      },
-      "ru": {
-        "reported": "Из первых рук — мы работали в этом деле до того, как построили систему.",
-        "built": "Сделано",
-        "withheld": "Имя клиента не раскрывается по его просьбе.",
-        "notasked": "Имя будет названо после согласия — разрешение пока не запрашивалось.",
-        "ownBuild": "Собственная разработка для частной стоматологической клиники — до внедрения мы её сознательно не довели. Выяснилось, что люди с тридцатилетним стажем письма заполняют карту от руки быстрее, чем печатают, и одним быстрым молодым человеком это не компенсируется: переносить рукописи за другую смену значит удваивать работу, а не убирать её. Вывод мы оплатили сами, и теперь он входит в первый вопрос каждому клиенту: кто конкретно будет вводить данные. Систему показываем по запросу, публичной демонстрации нет."
-      },
-      "ee": {
-        "reported": "Otsesest kogemusest — töötasime selles valdkonnas enne süsteemi ehitamist.",
-        "built": "Tehtud",
-        "withheld": "Kliendi nimi on tema soovil avaldamata.",
-        "notasked": "Nimi avaldatakse loal — luba pole veel küsitud.",
-        "ownBuild": "Meie enda ehitatud lahendus erahambaravipraksisele — jätsime selle teadlikult kasutuselevõtuni viimata. Selgus, et inimesed, kes on kolmkümmend aastat käsitsi kirjutanud, täidavad kaardi käsitsi kiiremini kui klaviatuuril, ja üks kiire noor inimene seda ei korva: teise vahetuse käsikirjade ümbertrükkimine kahekordistab töö, mitte ei kaota seda. Selle järelduse eest maksime ise, ja nüüd on see esimene küsimus igale kliendile: kes täpselt hakkab andmeid sisestama. Süsteemi näitame soovi korral, avalikku demot ei ole."
-      },
-      "fi": {
-        "reported": "Omakohtaisesti — teimme tätä työtä ennen järjestelmän rakentamista.",
-        "built": "Rakennettu",
-        "withheld": "Asiakkaan nimi jätetty pois hänen pyynnöstään.",
-        "notasked": "Nimi julkaistaan luvalla — lupaa ei ole vielä pyydetty.",
-        "ownBuild": "Oma rakennuksemme yksityiselle hammasklinikalle — jätimme sen tietoisesti käyttöönottoon viemättä. Kävi ilmi, että ihmiset, joilla on kolmenkymmenen vuoden käsinkirjoittamisen rutiini, täyttävät kortin käsin nopeammin kuin näppäimistöllä, eikä yksi nopea nuori sitä korvaa: toisen vuoron käsinkirjoitusten puhtaaksikirjoitus kaksinkertaistaa työn sen sijaan että poistaisi sen. Maksoimme tästä havainnosta itse, ja nyt se on ensimmäinen kysymys jokaiselle asiakkaalle: kuka tarkalleen syöttää tiedot. Näytämme järjestelmän pyynnöstä, julkista demoa ei ole."
-      }
-    },
-    "portfolioCaseLink": {
-      "en": "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>See a real system we've shipped &rarr;<\/a>",
-      "ru": "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Посмотреть реальную систему, которую мы сделали &rarr;<\/a>",
-      "ee": "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Vaata reaalset süsteemi, mille ehitasime &rarr;<\/a>",
-      "fi": "<a href='os/' style='color:var(--accent);font-weight:600;text-decoration:none;'>Katso oikea järjestelmä, jonka olemme toimittaneet &rarr;<\/a>"
-    },
-    "heroProofSourceLine": {
-      "en": "First-hand — we worked in this trade before building the system.",
-      "ru": "Из первых рук — мы работали в этом деле до того, как построили систему.",
-      "ee": "Otsesest kogemusest — töötasime selles valdkonnas enne süsteemi ehitamist.",
-      "fi": "Omakohtaisesti — teimme tätä työtä ennen järjestelmän rakentamista."
-    },
-    "casesOpenPlatformLabel": {
-      "en": "Open the live platform →",
-      "ru": "Открыть живую платформу →",
-      "ee": "Ava elav platvorm →",
-      "fi": "Avaa toimiva alusta →"
-    },
     "attention": {
       "_note": "Принцип знакомств (MASTER PROMPT 2 §3). Тихий слой, не CTA. Никогда не называть это referral/affiliate/партнёрской программой/комиссией. Конкретный процент не публикуется намеренно.",
       "en": {
@@ -2615,13 +2431,6 @@ html[data-anim="paused"] .dock-flare{display:none}
       "ee": "Vaheta keelt",
       "fi": "Vaihda kieli"
     },
-    "seenSystemsLineTemplates": {
-      "_comment": "Built by concatenation in source; {names} = portfolio view names joined with ', '.",
-      "en": "I looked at: {names}.",
-      "ru": "Смотрел: {names}.",
-      "ee": "Vaatasin: {names}.",
-      "fi": "Katsoin: {names}."
-    },
     "staticStrings": {
       "documentTitle": "sys.baby — Building Automated Business for You",
       "wordmark": "sys\u200A.\u200Ababy",
@@ -2669,9 +2478,7 @@ html[data-anim="paused"] .dock-flare{display:none}
         "controlCenter": "Control Center",
         "dockNav": "Applications",
         "dockApps": {
-          "product": "Estimate — live system",
           "services": "Services",
-          "cases": "Cases",
           "about": "About",
           "contact": "Contact",
           "roi": "ROI Calculator",
@@ -2813,13 +2620,13 @@ var S = C.staticStrings;
    единой финской строки. Смешение внутри окна хуже, чем всё по-английски. */
 var LANGS = ["en", "ru", "ee", "fi"];
 var OS_LANGS = ["en", "ru", "ee"];
-/* Первый продукт стоит первым в доке — решение D-046-ONE-ENTRANCE: человек
-   попадает не на страницу о системе, а в систему, и первое, что ему
-   предлагается, — живая работа, а не рассказ о ней. */
-var APPS = ["product", "services", "cases", "about", "contact", "roi", "chat", "order"];
+/* Работы временно сняты с витрины (D-354, основатель 03.10.2026): ни окна
+   «Избранные проекты», ни окна «Смета» с живой работой. Прежде первым в доке
+   стоял первый продукт (D-046); теперь витрина начинается с услуг. Старые
+   адреса ?open=cases и ?open=product открывают первый экран: таких окон нет,
+   и appCopyExists их не находит. */
+var APPS = ["services", "about", "contact", "roi", "chat", "order"];
 var DOC_LANG = { en: "en", ru: "ru", ee: "et", fi: "fi" };
-var OS_LINK = "os/";
-var SEEN_KEY = "sysbaby.seen.systems";
 var ENDPOINT = S.formEndpoint;
 /* Чужая машина, через которую идёт бриф, называется в форме по имени — и имя
    достаётся из ENDPOINT, а не пишется буквой в переводах. */
@@ -2843,8 +2650,7 @@ var SYS_ERRORS = {
    filling the screen (see createWindow) — but this pair is still the size a
    window returns to when the visitor un-maximises it, so it stays live data. */
 var WIN_SIZE = {
-  product: [860, 660],
-  services: [640, 520], cases: [640, 520], about: [560, 400],
+  services: [640, 520], about: [560, 400],
   contact: [560, 440], order: [760, 700], chat: [380, 560], roi: [560, 640]
 };
 
@@ -2854,11 +2660,7 @@ var WIN_SIZE = {
 var TOPBAR_H = 44;
 
 var ICONS = {
-  /* Первый продукт: лист сметы со строкой итога. Не «калькулятор» — считает
-     не человек, а система, и отдаёт готовый документ. */
-  product: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8"/><path d="M8 12h5"/><path d="M8 16h8"/><path d="M16 12.5v3.5"/>',
   services: '<path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M3 14h7v7H3z"/><path d="M14 14h7v7h-7z"/>',
-  cases: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
   about: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>',
   contact: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/>',
   roi: '<path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-6"/><path d="M2 20h20"/>',
@@ -3058,7 +2860,6 @@ function setLang(lang) {
     }
   } catch (err) { /* storage blocked */ }
   renderHero();
-  renderHeroProof();          /* the proof line is portfolio prose: it translates too */
   renderDockLabels();
   el("cmdkTriggerLabel").textContent = C.cmdkLabels[lang].triggerLabel;
   APPS.forEach(function (app) { if (wins[app]) renderWindow(app); });
@@ -3262,35 +3063,6 @@ function fitHeroName() {
   eb.style.width = target.toFixed(2) + "px";
 }
 window.sbFitHeroName = fitHeroName;
-
-/* Hero proof: rendered once, at load, in the load-time language (spec §7). */
-function renderHeroProof() {
-  if (!window.sbPortfolio || !window.sbPortfolioView) return;
-  var lang = state.lang;
-  for (var i = 0; i < window.sbPortfolio.length; i++) {
-    var entry = window.sbPortfolio[i];
-    if (entry && entry.visibility === "private") continue;
-    var view = window.sbPortfolioView(entry, lang);
-    if (view.resultsState !== "measured" || !view.results) continue;
-    el("heroProofMain").textContent = view.results;
-    /* ОБЛАСТЬ ДЕЙСТВИЯ ЦИФРЫ. Замер сделан в ОДНОЙ отрасли — авторемонтной
-       покраске. Без названия отрасли «час превратился в 15 минут» читается
-       как обещание всем и каждому: два верных факта, стоящих рядом, снова
-       дают обещание, которого никто не давал. Отрасль берётся из вида
-       портфолио, а не вписывается руками, и потому не разойдётся с делом.
-       Тот же приём уже применён в окне окупаемости: «в одной поставленной
-       системе». Охраняется tools/facts-source-check.mjs. */
-    var src = [];
-    if (view.industry) src.push(view.industry);
-    if (view.resultsSource === "first-hand") {
-      src.push(C.heroProofSourceLine[lang] || C.heroProofSourceLine.en);
-    }
-    el("heroProofSrc").textContent = src.join(" · ");
-    el("heroProof").classList.add("is-shown");
-    return;
-  }
-  /* No qualifying entry: the block stays hidden. Never substitute copy. */
-}
 
 /* ------------------------------------------------------------------ dock */
 
@@ -3948,8 +3720,6 @@ function renderWindow(app) {
   if (app === "order") { renderOrder(record); return; }
   if (app === "roi") { renderRoi(record); return; }
   if (app === "chat") { renderChat(record); return; }
-  if (app === "cases") { renderCases(record); return; }
-  if (app === "product") { renderProduct(record); return; }
   renderSimple(record, app);
 }
 
@@ -4160,193 +3930,6 @@ function renderSimple(record, app) {
   if (copy.hours && copy.hours.line) startHoursClock();
 }
 
-/* Cases: generated from the portfolio safe views (spec §11). */
-function caseItemHtml(view, lang) {
-  var labels = C.portfolioCaseLabels[lang] || C.portfolioCaseLabels.en;
-  var parts = [];
-  parts.push('<span class="case-goal">' + esc(view.goal) + "</span>");
-  var meta = [view.industry, view.projectType].filter(Boolean).map(esc).join(" &middot; ");
-  if (meta) parts.push('<span class="case-meta">' + meta + "</span>");
-  if (view.features && view.features.length) {
-    parts.push('<span class="case-meta">' + esc(labels.built) + ": " +
-      view.features.map(esc).join(" &middot; ") + "</span>");
-  }
-  if (view.scale) parts.push('<span class="case-meta">' + esc(view.scale) + "</span>");
-  if (view.resultsState === "measured" && view.results) {
-    parts.push('<span class="case-result">' + esc(view.results) + "</span>" +
-      '<span class="case-note">' + esc(labels.reported) + "</span>");
-  }
-  if (view.origin) parts.push('<span class="case-note">' + esc(view.origin.label) + "</span>");
-  /* Собственная разработка: стороннего заказчика нет, и это сказано прямо.
-     Раньше такая запись попадала в ветку «имя скрыто по просьбе клиента» —
-     то есть страница называла причину, которой не было. */
-  if (view.nameState === "own-build") parts.push('<span class="case-note">' + esc(labels.ownBuild) + "</span>");
-  else if (view.nameState === "withheld") parts.push('<span class="case-note">' + esc(labels.withheld) + "</span>");
-  else if (view.nameState === "not-yet-asked") parts.push('<span class="case-note">' + esc(labels.notasked) + "</span>");
-  return "<li>" + parts.join("<br>") + "</li>";
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   ПЕРВЫЙ ПРОДУКТ · окно «Смета» — вход в систему, а не рассказ о системе
-   ───────────────────────────────────────────────────────────────────────────
-   ПОВОД. До этого окна путь человека выглядел так: посмотрел страницу →
-   прочитал о кейсах → может быть нажал «живая система» внутри карточки →
-   попал в чужую вкладку. Четыре шага до первого действия и ни одного
-   наблюдаемого события по дороге. Решение союза (D-046-ONE-ENTRANCE): один
-   вход, и первым в доке стоит рабочая вещь.
-
-   ЧТО ЗДЕСЬ ЕСТЬ.
-   1. Рамка с НАСТОЯЩЕЙ системой клиента (тот же адрес, что открывает
-      портфолио, — адрес берётся у общего источника sbResolveCasePath).
-   2. Граница, а не гарантия (класс D в терминах внутреннего контура):
-      сказано ровно то, что верно, — введённое остаётся в браузере и у нас
-      не хранится. Это ограничение витрины, и оно названо там же, где
-      предлагается пробовать.
-   3. ЗАПИСЬ СПРОСА. Открытие окна и нажатие «рассказать» кладутся в местный
-      журнал (sysbaby.demand.log) и предлагают человеку сказать одной
-      строкой — через тот же чат, который уже доходит письмом. Это
-      единственное место в проекте, где спрос вообще может появиться:
-      всё остальное измеряет нас, а не людей.
-   Охраняется tools/first-product-check.mjs. */
-function demandNote(kind, extra) {
-  try {
-    var raw = localStorage.getItem("sysbaby.demand.log");
-    var log = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(log)) log = [];
-    log.push({ k: kind, t: Date.now(), lang: state.lang, x: extra || null });
-    /* Журнал местный и короткий: он подсказка человеку, а не слежка. */
-    localStorage.setItem("sysbaby.demand.log", JSON.stringify(log.slice(-40)));
-    return log.length;
-  } catch (e) { return 0; }
-}
-window.sbDemandLog = function () {
-  try { return JSON.parse(localStorage.getItem("sysbaby.demand.log") || "[]"); }
-  catch (e) { return []; }
-};
-
-function renderProduct(record) {
-  var lang = state.lang;
-  var t = appCopy("product", lang);
-  /* Адрес берётся у единственного источника — записи портфолио, а не пишется
-     здесь второй раз: вторая копия правды расходится молча. Путь в источнике
-     записан от корня ОС («../cases/…»), потому что первым его потребителем
-     было приложение портфолио внутри os/. Лендинг лежит на этаж выше, и
-     ведущие «../» ему лишние — снимаем их ЗДЕСЬ, у потребителя, оставив
-     источник нетронутым. Внешний адрес (SB_CASES_BASE) проходит как есть. */
-  var entry = null;
-  if (window.sbPortfolio) {
-    for (var i = 0; i < window.sbPortfolio.length; i++) {
-      var v = window.sbPortfolioView(window.sbPortfolio[i], lang);
-      if (v && v.explorePath) { entry = v; break; }
-    }
-  }
-  var url = entry ? entry.explorePath : "cases/auto-estimate/index.html";
-  if (!/^https?:\/\//.test(url)) url = url.replace(/^(\.\.\/)+/, "");
-  setHtml(record.body,
-    '<h3>' + esc(t.title) + "</h3>" +
-    "<p>" + esc(t.intro) + "</p>" +
-    /* ── ГРАНИЦА — ДО СИСТЕМЫ, ПРИЗЫВ — ПОСЛЕ (D-284) ────────────────────
-       История, чтобы не повторить её в третий раз. Сначала граница стояла в
-       потоке ПОД рамкой, а кнопка липла к низу — и кнопка накрыла границу
-       собой: система показывала предложение поверх собственного предела.
-       Тогда их сложили в один липкий блок, «вместе и всегда видны». Но блок
-       вырос до пяти строк и на телефоне 320×568 и 360×640 закрыл уже саму
-       демонстрацию — 0 px видимой системы (прибор, 24.09.2026).
-       Теперь граница стоит ПЕРЕД системой: её читают до того, как начали
-       пользоваться, и липкой кнопке её не накрыть — она выше. Липнет одна
-       строка: вопрос и кнопка. Охраняются first-product-check (граница
-       видна) и demo-visible-check (демонстрация видна). */
-    '<p class="product-note product-note-before"><span class="d-mark">D</span>' + esc(t.note) + "</p>" +
-    '<div class="product-frame"><iframe id="productFrame" src="' + esc(url) + '" ' +
-      'title="' + esc(t.title) + '" loading="lazy"></iframe></div>' +
-    '<div class="product-ask">' +
-      "<b>" + esc(t.askIntro) + "</b>" +
-      '<button class="btn btn-primary" type="button" id="productAsk">' + esc(t.ask) + "</button>" +
-    "</div>");
-  demandNote("product:open");
-  var ask = $("#productAsk", record.body);
-  if (ask) {
-    ask.addEventListener("click", function () {
-      demandNote("product:tell");
-      openApp("chat");
-      /* Заготовка текста — не сообщение за человека: строка обрывается на
-         полуслове намеренно, дописывает он. Пустое поле после нажатия — это
-         дефект, и его ловит закон. */
-      setTimeout(function () {
-        var box = document.querySelector("#chatText");
-        if (box && !box.value) {
-          box.value = t.prefill;
-          box.focus();
-          try { box.setSelectionRange(box.value.length, box.value.length); } catch (e) { /* не критично */ }
-        }
-      }, 260);
-    });
-  }
-}
-
-/* ── «ИЗБРАННЫЕ ПРОЕКТЫ» РИСУЕТ ТОТ ЖЕ МОДУЛЬ, ЧТО И ПОРТФОЛИО (v47.1) ────
- *
- * Основатель: «в раздел selected work на лендинге нужно уместить информацию
- * из приложения портфолио, так как оно не должно быть в OS, портфолио должно
- * быть в приложении build». Совет проголосовал за общий модуль отрисовки:
- * shared/portfolio.view.js рисует и окно системы, и этот раздел.
- *
- * Здесь остаётся ровно то, что принадлежит витрине: заголовок раздела, её
- * собственное вступление о конфиденциальности и ссылка в систему. Всё
- * остальное — карточки, живые предпросмотры, очередь работ, призыв — идёт
- * из общего модуля, и второй копии этой вёрстки на витрине больше нет.
- *
- * Список ниже сохранён как ЗАПАСНОЙ ХОД: если общий модуль не загрузился,
- * раздел показывает работы простым списком, а не пустоту. Молчаливой дыры
- * на месте главного раздела быть не должно.
- */
-function renderCases(record) {
-  var lang = state.lang;
-  var copy = appCopy("cases", lang);
-  var platformLabel = C.casesOpenPlatformLabel[lang] || C.casesOpenPlatformLabel.en;
-
-  if (typeof window.sbRenderPortfolioInto === "function") {
-    setHtml(record.body,
-      "<h3>" + copy.title + "</h3><p>" + copy.intro + "</p>" +
-      '<div class="pf-mount"></div>' +
-      '<p class="link-row"><a href="' + esc(OS_LINK) + '">' + esc(platformLabel) + "</a></p>");
-    var mount = record.body.querySelector(".pf-mount");
-    var drawn = false;
-    try { drawn = window.sbRenderPortfolioInto(mount, "build", lang); }
-    catch (err) { console.error("[cases] shared portfolio failed", err); drawn = false; }
-    if (drawn) return;
-    /* не получилось — падаем в запасной список ниже, а не оставляем дыру */
-  }
-
-  var items = [];
-  if (window.sbPortfolio && window.sbPortfolioView) {
-    window.sbPortfolio.forEach(function (entry) {
-      if (!entry || entry.visibility === "private") return;   /* never surfaced */
-      items.push(caseItemHtml(window.sbPortfolioView(entry, lang), lang));
-    });
-  }
-  /* Work that is real but has nothing to open yet. Reads the same object the
-     OS Portfolio does, so the count cannot be current in one place and stale
-     in the other — and it keeps the register of the entries above it: a
-     number and a state, no client and no promise of a date. */
-  if (typeof window.sbPipelineView === "function") {
-    var pipe = window.sbPipelineView(lang);
-    if (pipe) {
-      (pipe.rows || [pipe]).forEach(function (r) {
-        items.push('<li class="plain case-pipeline">' +
-          '<span class="case-pipe-count">' + esc(r.count) + "</span>" +
-          '<span class="case-pipe-label">' + esc(r.label) + "</span><br>" +
-          '<span class="case-note">' + esc(r.note) + "</span></li>");
-      });
-    }
-  }
-  items.push('<li class="plain">' + (C.portfolioCaseLink[lang] || C.portfolioCaseLink.en) + "</li>");
-  setHtml(record.body,
-    "<h3>" + copy.title + "</h3><p>" + copy.intro + "</p>" +
-    '<ul class="panel-list">' + items.join("") + "</ul>" +
-    '<p class="link-row"><a href="' + esc(OS_LINK) + '">' + esc(platformLabel) + "</a></p>");
-}
-
 /* ----------------------------------------------------------- order panel */
 
 function packageById(lang, id) {
@@ -4359,34 +3942,6 @@ function packageLabel(lang, id) {
   var pkg = packageById(lang, id);
   if (!PRICING) return pkg.name;
   return pkg.name + " — " + PRICING.priceOf(pkg.priceId, lang);
-}
-
-/* localStorage read (the landing writes nothing) — spec §17. */
-function seenSystemsPrefill(lang) {
-  if (!window.sbPortfolio || !window.sbPortfolioView) return "";
-  var raw;
-  /* Both catches are deliberate no-prefill paths, not swallowed failures: this
-     is optional context written by another surface. Storage blocked (private
-     mode / disabled cookies) or a corrupt value must leave the visitor with a
-     working, empty textarea and nothing to read (spec 17). */
-  try { raw = window.localStorage.getItem(SEEN_KEY); } catch (err) { return ""; }
-  if (!raw) return "";
-  var ids;
-  try { ids = JSON.parse(raw); } catch (err) { return ""; }
-  if (!Array.isArray(ids)) return "";
-  var names = [];
-  ids.forEach(function (id) {
-    for (var i = 0; i < window.sbPortfolio.length; i++) {
-      if (window.sbPortfolio[i].id === id) {
-        var view = window.sbPortfolioView(window.sbPortfolio[i], state.lang);
-        if (view.name) names.push(view.name);
-        return;
-      }
-    }
-  });
-  if (!names.length) return "";
-  var template = C.seenSystemsLineTemplates[lang] || C.seenSystemsLineTemplates.en;
-  return template.replace("{names}", names.join(", ")) + "\n\n";
 }
 
 function renderOrder(record) {
@@ -4447,8 +4002,6 @@ function renderOrder(record) {
     });
   });
 
-  var messageField = $("#of-message", record.body);
-  if (!messageField.value) messageField.value = seenSystemsPrefill(lang);
   $("#orderForm", record.body).addEventListener("submit", function (ev) {
     ev.preventDefault();
     submitOrder(record);
@@ -4649,7 +4202,6 @@ function renderRoi(record) {
   setHtml(record.body,
     "<h3>" + t.title + "</h3>" +
     "<p>" + t.intro + "</p>" +
-    '<div class="roi-anchor">' + t.anchor + "</div>" +      /* checkable real result */
     roiSliderHtml("roiHours", t.hoursLabel, t.hoursHint, 1, 30, 8) +
     roiSliderHtml("roiPeople", t.peopleLabel, t.peopleHint, 1, 15, 3) +
     roiSliderHtml("roiRate", t.rateLabel, t.rateHint, 12, 60, 22) +
@@ -5221,7 +4773,6 @@ function init() {
   renderHero();
   buildDock();
   applyPrefs();
-  renderHeroProof();
   wireChrome();
   wireHandoff();
   wireResize();

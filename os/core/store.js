@@ -20,6 +20,19 @@
   function ssSet(k, v) { try { window.sessionStorage.setItem(k, v); return true; } catch (e) { return false; } }
   function ssDel(k) { try { window.sessionStorage.removeItem(k); return true; } catch (e) { return false; } }
 
+  /* Какой замок знает эта вкладка (D-353, шаг 4; см. «ЗАМОК, КОТОРЫЙ ЗНАЕТ
+     ВКЛАДКА» ниже): соль записи замка — запоминается сразу после фасада
+     инкогнито (ниже), до первого обращения к хранилищу, тем же взглядом,
+     каким её потом сверяют. */
+  var seenLock = null, ownGone = null;
+  function lockSaltNow() {
+    var raw = null, rec = null;
+    try { raw = window.localStorage.getItem("sysbaby.lock.v1"); } catch (e) { raw = null; }
+    if (!raw) return null;
+    try { rec = JSON.parse(raw); } catch (e) { return "?"; }
+    return rec && rec.salt ? String(rec.salt) : "?";
+  }
+
   /* ── ПЕРЕЧИСЛЕНИЕ ТОЖЕ ПРОХОДИТ ЧЕРЕЗ ЗАМОК · решение D-172 ────────────────
      Замок стоит на границе Storage: чтение и запись он перехватывает (D-164).
      А ПЕРЕЧИСЛЕНИЕ — нет: localStorage.key() отдаёт то, что лежит на диске, а
@@ -102,6 +115,10 @@
       if (window.console) console.warn("[sysbaby] incognito facade unavailable:", err && err.message);
     }
   })();
+  /* Соль — тем же взглядом, что и сверка: в инкогнито — через фасад
+     (разбор №4: взгляд мимо фасада видел настоящий замок, которого фасад
+     не показывает, и вкладка инкогнито считала замок пропавшим). */
+  try { seenLock = lockSaltNow(); } catch (e) { seenLock = null; }
 
   /* -------------------------------------------------- 2. diagnostics §10/§6.6 */
   var diagErrors = window.__sbDiagErrors || [];
@@ -581,8 +598,14 @@
 
   /* ------------------------------------------------ 6. IndexedDB mirror §1.4 */
   var idbPromise = null;
-  function idb() {
+  function idb(forErase) {
     if (window.sbIncognitoActive) return Promise.resolve(null);
+    /* Замок исчез (или появился) под вкладкой — базы она не открывает (и не
+       пересоздаёт). */
+    if (lostNow()) return Promise.resolve(null);
+    /* После ухода (D-174) база не открывается вовсе: открыть её — значит
+       пересоздать стёртую, пустую, но след. Открывает только само стирание. */
+    if (window.sbVanishing && !forErase) return Promise.resolve(null);
     if (idbPromise) return idbPromise;
     idbPromise = new Promise(function (resolve) {
       var req;
@@ -595,7 +618,20 @@
          папку не строка и в localStorage не ложится. */
       /* Версия 4 (D-351): добавлен склад «carrier» — носитель замка, одна
          запись фиксированного размера. */
-      try { req = window.indexedDB.open("sysbaby", 4); } catch (e) { resolve(null); return; }
+      /* Версия 5 (D-353): новых складов нет — это ВОРОТА ВЕРСИЙ. Носитель
+         пишется теперь только сравнением и заменой в одной транзакции, а
+         сборка до D-353 писала его по-старому: прочитав в одной транзакции и
+         записав в другой — поверх более нового. Открытая вкладка прежней
+         сборки получает versionchange и закрывает базу, а открыть её снова
+         своей версией не может (VersionError): по старым правилам она базу
+         больше не пишет. Запись замка в localStorage такая вкладка в миг
+         ухода ещё может переписать целиком (щели в самой записи, как в
+         v178) — безвредно: lateRead предпочитает щели своими записями
+         (финальный разбор H1, п. 4). */
+      /* Версия 6 (A1 разбора границ): те же ворота против сборки до A1 —
+         она без Web Locks ставила и поворачивала замок сравнением-и-заменой,
+         а эта в браузере без них общего не пишет вовсе. */
+      try { req = window.indexedDB.open("sysbaby", 6); } catch (e) { resolve(null); return; }
       if (!req) { resolve(null); return; }
       req.onupgradeneeded = function () {
         var db = req.result;
@@ -625,6 +661,9 @@
   }
 
   function idbPut(storeName, value) {
+    /* Замёрзшая вкладка (D-353) не пишет ничего — ни вещей, ни снимков, ни
+       учёток, ни указателя папки; уходящая (D-174) и потерявшая замок — тоже. */
+    if (carrierStale || window.sbVanishing || lostNow()) return Promise.resolve(false);
     return idb().then(function (db) {
       if (!db) return false;
       return new Promise(function (resolve) {
@@ -665,8 +704,12 @@
      содержимое — здесь, где его никто не переписывает попусту.
 
      Инкогнито не пишет никуда — это правило старше Хранилища, и idb() уже
-     возвращает null. Отказ здесь не молчаливый: put отвечает null, а
-     приложение обязано сказать об этом человеку (см. vault-things-check).
+     возвращает null. Отказ здесь не молчаливый: put отвечает null, why()
+     называет причину, а приложение обязано сказать о ней человеку своими
+     словами (см. vault-things-check, one-door-things-check).
+     ПОД ЗАМКОМ (D-352) вещь лежит не здесь, а в складе носителя — в
+     половине своего мира, см. «ОДНА ДВЕРЬ, СТУПЕНЬ 2»; склад «things» под
+     замком держит только конверты, не поместившиеся в склад носителя.
 
      Охраняется tools/vault-things-check.mjs. */
   var THING_SEQ = 0;
@@ -677,10 +720,12 @@
   }
 
   window.sbThings = {
-    /* Кладёт вещь на склад и отдаёт её номер. null означает «склада нет»:
-       инкогнито, отказ браузера, переполнение. Молчать об этом нельзя. */
+    /* Кладёт вещь на склад и отдаёт её номер. null означает «не принято»:
+       почему — отвечает why() (incognito, full, nostore, closed, fail). Молчать об
+       этом нельзя. */
     put: function (blob, meta) {
       if (!blob) return Promise.resolve(null);
+      if (carrierStale) { thWhy = "frozen"; return Promise.resolve(null); }   /* замёрзшая вкладка (D-353) */
       var id = newThingId();
       var rec = {
         id: id,
@@ -692,45 +737,77 @@
         size: blob.size || 0,
         at: Date.now()
       };
-      /* ── ПОД ЗАМКОМ ВЕЩЬ ЛОЖИТСЯ КОНВЕРТОМ (D-265) ─────────────────────
-         Замок стоит — склад принимает только запечатанное; замок стоит, а
-         сеанс не открыт — не принимает ничего: ключа нет, а открытым класть
-         нельзя. Имя, род и размер уходят ВНУТРЬ конверта вместе с байтами. */
+      /* ── ПОД ЗАМКОМ ВЕЩЬ ЛОЖИТСЯ В СКЛАД НОСИТЕЛЯ (D-352) ──────────────
+         Замок стоит — вещь уходит в половину открытого мира, и половина
+         пересобирается целиком; замок стоит, а сеанс не открыт — не
+         принимается ничего: ключа нет, а открытым класть нельзя. Имя, род и
+         размер уходят ВНУТРЬ половины вместе с байтами. */
       if (vaultLocked()) {
-        if (!vaultOpen || !vaultKeys) return Promise.resolve(null);
-        return thingToSealed(vaultKeys, rec).then(function (sealed) {
-          return idbPut("things", sealed);
-        }).then(function (okFlag) { return okFlag ? id : null; }, function () { return null; });
+        if (!vaultOpen || !vaultKeys) { thWhy = "closed"; return Promise.resolve(null); }
+        return thQueue("add", rec);
       }
-      return idbPut("things", rec).then(function (okFlag) { return okFlag ? id : null; });
+      return idbPut("things", rec).then(function (okFlag) {
+        if (!okFlag) thWhy = window.sbIncognitoActive ? "incognito" : "fail";
+        return okFlag ? id : null;
+      });
     },
     get: function (id) {
       if (!id) return Promise.resolve(null);
+      if (vaultLocked()) {
+        /* Запертая вещь отдаётся только открытому сеансу и только своему
+           миру: сперва его половина склада, затем прежний конверт. */
+        if (!vaultOpen || !vaultKeys) return Promise.resolve(null);
+        var tries = 0;
+        var fromHalf = function () {
+          return thLoad(vaultDoor).then(function (st) {
+            var it = st.mac ? thFind(st.dir, id) : null;
+            if (!it) return null;
+            return thReadItem(st, it).then(function (blob) {
+              return { id: it.id, blob: blob, name: it.name, mime: it.mime, size: it.size, at: it.at };
+            });
+          }).then(null, function () {
+            /* Другая вкладка успела пересобрать половину — прочесть заново. */
+            thState = null;
+            return ++tries < 2 ? fromHalf() : null;
+          });
+        };
+        return fromHalf().then(function (got) {
+          if (got) return got;
+          return idbGet("things", id).then(function (rec) {
+            if (!rec || !rec.sealed) return null;
+            return thingFromSealed(vaultKeys, rec).then(null, function () { return null; });
+          });
+        });
+      }
       return idbGet("things", id).then(function (rec) {
-        if (!rec || !rec.sealed) return rec;
-        /* Запечатанная вещь отдаётся только открытому сеансу, и только тому
-           миру, чьим ключом она запечатана: чужой мир получает «нет вещи». */
-        if (!vaultOpen || !vaultKeys) return null;
-        return thingFromSealed(vaultKeys, rec).then(null, function () { return null; });
+        /* Снят замок, а вещь запечатана — её мира больше нет: «нет вещи». */
+        if (!rec || rec.sealed) return null;
+        return rec;
       });
     },
     del: function (id) {
       if (!id) return Promise.resolve(false);
-      return idb().then(function (db) {
-        if (!db) return false;
-        return new Promise(function (resolve) {
-          var tx;
-          try { tx = db.transaction("things", "readwrite"); } catch (e) { resolve(false); return; }
-          try { tx.objectStore("things").delete(id); } catch (e) { resolve(false); return; }
-          tx.oncomplete = function () { resolve(true); };
-          tx.onerror = function () { resolve(false); };
-          tx.onabort = function () { resolve(false); };
-        });
-      }).catch(function () { return false; });
+      if (carrierStale) { thWhy = "frozen"; return Promise.resolve(false); }
+      if (vaultLocked()) {
+        if (!vaultOpen || !vaultKeys) return Promise.resolve(false);
+        return thLoad(vaultDoor).then(function (st) {
+          if (st.mac && thFind(st.dir, id)) return thQueue("del", id);
+          /* Прежний конверт этого мира убирается, как прежде. */
+          return idbGet("things", id).then(function (rec) {
+            if (!rec || !rec.sealed) return false;
+            return thingFromSealed(vaultKeys, rec).then(function () { return idbDel("things", id); }, function () { return false; });
+          });
+        }).then(null, function () { return false; });
+      }
+      return idbDel("things", id);
     },
     /* Сколько вещей на складе. Нужно не для красоты: закон проверяет им, что
        выброшенная из описи вещь действительно ушла, а не осталась лежать. */
     count: function () {
+      if (vaultLocked()) {
+        if (!vaultOpen) return Promise.resolve(0);
+        return thLoad(vaultDoor).then(function (st) { return st.dir.items.length; }, function () { return 0; });
+      }
       return idb().then(function (db) {
         if (!db) return 0;
         return new Promise(function (resolve) {
@@ -742,11 +819,27 @@
           rq.onerror = function () { resolve(0); };
         });
       }).catch(function () { return 0; });
+    },
+    /* Склад носителя называет себя сам (D-352): часть, число частей,
+       половина мира и сколько в своей половине занято (знает только
+       открытый мир). */
+    capacity: function () {
+      var used = (vaultOpen && thState && thState.r === vaultDoor) ? thUsed(thState.dir) : 0;
+      return { chunk: TH_CHUNK, chunks: TH_CHUNKS, half: TH_HALF, used: used };
+    },
+    why: function () { return thWhy; },
+    /* Дождаться, пока склад вещей успокоится (переезд, пересборка). */
+    settled: function () { return thingsWork.then(function () { return true; }, function () { return true; }); },
+    /* Цена записи — настоящей пересборкой своей половины (D-352), в мс. */
+    measure: function () {
+      if (!vaultLocked() || !vaultOpen) return Promise.resolve(null);
+      return thQueue("force", null);
     }
   };
 
   function idbPutAccount(rec) {
     if (!rec) return;
+    if (lockedNonWriter()) return;
     /* Под замком зеркало аккаунта не знает о человеке ничего, кроме номера
        места: имя и почта — сведения о человеке ровно так же, как записи (D-265). */
     if (vaultLocked()) { idbPut("accounts", { id: rec.id }); return; }
@@ -766,8 +859,12 @@
     if (snapTimer) clearTimeout(snapTimer);
     snapTimer = setTimeout(snapshotNow, 1400);
   }
+  /* При замке пишет только писатель открытого мира (D-353, шаг 4): дверь и
+     читающая вкладка снимков и учёток не пишут. */
+  function lockedNonWriter() { return vaultLocked() && (!vaultOpen || !!carrierStale || !writeRight); }
   function snapshotNow() {
     if (window.sbIncognitoActive) return Promise.resolve(false);
+    if (lockedNonWriter() || window.sbVanishing || lostNow()) return Promise.resolve(false);
     if (snapTimer) { clearTimeout(snapTimer); snapTimer = null; }
     var pid = activeProfile();
     return idbPut("snapshots", { profileId: pid, data: diskSafe(enumerateProfileKeys(pid)), updatedAt: Date.now() });
@@ -782,7 +879,7 @@
   function diskSafe(data) {
     if (!vaultLocked() || !data) return data;
     var out = {}, k;
-    for (k in data) if (Object.prototype.hasOwnProperty.call(data, k) && !isProtectedKey(k)) out[k] = data[k];
+    for (k in data) if (Object.prototype.hasOwnProperty.call(data, k) && !isProtectedKey(k) && k.indexOf("sysbaby.lock.late.") !== 0) out[k] = data[k];
     return out;
   }
   function idbAll(storeName) {
@@ -797,6 +894,7 @@
     }).catch(function () { return []; });
   }
   function idbDel(storeName, key) {
+    if (carrierStale || lostNow()) return Promise.resolve(false);
     return idb().then(function (db) {
       if (!db) return false;
       return new Promise(function (resolve) {
@@ -815,21 +913,42 @@
      снимок остаётся снимком, зеркало — номером места. */
   function purgeDiskLeaks() {
     if (!vaultLocked()) return Promise.resolve(false);
-    return idbAll("snapshots").then(function (list) {
-      return Promise.all(list.map(function (snap) {
-        if (!snap || !snap.data) return null;
-        var clean = diskSafe(snap.data);
-        if (Object.keys(clean).length === Object.keys(snap.data).length) return null;
-        return idbPut("snapshots", { profileId: snap.profileId, data: clean, updatedAt: snap.updatedAt });
-      }));
-    }).then(function () {
-      return idbAll("accounts");
-    }).then(function (list) {
-      return Promise.all(list.map(function (a) {
-        if (!a || Object.keys(a).length <= 1) return null;
-        return idbPut("accounts", { id: a.id });
-      }));
-    }).then(function () { return true; });
+    if (carrierStale || window.sbVanishing || lostNow()) return Promise.resolve(false);
+    /* Вычищается сразу, при загрузке, до пароля (D-265) — и только
+       СРАВНЕНИЕМ И ЗАМЕНОЙ в одной транзакции (разбор №3 шага 4): запись
+       переписывается, лишь пока она та самая утечка. Писатель под замком
+       кладёт снимки уже без защищённого и учётки — одним номером, поэтому
+       вкладка у двери не ляжет своим прочитанным поверх более нового. */
+    return idb().then(function (db) {
+      if (!db) return false;
+      return new Promise(function (resolve) {
+        var tx;
+        try { tx = db.transaction(["snapshots", "accounts"], "readwrite"); } catch (e) { resolve(false); return; }
+        var walk = function (store, fix) {
+          var q;
+          try { q = tx.objectStore(store).openCursor(); } catch (e) { return; }
+          q.onsuccess = function () {
+            var c = q.result;
+            if (!c) return;
+            var next = fix(c.value);
+            if (next) { try { c.update(next); } catch (e) { /* ignore */ } }
+            c["continue"]();
+          };
+        };
+        walk("snapshots", function (snap) {
+          if (!snap || !snap.data) return null;
+          var clean = diskSafe(snap.data);
+          if (Object.keys(clean).length === Object.keys(snap.data).length) return null;
+          return { profileId: snap.profileId, data: clean, updatedAt: snap.updatedAt };
+        });
+        walk("accounts", function (a) {
+          if (!a || Object.keys(a).length <= 1) return null;
+          return { id: a.id };
+        });
+        tx.oncomplete = function () { resolve(true); };
+        tx.onabort = function () { resolve(false); };
+      });
+    }).then(null, function () { return false; });
   }
   window.sbSnapshotNow = snapshotNow;
   window.sbReadSnapshot = function (profileId) { return idbGet("snapshots", profileId || activeProfile()); };
@@ -855,7 +974,9 @@
     "sysbaby.lock.v1", "sysbaby.lock.spareAt", "sysbaby.lock.wantNow", "sysbaby.auth.salt",
     /* Отметка «след стука уже видел» — о двери ЭТОГО устройства (D-341). */
     "sysbaby.knock.seen"];
-  var DENY_PREFIX = ["sysbaby.sync.token::", "sysbaby.incognito::", "sysbaby.i18n.cache."];
+  /* Поздние щели — о двери ЭТОГО устройства и его последнем миге (D-353):
+     в выгрузку не едут, восстановление их не кладёт и не стирает. */
+  var DENY_PREFIX = ["sysbaby.sync.token::", "sysbaby.incognito::", "sysbaby.i18n.cache.", "sysbaby.lock.late."];
 
   function denied(key) {
     if (DENY_EXACT.indexOf(key) !== -1) return true;
@@ -886,7 +1007,10 @@
   /* Склад отдан наружу: синхронизация копий (sync.js) хранит в нём указатель
      на настоящую папку. Свой второй indexedDB.open был бы вторым знанием об
      одном хранилище — а с ним и вторая версия схемы, и расхождение. */
-  window.sbIdb = { put: idbPut, get: idbGet };
+  /* Наружу пишется только указатель папки (handles): носитель, вещи, снимки
+     и учётки — только своими дверями записи со сверкой (A1 разбора границ:
+     слепой put в любой склад был бы записью общего мимо них). */
+  window.sbIdb = { put: function (storeName, value) { return storeName === "handles" ? idbPut(storeName, value) : Promise.resolve(false); }, get: idbGet };
 
   window.sbExportFileName = function (profileId) {
     var env = buildExport(profileId);
@@ -961,6 +1085,12 @@
     opts = opts || {};
     var check = validateEnvelope(input);
     if (!check.ok) return check;
+    /* Под замком импорт — запись мира: только вкладка, которая пишет (D-353,
+       шаг 4). Читающая, замёрзшая или у двери отвечает «нет», а не «принято»
+       — её запись не легла бы никуда. */
+    if (lockLost() || (vaultLocked() && (!vaultOpen || carrierStale || !writeRight))) {
+      return { ok: false, error: "This tab cannot write right now: the world is written in another tab. Reload this tab, then import again." };
+    }
     var env = check.env;
     var pid = opts.profileId || activeProfile();
     var mode = opts.mode === "merge" ? "merge" : "replace";
@@ -983,7 +1113,19 @@
         count++;
       }
       cache.clear(); dirty.clear();
-      if (opts.reload !== false) setTimeout(function () { location.reload(); }, 60);
+      if (opts.reload !== false) {
+        /* Под замком принятое лежит в памяти и уходит на диск печатью ячейки:
+           страница поднимается заново, только когда печать легла (D-353,
+           разбор №3) — иначе уход оборвал бы её, а в позднюю щель (64 КиБ)
+           большое не помещается. */
+        var go = function () { location.reload(); };
+        /* Печать не легла (отказ — вкладка замёрзла; сбой — сказано вслух,
+           правки в очереди) — страница не уходит: уход унёс бы принятое
+           молча (разбор №4). */
+        var gone = function (sealedOk) { if (sealedOk === true && !carrierStale) go(); };
+        if (vaultLocked() && vaultOpen && typeof window.sbVaultSettled === "function") window.sbVaultSettled().then(gone, function () { /* сбой сказан вслух */ });
+        else setTimeout(go, 60);
+      }
       return { ok: true, count: count, mode: mode, profileId: pid };
     } catch (e) {
       return { ok: false, error: "Import failed: " + (e && e.message ? e.message : "unknown error") };
@@ -1145,15 +1287,16 @@
      ЩЕЛЬ ячейки мира, в которой лежит МАСТЕР-КЛЮЧ — 32 случайных байта, не
      выводимых ни из чего; до v177 он открывал конверт мастер-ключа — дверь
      в записи замка. Из мастер-ключа по HKDF-SHA-256 расходятся ключи ячейки
-     (два шифра тела и ключ печати своей роли), ключи «Ключей» и ключи
-     конвертов вещей Хранилища, выгрузки и копии. Смена пароля не меняет
+     (два шифра тела и ключ печати своей роли), ключи склада вещей (D-352),
+     ключи «Ключей» и ключи конвертов выгрузки и копии. Смена пароля не меняет
      мастера: пересобирается щель слова, записи и пароли «Ключей» те же.
 
      ДВА ШИФРА ПОДРЯД, НЕ ОДИН (слово основателя: «пускай их будет несколько»):
      тело ячейки — AES-256-CTR, затем ещё раз AES-256-CTR другим ключом, и
-     печать HMAC-SHA-512 поверх всей ячейки (encrypt-then-MAC); у конвертов
-     вещей, выгрузки и копии — AES-256-CTR, затем AES-256-GCM, и подпись
-     HMAC-SHA-512. Оба ключа шифров выведены из одного мастера, и
+     печать HMAC-SHA-512 поверх всей ячейки (encrypt-then-MAC); у склада
+     вещей — AES-256-CTR и печать HMAC-SHA-256 каждой части; у конвертов
+     выгрузки, копии и прежних конвертов вещей — AES-256-CTR, затем
+     AES-256-GCM, и подпись HMAC-SHA-512. Оба ключа шифров выведены из одного мастера, и
      независимой защиты друг от друга они не дают — это сказано вслух (разбор
      «Шифр без театра», Н10); второй слой оставлен по слову основателя.
      Печать проверяется ДО расшифровки — испорченная или подложенная ячейка
@@ -1181,6 +1324,13 @@
      ═══════════════════════════════════════════════════════════════════════ */
   var LOCK_KEY = "sysbaby.lock.v1";
   var SEAL_PFX = "sysbaby.v.";        /* под этим именем лежали конверты записей (до v177); у переехавшего замка — их остаток */
+  /* ВОРОТА ВЕРСИЙ И ДЛЯ ЗАПИСИ ЗАМКА (D-353). Сборка до D-353 узнавала
+     носитель по полю carrier записи замка — и, оставшись открытой во
+     вкладке после обновления, без базы (ворота IndexedDB) брала носитель
+     из своей памяти и по нему сверяла слово: снятие замка ею писало бы
+     открытым СВОЁ старое поверх нового. Теперь поле зовётся carrier5: старая
+     сборка носителя не видит, её дверь не находит мира и не пишет ничего. */
+  function carrierSize(rec) { return rec ? (rec.carrier5 || rec.carrier || 0) : 0; }
   /* ── ЦЕНА ВЫВОДА КЛЮЧА, И ЭТО ЕДИНСТВЕННОЕ ИЗМЕРИМОЕ МЕСТО (D-205) ───────
    Основатель требовал «в десять раз сильнее Signal». У ШИФРА такой величины
    нет: AES-256 уже за пределами перебора, и умножать невозможность бессмысленно.
@@ -1205,7 +1355,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   var PAD_BLOCK = 256;                /* длина прячется: конверт выгрузки и копии кратен блоку */
   var VAULT_ITER = KDF2_ITER;         /* прежнее имя — для старых записей v1 */
 
-  var VAULT_NEVER = ["sysbaby.lock.v1", "sysbaby.activeProfile", "sysbaby.authed"];
+  /* Поздние щели — отдельными записями, по одной на ячейку (D-353): их пишут
+     открытые миры в миг ухода, и общая запись замка, которую переписывали
+     целиком, теряла щель одного мира от записи другого. Снаружи каждая —
+     64 КиБ шума у всех замков одинаково; сведений в них не прибавилось. */
+  var VAULT_NEVER = ["sysbaby.lock.v1", "sysbaby.lock.late.0", "sysbaby.lock.late.1", "sysbaby.activeProfile", "sysbaby.authed"];
   function isProtectedKey(k) {
     var key = String(k || "");
     if (key.indexOf("sysbaby.") !== 0) return false;
@@ -1540,6 +1694,26 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     /* ОТКАТ: устройство не спрошено или не ответило — дверь просто не выведется. */
     return hwSecret || new Uint8Array(32);
   }
+  /* ЧТО СПРОСИТЬ У ДВЕРИ — ПО НОСИТЕЛЮ (классификация границ, Г5). Носитель
+     пишется строго, запись замка — позже; обрыв питания между ними оставляет
+     копию без второго ключа или ключа устройства, которые носитель требует.
+     Прав носитель (см. paramsOf): дверь спрашивает то, что требует он, — тем
+     же условием, каким openWorlds берёт его параметры. Носитель для этого
+     читается до двери (sbVault.requirements). */
+  function effRecord() {
+    var rec = lockRecord();
+    return rec && carrierMem && carrierMem.params && (carrierSize(rec) || ownCarrierOf(rec, carrierMem)) ? withParams(rec, carrierMem.params) : rec;
+  }
+  /* Носитель рядом с записью замка прежнего вида (с дверями) — свой, если
+     соль у них одна (соль случайна; переезд кладёт в носитель параметры этой
+     записи). Тогда прав носитель (D-351): его параметры вывода новее —
+     второй ключ, ключ устройства, цена, поставленные после переезда, до
+     записи замка могли не дойти (обрыв питания, финальный разбор H1, Г10).
+     Соль другая — носитель чужой (остался от снятого или заменённого
+     замка), и параметры — свои у записи. */
+  function ownCarrierOf(rec, c) {
+    return !!(rec && c && c.params && c.params.salt && !carrierSize(rec) && (rec.doors || rec.wrap || rec.spare) && c.params.salt === saltOf(rec));
+  }
   function hwAsk(rec) {
     var h = hwOf(rec);
     if (!h) return Promise.resolve(true);
@@ -1661,6 +1835,137 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   var CR_HEAD = CR_NS + CR_EW + CR_EC + CR_NB;
   var carrierMem = null;          /* { bytes: Uint8Array, seal: [Uint8Array×2] } — последнее прочитанное или записанное */
   var carrierKeys = null;         /* { body, mac } открытого мира — неизвлекаемые */
+  /* СЕАНС ПОМНИТ, ОТ ЧЕГО ОН СЧИТАЕТ (D-353): ownBase — своя ячейка в том
+     виде, в каком сеанс её последний раз видел (открыл или сам записал),
+     sessionG — поколение полномочий (worldText). carrierStale — сеанс узнал,
+     что отстал, и больше не пишет: "records" — мир сохранили в другой
+     вкладке, "auth" — там сменили то, чем мир открывается. */
+  var ownBase = null, sessionG = 0, carrierStale = null, removingNow = false;
+  /* ЗАМОК, КОТОРЫЙ ЗНАЕТ ВКЛАДКА (разборы №2–3 шага 4). Вкладка помнит соль
+     той записи замка, которую видела при загрузке или поставила сама (свой
+     поворот ключа, переезд замка v1). Запись замка исчезла, сменилась
+     другой или ПОЯВИЛАСЬ — и не этой вкладкой — значит, память вкладки
+     старее лежащего: она не пишет ничего (ни в localStorage, ни в
+     IndexedDB, базы не пересоздаёт), говорит это вслух, а вход ведёт к
+     перезагрузке. Своё снятие или стирание (ownGone) — не исчезновение.
+     Чужой замок не усыновляется: вкладка, поднятая без замка, после замка
+     в другой вкладке живёт памятью без замка, и её записи легли бы
+     открытыми рядом с запертым или поверх снятого. */
+  /* seenLock, ownGone и lockSaltNow — в начале файла: соль запомнена до
+     первого обращения к хранилищу. */
+  var removalCut = false, lateSuspended = false, lateKnown = null;
+  /* Свой поворот ключа или своя пересборка: теперь вкладка знает этот замок. */
+  function noteOwnLock() { seenLock = lockSaltNow(); ownGone = null; }
+  function lockLost() {
+    var cur = lockSaltNow();
+    if (cur === seenLock) return false;
+    if (!cur && seenLock && ownGone === seenLock) return false;
+    return true;
+  }
+  /* Потеряла — замирает (один раз) и говорит это: «изменено в другой
+     вкладке», единственный выход — «Перечитать». */
+  function lostNow() {
+    if (!lockLost()) return false;
+    if (!carrierStale) {
+      if (vaultOpen) carrierStaleNow("records");
+      else { carrierStale = "records"; writerDrop(); staleSay("records"); }
+    }
+    return true;
+  }
+  /* Другая вкладка тронула запись замка — узнать сразу, а не при записи. */
+  try {
+    window.addEventListener("storage", function (ev) {
+      try { if (ev && (ev.key === null || ev.key === "sysbaby.lock.v1")) lostNow(); } catch (e) { /* ignore */ }
+    });
+  } catch (e) { /* ignore */ }
+  /* ── ОДИН ПИСАТЕЛЬ НА ЯЧЕЙКУ (D-353, шаг 4) ─────────────────────────────
+     Поздняя щель лежит в localStorage, носитель — в IndexedDB; общей
+     транзакции у них нет, и сравнением её не замкнуть. Поэтому «кто пишет»
+     решается ДО записи: право писать ячейку — исключительный Web Lock с
+     постоянным именем, одним на все миры (WRITER_LOCK, ниже), взятый без
+     ожидания при входе.
+     Его держит одна вкладка браузера; снимает его сам браузер, когда
+     вкладки не стало. Без него вкладка мира только читает.
+     ПРИМАНКА. Каждая вкладка держит ровно один замок: у двери и без права —
+     случайный той же формы. Число и вид замков не говорят, открыт ли где-то
+     второй мир; ждущих замков нет (только ifAvailable) — кроме вкладки,
+     которая после обрыва питания ждёт, пока другая долечит запись замка
+     (sbVault.crashWait): её ждущий запрос — права писателя, одного на все
+     миры, и о мирах не говорит ничего.
+     БЕЗ WEB LOCKS один писатель не доказан: запись — только сравнением-и-
+     заменой, поздней щели и удаления нет. */
+  var LOCKS = null;
+  try { LOCKS = window.navigator && window.navigator.locks && typeof window.navigator.locks.request === "function" ? window.navigator.locks : null; } catch (e) { LOCKS = null; }
+  var writeRight = null;      /* "lock" | "cas" | false; null — мир не открыт */
+  var heldLock = null;        /* { name, release, world } — ровно один на вкладку */
+  function hexOf(u8) { var o = "", i; for (i = 0; i < u8.length; i++) o += (u8[i] < 16 ? "0" : "") + u8[i].toString(16); return o; }
+  function lockTry(name) {
+    if (!LOCKS || !name) return Promise.resolve(null);
+    return new Promise(function (resolve) {
+      var settled = false;
+      try {
+        LOCKS.request(name, { mode: "exclusive", ifAvailable: true }, function (lock) {
+          if (!lock) { settled = true; resolve(null); return null; }
+          return new Promise(function (rel) { settled = true; resolve({ name: name, release: rel }); });
+        }).then(null, function () { if (!settled) resolve(null); });
+      } catch (e) { resolve(null); }
+    });
+  }
+  /* Держать ровно один замок: новый взят — прежний отпущен. */
+  function lockSwap(h, world) {
+    var old = heldLock;
+    heldLock = h ? { name: h.name, release: h.release, world: !!world } : null;
+    if (old && old.release) { try { old.release(); } catch (e) { /* ignore */ } }
+  }
+  function lockDecoy() {
+    return lockTry(hexOf(randBytes(32))).then(function (h) { if (h) lockSwap(h, false); return !!h; });
+  }
+  /* ОДНО ПРАВО НА ВЕСЬ ИСТОЧНИК (повторный разбор шага 4). Имя права —
+     постоянное и одно для всех миров: по замкам не сказать, какой мир пишет и
+     открыт ли второй; вкладка второго мира при писателе главного — такая же
+     читающая, как вкладка того же мира. Право берётся у двери ДО чтения мира.
+     ПОСТОЯННАЯ: имя — SHA-256("sys.baby/writer/v1") шестнадцатерично: того же
+     вида, что приманки. */
+  var WRITER_LOCK = "8d9cfa0ea216b2164dc04496c9d6cb1f10dcc548cd56019173bc8432bd0270ae";
+  /* Право писателя без ожидания. Уже держим — оно наше. */
+  /* НЕТ ДОКАЗУЕМОЙ ИСКЛЮЧИТЕЛЬНОСТИ — ОТКАЗ, ЗАПИСИ НЕТ (основатель,
+     A1 разбора границ: «NO PROVABLE EXCLUSIVITY → REJECT → NO WRITE»).
+     Без Web Locks один писатель на источник не доказан ничем, кроме
+     сравнения-и-замены внутри одной транзакции IndexedDB. Этого хватает
+     записи СВОЕЙ ячейки (её сверяет сама транзакция) — и не хватает всему,
+     что меняет общее для вкладок: запись замка, слово, второй ключ, ключ
+     устройства, цену, тревожный мир, код, переезд прежнего вида, копию
+     параметров, ряд стуков в записи замка. Им — отказ до любого чтения и
+     любой записи; ни флагов в localStorage, ни пауз, ни повторов. */
+  function noLocksRefusal() { return LOCKS ? null : Promise.reject(new Error("nolocks")); }
+  function writerTake() {
+    if (!LOCKS) return Promise.resolve("cas");
+    if (heldLock && heldLock.world) return Promise.resolve("lock");
+    return lockTry(WRITER_LOCK).then(function (h) {
+      if (!h) return false;
+      lockSwap(h, true);
+      return "lock";
+    }, function () { return false; });
+  }
+  /* Замёрзшая вкладка права не держит: замок мира — назад в приманку, чтобы
+     вкладка, открытая после «Перечитать», могла стать писателем. */
+  function writerDrop() {
+    /* Право перестаёт быть нашим сразу (writerTake больше не скажет «lock»),
+       а сам замок отпускается, когда взята приманка. */
+    if (heldLock && heldLock.world) { heldLock.world = false; lockDecoy().then(function (ok) { if (!ok) lockSwap(null, false); }); }
+    if (writeRight === "lock") writeRight = false;
+  }
+  /* Стирать хранилище при замке (снять замок, «Стереть всё», глубокий
+     уход) вправе только писатель открытого мира; без замка — стирать нечего
+     беречь. */
+  function mayErase() {
+    /* Память вкладки старше лежащего (замок исчез, сменился, появился) —
+       стирать ей нечего беречь и не за кого решать: отказ. */
+    if (lockLost()) return false;
+    if (!lockRecord()) return !carrierStale;
+    return !!vaultOpen && !carrierStale && writeRight === "lock" && !!heldLock && !!heldLock.world;
+  }
+  lockDecoy();
 
   function carrierNew() {
     var bytes = new Uint8Array(CARRIER_REGIONS * CARRIER_REGION), seal = [], i, off;
@@ -1672,6 +1977,10 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   function carrierCopy(c) {
     var o = { bytes: new Uint8Array(c.bytes), seal: c.seal.map(function (s) { return new Uint8Array(s); }) };
     if (c.params) o.params = JSON.parse(JSON.stringify(c.params));
+    if (c.mark) o.mark = JSON.parse(JSON.stringify(c.mark));
+    if (Array.isArray(c.spent)) o.spent = c.spent.slice();
+    if (Array.isArray(c.knock)) o.knock = c.knock.slice();
+    if (c.removing) o.removing = c.removing;
     return o;
   }
   function carrierNorm(v) {
@@ -1680,6 +1989,10 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     if (!b || b.length !== CARRIER_REGIONS * CARRIER_REGION || v.seal.length !== CARRIER_REGIONS) return null;
     var o = { bytes: b, seal: v.seal.map(function (s) { return s instanceof Uint8Array ? s : new Uint8Array(s); }) };
     if (v.params && typeof v.params === "object") o.params = v.params;
+    if (v.mark && typeof v.mark === "object") o.mark = v.mark;
+    if (Array.isArray(v.spent)) o.spent = v.spent;
+    if (Array.isArray(v.knock)) o.knock = v.knock;
+    if (v.removing) o.removing = v.removing;
     return o;
   }
   function carrierRead() {
@@ -1689,28 +2002,242 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       return c;
     });
   }
-  function carrierWrite(c) {
-    /* Параметры вывода — В ТОЙ ЖЕ записи (см. paramsOf): одна неделимая запись. */
-    return idbPut(CARRIER_STORE, { id: CARRIER_ID, bytes: c.bytes, seal: c.seal, params: c.params || null }).then(function (okp) {
-      if (okp) {
-        carrierMem = c;
-        if (window.sbBus && window.sbBus.emit) window.sbBus.emit("carrier:write", { at: Date.now() });
-      }
-      return okp;
-    });
+  /* ── ОДНА ДВЕРЬ ЗАПИСИ: СРАВНЕНИЕ И ЗАМЕНА В ОДНОЙ ТРАНЗАКЦИИ (D-353) ────
+     Основатель, 01.10.2026: «Ни одна операция sys.baby не имеет права
+     уничтожить, откатить или заменить более новое состояние ячейки более
+     старым состоянием. Stale writer всегда получает отказ. Он никогда не
+     получает право «починить» состояние автоматически».
+     ЧТО БЫЛО (до D-353). Запись носителя читала его одной транзакцией, а
+     писала другой, и между ними шла печать ячейки — сотни миллисекунд.
+     Вкладка, открывшая мир раньше, писала поверх более нового: смена слова в
+     другой вкладке откатывалась к прежнему слову, новый код восстановления
+     переставал работать, правка соседней вкладки пропадала, запись другого
+     мира откатывалась. Всё это показал stale-writer-check на v178.
+     ЧТО СТАЛО. Носитель пишет ОДНА функция. Пишущий называет состояние, от
+     которого он считал (base), и ячейки, которые он меняет; в ОДНОЙ
+     транзакции IndexedDB запись читается заново, и каждая называемая ячейка
+     сверяется с base байт в байт — тело и печать. Совпало — пишется только
+     названное, всё остальное берётся из этого же чтения. Не совпало — отказ
+     ("stale"), и не пишется НИЧЕГО: ни повтора в новой транзакции, ни
+     ремонта, ни «последний прав». Между чтением и записью в транзакции нет
+     ожиданий вне IndexedDB: всё, что считается долго (печать, шифр), готово
+     заранее. Транзакция — с долговечностью «strict».
+     base === CARRIER_ANY — носитель должен быть (журнал стуков: он не
+     трогает ни одной ячейки); base === null — носителя быть не должно.
+     Охраняется tools/stale-writer-1-check.mjs и остальными частями закона
+     устаревшего писателя на доске (тело закона — stale-writer-check). */
+  var CARRIER_ANY = { any: true };
+  /* ВЕСТЬ О ЗАПИСИ (D-353). Записав ячейку или половину вещей, вкладка
+     говорит соседям того же адреса: «ячейка r изменена». Вкладка, чей мир
+     лежит в этой ячейке, сразу знает, что отстала, и замерзает ДО попытки
+     записи — а не узнаёт об этом своей отвергнутой записью. В вести НЕТ
+     номера ячейки (повторный разбор шага 4: номер говорил бы открытому миру,
+     что жив другой): получатель сам перечитывает свою ячейку и свою половину
+     склада и замерзает, только если изменились они. Весть не покидает
+     браузер и не ложится на диск. */
+  var carrierNews = null;
+  try { if (typeof window.BroadcastChannel === "function") carrierNews = new window.BroadcastChannel("sysbaby-carrier"); } catch (e) { carrierNews = null; }
+  function carrierTell() {
+    if (!carrierNews) return;
+    try { carrierNews.postMessage({ t: "carrier" }); } catch (e) { /* соседей нет — сказать некому */ }
   }
-  function carrierDrop() {
-    carrierMem = null;
-    return idb().then(function (db) {
-      if (!db) return false;
-      return new Promise(function (resolve) {
-        var tx;
-        try { tx = db.transaction(CARRIER_STORE, "readwrite"); tx.objectStore(CARRIER_STORE).clear(); } catch (e) { resolve(false); return; }
-        tx.oncomplete = function () { resolve(true); };
-        tx.onerror = function () { resolve(false); };
+  /* ── ПОВОРОТ КЛЮЧА — В ТИШИНЕ (разбор №4) ─────────────────────────────
+     Пока одна вкладка собирает открытые записи под замок, другая могла бы
+     дописать запись, которую первая тут же сотрёт как уже собранную (её
+     собранное старше), или оставить новую открытой рядом с запертым.
+     Поэтому поворачивающая, держа право писателя, после растяжки слова и
+     перед самым сбором просит каждую вкладку источника замолчать: та
+     сбрасывает свои отложенные записи на диск, замерзает («изменено в
+     другой вкладке», выход — «Перечитать») и отвечает, назвав свой замок
+     (у каждой вкладки ровно один замок, Web Locks знают их все). Затем —
+     круги отпечатков открытых записей, уже в тишине, пока свой взгляд на
+     диск не совпадёт с отпечатком каждой (у браузера свой кеш localStorage
+     на процесс). Не ответил хоть один названный замок за QUIET_MS или
+     взгляды не сошлись за 2·QUIET_MS — отказ «busy», ничего не заперто.
+     Упала растяжка — никто не замёрз: тишины ещё не было. Без Web Locks
+     вкладок не перечесть — не доказано (граница). Вкладка, открытая
+     посреди поворота, узнаёт о замке по его записи — граница, вслух. */
+  var quietWait = null, turning = false;
+  /* ПОСТОЯННАЯ: 3 с — живая вкладка отвечает за миллисекунды; дольше ждать значит держать поворот ключа ради вкладки, которая не ответит. */
+  var QUIET_MS = 3000;
+  /* ПОСТОЯННАЯ: 50 мс — шаг ожидания, пока записи другой вкладки дойдут до этой. */
+  var QUIET_STEP_MS = 50;
+  /* Весть — без цифр (по ней не сказать ни номера ячейки, ни числа миров). */
+  function lettersOf(hex) { return String(hex).replace(/[0-9]/g, function (d) { return "ghijklmnop".charAt(+d); }); }
+  function plainPrint() {
+    var names = protectedKeysNow().slice().sort(), h = 2166136261, i, j, t;
+    for (i = 0; i < names.length; i++) {
+      t = names[i] + "\u0000" + String(rawStore.get.call(window.localStorage, names[i])) + "\u0001";
+      for (j = 0; j < t.length; j++) { h ^= t.charCodeAt(j); h = Math.imul(h, 16777619) >>> 0; }
+    }
+    return lettersOf(h.toString(16));
+  }
+  /* Имя своего замка — буквами: ответ называет, КТО ответил (разбор №5), и
+     поворачивающая сверяет ответы со списком замков, а не только их число. */
+  function quietName() { return heldLock && heldLock.name ? lettersOf(heldLock.name) : "-"; }
+  function quietHere(id, kind) {
+    /* Инкогнито пишет в своё пространство — сбору не мешает и не замолкает. */
+    if (!window.sbIncognitoActive && kind === "quiet" && !vaultLocked() && !carrierStale) {
+      try { flush(); } catch (e) { /* ignore */ }
+      carrierStale = "records";
+      writerDrop();
+      staleSay("records");
+    }
+    /* Вкладка, которая видит замок или живёт в инкогнито (открытым в общем
+       пространстве она не пишет), отвечает без отпечатка — «-». */
+    var p = (window.sbIncognitoActive || vaultLocked()) ? "-" : plainPrint();
+    try { carrierNews.postMessage({ t: "quiet-ok", id: id, n: quietName(), p: p }); } catch (e) { /* ignore */ }
+  }
+  function lockQuiet() {
+    if (!LOCKS || typeof LOCKS.query !== "function" || !carrierNews || window.sbIncognitoActive) return Promise.resolve(true);
+    var started = Date.now();
+    return LOCKS.query().then(function (q) {
+      var mine = heldLock && heldLock.name, want = {}, count = 0;
+      ((q && Array.isArray(q.held)) ? q.held : []).forEach(function (h) {
+        if (h && h.name && h.name !== mine && !want[lettersOf(h.name)]) { want[lettersOf(h.name)] = true; count++; }
+      });
+      if (!count) return true;
+      /* Один круг: просьба (тишина или отпечаток) — и ответ каждого названного
+         замка; не ответили за QUIET_MS — отказ «busy». */
+      var ask = function (kind) {
+        var id = lettersOf(hexOf(randBytes(16))), got = {}, left = count;
+        return new Promise(function (resolve, reject) {
+          var t = setTimeout(function () { quietWait = null; reject(new Error("busy")); }, QUIET_MS);
+          quietWait = { id: id, on: function (n, p) {
+            if (!want[n] || Object.prototype.hasOwnProperty.call(got, n)) return;
+            got[n] = String(p || "");
+            if (--left <= 0) { clearTimeout(t); quietWait = null; resolve(got); }
+          } };
+          try { carrierNews.postMessage({ t: kind, id: id }); } catch (e) { clearTimeout(t); quietWait = null; reject(new Error("busy")); }
+        });
+      };
+      /* Круг тишины: все названные замолкают. Затем круги отпечатков — уже в
+         тишине, где взгляды сходятся, — пока свой взгляд на диск не совпадёт
+         с каждым (у браузера свой кеш localStorage на процесс). */
+      return ask("quiet").then(function () {
+        return (function round() {
+          return ask("print").then(function (got) {
+            var me = plainPrint(), all = true, n;
+            for (n in got) if (Object.prototype.hasOwnProperty.call(got, n) && got[n] !== "-" && got[n] !== me) all = false;
+            if (all) return true;
+            if (Date.now() - started > 2 * QUIET_MS) throw new Error("busy");
+            return new Promise(function (r) { setTimeout(r, QUIET_STEP_MS); }).then(round);
+          });
+        })();
       });
     });
   }
+  if (carrierNews) carrierNews.onmessage = function (ev) {
+    var msg = ev && ev.data;
+    if (msg && (msg.t === "quiet" || msg.t === "print")) { quietHere(msg.id, msg.t); return; }
+    if (msg && msg.t === "quiet-ok") { if (quietWait && quietWait.id === msg.id) quietWait.on(msg.n, msg.p); return; }
+    if (!vaultOpen || vaultDoor < 0 || !ownBase) return;
+    var r = vaultDoor;
+    Promise.all([carrierRead(), thMacRead()]).then(function (got) {
+      var c = got[0], mac = got[1], sl = c && c.seal && c.seal[r] ? new Uint8Array(c.seal[r]) : null;
+      var mine = !!sl && !!ownBase && ((sameBytes(sl, ownBase.seal) && sameBytes(regionOf(c, r), ownBase.region)) ||
+        (!!carrierPendingSeal && sameBytes(sl, new Uint8Array(carrierPendingSeal))));
+      var half = true;
+      if (mac && thState && thState.r === r && thState.nonce) half = sameBytes(mac.subarray(r * TH_MAC_HALF, r * TH_MAC_HALF + TH_NONCE), thState.nonce);
+      if (mine && half) return;
+      /* Читающая вкладка своего вида по вести не меняет (по ней не сказать,
+         тот ли мир пишет); полномочия сверяются и у неё. */
+      if (carrierStale !== "records" && carrierStale !== "auth" && carrierStale !== "reader") carrierStaleNow("records");
+      /* Сменили ли там полномочия — сверяется сразу (только чтение). */
+      staleProbe();
+    }).then(null, function () { /* прочесть не далось — промолчать: своя запись всё равно сверит */ });
+  };
+  function sameCell(a, b, r) {
+    return !!a && !!b && sameBytes(a.seal[r], b.seal[r]) && sameBytes(regionOf(a, r), regionOf(b, r));
+  }
+  function carrierRecord(c) {
+    var rec = { id: CARRIER_ID, bytes: c.bytes, seal: c.seal, params: c.params || null };
+    if (Array.isArray(c.knock)) rec.knock = c.knock;
+    /* Метка стоящего замка (Г8) и отпечатки израсходованных прежних запасных
+       дверей (Г10) — полями той же записи: в складе носителя под замком
+       по-прежнему одна запись постоянного размера (D-351). */
+    if (c.mark) rec.mark = c.mark;
+    if (Array.isArray(c.spent) && c.spent.length) rec.spent = c.spent;
+    if (c.removing) rec.removing = c.removing;
+    return rec;
+  }
+  function carrierCommit(base, cells, change, also) {
+    /* Замёрзшая вкладка не пишет носитель ничем: ни повтором, ни частью, ни
+       журналом, ни переездом (D-353, «CONFLICT → REJECT → NO WRITE → FREEZE»). */
+    if (carrierStale) return Promise.reject(new Error("frozen"));
+    /* Ячейки существующего мира пишет только писатель (разбор №2 шага 4);
+       журнал стука (CARRIER_ANY) и заведение замка (записи замка ещё нет) —
+       без права: они ячеек мира не переписывают. */
+    if (base !== CARRIER_ANY && LOCKS && lockRecord() && !(heldLock && heldLock.world)) return Promise.reject(new Error("writer"));
+    /* Поздняя щель своей ячейки сменилась не этой вкладкой (щель прежнего
+       писателя дошла позже права): мир старше лежащего — отказ, как при
+       чужой ячейке (разбор №3: сверка перед каждой записью, не таймер). */
+    if (base !== CARRIER_ANY && lateDrift()) return Promise.reject(new Error("stale"));
+    return idb().then(function (db) {
+      if (!db) throw new Error("carrier");
+      return new Promise(function (resolve, reject) {
+        var tx, st, q, next = null, why = "carrier";
+        try {
+          tx = db.transaction(CARRIER_STORE, "readwrite", { durability: "strict" });
+          st = tx.objectStore(CARRIER_STORE);
+          q = st.get(CARRIER_ID);
+        } catch (e) { reject(new Error("carrier")); return; }
+        var refuse = function (w) { why = w; next = null; try { tx.abort(); } catch (e) { /* уже закрыта */ } };
+        q.onsuccess = function () {
+          var cur = carrierNorm(q.result), i;
+          if (carrierStale) { refuse("frozen"); return; }
+          if (base !== CARRIER_ANY && lateDrift()) { refuse("stale"); return; }
+          /* Носитель снимается (снятие замка, см. remove): никто, кроме
+             снимающего, его больше не пишет. */
+          if (cur && cur.removing) { refuse("fenced"); return; }
+          if (base === null ? !!cur : !cur) { refuse("stale"); return; }
+          if (base !== CARRIER_ANY && base !== null) {
+            for (i = 0; i < cells.length; i++) if (!sameCell(cur, base, cells[i])) { refuse("stale"); return; }
+          }
+          next = cur ? carrierCopy(cur) : carrierNew();
+          try { change(next); } catch (e) { refuse((e && e.message) || "carrier"); return; }
+          try { st.put(carrierRecord(next)); } catch (e) { refuse("carrier"); return; }
+          /* То, что ложится той же транзакцией (поворот ключа уносит переход
+             прежнего снятия). */
+          if (also) { try { also(st); } catch (e) { refuse("carrier"); } }
+        };
+        q.onerror = function () { refuse("carrier"); };
+        tx.oncomplete = function () {
+          if (!next) { reject(new Error(why)); return; }
+          carrierMem = next;
+          if (window.sbBus && window.sbBus.emit) window.sbBus.emit("carrier:write", { at: Date.now() });
+          if (base !== CARRIER_ANY) carrierTell();
+          resolve(next);
+        };
+        tx.onabort = function () { reject(new Error(why)); };
+      });
+    });
+  }
+  /* Ячейки целиком и параметры. Шум для стираемых ячеек готовится ДО
+     транзакции: getRandomValues на мебибайт — это время. */
+  function carrierPut(base, puts, wipes, params, alter) {
+    var cells = Object.keys(puts || {}).map(Number).concat(wipes || []), noise = {};
+    (wipes || []).forEach(function (w) {
+      var reg = new Uint8Array(CARRIER_REGION), off;
+      for (off = 0; off < reg.length; off += 65536) window.crypto.getRandomValues(reg.subarray(off, Math.min(reg.length, off + 65536)));
+      noise[w] = { region: reg, seal: randBytes(CR_SEAL) };
+    });
+    return carrierCommit(base, cells, function (next) {
+      var r;
+      for (r in puts) if (Object.prototype.hasOwnProperty.call(puts, r)) {
+        next.bytes.set(puts[r].region, Number(r) * CARRIER_REGION);
+        next.seal[Number(r)] = puts[r].seal;
+      }
+      for (r in noise) if (Object.prototype.hasOwnProperty.call(noise, r)) {
+        next.bytes.set(noise[r].region, Number(r) * CARRIER_REGION);
+        next.seal[Number(r)] = noise[r].seal;
+      }
+      if (params) next.params = params;
+      if (alter) alter(next);
+    });
+  }
+  /* Снять носитель (снятие замка) — только если ни одна ячейка не менялась
+     с base: та же сверка в той же транзакции, что и очистка. */
   function regionOf(c, r) { return c.bytes.subarray(r * CARRIER_REGION, (r + 1) * CARRIER_REGION); }
 
   /* ── ПОЗДНЯЯ ЩЕЛЬ: ТО, ЧТО ПИШЕТСЯ В МИГ УХОДА (D-351) ──────────────────
@@ -1739,6 +2266,45 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      щели, читается целиком не чаще, чем её меняют (см. vaultLocked). */
   var LATE_SIZE = 65536, LATE_NONCE = 16;
   function lateNoise() { return b64(randBytes(LATE_SIZE)); }
+  var LATE_PFX = "sysbaby.lock.late.";
+  function lateKey(r) { return LATE_PFX + r; }
+  /* Щель своей ячейки — та, что этот сеанс видел при входе или записал сам
+     (lateKnown)? Нет — значит, её записал другой писатель (прежний, чья
+     запись localStorage дошла до этой вкладки позже права). */
+  function lateDrift() {
+    if (lateHold) { for (var lr in lateHold) if (Object.prototype.hasOwnProperty.call(lateHold, lr) && lateRead(+lr) !== lateHold[lr]) return true; }
+    return !!lateKnown && !!vaultOpen && writeRight === "lock" && lateKnown.cell === vaultDoor && lateRead(vaultDoor) !== lateKnown.v;
+  }
+  /* Щель ячейки r: своя запись; у замка, ещё не переложенного (до D-353), —
+     из общей записи замка. */
+  function lateRead(r) {
+    var own = lsGet(lateKey(r));
+    if (own) return own;
+    var rec = lockRecord();
+    return rec && Array.isArray(rec.late) ? rec.late[r] : null;
+  }
+  /* У каждого замка обе щели есть всегда — шум с самого начала. */
+  function lateEnsure() {
+    var r;
+    for (r = 0; r < CARRIER_REGIONS; r++) if (!lsGet(lateKey(r))) lsSet(lateKey(r), lateNoise());
+  }
+  /* Перекладка один раз: щели из общей записи замка — в свои записи, затем
+     из записи замка они уходят. */
+  function lateToKeys() {
+    var rec = lockRecord(), r, moved = true;
+    if (!rec || !Array.isArray(rec.late)) return;
+    for (r = 0; r < CARRIER_REGIONS; r++) {
+      if (lsGet(lateKey(r)) || !rec.late[r]) continue;
+      lsSet(lateKey(r), rec.late[r]);
+      /* Прежняя щель уходит из записи замка, только когда её копия
+         прочитана назад байт в байт: место не далось — переложится потом. */
+      if (lsGet(lateKey(r)) !== rec.late[r]) moved = false;
+    }
+    if (!moved) return;
+    lateEnsure();
+    var raw = lsGet(LOCK_KEY), now = lockRecord();
+    if (now && Array.isArray(now.late)) { delete now.late; lockRecordSwap(raw, now); }
+  }
   function xorInto(a, b) { var o = new Uint8Array(a.length), i; for (i = 0; i < a.length; i++) o[i] = a[i] ^ b[i]; return o; }
   /* Поток для щели: AES-CTR ключом щели по метке щелей ячейки (N_s — новая
      при каждой печати ячейки, см. sealRegion). */
@@ -1834,10 +2400,14 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      второй — в 1; тогда по снимкам — какая половина носителя менялась, пока
      открыто, — читалось, какой мир открыт, а раз открыт второй, значит, есть
      и главный. Найдено разбором Совета до выпуска (30.09.2026). */
-  function worldText(kv, codeBits, role) {
+  /* ПОКОЛЕНИЕ ПОЛНОМОЧИЙ g (D-353): растёт при каждой смене того, чем мир
+     открывается, — слова, кода, второго ключа, ключа устройства, цены. Сеанс
+     помнит своё g; ячейка с другим g значит, что полномочия сменились в
+     другой вкладке, и этот сеанс в неё больше не пишет. */
+  function worldText(kv, codeBits, role, g) {
     var obj = {}, out;
     kv.forEach(function (v, key) { if (v != null) obj[key] = v; });
-    out = { v: 1, w: role === 1 ? 1 : 0, kv: obj };
+    out = { v: 1, w: role === 1 ? 1 : 0, kv: obj, g: g > 0 ? Math.floor(g) : 0 };
     if (codeBits) out.c = b64(codeBits);
     return JSON.stringify(out);
   }
@@ -1847,12 +2417,12 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      двумя снимками в ячейке не остаётся ни одного неподвижного байта: по
      снимкам не видно ни где голова, ни когда заводили код или меняли слово.
      code — { slot, bits } щели кода или null; role — 0 главный мир, 1 второй. */
-  function sealRegion(m, wordSlot, code, kv, role) {
+  function sealRegion(m, wordSlot, code, kv, role, g) {
     var ns = randBytes(CR_NS), nb = randBytes(CR_NB);
     return Promise.all([regionKeys(m, role), slotStream(wordSlot, ns), code ? slotStream(code.slot, ns) : Promise.resolve(null)]).then(function (r) {
       var keys = r[0], ew = xorInto(m, r[1]), ec = r[2] ? xorInto(m, r[2]) : randBytes(CR_EC);
       r[1].fill(0); if (r[2]) r[2].fill(0);
-      var raw = new TextEncoder().encode(worldText(kv, code && code.bits, role));
+      var raw = new TextEncoder().encode(worldText(kv, code && code.bits, role, g));
       return deflate(raw).then(function (z) {
         var kind = z && z.length < raw.length ? 1 : 0, data = kind ? z : raw;
         var room = CARRIER_REGION - CR_HEAD;
@@ -1891,7 +2461,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       return (body[4] === 1 ? inflate(data) : Promise.resolve(data)).then(function (plain) {
         var obj = JSON.parse(new TextDecoder().decode(plain));
         if (!obj || obj.v !== 1 || !obj.kv || typeof obj.kv !== "object") throw new Error("shape");
-        return { kv: kvFromObject(obj.kv), code: obj.c ? unb64(obj.c) : null, role: obj.w === 1 ? 1 : 0 };
+        return { kv: kvFromObject(obj.kv), code: obj.c ? unb64(obj.c) : null, role: obj.w === 1 ? 1 : 0, g: obj.g > 0 ? Math.floor(obj.g) : 0 };
       });
     });
   }
@@ -2028,8 +2598,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     return third().then(null, function () { return second(); });
   }
 
-  /* ── ВЕЩЬ В КОНВЕРТЕ (D-265) ──────────────────────────────────────────
-     Те же два шифра и подпись, что у записей (CTR → GCM → HMAC-SHA-512), на
+  /* ── ВЕЩЬ В КОНВЕРТЕ (D-265 → D-352) ──────────────────────────────────
+     С D-352 вещь под замком лежит в складе носителя; конвертом ложится только
+     то, что не поместилось в склад у поворота ключа или на устройстве без
+     места под склад, а прежние конверты читаются и переезжают в склад.
+     Те же два шифра и подпись, что у прежних записей (CTR → GCM → HMAC-SHA-512), на
      тех же ключах сеанса; первый байт подписанного — 3, у записей — 2, и
      конверт одного рода нельзя выдать за конверт другого. Внутри — имя,
      род, размер и время вещи, затем её байты; снаружи — только номер.
@@ -2106,42 +2679,20 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       return { id: rec.id, blob: new Blob([o.bytes], { type: m.mime || "" }), name: m.name, mime: m.mime, size: m.size, at: m.at };
     });
   }
-  /* Запечатать открытые вещи. При повороте ключа мир один — запечатывается
-     всё. При открытии замка — только вещи, о которых знает ЭТОТ мир (номер
-     вещи стоит в одной из его расшифрованных записей): открытая вещь,
-     оставшаяся от прежнего выпуска, могла принадлежать другому миру, и
-     запечатать её чужим ключом значило бы потерять её для хозяина. */
-  /* Запечатывание и распечатывание идут ОДНОЙ очередью: иначе открытие
-     замка (запечатать своё) и снятие замка (распечатать всё), начатые подряд,
-     разошлись бы по складу наперегонки, и вещь осталась бы запечатанной
-     ключом, которого уже нет. */
+  /* Запечатывание, переезд в склад носителя (D-352) и распечатывание идут
+     ОДНОЙ очередью: иначе открытие замка (переезд своего) и снятие замка
+     (распечатать всё), начатые подряд, разошлись бы по складу наперегонки, и
+     вещь осталась бы запечатанной ключом, которого уже нет. Какие открытые
+     вещи берёт мир при входе — только те, о которых он знает (номер вещи в
+     одной из его записей), см. thLegacy: открытая вещь, оставшаяся от
+     прежнего выпуска, могла принадлежать другому миру. */
   var thingsWork = Promise.resolve();
   function thingsQueue(job) {
     thingsWork = thingsWork.then(job, job);
     return thingsWork;
   }
-  function sealThingsNow(ks, onlyKnown) {
-    return thingsQueue(function () { return sealThingsJob(ks, onlyKnown); });
-  }
   function unsealThingsNow(ks) {
     return thingsQueue(function () { return unsealThingsJob(ks); });
-  }
-  function sealThingsJob(ks, onlyKnown) {
-    var known = null;
-    if (onlyKnown) {
-      known = [];
-      mem.forEach(function (v) { if (v != null) known.push(String(v)); });
-      known = known.join("\n");
-    }
-    return idbAll("things").then(function (list) {
-      return list.reduce(function (chain, rec) {
-        return chain.then(function () {
-          if (!rec || rec.sealed || !rec.blob) return null;
-          if (known !== null && known.indexOf(String(rec.id)) === -1) return null;
-          return thingToSealed(ks, rec).then(function (sealed) { return idbPut("things", sealed); });
-        });
-      }, Promise.resolve());
-    }).then(function () { return true; }, function () { return false; });
   }
   /* Снять замок — распечатать вещи. Запечатанная вещь без мастер-ключа
      потеряна навсегда; вещь другого мира, которую этим ключом не открыть,
@@ -2207,8 +2758,10 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      ЧЕГО ЭТО НЕ ДАЁТ, и Совет говорит вслух: по НЕСКОЛЬКИМ снимкам диска видно,
      какая ячейка менялась, — значит, открывали ли между снимками второй мир.
      Тревожный пароль защищает от того, кто ЗАСТАВЛЯЕТ ОТКРЫТЬ и изучает один
-     снимок диска, а не от того, кто снимает диск много раз (эпоха записи —
-     следующая ступень, v178). Прежде здесь стояла иная граница — видно ЧИСЛО
+     снимок диска, а не от того, кто снимает диск много раз. Эпоха записи
+     (следующая ступень) спрячет, когда и что писали, но не то, что менялись ячейки
+     другого мира: их без его ключа не перешифровать — это остаточная граница
+     One Door, названная в документе. Прежде здесь стояла иная граница — видно ЧИСЛО
      конвертов; её закрыли пустышки ступенями (D-206), а носитель одного
      размера сделал ненужными и их.
 
@@ -2322,6 +2875,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      носителя (D-351): у ячейки главного мира — под его мастер, у другой —
      под мастер второго мира, а без него — случайные байты той же длины:
      запись не говорит, есть ли второй мир. Новой открытой записи на диске нет.
+     РЯД — В НОСИТЕЛЕ (D-353): ключ и обёртки лежат в записи замка, а сам ряд
+     — в записи «one» склада «carrier», рядом с ячейками, и пишется через
+     дверь записи носителя. Прежде стук переписывал запись замка целиком, а
+     в ней живут поздние щели открытых вкладок: неизвестное слово могло
+     отменить чужую запись. Теперь оно не пишет в localStorage ничего.
      ЧЕГО ЭТО НЕ ДАЁТ, вслух (сказано и в окне замка): перебор снятой копии
      диска следа не оставляет; стёртое хранилище браузера стирает и след; по
      двум снимкам диска видно, что запись замка менялась и сколько стуков
@@ -2438,38 +2996,51 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
        снаружи одинаковы; внутри — ровно последние стуки, ни один не ложится
        поверх другого (первый вид клал стук в случайный слот и терял стуки). */
     note: function () {
+      /* Ряд стуков лежит в самом носителе (D-353), а не в записи замка: запись
+         замка пишут поздние щели открытых вкладок, и стук, переписывавший её
+         целиком, мог отменить их. Стук — запись через ту же дверь записи, и
+         ни одной ячейки она не касается. */
       var rec = lockRecord();
-      if (!rec || !rec.knock || !rec.knock.pub || !Array.isArray(rec.knock.slots) || !rec.knock.slots.length) return Promise.resolve(false);
+      if (!rec || !rec.knock || !rec.knock.pub) return Promise.resolve(false);
       return knockSeal(unb64(rec.knock.pub), Date.now()).then(function (slot) {
-        var now = lockRecord();
-        if (!now || !now.knock || !Array.isArray(now.knock.slots) || !now.knock.slots.length) return false;
-        now.knock.slots = now.knock.slots.slice(1).concat([slot]);
-        lsSet(LOCK_KEY, JSON.stringify(now));
-        return true;
+        return carrierCommit(CARRIER_ANY, [], function (next) {
+          if (!Array.isArray(next.knock) || !next.knock.length) throw new Error("no-knock");
+          next.knock = next.knock.slice(1).concat([slot]);
+        }).then(function () { return true; }, function () { return false; });
       }, function () { return false; });
     },
     /* Прочесть след — только открытой системой. Замку, поставленному до
        D-341, след заводится при первом открытии главным словом. */
     read: function () {
-      var rec = lockRecord();
-      if (!vaultOpen || !rec) return Promise.resolve([]);
-      if (!rec.knock) {
-        if (vaultRole !== 0) return Promise.resolve([]);
-        return withMaster(function (m) { return makeKnock(new Uint8Array(m), null); }).then(function (k) {
-          knockInCells(k, vaultDoor);
-          var now = lockRecord();
-          if (now && !now.knock && k) { now.knock = k; lsSet(LOCK_KEY, JSON.stringify(now)); }
-          knockLast = [];
-          return [];
+      if (!vaultOpen || !lockRecord()) return Promise.resolve([]);
+      /* Ряд, ещё лежащий в записи замка, сперва переезжает — иначе новый ряд
+         шума занял бы его место и прежний след пропал бы. */
+      return knockToCarrier().then(function () { return carrierRead(); }).then(function (c) {
+        var rec = lockRecord();
+        if (!rec) return [];
+        var slots = c && Array.isArray(c.knock) && c.knock.length ? c.knock : null;
+        if (!rec.knock || !rec.knock.pub || !slots) {
+          if (vaultRole !== 0 || !c || !LOCKS) return [];   /* без Web Locks след не заводится (A1) */
+          return withMaster(function (m) { return makeKnock(new Uint8Array(m), null); }).then(function (k) {
+            knockInCells(k, vaultDoor);
+            var now = lockRecord(), pub = k.pub;
+            if (now && !(now.knock && now.knock.pub)) { now.knock = { pub: k.pub, wrap: k.wrap }; lsSet(LOCK_KEY, JSON.stringify(now)); }
+            else if (now && now.knock && now.knock.pub) pub = now.knock.pub;
+            /* Ряд — шум того же вида к тому ключу, что лежит в записи замка. */
+            var fill = pub === k.pub ? Promise.resolve(k.slots) : Promise.all(Array.from({ length: KNOCK_SLOTS }, function () { return knockSeal(unb64(pub), 0); }));
+            return fill.then(function (fresh) {
+              return carrierCommit(CARRIER_ANY, [], function (next) { if (!Array.isArray(next.knock) || !next.knock.length) next.knock = fresh; });
+            }).then(function () { knockLast = []; return []; }, function () { return []; });
+          }, function () { return []; });
+        }
+        return knockPrivate(rec).then(function (priv) {
+          if (!priv) return [];
+          return Promise.all(slots.map(function (x) { return knockOpen(priv, x).then(null, function () { return 0; }); }));
+        }).then(function (ts) {
+          knockLast = ts.filter(function (t) { return typeof t === "number" && isFinite(t) && t > 0; }).sort(function (a, b) { return a - b; });
+          return knockLast.slice();
         }, function () { return []; });
-      }
-      return knockPrivate(rec).then(function (priv) {
-        if (!priv) return [];
-        return Promise.all(rec.knock.slots.map(function (s) { return knockOpen(priv, s).then(null, function () { return 0; }); }));
-      }).then(function (ts) {
-        knockLast = ts.filter(function (t) { return typeof t === "number" && isFinite(t) && t > 0; }).sort(function (a, b) { return a - b; });
-        return knockLast.slice();
-      }, function () { return []; });
+      });
     },
     last: function () { return knockLast.slice(); },
     fresh: function () {
@@ -2481,6 +3052,452 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     },
     seen: function () { try { window.localStorage.setItem(KNOCK_SEEN, String(Date.now())); } catch (e) { /* место не далось — скажем ещё раз */ } }
   };
+  /* Ряд стуков, лежавший в записи замка (до укрепления D-353), переезжает в
+     носитель: один раз, через дверь записи, и лишь затем уходит из записи
+     замка. Замку без носителя (до v177) ряд переедет после первого входа. */
+  function knockToCarrier() {
+    if (!LOCKS) return Promise.resolve(false);   /* запись замка — общее для вкладок (A1) */
+    var rec = lockRecord();
+    if (!rec || !rec.knock || !Array.isArray(rec.knock.slots)) return Promise.resolve(false);
+    var slots = rec.knock.slots.slice();
+    return carrierRead().then(function (c) {
+      if (!c) return false;
+      return carrierCommit(CARRIER_ANY, [], function (next) { if (!Array.isArray(next.knock) || !next.knock.length) next.knock = slots; }).then(function () {
+        var now = lockRecord();
+        if (now && now.knock && now.knock.slots) { delete now.knock.slots; lsSet(LOCK_KEY, JSON.stringify(now)); }
+        return true;
+      });
+    }).then(null, function () { return false; });
+  }
+  /* Перекладка записи замка в вид D-353 — один раз, при загрузке. */
+  /* Запись замка у localStorage без транзакций: разовая перекладка пишет,
+     только если строка записи та же, что прочитана (перечитана в том же
+     шаге) — иначе её переложит тот, кто записал. */
+  function lockRecordSwap(before, next) {
+    if (lsGet(LOCK_KEY) !== before) return false;
+    return lsSet(LOCK_KEY, JSON.stringify(next));
+  }
+  function lockTo5() {
+    var raw = lsGet(LOCK_KEY), rec = lockRecord();
+    if (rec && rec.carrier && !rec.carrier5) { rec.carrier5 = rec.carrier; delete rec.carrier; lockRecordSwap(raw, rec); }
+  }
+  /* ── СНЯТИЕ ЗАМКА: ПРАВО, ПОРЯДОК, ОБРЫВ (D-353, шаг 4) ─────────────────
+     ПРАВО. Снимать (и стирать хранилище при замке) вправе только писатель
+     ячейки — вкладка, держащая её Web Lock (mayErase). Замёрзшая, читающая
+     и вкладка без Web Locks — отказ.
+     ПОРЯДОК, и каждое промежуточное состояние лечится:
+       (1) ЗАБОР — сравнением-и-заменой ОБЕИХ ячеек: «one».removing =
+           { by: имя замка писателя }. С этого мига носитель не пишет никто
+           (carrierCommit, вещи и стук отказывают забору).
+       (2) В памяти, без единой записи: записи мира и вещи открытыми.
+       (3) ОДНА транзакция IndexedDB: обе ячейки и забор сверены с (1) —
+           вещи ложатся открытыми, склад носителя очищается, в нём остаётся
+           одна запись «removal» с открытыми записями (переход).
+       (4) Записи — открытыми в localStorage; запись замка и щели уходят.
+       (5) Запись «removal» уходит.
+     ОБРЫВ. Обрыв до (3): носитель цел, забор стоит — забор снимается, мир
+     прежний, открытого нигде нет. Обрыв после (3): носителя нет, есть
+     «removal» — снятие доводится (4)–(5). Лечит загрузка, и ТОЛЬКО если
+     снимающего уже нет: его замок свободен (берётся без ожидания). Без
+     часов: живое снятие, сколько бы оно ни шло, не трогается. */
+  var REMOVAL_ID = "removal";
+  /* ИЗРАСХОДОВАННАЯ ПРЕЖНЯЯ ЗАПАСНАЯ ДВЕРЬ (финальный разбор H1, Г10). Код
+     замка до D-351 лежит запасной дверью в записи замка (rec.spare); он
+     расходуется строгой записью носителя, а из записи замка уходит позже —
+     в localStorage, который ложится на диск с задержкой. Обрыв питания в
+     этом окне оставлял прежнюю запасную дверь, и израсходованный код
+     открывал мир снова. Теперь расход кода (и замена его новым) кладёт в
+     сам носитель той же записью отпечаток двери (поле spent записи «one»),
+     и дверь с таким отпечатком не открывает ничего. Отпечаток — SHA-256
+     обёртки двери: тайны в нём нет, обёртка лежит открыто в записи замка.
+     Снятие и «Удалить все» уносят его вместе с носителем; новый замок
+     начинает без него. */
+  function spareFp(sp) {
+    if (!sp || !sp.wrap) return Promise.resolve(null);
+    return window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(sp.wrap))).then(function (d) { return hexOf(new Uint8Array(d)); }, function () { return null; });
+  }
+  function spareSpent(c, fp) { return !!(c && fp && Array.isArray(c.spent) && c.spent.indexOf(fp) !== -1); }
+  function spendAlso(fp) {
+    return fp ? function (next) { if (!Array.isArray(next.spent)) next.spent = []; if (next.spent.indexOf(fp) === -1) next.spent.push(fp); } : null;
+  }
+  /* Пока загрузка доводит снятие, страница не пишет ничего: она поднялась
+     запертой и пустой, и её пустота легла бы поверх открытых записей
+     (нашёл one-writer-check: sbDB записывал «[]» поверх записей мира). */
+  var healingNow = false;
+  function removalRead() {
+    return idb().then(function (db) {
+      if (!db) return null;
+      return new Promise(function (resolve) {
+        var q;
+        try { q = db.transaction(CARRIER_STORE, "readonly").objectStore(CARRIER_STORE).get(REMOVAL_ID); } catch (e) { resolve(null); return; }
+        q.onsuccess = function () { resolve(q.result || null); };
+        q.onerror = function () { resolve(null); };
+      });
+    });
+  }
+  /* (4): открытые записи — в localStorage (и правки, накопленные за
+     переход, — ДО снятия записи замка), затем запись замка и щели — вон.
+     Записи localStorage одного шага ложатся на диск по порядку: нет на
+     диске записи замка — значит, открытые записи легли раньше неё.
+     (5) переход НЕ уносится здесь: localStorage браузер сбрасывает на диск
+     с задержкой, а носитель уже очищен строгой записью IndexedDB — обрыв
+     питания в этом окне оставил бы запись замка без мира. Переход уносит
+     следующая загрузка (carrierHealHeld). Повторяемо. */
+  function removalFinish(st, extra) {
+    /* Эта вкладка сама доводит снятие: исчезновение замка — её дело. */
+    ownGone = seenLock;
+    var kv = (st && st.kv) || {}, k, laid = [], extraFailed = false;
+    try {
+      for (k in kv) if (Object.prototype.hasOwnProperty.call(kv, k) && kv[k] != null) { rawStore.set.call(window.localStorage, k, String(kv[k])); laid.push(k); }
+      (st && Array.isArray(st.sealed) ? st.sealed : []).forEach(function (n) { rawStore.del.call(window.localStorage, n); });
+      rawStore.del.call(window.localStorage, lateKey(0));
+      rawStore.del.call(window.localStorage, lateKey(1));
+      rawStore.del.call(window.localStorage, LOCK_KEY);
+    } catch (e) {
+      /* Не легло до снятия записи замка (места не хватило, страница умерла
+         на записи) — легшее откатывается: открытое не лежит рядом со
+         стоящей записью замка (D-265; разбор №5). Мир — в переходе, его
+         доведёт загрузка. */
+      if (rawStore.get.call(window.localStorage, LOCK_KEY) != null) laid.forEach(function (n) { try { rawStore.del.call(window.localStorage, n); } catch (e2) { /* ignore */ } });
+      throw e;
+    }
+    /* Запись замка снята. Правки перехода — ПОСЛЕ неё (разбор №5): записи
+       localStorage ложатся на диск по порядку, и всё, что легло после
+       снятия записи замка, загрузка, доводящая снятие, уже не тронет —
+       стоит запись замка, значит, ничего позднее неё не легло. */
+    if (extra) extra.forEach(function (v, key) {
+      try { if (v == null) rawStore.del.call(window.localStorage, key); else rawStore.set.call(window.localStorage, key, String(v)); }
+      catch (e) { extraFailed = true; }
+    });
+    if (extraFailed) removalSayRoom();
+    /* Замка больше нет — и вкладка знает, что его нет: следующий поворот
+       ключа в ней же — свой, не чужой (разбор №4). */
+    seenLock = null; ownGone = null;
+    return true;
+  }
+  /* Хватит ли места положить записи открытыми: проба того же размера
+     (знаков; квота localStorage считается знаками) и сразу её стирание. */
+  var ROOM_KEY = "sysbaby.lock.room";
+  function roomForOpen(kv) {
+    var n = 0, k;
+    for (k in kv) if (Object.prototype.hasOwnProperty.call(kv, k) && kv[k] != null) n += k.length + String(kv[k]).length;
+    /* С запасом на правки, что лягут за переход (их пока нет в kv). */
+    n += LATE_SIZE;
+    try {
+      rawStore.set.call(window.localStorage, ROOM_KEY, new Array(n + 1).join("0"));
+      rawStore.del.call(window.localStorage, ROOM_KEY);
+      return true;
+    } catch (e) {
+      try { rawStore.del.call(window.localStorage, ROOM_KEY); } catch (e2) { /* ignore */ }
+      return false;
+    }
+  }
+  /* Переход — тем, что легло открытым (своё снятие, под правом писателя). */
+  function removalMark(by, laid) {
+    return idb().then(function (db) {
+      if (!db) return false;
+      return new Promise(function (resolve) {
+        var tx, store, q, done = false;
+        try { tx = db.transaction(CARRIER_STORE, "readwrite", { durability: "strict" }); store = tx.objectStore(CARRIER_STORE); q = store.get(REMOVAL_ID); } catch (e) { resolve(false); return; }
+        q.onsuccess = function () {
+          var cur = q.result;
+          if (!cur || cur.by !== by) return;
+          cur.kv = laid;
+          store.put(cur);
+          done = true;
+        };
+        tx.oncomplete = function () { resolve(done); };
+        tx.onabort = function () { resolve(false); };
+      });
+    }).then(null, function () { return false; });
+  }
+  /* (5) Унести переход — только тот самый (имя снимающего то же). */
+  function removalDrop(st) {
+    return idb().then(function (db) {
+      if (!db) return false;
+      return new Promise(function (resolve) {
+        var tx, store, q, done = false;
+        try { tx = db.transaction(CARRIER_STORE, "readwrite", { durability: "strict" }); store = tx.objectStore(CARRIER_STORE); q = store.get(REMOVAL_ID); } catch (e) { resolve(false); return; }
+        q.onsuccess = function () {
+          var cur = q.result;
+          if (!cur || cur.by !== st.by) return;
+          store["delete"](REMOVAL_ID);
+          done = true;
+        };
+        tx.oncomplete = function () { resolve(done); };
+        tx.onabort = function () { resolve(false); };
+      });
+    });
+  }
+  /* Снять забор (откат обрыва до (3)) — только свой: имя снимающего то же. */
+  function carrierUnfence(by) {
+    return idb().then(function (db) {
+      if (!db) return false;
+      return new Promise(function (resolve) {
+        var tx, st, q, done = false;
+        try { tx = db.transaction(CARRIER_STORE, "readwrite", { durability: "strict" }); st = tx.objectStore(CARRIER_STORE); q = st.get(CARRIER_ID); } catch (e) { resolve(false); return; }
+        q.onsuccess = function () {
+          var cur = carrierNorm(q.result);
+          if (!cur || !cur.removing || cur.removing.by !== by) return;
+          var keep = carrierCopy(cur);
+          delete keep.removing;
+          st.put(carrierRecord(keep));
+          done = true;
+        };
+        tx.oncomplete = function () { resolve(done); };
+        tx.onabort = function () { resolve(false); };
+      });
+    });
+  }
+  /* Лечит загрузка, держа право писателя: снимающий держит его до конца
+     снятия, значит свободное право — снимающего нет. Под правом всё
+     перечитывается заново: другая вкладка могла долечить раньше. */
+  /* ПЕРЕХОД ЗНАЕТ СВОЙ ЗАМОК (разборы №3–4): в нём соль записи замка,
+     которую снимали.
+       · Стоит та же запись замка (и через HEAL_SETTLE_MS) — снятие не дошло
+         до диска: довести (4). Переход остаётся.
+       · Записи замка нет — (4) легло, а легло ли на ДИСК, браузер не
+         говорит: localStorage он сбрасывает с задержкой. Переход остаётся
+         запасной копией и ничего не применяет (открытое могло стать
+         новее). Уносит его следующий поворот ключа — той же транзакцией,
+         что кладёт новый замок, — или «Удалить все локальные данные».
+       · Стоит другая запись замка — переход прежнего замка: его мир уже
+         вошёл в новый замок; унести, не применяя.
+     Переход без соли (сборки до разбора №3 к людям не выходили) — довести,
+     только если запись замка стоит, а ячеек нет. */
+  /* ПОСТОЯННАЯ: 300 мс — дольше передачи записи localStorage между процессами браузера (та же мера, что у поздней щели): снявшая вкладка могла только что снять запись замка, а до этой вкладки это ещё не дошло. */
+  var HEAL_SETTLE_MS = 300;
+  /* ЗАМОК СВОЕГО СНЯТИЯ (классификация границ, Г3-1). После снятия вкладка
+     не перезагружается и пишет открыто. Загружающаяся вкладка, до которой
+     удаление записи замка ещё не дошло (кеш localStorage на процесс), видела
+     ту же соль и «доводила» снятие — клала старые записи перехода поверх
+     новых правок снимавшей; пауза HEAL_SETTLE_MS этого не доказывала. Теперь
+     снимавшая, пока жива, держит замок с именем её снятия — того же вида,
+     что приманки, и вместо приманки, — а лечение перехода, чья снимавшая
+     жива, не начинается вовсе. Свой следующий поворот ключа в той же
+     вкладке меняет этот замок на право писателя: переход уносит его же
+     запись носителя. Не дошёл поворот до записи — переход остаётся без
+     замка снятия, но и лечить его нечем: лечение требует видеть прежнюю
+     запись замка, а её снятие уже унесло. */
+  function removalLockName(by) {
+    return window.crypto.subtle.digest("SHA-256", new TextEncoder().encode("sys.baby/removal/v1/" + String(by))).then(function (d) { return hexOf(new Uint8Array(d)); });
+  }
+  function removalHold(by) {
+    if (!LOCKS || !by) { writerDrop(); return Promise.resolve(false); }
+    return removalLockName(by).then(function (name) { return lockTry(name); }).then(function (h) {
+      if (!h) { writerDrop(); return false; }
+      lockSwap(h, false);
+      if (writeRight === "lock") writeRight = false;
+      return true;
+    }, function () { writerDrop(); return false; });
+  }
+  function removalAlive(st) {
+    if (!LOCKS || !st || !st.by) return Promise.resolve(false);
+    return Promise.all([removalLockName(st.by), LOCKS.query()]).then(function (got) {
+      var held = (got[1] && got[1].held) || [];
+      return held.some(function (l) { return l && l.name === got[0]; });
+    }, function () { return true; });
+  }
+  function carrierHealHeld() {
+    return Promise.all([carrierRead(), removalRead()]).then(function (got) {
+      var c = got[0], st = got[1], now = lockSaltNow();
+      var same = !!st && !!now && (st.salt ? now === st.salt : !c);
+      if (same) {
+        return removalAlive(st).then(function (alive) {
+          if (alive) return "clean";
+          return new Promise(function (r) { setTimeout(r, HEAL_SETTLE_MS); });
+        }).then(function (v) {
+          if (v === "clean") return "clean";
+          if (lockSaltNow() !== now) return "clean";
+          healingNow = true;
+          try { removalFinish(st, null); }
+          catch (e) {
+            /* Места не хватило — переход цел, страница пишет снова и говорит это. */
+            healingNow = false;
+            removalSayRoom();
+            return "clean";
+          }
+          return "finished";
+        });
+      }
+      var dropped = st && now ? removalDrop(st) : Promise.resolve(false);
+      return dropped.then(function (d) {
+        if (c && c.removing && c.removing.by) return carrierUnfence(c.removing.by).then(function () { return "unfenced"; });
+        return d ? "dropped" : "clean";
+      });
+    });
+  }
+  function removalSayRoom() {
+    var tr = window.sbT || function (k) { return k; };
+    try { if (typeof window.showToast === "function") window.showToast(tr("lock.title"), tr("lock.removeRoom"), "", true, "toast-warn", "event"); } catch (e) { /* ignore */ }
+  }
+  function carrierFenceHeal() {
+    return Promise.all([carrierRead(), removalRead()]).then(function (got) {
+      /* Лечить есть что: переход при стоящей записи замка или забор. Переход
+         без записи замка — запасная копия до следующего замка; ради неё
+         право писателя не берётся (иначе каждая загрузка на миг отнимала бы
+         его у поворота ключа в другой вкладке). */
+      if (!(got[1] && lockSaltNow()) && !(got[0] && got[0].removing)) return false;
+      return lockTry(WRITER_LOCK).then(function (h) {
+        if (!h) return false;                        /* право держит живая вкладка — не трогать */
+        return carrierHealHeld().then(function (r) {
+          try { h.release(); } catch (e) { /* ignore */ }
+          /* Снятие доведено — страница поднимается заново, уже без замка. */
+          if (r === "finished") { try { window.location.reload(); } catch (e) { /* ignore */ } }
+          return r !== "clean";
+        }, function () { try { h.release(); } catch (e) { /* ignore */ } return false; });
+      });
+    }).then(null, function () { return false; });
+  }
+  /* СТЕРЕТЬ ВСЁ ПРИ ЗАМКЕ («Удалить все локальные данные», «Стереть всё и
+     уйти»; D-353, шаг 4). Только писатель открытого мира; своя ячейка
+     сверена с тем, от чего считает сеанс, В ТОЙ ЖЕ транзакции, что очищает
+     все склады базы: носитель, вещи, снимки, учётки. Не совпало — отказ, ни
+     одного удаления. Прежде «Удалить все локальные данные» при замке
+     оставляло носитель на диске — сказанное не было правдой. */
+  /* Все склады базы разом, одной строгой транзакцией. */
+  function clearAllStores() {
+    return idb(true).then(function (db) {
+      if (!db) return true;
+      var names = Array.from(db.objectStoreNames);
+      return new Promise(function (resolve, reject) {
+        var tx;
+        try { tx = db.transaction(names, "readwrite", { durability: "strict" }); names.forEach(function (n) { tx.objectStore(n).clear(); }); } catch (e) { reject(new Error("carrier")); return; }
+        tx.oncomplete = function () { carrierMem = null; resolve(true); };
+        tx.onabort = function () { reject(new Error("carrier")); };
+      });
+    });
+  }
+  function eraseAllStores() {
+    /* При замке стирание — дело писателя открытого мира; без Web Locks
+       писатель не доказан — отказ, ничего не стёрто (A1). */
+    if (!LOCKS && lockRecord()) return Promise.reject(new Error("nolocks"));
+    if (!mayErase()) return Promise.reject(new Error("writer"));
+    /* Без замка — все склады базы разом, без сверки ячейки (ячеек нет): и
+       запасная копия последнего снятия («removal»), и снимки, и вещи —
+       «удалить все локальные данные» должно быть правдой (разбор №4). */
+    if (!lockRecord()) {
+      /* Идёт свой поворот ключа или своё снятие — стирать нельзя: стёрлось бы
+         только что собранное (разбор №6). */
+      if (turning || sealing || removingNow) return Promise.reject(new Error("busy"));
+      /* Без Web Locks и без замка исключительность стиранию не нужна: замок
+         без них не ставится и не поворачивается (A1), а вкладки сборок до A1
+         отсечены воротами версий базы — стирать открытое есть только само
+         открытое. Сразу: без паузы и без поддельного права. */
+      if (!LOCKS) return clearAllStores();
+      /* И без замка стирание — под правом писателя (разбор №5): пока другая
+         вкладка поворачивает ключ, право у неё — отказ, а не её носитель,
+         стёртый между его записью и записью замка. Право взято — ещё раз
+         чуть погодя смотрим, не встал ли замок, до этой вкладки не дошедший. */
+      var noop = { release: function () { /* своё право — не отпускать */ } };
+      var take = heldLock && heldLock.world ? Promise.resolve(noop) : lockTry(WRITER_LOCK);
+      return take.then(function (h) {
+        if (!h) throw new Error("writer");
+        var free = function () { try { h.release(); } catch (e) { /* ignore */ } };
+        return new Promise(function (r) { setTimeout(r, HEAL_SETTLE_MS); }).then(function () {
+          if (lockLost() || lockRecord()) throw new Error("writer");
+          return clearAllStores();
+        }).then(function (v) { free(); return v; }, function (e) { free(); throw e; });
+      });
+    }
+    /* Стирание идёт и тогда, когда система уже «уходит» (sbVanishing):
+       открыть базу вправе только оно. */
+    return idb(true).then(function (db) {
+      if (!db) throw new Error("carrier");
+      var names = Array.from(db.objectStoreNames), r = vaultDoor;
+      return new Promise(function (resolve, reject) {
+        var tx, q, done = false;
+        try { tx = db.transaction(names, "readwrite", { durability: "strict" }); q = tx.objectStore(CARRIER_STORE).get(CARRIER_ID); } catch (e) { reject(new Error("carrier")); return; }
+        q.onsuccess = function () {
+          var cur = carrierNorm(q.result), sl = cur && cur.seal && cur.seal[r] ? new Uint8Array(cur.seal[r]) : null;
+          if (!cur || cur.removing || !ownBase || !sl || !sameBytes(sl, ownBase.seal) || !sameBytes(regionOf(cur, r), ownBase.region)) { try { tx.abort(); } catch (e) { /* ignore */ } return; }
+          names.forEach(function (n) { tx.objectStore(n).clear(); });
+          done = true;
+        };
+        tx.oncomplete = function () { if (done) { carrierMem = null; ownGone = seenLock; resolve(true); } else reject(new Error("stale")); };
+        tx.onabort = function () { reject(new Error("stale")); };
+      });
+    });
+  }
+  /* (2) вещи открытыми — в памяти: своя половина склада и прежние
+     конверты; конверт, который этим ключом не открыть, — вещь другого мира,
+     после снятия она шум и уходит (как и прежде, D-352). */
+  function thPlainAll(ks) {
+    return thingsQueue(function () {
+      var out = { put: [], del: [] };
+      return thLoad(vaultDoor).then(function (st) {
+        if (!st || !st.mac) return null;
+        return st.dir.items.reduce(function (chain, it) {
+          return chain.then(function () { return thReadItem(st, it); }).then(function (blob) {
+            out.put.push({ id: it.id, blob: blob, name: it.name, mime: it.mime, size: it.size, at: it.at });
+          });
+        }, Promise.resolve());
+      }).then(function () { return idbAll("things"); }).then(function (list) {
+        /* Вещь своей половины склада — новее всего, что лежит под тем же
+           именем в «things» (П9): переехавший конверт оставляет на своём месте
+           пустышку с тем же id, и прежде она уходила в «удалить» — удаление в
+           той же транзакции стирало только что открытую вещь. Под этим id
+           ложится вещь склада: ни пустышка, ни старый конверт её не трогают. */
+        var inHalf = {};
+        out.put.forEach(function (x) { inHalf[x.id] = true; });
+        return (list || []).reduce(function (chain, rec) {
+          return chain.then(function () {
+            if (!rec || !rec.sealed || inHalf[rec.id]) return null;
+            return thingFromSealed(ks, rec).then(function (p) { out.put.push(p); }, function () { out.del.push(rec.id); });
+          });
+        }, Promise.resolve());
+      }).then(function () { return out; });
+    });
+  }
+  /* (3) одна транзакция на склад носителя и склад вещей. */
+  function removalCommit(fenced, by, plain, kv, sealed, salt) {
+    return idb().then(function (db) {
+      if (!db) throw new Error("carrier");
+      return new Promise(function (resolve, reject) {
+        var tx, st, q, done = false;
+        try {
+          tx = db.transaction([CARRIER_STORE, "things"], "readwrite", { durability: "strict" });
+          st = tx.objectStore(CARRIER_STORE);
+          q = st.get(CARRIER_ID);
+        } catch (e) { reject(new Error("carrier")); return; }
+        q.onsuccess = function () {
+          var cur = carrierNorm(q.result), r;
+          if (!cur || !cur.removing || cur.removing.by !== by) { try { tx.abort(); } catch (e) { /* ignore */ } return; }
+          for (r = 0; r < CARRIER_REGIONS; r++) if (!sameCell(cur, fenced, r)) { try { tx.abort(); } catch (e) { /* ignore */ } return; }
+          /* Снимается тот замок, который знает снимающий. */
+          if (!salt || lockSaltNow() !== salt) { try { tx.abort(); } catch (e) { /* ignore */ } return; }
+          /* Поздняя щель своей ячейки сменилась не этой вкладкой (щель
+             прежнего писателя дошла в самый переход): мир старше лежащего —
+             снятия нет (разбор №6). */
+          if (lateDrift()) { try { tx.abort(); } catch (e) { /* ignore */ } return; }
+          var th = tx.objectStore("things");
+          plain.put.forEach(function (x) { th.put(x); });
+          plain.del.forEach(function (id) { th.delete(id); });
+          st.clear();
+          st.put({ id: REMOVAL_ID, by: by, salt: salt, kv: kv, sealed: sealed });
+          done = true;
+        };
+        tx.oncomplete = function () { if (done) resolve(true); else reject(new Error("stale")); };
+        tx.onabort = function () { reject(new Error("stale")); };
+      });
+    });
+  }
+  carrierFenceHeal();
+  /* Разовые перекладки записи замка (вид D-353: поле носителя carrier5, щели
+     своими записями, ряд стуков в носителе) — чтение-правка-запись общего:
+     только писателем при входе (разбор A1-3), см. lockFormatAsWriter. При
+     загрузке право не просится вовсе: оно отнимало бы его у двери соседней
+     вкладки и у лечения оборванного снятия. Без Web Locks перекладки нет —
+     запись прежнего вида читается как есть (lateRead, carrierSize). */
+  function lockFormatAsWriter() {
+    if (!LOCKS || !vaultOpen || carrierStale || writeRight !== "lock" || !(heldLock && heldLock.world) || !lockRecord()) return;
+    lockTo5();
+    lateToKeys();
+    if (lockRecord() && !Array.isArray((lockRecord() || {}).late)) lateEnsure();
+    /* Свои же щели — своя запись, а не чужая: память о них идёт вслед. */
+    if (lateKnown) lateKnown.v = lateRead(lateKnown.cell);
+  }
+  /* У каждого замка обе щели есть всегда — и после сбоя места тоже. */
   /* Отметка «код заведён» — ВНУТРИ хранилища, под замком: снаружи её нет,
      и в тревожном мире она своя. */
   function markSpare(on) {
@@ -2546,10 +3563,19 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   }
   function openWorlds(rec, password, fileBytes) {
     var keys = null, c = null, eff = rec;
-    return (rec.carrier ? carrierRead().then(function (x) { return x || carrierMem; }) : Promise.resolve(null)).then(function (car) {
+    /* Носитель читается и при записи замка прежнего вида (с дверями), если
+       он есть (финальный разбор H1, Г10): после обрыва питания сразу за
+       переездом или сменой слова на диске может лежать прежняя запись рядом
+       с уже записанным носителем, и мир тогда — в носителе: слово ищется в
+       его ячейках раньше прежних дверей. Параметры вывода у прежней записи —
+       её собственные: носитель рядом с ней может быть и чужим. */
+    var known = carrierSize(rec), legacyRec = !known && !!(rec.doors || rec.wrap);
+    /* Дверь читает носитель заново и только заново (D-353): память вкладки —
+       не свидетель того, что лежит. */
+    return (known || legacyRec ? carrierRead() : Promise.resolve(null)).then(function (car) {
       c = car;
       /* Параметры вывода — носителя, если он их несёт (см. paramsOf). */
-      eff = withParams(rec, c && c.params);
+      eff = known || ownCarrierOf(rec, c) ? withParams(rec, c && c.params) : rec;
       var cost = costOf(eff);
       return factorFor(eff, fileBytes).then(function (fsec) {
         return deriveWordKeys(password, saltOf(eff), cost[0], cost[1], fsec, cost[2]);
@@ -2582,9 +3608,16 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       hit.src = hitC ? "carrier" : (hitR ? "reserved" : "legacy");
       /* gcm — ключ прежних дверей из той же растяжки: им переезд находит мир
          в резерве, если носитель записан уже после пробы (см. moveWorld). */
-      hit.slot = keys.slot; hit.gcm = keys.gcm; hit.c = c; hit.params = params;
+      hit.slot = keys.slot; hit.gcm = keys.gcm; hit.params = params;
+      /* Прежняя дверь при записи замка прежнего вида — как прежде: носитель
+         ей не назван (переезд прочтёт его сам и найдёт мир в нём). */
+      hit.c = hit.src === "legacy" && !known ? null : c;
       /* прежняя дверь того же мира, пережившая переезд, — к уборке */
       if (hit !== hitL && hitL) { if (hitL.role === hit.role) hit.stale = true; hitL.m.fill(0); }
+      /* Мир найден в носителе, а запись замка — прежнего вида (обрыв сразу
+         после переезда или смены слова, Г10): её двери старше носителя —
+         переезд доводится, как после обрыва первого переезда. */
+      if (legacyRec && hit !== hitL) hit.stale = true;
       return hit;
     });
   }
@@ -2692,6 +3725,12 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      Охраняется tools/one-door-carrier-check.mjs. */
   /* ПОСТОЯННАЯ: оборот раз в полторы минуты открытого сеанса (v102). */
   var ROLL_EVERY = 90000;
+  /* ПОСТОЯННАЯ: кругов сходимости поворота ключа до записи замка (Р-A5.2).
+     Круг — печать мебибайта и одна запись носителя; пять кругов — правки,
+     дошедшие за пять печатей подряд. Что пишет чаще, то и дальше пишет:
+     честнее отказать до записи замка, чем запереть не то. */
+  var LOCK_SETTLE_ROUNDS = 5;
+  var ROLL_KEY = "\u0000sb/roll";
   var rollTimer = null;
   function ownTiles() {
     var C = window.sbCarrier, out = [], per, i, from;
@@ -2703,7 +3742,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   }
   function rollOnce() {
     if (!vaultOpen || !carrierKeys) return Promise.resolve([]);
-    carrierChanged.add("\u0000sb/roll");
+    carrierChanged.add(ROLL_KEY);
     return carrierFlushNow().then(function () {
       var names = ownTiles();
       if (names.length && window.sbBus && window.sbBus.emit) {
@@ -2767,50 +3806,127 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           return (duressPassword ? deriveWordKeys(duressPassword, saltB64, cost.it1, cost.it2, fsec, a2) : Promise.resolve(null))
             .then(function (k1) { return [k0, k1]; });
         }).then(function (wk) {
+          /* Сбор — после растяжки (разбор №5): тишина соседей при повороте
+             ключа объявляется перед самым сбором, и упавшая растяжка никого
+             не замораживает; записи соседей за время растяжки — в сборе. */
+          return Promise.resolve(typeof pairs === "function" ? pairs() : pairs).then(function (got) { rows = got; return wk; });
+        }).then(function (wk) {
           if (duressPassword) { dm = new Uint8Array(32); window.crypto.getRandomValues(dm); }
           /* След стука заводится вместе с замком (D-341). */
           var kc0 = new Uint8Array(master), kc1 = dm ? new Uint8Array(dm) : null;
           var knockMade = makeKnock(kc0, kc1).then(function (k) { kc0.fill(0); if (kc1) kc1.fill(0); return k; },
             function () { kc0.fill(0); if (kc1) kc1.fill(0); return null; });
-          rows = typeof pairs === "function" ? pairs() : pairs;
           var kv0 = new Map();
           rows.forEach(function (p) { if (p.v != null) kv0.set(p.k, p.v); });
           var c = carrierNew();
           /* Главный мир — в СЛУЧАЙНУЮ ячейку, второй — в другую (D-351): номер
              ячейки не говорит, какой мир в ней. */
           var cell = randBytes(1)[0] & 1;
-          var world0 = sealRegion(master, wk[0].slot, null, kv0, 0);
-          var world1 = dm ? sealRegion(dm, wk[1].slot, null, new Map(), 1) : Promise.resolve(null);
-          return Promise.all([world0, world1, knockMade]).then(function (made) {
+          var world0 = sealRegion(master, wk[0].slot, null, kv0, 0, 0);
+          var world1 = dm ? sealRegion(dm, wk[1].slot, null, new Map(), 1, 0) : Promise.resolve(null);
+          /* От чего считается поворот ключа (D-353): носитель, который лежит
+             сейчас (или его нет), — запись сверится с ним в той же транзакции. */
+          return Promise.all([world0, world1, knockMade, carrierRead()]).then(function (made) {
             c.bytes.set(made[0].region, cell * CARRIER_REGION); c.seal[cell] = made[0].seal;
             if (made[1]) { c.bytes.set(made[1].region, (1 - cell) * CARRIER_REGION); c.seal[1 - cell] = made[1].seal; }
             knockInCells(made[2], cell);
             c.params = { salt: saltB64, kdf: ["PBKDF2-SHA512:" + cost.it1, "PBKDF2-SHA256:" + cost.it2].concat(a2 ? [a2Label(a2)] : []) };
             if (factorRec) c.params.factor = factorRec;
-            return carrierWrite(c).then(function (okp) {
-              if (!okp) throw new Error("carrier");
-              var body = {
-                v: factorRec ? 4 : 3,
-                kdf: ["PBKDF2-SHA512:" + cost.it1, "PBKDF2-SHA256:" + cost.it2].concat(a2 ? [a2Label(a2)] : []),
-                ciphers: ["AES-256-CTR", "AES-256-CTR"],
-                mac: "HMAC-SHA-512",
-                /* Носитель (D-351): его размер — не тайна, он у всех один. */
-                carrier: CARRIER_REGIONS * CARRIER_REGION,
-                salt: saltB64,
-                /* Поздние щели обеих ячеек — шум с самого начала. */
-                late: [lateNoise(), lateNoise()]
+            /* Журнал стуков — в самом носителе (D-353), рядом с ячейками: его
+               пишет неизвестное слово, и запись замка он больше не трогает. */
+            if (made[2] && Array.isArray(made[2].slots)) c.knock = made[2].slots.slice();
+            var seen = made[3], all = [], ri;
+            for (ri = 0; ri < CARRIER_REGIONS; ri++) all.push(ri);
+            return carrierCommit(seen, all, function (next) {
+              /* Запись замка, которой эта вкладка не знает, появилась (чужой
+                 поворот ключа) или сменилась — отказ, а не запертое поверх
+                 запертого (разбор №3; без Web Locks — единственная стража). */
+              if (lockLost()) throw new Error("already");
+              next.bytes.set(c.bytes, 0);
+              next.seal = c.seal.map(function (x) { return new Uint8Array(x); });
+              next.params = c.params;
+              if (c.knock) next.knock = c.knock; else delete next.knock;
+              /* Новый носитель метку стоящего замка получает, только когда
+                 ляжет его запись замка (lockMark, Г8); отпечатки прежних
+                 запасных дверей прежнего замка ему ни к чему. */
+              delete next.mark;
+              delete next.spent;
+            }, function (store) {
+              /* Переход прежнего снятия (его открытые записи) уходит той же
+                 транзакцией, что кладёт новый замок: под замком открытого на
+                 диске нет (D-265), а до замка переход — запасная копия мира
+                 на случай, если открытые записи снятия не успели на диск. */
+              store["delete"](REMOVAL_ID);
+            }).then(function (written0) {
+              /* СХОДИМОСТЬ ДО ЗАПИСИ ЗАМКА (Р-A5.2, класс A). Пока печаталась
+                 ячейка, система жила: правки этой вкладки и вкладки, открытой
+                 посреди поворота (Г9-3), лежат на диске открытыми. Запись
+                 замка ложится, только когда то, что лежит, — ровно то, что в
+                 ячейке: иначе ячейка печатается заново (сравнением и заменой
+                 от только что записанного носителя), и сверка повторяется.
+                 Сверка и запись замка — один синхронный шаг. Прежде эти
+                 правки дописывались ПОСЛЕ записи замка: упала дозапись —
+                 замок стоял, правки пропадали, а окно говорило «ничего не
+                 изменено»; обрыв между записью замка и дозаписью терял их
+                 так же. Не сошлось за LOCK_SETTLE_ROUNDS кругов (что-то пишет
+                 без конца) — отказ до записи замка: замка нет, всё лежит,
+                 как лежало. */
+              var sealedNow = made[0];
+              var settleThen = function (written, kvNow, n) {
+                var drift = typeof pairs === "function" && typeof pairs.drift === "function" ? pairs.drift(kvNow) : null;
+                if (!drift) return layLock(written, sealedNow);
+                if (n >= LOCK_SETTLE_ROUNDS) throw new Error("moving");
+                return sealRegion(master, wk[0].slot, null, drift, 0, 0).then(function (s) {
+                  sealedNow = s;
+                  var puts = {}; puts[cell] = s;
+                  return carrierPut(written, puts, null, null, function () { if (lockLost()) throw new Error("already"); });
+                }).then(function (w2) { return settleThen(w2, drift, n + 1); });
               };
-              if (made[2]) body.knock = made[2];
-              if (factorRec) body.factor = factorRec;
-              lsSet(LOCK_KEY, JSON.stringify(body));
-              rows.forEach(function (p) { rawStore.del.call(window.localStorage, p.k); });
-              return subkeys(master).then(function (ks) {
-                carrierKeys = made[0].keys;
-                carrierWordSlot = wk[0].slot;
-                vaultDoor = cell;
-                vaultRole = 0;
-                return holdMaster(master).then(function () { if (dm) dm.fill(0); return ks; });
-              });
+              var layLock = function (written, sealed) {
+                var body = {
+                  v: factorRec ? 4 : 3,
+                  kdf: ["PBKDF2-SHA512:" + cost.it1, "PBKDF2-SHA256:" + cost.it2].concat(a2 ? [a2Label(a2)] : []),
+                  ciphers: ["AES-256-CTR", "AES-256-CTR"],
+                  mac: "HMAC-SHA-512",
+                  /* Носитель (D-351): его размер — не тайна, он у всех один. */
+                  carrier5: CARRIER_REGIONS * CARRIER_REGION,
+                  salt: saltB64
+                };
+                if (made[2]) body.knock = { pub: made[2].pub, wrap: made[2].wrap };
+                if (factorRec) body.factor = factorRec;
+                var bodyText = JSON.stringify(body);
+                lsSet(LOCK_KEY, bodyText);
+                /* Легла именно своя запись — иначе это чужой замок, и вкладка
+                   его не усыновляет. */
+                if (lsGet(LOCK_KEY) !== bodyText) throw new Error("already");
+                noteOwnLock();
+                /* С этой строки замок стоит: что бы ни упало дальше, «ничего не
+                   изменено» уже неправда (см. lock, keepOpen). */
+                if (typeof pairs === "function" && typeof pairs.laid === "function") pairs.laid();
+                /* Поздние щели обеих ячеек — шум с самого начала, своими записями. */
+                lsSet(lateKey(0), lateNoise()); lsSet(lateKey(1), lateNoise());
+                lateKnown = { cell: cell, v: lateRead(cell) };
+                /* Открытые записи уходят с диска в том же шаге, что легла запись
+                   замка. Поворот ключа сверяет их с тем, что лежало при сборе
+                   (Г9-3, см. lock); переезд v1 стирает свои конверты по имени. */
+                if (typeof pairs === "function" && typeof pairs.lay === "function") pairs.lay();
+                else rows.forEach(function (p) { rawStore.del.call(window.localStorage, p.k); });
+                /* Запись замка легла — метка стоящего замка рядом с носителем
+                   (Г8, см. crashHeal). Не легла метка — замок стоит и так, но
+                   обрыв питания в ближайшие секунды тогда не лечится (граница
+                   названа в D-353). */
+                return lockMark(body.knock, written).then(function () { return subkeys(master); }).then(function (ks) {
+                  carrierKeys = sealed.keys;
+                  carrierWordSlot = wk[0].slot;
+                  vaultDoor = cell;
+                  vaultRole = 0;
+                  ownFrom(written, cell);
+                  sessionG = 0;
+                  carrierStale = null;
+                  return holdMaster(master).then(function () { if (dm) dm.fill(0); return ks; });
+                });
+              };
+              return settleThen(written0, kv0, 0);
             });
           });
         });
@@ -3149,34 +4265,15 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     });
   }
 
-  /* ── ЗАПИСАТЬ НОСИТЕЛЬ: ячейки целиком и параметры — одной записью ──────
-     puts — { номер ячейки: запечатанная ячейка }, wipes — номера ячеек,
-     которые становятся шумом. Носитель читается заново перед записью:
-     чужую ячейку могла переписать другая вкладка. */
-  function carrierPut(puts, wipes, params) {
-    return carrierRead().then(function (fresh) {
-      var base = fresh || carrierMem || carrierNew(), next = carrierCopy(base), r, off, reg;
-      for (r in puts) if (Object.prototype.hasOwnProperty.call(puts, r)) {
-        next.bytes.set(puts[r].region, Number(r) * CARRIER_REGION);
-        next.seal[Number(r)] = puts[r].seal;
-      }
-      (wipes || []).forEach(function (w) {
-        reg = next.bytes.subarray(w * CARRIER_REGION, (w + 1) * CARRIER_REGION);
-        for (off = 0; off < reg.length; off += 65536) window.crypto.getRandomValues(reg.subarray(off, Math.min(reg.length, off + 65536)));
-        next.seal[w] = randBytes(CR_SEAL);
-      });
-      if (params) next.params = params;
-      else if (base.params) next.params = base.params;
-      return carrierWrite(next).then(function (okp) { if (!okp) throw new Error("carrier"); return next; });
-    });
-  }
   /* Своя ячейка из свежего носителя: печать сверяется мастером под СВОЕЙ
      ролью, тело открывается. Не своя — «not-mine». Байты ключа щели кода
      из тела — та же тайна, что мастер (ими открывается мир), и без просьбы
      (wantCode) обнуляются сразу (D-300). */
+  /* Ответ несёт и сам прочитанный носитель (w.c): от него считается запись,
+     и с ним она сверяется в одной двери записи (D-353). Носителя на диске
+     нет — отказ: память сеанса не заменяет прочитанного. */
   function readOwn(r, m, role, wantCode) {
-    return carrierRead().then(function (fresh) {
-      var c = fresh || carrierMem;
+    return carrierRead().then(function (c) {
       if (!c) throw new Error("carrier");
       return regionKeys(m, role).then(function (keys) {
         var reg = regionOf(c, r);
@@ -3184,6 +4281,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           if (!mine) throw new Error("not-mine");
           return openRegion(keys, reg).then(function (w) {
             if (!wantCode && w.code) { w.code.fill(0); w.code = null; }
+            w.c = c;
             return w;
           });
         });
@@ -3211,15 +4309,109 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       kdf: params.kdf,
       ciphers: ["AES-256-CTR", "AES-256-CTR"],
       mac: "HMAC-SHA-512",
-      carrier: CARRIER_REGIONS * CARRIER_REGION,
-      salt: params.salt,
-      late: [lateNoise(), lateNoise()]
+      carrier5: CARRIER_REGIONS * CARRIER_REGION,
+      salt: params.salt
     };
     if (rec.knock) body.knock = rec.knock;
     if (params.factor) body.factor = params.factor;
     if (params.hw) body.hw = params.hw;
     if (rec.spare) body.spare = rec.spare;
     return body;
+  }
+  /* ── ОБРЫВ ПИТАНИЯ СРАЗУ ПОСЛЕ ЗАМКА (классификация границ, Г8) ────────
+     Носитель пишется строго (durability strict), а запись замка, щели и
+     удаление открытых записей — в localStorage, который браузер кладёт на
+     диск позже. Обрыв в этом окне оставлял носитель без записи замка и
+     открытые записи до замка: загрузка открывала систему БЕЗ слова — старое
+     состояние побеждало новое, а записанное после замка жило только в
+     носителе.
+     МЕТКА СТОЯЩЕГО ЗАМКА. Поворот ключа кладёт её в сам носитель (поле mark
+     записи «one») второй строгой записью, когда запись замка уже легла, — с
+     этого мига замок для человека стоит. Запись замка не легла (нет места) — метки нет, и
+     носитель неудачного поворота ничего не запирает: правки после неудачи
+     новее его. Снятие и «Удалить все» уносят метку вместе с носителем; новый
+     поворот ключа пишет носитель без неё. Замки сборок до H1 метки не несут, и
+     их носитель без записи замка по-прежнему ничего не открывает (D-351).
+     ЛЕЧЕНИЕ — до двери, только под правом писателя (A1: без доказанной
+     исключительности — ни одной записи) и после сверки заново:
+       · записи замка нет, перехода снятия нет, носитель с меткой есть —
+         запись замка восстанавливается из параметров носителя (они в нём,
+         D-351), щели заводятся, открытые записи до замка стираются (их
+         содержимое — в носителе); страница поднимается заново запертой;
+       · обрыв на шаг позже: запись замка есть, щелей нет, а открытые записи
+         лежат — щели заводятся, открытые записи стираются.
+     Хоть одно условие не так — ничего не пишется. */
+  function lockMark(knock, base) {
+    /* Сравнением и заменой от только что записанного носителя (D-353): его
+       ячейки не меняются, меняется одно поле. След стука (pub, wrap) лежит
+       только в записи замка (D-341): метка несёт его копию, чтобы
+       восстановленная запись замка не теряла стук. Тайны в нём нет — запись
+       замка лежит открыто. */
+    return carrierCommit(base, [], function (next) {
+      next.mark = knock && knock.pub && knock.wrap ? { knock: { pub: knock.pub, wrap: knock.wrap } } : { v: 1 };
+    }).then(function () { return true; }, function () { return false; });
+  }
+  function crashRead() {
+    return idb().then(function (db) {
+      if (!db) return null;
+      return new Promise(function (resolve) {
+        var tx, st, one, rm;
+        try { tx = db.transaction(CARRIER_STORE, "readonly"); st = tx.objectStore(CARRIER_STORE); one = st.get(CARRIER_ID); rm = st.get(REMOVAL_ID); } catch (e) { resolve(null); return; }
+        tx.oncomplete = function () { var c = carrierNorm(one.result); resolve({ c: c, rm: rm.result || null, mark: c && c.mark ? c.mark : null }); };
+        tx.onabort = function () { resolve(null); };
+      });
+    }).then(null, function () { return null; });
+  }
+  function crashKind(r) {
+    if (!r || !r.c || !r.mark || r.rm || r.c.removing || !r.c.params || !r.c.params.salt) return null;
+    var rec = lockRecord();
+    if (!rec) return "orphan";
+    if (rec.v === 1 || rec.doors || rec.wrap || !carrierSize(rec)) return null;
+    if (!lsGet(lateKey(0)) && !lsGet(lateKey(1)) && protectedKeysNow().length) return "leftover";
+    return null;
+  }
+  /* Лечить есть что, а права нет (его держит живая вкладка — она и лечит)
+     или лечение не легло: вкладка не поднимается открытой поверх обрыва —
+     иначе её правки легли бы открытыми и следующее лечение стёрло бы их
+     (разбор A2–A4, п. 1). Она замирает — «изменено в другой вкладке»,
+     выход «Перечитать» — и не пишет ничего (CONFLICT → REJECT → NO WRITE →
+     FREEZE). */
+  function crashHold() {
+    if (!carrierStale) { carrierStale = "records"; writerDrop(); staleSay("records"); }
+    return "frozen";
+  }
+  function crashHeal() {
+    if (!LOCKS || carrierStale || vaultOpen || window.sbVanishing) return Promise.resolve(false);
+    return crashRead().then(function (r) {
+      var kind = crashKind(r);
+      if (!kind) return false;
+      return lockTry(WRITER_LOCK).then(function (h) {
+        if (!h) return crashHold();
+        var free = function () { try { h.release(); } catch (e) { /* ignore */ } };
+        return new Promise(function (res) { setTimeout(res, HEAL_SETTLE_MS); }).then(crashRead).then(function (r2) {
+          if (carrierStale || vaultOpen || window.sbVanishing) return false;
+          /* Лечить было что, а второе чтение не удалось — закрыто, не открыто. */
+          if (!r2) { crashHold(); return "frozen-room"; }
+          /* Запись замка появилась не этой вкладкой (её поставила или
+             восстановила другая) — замереть, как при любом чужом замке. */
+          if (lostNow()) return "frozen";
+          if (crashKind(r2) !== kind) return false;
+          if (kind === "orphan") {
+            var mk = r2.mark && r2.mark.knock ? { knock: r2.mark.knock } : {};
+            var text = JSON.stringify(carriedRecord(mk, paramsOf(withParams({}, r2.c.params))));
+            lsSet(LOCK_KEY, text);
+            /* Запись замка не легла (нет места) — ждать права бессмысленно:
+               оно у этой вкладки. Занавес стоит до записи замка другой
+               вкладкой или до «Перечитать». */
+            if (lsGet(LOCK_KEY) !== text) { crashHold(); return "frozen-room"; }
+            noteOwnLock();
+          }
+          lateEnsure();
+          protectedKeysNow().forEach(function (k) { try { rawStore.del.call(window.localStorage, k); } catch (e) { /* ignore */ } });
+          return kind;
+        }).then(function (v) { free(); return v; }, function () { free(); crashHold(); return "frozen-room"; });
+      });
+    }).then(null, function () { return false; });
   }
   /* ── ПЕРЕЕЗД МИРА В НОСИТЕЛЬ (D-351) ──────────────────────────────────
      Из резерва — в ту же ячейку. Из-за прежней двери записи замка (первый
@@ -3272,26 +4464,47 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       }
       if (cell < 0) throw new Error("carrier-state");
       hit.src = "reserved"; hit.i = cell; hit.c = c; hit.carried = carried;
-      return hit;
+      if (!carried) return hit;
+      /* Мир уже в своей ячейке. Её щель слова должна открываться набранным
+         словом (так бывает, когда переезд того же слова прошёл в другой
+         вкладке после пробы); не открывается — прежняя дверь старше ячейки:
+         слово с тех пор сменили (финальный разбор H1, Г10). Ответ как на
+         неверное слово, без записи: перепечатать ячейку прежним словом
+         значило бы вернуть старое слово и отнять новое. */
+      return slotCandidates(c, hit.slot, "word").then(function (cands) { return carrierMatch(c, cands); }).then(function (h) {
+        var good = !!h && h.i === cell && h.role === hit.role;
+        if (h) h.m.fill(0);
+        if (!good) throw new Error("wrong");
+        return hit;
+      });
     });
   }
   function moveWorld(hit, kv) {
-    var code = null;
-    var fresh = hit.src === "reserved" ? Promise.resolve(kv) : carrierRead().then(function (c) {
+    var code = null, g = 0;
+    /* От чего считается переезд (D-353): носитель, прочитанный здесь, — с
+       ним и сверяется запись; носителя не было — его и не должно появиться. */
+    var seen = hit.src === "reserved" && hit.c ? hit.c : null;
+    var fresh = hit.src === "reserved" ? (seen ? Promise.resolve(kv) : carrierRead().then(function (c) {
+      if (!c) throw new Error("carrier-state");
+      seen = c;
+      return kv;
+    })) : carrierRead().then(function (c) {
+      seen = c;
       if (!c) return kv;
       return relocated(hit, c).then(function () {
         if (!hit.carried) return kv;
-        return readOwn(hit.i, hit.m, hit.role, !hit.dropCode).then(function (w) { code = w.code; return w.kv; });
+        return readOwn(hit.i, hit.m, hit.role, !hit.dropCode).then(function (w) { code = w.code; g = w.g; seen = w.c; return w.kv; });
       }, function (e) {
+        if (e && e.message === "wrong") throw e;          /* прежняя дверь устарела — см. relocated */
         var now = lockRecord();
-        if (now && !now.carrier) return kv;           /* носитель чужой — см. выше */
+        if (now && !carrierSize(now)) return kv;           /* носитель чужой — см. выше */
         throw e;
       });
     });
     return fresh.then(function (kv2) {
       kv = kv2;
       return codeFromBits(code).then(function (ck) {
-        return sealRegion(hit.m, hit.slot, ck, kv, hit.role).then(function (sealed) { if (ck) ck.bits.fill(0); return sealed; },
+        return sealRegion(hit.m, hit.slot, ck, kv, hit.role, g).then(function (sealed) { if (ck) ck.bits.fill(0); return sealed; },
           function (e) { if (ck) ck.bits.fill(0); throw e; });
       });
     }).then(function (sealed) {
@@ -3299,7 +4512,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       if (hit.src === "reserved") {
         cell = hit.i;
         puts[cell] = sealed;
-        return carrierPut(puts, null, hit.params).then(function () { return { cell: cell, keys: sealed.keys, rec: null, kv: kv, code: code }; },
+        return carrierPut(seen, puts, null, hit.params, hit.spend || null).then(function (next) { return { cell: cell, keys: sealed.keys, rec: null, kv: kv, code: code, c: next, g: g }; },
           function (e) { if (code) code.fill(0); throw e; });
       }
       if (hit.c) throw new Error("carrier-state");
@@ -3320,14 +4533,14 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       } catch (e) { /* обёртка не читается — резерв остаётся шумом */ }
       puts[cell] = sealed;
       puts[other] = { region: resv, seal: randBytes(CR_SEAL) };
-      return carrierPut(puts, null, hit.params).then(function () {
+      return carrierPut(seen, puts, null, hit.params, hit.spend || null).then(function (written) {
         var next = carriedRecord(rec, hit.params);
         /* След стука — по ячейкам: wrap[r] под мастер мира ячейки r. */
         if (next.knock && Array.isArray(next.knock.wrap) && next.knock.wrap.length === 2 && cell !== hit.role) {
           next.knock = JSON.parse(JSON.stringify(next.knock));
           next.knock.wrap = [next.knock.wrap[1], next.knock.wrap[0]];
         }
-        return { cell: cell, keys: sealed.keys, rec: next, kv: kv, code: null };
+        return { cell: cell, keys: sealed.keys, rec: next, kv: kv, code: null, c: written, g: 0 };
       });
     });
   }
@@ -3351,7 +4564,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     vaultOpen = true;
     carrierChanged.clear();
     rollKeep();
-    sealThingsNow(ks, vaultRole !== 0);
+    /* Вещи — в склад своей половины (D-352); прежние конверты переезжают. */
+    thOnOpen(ks, vaultRole !== 0);
     bumpEpoch("open");
     if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: true, open: true });
     if (typeof window.sbApplyStoredAppearance === "function") {
@@ -3367,7 +4581,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   function finishMove(ks, own, rec2, cell, role) {
     return (own ? Promise.resolve(own) : legacyWorld(ks).then(function (x) { return x.own; })).then(function (list) {
       legacyTidy(list);
-      if (rec2) { lsSet(LOCK_KEY, JSON.stringify(rec2)); return; }
+      if (rec2) { lsSet(LOCK_KEY, JSON.stringify(rec2)); lateEnsure(); return; }
       var now = lockRecord(), next;
       if (!now || !(now.doors || now.wrap)) return;
       /* Обрыв первого переезда: носитель записан, запись замка — ещё
@@ -3378,34 +4592,101 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         next.knock.wrap = [next.knock.wrap[1], next.knock.wrap[0]];
       }
       lsSet(LOCK_KEY, JSON.stringify(next));
+      lateEnsure();
     });
   }
   /* Войти в найденный мир: прочесть ячейку или переехать в носитель. */
-  function enterWorld(hit) {
+  function enterWorld(hit, right) {
     var m = hit.m;
+    if (right === undefined) right = LOCKS ? false : "cas";
+    /* Читающая вкладка мир прежнего вида не переносит: переезд — запись. Ответ
+       — как на неверное слово (D-349): иной ответ сказал бы, что слово верно
+       и что это не тот мир, что открыт в другой вкладке (разбор №3). */
+    if (right !== "lock" && hit.src !== "carrier") { m.fill(0); return Promise.reject(new Error("wrong")); }
     return subkeys(m).then(function (ks) {
       var load = hit.src === "carrier"
         ? regionKeys(m, hit.role).then(function (rk) {
             return openRegion(rk, regionOf(hit.c, hit.i)).then(function (w) {
-              /* Изменённое в миг прошлого ухода — поверх ячейки (поздняя щель). */
-              return lateApply(hit.i, rk, w.kv, hit.c.seal[hit.i]).then(function (late) { return { kv: w.kv, code: w.code, own: null, rk: rk, cell: hit.i, rec: null, late: late }; });
+              /* Изменённое в миг прошлого ухода — поверх ячейки (поздняя щель).
+                 Какой щель была в этот миг — запоминается: право писателя,
+                 взятое позже, сверит, не легла ли с тех пор новая. */
+              var lateSeen = lateRead(hit.i);
+              return lateApply(hit.i, rk, w.kv, hit.c.seal[hit.i]).then(function (late) { return { kv: w.kv, code: w.code, own: null, rk: rk, cell: hit.i, rec: null, late: late, c: hit.c, g: w.g, lateSeen: lateSeen }; });
             });
           })
         : legacyWorld(ks).then(function (w) {
-            return moveWorld(hit, w.kv).then(function (mv) { return { kv: mv.kv, code: mv.code, own: w.own, rk: mv.keys, cell: mv.cell, rec: mv.rec }; });
+            return moveWorld(hit, w.kv).then(function (mv) { return { kv: mv.kv, code: mv.code, own: w.own, rk: mv.keys, cell: mv.cell, rec: mv.rec, c: mv.c, g: mv.g }; });
           });
       return load.then(function (w) {
+        /* ПРАВО ПИСАТЕЛЯ (D-353, шаг 4) взято после верного слова — мир
+           сверяется заново: прежний писатель мог записать ячейку или позднюю
+           щель между проверкой слова и этим мигом; тогда основание сеанса
+           устарело, и вкладка не пишет — только «Перечитать». */
+        if (right !== "lock") return { w: w, right: right, fresh: true };
+        var judge = function (c2) {
+          var same = !!c2 && !c2.removing && !!w.c && sameCell(c2, w.c, w.cell) && (hit.src !== "carrier" || lateRead(w.cell) === w.lateSeen);
+          return { w: w, right: "lock", fresh: same };
+        };
+        return carrierRead().then(function (c2) {
+          /* Забор оборванного снятия: право у нас — значит, снимающего нет;
+             лечим под правом и судим заново (разбор №2 шага 4). */
+          if (c2 && c2.removing) {
+            return carrierHealHeld().then(function (r) {
+              if (r === "finished") { try { window.location.reload(); } catch (e) { /* ignore */ } throw new Error("removed"); }
+              return carrierRead().then(judge);
+            });
+          }
+          return judge(c2);
+        }, function () { return { w: w, right: "lock", fresh: false }; });
+      }).then(function (x) {
+        var w = x.w;
         vaultDoor = w.cell;
         vaultRole = hit.role;
         carrierKeys = w.rk;
         carrierWordSlot = hit.slot;
-        mirrorParams(hit.params);
-        var tidy = (w.own || w.rec || hit.stale) ? finishMove(ks, w.own, w.rec, w.cell, hit.role) : Promise.resolve();
-        return tidy.then(function () { return holdCode(w.code); })
+        /* От чего этот сеанс считает (D-353). */
+        ownFrom(w.c, w.cell);
+        sessionG = w.g || 0;
+        carrierStale = null;
+        writeRight = x.right;
+        /* Без права — только чтение с первой секунды, до любой записи входа
+           (вещи, переезд, след); основание устарело — то же, со словами
+           «изменено в другой вкладке». */
+        lateKnown = null;
+        if (x.right === false) carrierStaleNow("reader");
+        else if (!x.fresh) carrierStaleNow("records");
+        else if (x.right === "lock") {
+          /* Последняя щель прежнего писателя могла дойти до этой вкладки позже
+             права (у браузера свой кеш localStorage на процесс). Сеанс помнит
+             щель, от которой считает (lateKnown), и сверяет её перед КАЖДОЙ
+             своей записью — носителя и щели (разбор №3); ещё одна сверка
+             чуть погодя замораживает и без записи. */
+          /* Мир прежнего вида щели не имел: её заводит сам переезд (ниже), и
+             сеанс запоминает её после него. */
+          if (hit.src === "carrier") lateKnown = { cell: w.cell, v: w.lateSeen };
+          /* ПОСТОЯННАЯ: 300 мс — дольше передачи записи localStorage между процессами браузера и раньше первой печати по окну (700 мс). */
+          setTimeout(function () {
+            if (vaultOpen && !carrierStale && lateDrift()) { carrierStaleNow("records"); return; }
+            /* Сверка прошла — писатель перекладывает запись замка (разбор A1-3):
+               обе щели сразу своими записями, без окна, в котором одна щель
+               выдала бы снимкам второй мир. */
+            lockFormatAsWriter();
+          }, 300);
+        }
+        /* Копия параметров в записи замка и уборка прежних конвертов — записи
+           общего для вкладок: только доказанному писателю (Web Lock) со свежим
+           основанием (A1; без Web Locks — не пишутся). */
+        if (x.right === "lock") mirrorParams(hit.params);
+        var tidy = (w.own || w.rec || hit.stale) && x.right === "lock" && x.fresh ? finishMove(ks, w.own, w.rec, w.cell, hit.role) : Promise.resolve();
+        return tidy.then(function () {
+          if (x.right === "lock" && x.fresh && hit.src !== "carrier" && !carrierStale) lateKnown = { cell: w.cell, v: lateRead(w.cell) };
+          return holdCode(w.code);
+        })
           .then(function () { return holdMaster(m); }).then(function () { return adoptWorld(ks, w.kv); })
           .then(function (r) {
             /* Позднее ляжет в ячейку ближайшей печатью — вместе с шумом в щели. */
             (w.late || []).forEach(function (k) { carrierDirty(k); });
+            knockToCarrier();
             return r;
           });
       });
@@ -3418,9 +4699,10 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      Записи собираются окном в CARRIER_QUIET_MS от первой правки: ячейка —
      мебибайт, и писать её на каждую букву значило бы изнашивать память
      телефона; при непрерывной записи печать идёт не реже раза в окно.
-     ДРУГАЯ ВКЛАДКА. Перед записью носитель читается заново: чужая ячейка
-     берётся свежей (её мог записать другой мир в другой вкладке), своя —
-     сливается: свои изменения поверх, остальное — как лежит.
+     ДРУГАЯ ВКЛАДКА (D-353). Запись — одной транзакцией сравнения и замены
+     (carrierCommit): чужая ячейка не трогается вовсе, своя ложится, только
+     если на месте ровно та, от которой считает сеанс; иначе — отказ без
+     записи и заморозка вкладки. Слияния, повтора и пересоздания нет.
      В МИГ УХОДА полная печать начинается, но браузер не обязан её
      дождаться (замерено: запись IndexedDB в этот миг обрывается). Поэтому
      сперва изменённое ложится в позднюю щель (см. ниже) синхронной записью.
@@ -3439,13 +4721,21 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      Сама запись — синхронная (localStorage): её не оборвёт уход страницы. */
   function carrierLateNow() {
     lateQueue = lateQueue.then(function () {
-      if (!vaultOpen || !carrierKeys || !carrierKeys.late || vaultDoor < 0 || !carrierMem) return false;
+      if (carrierStale || !vaultOpen || !carrierKeys || !carrierKeys.late || vaultDoor < 0 || !ownBase) return false;
+      /* Щель пишет только писатель ячейки (D-353, шаг 4): у неё нет
+         сравнения-и-замены с носителем, и второй писатель сделал бы её
+         «кто последний, тот и прав». Без замка (и без Web Locks) щели нет.
+         Замка нет — мир снят: щели не заводятся. */
+      if (writeRight !== "lock" || !heldLock || !heldLock.world || !lsGet(LOCK_KEY)) return false;
       var keys = new Set(), delta = {}, n = 0, cell = vaultDoor, ks = carrierKeys;
       carrierChanged.forEach(function (k) { keys.add(k); });
       carrierInflight.forEach(function (k) { keys.add(k); });
       keys.forEach(function (k) { var v = mem.get(k); delta[k] = v == null ? null : v; n++; });
       if (!n) return false;
-      var bases = [b64(carrierMem.seal[cell])];
+      /* Основа щели — состояние, от которого считает ЭТОТ сеанс (D-353), а не
+         последнее прочитанное: отставший сеанс читал и более новое, но его
+         изменения сделаны поверх своего, и лечь поверх чужого они не должны. */
+      var bases = [b64(ownBase.seal)];
       if (carrierPendingSeal) bases.push(b64(carrierPendingSeal));
       /* Без сжатия: поток сжатия в миг ухода не доходит до конца (замерено),
          шифр — доходит. */
@@ -3461,10 +4751,13 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         return window.crypto.subtle.encrypt({ name: "AES-CTR", counter: nonce, length: 64 }, ks.late, plain).then(function (ct) {
           var c8 = new Uint8Array(ct);
           return window.crypto.subtle.sign("HMAC", ks.lateMac, cat(nonce, c8)).then(function (mac) {
-            var rec = lockRecord();
-            if (!rec || !Array.isArray(rec.late) || rec.late.length !== CARRIER_REGIONS) return false;
-            rec.late[cell] = b64(cat(nonce, new Uint8Array(mac), c8));
-            lsSet(LOCK_KEY, JSON.stringify(rec));
+            /* Своя запись своей ячейки — целиком, без чтения общей (D-353). */
+            if (carrierStale || lateSuspended || writeRight !== "lock" || !heldLock || !heldLock.world || !lsGet(LOCK_KEY)) return false;
+            /* Чужая щель на месте своей — не писать поверх неё: заморозка. */
+            if (lateDrift()) { carrierStaleNow("records"); return false; }
+            var slotNow = b64(cat(nonce, new Uint8Array(mac), c8));
+            lsSet(lateKey(cell), slotNow);
+            if (lateRead(cell) === slotNow) lateKnown = { cell: cell, v: slotNow };
             return true;
           });
         });
@@ -3477,8 +4770,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      изменённых ключей (пустой, если в щели шум, чужое или устаревшее). */
   function lateApply(cell, ks, kv, seal) {
     var rec = lockRecord(), b;
-    if (!ks || !ks.late || !seal || !rec || !Array.isArray(rec.late)) return Promise.resolve([]);
-    try { b = unb64(rec.late[cell]); } catch (e) { return Promise.resolve([]); }
+    var slot = lateRead(cell);
+    if (!ks || !ks.late || !seal || !slot) return Promise.resolve([]);
+    try { b = unb64(slot); } catch (e) { return Promise.resolve([]); }
     if (!b || b.length !== LATE_SIZE) return Promise.resolve([]);
     var nonce = b.subarray(0, LATE_NONCE), mac = b.subarray(LATE_NONCE, LATE_NONCE + CR_SEAL), ct = b.subarray(LATE_NONCE + CR_SEAL);
     return window.crypto.subtle.verify("HMAC", ks.lateMac, mac, cat(nonce, ct)).then(function (good) {
@@ -3531,32 +4825,129 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     changed.forEach(function (k) { var v = mem.get(k); if (v == null) kv.delete(k); else kv.set(k, v); });
     return kv;
   }
+  /* ── УСТАРЕВШИЙ ПИСАТЕЛЬ ПОЛУЧАЕТ ОТКАЗ (D-353) ─────────────────────
+     Своя ячейка сверяется с тем, от чего сеанс считает (ownBase, sessionG).
+     Её записала другая вкладка — этот сеанс отстал: он НЕ пишет и не
+     «чинит», а говорит об этом. Сменились полномочия (слово, код, ключи) —
+     сеанс закрывает мир: его ключи больше не те. Сохранили записи — сеанс
+     перестаёт сохранять: иначе его более старая копия легла бы поверх более
+     новой. Ячейка не открывается своим ключом — тоже отказ, а не запись из
+     памяти поверх неизвестного. */
+  function ownCurrent(w, r) {
+    if (!w || !w.c) throw new Error("stale-auth");
+    if (w.g !== sessionG) throw new Error("stale-auth");
+    if (!ownBase || !sameBytes(w.c.seal[r], ownBase.seal) || !sameBytes(regionOf(w.c, r), ownBase.region)) throw new Error("stale");
+    return w;
+  }
+  function ownAfter(sealed) {
+    ownBase = { region: new Uint8Array(sealed.region), seal: new Uint8Array(sealed.seal) };
+  }
+  function ownFrom(c, r) {
+    ownBase = c ? { region: new Uint8Array(regionOf(c, r)), seal: new Uint8Array(c.seal[r]) } : null;
+  }
+  var staleSaidAt = 0;
+  /* Сказать об отставании; о записях — не чаще раза в 20 с, пока человек
+     продолжает писать в отставшей вкладке. */
+  var staleStanding = null;
+  function staleSay(kind) {
+    var tr = window.sbT || function (k) { return k; };
+    var now = Date.now();
+    /* Бессрочное извещение с одним выходом — «Перечитать»: состояние
+       перечитывается только по явному действию человека. */
+    if (typeof window.showStandingToast === "function") {
+      if (staleStanding && staleStanding.kind === kind && staleStanding.handle && staleStanding.handle.el && staleStanding.handle.el.parentNode) return;
+      if (staleStanding && staleStanding.handle && staleStanding.handle.dismiss) { try { staleStanding.handle.dismiss(); } catch (e) { /* ignore */ } }
+      try {
+        staleStanding = { kind: kind, handle: window.showStandingToast(tr(kind === "reader" ? "lock.readerTitle" : "lock.staleTitle"), tr(kind === "auth" ? "lock.staleAuthBody" : kind === "reader" ? "lock.readerBody" : "lock.staleBody"), "",
+          [{ id: "stale-reload", label: tr("lock.staleReload"), run: function () { try { window.location.reload(); } catch (e) { /* ignore */ } } }], "toast-warn", true) };
+      } catch (e) { staleStanding = null; }
+      return;
+    }
+    /* ПОСТОЯННАЯ: 20 с между повторами — правка за правкой не превращается в ленту извещений. */
+    if (typeof window.showToast === "function" && (kind === "auth" || now - staleSaidAt > 20000)) {
+      staleSaidAt = now;
+      try { window.showToast(tr(kind === "reader" ? "lock.readerTitle" : "lock.staleTitle"), tr(kind === "auth" ? "lock.staleAuthBody" : kind === "reader" ? "lock.readerBody" : "lock.staleBody"), "", true, "toast-warn", "event"); } catch (e) { /* ignore */ }
+    }
+  }
+  /* ЗАМОРОЗКА (D-353, слово основателя: «CONFLICT → REJECT → NO WRITE →
+     FREEZE → FRESH STATE»). Узнав, что отстала, вкладка теряет право записи
+     целиком: носитель, вещи, поздняя щель, запись замка, журнал, метки,
+     снимки — всё отвечает отказом (carrierStale проверяют все двери записи).
+     Несохранённое остаётся только в её памяти и на экране. Назад — один
+     путь: явное «Перечитать» (перезагрузка), свежее чтение у двери и новое
+     право записи. Сменили полномочия — ключи сеанса выбрасываются сразу. */
+  /* Читающая (нет права) < правка в другой вкладке < сменились полномочия. */
+  var STALE_RANK = { reader: 1, records: 2, auth: 3 };
+  function carrierStaleNow(kind) {
+    if (!STALE_RANK[kind]) kind = "records";
+    /* Своё снятие замка: отказы от своего же забора — не конфликт, и право
+       писателя держится до конца снятия (иначе загрузка другой вкладки
+       сочла бы снимающего мёртвым). Писателя, кроме снимающего, нет. */
+    if (removingNow && kind !== "auth") return;
+    if (carrierStale && STALE_RANK[carrierStale] >= STALE_RANK[kind]) return;
+    carrierStale = kind;
+    writerDrop();
+    if (carrierTimer) { clearTimeout(carrierTimer); carrierTimer = null; }
+    carrierChanged.clear();
+    if (kind === "auth") {
+      vaultKeys = null;
+      carrierKeys = null;
+      carrierWordSlot = null;
+      codeBox = null;
+      thK = null; thState = null;
+      ownBase = null;
+      dropMaster();
+      vaultOpen = false;
+      if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: true, open: false, frozen: true });
+    } else if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: true, open: true, frozen: true });
+    staleSay(kind);
+  }
+  /* Замёрзшая вкладка не пишет, но слушает: сменили полномочия — ключи сеанса
+     выбрасываются. Читает и только читает. */
+  function staleProbe() {
+    carrierChanged.clear();
+    if ((carrierStale !== "records" && carrierStale !== "reader") || !vaultOpen || vaultDoor < 0) return Promise.resolve(false);
+    var r = vaultDoor, role = vaultRole;
+    return withMaster(function (m) { return readOwn(r, m, role); }).then(function (w) {
+      if (w.g !== sessionG) carrierStaleNow("auth");
+      else staleSay(carrierStale);
+      return false;
+    }, function () { carrierStaleNow("auth"); return false; });
+  }
   function carrierSaveWorld() {
+    if (carrierStale) return staleProbe();
+    if (removingNow) return Promise.resolve(false);   /* снимаемый носитель не пишется; правки остаются в очереди — уйдут открытыми или вернутся печатью при откате */
     if (!vaultOpen || !carrierKeys || !carrierWordSlot || vaultDoor < 0 || !carrierChanged.size) return Promise.resolve(false);
     var r = vaultDoor, role = vaultRole, keys = carrierKeys, slot = carrierWordSlot;
     var changed = Array.from(carrierChanged);
     carrierChanged.clear();
     changed.forEach(function (k) { carrierInflight.add(k); });
     var settle = function () { changed.forEach(function (k) { carrierInflight.delete(k); }); carrierPendingSeal = null; };
-    /* Не записалось — изменения возвращаются в очередь и пробуются позже. */
+    /* Не записалось по сбою носителя — изменения возвращаются в очередь и
+       пробуются позже. Отказ «отстал» — не сбой: повтора нет. */
     var giveBack = function () {
       settle();
       changed.forEach(function (k) { carrierChanged.add(k); });
       if (carrierTimer) clearTimeout(carrierTimer);
       carrierTimer = setTimeout(carrierFlushNow, CARRIER_QUIET_MS * 4);
     };
+    var base = null;
     return withMaster(function (m) {
       return withCode(function (code) {
-        return readOwn(r, m, role).then(function (w) { return w.kv; }, function () { return null; }).then(function (lying) {
-          return sealRegion(m, slot, code, mergeOwn(lying, changed), role);
+        return readOwn(r, m, role).then(null, function () { throw new Error("stale-auth"); }).then(function (w) {
+          ownCurrent(w, r);
+          base = w.c;
+          return sealRegion(m, slot, code, mergeOwn(w.kv, changed), role, sessionG);
         });
       });
     }).then(function (sealed) {
+      if (!sealed) { settle(); return false; }
       if (!vaultOpen || vaultDoor !== r || carrierKeys !== keys) { settle(); return false; }
       var puts = {}; puts[r] = sealed;
       /* Печать, которая сейчас ляжет, — поздняя щель назовёт и её. */
       carrierPendingSeal = sealed.seal;
-      return carrierPut(puts, null, null).then(function () {
+      return carrierPut(base, puts, null, null).then(function () {
+        ownAfter(sealed);
         settle();
         if (window.sbBus && window.sbBus.emit) {
           var at = Date.now();
@@ -3566,8 +4957,24 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         return true;
       });
     }).then(null, function (e) {
+      var why = e && e.message;
+      /* Отказ — не сбой (D-353): ни повтора, ни слов «не удалось сохранить».
+         «frozen» — вкладка замёрзла, пока запись шла (весть соседей пришла
+         раньше её конца). Отказ сверкой ячейки («stale») не говорит, сменились
+         ли полномочия: они сверяются тут же, только чтением (staleProbe), —
+         весть соседей могла и не дойти. */
+      /* Свой забор (идёт своё снятие замка) — не конфликт: записанное уйдёт
+         открытым вместе со снятием. Чужой забор — носитель снимается. */
+      if (why === "fenced" && removingNow) { settle(); return false; }
+      if (why === "fenced") why = "stale";
+      if (why === "stale" || why === "stale-auth" || why === "frozen") {
+        settle();
+        if (why !== "frozen") carrierStaleNow(why === "stale-auth" ? "auth" : "records");
+        if (carrierStale === "records") return staleProbe();
+        return false;
+      }
       giveBack();
-      if (e && e.message === "full") surfaceCarrierFull();
+      if (why === "full") surfaceCarrierFull();
       else surfaceStorageFailure();
       if (window.console) console.error("[vault] carrier write failed", e);
       return false;
@@ -3589,15 +4996,41 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     sealQueue = job.then(null, function () { return null; });
     return job;
   }
-  /* Мир, найденный за прежней дверью, переезжает сейчас же. */
+  /* Запись у закрытой системы — под правом писателя (D-353, шаг 4): вкладка
+     берёт право сама и отпускает его, если мир в ней так и не открыт; пока
+     пишет другая вкладка — отказ «writer». */
+  function withWriter(fn) {
+    var had = !!(heldLock && heldLock.world);
+    var let_go = function () { if (!had && !vaultOpen) writerDrop(); };
+    return writerTake().then(function (right) {
+      if (right === false) throw new Error("writer");
+      return fn();
+    }).then(function (v) { let_go(); return v; }, function (e) { let_go(); throw e; });
+  }
+  /* Мир, найденный за прежней дверью, переезжает сейчас же — под правом
+     писателя: переезд пишет носитель и запись замка. */
   function ensureCarried(hit) {
+    /* Мир найден в носителе, а запись замка — прежнего вида (hit.stale):
+       переезд доводится под правом до действия — иначе прежняя дверь в
+       записи замка пережила бы и второй ключ, и цену (финальный разбор H1,
+       Г10). */
+    if (hit && hit.src === "carrier" && hit.stale) {
+      return withWriter(function () {
+        return subkeys(hit.m).then(function (ks) { return finishMove(ks, null, null, hit.i, hit.role); }).then(function () { hit.stale = false; return hit; });
+      });
+    }
     if (!hit || (hit.src !== "legacy" && hit.src !== "reserved")) return Promise.resolve(hit);
+    return withWriter(function () { return carryHeld(hit); });
+  }
+  function carryHeld(hit) {
     return subkeys(hit.m).then(function (ks) {
       return legacyWorld(ks).then(function (w) {
         return carrierJob(function () { return moveWorld(hit, w.kv); }).then(function (mv) {
           if (mv.code) mv.code.fill(0);
           return finishMove(ks, w.own, mv.rec, mv.cell, hit.role).then(function () {
-            hit.i = mv.cell; hit.src = "carrier"; hit.stale = false;
+            /* Ячейка, в которую мир переехал под этим же правом, — теперь то,
+               от чего считает план действия (разбор №8). */
+            hit.i = mv.cell; hit.src = "carrier"; hit.stale = false; hit.c = carrierMem;
             return hit;
           });
         });
@@ -3610,9 +5043,32 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      ОДНОЙ записью носителя. w0 — главный мир { m, pw }, обязателен; w1 —
      второй или null (тогда его ячейка — шум: мир за ней открыть больше
      нечем, и это сказано в окне до нажатия). patch меняет параметры. */
-  function reslotWorlds(w0, w1, fsecNew, patch) {
+  /* Пересборка обеих ячеек (второй ключ, ключ устройства, цена) — запись:
+     только под правом писателя (D-353, шаг 4). Вкладка у закрытой системы
+     берёт право сама и отпускает его, если мир в ней так и не открыт; пока
+     пишет другая вкладка — отказ «writer». */
+  function reslotWorlds(w0, w1, fsecNew, patch, plan) {
     var rec0 = lockRecord();
     if (!rec0) return Promise.reject(new Error("no-lock"));
+    if (carrierStale || lostNow()) return Promise.reject(new Error("frozen"));
+    var had = !!(heldLock && heldLock.world);
+    var let_go = function () { if (!had && !vaultOpen) writerDrop(); };
+    return writerTake().then(function (right) {
+      if (right === false) throw new Error("writer");
+      return reslotHeld(w0, w1, fsecNew, patch, rec0, plan || rec0);
+    }).then(function (v) { let_go(); return v; }, function (e) { let_go(); throw e; });
+  }
+  /* Щели, от которых считает пересборка у закрытой системы (разбор №7):
+     прочитаны под правом после HEAL_SETTLE_MS и сверяются перед записью и в
+     самой транзакции (lateDrift) — щель, сменившаяся после чтения, означает
+     отказ без записи, а не печать, которая сделала бы её мёртвой. */
+  var lateHold = null;
+  function reslotHeld(w0, w1, fsecNew, patch, rec0, plan) {
+    var settle = vaultOpen ? Promise.resolve() : new Promise(function (r) { setTimeout(r, HEAL_SETTLE_MS); });
+    return settle.then(function () { return reslotPlanned(w0, w1, fsecNew, patch, rec0, plan); })
+      .then(function (v) { lateHold = null; return v; }, function (e) { lateHold = null; throw e; });
+  }
+  function reslotPlanned(w0, w1, fsecNew, patch, rec0, plan) {
     return carrierRead().then(function (c) {
       var params = paramsOf(withParams(rec0, c && c.params));
       patch(params);
@@ -3621,28 +5077,60 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         return (w1 ? deriveWordKeys(w1.pw, params.salt, cost[0], cost[1], fsecNew, cost[2]) : Promise.resolve(null)).then(function (k1) {
           /* Ячейки — по месту миров (w.i): главный мир лежит там, где лежит. */
           var c0 = w0.i, c1 = w1 ? w1.i : 1 - w0.i;
+          /* Полномочия обоих миров меняются: поколение каждого растёт (D-353),
+             и сеансы этих миров в других вкладках узнают, что отстали. */
+          var mine = vaultOpen && vaultDoor === c0 && vaultRole === 0, s0 = null, g0 = 0;
           return carrierJob(function () {
             return readOwn(c0, w0.m, 0, true).then(function (own0) {
+              if (mine) { try { ownCurrent(own0, c0); } catch (e) { if (own0.code) own0.code.fill(0); throw e; } }
+              /* План действия (файл, ключ устройства, цена) построен по записи
+                 замка, прочитанной под правом; лежащие в носителе параметры
+                 обязаны быть теми же. Иначе план устарел: отказ без записи. */
+              if (!sameParams(paramsOf(plan), paramsOf(withParams(plan, own0.c && own0.c.params)))) { if (own0.code) own0.code.fill(0); throw new Error("stale"); }
+              /* Ячейка, которую открыло слово, — тоже часть плана (разбор №8): у
+                 закрытой системы она обязана быть той же и сейчас. Сменилась
+                 (другая вкладка сменила слово, пока право было не у нас) —
+                 отказ без записи, а не печать прежнего слова поверх нового.
+                 Открытый мир сверяет свою ячейку выше (ownCurrent). */
+              if (!mine && w0.c && !sameCell(w0.c, own0.c, c0)) { if (own0.code) own0.code.fill(0); throw new Error("stale"); }
+              /* У закрытой системы последний миг прежнего писателя (поздняя щель
+                 главного мира) ложится в его ячейку и здесь — новая печать не
+                 делает его мёртвым (старое не ложится поверх нового). */
+              if (mine) return own0;
+              lateHold = lateHold || {}; lateHold[c0] = lateRead(c0);
+              return regionKeys(w0.m, 0).then(function (rk0) { return lateApply(c0, rk0, own0.kv, own0.c.seal[c0]); }).then(function () { return own0; });
+            }).then(function (own0) {
+              g0 = own0.g + 1;
               return codeFromBits(own0.code).then(function (code0) {
                 if (own0.code) own0.code.fill(0);
                 var done = function (v) { if (code0) code0.bits.fill(0); return v; };
-                return sealRegion(w0.m, k0.slot, code0, own0.kv, 0).then(done, function (e) { done(); throw e; });
-              });
-            }).then(function (s0) {
+                return sealRegion(w0.m, k0.slot, code0, own0.kv, 0, g0).then(done, function (e) { done(); throw e; });
+              }).then(function (sealed0) { s0 = sealed0; return own0.c; });
+            }).then(function (base0) {
               var puts = {}; puts[c0] = s0;
-              if (!w1) return carrierPut(puts, [c1], params);
+              if (!w1) return carrierPut(base0, puts, [c1], params);
               return readOwn(c1, w1.m, 1).then(function (own1) {
-                return sealRegion(w1.m, k1.slot, null, own1.kv, 1);
-              }).then(function (s1) { puts[c1] = s1; return carrierPut(puts, null, params); });
+                /* Обе ячейки — от одного и того же прочитанного носителя. */
+                if (!sameCell(base0, own1.c, c0)) throw new Error("stale");
+                if (!mine && w1.c && !sameCell(w1.c, own1.c, c1)) throw new Error("stale");
+                /* Последний миг второго мира (его поздняя щель) ложится в его
+                   ячейку и здесь — новая печать не делает его мёртвым. */
+                if (!mine) { lateHold = lateHold || {}; lateHold[c1] = lateRead(c1); }
+                return regionKeys(w1.m, 1).then(function (rk1) { return lateApply(c1, rk1, own1.kv, own1.c.seal[c1]); }).then(function () {
+                  return sealRegion(w1.m, k1.slot, null, own1.kv, 1, own1.g + 1);
+                }).then(function (s1) { puts[c1] = s1; return carrierPut(own1.c, puts, null, params); });
+              });
             });
           }).then(function () {
+            if (mine) { ownAfter(s0); sessionG = g0; }
             if (vaultOpen && vaultDoor === c0) carrierWordSlot = k0.slot;
             var fin = withParams(lockRecord() || rec0, params);
             /* Прежние двери сделаны прежними параметрами — открыть ими больше нечего. */
             if (Array.isArray(fin.doors)) fin.doors = [randomDoor(), randomDoor()];
             if (!w1 && fin.knock && Array.isArray(fin.knock.wrap) && fin.knock.wrap[c0]) fin.knock.wrap[c1] = knockNoise(fin.knock.wrap[c0]);
             lsSet(LOCK_KEY, JSON.stringify(fin));
-            return true;
+            /* Мир за ячейкой-шумом потерян — и его склад вещей в шум (D-352). */
+            return w1 ? true : thWipe(c1).then(function () { return true; });
           });
         });
       });
@@ -3674,12 +5162,639 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   };
   /* Замок с носителем — носитель читается сразу, до двери: поле за дверью
      рисует его байты. */
-  try { var bootRec = lockRecord(); if (bootRec && bootRec.carrier) carrierRead(); } catch (e) { /* нет базы — поле пустое */ }
+  try { var bootRec = lockRecord(); if (carrierSize(bootRec)) carrierRead(); } catch (e) { /* нет базы — поле пустое */ }
+  /* ═══════ ОДНА ДВЕРЬ, СТУПЕНЬ 2: СКЛАД ВЕЩЕЙ ОДНОГО РАЗМЕРА · D-352 ═══════
+     ПОВОД. После ступени 1 (D-351) записи мира лежали в носителе одного
+     размера, а вещи Хранилища — конвертами по одному в складе «things»: по
+     диску было видно, сколько вещей и какого они веса, а по двум снимкам —
+     какого веса вещь положили только что. Размер склада основатель отдал
+     Совету 01.10.2026: «Прошу совет принять самое гениальное,
+     интеллектуальное и правильное решение».
+     РЕШЕНИЕ. Под замком вещи лежат в носителе (тот же склад «carrier»
+     IndexedDB): TH_CHUNKS записей по мебибайту и запись печатей «tmac».
+     Половина — мир: части ячейки r (тот же номер, что у ячейки его записей,
+     и он так же не говорит, чей мир). Внутри половины, под ключами мира, —
+     одна строка байтов: длина описи ‖ опись (JSON: номер, имя, род, вес,
+     время и место каждой вещи) ‖ вещи подряд ‖ нули до конца; снаружи —
+     AES-CTR ключом мира от метки половины и HMAC-SHA-256 каждой части
+     (метка, номер части, шифр). Метка и печати частей обеих половин — в
+     «tmac», той же длины всегда.
+     ЛЮБАЯ ЗАПИСЬ ВЕЩЕЙ ПЕРЕСОБИРАЕТ ПОЛОВИНУ ЦЕЛИКОМ: новая метка, каждая
+     часть заново. Если бы писались только изменённые части, по двум
+     снимкам было бы видно, сколько частей сменилось, — то есть вес
+     положенной вещи: «строение данных», которого One Door не допускает.
+     Поэтому цена записи — вес половины, а не вещи, и размер выбран по ней:
+     128 МиБ на мир, 256 на носитель, одинаково у всех. Несколько вещей,
+     принесённых разом, ложатся одной пересборкой.
+     ЗАПИСЬ — ОДНОЙ ТРАНЗАКЦИЕЙ: все части половины и печати либо ложатся
+     вместе, либо не ложатся вовсе; внутри транзакции метка половины
+     сверяется с той, что читали, — другая вкладка, успевшая записать раньше,
+     не будет переписана вслепую, пересборка повторяется.
+     ПОЛОВИНА, ЧЬЯ ОПИСЬ НЕ СХОДИТСЯ С ПЕЧАТЬЮ, — ПУСТА: так выглядит шум
+     нового склада, и так же — половина, испорченная на диске (её вещи уже не
+     прочесть; спасают копии).
+     ПРЕЖНИЕ КОНВЕРТЫ (вещи v177 и раньше, D-265) переезжают в половину при
+     входе своим словом, сколько поместится; на месте переехавшего — пустышка
+     того же веса под тем же номером: число и вес конвертов на диске не
+     меняются, и остаток не говорит, переехал ли мир. Не поместившееся
+     остаётся конвертом, и это сказано вслух (lock.thingsLeft).
+     ГРАНИЦЫ, вслух: по нескольким снимкам видно, менялся ли склад и когда
+     (эпоха записи — следующая ступень); на миг записи шифр половины (128 МиБ)
+     держится в памяти — иначе запись не была бы одной транзакцией; вещи,
+     оставшиеся конвертами, видны по числу и весу, как прежде.
+     Охраняется tools/one-door-things-check.mjs. */
+  /* ПОСТОЯННАЯ: часть — мебибайт (одна запись IndexedDB), половина мира —
+     128 частей: 128 МиБ на мир, 256 на носитель (D-352, замер: пересборка
+     128 МиБ — около полутора секунд записи на двухъядерной машине). */
+  var TH_CHUNK = 1048576, TH_HALF_CHUNKS = 128;
+  var TH_HALF = TH_CHUNK * TH_HALF_CHUNKS, TH_CHUNKS = CARRIER_REGIONS * TH_HALF_CHUNKS;
+  /* ПОСТОЯННАЯ: метка половины — 16 байт (счётчик AES-CTR), печать части —
+     32 (HMAC-SHA-256), блок CTR — 16 байт: в части 65536 блоков. */
+  var TH_NONCE = 16, TH_TAG = 32, TH_BLOCKS = TH_CHUNK / 16;
+  var TH_MAC_HALF = TH_NONCE + TH_HALF_CHUNKS * TH_TAG, TH_MAC_ID = "tmac";
+  var thK = null;        /* { ctr, mac } открытого мира — неизвлекаемые */
+  var thState = null;    /* { r, nonce, dir } — последняя прочитанная опись своей половины */
+  var thWhy = null;      /* почему склад не принял последнюю вещь: full | closed | nostore | incognito | frozen | fail */
+  var thPend = null;     /* вещи, ждущие пересборки: { add: [], del: [], force } */
+  function thId(r, i) { return "t" + (r * TH_HALF_CHUNKS + i); }
+  function thNoise(n) {
+    var u = new Uint8Array(n), off;
+    for (off = 0; off < n; off += 65536) window.crypto.getRandomValues(u.subarray(off, Math.min(n, off + 65536)));
+    return u.buffer;
+  }
+  function thKeys() {
+    if (thK) return Promise.resolve(thK);
+    return withMaster(function (m) {
+      var subtle = window.crypto.subtle, enc = new TextEncoder(), empty = new Uint8Array(0);
+      return subtle.importKey("raw", m, "HKDF", false, ["deriveKey"]).then(function (b) {
+        return Promise.all([
+          subtle.deriveKey({ name: "HKDF", hash: "SHA-256", salt: empty, info: enc.encode("sys.baby/things/ctr/v1") }, b, { name: "AES-CTR", length: 256 }, false, ["encrypt", "decrypt"]),
+          subtle.deriveKey({ name: "HKDF", hash: "SHA-256", salt: empty, info: enc.encode("sys.baby/things/mac/v1") }, b, { name: "HMAC", hash: "SHA-256", length: 256 }, false, ["sign", "verify"])
+        ]);
+      });
+    }).then(function (k) { thK = { ctr: k[0], mac: k[1] }; return thK; });
+  }
+  /* Счётчик части i: метка половины плюс i·65536 блоков в младших 64 битах
+     (как считает сам AES-CTR с length: 64) — половина одна сплошная струя. */
+  function thCounter(nonce, i) {
+    var c = new Uint8Array(nonce), add = i * TH_BLOCKS, k, v;
+    for (k = 15; k >= 8; k--) { v = c[k] + (add % 256); c[k] = v % 256; add = Math.floor(add / 256) + Math.floor(v / 256); }
+    return c;
+  }
+  function thTagInput(nonce, i, ct) {
+    var head = new Uint8Array(TH_NONCE + 4);
+    head.set(nonce, 0);
+    head[16] = (i >>> 24) & 255; head[17] = (i >>> 16) & 255; head[18] = (i >>> 8) & 255; head[19] = i & 255;
+    return cat(head, ct);
+  }
+  function thMacRead() {
+    return idbGet(CARRIER_STORE, TH_MAC_ID).then(function (m) {
+      var u = m && m.bytes ? new Uint8Array(m.bytes) : null;
+      return u && u.length === CARRIER_REGIONS * TH_MAC_HALF ? u : null;
+    });
+  }
+  /* Склад носителя заводится шумом: часть за частью, каждая — своей
+     транзакцией, и каждая сперва спрашивает, нет ли уже печатей (их кладёт
+     последней та, что завела склад): заведённый склад не перепишется шумом
+     поверх чужой записи. Печати — последними. */
+  function thEnsure() {
+    if (carrierStale) return Promise.reject(new Error("frozen"));
+    return thMacRead().then(function (mac) {
+      if (mac) return true;
+      return idb().then(function (db) {
+        if (!db) return false;
+        var i = 0;
+        function one(id, bytes) {
+          return new Promise(function (resolve) {
+            var tx;
+            try { tx = db.transaction(CARRIER_STORE, "readwrite"); } catch (e) { resolve("fail"); return; }
+            var s = tx.objectStore(CARRIER_STORE), seen = false;
+            var g = s.get(TH_MAC_ID);
+            g.onsuccess = function () { if (g.result && g.result.bytes) { seen = true; return; } s.put({ id: id, bytes: bytes }); };
+            tx.oncomplete = function () { resolve(seen ? "seen" : "ok"); };
+            tx.onerror = function () { resolve("fail"); };
+            tx.onabort = function () { resolve("fail"); };
+          });
+        }
+        function next() {
+          if (i >= TH_CHUNKS) return one(TH_MAC_ID, thNoise(CARRIER_REGIONS * TH_MAC_HALF)).then(function (r) { return r !== "fail"; });
+          var id = "t" + i; i++;
+          return one(id, thNoise(TH_CHUNK)).then(function (r) { if (r === "fail") return false; if (r === "seen") return true; return next(); });
+        }
+        return next();
+      }).then(function (okp) {
+        /* Браузер не дал места (приватное окно, полный диск) — склада нет. */
+        if (!okp) throw new Error("no-room");
+        return true;
+      });
+    });
+  }
+  /* Часть i своей половины: печать — ПЕРВОЙ, затем расшифровка. */
+  function thOpenChunk(k, r, i, mac) {
+    var base = r * TH_MAC_HALF, nonce = mac.subarray(base, base + TH_NONCE);
+    var tag = mac.subarray(base + TH_NONCE + i * TH_TAG, base + TH_NONCE + (i + 1) * TH_TAG);
+    return idbGet(CARRIER_STORE, thId(r, i)).then(function (v) {
+      var ct = v && v.bytes ? new Uint8Array(v.bytes) : null;
+      if (!ct || ct.length !== TH_CHUNK) throw new Error("tag");
+      return window.crypto.subtle.verify("HMAC", k.mac, tag, thTagInput(nonce, i, ct)).then(function (good) {
+        if (!good) throw new Error("tag");
+        return window.crypto.subtle.decrypt({ name: "AES-CTR", counter: thCounter(nonce, i), length: 64 }, k.ctr, ct);
+      }).then(function (p) { return new Uint8Array(p); });
+    });
+  }
+  function thEmptyDir() { return { v: 1, legacy: 0, items: [] }; }
+  /* Опись своей половины; не сходится печать или форма — половина пуста. */
+  function thReadDir(k, r, mac) {
+    return thOpenChunk(k, r, 0, mac).then(function (p0) {
+      var n = ((p0[0] << 24) | (p0[1] << 16) | (p0[2] << 8) | p0[3]) >>> 0;
+      if (!n || n > TH_HALF - 4) throw new Error("shape");
+      var parts = [p0.subarray(4, Math.min(TH_CHUNK, 4 + n))], got = parts[0].length, i = 1;
+      function more() {
+        if (got >= n) return Promise.resolve();
+        return thOpenChunk(k, r, i, mac).then(function (p) {
+          var take = p.subarray(0, Math.min(TH_CHUNK, n - got));
+          parts.push(take); got += take.length; i++;
+          return more();
+        });
+      }
+      return more().then(function () {
+        var dir = JSON.parse(new TextDecoder().decode(cat.apply(null, parts)));
+        if (!dir || dir.v !== 1 || !Array.isArray(dir.items)) throw new Error("shape");
+        var end = 4 + n;
+        dir.items.forEach(function (it) {
+          if (!it || typeof it.id !== "string" || !(it.size >= 0) || !(it.off >= end) || it.off + it.size > TH_HALF) throw new Error("shape");
+        });
+        return dir;
+      });
+    }).then(null, function () { return null; });
+  }
+  /* Своя половина: ключи, печати, опись (из памяти, если метка та же). */
+  function thLoad(r) {
+    if (typeof r !== "number") r = vaultDoor;
+    return Promise.all([thKeys(), thMacRead()]).then(function (x) {
+      var k = x[0], mac = x[1];
+      if (!mac || r < 0) return { k: k, r: r, mac: null, nonce: null, dir: thEmptyDir() };
+      var nonce = mac.slice(r * TH_MAC_HALF, r * TH_MAC_HALF + TH_NONCE);
+      if (thState && thState.r === r && sameBytes(thState.nonce, nonce)) return { k: k, r: r, mac: mac, nonce: nonce, dir: thState.dir };
+      return thReadDir(k, r, mac).then(function (dir) {
+        dir = dir || thEmptyDir();
+        thState = { r: r, nonce: nonce, dir: dir };
+        return { k: k, r: r, mac: mac, nonce: nonce, dir: dir };
+      });
+    });
+  }
+  function thFind(dir, id) { for (var i = 0; i < dir.items.length; i++) if (dir.items[i].id === id) return dir.items[i]; return null; }
+  function thReadItem(st, it) {
+    if (!it.size) return Promise.resolve(new Blob([], { type: it.mime || "" }));
+    var first = Math.floor(it.off / TH_CHUNK), last = Math.floor((it.off + it.size - 1) / TH_CHUNK), parts = [], i = first;
+    function step() {
+      if (i > last) return Promise.resolve(new Blob(parts, { type: it.mime || "" }));
+      var ci = i;
+      return thOpenChunk(st.k, st.r, ci, st.mac).then(function (p) {
+        var a = ci === first ? it.off - ci * TH_CHUNK : 0;
+        var b = ci === last ? it.off + it.size - ci * TH_CHUNK : TH_CHUNK;
+        parts.push(p.slice(a, b));
+        i++;
+        return step();
+      });
+    }
+    return step();
+  }
+  function thUsed(dir) {
+    var end = 0;
+    dir.items.forEach(function (it) { if (it.off + it.size > end) end = it.off + it.size; });
+    if (!dir.items.length) end = 4 + new TextEncoder().encode(JSON.stringify(dir)).length;
+    return end;
+  }
+  /* Раскладка: опись, затем вещи подряд. Места вещей зависят от длины
+     описи, длина описи — от мест: считается, пока не сойдётся. */
+  function thLayout(items, legacy) {
+    var meta = items.map(function (it) { return { id: it.id, name: it.name, mime: it.mime, size: it.size, at: it.at, off: 0 }; });
+    var dir = { v: 1, legacy: legacy ? 1 : 0, items: meta }, txt = null, off = 0, guard, k, changed;
+    for (guard = 0; guard < 8; guard++) {
+      txt = new TextEncoder().encode(JSON.stringify(dir));
+      off = 4 + txt.length; changed = false;
+      for (k = 0; k < meta.length; k++) { if (meta[k].off !== off) { meta[k].off = off; changed = true; } off += meta[k].size; }
+      if (!changed) break;
+    }
+    var hdr = new Uint8Array(4 + txt.length);
+    hdr[0] = (txt.length >>> 24) & 255; hdr[1] = (txt.length >>> 16) & 255; hdr[2] = (txt.length >>> 8) & 255; hdr[3] = txt.length & 255;
+    hdr.set(txt, 4);
+    return { dir: dir, hdr: hdr, total: off };
+  }
+  /* Пересобрать половину: опись и вещи — подряд, часть за частью, новой
+     меткой. Прежние вещи читаются из прежней половины по частям (в памяти —
+     одна часть), новые — из своих Blob. Ответ — шифр и печати частей. */
+  function thBuild(st, plan, nonce) {
+    var out = { buf: new Uint8Array(TH_CHUNK), pos: 0, j: 0, cts: [], tags: [] };
+    var cache = { i: -1, p: null };
+    function flush() {
+      var plain = out.buf, j = out.j++;
+      out.buf = new Uint8Array(TH_CHUNK); out.pos = 0;
+      return window.crypto.subtle.encrypt({ name: "AES-CTR", counter: thCounter(nonce, j), length: 64 }, st.k.ctr, plain).then(function (ct) {
+        out.cts[j] = ct;
+        return window.crypto.subtle.sign("HMAC", st.k.mac, thTagInput(nonce, j, new Uint8Array(ct)));
+      }).then(function (tag) { out.tags[j] = new Uint8Array(tag); plain.fill(0); });
+    }
+    function put(bytes) {
+      var off = 0;
+      function step() {
+        if (off >= bytes.length) return Promise.resolve();
+        var n = Math.min(bytes.length - off, TH_CHUNK - out.pos);
+        out.buf.set(bytes.subarray(off, off + n), out.pos); out.pos += n; off += n;
+        if (out.pos === TH_CHUNK) return flush().then(step);
+        return step();
+      }
+      return step();
+    }
+    function oldChunk(i) {
+      if (cache.i === i) return Promise.resolve(cache.p);
+      return thOpenChunk(st.k, st.r, i, st.mac).then(function (p) { if (cache.p) cache.p.fill(0); cache.i = i; cache.p = p; return p; });
+    }
+    function putOld(it) {
+      var pos = it.src.off, end = it.src.off + it.src.size;
+      function step() {
+        if (pos >= end) return Promise.resolve();
+        var i = Math.floor(pos / TH_CHUNK);
+        return oldChunk(i).then(function (p) {
+          var a = pos - i * TH_CHUNK, b = Math.min(TH_CHUNK, end - i * TH_CHUNK);
+          pos = i * TH_CHUNK + b;
+          return put(p.subarray(a, b));
+        }).then(step);
+      }
+      return step();
+    }
+    function putBlob(blob) {
+      var pos = 0;
+      function step() {
+        if (pos >= blob.size) return Promise.resolve();
+        var e = Math.min(blob.size, pos + TH_CHUNK);
+        return blobBytes(blob.slice(pos, e)).then(function (u) { pos = e; return put(u); }).then(step);
+      }
+      return step();
+    }
+    var chain = put(plan.hdr);
+    plan.items.forEach(function (it) {
+      chain = chain.then(function () { return it.blob ? putBlob(it.blob) : putOld(it); });
+    });
+    return chain.then(function () {
+      function rest() { return out.j < TH_HALF_CHUNKS ? flush().then(rest) : Promise.resolve(); }
+      return rest();
+    }).then(function () { if (cache.p) cache.p.fill(0); out.buf = null; return out; });
+  }
+  /* Половина и печати — одной транзакцией; метка сверяется внутри неё. */
+  function thCommit(st, nonce, out) {
+    if (carrierStale) return Promise.reject(new Error("frozen"));
+    return idb().then(function (db) {
+      if (!db) throw new Error("no-idb");
+      return new Promise(function (resolve, reject) {
+        var tx;
+        try { tx = db.transaction(CARRIER_STORE, "readwrite"); } catch (e) { reject(e); return; }
+        var s = tx.objectStore(CARRIER_STORE), stale = false, base = st.r * TH_MAC_HALF;
+        var one = s.get(CARRIER_ID), fenced = false;
+        /* Своя половина пишется, только если и своя ячейка мира — та, от
+           которой считает сеанс (D-353): иначе вкладка, до которой не дошла
+           весть соседей, клала бы вещи после смены слова в другой вкладке.
+           Своя печать, которая сейчас ложится, — тоже своя. */
+        var mine = st.r === vaultDoor && ownBase ? [ownBase.seal, carrierPendingSeal ? new Uint8Array(carrierPendingSeal) : null] : null;
+        one.onsuccess = function () {
+          var c = one.result;
+          if (c && c.removing) { fenced = true; stale = true; try { tx.abort(); } catch (e) { /* уже закрыта */ } return; }
+          if (mine) {
+            var sl = c && Array.isArray(c.seal) && c.seal[st.r] ? new Uint8Array(c.seal[st.r]) : null;
+            if (!sl || !mine.some(function (x) { return x && sameBytes(sl, x); })) { stale = true; try { tx.abort(); } catch (e) { /* уже закрыта */ } }
+          }
+        };
+        var g = s.get(TH_MAC_ID);
+        g.onsuccess = function () {
+          if (carrierStale) { stale = true; try { tx.abort(); } catch (e) { /* уже закрыта */ } return; }
+          var cur = g.result && g.result.bytes ? new Uint8Array(g.result.bytes) : null;
+          if (!cur || cur.length !== CARRIER_REGIONS * TH_MAC_HALF || !st.nonce || !sameBytes(cur.subarray(base, base + TH_NONCE), st.nonce)) {
+            stale = true;
+            try { tx.abort(); } catch (e) { /* уже закрыта */ }
+            return;
+          }
+          var mac = new Uint8Array(cur), j;
+          mac.set(nonce, base);
+          for (j = 0; j < TH_HALF_CHUNKS; j++) {
+            mac.set(out.tags[j], base + TH_NONCE + j * TH_TAG);
+            s.put({ id: thId(st.r, j), bytes: out.cts[j] });
+          }
+          s.put({ id: TH_MAC_ID, bytes: mac.buffer });
+        };
+        tx.oncomplete = function () { carrierTell(); resolve(true); };
+        tx.onabort = function () { if (stale) resolve(false); else reject(tx.error || new Error("abort")); };
+      });
+    });
+  }
+  /* Одна пересборка своей половины: убрать del, добавить add (сколько
+     поместится, по порядку), положить extra (переезжающие конверты) и
+     поставить отметку legacy. Ответ — { added: [id|null], moved: [id], dir }. */
+  function thRewrite(r, op) {
+    function go() {
+      if (carrierStale) return Promise.reject(new Error("frozen"));
+      return thLoad(r).then(function (st) {
+        if (!st.mac) throw new Error("no-carrier");
+        var keep = st.dir.items.filter(function (it) { return (op.del || []).indexOf(it.id) === -1; })
+          .map(function (it) { return { id: it.id, name: it.name, mime: it.mime, size: it.size, at: it.at, src: it }; });
+        var items = keep.slice(), added = [], moved = [];
+        (op.add || []).forEach(function (a) {
+          var cand = items.concat([a]);
+          if (thLayout(cand, 0).total <= TH_HALF) { items = cand; added.push(a.id); } else added.push(null);
+        });
+        (op.extra || []).forEach(function (a) {
+          /* Уже в половине (переезд оборвался до уборки конверта) — второй раз не кладётся. */
+          if (thFind(st.dir, a.id) || items.some(function (x) { return x.id === a.id; })) { moved.push(a.id); return; }
+          var cand = items.concat([a]);
+          if (thLayout(cand, 0).total <= TH_HALF) { items = cand; moved.push(a.id); }
+        });
+        var legacy = op.legacyIfAll ? (moved.length === (op.extra || []).length ? 1 : 0)
+          : (typeof op.legacy === "number" ? op.legacy : st.dir.legacy);
+        var changed = op.force || keep.length !== st.dir.items.length || added.some(Boolean) || moved.length || legacy !== st.dir.legacy;
+        if (!changed) return { added: added, moved: moved, dir: st.dir, same: true };
+        var plan = thLayout(items, legacy);
+        plan.items = items;
+        var nonce = randBytes(TH_NONCE);
+        return thBuild(st, plan, nonce).then(function (out) {
+          return thCommit(st, nonce, out).then(function (done) {
+            out.cts = null;
+            /* Половину переписали в другой вкладке после того, как эта её
+               прочла: отказ и заморозка, без повтора (D-353). */
+            if (!done) {
+              thState = null;
+              throw new Error("stale");
+            }
+            thState = { r: st.r, nonce: nonce, dir: plan.dir };
+            return { added: added, moved: moved, dir: plan.dir };
+          });
+        });
+      });
+    }
+    return go();
+  }
+  /* Ждущие вещи — одной пересборкой (D-352: «несколько вещей, принесённых
+     разом, ложатся одной пересборкой»). */
+  function thQueue(kind, payload) {
+    return new Promise(function (resolve) {
+      if (!thPend) {
+        var p = thPend = { add: [], del: [], force: false };
+        thingsQueue(function () {
+          if (thPend === p) thPend = null;
+          return thRun(p);
+        });
+      }
+      if (kind === "add") thPend.add.push({ item: payload, done: resolve });
+      else if (kind === "del") thPend.del.push({ id: payload, done: resolve });
+      else { thPend.force = true; thPend.add.push({ item: null, done: resolve }); }
+    });
+  }
+  function thRun(p) {
+    var room = true;
+    var adds = p.add.filter(function (a) { return a.item; });
+    var finish = function (res) {
+      p.add.forEach(function (a) {
+        if (!a.item) { a.done(res ? res.ms : null); return; }
+        var k = adds.indexOf(a), id = res ? res.added[k] : null;
+        if (!id) thWhy = res ? "full" : (room ? "fail" : "nostore");
+        a.done(id || null);
+      });
+      p.del.forEach(function (d) { d.done(!!res && !thFind(res.dir, d.id)); });
+    };
+    if (!vaultOpen || vaultDoor < 0) {
+      p.add.forEach(function (a) { a.done(null); });
+      p.del.forEach(function (d) { d.done(false); });
+      thWhy = "closed";
+      return Promise.resolve();
+    }
+    var t0 = (window.performance || Date).now();
+    return thEnsure().then(null, function (e) { room = false; throw e; }).then(function () {
+      return thRewrite(vaultDoor, { add: adds.map(function (a) { return a.item; }), del: p.del.map(function (d) { return d.id; }), force: p.force });
+    }).then(function (res) {
+      res.ms = Math.max(1, Math.round((window.performance || Date).now() - t0));
+      finish(res);
+    }, function (e) {
+      /* Отказ сверкой не говорит, сменились ли полномочия: сверяются тут же,
+         только чтением (staleProbe), — весть соседей могла не дойти. */
+      if (e && e.message === "stale") { carrierStaleNow("records"); staleProbe(); }
+      if (carrierStale) { thWhy = "frozen"; finish(null); thWhy = "frozen"; return; }
+      if (window.console) console.error("[vault] things write failed", e);
+      finish(null);
+    });
+  }
+  /* Пустышка того же веса, что конверт этой вещи (sealBytes, D-265). */
+  function thDecoyLen(rec) {
+    if (rec.sealed && rec.box) return rec.box.size;
+    var meta = new TextEncoder().encode(JSON.stringify({ name: rec.name, mime: rec.mime, size: rec.size, at: rec.at }));
+    var total = 4 + 2 + meta.length + (rec.blob ? rec.blob.size : 0);
+    return 16 + 12 + Math.ceil(total / THING_BLOCK) * THING_BLOCK + 16 + 64;
+  }
+  function thDecoy(rec) {
+    var n = thDecoyLen(rec), parts = [], off;
+    for (off = 0; off < n; off += TH_CHUNK) parts.push(thNoise(Math.min(TH_CHUNK, n - off)));
+    return { id: rec.id, sealed: 3, box: new Blob(parts, { type: "application/octet-stream" }) };
+  }
+  /* Прежние вещи этого мира в складе «things»: открытые (оставленные
+     выпусками до v144) — всегда; конверты — пока опись не отметила, что
+     переезд прошёл (legacy). Ответ — [{ id, blob, name, mime, size, at, rec }]. */
+  function thLegacy(ks, onlyKnown, withSealed) {
+    var known = null;
+    if (onlyKnown) { known = []; mem.forEach(function (v) { if (v != null) known.push(String(v)); }); known = known.join("\n"); }
+    return idbAll("things").then(function (list) {
+      var out = [];
+      return list.reduce(function (chain, rec) {
+        return chain.then(function () {
+          if (!rec || !rec.id) return null;
+          if (!rec.sealed && rec.blob) {
+            if (known !== null && known.indexOf(String(rec.id)) === -1) return null;
+            out.push({ id: rec.id, blob: rec.blob, name: rec.name, mime: rec.mime, size: rec.size || rec.blob.size || 0, at: rec.at || 0, rec: rec });
+            return null;
+          }
+          if (!withSealed || !rec.sealed || !ks) return null;
+          return thingFromSealed(ks, rec).then(function (p) {
+            out.push({ id: p.id, blob: p.blob, name: p.name, mime: p.mime, size: p.blob.size, at: p.at || 0, rec: rec });
+          }, function () { return null; });
+        });
+      }, Promise.resolve()).then(function () { return out; });
+    });
+  }
+  /* Склада нет — открытые вещи этого мира запечатываются конвертами, как до
+     D-352: под замком не остаётся открытым ничего (D-265). Ответ — сколько. */
+  function thSealPlain(ks, onlyKnown) {
+    /* Читающая и замёрзшая вкладки склада вещей не трогают вовсе. */
+    if (carrierStale) return Promise.resolve(0);
+    var known = null;
+    if (onlyKnown) { known = []; mem.forEach(function (v) { if (v != null) known.push(String(v)); }); known = known.join("\n"); }
+    var n = 0;
+    return idbAll("things").then(function (list) {
+      return list.reduce(function (chain, rec) {
+        return chain.then(function () {
+          if (!rec || rec.sealed || !rec.blob) return null;
+          if (known !== null && known.indexOf(String(rec.id)) === -1) return null;
+          n++;
+          return thingToSealed(ks, rec).then(function (sealed) { return idbPut("things", sealed); });
+        });
+      }, Promise.resolve());
+    }).then(function () { return n; }, function () { return n; });
+  }
+  var thNoStoreSaid = false;
+  function surfaceThingsNoStore() {
+    if (thNoStoreSaid) return;
+    thNoStoreSaid = true;
+    var tr = window.sbT || function (k) { return k; };
+    if (typeof window.showToast === "function") {
+      try { window.showToast(tr("lock.thingsNoStoreTitle"), String(tr("lock.thingsNoStoreBody")).replace("{mb}", String(Math.round(TH_CHUNKS * TH_CHUNK / 1048576))), "", true, "toast-warn", "event"); } catch (e) { /* ignore */ }
+    }
+  }
+  function surfaceThingsLeft(n) {
+    if (!n) return;
+    var tr = window.sbT || function (k) { return k; };
+    if (typeof window.showToast === "function") {
+      try { window.showToast(tr("lock.thingsLeftTitle"), String(tr("lock.thingsLeftBody")).replace("{n}", String(n)), "", true, "toast-warn", "event"); } catch (e) { /* ignore */ }
+    }
+  }
+  /* Вход словом: склад заводится, если его нет (замок v177), и прежние вещи
+     этого мира переезжают в его половину. */
+  function thOnOpen(ks, onlyKnown) {
+    thK = null; thState = null;
+    if (carrierStale) return Promise.resolve(null);
+    return thingsQueue(function () {
+      return thEnsure().then(function () { return thLoad(vaultDoor); }).then(function (st) {
+        if (!st.mac) return null;
+        /* Переезд прежних конвертов в склад (и отметка о нём) — запись общего:
+           только доказанному писателю (A1). Без Web Locks вещь читается из
+           конверта как есть. */
+        if (writeRight !== "lock") return null;
+        return thLegacy(ks, onlyKnown, !st.dir.legacy).then(function (cands) {
+          if (!cands.length) {
+            if (st.dir.legacy) return null;
+            /* Конвертов этого мира нет — отметка ставится, только если в складе
+               «things» вообще что-то лежит: иначе проверять и так нечего. */
+            return idbAll("things").then(function (all) {
+              if (!all.some(function (x) { return x && x.sealed; })) return null;
+              return thRewrite(vaultDoor, { legacy: 1 });
+            });
+          }
+          return thRewrite(vaultDoor, { extra: cands, legacyIfAll: true }).then(function (res) {
+            var left = cands.filter(function (c) { return res.moved.indexOf(c.id) === -1; });
+            var swap = cands.filter(function (c) { return res.moved.indexOf(c.id) !== -1; });
+            return swap.reduce(function (chain, c) {
+              return chain.then(function () { return idbPut("things", thDecoy(c.rec)); });
+            }, Promise.resolve()).then(function () {
+              /* Не поместившиеся открытые — запечатываются, как прежде (D-265). */
+              return left.reduce(function (chain, c) {
+                return chain.then(function () { if (c.rec.sealed) return null; return thingToSealed(ks, c.rec).then(function (s) { return idbPut("things", s); }); });
+              }, Promise.resolve());
+            }).then(function () { surfaceThingsLeft(left.length); });
+          });
+        });
+      }).then(null, function (e) {
+        if (window.console) console.error("[vault] things open failed", e);
+        /* Склада нет — прежние открытые вещи всё равно не остаются открытыми. */
+        return thSealPlain(ks, onlyKnown).then(function () { if (e && e.message === "no-room") surfaceThingsNoStore(); });
+      });
+    });
+  }
+  /* Поворот ключа: открытые вещи — в половину главного мира, сколько
+     поместится; остальные — конвертами, и это сказано вслух. Вызывается,
+     пока мастер ещё в памяти сеанса (до закрытия). */
+  function thAtLock(ks) {
+    thK = null; thState = null;
+    if (carrierStale) return Promise.resolve(null);
+    return thingsQueue(function () {
+      return thEnsure().then(function () { return idbAll("things"); }).then(function (list) {
+        var plain = list.filter(function (rec) { return rec && !rec.sealed && rec.blob; })
+          .map(function (rec) { return { id: rec.id, blob: rec.blob, name: rec.name, mime: rec.mime, size: rec.size || rec.blob.size || 0, at: rec.at || 0, rec: rec }; });
+        plain.sort(function (a, b) { return (a.at || 0) - (b.at || 0); });
+        return thRewrite(vaultDoor, { extra: plain, legacyIfAll: true, force: true }).then(function (res) {
+          var left = plain.filter(function (c) { return res.moved.indexOf(c.id) === -1; });
+          return plain.reduce(function (chain, c) {
+            return chain.then(function () {
+              if (res.moved.indexOf(c.id) !== -1) return idbDel("things", c.id);
+              return thingToSealed(ks, c.rec).then(function (s) { return idbPut("things", s); });
+            });
+          }, Promise.resolve()).then(function () { surfaceThingsLeft(left.length); });
+        });
+      }).then(function () { return true; }, function (e) {
+        if (window.console) console.error("[vault] things lock failed", e);
+        /* Склада нет — вещи запираются конвертами, как до D-352, и это сказано. */
+        return thSealPlain(ks, false).then(function () { if (e && e.message === "no-room") surfaceThingsNoStore(); return false; });
+      });
+    });
+  }
+  /* Снятие замка: вещи открытого мира — открытыми в склад «things». */
+  function thMacPatch(r, half) {
+    if (carrierStale) return Promise.resolve(false);
+    return idb().then(function (db) {
+      if (!db) return false;
+      return new Promise(function (resolve) {
+        var tx, st, g, wrote = false;
+        try { tx = db.transaction(CARRIER_STORE, "readwrite"); st = tx.objectStore(CARRIER_STORE); g = st.get(TH_MAC_ID); } catch (e) { resolve(false); return; }
+        g.onsuccess = function () {
+          if (carrierStale || !g.result || !g.result.bytes) return;
+          var m = new Uint8Array(g.result.bytes);
+          if (m.length !== CARRIER_REGIONS * TH_MAC_HALF) return;
+          m = new Uint8Array(m);
+          m.set(half, r * TH_MAC_HALF);
+          st.put({ id: TH_MAC_ID, bytes: m.buffer });
+          wrote = true;
+        };
+        tx.oncomplete = function () { if (wrote) carrierTell(); resolve(wrote); };
+        tx.onabort = function () { resolve(false); };
+      });
+    });
+  }
+  function thUnpack() {
+    return thingsQueue(function () {
+      return thLoad(vaultDoor).then(function (st) {
+        if (!st.mac) return true;
+        return st.dir.items.reduce(function (chain, it) {
+          return chain.then(function () { return thReadItem(st, it); }).then(function (blob) {
+            return idbPut("things", { id: it.id, blob: blob, name: it.name, mime: it.mime, size: it.size, at: it.at });
+          });
+        }, Promise.resolve()).then(function () { return true; });
+      }).then(null, function (e) { if (window.console) console.error("[vault] things unpack failed", e); return false; });
+    });
+  }
+  /* Половина другого мира — в шум (снятие второго слова, новый второй мир,
+     код со вторым ключом): ключ её мира уже стёрт вместе с ячейкой, а шум
+     делает стирание настоящим и для того, у кого осталась копия того ключа. */
+  function thWipe(r) {
+    if (carrierStale) return Promise.resolve(false);
+    return thingsQueue(function () {
+      return thMacRead().then(function (mac) {
+        if (!mac) return true;
+        var i = 0;
+        function next() {
+          if (i >= TH_HALF_CHUNKS) return Promise.resolve();
+          var id = thId(r, i); i++;
+          return idbPut(CARRIER_STORE, { id: id, bytes: thNoise(TH_CHUNK) }).then(next);
+        }
+        /* Печати половины r — заменой в той же транзакции, где прочитаны
+           (D-353): печати другой половины, записанные другой вкладкой в
+           этот миг, не откатываются. */
+        return next().then(function () { return thMacPatch(r, new Uint8Array(thNoise(TH_MAC_HALF))); });
+      }).then(function () { return true; }, function () { return false; });
+    });
+  }
+
   /* Уход и скрытие: сперва поздняя щель (миллисекунды), затем полная
      печать (успеет — хорошо). Модули, что пишут своё в том же миг ухода
      позже, попадают в щель сами (см. carrierDirty). */
-  window.addEventListener("pagehide", function () { leaving = true; carrierLateNow(); carrierFlushNow(); });
-  window.addEventListener("pageshow", function () { leaving = false; });
+  window.addEventListener("pagehide", function (ev) {
+    leaving = true;
+    carrierLateNow();
+    /* Уходит в кеш истории: держит ли браузер там право писателя, не сказано
+       ни одним стандартом — отложенная щель после этого мига не пишется. */
+    if (ev && ev.persisted) lateSuspended = true;
+    carrierFlushNow();
+  });
+  window.addEventListener("pageshow", function (ev) {
+    leaving = false;
+    /* Вернулась из кеша истории: держит ли браузер ещё право писателя, не
+       сказано ни одним стандартом — вкладка не пишет, назад — «Перечитать». */
+    if (ev && ev.persisted && vaultOpen) carrierStaleNow("records");
+    else lateSuspended = false;
+  });
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "hidden") { leaving = true; carrierLateNow(); carrierFlushNow(); }
     else leaving = false;
@@ -3689,6 +5804,19 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     available: vaultAvailable,
     isLocked: vaultLocked,
     isOpen: function () { return vaultOpen; },
+    /* Заморожена ли вкладка (D-353): null — нет; "records" — мир сохранили в
+       другой вкладке; "auth" — там сменили то, чем он открывается. */
+    frozen: function () { return carrierStale; },
+    /* Право записи сеанса (D-353, шаг 4): "lock" — писатель ячейки (Web
+       Lock), "cas" — Web Locks нет, запись только сравнением-и-заменой,
+       false — только чтение; null — мир не открыт. */
+    writer: function () { return vaultOpen ? (carrierStale ? false : writeRight) : null; },
+    /* Запись замка исчезла, сменилась или появилась под вкладкой: её
+       память старше лежащего, она не пишет ничего (D-353, шаг 4). */
+    lost: function () { return lockLost(); },
+    /* Стирать хранилище при замке вправе только писатель открытого мира. */
+    mayErase: function () { return mayErase(); },
+    eraseAll: function () { return eraseAllStores(); },
     protectedKeys: protectedKeysNow,
     sealedNames: sealedNamesNow,
     neverLocked: function () { return VAULT_NEVER.slice(); },
@@ -3711,7 +5839,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     cipher: function () {
       var rec = lockRecord();
       if (!rec) return { v: 3, kdf: ["PBKDF2-SHA512:" + KDF1_ITER, "PBKDF2-SHA256:" + KDF2_ITER].concat(todayA2() ? [a2Label(todayA2())] : []),
-        ciphers: ["AES-256-CTR", "AES-256-CTR"], mac: "HMAC-SHA-512", carrier: CARRIER_REGIONS * CARRIER_REGION };
+        ciphers: ["AES-256-CTR", "AES-256-CTR"], mac: "HMAC-SHA-512", carrier5: CARRIER_REGIONS * CARRIER_REGION };
       return rec;
     },
 
@@ -3719,44 +5847,21 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
        хранилища и из памяти разом: оставить их «на всякий случай» значило бы
        не запереть ничего. */
     lock: function (password, duressPassword, secondKeyFile) {
+      var nl = noLocksRefusal(); if (nl) return nl;   /* без Web Locks — отказ, записи нет (A1) */
+      if (carrierStale) return Promise.reject(new Error("frozen"));   /* замёрзшая вкладка не пишет (D-353) */
       if (!vaultAvailable()) return Promise.reject(new Error("no-subtle"));
       if (String(password || "").length < 4) return Promise.reject(new Error("short"));
       if (vaultLocked()) return Promise.reject(new Error("already"));
-      flush();
-      /* Флаг поднимается СИНХРОННО, до первого await: между этой строкой и
-         записью замка система продолжает жить и писать — это копится в pending. */
-      sealing = true;
-      pending.clear();
-      var collect = function () {
-        var m = new Map();
-        protectedKeysNow().forEach(function (k) { var v = rawStore.get.call(window.localStorage, k); if (v != null) m.set(k, v); });
-        pending.forEach(function (v, k) { if (v == null) m.delete(k); else m.set(k, v); });
-        pending.clear();
-        var out = [];
-        m.forEach(function (v, k) { out.push({ k: k, v: v }); });
-        return out;
-      };
-      var sealedWith = null;
-      return buildLock(password, collect, null, duressPassword, secondKeyFile).then(function (ks) {
-        sealedWith = ks;
-        /* Добираем то, что система записала, пока собиралась ячейка. */
-        if (!pending.size) return null;
-        var extra = new Map(pending);
-        pending.clear();
-        return withMaster(function (m) {
-          return readOwn(vaultDoor, m, 0).then(function (w) {
-            extra.forEach(function (v, k) { if (v == null) w.kv.delete(k); else w.kv.set(k, v); });
-            return sealRegion(m, carrierWordSlot, null, w.kv, 0);
-          });
-        }).then(function (sealed) { var puts = {}; puts[vaultDoor] = sealed; return carrierPut(puts, null, null); });
-      }).then(function () {
-        /* Вещи склада уходят в конверты ТЕМ ЖЕ поворотом ключа, и старые
-           открытые снимки вычищаются: замок держит весь диск (D-265). */
-        return sealThingsNow(sealedWith, false).then(function () { return purgeDiskLeaks(); });
-      }).then(function () {
-        /* ── ЗАПЕР — ЗНАЧИТ ЗАПЕРТО, С ЭТОГО ЖЕ МИГА ──────────────────────
-           Поворот ключа ЗАКРЫВАЕТ сеанс: ключи выброшены, память пуста, на
-           диск защищённое не идёт вовсе. Дальше — только дверь с паролем. */
+      if (lostNow()) return Promise.reject(new Error("frozen"));
+      /* Один поворот за раз и в этой вкладке: sealing, pending и тишина у
+         сеанса одни (разбор №5). */
+      if (turning) return Promise.reject(new Error("busy"));
+      turning = true;
+      /* laid — запись замка легла (Р-A5.2): после неё отказ «ничего не
+         изменено» — неправда. sealedWith — ключи мира нового замка. */
+      var laid = false, sealedWith = null, sealedKvNow = null;
+      /* Сеанс поворота закрывается: ключи выброшены, память пуста. */
+      var shut = function () {
         cache.clear();
         mem.clear();
         vaultKeys = null;
@@ -3764,26 +5869,233 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         carrierWordSlot = null;
         codeBox = null;
         carrierChanged.clear();
+        thK = null; thState = null;
         vaultDoor = -1;
         vaultRole = -1;
+        ownBase = null;
         dropMaster();
         vaultOpen = false;
         sealing = false;
+        pending.clear();
+        pendDisk.clear();
         bumpEpoch("lock");
         if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: true, open: false });
-        return true;
-      }, function (e) { sealing = false; pending.clear(); throw e; });
+      };
+      /* Хвост поворота — правки, легшие после записи замка, — в свою ячейку,
+         кругами, пока не опустеет; круг — сравнением и заменой от лежащего. */
+      var sealTail = function (n) {
+        if (!pending.size) return null;
+        if (n >= LOCK_SETTLE_ROUNDS) return Promise.reject(new Error("moving"));
+        var extra = new Map(pending), base = null;
+        return withMaster(function (m) {
+          return readOwn(vaultDoor, m, 0).then(function (w) {
+            ownCurrent(w, vaultDoor);
+            base = w.c;
+            extra.forEach(function (v, k) { if (v == null) w.kv.delete(k); else w.kv.set(k, v); });
+            return sealRegion(m, carrierWordSlot, null, w.kv, 0, sessionG);
+          });
+        }).then(function (sealed) {
+          var puts = {}; puts[vaultDoor] = sealed;
+          return carrierPut(base, puts, null, null).then(function () {
+            ownAfter(sealed);
+            extra.forEach(function (v, k) { if (pending.has(k) && pending.get(k) === v) pending["delete"](k); });
+            return sealTail(n + 1);
+          });
+        });
+      };
+      /* ЗАМОК СТОИТ — ЗНАЧИТ, ТАК И СКАЗАТЬ (Р-A5.2, класс A). Запись замка
+         легла, а дальше что-то упало (хвост не лёг: ячейка полна, сбой
+         IndexedDB). Отказ «ничего не изменено» здесь — неправда, а сброс
+         хвоста — потеря. Поэтому: хвост есть — мир нового замка остаётся
+         ОТКРЫТЫМ в этой вкладке, правки хвоста — в его памяти и в очереди
+         ячейки (повтор сам, как у всякой упавшей записи ячейки), право
+         писателя — у вкладки; ответ «kept». Хвоста нет или открыть нечем
+         (ключей мира нет) — сеанс закрывается, как после удачного поворота:
+         замок стоит, мир за словом; ответ «locked». */
+      var keepOpen = function (e) {
+        var why = e && e.message;
+        var drop = function () { pending.clear(); pendDisk.clear(); sealing = false; };
+        if (!pending.size || !sealedWith || vaultDoor < 0 || !carrierKeys) {
+          drop();
+          shut();
+          writerDrop();
+          return Promise.reject(new Error("locked"));
+        }
+        /* ПОКА МИР ОТКРЫВАЕТСЯ ЗАНОВО — ПРАВКИ ВСЁ ЕЩЁ ХВОСТ (финальный обзор
+           H1). Мир нового замка открывается не сразу: своя ячейка читается и
+           расшифровывается. Всё это время запись замка стоит, а мир ещё не
+           открыт: сбрось здесь sealing — и граница хранилища выбросила бы
+           правку этого окна молча («запертое не перезаписывается»), а
+           открытие мира затёрло бы ещё не сброшенную правку прежним значением
+           ячейки. Поэтому хвост копится до самого открытия; очередь записи
+           сбрасывается в него; и только тогда хвост ложится в открытый мир. */
+        return withMaster(function (m) { return readOwn(vaultDoor, m, 0); }).then(function (w) {
+          ownCurrent(w, vaultDoor);
+          return w.kv;
+        }, function () { return new Map(sealedKvNow || []); }).then(function (kv) {
+          try { flush(); } catch (e2) { /* очередь записи — как получится; хвост ниже */ }
+          var extra = new Map(pending);
+          drop();
+          extra.forEach(function (v, k) { if (v == null) kv["delete"](k); else kv.set(k, v); });
+          writeRight = heldLock && heldLock.world ? "lock" : "cas";
+          adoptWorld(sealedWith, kv);
+          extra.forEach(function (v, k) { carrierChanged.add(k); });
+          if (!carrierTimer) carrierTimer = setTimeout(carrierFlushNow, CARRIER_QUIET_MS * 4);
+          if (why === "full") surfaceCarrierFull();
+          throw new Error("kept");
+        }).then(null, function (e3) {
+          if (sealing) drop();
+          throw e3;
+        });
+      };
+      /* Поворот ключа — запись: только писатель (D-353, разбор №3). Две
+         вкладки разом поворачивать ключ не могут: вторая получает отказ, а не
+         переписывает запертое первой пустым; правки, сделанные, пока
+         собиралась ячейка, ложатся под тем же правом. Без Web Locks то же
+         сторожит сверка внутри записи носителя (buildLock). Право
+         отпускается, когда поворот кончился: сеанс закрыт. */
+      return writerTake().then(function (right) {
+        if (right === false) throw new Error("writer");
+        if (vaultLocked() || lostNow()) throw new Error("already");
+        flush();
+        /* Флаг поднимается СИНХРОННО, до первого await самого поворота (право
+           уже взято): система продолжает жить и писать — до записи замка на
+           диск открытыми (замка ещё нет; сходимость их запечатает), после
+           неё — в pending (хвост поворота, см. sealTail). */
+        sealing = true;
+        pending.clear();
+      }).then(function () {
+        /* Сбор — в тишине: остальные вкладки замолкают перед самым сбором,
+           после растяжки (см. «ПОВОРОТ КЛЮЧА — В ТИШИНЕ»). */
+        var collect = function () { return lockQuiet().then(collectNow); };
+        var rawAt = new Map();
+        var collectNow = function () {
+          var m = new Map();
+          rawAt = new Map();
+          pendDisk.clear();
+          protectedKeysNow().forEach(function (k) { var v = rawStore.get.call(window.localStorage, k); if (v != null) { m.set(k, v); rawAt.set(k, v); } });
+          pending.forEach(function (v, k) { if (v == null) m.delete(k); else m.set(k, v); });
+          pending.clear();
+          var out = [];
+          m.forEach(function (v, k) { out.push({ k: k, v: v }); });
+          return out;
+        };
+        /* ВКЛАДКА, ОТКРЫТАЯ ПОСРЕДИ ПОВОРОТА (классификация границ, Г9-3).
+           Тишина просится у тех, кто есть; вкладка, открытая после просьбы,
+           пишет открыто, пока не ляжет запись замка. Стирать собранное по
+           имени значило бы стереть и её запись, новее собранной, — в ячейке
+           осталось бы старое. Поэтому в том же шаге, что легла запись замка,
+           каждая открытая запись сверяется с тем, что лежало при сборе:
+           совпала — уходит; другая, новая или стёртая — уходит с диска и
+           ложится в мир тем же поворотом, как своё отложенное. Ключ, который
+           писали обе вкладки, — по времени: своё отложенное помнит, что
+           лежало на диске в миг своей записи (pendDisk); диск с тех пор
+           другой — значит, та вкладка писала позже, и прав диск. Запись,
+           дошедшая из другого процесса браузера позже этого шага, остаётся
+           границей задержки localStorage (Г3). */
+        collect.lay = function () {
+          var seen = {};
+          var later = function (k, v) {
+            if (pending.has(k) && pendDisk.has(k)) return pendDisk.get(k) !== v;
+            return !rawAt.has(k) ? v !== null : rawAt.get(k) !== v;
+          };
+          protectedKeysNow().forEach(function (k) {
+            var v = rawStore.get.call(window.localStorage, k);
+            seen[k] = true;
+            if (later(k, v)) pending.set(k, v);
+            rawStore.del.call(window.localStorage, k);
+          });
+          rawAt.forEach(function (v, k) { if (!seen[k] && later(k, null)) pending.set(k, null); });
+        };
+        /* Сходимость до записи замка (Р-A5.2, см. buildLock): что лежит на
+           диске сейчас — то ли, что в ячейке. Не то — ответ: что лежит (его
+           и печатать); то — null, и «что лежало при сборе» становится тем,
+           что лежит: шаг записи замка стирает ровно запечатанное. До записи
+           замка правки идут на диск открытыми (замка ещё нет), поэтому обрыв
+           в любой миг поворота их не теряет. */
+        collect.drift = function (sealedKv) {
+          var now = new Map(), same;
+          protectedKeysNow().forEach(function (k) { var v = rawStore.get.call(window.localStorage, k); if (v != null) now.set(k, v); });
+          same = now.size === sealedKv.size;
+          if (same) now.forEach(function (v, k) { if (sealedKv.get(k) !== v) same = false; });
+          if (!same) return now;
+          rawAt = new Map(now);
+          pendDisk.clear();
+          sealedKvNow = sealedKv;
+          return null;
+        };
+        collect.laid = function () { laid = true; };
+        return buildLock(password, collect, null, duressPassword, secondKeyFile).then(function (ks) {
+          sealedWith = ks;
+          /* Вещи уходят в склад носителя ТЕМ ЖЕ поворотом ключа (D-352; не
+             поместившееся — конвертами, D-265), и старые открытые снимки
+             вычищаются: замок держит весь диск. */
+          return thAtLock(sealedWith).then(function () { return purgeDiskLeaks(); });
+        }).then(function () {
+          /* Хвост поворота: что система записала после записи замка (уже
+             только в память, pending), — в свою ячейку, пока не опустеет. */
+          return sealTail(0);
+        }).then(function () {
+          /* ── ЗАПЕР — ЗНАЧИТ ЗАПЕРТО, С ЭТОГО ЖЕ МИГА ──────────────────────
+             Поворот ключа ЗАКРЫВАЕТ сеанс: ключи выброшены, память пуста, на
+             диск защищённое не идёт вовсе. Дальше — только дверь с паролем. */
+          shut();
+          return true;
+        });
+      }).then(function (r) { turning = false; writerDrop(); return r; }, function (e) {
+        turning = false;
+        /* Запись замка легла — не «не вышло» (Р-A5.2): см. keepOpen. */
+        if (laid) return keepOpen(e);
+        /* Поворот не состоялся: накопленное за него ложится открытым, как
+           легло бы без поворота, — если замка так и нет (своей записи замка
+           нет — значит, и ячеек этой вкладки нет). */
+        if (sealing) {
+          sealing = false;
+          if (!vaultLocked() && !lostNow()) pending.forEach(function (v, k) { try { if (v == null) rawStore.del.call(window.localStorage, k); else rawStore.set.call(window.localStorage, k, v); } catch (e2) { /* ignore */ } });
+          pending.clear();
+        }
+        writerDrop();
+        throw e;
+      });
     },
 
     /* Открыть на сеанс. Расшифрованное кладётся в ПАМЯТЬ (кэш sbDB), а не
        обратно в хранилище: иначе первое же открытие отменило бы замок. */
     unlock: function (password, secondKeyFile) {
+      /* ЗАМЁРЗШАЯ ВКЛАДКА НЕ ВХОДИТ ЗАНОВО НА МЕСТЕ (D-353). Даже верным, даже
+         новым словом: в её памяти сеанса — отложенное и прочитанное до чужой
+         записи, и вход поверх него дал бы старому новое право записи. Назад —
+         только «Перечитать»: перезагрузка, свежее чтение, новое право. */
+      /* Запись замка исчезла, сменилась или появилась под вкладкой (снятие,
+         стирание или поворот ключа в другой вкладке): вход — перезагрузка, а
+         не «открыто» на любое слово поверх памяти, которая старше лежащего. */
+      if (lockLost()) { try { window.location.reload(); } catch (e) { /* ignore */ } return Promise.resolve(false); }
+      /* Замёрзшая вкладка у двери отвечает «нет» и верному слову: тот же
+         ответ, что неверному, а выход один — «Перечитать» (стоящее сообщение
+         говорит это). */
+      if (carrierStale) return Promise.resolve(false);
       var rec = lockRecord();
       if (!rec) return Promise.resolve(true);
       /* Ключ устройства спрашивается дверью ДО слова (hwAsk) — здесь его ответ
          уже лежит в памяти сеанса; без ответа ключ просто не выведется. */
       if (!vaultAvailable()) return Promise.resolve(false);
-      if (rec.v === 1) return migrateV1(password, rec);
+      /* Замок самого первого вида переезжает записью — только писатель. Без
+         права ответ тот же, что на неверное слово (право берётся до проверки
+         слова: ответ о слове не говорит ничего). Не вошли — право отпущено. */
+      if (rec.v === 1) {
+        return writerTake().then(function (right) {
+          /* Без Web Locks переезд не доказан одним писателем — ответ тот же,
+             что на неверное слово (A1). */
+          if (right !== "lock") return false;
+          return migrateV1(password, rec, right).then(function (okp) {
+            if (!okp && right === "lock" && !vaultOpen) writerDrop();
+            return okp;
+          }, function () {
+            if (right === "lock" && !vaultOpen) writerDrop();
+            return false;
+          });
+        });
+      }
       /* Верно ли слово, отвечают печати ячеек (и прежние двери, пока замок не
          переехал целиком): считаются ВСЕ, всегда — см. openWorlds. */
       return openWorldsAny(rec, password, secondKeyFile).then(function (hit) {
@@ -3793,41 +6105,163 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         if (hit && vaultOpen && hit.role !== vaultRole) { hit.m.fill(0); hit = null; }
         if (!hit) throw new Error("wrong");
         if (vaultOpen) { hit.m.fill(0); return true; }
-        return enterWorld(hit);
+        /* Право писателя — после верного слова: неверное слово (и замер цены
+           попытки) права не трогает. Мир, прочитанный до права, сверяется
+           заново при входе (enterWorld). */
+        return writerTake().then(function (right) {
+          return enterWorld(hit, right).then(null, function (e) {
+            /* Вход не состоялся — взятое право отпускается. */
+            if (right === "lock" && !vaultOpen) writerDrop();
+            throw e;
+          });
+        });
       }).then(function () { return rememberWord(password); }).then(function () { return true; }, function () { return false; });
     },
 
     /* Снять замок совсем: слова возвращаются в хранилище открытыми. Требует
        пароля — снять замок должен тот, кто его ставил. */
     remove: function (password, secondKeyFile) {
+      var nl = noLocksRefusal(); if (nl) return nl;   /* без Web Locks — отказ, записи нет (A1) */
+      if (carrierStale) return Promise.reject(new Error("frozen"));   /* замёрзшая вкладка не пишет (D-353) */
       var rec = lockRecord();
       if (!rec) return Promise.resolve(true);
+      /* ПРАВО И ПОРЯДОК — см. «СНЯТИЕ ЗАМКА: ПРАВО, ПОРЯДОК, ОБРЫВ» выше.
+         Снимает только писатель (D-353, шаг 4). У закрытой системы вкладка
+         сперва входит верным словом — вход сам берёт право писателя (или
+         открывает мир только на чтение), — и право сверяется после входа. */
+      if (removingNow || lostNow() || (vaultOpen && !mayErase())) return Promise.reject(new Error("writer"));
+      /* Без Web Locks снять нельзя вовсе — и мир ради отказа не открывается
+         (разбор №6). */
+      if (!LOCKS) return Promise.reject(new Error("writer"));
+      var wasClosed = !vaultOpen;
+      var by = hexOf(randBytes(16)), fenced = null, plain = null, kv = {}, sealed = [], cut = false;
+      var still = function () { return !carrierStale && !!heldLock && !!heldLock.world; };
+      /* Снятие не состоялось — накопленное за переход возвращается в мир. */
+      var unCut = function () {
+        if (!cut) return;
+        cut = false; removalCut = false;
+        pending.forEach(function (v, k) { mem.set(k, v); carrierChanged.add(k); });
+        pending.clear();
+      };
       return enterOrConfirm(password, secondKeyFile).then(function (door) {
-        if (door < 0) return false;
-        return unsealThingsNow(vaultKeys).then(function () { return true; });
+        if (door < 0) return -1;
+        if (!mayErase()) throw new Error("writer");
+        /* Только что вошли — поздняя щель прежнего писателя могла ещё не
+           дойти до этой вкладки (кеш localStorage на процесс): та же мера, что
+           и после входа, и сверка щели (разбор №6). */
+        return (wasClosed ? new Promise(function (r) { setTimeout(r, HEAL_SETTLE_MS); }) : Promise.resolve()).then(function () {
+          if (lateDrift()) { carrierStaleNow("records"); throw new Error("stale"); }
+          return door;
+        });
+      }).then(function (door) {
+        if (door < 0) return null;
+        /* Слово подтверждено. С этого мига своя печать по окну не идёт —
+           правки ОСТАЮТСЯ в очереди (уйдут открытыми или лягут печатью при
+           откате), а отказы от своего забора не замораживают. */
+        removingNow = true;
+        if (carrierTimer) { clearTimeout(carrierTimer); carrierTimer = null; }
+        var r0 = vaultDoor;
+        return withMaster(function (m) { return readOwn(r0, m, vaultRole); }).then(function (w) {
+          try { ownCurrent(w, r0); } catch (e) { removingNow = false; carrierStaleNow(e.message === "stale-auth" ? "auth" : "records"); return null; }
+          return w.c;
+        }, function () { removingNow = false; carrierStaleNow("auth"); return null; });
+      }).then(function (base) {
+        if (!base || !still()) return null;
+        /* (1) забор: сравнение-и-замена обеих ячеек. */
+        return carrierCommit(base, [0, 1], function (next) { next.removing = { by: by }; }).then(function (n) {
+          fenced = n;
+          return true;
+        }, function () { return null; });
+      }).then(function (okp) {
+        if (!okp || !still()) return false;
+        /* (2) вещи открытыми — в памяти, без единой записи. */
+        sealed = sealedNamesNow();
+        return thPlainAll(vaultKeys).then(function (p) { plain = p; return true; });
+      }).then(function (okp) {
+        if (!okp || !still()) return false;
+        /* Снимок записей и начало перехода — в одной задаче: правки после
+           этого мига копятся (removalCut) и лягут открытыми вместе со снятием. */
+        mem.forEach(function (v, k) { if (v != null) kv[k] = v; });
+        pending.clear();
+        /* Хватит ли места положить записи открытыми — проверяется ДО (3):
+           после (3) ячеек уже нет, и нехватка места на (4) оставила бы мир
+           только в переходе (разбор №4). Проба — запись того же размера и
+           сразу её стирание. Не хватает — отказ «room», мир прежний. */
+        if (!roomForOpen(kv)) throw new Error("room");
+        removalCut = true; cut = true;
+        /* (3) одна транзакция: сверка обеих ячеек и забора, вещи открытыми,
+           склад носителя — в переход «removal». */
+        return removalCommit(fenced, by, plain, kv, sealed, seenLock);
       }).then(function (okp) {
         if (!okp) return false;
-        var names = sealedNamesNow(), i;
-        mem.forEach(function (v, k) {
-          if (v != null) rawStore.set.call(window.localStorage, k, v);
-        });
-        for (i = 0; i < names.length; i++) rawStore.del.call(window.localStorage, names[i]);
-        /* Порядок (D-351): записи — открытыми, затем снимается замок, затем
-           носитель. Оборвись питание между двумя последними — замка нет,
-           записи на месте, а оставшийся носитель ничего не открывает. */
-        if (carrierTimer) { clearTimeout(carrierTimer); carrierTimer = null; }
+        /* (4) записи открытыми (и накопленное за переход), запись замка и
+           щели — вон; переход (5) унесёт следующая загрузка. */
         carrierChanged.clear();
-        lsDel(LOCK_KEY);
         vaultOpen = false;
         vaultKeys = null;
         carrierKeys = null;
+        thK = null; thState = null;
         vaultDoor = -1;
         vaultRole = -1;
+        ownBase = null;
+        writeRight = null;
         dropMaster();
-        carrierDrop();
-        bumpEpoch("remove");
-        if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: false });
-        return true;
+        carrierMem = null;
+        /* Накопленное за переход ложится открытым поверх — до снятия записи
+           замка, в том же шаге. Не легло (место кончилось) — носителя уже
+           нет, переход лежит: снятие доведёт следующая загрузка. */
+        var extra = new Map(pending);
+        pending.clear();
+        var laidAll = function () {
+          var o = {}, kk2;
+          for (kk2 in kv) if (Object.prototype.hasOwnProperty.call(kv, kk2)) o[kk2] = kv[kk2];
+          extra.forEach(function (v, key) { if (v == null) delete o[key]; else o[key] = String(v); });
+          return o;
+        };
+        try { removalFinish({ kv: kv, sealed: sealed }, extra); }
+        catch (e) {
+          /* Не легло — правки перехода уходят в переход (под правом), чтобы
+             доведение при загрузке положило и их (разбор №6). */
+          removalCut = false; cut = false;
+          return removalMark(by, laidAll()).then(function () { writerDrop(); removalSayRoom(); throw new Error("removal-unfinished"); });
+        }
+        removalCut = false; cut = false;
+        /* Запасная копия — ровно то, что легло открытым (с правками перехода):
+           доведение после обрыва не вернёт старшего, чем легло (разбор №4).
+           Пишется под правом писателя, до того как право отпущено. */
+        var laid = laidAll();
+        return removalMark(by, laid).then(function () {
+          /* Мира нет — нет и права писателя. Но вкладка, снявшая замок, жива
+             и пишет открыто: до конца жизни она держит вместо права замок
+             своего снятия (Г3-1), и лечение этого перехода нигде не начнётся. */
+          return removalHold(by);
+        }).then(function () {
+          bumpEpoch("remove");
+          if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: false });
+          return true;
+        });
+      }).then(function (r) {
+        if (r === true) { removingNow = false; return true; }
+        unCut();
+        /* Не дошло до (3) — откат: забор снимает сам снимающий, если не
+           замёрз (после конфликта он не пишет — забор снимет лечение под
+           правом писателя); очередь правок пишется печатью. */
+        var undo = fenced && !carrierStale ? carrierUnfence(by) : Promise.resolve(false);
+        return undo.then(function () {
+          removingNow = false;
+          if (carrierChanged.size && !carrierTimer) carrierTimer = setTimeout(carrierFlushNow, CARRIER_QUIET_MS);
+          return false;
+        });
+      }, function (e) {
+        unCut();
+        var undo = fenced && !carrierStale && vaultOpen ? carrierUnfence(by) : Promise.resolve(false);
+        return undo.then(function () {
+          removingNow = false;
+          /* Отказ из-за чужой поздней щели — вкладка отстала: заморозка. */
+          if (vaultOpen && lateDrift()) carrierStaleNow("records");
+          if (vaultOpen && carrierChanged.size && !carrierTimer) carrierTimer = setTimeout(carrierFlushNow, CARRIER_QUIET_MS);
+          throw e;
+        });
       });
     },
 
@@ -3908,7 +6342,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
 
        Охраняется tools/second-key-check.mjs. */
     secondKey: function () {
-      var f = factorOf(lockRecord());
+      var f = factorOf(effRecord());
       return { on: !!f, kind: f ? f.kind : null };
     },
     /* Ключ рождается здесь, а не выбирается из своих файлов: чужой файл можно
@@ -3920,6 +6354,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       return b;
     },
     setSecondKey: function (password, fileBytes, duressPassword) {
+      var nl = noLocksRefusal(); if (nl) return nl;   /* без Web Locks — отказ, записи нет (A1) */
+      /* Право писателя — до чтения записи замка и до проверки слова (разбор №7): план строится по тому, что лежит, пока никто другой не пишет; пока пишет другая вкладка — отказ «writer» любому слову. */
+      if (carrierStale || lostNow()) return Promise.reject(new Error("frozen"));
+      return withWriter(function () {
+      if (carrierStale) return Promise.reject(new Error("frozen"));   /* замёрзшая вкладка не пишет (D-353) */
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
       if (factorOf(rec)) return Promise.reject(new Error("already"));
@@ -3941,18 +6380,24 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       }).then(function (early) {
         if (early === false || early === true) return early;
         if (early === "duress-wrong") return Promise.reject(new Error("duress-wrong"));
-        return ensureCarried(h0).then(function () { return ensureCarried(h1); }).then(function () {
+        return withWriter(function () { return ensureCarried(h0).then(function () { return ensureCarried(h1); }).then(function () {
           return factorSecret(fileBytes, fsaltB64);
         }).then(function (fs) {
           return mixFactors(fs, hwNow(rec));
         }).then(function (fsec) {
-          return reslotWorlds({ m: h0.m, pw: password, i: h0.i }, h1 ? { m: h1.m, pw: duressPassword, i: h1.i } : null, fsec, function (next) {
+          return reslotWorlds({ m: h0.m, pw: password, i: h0.i, c: h0.c }, h1 ? { m: h1.m, pw: duressPassword, i: h1.i, c: h1.c } : null, fsec, function (next) {
             next.factor = { kind: "file", salt: fsaltB64 };
-          });
-        });
+          }, rec);
+        }); });
       }).then(scrub, scrubErr);
+    });
     },
     clearSecondKey: function (password, fileBytes, duressPassword) {
+      var nl = noLocksRefusal(); if (nl) return nl;   /* без Web Locks — отказ, записи нет (A1) */
+      /* Право писателя — до чтения записи замка и до проверки слова (разбор №7): план строится по тому, что лежит, пока никто другой не пишет; пока пишет другая вкладка — отказ «writer» любому слову. */
+      if (carrierStale || lostNow()) return Promise.reject(new Error("frozen"));
+      return withWriter(function () {
+      if (carrierStale) return Promise.reject(new Error("frozen"));   /* замёрзшая вкладка не пишет (D-353) */
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
       if (!factorOf(rec)) return Promise.resolve(true);
@@ -3971,14 +6416,15 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         if (early === false || early === true) return early;
         if (early === "duress-wrong") return Promise.reject(new Error("duress-wrong"));
         /* Снимается файл — ключ устройства остаётся (D-276). */
-        return ensureCarried(h0).then(function () { return ensureCarried(h1); }).then(function () {
+        return withWriter(function () { return ensureCarried(h0).then(function () { return ensureCarried(h1); }).then(function () {
           return mixFactors(null, hwNow(rec));
         }).then(function (fsecNo) {
-          return reslotWorlds({ m: h0.m, pw: password, i: h0.i }, h1 ? { m: h1.m, pw: duressPassword, i: h1.i } : null, fsecNo, function (next) {
+          return reslotWorlds({ m: h0.m, pw: password, i: h0.i, c: h0.c }, h1 ? { m: h1.m, pw: duressPassword, i: h1.i, c: h1.c } : null, fsecNo, function (next) {
             delete next.factor;
-          });
-        });
+          }, rec);
+        }); });
       }).then(scrub, scrubErr);
+    });
     },
 
     /* ── УСИЛИТЬ ЗАМОК ПАМЯТЬЮ (D-275) ────────────────────────────────────
@@ -3997,6 +6443,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
        стирала бы мир.
        Из тревожного мира — молча «готово» и ничего не меняется (D-203). */
     strengthen: function (password, duressPassword, secondKeyFile) {
+      var nl = noLocksRefusal(); if (nl) return nl;   /* без Web Locks — отказ, записи нет (A1) */
+      /* Право писателя — до чтения записи замка и до проверки слова (разбор №7): план строится по тому, что лежит, пока никто другой не пишет; пока пишет другая вкладка — отказ «writer» любому слову. */
+      if (carrierStale || lostNow()) return Promise.reject(new Error("frozen"));
+      return withWriter(function () {
+      if (carrierStale) return Promise.reject(new Error("frozen"));   /* замёрзшая вкладка не пишет (D-353) */
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
       var a2 = todayA2();
@@ -4021,17 +6472,45 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       }).then(function (early) {
         if (early === false || early === true) return early;
         if (early === "duress-wrong") return Promise.reject(new Error("duress-wrong"));
-        return ensureCarried(h0).then(function () { return ensureCarried(h1); }).then(function () {
-          return reslotWorlds({ m: h0.m, pw: password, i: h0.i }, h1 ? { m: h1.m, pw: duressPassword, i: h1.i } : null, fsec, function (next) {
+        return withWriter(function () { return ensureCarried(h0).then(function () { return ensureCarried(h1); }).then(function () {
+          return reslotWorlds({ m: h0.m, pw: password, i: h0.i, c: h0.c }, h1 ? { m: h1.m, pw: duressPassword, i: h1.i, c: h1.c } : null, fsec, function (next) {
             next.kdf = ["PBKDF2-SHA512:" + cost[0], "PBKDF2-SHA256:" + cost[1], a2Label(a2)];
-          });
-        });
+          }, rec);
+        }); });
       }).then(scrub, scrubErr);
+    });
     },
     /* ── КЛЮЧ УСТРОЙСТВА: состояние, вопрос, привязка, снятие (D-276) ───── */
-    hwState: function () { var rec = lockRecord(); var h = hwOf(rec); return { on: !!h, can: hwAvailable(), synced: h && typeof h.synced === "boolean" ? h.synced : null }; },
-    hwAsk: function () { return hwAsk(lockRecord()); },
+    hwState: function () { var rec = effRecord(); var h = hwOf(rec); return { on: !!h, can: hwAvailable(), synced: h && typeof h.synced === "boolean" ? h.synced : null }; },
+    hwAsk: function () { return hwAsk(effRecord()); },
+    /* До двери: обрыв питания сразу после замка ведёт к двери (Г8). */
+    crashHeal: function () { return crashHeal(); },
+    /* Лечить было что, а лечит другая вкладка (или лечение не легло): ждать,
+       пока запись замка не появится или право писателя не освободится, — и
+       тогда подняться заново (финальный разбор H1, п. 1). Ожидание — не
+       замена исключительности: эта вкладка ничего не пишет ни до, ни после;
+       ждущий запрос права отпускается в тот же миг, как дан. */
+    crashWait: function (storageOnly) {
+      return new Promise(function (resolve) {
+        var done = false, go = function () { if (!done) { done = true; resolve(true); } };
+        try { window.addEventListener("storage", function (ev) { if (ev && (ev.key === null || ev.key === LOCK_KEY)) go(); }); } catch (e) { /* ignore */ }
+        if (LOCKS && !storageOnly) { try { LOCKS.request(WRITER_LOCK, { mode: "exclusive" }, function () { go(); return null; }).then(null, function () { /* ignore */ }); } catch (e) { /* ignore */ } }
+      });
+    },
+    /* Требования двери — после свежего чтения носителя (Г5). */
+    requirements: function () {
+      var rec = lockRecord();
+      return (rec && (carrierSize(rec) || rec.doors || rec.wrap || rec.spare) ? carrierRead() : Promise.resolve(null)).then(function () {
+        var eff = effRecord();
+        return { key: !!factorOf(eff), hw: !!hwOf(eff) };
+      });
+    },
     hwEnroll: function (password, secondKeyFile, duressPassword) {
+      var nl = noLocksRefusal(); if (nl) return nl;   /* без Web Locks — отказ, записи нет (A1) */
+      /* Право писателя — до чтения записи замка и до проверки слова (разбор №7): план строится по тому, что лежит, пока никто другой не пишет; пока пишет другая вкладка — отказ «writer» любому слову. */
+      if (carrierStale || lostNow()) return Promise.reject(new Error("frozen"));
+      return withWriter(function () {
+      if (carrierStale) return Promise.reject(new Error("frozen"));   /* замёрзшая вкладка не пишет (D-353) */
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
       if (!vaultOpen) return Promise.reject(new Error("closed"));
@@ -4112,21 +6591,27 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             fileSec = fs;
             return mixFactors(fileSec, secret);
           }).then(function (fsecNew) {
-            return ensureCarried(h0).then(function () { return ensureCarried(h1); }).then(function () {
-              return reslotWorlds({ m: master0, pw: password, i: h0.i }, master1 ? { m: master1, pw: duressPassword, i: h1.i } : null, fsecNew, function (next) {
+            return withWriter(function () { return ensureCarried(h0).then(function () { return ensureCarried(h1); }).then(function () {
+              return reslotWorlds({ m: master0, pw: password, i: h0.i, c: h0.c }, master1 ? { m: master1, pw: duressPassword, i: h1.i, c: h1.c } : null, fsecNew, function (next) {
                 next.hw = { kind: "webauthn-prf", id: b64(new Uint8Array(cred.rawId)), salt: b64(prfSalt), rp: rp };
                 if (syncedFlag === true) next.hw.synced = true; else if (syncedFlag === false) next.hw.synced = false;
-              });
+              }, rec);
             }).then(function (okp) {
               hwSecret = secret;
               master0.fill(0); if (master1) master1.fill(0);
               return okp;
-            });
+            }); });
           });
         });
       }).then(scrub, scrubErr);
+    });
     },
     hwRemove: function (password, secondKeyFile, duressPassword) {
+      var nl = noLocksRefusal(); if (nl) return nl;   /* без Web Locks — отказ, записи нет (A1) */
+      /* Право писателя — до чтения записи замка и до проверки слова (разбор №7): план строится по тому, что лежит, пока никто другой не пишет; пока пишет другая вкладка — отказ «writer» любому слову. */
+      if (carrierStale || lostNow()) return Promise.reject(new Error("frozen"));
+      return withWriter(function () {
+      if (carrierStale) return Promise.reject(new Error("frozen"));   /* замёрзшая вкладка не пишет (D-353) */
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
       if (!hwOf(rec)) return Promise.resolve(true);
@@ -4151,23 +6636,26 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         var f = factorOf(rec);
         return (f ? factorSecret(secondKeyFile || new Uint8Array(0), f.salt) : Promise.resolve(null)).then(function (fs) {
           fileSec = fs;
-          return ensureCarried(h0).then(function () { return ensureCarried(h1); }).then(function () {
-            return reslotWorlds({ m: master0, pw: password, i: h0.i }, master1 ? { m: master1, pw: duressPassword, i: h1.i } : null, fileSec, function (next) {
+          return withWriter(function () { return ensureCarried(h0).then(function () { return ensureCarried(h1); }).then(function () {
+            return reslotWorlds({ m: master0, pw: password, i: h0.i, c: h0.c }, master1 ? { m: master1, pw: duressPassword, i: h1.i, c: h1.c } : null, fileSec, function (next) {
               delete next.hw;
-            });
+            }, rec);
           }).then(function (okp) {
             hwSecret = null;
             master0.fill(0); if (master1) master1.fill(0);
             return okp;
-          });
+          }); });
         });
       }).then(scrub, scrubErr);
+    });
     },
 
     /* Сделан ли этот замок ценой с памятью — видно в его записи и так. */
     strong: function () { var rec = lockRecord(); return !!(rec && costOf(rec)[2]); },
 
     setDuress: function (mainPassword, duressPassword, secondKeyFile) {
+      var nl = noLocksRefusal(); if (nl) return nl;   /* без Web Locks — отказ, записи нет (A1) */
+      if (carrierStale) return Promise.reject(new Error("frozen"));   /* замёрзшая вкладка не пишет (D-353) */
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
       if (String(duressPassword || "").length < 4) return Promise.reject(new Error("short"));
@@ -4175,9 +6663,13 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       return enterOrConfirm(mainPassword, secondKeyFile).then(function (door) {
         if (door < 0) return false;
         if (door !== 0) return true;          /* см. выше: молча и «готово» */
-        var m = new Uint8Array(32);
+        var m = new Uint8Array(32), seen = null;
         window.crypto.getRandomValues(m);
         return carrierRead().then(function (c) {
+          /* От этого носителя считается второй мир (D-353): другая ячейка
+             сверится с ним в той же транзакции, что и запись. */
+          seen = c;
+          if (!c) throw new Error("carrier");
           var eff = withParams(lockRecord() || {}, c && c.params), cost = costOf(eff);
           /* Второй мир — новая ячейка: пустой мир под своим мастером, щель
              слова — ключом второго слова. Прежний второй мир (ячейка или
@@ -4188,8 +6680,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         }).then(function (k1) {
           /* Второй мир — в ДРУГУЮ ячейку, чем открытый главный. */
           return carrierJob(function () {
-            return sealRegion(m, k1.slot, null, new Map(), 1).then(function (sealed) { var puts = {}; puts[1 - vaultDoor] = sealed; return carrierPut(puts, null, null); });
+            return sealRegion(m, k1.slot, null, new Map(), 1, 0).then(function (sealed) { var puts = {}; puts[1 - vaultDoor] = sealed; return carrierPut(seen, puts, null, null); });
           });
+        }).then(function () {
+          /* Склад вещей прежнего второго мира — в шум (D-352). */
+          return thWipe(1 - vaultDoor);
         }).then(function () {
           return knockForWorld(m);
         }).then(function (w1) {
@@ -4210,13 +6705,17 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
        которого вдруг исчезла половина конвертов, сам рассказывал бы, что там
        что-то было). */
     clearDuress: function (mainPassword, secondKeyFile) {
+      var nl = noLocksRefusal(); if (nl) return nl;   /* без Web Locks — отказ, записи нет (A1) */
+      if (carrierStale) return Promise.reject(new Error("frozen"));   /* замёрзшая вкладка не пишет (D-353) */
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
       return enterOrConfirm(mainPassword, secondKeyFile).then(function (door) {
         if (door < 0) return false;
         if (door !== 0) return true;
         var mine = vaultDoor, theirs = 1 - vaultDoor;
-        return carrierJob(function () { return carrierPut({}, [theirs], null); }).then(function () {
+        return carrierJob(function () {
+          return carrierRead().then(function (seen) { if (!seen) throw new Error("carrier"); return carrierPut(seen, {}, [theirs], null); });
+        }).then(function () { return thWipe(theirs); }).then(function () {
           var next = lockRecord() || {};
           if (Array.isArray(next.doors) && next.doors[1]) next.doors[1] = randomDoor();
           if (next.knock && Array.isArray(next.knock.wrap) && next.knock.wrap[mine]) next.knock.wrap[theirs] = knockNoise(next.knock.wrap[mine]);
@@ -4228,6 +6727,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
 
     /* ── КОД ВОССТАНОВЛЕНИЯ (D-266) — см. шапку «ЗАПАСНАЯ ДВЕРЬ» ─────────── */
     recoveryMake: function (password, secondKeyFile) {
+      var nl = noLocksRefusal(); if (nl) return nl;   /* без Web Locks — отказ, записи нет (A1) */
+      if (carrierStale) return Promise.reject(new Error("frozen"));   /* замёрзшая вкладка не пишет (D-353) */
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
       if (!vaultOpen) return Promise.reject(new Error("closed"));
@@ -4242,12 +6743,22 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         /* Код — ещё один вход в ту же ячейку (D-351): щель кода закрывает тот
            же мастер потоком из ключа кода. Отдельной записи «код заведён»
            на диске нет: щель кода есть в каждой ячейке всегда. */
-        return ensureCarried(hit).then(function () { return codeKeys(code, saltOf(rec), null); }).then(function (ck) {
+        var oldFp = null;
+        return ensureCarried(hit).then(function () { return spareFp(rec.spare); }).then(function (fp) { oldFp = fp; return codeKeys(code, saltOf(rec), null); }).then(function (ck) {
+          /* Код — смена полномочий: поколение растёт (D-353). Сеанс, отставший
+             от своей ячейки, кода не заводит — он записал бы старое поверх. */
+          var mine = vaultOpen && vaultRole === 0 && vaultDoor === hit.i, base = null, sealedNow = null, gNext = 0;
           return carrierJob(function () {
             return readOwn(hit.i, m, 0).then(function (own) {
-              return sealRegion(m, hit.slot, { slot: ck.slot, bits: ck.bits }, own.kv, 0);
-            }).then(function (sealed) { var puts = {}; puts[hit.i] = sealed; return carrierPut(puts, null, null); });
+              if (mine) ownCurrent(own, hit.i);
+              base = own.c;
+              gNext = own.g + 1;
+              return sealRegion(m, hit.slot, { slot: ck.slot, bits: ck.bits }, own.kv, 0, gNext);
+            /* Прежняя запасная дверь (код замка до D-351) заменена новым кодом —
+               отпечаток расхода той же записью (Г10, см. spareSpent). */
+            }).then(function (sealed) { sealedNow = sealed; var puts = {}; puts[hit.i] = sealed; return carrierPut(base, puts, null, null, spendAlso(oldFp)); });
           }).then(function () {
+            if (mine) { ownAfter(sealedNow); sessionG = gNext; }
             /* Открытый главный мир с этой минуты пересобирает и щель кода. */
             if (vaultOpen && vaultRole === 0 && vaultDoor === hit.i) return holdCode(new Uint8Array(ck.bits)).then(function () { ck.bits.fill(0); return true; });
             ck.bits.fill(0);
@@ -4291,6 +6802,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
        теряется тревожный мир — его щель сделана с файлом, и открыть её
        больше нечем; это сказано у двери до нажатия. */
     recover: function (code, newPassword) {
+      var nl = noLocksRefusal(); if (nl) return nl;   /* без Web Locks — отказ, записи нет (A1) */
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
       if (String(newPassword || "").length < 4) return Promise.reject(new Error("short"));
@@ -4299,14 +6811,29 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
          запасная дверь в записи замка и её копия в резерве (если первым
          переехал второй мир — по ней код находит ячейку, куда вернуть
          главный). */
-      return (rec.carrier ? carrierRead().then(function (x) { return x || carrierMem; }) : Promise.resolve(null)).then(function (car) {
+      /* Восстановление пишет ячейку мира — только с правом писателя (D-353,
+         шаг 4): пока мир пишет другая вкладка, код у двери отказывает. Право
+         берётся ДО чтения носителя; не дошло до входа — право отпускается. */
+      if (carrierStale) return Promise.reject(new Error("frozen"));
+      var hadIt = !!(heldLock && heldLock.world);
+      /* Носитель читается и при записи замка прежнего вида (Г10, см.
+         openWorlds); прежняя запасная дверь с меткой расхода не открывает
+         ничего (см. spareSpent). */
+      var known = carrierSize(rec), legacyRec = !known && !!(rec.doors || rec.wrap || rec.spare), spFp = null, spDead = false;
+      return writerTake().then(function (right) {
+        if (right === false) throw new Error("writer");
+        return known || legacyRec ? carrierRead() : null;
+      }).then(function (car) {
         c = car;
-        eff = withParams(rec, c && c.params);
-        return codeKeys(code, saltOf(eff), sp && sp.kdf);
+        eff = known || ownCarrierOf(rec, c) ? withParams(rec, c && c.params) : rec;
+        return spareFp(sp).then(function (fp) { spFp = fp; return spareSpent(c, fp); });
+      }).then(function (dead) {
+        spDead = dead;
+        return codeKeys(code, saltOf(eff), sp && !spDead ? sp.kdf : null);
       }).then(function (ck) {
         ck.bits.fill(0);
         var fromCarrier = c ? slotCandidates(c, ck.slot, "code").then(function (cands) { return carrierMatch(c, cands); }) : Promise.resolve(null);
-        var fromRecord = sp ? (function () {
+        var fromRecord = sp && !spDead ? (function () {
           var wrapped, iv;
           try { wrapped = unb64(sp.wrap); iv = unb64(sp.wrapIv); } catch (e) { return Promise.resolve(null); }
           return window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, ck.gcm, wrapped)
@@ -4328,12 +6855,17 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           else hit = { i: -1, role: 0, m: mL, src: "find" };
         }
         if (!hit) return false;
+        /* Расход прежней запасной двери ложится той же записью носителя. */
+        if (mL && hit.m === mL) hit.spend = spendAlso(spFp);
         var located = hit.src !== "find" ? Promise.resolve(hit) :
           carrierMatch(c, [new Uint8Array(hit.m), new Uint8Array(hit.m)]).then(function (h) {
             if (h) h.m.fill(0);
-            if (!h || h.role !== 0) return null;
-            hit.i = h.i; hit.src = "carrier";
-            return hit;
+            if (h && h.role === 0) { hit.i = h.i; hit.src = "carrier"; return hit; }
+            /* Мира в носителе нет, а запись замка носителя не знает —
+               носитель чужой (Г10: читается и при прежней записи), первый
+               переезд пишет свой, как прежде. */
+            if (!h && !known) { hit.src = "legacy"; return hit; }
+            return null;
           });
         return located.then(function (h) {
           if (!h) { hit.m.fill(0); return false; }
@@ -4344,28 +6876,42 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           delete params.factor; delete params.hw;
           var cost = costOf({ kdf: params.kdf });
           return deriveWordKeys(newPassword, params.salt, cost[0], cost[1], null, cost[2]).then(function (wk) {
-            hit.slot = wk.slot; hit.params = params; hit.c = c;
+            hit.slot = wk.slot; hit.params = params;
+            /* Прежняя запасная дверь при записи, не знающей носителя, — без
+               него: переезд прочтёт носитель сам (Г10, как в openWorlds). */
+            hit.c = hit.src === "legacy" && !known ? null : c;
+            /* Восстановление — смена полномочий: поколение мира растёт (D-353),
+               и его сеансы в других вкладках узнают, что слово сменилось. */
             var world = hit.src === "carrier"
-              ? readOwn(hit.i, hit.m, hit.role).then(function (w) { return { kv: w.kv, own: null }; })
+              ? readOwn(hit.i, hit.m, hit.role).then(function (w) {
+                  /* Изменённое в последний миг прошлого писателя (поздняя щель)
+                     ложится в мир и при восстановлении — иначе новая печать
+                     молча сделала бы его мёртвым. */
+                  return regionKeys(hit.m, hit.role).then(function (rk) { return lateApply(hit.i, rk, w.kv, w.c.seal[hit.i]); })
+                    .then(function () { return { kv: w.kv, own: null, c: w.c, g: w.g }; });
+                })
               : subkeys(hit.m).then(legacyWorld);
             return world.then(function (w) {
               /* Код расходуется: щель кода новой ячейки — шум, ключа кода в теле нет.
                  Со вторым ключом был сделан и второй мир — открыть его больше нечем. */
               return carrierJob(function () {
                 if (hit.src === "carrier") {
-                  return sealRegion(hit.m, wk.slot, null, w.kv, hit.role).then(function (sealed) {
+                  return sealRegion(hit.m, wk.slot, null, w.kv, hit.role, (w.g || 0) + 1).then(function (sealed) {
                     var puts = {}; puts[hit.i] = sealed;
-                    return carrierPut(puts, hadFactor ? [1 - hit.i] : null, params).then(function () { return { cell: hit.i, rec: null }; });
+                    return carrierPut(w.c, puts, hadFactor ? [1 - hit.i] : null, params, hit.spend || null).then(function () { return { cell: hit.i, rec: null }; });
                   });
                 }
                 /* Код расходуется: щель кода ячейки, найденной переездом, не переносится. */
                 hit.dropCode = true;
                 return moveWorld(hit, w.kv).then(function (mv) {
                   if (mv.code) mv.code.fill(0);
-                  return (hadFactor ? carrierPut({}, [1 - mv.cell], params) : Promise.resolve()).then(function () { return mv; });
+                  return (hadFactor ? carrierPut(mv.c, {}, [1 - mv.cell], params) : Promise.resolve()).then(function () { return mv; });
                 });
               }).then(function (mv) {
-                if (!w.own && !mv.rec) return mv;
+                /* Запись замка прежнего вида при мире в носителе (Г10): двери
+                   уходят из неё и здесь — иначе прежнее слово давало бы мастер
+                   по прежней двери. */
+                if (!w.own && !mv.rec && !legacyRec) return mv;
                 return subkeys(hit.m).then(function (ks) { return finishMove(ks, w.own, mv.rec, mv.cell, hit.role); }).then(function () { return mv; });
               });
             });
@@ -4373,19 +6919,27 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             hit.m.fill(0);
             if (hadFactor) hwSecret = null;
             var next = withParams(lockRecord() || rec, params);
-            if (!next.carrier) next.carrier = CARRIER_REGIONS * CARRIER_REGION;
+            if (!next.carrier5) next.carrier5 = CARRIER_REGIONS * CARRIER_REGION;
+            delete next.carrier;
             delete next.spare;
             if (hadFactor) {
               if (Array.isArray(next.doors)) next.doors = [randomDoor(), randomDoor()];
               if (next.knock && Array.isArray(next.knock.wrap) && next.knock.wrap[mv.cell]) next.knock.wrap[1 - mv.cell] = knockNoise(next.knock.wrap[mv.cell]);
             }
             lsSet(LOCK_KEY, JSON.stringify(next));
-            return window.sbVault.unlock(newPassword);
+            /* Второй мир со вторым ключом потерян — и его склад вещей в шум (D-352). */
+            return (hadFactor ? thWipe(1 - mv.cell) : Promise.resolve()).then(function () { return window.sbVault.unlock(newPassword); });
           }, function (e) { hit.m.fill(0); throw e; }).then(function (okp) {
             if (okp) markSpare(false);
             return okp;
           });
         });
+      }).then(function (okp) {
+        if (!okp && !hadIt && !vaultOpen) writerDrop();
+        return okp;
+      }, function (e) {
+        if (!hadIt && !vaultOpen) writerDrop();
+        throw e;
       });
     },
 
@@ -4400,6 +6954,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
        любой записи. Запись замка не меняется вовсе: соль и цена — замка.
        Проверяет tools/vault-cascade-check.mjs и one-door-carrier-check. */
     rekey: function (oldPassword, newPassword, secondKeyFile) {
+      var nl = noLocksRefusal(); if (nl) return nl;   /* без Web Locks — отказ, записи нет (A1) */
+      if (carrierStale) return Promise.reject(new Error("frozen"));   /* замёрзшая вкладка не пишет (D-353) */
       var rec = lockRecord();
       if (!rec) return Promise.reject(new Error("no-lock"));
       if (String(newPassword || "").length < 4) return Promise.reject(new Error("short"));
@@ -4418,13 +6974,21 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           var eff = withParams(lockRecord() || {}, c && c.params), cost = costOf(eff);
           return deriveWordKeys(newPassword, saltOf(eff), cost[0], cost[1], fsecNew, cost[2]);
         }).then(function (k) {
+          /* Смена слова — смена полномочий (D-353): поколение растёт; отставший
+             сеанс слова не меняет — он записал бы поверх более нового. */
+          var base = null, sealedNow = null, gNext = 0;
           return carrierJob(function () {
             return withMaster(function (m) {
               return withCode(function (code) {
-                return readOwn(r, m, vaultRole).then(function (own) { return sealRegion(m, k.slot, code, own.kv, vaultRole); });
+                return readOwn(r, m, vaultRole).then(function (own) {
+                  ownCurrent(own, r);
+                  base = own.c;
+                  gNext = own.g + 1;
+                  return sealRegion(m, k.slot, code, own.kv, vaultRole, gNext);
+                });
               });
-            }).then(function (sealed) { var puts = {}; puts[r] = sealed; return carrierPut(puts, null, null); });
-          }).then(function () { carrierWordSlot = k.slot; return true; });
+            }).then(function (sealed) { sealedNow = sealed; var puts = {}; puts[r] = sealed; return carrierPut(base, puts, null, null); });
+          }).then(function () { ownAfter(sealedNow); sessionG = gNext; carrierWordSlot = k.slot; return true; });
         }).then(function (okw) {
           if (!okw) return false;
           /* Подтверждение (D-308) отныне узнаёт новое слово, а не прежнее. */
@@ -4440,7 +7004,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      шагов выбран так, чтобы обрыв питания в любой точке не стоил ни одного
      ключа: сперва всё читается в память, затем пишется носитель, затем
      новая запись замка, и только последними стираются старые. */
-  function migrateV1(password, rec) {
+  function migrateV1(password, rec, right) {
     var names = protectedKeysNow();     /* у v1 конверты лежали под своими именами */
     return deriveVaultKeyV1(password, rec.salt).then(function (key) {
       return openTextV1(key, rec.check).then(function (word) {
@@ -4453,10 +7017,15 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         });
         return Promise.all(jobs).then(function (rows) {
           var pairs = rows.filter(Boolean);
-          lsDel(LOCK_KEY);
+          /* Запись замка v1 НЕ стирается заранее (разбор №3, блокер): новая
+             ложится поверх неё только после носителя (buildLock). Обрыв в
+             любой точке оставляет либо v1 целиком, либо новый замок целиком;
+             и пока идёт переезд, система заперта — правки не ложатся
+             открытыми. */
           return buildLock(password, pairs).then(function (ks) {
             var kv = new Map();
             pairs.forEach(function (p) { kv.set(p.k, p.v); });
+            writeRight = right || (LOCKS ? false : "cas");
             return adoptWorld(ks, kv);
           });
         });
@@ -4506,12 +7075,20 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      ячейку тем же поворотом ключа. */
   var sealing = false;
   var pending = new Map();
+  /* Что лежало на диске, когда своя запись ушла в отложенное (Г9-3): по
+     нему поворот ключа узнаёт, писала ли этот ключ после неё вкладка,
+     открытая посреди поворота (см. collect.lay в lock). */
+  var pendDisk = new Map();
 
   var rawStore = {
     get: window.localStorage.getItem,
     set: window.localStorage.setItem,
     del: window.localStorage.removeItem
   };
+  /* Проба места перед снятием (ROOM_KEY) пишется и стирается в одном шаге;
+     оборвалось между ними — не лежать ей: её длина сказала бы размер
+     открытого мира, а носитель его прячет (разбор №5). */
+  try { if (rawStore.get.call(window.localStorage, ROOM_KEY) != null) rawStore.del.call(window.localStorage, ROOM_KEY); } catch (e) { /* ignore */ }
   /* Запись защищённого ключа уходит в ячейку мира (D-351): см. carrierDirty. */
   function scheduleSeal(k) { carrierDirty(k); }
   (function guardStorage() {
@@ -4551,14 +7128,33 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
            У системы есть отложенные записи и таймеры. Любой из них воскресил
            бы стёртое через миг после уборки — и человек, нажавший «стереть
            всё», нашёл бы на диске свежие следы своего же ухода. */
-        if (window.sbVanishing) return;
+        if (window.sbVanishing || healingNow) return;
+        /* Замок исчез под вкладкой, поднявшейся под ним (разбор №2): её
+           запертая пустота на диск не идёт. */
+        if (lostNow()) return;
+        /* Своё снятие замка между снимком записей и концом: написанное
+           копится и ляжет открытым вместе со снятием (или вернётся в мир). */
+        if (removalCut && isProtectedKey(k)) { pending.set(String(k), String(v)); return; }
+        /* ЗАМЁРЗШАЯ ВКЛАДКА (D-353): написанное остаётся в её памяти, на диск
+           не идёт ничего — ни записи мира, ни метки профиля, ни записи замка. */
+        if (carrierStale) {
+          if (isProtectedKey(k)) { mem.set(String(k), String(v)); scheduleSeal(String(k)); }
+          return;
+        }
         if (isProtectedKey(k)) {
           if (vaultOpen) {
+            /* То же значение — не правка (D-353): ячейка не пересобирается, и
+               соседняя вкладка того же мира не замерзает от записи, которая
+               ничего не меняет (загрузка пишет метки, что уже лежат). */
+            if (mem.has(String(k)) && mem.get(String(k)) === String(v)) return;
             mem.set(String(k), String(v));
             scheduleSeal(String(k));
             return;
           }
-          if (sealing) { pending.set(String(k), String(v)); return; }
+          /* Поворот ключа идёт: до записи замка — на диск открытыми (замка
+             ещё нет; сходимость поворота их запечатает), после — в хвост
+             поворота (Р-A5.2). */
+          if (sealing && vaultLocked()) { pending.set(String(k), String(v)); pendDisk.set(String(k), rawStore.get.call(ls, k)); return; }
           /* ── ЗАПЕРТОЕ НЕ ПЕРЕЗАПИСЫВАЕТСЯ (D-164) ────────────────────────
              Пока замок заперт и ещё не открыт, система живёт на пустом месте:
              она не видит своих данных и потому считает, что их нет. Первая
@@ -4575,15 +7171,31 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         if (!isOurs(this)) return rawStore.get.call(this, k);
         /* После ухода и очистки (D-174, D-350) голос у диска, а не у памяти
            сеанса: память уходящего мира не выдаётся за то, что лежит. */
-        if (vaultOpen && !window.sbVanishing && mem.has(String(k))) return mem.get(String(k));
+        if ((vaultOpen || carrierStale) && !window.sbVanishing && mem.has(String(k))) return mem.get(String(k));
         return rawStore.get.call(ls, k);
       });
       shadow("removeItem", function (k) {
         if (!isOurs(this)) return rawStore.del.call(this, k);
-        if (window.sbVanishing) return rawStore.del.call(ls, k);   /* стирать — можно всегда */
+        if (healingNow) return;
+        if (lostNow()) return;
+        if (removalCut && isProtectedKey(k)) { pending.set(String(k), null); return; }
+        /* Стирать при уходе (D-174) — только тому, кто вправе стирать: при
+           замке это писатель открытого мира (D-353, шаг 4). */
+        if (window.sbVanishing) {
+          var kk = String(k);
+          if (!mayErase() && (isProtectedKey(kk) || kk === LOCK_KEY || kk.indexOf(LATE_PFX) === 0 || kk.indexOf(SEAL_PFX) === 0)) return;
+          return rawStore.del.call(ls, k);
+        }
+        if (carrierStale) {
+          if (isProtectedKey(k)) { mem.set(String(k), null); scheduleSeal(String(k)); }
+          return;
+        }
         if (isProtectedKey(k)) {
-          if (vaultOpen) { mem.set(String(k), null); scheduleSeal(String(k)); return; }
-          if (sealing) { pending.set(String(k), null); return; }
+          if (vaultOpen) {
+            if (!mem.has(String(k)) || mem.get(String(k)) === null) return;   /* стирать нечего — не правка */
+            mem.set(String(k), null); scheduleSeal(String(k)); return;
+          }
+          if (sealing && vaultLocked()) { pending.set(String(k), null); pendDisk.set(String(k), rawStore.get.call(ls, k)); return; }
           if (vaultLocked()) return;          /* та же причина: не стирать вслепую */
         }
         return rawStore.del.call(ls, k);

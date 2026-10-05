@@ -95,6 +95,15 @@
      закон замка (D-164), только с другой стороны. */
   function dataReadable() {
     var V = window.sbVault;
+    /* Сперва — может ли эта вкладка вообще говорить за данные (D-353, разбор
+       №3), и лишь потом — заперто ли. Уходящая (D-174), потерявшая замок
+       (его сняли, стёрли или поставили в другой вкладке) и замёрзшая или
+       читающая вкладки копий не пишут: их память старше лежащего, и копия
+       из неё легла бы поверх более новой — или вынесла бы в папку мир,
+       который человек только что стёр. */
+    if (window.sbVanishing) return false;
+    if (V && typeof V.lost === "function" && V.lost()) return false;
+    if (V && typeof V.frozen === "function" && V.frozen()) return false;
     if (!V || !V.isLocked()) return true;
     return !!V.isOpen();
   }
@@ -284,6 +293,8 @@
         });
       })["catch"](function () { return false; });
     },
+    /* Можно ли сейчас писать копию — тот же ответ, что спрашивает таймер. */
+    readable: function () { return dataReadable(); },
     permission: function () {
       if (!dirHandle || typeof dirHandle.queryPermission !== "function") {
         return Promise.resolve(dirHandle ? "granted" : "none");

@@ -1,4 +1,7 @@
-/* sys.baby OS — Real Project viewer presentation. */
+/* sys.baby OS — Real Project viewer presentation.
+   С D-354 работы временно сняты, и окно знает одно состояние: правда о
+   снятых работах и дорога в build. Оформление рамки, описания и телефонной
+   складки снято вместе с ней и возвращается вместе с работами. */
 
 .app-project {
   display: flex;
@@ -8,29 +11,6 @@
   min-height: 0;
   color: var(--ink);
 }
-
-.pj-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--hairline, rgba(var(--film-rgb), .09));
-  flex: 0 0 auto;
-}
-
-.pj-tag {
-  font-size: var(--f-micro);
-  text-transform: uppercase;
-  letter-spacing: var(--track-caps);
-  color: var(--ink-3);
-  border: 1px solid rgba(var(--teal-rgb), .32);
-  border-radius: var(--r-pill);
-  padding: 3px 9px;
-}
-
-.pj-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
 .pj-btn {
   display: inline-block;
@@ -55,171 +35,20 @@
   :where(html:not([data-input="touch"])) .pj-btn:hover { background: rgba(var(--film-rgb), .12); }
 }
 
-.pj-btn.accent {
-  background: var(--accent);
-  border-color: transparent;
-  color: var(--on-accent);
-  font-weight: var(--w-strong);
-}
-
-/* Наведение — это про мышь. На устройстве без мыши :hover включается по
-   касанию и держится до следующего касания где-нибудь ещё: человек видит
-   предмет в состоянии, которого не выбирал. Повод — снимок основателя
-   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
-   Охраняется tools/hover-is-not-touch-check.mjs. */
-@media (hover: hover) {
-  :where(html:not([data-input="touch"])) .pj-btn.accent:hover { filter: brightness(1.08); }
-}
-
-.pj-context {
-  padding: 10px 14px 12px;
-  border-bottom: 1px solid rgba(var(--film-rgb), .07);
-  flex: 0 0 auto;
-}
-
-.pj-line { margin: 0; font-size: var(--f-ui); color: var(--ink-2); }
-/* Курсив в строке проекта стоял на собственных .45 мимо шкалы чернил и
-   давал 3.49 — ниже порога читаемости (D-234). Отдан тусклым чернилам
-   системы: они теперь .52 и держат меру. Наклон и так отличает эту речь от
-   остальной — цветом её приглушать дальше незачем.
-   Охраняется tools/legible-check.mjs. */
-.pj-line em { color: var(--ink-3); font-style: italic; }
-.pj-goal { margin: 5px 0 0; font-size: var(--f-meta); color: var(--ink-3); line-height: var(--lh-read); }
-
-.pj-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 8px; }
-
-.pj-chips-label {
-  font-size: var(--f-micro);
-  text-transform: uppercase;
-  letter-spacing: var(--track-caps);
-  /* Стояло на собственных .35 мимо шкалы чернил: 3.14 (D-234). */
-  color: var(--ink-2);
-  margin-right: 2px;
-}
-
-.pj-chip {
-  font-size: var(--f-meta);
-  padding: 3px 8px;
-  border-radius: var(--r-pill);
-  background: rgba(var(--film-rgb), .06);
-  border: 1px solid rgba(var(--film-rgb), .09);
-  color: var(--ink-2);
-}
-
-.pj-langnote {
-  margin: 9px 0 0;
-  font-size: var(--f-meta);
-  line-height: var(--lh-read);
-  color: var(--ink-3);
-  border-left: 2px solid rgba(var(--teal-rgb), .4);
-  padding-left: 9px;
-}
-
-.pj-stage { position: relative; flex: 1; min-height: 0; /* своя краска: сцена превью — тёмный экран, в нём живёт чужой сайт */ background: #08090c; }
-
-.pj-frame {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  opacity: 0;
-  transition: opacity var(--t-scene) var(--ease-enter);
-}
-
-.pj-frame.loaded { opacity: 1; }
-
-.pj-placeholder {
-  position: absolute;
-  inset: 0;
+/* Пустое состояние — колонкой посередине, как у Писем и Эхо: фраза и
+   кнопка стоят по центру окна и на телефоне не прижимаются к левой стенке.
+   Охраняется tools/room-center-check.mjs (доска v178-H1 поймала: на 390 px
+   строки шли от левого края — слева 0, справа 40 px). */
+.pj-empty {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 30px;
   text-align: center;
-  /* своя краска: та же сцена превью */
-  background: #08090c;
-  transition: opacity var(--t-scene) var(--ease-enter);
-}
-
-.pj-placeholder.done { opacity: .35; }
-.pj-placeholder.hidden { opacity: 0; pointer-events: none; }
-
-.pj-spinner {
-  width: 26px;
-  height: 26px;
-  border-radius: var(--r-pill);
-  border: 2px solid rgba(var(--film-rgb), .14);
-  border-top-color: var(--teal);
-  animation: pjSpin 1s linear infinite;
-}
-
-@keyframes pjSpin { to { transform: rotate(360deg); } }
-
-@media (prefers-reduced-motion: reduce) {
-  .pj-spinner { animation: none; }
-}
-
-.pj-ph-name { margin: 0; font-size: var(--f-read); font-weight: var(--w-strong); }
-.pj-ph-hint { margin: 0; max-width: 380px; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-3); }
-
-.pj-empty {
-  flex: 1;
-  display: grid;
-  place-items: center;
+  padding: 30px 22px;
   color: var(--ink-3);
   font-size: var(--f-ui);
 }
-
-/* --- описание проекта: складка ---------------------------------------------
-   На широком экране складки нет вовсе: <details> всегда открыт (project.js),
-   а сводка спрятана — блок выглядит и ведёт себя ровно как раньше. Складка
-   существует только там, где за место идёт борьба, — на телефоне.           */
-.pj-more { flex: 0 0 auto; border-bottom: 1px solid rgba(var(--film-rgb), .07); }
-.pj-more > summary { display: none; }
-.pj-more .pj-context { border-bottom: 0; }
-
-/* --- телефон ---------------------------------------------------------------
-   Наблюдение основателя 12.08: на 390×844 работающей программе доставалось
-   288 px из 694 — 42% окна, — потому что шапка и описание занимали 362 px.
-   Клиенту, который пришёл потрогать систему, доставался обрезок.
-   Ниже: описание свёрнуто, переход во весь экран — первое действие и во всю
-   ширину, программа получает большую часть окна.                            */
-@media (max-width: 760px) {
-  .pj-top { padding: 8px 10px; gap: 8px; }
-  .pj-tag { font-size: var(--f-micro); }
-
-  .pj-actions { width: 100%; display: flex; flex-wrap: wrap; gap: 7px; }
-  .pj-actions .pj-btn { flex: 1 1 auto; justify-content: center; text-align: center; }
-
-  /* Главное действие на телефоне — открыть во весь экран. Оно первое и во всю
-     ширину: до сих пор оно стояло между двумя другими кнопками и читалось как
-     служебное, хотя без него системой почти нельзя пользоваться. */
-  .pj-btn.open {
-    order: -1; flex: 1 0 100%;
-    border-color: rgba(var(--film-rgb), .34);
-    background: rgba(var(--film-rgb), .1);
-    font-weight: var(--w-strong);
-  }
-
-  .pj-more > summary {
-    display: flex; align-items: center; gap: 8px;
-    padding: 9px 14px; cursor: pointer; list-style: none;
-    font-size: var(--f-meta); letter-spacing: var(--track-caps); text-transform: uppercase;
-    color: var(--ink-3);
-  }
-  .pj-more > summary::-webkit-details-marker { display: none; }
-  .pj-more > summary::before {
-    content: "+"; width: 12px; font-weight: var(--w-strong);
-    color: var(--ink-2);
-  }
-  .pj-more[open] > summary::before { content: "−"; }
-  .pj-more[open] > summary { color: var(--ink-2); }
-
-  .pj-context { padding: 2px 14px 12px; }
-
-  /* Программа обязана получить экран, а не остаток от него. */
-  .pj-stage { min-height: 58vh; }
-}
+.pj-empty p { margin: 0; max-width: 42ch; }

@@ -483,6 +483,28 @@
       }
     } catch (err) { /* storage blocked — shown as 0 */ }
 
+    /* ── У НАС ТОЖЕ ОДНА ДВЕРЬ (D-356) ─────────────────────────────────
+       Основатель, 03.10.2026: «Текст поддержки door@sys.baby — утверждаю как
+       есть». Адрес в тексте — ссылка mailto: письмо пишет и отправляет сам
+       человек своей почтовой программой; страница не делает ни одного
+       запроса. В заготовке — только то, что помогает найти увиденное:
+       метка сборки, вид браузера, язык системы, — и сказано, что эти строки
+       можно стереть. Ничего с диска человека в письмо не попадает. Дверь
+       названа в описи «Наружу» (door-mail). Охраняется
+       tools/door-address-check.mjs. */
+    var DOOR = "door@sys.baby";
+    var doorHref = "mailto:" + DOOR +
+      "?subject=" + encodeURIComponent(t("set.about.doorMailSubject")) +
+      "&body=" + encodeURIComponent(t("set.about.doorMailBody", {
+        build: build, browser: browserName(), lang: (window.sbLang ? window.sbLang() : "en")
+      }));
+    /* Адрес — имя собственное, а не строка перевода: объявлено атрибутом
+       data-sb-nolang, который читает закон переводов. */
+    var doorLink = '<a class="st-door-link" href="' + esc(doorHref) + '" data-sb-nolang>' + esc(DOOR) + "</a>";
+    var doorText = String(t("set.about.doorBody", { door: "\u0001" })).split("\n").map(function (line) {
+      return esc(line).split("\u0001").join(doorLink);
+    }).join("<br>");
+
     var rows = [
       [t("set.about.build"), esc(build)],
       [t("set.about.apps"), registered != null
@@ -525,8 +547,9 @@
       '<div class="st-card">' +
         "<h3>" + esc(t("set.about.whatTitle")) + "</h3>" +
         /* Текст «о системе» называл приложение портфолио. Оно снято (D-066):
-             называем то, что есть, — build с разделом «Избранные проекты». */
-        "<p>" + esc(t("set.about.whatBody", { portfolio: appName("build") })) + "</p>" +
+             называем то, что есть, — build. Раньше текст вёл ещё и в раздел
+             «Избранные проекты»; с D-354 работы сняты, и он говорит о студии. */
+        "<p>" + esc(t("set.about.whatBody", { build: appName("build") })) + "</p>" +
       "</div>" +
       '<div class="st-card">' +
         "<h3>" + esc(t("set.about.whoTitle")) + "</h3>" +
@@ -536,7 +559,29 @@
            системы. Охраняется tools/retired-words-check.mjs (D-278). */
         "<p>" + esc(t("set.about.whoBody", { build: appName("build") })) + "</p>" +
       "</div>" +
+      '<div class="st-card" id="stDoor">' +
+        "<h3>" + esc(t("set.about.doorTitle")) + "</h3>" +
+        '<p class="st-door-text">' + doorText + "</p>" +
+      "</div>" +
       '<div class="st-note"><p>' + esc(t("set.about.note")) + "</p></div>";
+  }
+
+  /* Вид браузера для заготовки письма в дверь: имя и главный номер версии,
+     и ничего больше — ни системы, ни устройства. Порядок проверок важен:
+     строка Chrome содержит «Safari», строка Edge — «Chrome». */
+  function browserName() {
+    var ua = (navigator && navigator.userAgent) || "";
+    var known = [
+      [/Edg(?:A|iOS)?\/(\d+)/, "Edge"], [/OPR\/(\d+)/, "Opera"],
+      [/SamsungBrowser\/(\d+)/, "Samsung Internet"], [/FxiOS\/(\d+)/, "Firefox"],
+      [/Firefox\/(\d+)/, "Firefox"], [/CriOS\/(\d+)/, "Chrome"], [/Chrome\/(\d+)/, "Chrome"],
+      [/Version\/(\d+)[^ ]* (?:Mobile\/\S+ )?Safari\//, "Safari"]
+    ];
+    for (var i = 0; i < known.length; i++) {
+      var m = known[i][0].exec(ua);
+      if (m) return known[i][1] + " " + m[1];
+    }
+    return "—";
   }
 
   var RENDERERS = {
@@ -906,6 +951,12 @@
     if (clearAll) {
       clearAll.addEventListener("click", function () {
         if (typeof window.sbAskIrreversible !== "function") return;
+        /* Стирать при замке вправе только писатель открытого мира (D-353, шаг 4). */
+        var V0 = window.sbVault;
+        /* Память вкладки старше лежащего (замок сняли, поставили или стёрли в
+           другой вкладке) — стирать она не вправе и не говорит «стёрто». */
+        if (V0 && V0.lost && V0.lost()) { toast(t("lock.staleTitle"), t("lock.staleBody")); return; }
+        if (V0 && V0.isLocked && V0.isLocked() && V0.mayErase && !V0.mayErase()) { toast(t("lock.readerTitle"), t("set.privacy.clearWriter")); return; }
         /* Навсегда — при замке только словом (D-350), без замка своим голосом. */
         window.sbAskIrreversible({ question: t("set.privacy.clearConfirm"), ok: t("ask.clear") }).then(function (yes) {
           if (!yes) return;
@@ -918,12 +969,34 @@
              правду диска, и сеанс закрывается: система открывается заново. */
           var V = window.sbVault;
           var sealed = !!(V && V.isLocked && V.isLocked());
+          /* При замке сперва уходят склады базы — носитель, вещи, снимки — одной
+             транзакцией со сверкой своей ячейки (D-353, шаг 4): «удалить все
+             локальные данные» должно быть правдой. Отказ — ничего не удалено. */
+          /* С этого мига — ещё ДО стирания — система не пишет ничего: снимок
+             или печать, вставшие в очередь за стирающей транзакцией, легли бы
+             в пустые склады (разбор №3). Отказ — страница поднимается заново
+             (ниже): запрет записи снимает только перезагрузка. */
           if (sealed) window.sbVanishing = true;
-          clearNamespace(localStorage);
-          clearNamespace(typeof sessionStorage !== "undefined" ? sessionStorage : null);
-          toast(t("set.privacy.clearedTitle"), t(sealed ? "set.privacy.clearedLocked" : "set.privacy.clearedBody"));
-          /* ПОСТОЯННАЯ: две секунды — прочесть извещение до того, как сеанс закроется. */
-          if (sealed) setTimeout(function () { location.reload(); }, 2000);
+          /* Без замка — тоже все склады базы: запасная копия снятия, снимки,
+             вещи (разбор №4). */
+          var stores = V && V.eraseAll ? V.eraseAll() : Promise.resolve(true);
+          stores.then(function () {
+            clearNamespace(localStorage);
+            clearNamespace(typeof sessionStorage !== "undefined" ? sessionStorage : null);
+            toast(t("set.privacy.clearedTitle"), t(sealed ? "set.privacy.clearedLocked" : "set.privacy.clearedBody"));
+            /* ПОСТОЯННАЯ: две секунды — прочесть извещение до того, как сеанс закроется. */
+            if (sealed) setTimeout(function () { location.reload(); }, 2000);
+          }, function (e) {
+            /* Без Web Locks при замке — не «читает другая вкладка», а «писатель
+               здесь не доказан» (A1). */
+            if (e && e.message === "nolocks") toast(t("lock.title"), t("lock.noLocks"));
+            else toast(t("lock.readerTitle"), t("set.privacy.clearWriter"));
+            /* Отказ при замке — страница поднимается заново, а не пишет дальше:
+               пока шло стирание, чтение отдавало диск (разбор №4), и память
+               модулей могла взять пустоту за правду. Не стёрто ничего. */
+            /* ПОСТОЯННАЯ: две секунды — прочесть извещение до того, как сеанс закроется. */
+            if (sealed) setTimeout(function () { location.reload(); }, 2000);
+          });
         });
       });
     }

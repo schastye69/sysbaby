@@ -151,8 +151,9 @@
        должно быть в приложении build, больше не оставлять в ОС». Папка была
        выведенной — Хранилище само подсаживало брифы наших кейсов в стол
        пользователя. Это витринное содержимое в личном месте: ровно то, что
-       он просил убрать. Брифы никуда не пропали — карточки работ живут в
-       build/«Избранные проекты» (D-062), а Хранилище принадлежит человеку.
+       он просил убрать. Брифы тогда не пропали — карточки работ жили в
+       build/«Избранные проекты» (D-062); с D-354 работы временно сняты и
+       оттуда. Хранилище принадлежит человеку.
        Миграция: выведенная папка ВЫРЕЗАЕТСЯ и из сохранённых деревьев — по
        нашему знаку derived, а для деревьев до перевода — по имени Portfolio,
        и только если все дети несут docId (то есть папка целиком наша).
@@ -287,31 +288,41 @@
     ensureLoaded();
     var folder = currentFolder();
     var done = [];
-    return list.reduce(function (chain, file) {
-      return chain.then(function () {
-        if (file.size > THING_CAP) {
-          toast(t("fv.tooBig", { name: file.name }), t("fv.tooBigNote", { limit: weigh(THING_CAP) }));
-          return null;
+    /* Склад принимает вещи РАЗОМ: под замком (D-352) каждая запись склада
+       пересобирает половину мира целиком, и вещи, принесённые вместе,
+       ложатся одной пересборкой, а не одна за другой. Отказ — своими словами
+       для своей причины: переполнение — не инкогнито. */
+    var asks = list.map(function (file) {
+      if (file.size > THING_CAP) return Promise.resolve({ file: file, big: true });
+      return window.sbThings.put(file, { name: file.name, mime: file.type }).then(function (id) {
+        return { file: file, id: id, why: id ? null : (window.sbThings.why ? window.sbThings.why() : null) };
+      }, function () { return { file: file, id: null, why: "fail" }; });
+    });
+    return Promise.all(asks).then(function (answers) {
+      answers.forEach(function (a) {
+        var file = a.file;
+        if (a.big) { toast(t("fv.tooBig", { name: file.name }), t("fv.tooBigNote", { limit: weigh(THING_CAP) })); return; }
+        if (!a.id) {
+          if (a.why === "incognito") toast(t("fv.noBring"), t("fv.noBringNote"));
+          else if (a.why === "full") toast(t("fv.full"), t("fv.fullNote", { name: file.name }));
+          else if (a.why === "nostore") toast(t("fv.noStore"), t("fv.noStoreNote", { name: file.name }));
+          else toast(t("fv.notWritten"), t("fv.notWrittenNote", { name: file.name }));
+          return;
         }
-        return window.sbThings.put(file, { name: file.name, mime: file.type }).then(function (id) {
-          if (!id) { toast(t("fv.noBring"), t("fv.noBringNote")); return null; }
-          var node = {
-            name: uniqueName(folder, file.name || "вещь", false),
-            type: "file",
-            thingId: id,
-            kind: kindOf(file.type, file.name),
-            mime: file.type || "",
-            size: file.size || 0
-          };
-          folder.children = folder.children || [];
-          folder.children.push(node);
-          done.push(node.name);
-          persist();
-          toast(t("fv.brought", { name: node.name }), t("fv.broughtNote"));
-          return node;
-        });
+        var node = {
+          name: uniqueName(folder, file.name || "вещь", false),
+          type: "file",
+          thingId: a.id,
+          kind: kindOf(file.type, file.name),
+          mime: file.type || "",
+          size: file.size || 0
+        };
+        folder.children = folder.children || [];
+        folder.children.push(node);
+        done.push(node.name);
+        toast(t("fv.brought", { name: node.name }), t("fv.broughtNote"));
       });
-    }, Promise.resolve()).then(function () {
+      if (done.length) persist();
       openWindows_render();
       return done;
     });

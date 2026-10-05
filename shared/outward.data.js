@@ -101,6 +101,30 @@ window.SB_OUTWARD = {
       }
     },
     {
+      "id": "door-mail",
+      "title": {
+        "ru": "О системе — письмо в дверь",
+        "en": "About — a letter to the door",
+        "ee": "Süsteemist — kiri uksele"
+      },
+      "where": [
+        "os/apps/settings/settings.js:496"
+      ],
+      "side": "hand",
+      "byHand": true,
+      "host": "",
+      "what": {
+        "ru": "Если вы нажмёте door@sys.baby в «О системе», ваша почтовая программа откроет письмо с заготовкой: метка сборки, вид браузера и язык системы — только они, и их можно стереть. Уходит то, что вы сами допишете и отправите.",
+        "en": "If you press door@sys.baby in About, your mail app opens a letter with a template: the build tag, the browser type and the system's language — only these, and you can erase them. What leaves is what you write and send yourself.",
+        "ee": "Kui vajutate jaotises „Süsteemist“ door@sys.baby, avab teie postiprogramm kirja eeltäidetud ridadega: järgu silt, brauseri tüüp ja süsteemi keel — ainult need ja neid võib kustutada. Lahkub see, mille ise kirjutate ja saadate."
+      },
+      "who": {
+        "ru": "Ваша почтовая служба; Cloudflare, через который идёт почта домена sys.baby; и почтовый ящик основателя студии, куда письмо пересылается. Вашей системы в письме нет — она остаётся у вас.",
+        "en": "Your mail service; Cloudflare, through which mail for the sys.baby domain passes; and the mailbox of the studio's founder, where the letter is forwarded. Your system is not in the letter — it stays with you.",
+        "ee": "Teie postiteenus; Cloudflare, mille kaudu käib sys.baby domeeni post; ja stuudio asutaja postkast, kuhu kiri edasi saadetakse. Teie süsteemi kirjas ei ole — see jääb teile."
+      }
+    },
+    {
       "id": "messenger-sealed",
       "title": {
         "ru": "Разговор — запечатанное сообщение",
@@ -198,69 +222,6 @@ window.SB_OUTWARD = {
       }
     },
     {
-      "id": "works-probe",
-      "title": {
-        "ru": "Работы — проверка, жива ли",
-        "en": "Works — liveness probe",
-        "ee": "Tööd — kas töötab"
-      },
-      "where": [
-        "shared/portfolio.view.js:322",
-        "os/core/shell.js:148"
-      ],
-      "side": "self",
-      "byHand": false,
-      "toggle": "probeWorks",
-      "host": "",
-      "what": {
-        "ru": "Один запрос к адресу самой работы на этом же сайте, чтобы карточка не говорила «работает», когда работа не отвечает.",
-        "en": "One request to the work's own address on this same site, so the card does not say “working” when the work does not answer.",
-        "ee": "Üks päring töö enda aadressile samal saidil, et kaart ei ütleks „töötab“, kui töö ei vasta."
-      },
-      "who": {
-        "ru": "Тот, кто держит sys.baby, и посредник сети — Cloudflare. Наружу к чужим хозяевам не уходит ничего.",
-        "en": "Whoever hosts sys.baby, and the network intermediary — Cloudflare. Nothing leaves to outside owners.",
-        "ee": "See, kes sys.baby-d hoiab, ja võrgu vahendaja — Cloudflare. Võõrastele omanikele ei lahku midagi."
-      },
-      "default": "on",
-      "defaultWhy": {
-        "ru": "Включено по умолчанию: адрес свой, чужих хозяев нет, а выключенная проверка вернула бы карточку, которая говорит «работает», не зная этого. Третья сторона по умолчанию была бы выключена — здесь её нет.",
-        "en": "On by default: our own address, no outside owners, and a probe switched off would return a card that says “working” without knowing it. A third party would be off by default — there is none here.",
-        "ee": "Vaikimisi sees: oma aadress, võõraid omanikke pole, ja väljalülitatud kontroll tagastaks kaardi, mis ütleb „töötab“ seda teadmata. Kolmas osapool oleks vaikimisi väljas — siin seda pole."
-      }
-    },
-    {
-      "id": "works-frame",
-      "title": {
-        "ru": "Работы — живое превью",
-        "en": "Works — live preview",
-        "ee": "Tööd — elav eelvaade"
-      },
-      "where": [
-        "shared/portfolio.view.js:202"
-      ],
-      "side": "self",
-      "byHand": false,
-      "toggle": "probeWorks",
-      "host": "",
-      "what": {
-        "ru": "Работа открывается в рамке прямо в карточке — это не картинка, а сама работающая программа, и она грузится сама.",
-        "en": "The work opens in a frame right inside the card — not a picture but the running program itself, and it loads on its own.",
-        "ee": "Töö avaneb raamis otse kaardi sees — mitte pilt, vaid töötav programm ise, ja see laadib end ise."
-      },
-      "who": {
-        "ru": "Тот же, кто держит sys.baby. Адрес свой, чужих хозяев здесь нет.",
-        "en": "The same party that hosts sys.baby. Our own address; no outside owners here.",
-        "ee": "Sama, kes sys.baby-d hoiab. Oma aadress; võõraid omanikke siin pole."
-      },
-      "default": "on",
-      "defaultWhy": {
-        "ru": "Включено по умолчанию: адрес свой, чужих хозяев нет, а выключенная проверка вернула бы карточку, которая говорит «работает», не зная этого. Третья сторона по умолчанию была бы выключена — здесь её нет.",
-        "en": "On by default: our own address, no outside owners, and a probe switched off would return a card that says “working” without knowing it. A third party would be off by default — there is none here.",
-        "ee": "Vaikimisi sees: oma aadress, võõraid omanikke pole, ja väljalülitatud kontroll tagastaks kaardi, mis ütleb „töötab“ seda teadmata. Kolmas osapool oleks vaikimisi väljas — siin seda pole."
-      }
-    },
-    {
       "id": "service-worker",
       "title": {
         "ru": "Служебный работник — загрузка системы",
@@ -342,54 +303,6 @@ window.SB_OUTWARD = {
         "ru": "Тот, кто держит sys.baby. Чужих хозяев здесь нет.",
         "en": "Whoever hosts sys.baby. No outside owners here.",
         "ee": "See, kes sys.baby-d hoiab. Võõraid omanikke siin pole."
-      }
-    },
-    {
-      "id": "project-frame",
-      "title": {
-        "ru": "Проект — работа в рамке",
-        "en": "Project — the work in a frame",
-        "ee": "Projekt — töö raamis"
-      },
-      "where": [
-        "os/apps/project/project.js:187"
-      ],
-      "side": "self",
-      "byHand": true,
-      "host": "",
-      "what": {
-        "ru": "Выбранная работа открывается в рамке: это сама работающая программа с этого же сайта.",
-        "en": "The chosen work opens in a frame: the running program itself, from this same site.",
-        "ee": "Valitud töö avaneb raamis: töötav programm ise, samalt saidilt."
-      },
-      "who": {
-        "ru": "Тот, кто держит sys.baby.",
-        "en": "Whoever hosts sys.baby.",
-        "ee": "See, kes sys.baby-d hoiab."
-      }
-    },
-    {
-      "id": "product-frame",
-      "title": {
-        "ru": "Витрина — товар в рамке",
-        "en": "Showcase — product in a frame",
-        "ee": "Esileht — toode raamis"
-      },
-      "where": [
-        "index.php:4171"
-      ],
-      "side": "self",
-      "byHand": true,
-      "host": "",
-      "what": {
-        "ru": "Выбранный товар витрины показывается рамкой с этого же сайта.",
-        "en": "The chosen showcase item is shown in a frame from this same site.",
-        "ee": "Valitud vitriinitoode näidatakse raamis samalt saidilt."
-      },
-      "who": {
-        "ru": "Тот, кто держит sys.baby.",
-        "en": "Whoever hosts sys.baby.",
-        "ee": "See, kes sys.baby-d hoiab."
       }
     },
     {

@@ -617,7 +617,14 @@
         if (!res || !res.ok) { busy = null; err = fill(t.unpackFail, { why: (res && res.error) || "?" }); rerender(); return null; }
         setFlag("unpacked");
         if (V.isLocked()) return { n: res.count, relocked: false };
-        return V.lock(word).then(function () { return V.unlock(word); }).then(function (okp) {
+        /* «kept» — замок встал, мир открыт этой вкладкой (последние правки
+           ещё не под замком, вкладка допишет их сама); «locked» — замок
+           встал, сеанс закрыт (Р-A5.2). */
+        return V.lock(word).then(function () { return V.unlock(word); }, function (e) {
+          if (e && e.message === "kept") return true;
+          if (e && e.message === "locked") return V.unlock(word);
+          throw e;
+        }).then(function (okp) {
           return { n: res.count, relocked: !!okp };
         });
       });
