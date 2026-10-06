@@ -1,0 +1,101 @@
+/* sam.vin — chrome.css (WP0). Corners, status line, ЗВУК waveform, edge strings, LEAD, datum + title + level mark,
+   GIANT numeral + elevator counter, text effects, cursor, ripple, slice hairline, beam head.
+
+   DOM contract (ui/*.js; ids = QA selectors ARCH §6.1.8):
+   #chrome > #c-tl.corner > span#c-tl-name.t-label + span#c-tl-micro.t-micro
+           > #c-tr.corner > button#sound[aria-pressed] > span#sound-label.t-label + svg.sound-wave (rect.bar ×8, line.flat)
+           > #c-bl.corner.t-micro · #c-br.corner.t-micro (> span.found-count, span.rank; .is-relock)
+           > p#status.t-status (.is-in while shown) · nav#keynav (navigator.css)
+   #frame  > svg#edges > line.edge ×4 (.is-flash, .is-off)
+           > div#datum (.is-drawn, .is-out) > i#datum-line, p#datum-label.t-label, h1#datum-title.t-display, p#datum-level.t-micro
+           > div#lead (.is-in) > p#lead-text (.t-lead or the class passed to lead.show), p#lead-micro.t-micro
+   #giant.t-giant (.is-in at rest, .is-counter during travel, [data-electrum] on the birthday)
+   #fx     > i#cursor (.is-on) · i.ripple (.ripple--still) · i.slice · i.beam-head
+   .corner--dim = the first-frame 30 % (chrome.typeIn); chrome.assemble() removes it. */
+
+.corner{position:fixed;margin:0;white-space:nowrap;transition:opacity var(--d-480) var(--ease-reveal)}
+.corner--dim{opacity:.3}
+#c-tl,#c-br{display:flex;flex-direction:column;gap:2px}
+#c-tl{top:var(--chrome-t);left:var(--chrome-l);align-items:flex-start}
+#c-tr{top:var(--chrome-t);right:var(--chrome-r)}
+#c-bl{bottom:var(--chrome-b);left:var(--chrome-l)}
+#c-br{bottom:var(--chrome-b);right:var(--chrome-r);align-items:flex-end;text-align:right}
+/* ≥ 44 × 44 hit area around the 11 px SAM.VIN label (S05 long-press) */
+#c-tl-name{pointer-events:auto;padding:15px 12px 15px 0;margin:-15px -12px -15px 0}
+#c-br .found-count{transition:color var(--d-960)}
+#c-br.is-relock .found-count{color:var(--white);transition:none}
+
+#sound{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:var(--hit);min-height:var(--hit);
+  margin:-15px -4px -15px -12px;padding:0 4px 0 12px}
+#sound:hover #sound-label,#sound:focus-visible #sound-label{color:var(--white)}
+.sound-wave{width:var(--sound-w);height:var(--sound-h);flex:none}
+.sound-wave .bar{fill:var(--silver)}
+.sound-wave .flat{stroke:var(--pewter);opacity:0}
+#sound[aria-pressed="false"] .bar{opacity:0}
+#sound[aria-pressed="false"] .flat{opacity:1}
+#sound[aria-pressed="false"] #sound-label{color:var(--pewter)}
+
+#status{position:fixed;left:50%;bottom:var(--status-bottom);transform:translateX(-50%);width:max-content;
+  max-width:min(var(--status-measure),calc(100vw - 2 * var(--margin)));text-align:center;opacity:0;transition:opacity var(--status-in)}
+#status.is-in,#lead.is-in,#giant.is-in,#cursor.is-on{opacity:1}
+
+#edges{position:absolute;inset:0;width:100%;height:100%}
+.edge{stroke:var(--slate);stroke-width:1;vector-effect:non-scaling-stroke;transition:stroke var(--d-120)}
+.edge.is-flash{stroke:var(--silver);transition:none}
+.edge.is-off{opacity:0}
+
+/* Datum: desktop line at 62 % height, title on it at the 48 px margin; phone title at 72 px, datum at 120 px. */
+#datum{position:absolute;left:0;right:0;top:var(--datum-y)}
+#datum-line{position:absolute;left:0;right:0;top:0;height:1px;background:var(--slate);transform:scaleX(0);transform-origin:0 0}
+#datum.is-drawn #datum-line{transform:none;transition:transform var(--d-240) var(--ease-reveal)}
+#datum-title,#datum-label,#datum-level{position:absolute;left:var(--title-x);white-space:nowrap;margin:0}
+#datum-title{bottom:6px}
+#datum-label{bottom:calc(14px + clamp(56px,8.4vw,148px) * .9)}
+#datum-level{top:6px}
+#datum.is-out,#datum .is-out{opacity:0;transition:opacity var(--depart)}
+
+#giant{left:var(--title-x);top:var(--datum-y);transform:translateY(-50%);opacity:0;transition:opacity var(--d-480)}
+#giant.is-counter{color:var(--c-counter);opacity:1;transition:none}
+#giant[data-electrum]{color:transparent;-webkit-text-stroke:1px rgba(var(--electrum-rgb),.55)}
+
+#lead{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);width:max-content;
+  max-width:min(var(--measure),calc(100vw - 2 * var(--margin)));text-align:center;opacity:0;transition:opacity var(--d-240)}
+#lead-micro{margin-top:8px}
+
+/* Text effects (ui/text.js): lock-in letters, body reveal mask, BEAM WRITE letters + head. */
+.lock-letter,.beam-letter{display:inline-block;white-space:pre}
+.reveal-mask{-webkit-mask-image:linear-gradient(90deg,#000 var(--reveal,0%),transparent calc(var(--reveal,0%) + 8%));
+  mask-image:linear-gradient(90deg,#000 var(--reveal,0%),transparent calc(var(--reveal,0%) + 8%))}
+.beam-letter{clip-path:inset(0 100% 0 0);color:var(--white)}
+.beam-letter.is-lit{clip-path:none;animation:phosphor .9s var(--ease-phosphor) forwards}
+@keyframes phosphor{35%{color:var(--ember)}to{color:var(--silver)}}
+
+#fx > *{position:absolute;left:0;top:0;pointer-events:none;will-change:transform}
+.beam-head{width:var(--beam-head);height:var(--beam-head);background:var(--ember)}
+#cursor{width:var(--cursor);height:var(--cursor);margin:-3px 0 0 -3px;border-radius:50%;box-shadow:inset 0 0 0 1px var(--ember);
+  opacity:0;transition:opacity var(--d-120)}
+.ripple{width:var(--ripple);height:var(--ripple);margin:-24px 0 0 -24px}
+.ripple::before{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 1px var(--silver);
+  animation:ripple .26s var(--ease-reveal) forwards}
+.ripple--still::before{animation:ripple-still .26s linear forwards}
+@keyframes ripple{from{transform:scale(0)}to{opacity:0}}
+@keyframes ripple-still{to{opacity:0}}
+.slice{right:0;height:1px;background:var(--silver);animation:slice .28s linear forwards}
+@keyframes slice{to{transform:translateY(100vh)}}
+
+/* Phone (SPEC §2.3): BL hidden, BR under ЗВУК; title at 72 px above the 120 px datum. */
+@media (pointer:coarse) and (max-width:600px),(pointer:coarse) and (max-height:600px){
+  #c-bl{display:none}
+  #c-br{top:calc(var(--chrome-t) + 28px);bottom:auto}
+  #datum-title{bottom:auto;top:calc(var(--title-top) - var(--datum-y))}
+  #datum-label{bottom:auto;top:calc(var(--title-top) - var(--datum-y) - 20px)}
+  #lead{top:34%}
+}
+@media (pointer:coarse) and (max-height:499.98px){
+  #c-tr,#c-br{right:calc(var(--band-side-w) + 12px + var(--safe-r))}
+}
+@media (prefers-reduced-motion:reduce){
+  #datum.is-drawn #datum-line{transition:none}
+  #giant,#lead,#status,.corner{transition-duration:.16s}
+  .beam-letter.is-lit{animation-duration:.16s}
+}

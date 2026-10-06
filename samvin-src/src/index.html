@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#04060A">
+<meta name="description" content="SAM.VIN — VIN строит себя сам.">
+<title>SAM.VIN</title>
+<link rel="icon" id="favicon" href="./favicon.svg" type="image/svg+xml">
+<link rel="preload" href="./fonts/geologica-cyrillic-full-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./fonts/martian-mono-cyrillic-standard-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="%%APP_CSS%%">
+<style>
+/* FIRST FRAME (SPEC §4.0) — the only inline CSS. Everything else is in app.<hash>.css. */
+html,body{margin:0;height:100%;background:#04060A;overflow:hidden;overscroll-behavior:none}
+body{color:#B8C4D0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+#ff-grain{position:fixed;inset:-64px;z-index:90;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 -.2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:ffg .48s steps(6) infinite}
+@keyframes ffg{0%{transform:translate(0,0)}17%{transform:translate(-37px,21px)}33%{transform:translate(19px,-44px)}50%{transform:translate(-52px,-13px)}67%{transform:translate(41px,33px)}83%{transform:translate(-8px,57px)}100%{transform:translate(0,0)}}
+@media (prefers-reduced-motion:reduce){#ff-grain{animation:none}}
+.ff-c{position:fixed;z-index:60;margin:0;opacity:.3;font:450 9.5px/12px "Martian",ui-monospace,monospace;font-stretch:75%;letter-spacing:.1em;text-transform:uppercase;color:#5E6E80;white-space:nowrap}
+#c-tl{top:24px;left:24px;color:#B8C4D0;font-size:11px;line-height:14px;font-weight:500;font-stretch:87.5%;letter-spacing:.08em}
+#c-tr{top:24px;right:24px}#c-bl{bottom:24px;left:24px}#c-br{bottom:24px;right:24px;text-align:right}
+@media (pointer:coarse) and (max-width:600px){#c-tl{top:calc(16px + env(safe-area-inset-top));left:16px}#c-tr{top:calc(16px + env(safe-area-inset-top));right:16px}#c-bl{display:none}#c-br{top:calc(44px + env(safe-area-inset-top));right:16px;bottom:auto}}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:10;touch-action:none}
+</style>
+<script src="./world.js" defer></script>
+<script src="%%APP_JS%%" defer></script>
+</head>
+<body class="is-ff">
+<div id="giant" class="t-giant" aria-hidden="true"></div>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div id="t0" hidden></div>
+<svg id="leaders" aria-hidden="true"></svg>
+<div id="overlay"></div>
+<div id="halls"></div>
+<div id="frame" aria-hidden="false"></div>
+<div id="chrome">
+  <p id="c-tl" class="ff-c">SAM.VIN</p>
+  <p id="c-tr" class="ff-c">ЗВУК ○</p>
+  <p id="c-bl" class="ff-c">ДЕНЬ 1 · УЗЛОВ 0 · 00:00</p>
+  <p id="c-br" class="ff-c">НАЙДЕНО 00 / ??</p>
+</div>
+<div id="sheets"></div>
+<div id="fx" aria-hidden="true"></div>
+<div id="status-live" class="sr-only" aria-live="polite"></div>
+<div id="ff-grain" aria-hidden="true"></div>
+</body>
+</html>

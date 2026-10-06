@@ -1,0 +1,116 @@
+/* sam.vin — navigator.css (WP0). The Key navigator (SPEC §5.2, ARCH §3.13): desktop gauge, phone band, landscape band,
+   КАРТА. SVG elevation + real <button> rows; no WebGL, no second viewport.
+
+   DOM contract (nav/navigator.js, nav/navMap.js; QA selectors ARCH §6.1.8, A10):
+   nav#keynav (.is-shown after show(); [data-expanded] while hovered / scrubbing)
+     > svg.kn-draw > path.kn-stratum[data-sign] ×7 (.is-current) + path.kn-crack (.is-cool)
+     > button.kn-row[data-sign][data-room][aria-label] ×7, style="--i:<stratum 0…6>" (desktop: JS sets style.top = row
+         centre px); aria-current="true" · [data-glint="electrum"] · [data-shudder] · [data-blink] · .is-hot (hovered)
+         > span.kn-letter.t-label + span.kn-text > (span.kn-code.t-label 'S · SIGNAL', span.kn-name.t-body.t-body--15.t-body--em,
+           span.kn-level.t-micro)
+     > i.kn-tick (.is-on) · i#keynav-needle · svg.kn-twin (.is-on) > path ×2
+     > div#keynav-slots > i.slot ×5 (.filled) · i#keynav-zenith (.is-on / .is-ghost)
+     > div#keynav-ring (.is-on) > svg > circle.track + circle.fill, span.t-label «ПЕРЕЗАПУСК»
+     > p#keynav-name.t-body.t-body--15.t-body--em (phone: current hall name above the band)
+   div#map[hidden] > div.map-head + div.map-body > svg.map-draw + div.map-rows > button.map-row[data-room] ×7
+     (> span.t-micro level, span.t-label code, span.t-body name; aria-current, [data-sealed]) */
+
+#keynav{position:fixed;right:var(--nav-right);top:calc(50% - var(--nav-h) / 2);width:var(--nav-w);height:var(--nav-h);
+  pointer-events:auto;touch-action:none;opacity:0;visibility:hidden;--kn-t:width var(--d-240) var(--ease-reveal);
+  transition:var(--kn-t),opacity var(--d-480),visibility 0s var(--d-480)}
+#keynav.is-shown{opacity:1;visibility:visible;transition:var(--kn-t),opacity var(--d-480)}
+#keynav[data-expanded]{width:var(--nav-hover-w)}
+.kn-draw{position:absolute;right:0;top:0;width:var(--nav-w);height:100%;pointer-events:none}
+.kn-stratum,.kn-crack,.kn-twin path,#map svg *{fill:none;stroke:var(--slate);stroke-width:1;vector-effect:non-scaling-stroke}
+.kn-stratum{transition:stroke var(--d-240)}
+.kn-stratum.is-current,#map svg .is-current{stroke:var(--silver)}
+.kn-crack{stroke:var(--electrum);transition:stroke .6s}
+.kn-crack.is-cool{stroke:var(--silver)}
+
+.kn-row{position:absolute;right:0;width:100%;height:var(--hit);margin-top:calc(var(--hit) / -2);cursor:pointer}
+.kn-letter{position:absolute;right:0;top:50%;width:var(--nav-w);margin-top:-7px;text-align:center;color:var(--pewter);
+  font-variation-settings:"wght" 300,"wdth" 87.5;transition:color var(--d-120),font-variation-settings var(--d-120)}
+.kn-row:hover .kn-letter,.kn-row:focus-visible .kn-letter,.kn-row.is-hot .kn-letter{font-variation-settings:"wght" 700,"wdth" 87.5;color:var(--silver)}
+.kn-row[aria-current="true"] .kn-letter,.kn-row[data-flash] .kn-letter{color:var(--ember)}
+.kn-row[data-glint] .kn-letter{color:var(--electrum)}
+.kn-row[data-blink] .kn-letter{animation:kn-blink .48s}
+.kn-row[data-shudder]{animation:kn-shudder .24s linear}
+@keyframes kn-blink{40%{color:var(--ember)}}
+@keyframes kn-shudder{17%,50%{transform:translateX(-6px)}33%,67%{transform:translateX(6px)}83%{transform:translateX(-3px)}}
+
+.kn-text{position:absolute;right:calc(var(--nav-w) + 12px);top:50%;transform:translate(8px,-50%);display:flex;
+  flex-direction:column;align-items:flex-end;white-space:nowrap;opacity:0;pointer-events:none;
+  transition:opacity var(--d-240),transform var(--d-240) var(--ease-reveal)}
+#keynav[data-expanded] .kn-text{opacity:1;transform:translate(0,-50%)}
+.kn-code{color:var(--silver)}
+.kn-level{transition:font-variation-settings var(--d-120)}
+.kn-row:hover .kn-level,.kn-row.is-hot .kn-level{font-variation-settings:"wght" 450,"wdth" 100;color:var(--silver)}
+.kn-tick{position:absolute;right:calc(var(--nav-w) - 2px);top:0;width:8px;height:1px;background:var(--ember);opacity:0;
+  transition:transform var(--d-120) var(--ease-reveal),opacity var(--d-120)}
+#keynav[data-expanded] .kn-tick.is-on,.kn-twin.is-on,#keynav-ring.is-on,#keynav-zenith.is-on,#keynav-zenith.is-ghost{opacity:1}
+
+#keynav-needle,.kn-twin{position:absolute;right:var(--nav-w);top:0;pointer-events:none;will-change:transform}
+#keynav-needle{width:var(--nav-needle);height:1px;background:var(--ember)}
+.kn-twin{width:var(--nav-twin);height:12px;margin-top:-6px;opacity:0}
+.kn-twin path{stroke:var(--ember)}
+#keynav-slots{position:absolute;right:0;width:var(--nav-w);display:flex;justify-content:center;gap:4px;pointer-events:none}
+.slot{width:var(--nav-slot);height:var(--nav-slot);border-radius:50%;background:var(--slate);transition:background var(--d-240)}
+.slot.filled{background:var(--silver)}
+.slot.is-landing{background:var(--white)}
+#keynav-zenith{position:absolute;right:calc(var(--nav-w) / 2 - 1px);top:-10px;width:2px;height:2px;border-radius:50%;
+  background:var(--silver);opacity:0;transition:opacity var(--d-240)}
+#keynav-zenith.is-ghost{background:var(--electrum)}
+#keynav-ring{position:absolute;right:calc(var(--nav-w) / 2 - 22px);width:44px;height:44px;margin-top:-22px;opacity:0;
+  pointer-events:none;transition:opacity var(--d-120)}
+#keynav-ring svg{width:44px;height:44px;transform:rotate(-90deg)}
+#keynav-ring circle{fill:none;stroke:var(--slate)}
+#keynav-ring .fill{stroke:var(--silver)}
+#keynav-ring .t-label{position:absolute;right:52px;top:15px;white-space:nowrap}
+#keynav-name{display:none}
+
+/* ─── Phone band (portrait): bottom, 88 px + safe area, 7 equal cells (≥ 44 px) reading S A M • V I N ──────── */
+@media (pointer:coarse) and (max-width:600px),(pointer:coarse) and (max-height:600px){
+  #keynav,#keynav[data-expanded]{left:0;right:0;top:auto;bottom:0;width:auto;height:calc(var(--band-h) + var(--safe-b));
+    --kn-t:transform var(--d-480) var(--ease-reveal);transform:translateY(24px)}
+  #keynav.is-shown{transform:none}
+  .kn-draw{left:16px;right:16px;width:auto;height:var(--band-h)}
+  .kn-row{top:0 !important;right:auto;left:calc(16px + (100% - 32px) * var(--i) / 7);width:calc((100% - 32px) / 7);
+    height:var(--band-h);margin:0}
+  .kn-letter{right:0;width:100%;font-size:13px;line-height:16px;margin-top:-8px}
+  .kn-text,.kn-tick,.kn-twin{display:none}
+  #keynav-needle{right:auto;left:0;top:12px;width:1px;height:calc(var(--band-h) - 24px)}
+  #keynav-slots{right:auto;left:calc(16px + (100% - 32px) * 6 / 7);width:calc((100% - 32px) / 7);top:calc(var(--band-h) / 2 + 12px)}
+  #keynav-zenith{right:auto;left:8px;top:calc(var(--band-h) / 2)}
+  #keynav-ring{right:auto;left:calc(50% - 22px);top:calc(var(--band-h) / 2)}
+  #keynav-ring .t-label{right:auto;left:0;top:-16px}
+  #keynav-name{display:block;position:absolute;left:0;right:0;bottom:calc(100% + 4px);text-align:center;max-width:none;pointer-events:none}
+}
+/* ─── Landscape phone: vertical band 72 px at the right edge, S…N top → bottom ──────────────────────────── */
+@media (pointer:coarse) and (max-height:499.98px){
+  #keynav,#keynav[data-expanded]{left:auto;top:0;width:calc(var(--band-side-w) + var(--safe-r));height:auto;transform:translateX(24px)}
+  .kn-draw{left:0;right:auto;top:16px;bottom:16px;width:var(--band-side-w);height:auto}
+  .kn-row{left:0;top:calc(16px + (100% - 32px) * var(--i) / 7) !important;width:var(--band-side-w);height:calc((100% - 32px) / 7);min-height:var(--hit)}
+  #keynav-needle{left:12px;top:0;width:calc(var(--band-side-w) - 24px);height:1px}
+  #keynav-slots{left:0;width:var(--band-side-w);top:auto;bottom:22px}
+  #keynav-zenith{left:35px;top:8px}
+  #keynav-ring{left:14px;top:50%}
+  #keynav-name{display:none}
+}
+
+/* ─── КАРТА (phone): full-height solid --deep sheet, VIN elevation, one ≥ 56 px row per hall ───────────────── */
+#map{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;background:var(--deep);border-top:1px solid var(--slate);
+  padding:calc(24px + var(--safe-t)) 16px calc(16px + var(--safe-b));overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;
+  transition:transform var(--d-480) var(--ease-reveal)}
+#map.is-closing{transform:translateY(100%)}
+.map-head{display:flex;justify-content:space-between;align-items:center;min-height:var(--hit)}
+.map-body{display:flex;gap:16px;flex:1}
+.map-draw{width:72px;flex:none}
+.map-rows{flex:1;display:flex;flex-direction:column}
+.map-row{display:grid;grid-template-columns:72px 1fr;align-items:center;column-gap:12px;min-height:var(--hit-row);text-align:left;
+  border-bottom:1px solid rgba(var(--slate-rgb),.6)}
+.map-row .t-micro{grid-row:span 2}
+.map-row .t-label{color:var(--pewter)}
+.map-row[aria-current="true"] .t-label{color:var(--ember)}
+.map-row[data-sealed] .t-body{color:var(--pewter)}
+
+@media (prefers-reduced-motion:reduce){#keynav,#map{transition-duration:.16s}.kn-row[data-shudder]{animation:none}}

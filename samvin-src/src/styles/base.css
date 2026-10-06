@@ -1,0 +1,75 @@
+/* sam.vin — base.css (WP0). Reset, layer z-order (ARCH §1.5), shared primitives: .sr-only · .scrim · .cross · .verb ·
+   .chip · .dot · reduced-motion overrides. The ten type classes live in tokens.css (ARCH §5.1); nothing here changes a
+   class's font, size, weight or colour. Rules: no backdrop-filter anywhere; never border ≥ 1px with radius ≥ 6px. */
+
+*,::before,::after{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:var(--void);color:var(--silver);font:16px/1.4 var(--font-sans);-webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+h1,h2,h3,p,ul,ol{margin:0;padding:0;font:inherit}
+ul,ol{list-style:none}
+svg{overflow:visible}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;border-radius:0;
+  -webkit-appearance:none;appearance:none;touch-action:manipulation}
+:focus,:focus-visible{outline:none}
+[hidden]{display:none!important}
+.t-body,.t-brief,.t-lead{-webkit-user-select:text;user-select:text}
+
+/* Layers (ARCH §1.5): #giant 0 · #gl 10 · #t0 12 · #leaders 20 · #overlay 30 · #halls 40 · #frame 45 · #chrome 60 ·
+   #sheets 70 · #fx 80 · #ff-grain 90 (#gl and #ff-grain are also set inline for the first frame). */
+#giant,#t0,#leaders,#overlay,#halls,#frame,#chrome,#sheets,#fx{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none}
+#giant{z-index:0;width:auto;height:auto;margin:0;will-change:transform}
+#gl{z-index:10;cursor:none}
+#t0{z-index:12;pointer-events:auto}
+#leaders{z-index:20}
+#overlay{z-index:30}
+#halls{z-index:40}
+#frame{z-index:45}
+#chrome{z-index:60}
+#sheets{z-index:70}
+#fx{z-index:80;overflow:hidden}
+#overlay button,#halls button,#halls .verb,#halls [data-interactive],#chrome button,#sheets>*{pointer-events:auto}
+#halls .hall{position:absolute;inset:0}
+
+.sr-only{position:absolute!important;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* .scrim — radial --deep 60 % behind a readable block: ellipse 1.4× the block, feathered 40 px, breathing .58 ↔ .62
+   with the world breath (inhale 43 % of the period). No border, no box, no blur. */
+.scrim{position:relative;isolation:isolate}
+.scrim::before{content:"";position:absolute;z-index:-1;pointer-events:none;inset:calc(-20% - var(--scrim-feather));
+  background:radial-gradient(closest-side,rgba(var(--deep-rgb),.62) calc(100% - var(--scrim-feather)),transparent);
+  animation:scrim var(--breath) ease-in-out infinite}
+@keyframes scrim{0%,100%{opacity:calc(1 - .065 * var(--breath-amp))}43%{opacity:1}}
+
+/* .cross — the 7 px survey '+' (1 px --slate; .cross--ember for focus). Corner marks: .cross--tl/tr/bl/br. */
+.cross{position:relative;display:inline-block;width:var(--cross);height:var(--cross);color:var(--slate);flex:none}
+.cross::before,.cross::after{content:"";position:absolute;background:currentColor;left:0;top:3px;width:100%;height:1px}
+.cross::after{left:3px;top:0;width:1px;height:100%}
+.cross--ember{color:var(--ember)}
+.cross--tl,.cross--tr,.cross--bl,.cross--br{position:absolute;top:-14px;left:-14px}
+.cross--tr,.cross--br{left:auto;right:-14px}
+.cross--bl,.cross--br{top:auto;bottom:-14px}
+
+/* .verb — DOM button verb: LABEL, 1 px underline draws left → right in 120 ms, --silver → --white.
+   .chip — member chip: 24 px glyph + callsign LABEL, no box. Both keep ≥ 44 px hit areas. */
+.verb,.chip{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:var(--hit);min-width:var(--hit);padding:0 2px;
+  font:500 11px/14px var(--font-mono);font-stretch:87.5%;letter-spacing:.08em;text-transform:uppercase;
+  font-variation-settings:"wght" 500,"wdth" 87.5;color:var(--silver);transition:color var(--d-120)}
+.verb::after{content:"";position:absolute;left:2px;right:2px;top:calc(50% + 9px);height:1px;background:currentColor;
+  transform:scaleX(0);transform-origin:0 0;transition:transform var(--d-120) var(--ease-reveal)}
+.verb:hover,.verb:focus-visible,.verb[aria-pressed="true"],.chip:hover,.chip:focus-visible{color:var(--white)}
+.verb:hover::after,.verb:focus-visible::after,.verb[aria-pressed="true"]::after{transform:none}
+.verb[disabled],.verb[aria-disabled="true"]{color:var(--pewter);cursor:default}
+.verb[disabled]::after,.verb[aria-disabled="true"]::after{transform:scaleX(0)}
+.chip>svg,.chip>canvas{width:24px;height:24px;flex:none}
+
+/* .dot — 6 px status dot (ember «на связи», silver «в пути», pewter «отдыхает») */
+.dot{display:inline-block;width:var(--dot);height:var(--dot);border-radius:50%;background:currentColor;flex:none}
+.dot--ember{color:var(--ember)}.dot--silver{color:var(--silver)}.dot--pewter{color:var(--pewter)}
+
+/* Readable blocks: max 36ch; plain DOM buttons show a 1 px ember hairline on keyboard focus (never a ring box). */
+.readable{max-width:var(--measure)}
+.readable>*+*{margin-top:8px}
+button:not(.proxy,.verb,.chip,.kn-row):focus-visible{box-shadow:0 1px 0 var(--ember)}
+
+@media (prefers-reduced-motion:reduce){.scrim::before{animation:none}}
