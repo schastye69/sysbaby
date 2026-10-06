@@ -98,7 +98,9 @@ export function runBoot(ctx, initialRoute) {
     return done;
   }
   k.setScramble('golden');
-  at(600, () => { if (ctx.nest) tw(1000, (u) => ctx.nest.setFade(1, u), EASE.reveal); assemble(false); });
+  at(600, () => { if (ctx.nest) tw(1000, (u) => ctx.nest.setFade(1, u), EASE.reveal); });
+  // The chrome keeps its first-frame state (corner labels at 30 %) until the lock has begun, then types in + assembles.
+  at(1300, () => assemble(false));
   at(900, () => tw(400, (u) => k.setReveal({ points: u, scanY: null, fill: u, alpha: u }), EASE.reveal));
   at(1000, () => {
     k.lockSequence({ order: 'down', stepMs: 220, spin: false, snap: 0.04 }).then(() => {

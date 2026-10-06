@@ -10,7 +10,6 @@ import {
   Scene, OrthographicCamera, Vector2, NoBlending,
 } from 'three';
 import { RENDER } from '../core/tokens.js';
-import { registerTexture, unregisterTexture } from './uniforms.js';
 
 const FS_VERT = /* glsl */ `
 varying vec2 vUv;
@@ -83,7 +82,6 @@ export function createKawaseBloom(renderer, levels = RENDER.r6.levels) {
   const opts = { type: HalfFloatType, format: RGBAFormat, minFilter: LinearFilter, magFilter: LinearFilter, depthBuffer: false };
   const downRT = [], upRT = [];
   let W = 0, H = 0;
-  const bytesOf = (rt) => rt.width * rt.height * 8;
 
   function alloc(w, h) {
     free();
@@ -92,19 +90,17 @@ export function createKawaseBloom(renderer, levels = RENDER.r6.levels) {
     for (let i = 0; i < levels; i++) {
       cw = Math.max(1, cw >> 1); ch = Math.max(1, ch >> 1);
       const rt = new WebGLRenderTarget(cw, ch, opts);
-      registerTexture(rt.texture, bytesOf(rt));
       downRT.push(rt);
     }
     // up i writes into the size of down i−1 (up 0 = the source size)
     for (let i = 0; i < levels; i++) {
       const s = i === 0 ? { width: w, height: h } : downRT[i - 1];
       const rt = new WebGLRenderTarget(s.width, s.height, opts);
-      registerTexture(rt.texture, bytesOf(rt));
       upRT.push(rt);
     }
   }
   function free() {
-    for (const rt of downRT.concat(upRT)) { unregisterTexture(rt.texture); rt.dispose(); }
+    for (const rt of downRT.concat(upRT)) rt.dispose();   // pipeline targets: not in the content texture registry (A2)
     downRT.length = 0; upRT.length = 0;
   }
 

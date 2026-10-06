@@ -31,6 +31,8 @@
   .sheet[data-state="peek"]{transform:translateX(calc(100% - 160px))}
   .sheet-handle{display:none}
 }
+/* Portrait phone: sheets live above the Key band — they slide in from behind its top edge, never across it. */
+@media (pointer:coarse) and (max-width:600px) and (min-height:500px){#sheets{clip-path:inset(0 0 calc(var(--band-h) + var(--safe-b)) 0)}}
 @media (prefers-reduced-motion:reduce){.sheet,.sheet[data-state],.sheet-veil{transition-duration:.16s}}
 /* Landscape phone: the sheet is a right-side panel (44 % of the width left of the 72 px band), peek = shown. */
 @media (pointer:coarse) and (max-height:499.98px){

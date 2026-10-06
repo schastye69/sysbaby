@@ -14,7 +14,7 @@ import {
   WebGLRenderTarget, HalfFloatType, RGBAFormat, LinearFilter, ShaderMaterial, Mesh, Scene, OrthographicCamera,
   Vector2, CustomBlending, OneFactor, OneMinusSrcAlphaFactor, AddEquation, NoBlending,
 } from 'three';
-import { U, LAYER, registerTexture, unregisterTexture } from './uniforms.js';
+import { U, LAYER } from './uniforms.js';
 import { createKawaseBloom, fullscreenTriangle } from './kawase.js';
 import { RENDER } from '../core/tokens.js';
 import { ENV } from '../core/env.js';
@@ -85,8 +85,8 @@ export function createComposite(renderer) {
 
   function freeT3() {
     renderer.sceneTarget = null;
-    if (rtScene) { unregisterTexture(rtScene.texture); rtScene.dispose(); rtScene = null; }
-    if (rtEmissive) { unregisterTexture(rtEmissive.texture); rtEmissive.dispose(); rtEmissive = null; }
+    if (rtScene) { rtScene.dispose(); rtScene = null; }
+    if (rtEmissive) { rtEmissive.dispose(); rtEmissive = null; }
     if (bloom) { bloom.dispose(); bloom = null; }
   }
   function sizeT3() {
@@ -103,8 +103,8 @@ export function createComposite(renderer) {
       rtEmissive.setSize(Math.max(2, w >> 1), Math.max(2, h >> 1));
     }
     renderer.sceneTarget = rtScene;
-    registerTexture(rtScene.texture, w * h * 8 * 5);                 // colour (×4 samples) + resolve
-    registerTexture(rtEmissive.texture, rtEmissive.width * rtEmissive.height * 8);
+    // Render targets are pipeline memory, not content textures: `_stats.texMB` (ARCH §6.1.6 A2, G4 ≤ 12 MB) counts the
+    // registered atlas / glow / ring textures only, so the T3 targets are not registered.
     bloom.resize(rtEmissive.width, rtEmissive.height);
   }
   function onResize() {

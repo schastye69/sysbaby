@@ -188,7 +188,20 @@ export const overlay = {
 
     const anchor = {
       el: a.el, button: a.button, screen: a.screen,
-      setVisible(b) { a.visible = !!b; if (!b) show(a, false); },
+      setVisible(b) {
+        a.visible = !!b;
+        if (!b) { show(a, false); return; }
+        // Shown at once (not on the next overlay frame), so a hall's proxies are focusable the moment it arrives —
+        // even when the arrival lands between two frames (the director's wall-clock end).
+        if (a.shown || !rig.camera) return;
+        a.get(_w);
+        rig.project(_w, _p);
+        if (!(_p.depth > 0 || !a.hideBehind)) return;
+        if (!a.init) { a.sx = _p.x; a.sy = _p.y; a.init = true; }
+        a.wx = NaN;
+        show(a, true);
+        if (a.button) a.button.style.transform = `translate3d(${a.sx.toFixed(1)}px,${a.sy.toFixed(1)}px,0)`;
+      },
       setAlpha(x) { const s = String(Math.max(0, Math.min(1, x))); if (a.el) a.el.style.opacity = s; if (a.path) a.path.style.opacity = s; },
       drawIn(ms = TIMING.leaderDraw) {
         if (a.el) a.el.classList.add('is-pending');
