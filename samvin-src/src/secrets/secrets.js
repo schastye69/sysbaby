@@ -47,7 +47,7 @@ async function land(id, from) {
   const r = state.rank();
   if (r.index > before) {
     bus.emit('rank:change', { rank: r.name, index: r.index });
-    say('rank', { rank: r.name });
+    say('rank', { rank: r.name.toLocaleLowerCase('ru') });      // the status copy is lowercase (SPEC §2.2 STATUS)
     if (has(audio, 'setRank')) audio.setRank(r.index);
   }
   if (sealedSlot && d.shards >= 5 && !d.nadirOpen) {

@@ -42,6 +42,13 @@ const touches = new Map();   // pointerId → {x, y}
 let pinchD0 = 0, pinchDPrev = 0;
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+/** The event's own time (same clock as performance.now()): a move delivered late (rAF-aligned or coalesced on a busy
+ *  main thread) still contributes its true interval to the velocity. Falls back to the handler time. */
+const evTime = (e) => {
+  const ts = e && e.timeStamp;
+  const n = now();
+  return ts > 0 && ts <= n + 1 && ts > n - 5000 ? ts : n;
+};
 
 function dispatch(type, e) {
   g.type = type;
@@ -72,7 +79,7 @@ function clearTimers() {
 
 function updatePointer(e) {
   const p = input.pointer;
-  const t = now();
+  const t = evTime(e);
   const dtMs = Math.max(1, t - (p._t || t - 16));
   const ivx = (e.clientX - p.x) / dtMs, ivy = (e.clientY - p.y) / dtMs;
   const k = 1 - Math.exp(-dtMs / VEL_TAU);
@@ -106,7 +113,7 @@ function onDown(e) {
   }
   if (seq.active) return;   // one primary pointer
   try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
-  const t = now();
+  const t = evTime(e);
   const p = input.pointer;   // a new press starts the velocity estimate afresh (touches jump between fingers)
   p.x = e.clientX; p.y = e.clientY; p.vx = 0; p.vy = 0; p.speed = 0; p._t = t;
   p.type = e.pointerType || 'mouse'; p.lastMove = loop.now; p.inside = true;

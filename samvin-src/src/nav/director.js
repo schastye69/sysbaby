@@ -166,7 +166,8 @@ function begin(path, from, to, opts) {
   st.path = path; st.from = from; st.to = to;
   st.t = 0; st.u = 0; st.speed = 1; st.swapped = false; st.phase = 'transition';
   st.scrubbing = !!opts.scrub; scrubU = 0; mode = 'forward';
-  prevU = 0; lastNow = loop.at(); startNow = lastNow; interactiveSent = false; rec = null; fresh = true;
+  prevU = 0; lastNow = loop.at(); startNow = lastNow; interactiveSent = false; rec = null; fresh = true; travelGen++;
+  if (!st.scrubbing) armEnd(lastNow, true);
   opts0 = opts;
   app.u = 0;
   if (path.kind === 'SLICE') sliceLine();
@@ -174,11 +175,14 @@ function begin(path, from, to, opts) {
   bus.emit('travel:start', { from, to, kind: path.kind, duration: path.duration });
 }
 
-/** Compiles the destination hall's shader programs now, so a first visit never hitches inside the travel clock. */
+/** Compiles the destination hall's shader programs and completes their first use now (renderer.warm), before the
+ *  travel clock starts, so a first visit never hitches inside the travel. */
+const warmed = new WeakSet();
 function warm(id) {
   const g = hallHost.group(id);
-  if (!g || !ctx.renderer || !rig.camera) return;
-  try { ctx.renderer.three.compile(g, rig.camera, ctx.scene); } catch (e) { /* compile is an optimisation only */ }
+  if (!g || !ctx.renderer || !rig.camera || warmed.has(g)) return;
+  warmed.add(g);
+  try { ctx.renderer.warm(g, rig.camera, ctx.scene); } catch (e) { /* warming is an optimisation only */ }
 }
 
 function startTravel(to, opts) {
@@ -302,7 +306,7 @@ function arrive() {
   state.set('lastRoom', route.hash);
   if (kind === 'DIVE' && state.data && !state.data.firstDive) state.set('firstDive', true);
   refreshRest();
-  director.lastTravel = { kind, from: from.hash, to: route.hash, plannedMs: path.duration, ms: loop.now - startNow, completed: true };
+  director.lastTravel = { kind, from: from.hash, to: route.hash, plannedMs: path.duration, ms: loop.at() - startNow, completed: true };
   st.path = null;
   bus.emit('room:arrive', { room: to.room, sub: route.sub, first, kind, arrivals });
   bus.emit('route:change', { route, prev: from });
@@ -415,7 +419,33 @@ function frame(dt) {
     u = EASE.camera(st.t / D);
   }
   applyU(u);
-  if (!st.scrubbing && mode === 'forward' && st.t >= D) arrive();
+  if (!st.scrubbing && mode === 'forward') {
+    if (st.t >= D) arrive();
+    else armEnd(now);
+  }
+}
+
+// Wall-clock end (A8): the planned duration ends on time even when the frame that would cross it comes late (slow
+// GPUs present a frame every 50–300 ms). Near the end a timer finishes the travel at its exact time — applyU(1) (incl.
+// a pending swap) + arrive() — and the next frame draws the final pose. Loop-time based: paused while the loop is.
+let endTimer = 0, endGen = 0, travelGen = 0, endAt = 0;
+function endByTimer() {
+  endTimer = 0;
+  if (endGen !== travelGen || st.phase !== 'transition' || st.scrubbing || mode !== 'forward' || !st.path || !loop.running) return;
+  st.t = st.path.duration;
+  applyU(1);
+  arrive();
+}
+function armEnd(now, always) {
+  const left = (st.path.duration - st.t) / Math.max(1e-6, st.speed) - (loop.at() - now);
+  if (left > 400 && !always) return;
+  const at = performance.now() + Math.max(0, left);
+  // A frame capped at 250 ms leaves st.t behind the wall clock; never push a pending end of this travel later.
+  if (endTimer && endGen === travelGen && !always && at >= endAt) return;
+  if (endTimer) clearTimeout(endTimer);
+  endGen = travelGen;
+  endAt = at;
+  endTimer = setTimeout(endByTimer, Math.max(0, left));
 }
 
 // ─── FOCUS (same room, another sub) ──────────────────────────────────────────────────────────────────────────

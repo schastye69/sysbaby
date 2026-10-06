@@ -255,7 +255,7 @@ function warmPrograms() {
   if (!three || !ctx.scene || !ctx.camera) return;
   const hidden = [];
   ctx.scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
-  try { three.compile(ctx.scene, ctx.camera); } catch (e) { logOnce('main:warm', e); }
+  try { ctx.renderer.warm(ctx.scene, ctx.camera, ctx.scene); } catch (e) { logOnce('main:warm', e); }
   for (const o of hidden) o.visible = false;
 }
 

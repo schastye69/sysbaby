@@ -97,7 +97,8 @@
   #lead{top:34%}
 }
 @media (pointer:coarse) and (max-height:499.98px){
-  #c-tr,#c-br{right:calc(var(--band-side-w) + 12px + var(--safe-r))}
+  /* #chrome #c-… outranks the first-frame block's #c-tr/#c-br (inline <style>, later in the cascade). */
+  #chrome #c-tr,#chrome #c-br{right:calc(var(--band-side-w) + 12px + var(--safe-r))}
 }
 @media (prefers-reduced-motion:reduce){
   #datum.is-drawn #datum-line{transition:none}

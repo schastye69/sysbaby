@@ -28,6 +28,9 @@ export function createRenderer(canvas, gl, tier) {
   three.setClearColor(0x000000, 0);
   three.info.autoReset = false;
   three.autoClear = true;
+  // Production: no synchronous shader-log queries on a program's first use (each one waits for the GPU to finish the
+  // link — 100–300 ms per program on software GL). Dev builds keep three's error reporting.
+  three.debug.checkShaderErrors = !!__DEV__;
 
   const scene = new Scene();
   scene.background = null;
@@ -36,6 +39,8 @@ export function createRenderer(canvas, gl, tier) {
   camera.position.set(0, 0.75, 7.2);
 
   let cap = params.dprCap;
+  let pinned = 0;
+  const warmedPrograms = new WeakSet();
   let drop = 0;
 
   const r = {
@@ -58,6 +63,53 @@ export function createRenderer(canvas, gl, tier) {
       U.uResolution.value.set(Math.round(w * r.dpr), Math.round(h * r.dpr));
       for (const fn of resizeHooks) fn(r);
     },
+    /** WP0 addition: program pinning. Every shader program three creates is kept for the session (one extra use
+     *  count), so a hall disposed on leaving and rebuilt on the next visit reuses its programs instead of relinking
+     *  them inside the travel. The set is small and bounded (one program per material variant). Called per frame. */
+    pinPrograms() {
+      const list = three.info.programs;
+      if (!list || list.length === pinned) return;
+      for (let i = pinned; i < list.length; i++) list[i].usedTimes++;
+      pinned = list.length;
+    },
+    /** WP0 addition: compiles `object`'s programs (three.compile) AND completes their first use now (uniform and
+     *  attribute queries wait for the link), so neither happens inside a later frame. Used at boot (main) and when a
+     *  travel builds its destination hall (director), outside every travel clock. */
+    warm(object, camera, scene) {
+      three.compile(object, camera, scene || object);
+      object.traverse((o) => {
+        const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : null;
+        if (!mats) return;
+        for (const m of mats) {
+          const pr = three.properties.get(m).currentProgram;
+          if (pr && !warmedPrograms.has(pr)) { warmedPrograms.add(pr); pr.getUniforms(); pr.getAttributes(); }
+        }
+      });
+      r.pinPrograms();
+      // One real draw of everything into a 1 × 1 scissor of the scene's own target: uploads the buffers and builds the
+      // driver's pipeline states (software GL compiles one per program × vertex layout × blend on first draw), then
+      // waits for the GPU. Invisible (one corner pixel, redrawn by the next frame).
+      const gl = three.getContext();
+      const prevTarget = three.getRenderTarget(), prevAuto = three.autoClear, mask = camera.layers.mask;
+      const parent = object.parent;
+      try {
+        three.setRenderTarget(r.sceneTarget || null);
+        three.autoClear = false;
+        three.setScissorTest(true);
+        three.setScissor(0, 0, 1, 1);
+        camera.layers.enableAll();
+        three.render(object, camera);
+      } finally {
+        three.setScissorTest(false);
+        three.autoClear = prevAuto;
+        three.setRenderTarget(prevTarget);
+        camera.layers.mask = mask;
+        if (parent && object !== scene) object.updateWorldMatrix(true, true);   // render(object) dropped its parents
+      }
+      gl.finish();
+    },
+    /** The target the scene pass renders into (T3: the composite's rtScene; else null = the canvas). */
+    sceneTarget: null,
     /** WP0 addition: called after every resize (composite render targets). → off() */
     onResize(fn) { resizeHooks.add(fn); return () => resizeHooks.delete(fn); },
     lost: false,

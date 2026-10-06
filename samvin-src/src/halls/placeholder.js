@@ -4,7 +4,7 @@
 // sheet peek (phone), setSub() accepting any sub, enter/exit fading the props, the hall elevator on wheel / vertical
 // swipe (VOYAGES: wheel altitude 60–140 m), and Tab-focusable DOM proxies on MEMBERS' columns.
 // The copy «Зал строится.» exists only here and must never be visible once the owning WP has merged (§7.6 C6).
-import { Vector3, IcosahedronGeometry, EdgesGeometry } from 'three';
+import { Vector3, IcosahedronGeometry } from 'three';
 import { createLines } from '../render/lines.js';
 import { createPoints } from '../render/points.js';
 import { LAYER } from '../render/uniforms.js';
@@ -122,10 +122,20 @@ function buildProps(kind, hctx) {
       break;
     }
     case 'dome': {
-      const e = new EdgesGeometry(new IcosahedronGeometry(CAMERA.insignia.sphereR, 1), 1);
-      const a = e.attributes.position.array;
-      for (let k = 0; k < a.length; k++) seg.push(a[k] + (k % 3 === 1 ? 1.7 : 0));
-      e.dispose();
+      // Every edge of the frequency-1 icosphere once (what EdgesGeometry(…, 1°) yields; done here to keep it out of the
+      // bundle), lifted to the eye height 1.7 m.
+      const ico = new IcosahedronGeometry(CAMERA.insignia.sphereR, 1);
+      const a = ico.attributes.position.array, seen = new Set();
+      const key = (o) => `${a[o].toFixed(3)},${a[o + 1].toFixed(3)},${a[o + 2].toFixed(3)}`;
+      for (let t = 0; t < a.length; t += 9) {
+        for (const [p, q] of [[0, 3], [3, 6], [6, 0]]) {
+          const ka = key(t + p), kb = key(t + q), k = ka < kb ? ka + '|' + kb : kb + '|' + ka;
+          if (seen.has(k)) continue;
+          seen.add(k);
+          seg.push(a[t + p], a[t + p + 1] + 1.7, a[t + p + 2], a[t + q], a[t + q + 1] + 1.7, a[t + q + 2]);
+        }
+      }
+      ico.dispose();
       break;
     }
     case 'chamber': {

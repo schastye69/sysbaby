@@ -84,6 +84,7 @@ export function createComposite(renderer) {
   let first = true;
 
   function freeT3() {
+    renderer.sceneTarget = null;
     if (rtScene) { unregisterTexture(rtScene.texture); rtScene.dispose(); rtScene = null; }
     if (rtEmissive) { unregisterTexture(rtEmissive.texture); rtEmissive.dispose(); rtEmissive = null; }
     if (bloom) { bloom.dispose(); bloom = null; }
@@ -101,6 +102,7 @@ export function createComposite(renderer) {
       rtScene.setSize(w, h);
       rtEmissive.setSize(Math.max(2, w >> 1), Math.max(2, h >> 1));
     }
+    renderer.sceneTarget = rtScene;
     registerTexture(rtScene.texture, w * h * 8 * 5);                 // colour (×4 samples) + resolve
     registerTexture(rtEmissive.texture, rtEmissive.width * rtEmissive.height * 8);
     bloom.resize(rtEmissive.width, rtEmissive.height);
@@ -160,6 +162,7 @@ export function createComposite(renderer) {
         quad.material = overlayMat;
         three.render(post, postCam);
       }
+      renderer.pinPrograms();
       const st = renderer.stats, info = three.info;
       st.calls = info.render.calls;
       st.triangles = info.render.triangles;
