@@ -219,7 +219,9 @@ export function buildDive(start, stratum, opts = {}) {
         camC.sample(u, out.cam.pos).multiplyScalar(1000);
         tgtC.sample(u, out.cam.target).multiplyScalar(1000);
         out.fog = toFog;
-        const a = win(u, tSwap, D, D);
+        // The hall's frame (walls, deck/rings, pillar) is up within 240 ms of the swap, so the grown stratum hands over
+        // to a lit room instead of a dark void (SPEC §7.2 "no cut, no fade to black"); props build on enterU.
+        const a = win(u, tSwap, Math.min(D, tSwap + TIMING.depart), D);
         for (let j = 0; j < 7; j++) out.vinStrata[j] = j === i ? 1 : a;
         out.rim = 0; out.pillar = a; out.shellFrom = 0; out.shellTo = a;
       }
