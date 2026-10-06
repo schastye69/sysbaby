@@ -30,6 +30,8 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 #fx{z-index:80;overflow:hidden}
 #overlay button,#halls button,#halls .verb,#halls [data-interactive],#chrome button,#sheets>*{pointer-events:auto}
 #halls .hall{position:absolute;inset:0}
+/* WP0 placeholder halls: the one BODY line on a scrim, left column under the datum (halls/placeholder.js). */
+#halls .ph-block{position:absolute;left:var(--margin);top:calc(var(--datum-y) + 48px);max-width:var(--measure)}
 
 .sr-only{position:absolute!important;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 

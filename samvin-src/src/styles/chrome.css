@@ -53,6 +53,9 @@
 #datum-label{bottom:calc(14px + clamp(56px,8.4vw,148px) * .9)}
 #datum-level{top:6px}
 #datum.is-out,#datum .is-out{opacity:0;transition:opacity var(--depart)}
+/* LIFT: an intermediate hall's LABEL codename flashes for 180 ms (datum.flashCode). */
+#datum-flash{position:absolute;left:var(--title-x);top:calc(var(--datum-y) - 44px);margin:0;opacity:0;color:var(--white)}
+#datum-flash.is-on{opacity:1}
 
 #giant{left:var(--title-x);top:var(--datum-y);transform:translateY(-50%);opacity:0;transition:opacity var(--d-480)}
 #giant.is-counter{color:var(--c-counter);opacity:1;transition:none}

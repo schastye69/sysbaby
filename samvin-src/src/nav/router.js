@@ -1,46 +1,79 @@
-// nav/router.js — MINIMAL placeholder written by WP0 stage 0A (core/loop.js needs titleFor on 'visible').
-// Stage 0C completes it per ARCH §3.16 (parse/canonicalise, aliases, guards with status/shudder, titles via ROOMS,
-// owner suffix). Signatures are final; parseHash/routeHash/titleFor already follow §3.16 for the plain cases.
+// nav/router.js — routes, aliases, guards, titles (ARCH §3.16, SPEC §5.3). Pure apart from reading `state`/`app`.
+// History itself (pushState / replaceState / popstate / hashchange) lives in the director (ARCH §3.6.2 step 7).
+//
+// Canonical hashes: '#/core', '#/core/open', '#/signal', '#/archive[/<id>]', '#/members[/<id>]', '#/members/workshop',
+// '#/voyages[/<code>]', '#/insignia[/<id>]', '#/nadir', '#/zenith'. Aliases apply to the first segment (also with a sub).
+// Slugs are case-insensitive; anything unknown → CORE.
 import { WORLD } from '../data/world.js';
 import { app } from '../core/store.js';
+import { state } from '../core/state.js';
 import { upper } from '../core/ru.js';
+import { ROOMS, roomBySlug } from '../world/rooms.js';
 
-export const ALIASES = { clan: 'members', crew: 'members', missions: 'voyages', vault: 'insignia', legends: 'archive' };
-const SLUG = { core: 'CORE', signal: 'SIGNAL', archive: 'ARCHIVE', members: 'MEMBERS', voyages: 'VOYAGES',
-  insignia: 'INSIGNIA', nadir: 'NADIR', zenith: 'ZENITH', workshop: 'WORKSHOP' };
-const NAME = { SIGNAL: 'Связь', ARCHIVE: 'Летопись', MEMBERS: 'Клан', VOYAGES: 'Вылазки', INSIGNIA: 'Хранилище',
-  NADIR: 'Запечатано', ZENITH: 'Над всем', WORKSHOP: 'Мастерская' };
-const WITH_SUB = new Set(['members', 'voyages', 'archive', 'insignia']);
+/** @typedef {{ hash:string, room:string, sub:string|null }} Route */
 
-/** → Route { room, sub, hash } (canonical hash) */
+export const ALIASES = Object.freeze({ clan: 'members', crew: 'members', missions: 'voyages', vault: 'insignia', legends: 'archive' });
+
+/** Rooms whose routes may carry a sub (CORE only knows 'open'). */
+const WITH_SUB = new Set(['MEMBERS', 'VOYAGES', 'ARCHIVE', 'INSIGNIA']);
+
+function decode(s) { try { return decodeURIComponent(s); } catch (e) { return s; } }
+
+function make(room, sub) {
+  const r = { hash: '', room, sub: sub == null || sub === '' ? null : sub };
+  r.hash = routeHash(r);
+  return r;
+}
+
+/** '#/members/lev' (or a Route) → Route with the canonical hash. Never throws. */
 export function parseHash(hash) {
-  const parts = String(hash || '').replace(/^#\/?/, '').split('/').filter(Boolean);
+  if (hash && typeof hash === 'object' && hash.room) return make(ROOMS[hash.room] ? hash.room : 'CORE', hash.sub || null);
+  const raw = String(hash == null ? '' : hash).trim();
+  const parts = raw.replace(/^#?\/?/, '').split(/[/?]/).filter(Boolean);
   let slug = (parts[0] || 'core').toLowerCase();
   if (ALIASES[slug]) slug = ALIASES[slug];
-  let sub = parts[1] ? decodeURIComponent(parts[1]) : null;
-  if (slug === 'members' && sub && sub.toLowerCase() === 'workshop') return route('WORKSHOP', null);
-  if (slug === 'core') return route('CORE', sub === 'open' ? 'open' : null);
-  if (!SLUG[slug] || slug === 'workshop') return route('CORE', null);
-  if (!WITH_SUB.has(slug)) sub = null;
-  return route(SLUG[slug], sub);
+  const meta = roomBySlug(slug);
+  // WORKSHOP is only reachable as '#/members/workshop'; '#/workshop' is unknown.
+  if (!meta || meta.id === 'WORKSHOP') return make('CORE', null);
+  const sub = parts[1] ? decode(parts[1]) : null;
+  if (meta.id === 'MEMBERS' && sub && sub.toLowerCase() === 'workshop') return make('WORKSHOP', null);
+  if (meta.id === 'CORE') return make('CORE', sub && sub.toLowerCase() === 'open' ? 'open' : null);
+  return make(meta.id, WITH_SUB.has(meta.id) ? sub : null);
 }
 
-function route(room, sub) { const r = { room, sub, hash: '' }; r.hash = routeHash(r); return r; }
-
-/** → '#/members/lev' */
-export function routeHash(r) {
-  if (r.room === 'WORKSHOP') return '#/members/workshop';
-  const slug = Object.keys(SLUG).find((k) => SLUG[k] === r.room) || 'core';
-  return `#/${slug}${r.sub ? '/' + r.sub : ''}`;
+/** Route → '#/members/lev' (canonical). */
+export function routeHash(route) {
+  const room = route && ROOMS[route.room] ? route.room : 'CORE';
+  if (room === 'WORKSHOP') return '#/members/workshop';
+  const sub = route.sub;
+  const keep = sub != null && sub !== '' && (WITH_SUB.has(room) || (room === 'CORE' && sub === 'open'));
+  return `#/${ROOMS[room].slug}${keep ? '/' + encodeURIComponent(String(sub)) : ''}`;
 }
 
-/** Placeholder: no guards yet (0C implements NADIR/ZENITH/WORKSHOP). */
-export function applyGuards(r, source) { void source; return { route: r }; }
+const isFound = (id) => !!(state.data && state.data.found && state.data.found[id]);
 
-/** 'SAM.VIN' in CORE (owner: 'SAM.VIN · СЭМ'), else 'SAM.VIN · Клан' … (SAM.VIN = WORLD.clan.name) */
-export function titleFor(r) {
+/** @returns {{ route:Route, status?:string, vars?:Object, shudder?:'N' }} */
+export function applyGuards(route, source) {
+  const r = route && route.room ? route : parseHash(route);
+  const d = state.data || {};
+  if (r.room === 'NADIR' && !d.nadirOpen) {
+    return { route: make('CORE', null), status: 'sealed', vars: { k: d.shards | 0 }, shudder: 'N' };
+  }
+  if (r.room === 'ZENITH' && !isFound('S13') && source !== 'overpull') {
+    return { route: make('CORE', null), status: 'route.missing', vars: {} };
+  }
+  if (r.room === 'WORKSHOP' && !isFound('S06') && source !== 'hall') {
+    return { route: make('MEMBERS', WORLD.operator.id || null) };
+  }
+  return { route: r };
+}
+
+/** 'SAM.VIN' in CORE (owner: 'SAM.VIN · СЭМ'); 'SAM.VIN · Клан' elsewhere (NADIR: 'Исток' once open). */
+export function titleFor(route) {
   const clan = WORLD.clan.name;
-  const room = r && r.room ? r.room : 'CORE';
+  const room = route && ROOMS[route.room] ? route.room : 'CORE';
   if (room === 'CORE') return app.owner ? `${clan} · ${upper(WORLD.operator.name)}` : clan;
-  return `${clan} · ${NAME[room] || ''}`;
+  const meta = ROOMS[room];
+  const name = room === 'NADIR' && state.data && state.data.nadirOpen && meta.nameOpen ? meta.nameOpen : meta.name;
+  return `${clan} · ${name}`;
 }
