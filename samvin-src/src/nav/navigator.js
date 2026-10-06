@@ -133,11 +133,11 @@ function frame(dt) {
   if (twinEl) writeAxis(twinEl, p);
 }
 
-function rowAttr(i, name, ms) {
+function rowAttr(i, name, ms, value) {
   const r = rows[i];
   if (!r) return;
   if (r['_' + name]) cancelAfter(r['_' + name]);
-  r.setAttribute(name, name === 'data-glint' ? 'electrum' : '');
+  r.setAttribute(name, name === 'data-glint' ? (value || 'electrum') : '');
   r['_' + name] = after(ms, () => { r['_' + name] = 0; r.removeAttribute(name); });
 }
 
@@ -460,9 +460,17 @@ export const keyNav = {
       a.setAttribute('d', da); b.setAttribute('d', db);
     }).done.then(() => after(120, () => twinEl.classList.remove('is-on')));
   },
-  flashLetter(sign, token, ms) { const i = SIGNS.indexOf(sign); if (i >= 0) rowAttr(i, token === 'electrum' ? 'data-glint' : 'data-flash', ms || TIMING.hintGlint); },
+  flashLetter(sign, token, ms) {   // H21: token 'ember' | 'electrum' | 'white' (data-glint="white")
+    const i = SIGNS.indexOf(sign);
+    if (i >= 0) rowAttr(i, token === 'electrum' || token === 'white' ? 'data-glint' : 'data-flash', ms || TIMING.hintGlint, token);
+  },
   /** S05 owner: every letter ember for one breath. */
-  flashAll(ms) { for (let i = 0; i < 7; i++) rowAttr(i, 'data-flash', ms || 4200); },
+  flashAll(ms, token = 'ember') {   // H21: S05 first recognition uses 'white'
+    for (let i = 0; i < 7; i++) {
+      if (token === 'electrum' || token === 'white') rowAttr(i, 'data-glint', ms || 4200, token);
+      else rowAttr(i, 'data-flash', ms || 4200);
+    }
+  },
   blink(sign) { const i = SIGNS.indexOf(sign); if (i >= 0) rowAttr(i, 'data-blink', 480); },
   /** 6 px, 3 cycles, 240 ms (+ the N slot dots flash). data-shudder stays readable for QA a little longer. */
   shudder(sign) {

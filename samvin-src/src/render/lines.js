@@ -19,6 +19,7 @@ import {
 import { U, colorUniform, identityStrata, onesStrata } from './uniforms.js';
 import { FOG_GLSL } from './fog.js';
 import { R1_GLSL, STRATA_GLSL } from './madeOfItself.js';
+import { FX_GLSL, fxUniforms } from './fxChunk.js';
 import { RENDER } from '../core/tokens.js';
 import { ROOMS } from '../world/rooms.js';
 import { app } from '../core/store.js';
@@ -37,6 +38,7 @@ const QUAD_IDX = [0, 1, 2, 2, 1, 3];
 
 const VERT = /* glsl */ `
 ${R1_GLSL}
+${FX_GLSL}
 attribute vec3 aA; attribute vec3 aB; attribute float aW; attribute float aAl;
 #ifdef USE_COL_ATTR
 attribute vec3 aCol;
@@ -47,7 +49,7 @@ ${STRATA_GLSL}
 #endif
 uniform vec3 uColor; uniform vec3 cWhite;
 uniform float uWidth, uAlpha, uFar, uGlint, uFlatten, uFlattenY, uDrawA, uDrawB, uCount, uFlash, uStrut;
-uniform vec2 uResolution; uniform float uPixelRatio; uniform vec3 uLamp; uniform float uWorldScale; uniform vec3 uCamPos;
+uniform vec2 uResolution; uniform float uPixelRatio; uniform vec3 uLamp; uniform vec3 uCamPos;   // uWorldScale: FX_GLSL
 ${GLINT_GLSL}
 varying vec3 vCol; varying float vAlpha; varying float vSide; varying float vHalfW; varying float vAlong; varying float vDist;
 void main() {
@@ -64,6 +66,7 @@ void main() {
   M = modelMatrix * strataMatrix(aFace);
 #endif
   vec4 wa = M * vec4(a2, 1.0), wb = M * vec4(b2, 1.0);
+  wa.xyz = fxDisplace(wa.xyz); wb.xyz = fxDisplace(wb.xyz);
   vec4 va = viewMatrix * wa, vb = viewMatrix * wb;
   float zc = -1.0001 * projectionMatrix[3][2] / (projectionMatrix[2][2] - 1.0);   // −near
   if (va.z > zc && vb.z > zc) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
@@ -74,13 +77,15 @@ void main() {
   vec2 sa = ca.xy / ca.w * hr, sb = cb.xy / cb.w * hr;
   vec2 d = sb - sa; float len = length(d);
   vec2 dir = len > 1e-5 ? d / len : vec2(1.0, 0.0);
+  float coc = fxCoc(-va.z * 0.5 + -vb.z * 0.5);
   float wpx = max(aW * uWidth * uPixelRatio, 0.0);
-  float halfW = 0.5 * wpx + 1.0;
+  float wpxQuad = wpx * (1.0 + 0.5 * max(uImpact, uImpactWarm) * uFxCaps.x) + coc * uFxCaps.x * uPixelRatio;
+  float halfW = 0.5 * wpxQuad + 1.0;
   vec4 c = mix(ca, cb, position.x);
   vec4 v = mix(va, vb, position.x);
   c.xy += vec2(-dir.y, dir.x) * position.y * halfW / hr * c.w;
   gl_Position = c;
-  vSide = position.y * halfW; vHalfW = 0.5 * wpx;
+  vSide = position.y * halfW; vHalfW = 0.5 * (wpx * (1.0 + 0.5 * uImpact * uFxCaps.x) + coc * uFxCaps.x * uPixelRatio);
   vAlong = position.x * len / uPixelRatio;
   float depth = -v.z;
   float al = aAl * uAlpha;
@@ -91,6 +96,8 @@ void main() {
   al *= r1Lattice(uStrut, length(M[0].xyz), depth);
 #endif
   al *= 1.0 - smoothstep(0.55 * uFar, uFar, depth / max(uWorldScale, 1e-9));
+  float w0 = max(aW * uWidth, 0.5);
+  al = mix(al, min(1.0, 2.5 * al), uImpact) * uFxLineA * (w0 / (w0 + coc));
   vec3 wp = mix(wa.xyz, wb.xyz, position.x);
   vec3 sd = wb.xyz - wa.xyz; float sl = length(sd);
   float g = sl > 1e-9 ? pow(1.0 - abs(dot(sd / sl, normalize(uLamp - wp))), 24.0) * uGlint * lampReach(wp) : 0.0;
@@ -100,6 +107,7 @@ void main() {
   vec3 col = uColor;
 #endif
   col = mix(col, cWhite, uFlash);
+  col = mix(col, cWhite, uImpact) * (1.0 + fxWaveBright(wp));
   vCol = col * (1.0 + g);
   vAlpha = al;
   vDist = length(v.xyz);
@@ -172,6 +180,7 @@ export function createLines(opts = {}) {
     uStrataA: opts.strataAlpha || onesStrata(),
     cWhite: U.cWhite, cAbyss: U.cAbyss, uFogDensity: U.uFogDensity, uLamp: U.uLamp, uCamPos: U.uCamPos,
     uResolution: U.uResolution, uPixelRatio: U.uPixelRatio, uPxPerUnit: U.uPxPerUnit, uWorldScale: U.uWorldScale,
+    ...fxUniforms(),
   };
 
   const mat = new ShaderMaterial({
@@ -227,6 +236,7 @@ export function createLines(opts = {}) {
 // ─── Lattice twin material (LineSegments) ────────────────────────────────────────────────────────────────────
 const LVERT = /* glsl */ `
 ${R1_GLSL}
+${FX_GLSL}
 #ifdef USE_STRATA
 attribute float aFace;
 ${STRATA_GLSL}
@@ -237,7 +247,7 @@ attribute float aStrut;
 #ifdef USE_DIR
 attribute vec3 aDir;
 #endif
-uniform float uStrut, uAlpha, uFar, uGlint, uWorldScale, uFade; uniform vec3 uLamp; uniform vec3 uColor; uniform vec3 uCamPos;
+uniform float uStrut, uAlpha, uFar, uGlint, uFade; uniform vec3 uLamp; uniform vec3 uColor; uniform vec3 uCamPos; uniform vec3 cWhite;
 ${GLINT_GLSL}
 varying vec3 vCol; varying float vAlpha; varying float vDist;
 void main() {
@@ -246,6 +256,7 @@ void main() {
   M = modelMatrix * strataMatrix(aFace);
 #endif
   vec4 w = M * vec4(position, 1.0);
+  w.xyz = fxDisplace(w.xyz);
   vec4 v = viewMatrix * w;
   float depth = -v.z;
 #ifdef USE_ASTRUT
@@ -261,11 +272,12 @@ void main() {
   vec3 dw = normalize(mat3(M) * aDir);
   g = pow(1.0 - abs(dot(dw, normalize(uLamp - w.xyz))), 24.0) * uGlint * lampReach(w.xyz);
 #endif
-  vCol = uColor * (1.0 + g);
+  vCol = mix(uColor, cWhite, uImpact) * (1.0 + g + fxWaveBright(w.xyz));
   vAlpha = uAlpha * uFade * la * (1.0 - smoothstep(0.55 * uFar, uFar, depth / max(uWorldScale, 1e-9)));
 #ifdef USE_STRATA
   vAlpha *= strataAlpha(aFace);
 #endif
+  vAlpha = min(1.0, vAlpha * uFxLineA * mix(1.0, 2.5, uImpact) * (1.0 / (1.0 + fxCoc(depth))));
   vDist = length(v.xyz);
 }`;
 
@@ -300,6 +312,7 @@ export function createLatticeMaterial(opts = {}) {
       uStrataM: opts.strata || identityStrata(),
       uStrataA: opts.strataAlpha || onesStrata(),
       uLamp: U.uLamp, uCamPos: U.uCamPos, uWorldScale: U.uWorldScale, uPxPerUnit: U.uPxPerUnit, cAbyss: U.cAbyss, uFogDensity: U.uFogDensity,
+      cWhite: U.cWhite, ...fxUniforms(),
     },
     defines, vertexShader: LVERT, fragmentShader: LFRAG,
     transparent: true, depthWrite: false, blending: NormalBlending,

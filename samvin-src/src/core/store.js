@@ -42,6 +42,12 @@ export const app = {
   booting: true,
   /** WP0 hint — { secret, room, at } | null */
   hintTarget: null,
+  /** H12 (ARCH-ADDENDUM X§2.9.2): WP13 ПОКАЗ mirror */
+  show: { active: false, scene: -1 },
+  /** H12: WP13 — guest COUNT only (names live in WP13 memory) */
+  guests: 0,
+  /** H12: WP12 — the current stage lock */
+  fx: { stage: null },
 };
 
 /** Writes app.phase and emits 'phase:change' {phase, prev} only when it changes. */

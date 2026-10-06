@@ -1,6 +1,7 @@
 // nav/keyboard.js — the keyboard (ARCH §3.9.3; SPEC §5.2). Order for each keydown:
 //  (1) inside input / textarea / [contenteditable] → ignored except Esc (closes the sheet);
 //  (2) observeKeys observers (core/input.js, capture phase — they already ran);
+//  (2b) H19: handlers pushed with keyboard.pushHandler (most recent first; true = consumed);
 //  (3) while booting: the boot consumer's onKey (any key skips, Esc jumps to 6,400 ms) via input.offerKey;
 //  (4) while travelling: navigation keys retarget, Esc → #/core, any other key → director.speedUp();
 //  (5) hallHost.call(current, 'onKey', e);
@@ -26,6 +27,25 @@ function navTarget(e, from) {
   }
 }
 
+// ─── H19 (ARCH-ADDENDUM X§2.4.3): a stack of pushed handlers (WP13 ПОКАЗ) ────────────────────────────────────────
+let stack = [];
+export const keyboard = {
+  /** fn(e) → boolean (true = consumed). Runs after observeKeys and before the boot consumer. → pop() */
+  pushHandler(fn) {
+    if (typeof fn !== 'function') return () => {};
+    const h = { fn };
+    stack = stack.concat([h]);
+    return () => { stack = stack.filter((x) => x !== h); };
+  },
+};
+function runStack(e) {
+  const snap = stack;
+  for (let k = snap.length - 1; k >= 0; k--) {
+    try { if (snap[k].fn(e) === true) return true; } catch (err) { /* a handler's error is its owner's */ }
+  }
+  return false;
+}
+
 export function installKeyboard(ctx) {
   window.addEventListener('keydown', (e) => {
     if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -35,9 +55,11 @@ export function installKeyboard(ctx) {
       return;
     }
     if (esc && ctx.navMap && ctx.navMap.isOpen) { ctx.navMap.close(); e.preventDefault(); return; }
+    if (stack.length && runStack(e)) { e.preventDefault(); return; }                // (2b) H19
     if (app.booting && ctx.input.offerKey && ctx.input.offerKey(e)) { e.preventDefault(); return; }   // (3)
     const d = ctx.director;
     if (d && d.busy()) {                                                          // (4)
+      if (esc && d.playing) { d.speedUp(); e.preventDefault(); return; }          // H23: Esc during play() skips
       const to = d.state.to ? d.state.to.room : app.room;
       const h = navTarget(e, to);
       if (h != null) { if (h) d.go(h, { source: 'kbd' }); e.preventDefault(); return; }

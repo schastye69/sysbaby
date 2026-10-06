@@ -81,6 +81,21 @@ function paintAtlas() {
   if (!atlas.texture) atlas.init(quality.tier);
   for (let i = 0; i < 7; i++) paintSign(i);
   paintTicks();
+  for (let i = 0; i < 7; i++) if (lawText[i]) paintLaw(i, lawText[i]);
+}
+// H28c: КОДЕКС laws — atlas `code:i` (8:1 strip), drawn once per text, centred, cap ≈ 62 % of the strip height.
+const lawText = ['', '', '', '', '', '', ''];
+function drawLaw(c, w, h, text, inlay) {
+  c.fillStyle = '#fff'; c.strokeStyle = '#fff';
+  let px = Math.round(h * 0.86);
+  c.font = CANVAS_FONT.sign.replace('{px}', String(px));
+  const tw = c.measureText(text).width;
+  if (tw > w * 0.98) { px = Math.max(6, Math.floor(px * (w * 0.98) / tw)); c.font = CANVAS_FONT.sign.replace('{px}', String(px)); }
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  if (inlay) { c.lineWidth = 1; c.strokeText(text, w / 2, h / 2); } else c.fillText(text, w / 2, h / 2);
+}
+function paintLaw(i, text) {
+  atlas.draw(`code:${i}`, { height: (c, w, h) => drawLaw(c, w, h, text, false), inlay: (c, w, h) => drawLaw(c, w, h, text, true) });
 }
 
 // ─── Nucleus material (emissive, --ember; electrum 55 % at night; one-frame --white flash) ──────────────────────
@@ -256,6 +271,14 @@ export function createKey(ctx) {
     if (morphG.gap >= 0) gap = morphG.gap;
     if (overG && overG.gap != null) gap = lerp(gap, overG.gap, overW);
     curGap = gap;
+    U.uGap.value = gap;                                                // H28c
+    // H28c: a law draw requested inside a ПАУЗА waits for its end; isShowingBack bookkeeping.
+    if (lawPending >= 0 && !inPause()) { const i = lawPending; lawPending = -1; for (let j = 0; j < 7; j++) if (lawDirty[j]) { lawDirty[j] = 0; paintLaw(j, lawText[j]); } void i; }
+    {
+      const yw = Math.atan2(Math.sin(yawG.x), Math.cos(yawG.x));
+      const back = Math.abs(Math.abs(yw) - Math.PI) <= 35 * DEG;
+      if (!back) backSince = -1; else if (backSince < 0) backSince = t;
+    }
 
     let flash = 0;
     for (let i = 0; i < 7; i++) {
@@ -279,6 +302,7 @@ export function createKey(ctx) {
       st.scale.set(sR, sY, sR);
       structure.setStratumFade(i, a);
     }
+    if (edgeFlashFrames > 0) { edgeFlashFrames--; flash = Math.max(flash, 1 / 0.6); }   // H28c flashEdges (seed: the one batch)
     for (let q = 0; q < structure.edges.length; q++) structure.edges[q].uniforms.uFlash.value = Math.min(1, flash * 0.6);
 
     // Group: morph scale, overrides, shudder, bow.
@@ -299,6 +323,7 @@ export function createKey(ctx) {
 
     // Nucleus: intensity (breath, pulse, morph), colour, flash, SPEC visibility rule for the glow sprite.
     let k = nuc.on ? (idle ? breath.mix(NUCLEUS.intensity[0], NUCLEUS.intensity[1]) : 1) * nuc.pulse * morphG.nucleus : 0;
+    if (nucOverride != null) k = nucOverride;                          // H28c setNucleus
     if (nuc.flashUntil && t > nuc.flashUntil) { nuc.flashUntil = 0; nucColor = U.cEmber.value; glow.setColor('ember'); }
     nucMat.uniforms.uColor.value = nucColor;
     nucMat.uniforms.uI.value = k;
@@ -320,6 +345,11 @@ export function createKey(ctx) {
     }
   }
   let curGap = GAP.rest;
+  // H28c state
+  let edgeFlashFrames = 0, lawPending = -1, backSince = -1, nucOverride = null, yawTw = null;
+  const lawDirty = new Uint8Array(7);
+  const inPause = () => { try { return !!(ctx && ctx.fx && ctx.fx.impact && ctx.fx.impact.inPause()); } catch (e) { return false; } };
+  const _bf = new Vector3(), _bn = new Vector3();
 
   // ─── API ──────────────────────────────────────────────────────────────────────────────────────────────────
   const key = {
@@ -485,7 +515,50 @@ export function createKey(ctx) {
       nuc.flashUntil = nowMs + Math.max(16, ms || 0);
     },
     setNucleusPulse(mult) { nuc.pulse = mult > 0 ? mult : 1; },
+
+    // ── H28c (ARCH-ADDENDUM X§2.8.1) — WP1 seeds ──
+    /** 1-frame (or n-frame) flash of stratum i's primary edges (seed: the one edge batch). */
+    flashEdges(i, token = 'white', frames = 1) { void i; void token; edgeFlashFrames = Math.max(edgeFlashFrames, Math.max(1, frames | 0)); },
+    /** Draws atlas `code:i` (once per text; never inside a ПАУЗА) and sets U.uCut[i] = cut01. */
+    setLaw(i, text, cut01) {
+      if (!(i >= 0 && i < 7)) return;
+      const t = String(text == null ? '' : text);
+      if (t !== lawText[i]) {
+        lawText[i] = t;
+        if (inPause()) { lawDirty[i] = 1; lawPending = i; } else paintLaw(i, t);
+      }
+      U.uCut.value[i] = clamp01(+cut01 || 0);
+    },
+    /** Group yaw tween (КОДЕКС 180°, ПОКАЗ ФИНАЛ). → Promise (resolves after ms) */
+    yawTo(deg, ms) {
+      if (yawTw) yawTw.cancel();
+      const from = yawG.x, to = (deg || 0) * DEG, d = Math.max(0, ms || 0);
+      if (d <= 0) { yawG.snap(to); yawG.target = to; return Promise.resolve(); }
+      yawTw = tween(d, (u) => { yawG.x = from + (to - from) * u; yawG.v = 0; yawG.target = yawG.x; }, EASE.camera);
+      return yawTw.done;
+    },
+    /** Render-space centre + normal of face (i, floor(n/2)). */
+    backFaceFrame(i, out) {
+      const st = STRATA_GEOM[i];
+      if (!st) return out;
+      const jb = Math.floor(st.n / 2), a = (TAU * jb) / st.n;
+      faceCentre(i, _bf);
+      const r = _bf.z;
+      _bf.set(Math.sin(a) * r, _bf.y, Math.cos(a) * r).applyMatrix4(strata[i].matrixWorld);
+      _bn.set(Math.sin(a), 0, Math.cos(a)).transformDirection(strata[i].matrixWorld);
+      out.F.copy(_bf); out.n.copy(_bn);
+      return out;
+    },
+    /** yaw within 180° ± 35° for ≥ 240 ms */
+    isShowingBack() { return backSince >= 0 && nowMs - backSince >= 240; },
+    setScrambleQuant(step, lagMs) { void step; void lagMs; },
+    /** Nucleus intensity override 0..1; null releases. */
+    setNucleus(level) { nucOverride = level == null ? null : clamp01(+level || 0); },
+    strike(amp) { void amp; },
+    bowTo(deg, ms) { void deg; void ms; return key.bow(); },
   };
+  grains.markSaved = (n, pairs) => { void n; void pairs; };
+  grains.spiral = (p) => { void p; };
   let ringOn = false;
   // Initial state = the start of any boot: unrevealed, nucleus dark, axis not shot (the boot reveals, ignites, shoots).
   key.setReveal({ points: 0, scanY: null, fill: 0, alpha: 0 });

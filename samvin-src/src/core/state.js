@@ -24,8 +24,19 @@ function defaults() {
     transmissions: { delivered: 0, read: [], lastDay: null }, probes: {}, decoded: [], capsuleOpened: false,
     companionArrived: false, whaleSeen: false, inverted: false, sound: 'on', tier: null, lastRoom: '#/core',
     firstDive: false, firstUnfold: false, whaleDay: null, birthdayLeadDay: null, foundVars: {},
+    // H11 (ARCH-ADDENDUM X§2.9.3)
+    deeds: {}, code: {}, codeShown: [], sbor: { count: 0, last: null, here: [] },
+    lost: { saved: 0, pairs: 0, kind: null, day: null, rescued: false, hid: false },
+    replies: {}, proposals: [], shows: { count: 0, lastDay: null },
   };
 }
+
+// H11: the addendum's id sets (X§2.7 deedsModel; duplicated here so core never imports a WP13 file).
+const DEED_IDS = ['wait', 'finish', 'call', 'host', 'rope', 'gentle', 'notice', 'word'];
+const SIGNS = ['S', 'A', 'M', '•', 'V', 'I', 'N'];
+const isIso = (x) => typeof x === 'string' && Number.isFinite(Date.parse(x));
+const isCount = (x) => Number.isInteger(x) && x >= 0;
+const isDayOrNull = (x) => x === null || typeof x === 'string';
 
 /** Field validators: a loaded value that fails takes the default (unknown fields are kept untouched). */
 const CHECK = {
@@ -58,7 +69,54 @@ const CHECK = {
   whaleDay: (x) => x === null || typeof x === 'string',
   birthdayLeadDay: (x) => x === null || typeof x === 'string',
   foundVars: (x) => isObj(x),
+  deeds: (x) => isObj(x),
+  code: (x) => isObj(x),
+  codeShown: (x) => Array.isArray(x),
+  sbor: (x) => isObj(x),
+  lost: (x) => isObj(x),
+  replies: (x) => isObj(x),
+  proposals: (x) => Array.isArray(x),
+  shows: (x) => isObj(x),
 };
+
+/** H11: nested shapes and caps of the addendum fields (X§2.9.3). Mutates d. */
+function migrateAddendum(d) {
+  for (const k of Object.keys(d.deeds)) if (!DEED_IDS.includes(k) || !isIso(d.deeds[k])) delete d.deeds[k];
+  for (const k of Object.keys(d.code)) if (!SIGNS.includes(k) || !isIso(d.code[k])) delete d.code[k];
+  d.codeShown = [...new Set(d.codeShown.filter((x) => SIGNS.includes(x)))];
+  const sb = d.sbor;
+  if (!isCount(sb.count)) sb.count = 0;
+  if (!isDayOrNull(sb.last)) sb.last = null;
+  if (!Array.isArray(sb.here)) sb.here = [];
+  sb.here = sb.here.filter((h) => isObj(h) && typeof h.day === 'string' && Array.isArray(h.ids))
+    .map((h) => ({ ...h, ids: h.ids.filter((id) => typeof id === 'string') })).slice(-30);
+  const lo = d.lost;
+  if (!isCount(lo.saved)) lo.saved = 0;
+  if (!isCount(lo.pairs)) lo.pairs = 0;
+  if (!(lo.kind === null || lo.kind === 'one' || lo.kind === 'pair')) lo.kind = null;
+  if (!isDayOrNull(lo.day)) lo.day = null;
+  if (typeof lo.rescued !== 'boolean') lo.rescued = false;
+  if (typeof lo.hid !== 'boolean') lo.hid = false;
+  for (const k of Object.keys(d.replies)) {
+    const pts = d.replies[k];
+    if (!/^\d+$/.test(k) || !Array.isArray(pts)) { delete d.replies[k]; continue; }
+    d.replies[k] = pts.filter((p) => Array.isArray(p) && p.length === 2 && p.every((v) => typeof v === 'number' && v >= -1 && v <= 1)).slice(0, 64);
+  }
+  d.proposals = d.proposals.filter((p) => isObj(p) && typeof p.id === 'string' && typeof p.title === 'string').slice(0, 3)
+    .map((p) => ({
+      ...p,
+      title: p.title.slice(0, 32),
+      text: typeof p.text === 'string' ? p.text.slice(0, 80) : '',
+      where: p.where === 'игра' || p.where === 'жизнь' ? p.where : 'игра',
+    }));
+  const sh = d.shows;
+  if (!isCount(sh.count)) sh.count = 0;
+  if (!isDayOrNull(sh.lastDay)) sh.lastDay = null;
+  for (const c of Object.keys(d.probes)) {
+    const pr = d.probes[c];
+    if (isObj(pr) && 'read' in pr && typeof pr.read !== 'boolean') delete pr.read;
+  }
+}
 
 function migrate(raw) {
   const d = isObj(raw) ? raw : {};
@@ -76,6 +134,7 @@ function migrate(raw) {
   if (!(tr.lastDay === null || typeof tr.lastDay === 'string')) tr.lastDay = null;
   for (const id of Object.keys(d.found)) if (!SECRET_ID.test(id) || typeof d.found[id] !== 'string') delete d.found[id];
   d.days = [...new Set(d.days.filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k)))].sort();
+  try { migrateAddendum(d); } catch (e) { logOnce('state:migrate', e); }
   return d;
 }
 

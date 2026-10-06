@@ -1,6 +1,8 @@
 // audio/engine.js — the audio engine (ARCH §3.10.1; SPEC §9.1, §9.8). Web Audio only, no files.
-// Graph: voices → bus (ui | fx | room) → [dry → compressor] + [send (wet) → ConvolverNode → compressor];
-//        bed → its own bus → compressor; compressor (−18 dB, 3:1, 3 ms / 250 ms) → master (−6 dBFS) → analyser → out.
+// Graph (ARCH-ADDENDUM X§2.3.1, hook H8): voices → bus (ui | fx | room) → [dry → compressor] + [send (wet) → WET BUS
+//        → inA → convA → retA | inB → convB → retB → compressor]; bed → its own bus → compressor;
+//        compressor (−18 dB, 3:1, 3 ms / 250 ms) → [createMasterChain — WP3; seed pass-through] → master (−6 dBFS)
+//        → analyser → out. The audio.fx facade (X§2.3.2) maps AudioContext time ↔ performance time (A6.3).
 // The AudioContext exists only after the first gesture (unlock(), called by core/input.js). Convolver IRs are generated
 // at unlock (3.4 s stereo-decorrelated noise, exp decay, high-passed at 120 Hz; a 6 s IR for the whale). Voice cap 24,
 // the oldest stolen with an 8 ms fade. play()/start() return null / a no-op live voice while locked or off — callers
@@ -10,26 +12,33 @@ import { bus } from '../core/bus.js';
 import { app } from '../core/store.js';
 import { state } from '../core/state.js';
 import { loop, ORDER } from '../core/loop.js';
-import { logOnce } from '../core/env.js';
+import { logOnce, ENV } from '../core/env.js';
 import { ROOMS } from '../world/rooms.js';
 import { RECIPES, LIVE } from './registry.js';
 import { createBed } from './bed.js';
 import { hz } from './notes.js';
+import { createMasterChain } from './master.js';
+import { prerender, PRERENDER_ORDER } from './prerender.js';
 
 const MASTER = Math.pow(10, -6 / 20);
 const NOOP_LIVE = Object.freeze({ set() {}, stop() {}, alive: false });
 const voices = [];
 const bins = new Uint8Array(32);
 let irLong = null;
-let ac = null, master = null, analyser = null, comp = null, conv = null, sends = null, hidden = false, suspendTimer = 0;
+let ac = null, master = null, analyser = null, comp = null, wetBus = null, sends = null, hidden = false, suspendTimer = 0;
+let bootDone = false, restQueued = false;
+const timeBuf = new Float32Array(64);
+const gateLog = [];   // real gates only (unlocked and on), perf ms, last 16
 
 /** E — what recipes receive (ARCH §3.10.2). */
 const E = {
   ctx: null, bus: { ui: null, fx: null, room: null, bed: null }, transpose: 0, night: false, hz,
   /** 6 s IR for the whale — generated on first use (it is the only caller), so unlock stays short. */
   get irLong() { if (!irLong && ac) irLong = makeIR(6); return irLong; },
-  /** A send into the convolver at the given level (0..1). */
-  send(wet) { const g = ac.createGain(); g.gain.value = wet; g.connect(conv); return g; },
+  /** A send into the WET BUS (→ the live A/B convolver) at the given level (0..1). */
+  send(wet) { const g = ac.createGain(); g.gain.value = wet; g.connect(wetBus); return g; },
+  /** H8 additions (X§2.3.1) — set in build(). */
+  wet: null, buf: {}, chain: null, coarse: false, tier: 'T2',
   /** Voice-cap accounting (24, oldest stolen with an 8 ms fade) + auto cleanup after durSec. */
   track(voice, durSec) {
     if (!voice) return voice;
@@ -87,20 +96,32 @@ function build() {
   analyser = ac.createAnalyser();
   analyser.fftSize = 64;
   analyser.smoothingTimeConstant = 0.6;
-  comp.connect(master).connect(analyser).connect(ac.destination);
-  conv = ac.createConvolver();
-  conv.buffer = makeIR(3.4);
-  conv.connect(comp);
+  master.connect(analyser).connect(ac.destination);
+  // WET BUS → A/B convolvers sharing one IR (the live one swaps at every gate — WP3's chain).
+  wetBus = ac.createGain();
+  const ir = makeIR(3.4);
+  const inA = ac.createGain(), convA = ac.createConvolver(), retA = ac.createGain();
+  const inB = ac.createGain(), convB = ac.createConvolver(), retB = ac.createGain();
+  inA.gain.value = 1; retA.gain.value = 1; inB.gain.value = 0; retB.gain.value = 0;
+  convA.buffer = ir; convB.buffer = ir;
+  wetBus.connect(inA).connect(convA).connect(retA).connect(comp);
+  wetBus.connect(inB).connect(convB).connect(retB).connect(comp);
+  E.wet = { bus: wetBus, inA, retA, convA, inB, retB, convB, live: 'A' };
+  E.buf = {};
+  E.coarse = !!ENV.coarse;
+  E.tier = app.tier;
   sends = {};
   for (const name of ['ui', 'fx', 'room']) {
     const b = ac.createGain();
     b.connect(comp);
     const s = ac.createGain();
     s.gain.value = name === 'ui' ? 0.11 : 0.22;
-    b.connect(s).connect(conv);
+    b.connect(s).connect(wetBus);
     E.bus[name] = b;
     sends[name] = s;
   }
+  // The master chain sits between the compressor and the master gain (seed: comp → master).
+  try { E.chain = createMasterChain(E, comp, master); } catch (e) { logOnce('audio:chain', e); comp.connect(master); E.chain = null; }
   E.bus.bed = ac.createGain();
   E.bus.bed.connect(comp);
   E.ctx = ac;
@@ -118,6 +139,7 @@ export const audio = {
     app.soundOn = audio.on;
     bus.on('visibility', (e) => { hidden = !!e.hidden; if (hidden) fadeOutSuspend(); else resumeFadeIn(); });
     bus.on('room:arrive', (e) => audio.setRoom(e.room));
+    bus.on('boot:done', () => { bootDone = true; queueRest(); });
     return audio;
   },
 
@@ -137,6 +159,9 @@ export const audio = {
       audio.setNight(app.night);
       if (audio.on) { if (audio.bed) audio.bed.start(); resumeFadeIn(); } else ac.suspend().catch(() => {});
       loop.add((dt) => { if (audio.bed && audio.on) audio.bed.update(dt); }, ORDER.FX);
+      // H8: the dust buffer is awaited-not-blocking at unlock; the rest renders on idle after boot:done.
+      try { prerender(E, ['dustA']).catch((e) => logOnce('audio:prerender', e)); } catch (e) { logOnce('audio:prerender', e); }
+      queueRest();
       bus.emit('audio:unlocked', {});
     } catch (e) {
       logOnce('audio:unlock', 'audio unavailable', e);
@@ -168,12 +193,14 @@ export const audio = {
     if (!ac || !audio.on || hidden) return null;
     const r = RECIPES[name];
     if (!r) return null;
+    if (params && params.when != null) params.when = Math.max(params.when, ac.currentTime);
     try { return r(E, params || {}) || null; } catch (e) { logOnce(`audio:${name}`, 'recipe failed', name, e); return null; }
   },
 
   /** Continuous recipe (LIVE names). → LiveVoice (a no-op one while locked / off). */
   start(name, params = {}) {
     if (!ac || !audio.on || hidden || !LIVE.has(name)) return NOOP_LIVE;
+    if (params && params.when != null) params.when = Math.max(params.when, ac.currentTime);
     try { return RECIPES[name](E, params || {}) || NOOP_LIVE; } catch (e) { logOnce(`audio:${name}`, 'recipe failed', name, e); return NOOP_LIVE; }
   },
 
@@ -207,4 +234,98 @@ export const audio = {
   },
 
   now() { return ac ? ac.currentTime : 0; },
+};
+
+// ─── H8: the rest of PRERENDER_ORDER, one item per idle slot after boot:done ─────────────────────────────────────
+function queueRest() {
+  if (!bootDone || !ac || restQueued) return;
+  restQueued = true;
+  const items = PRERENDER_ORDER.slice(1);
+  const idle = (fn) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(fn) : setTimeout(fn, 200));
+  const next = () => {
+    const name = items.shift();
+    if (!name) return;
+    try { prerender(E, [name]).catch((e) => logOnce('audio:prerender', e)).then(() => idle(next)); }
+    catch (e) { logOnce('audio:prerender', e); idle(next); }
+  };
+  idle(next);
+}
+
+// ─── H8: the audio.fx facade (X§2.3.2). Time arguments are AudioContext seconds. Never throws. ────────────────────
+const fxReady = () => !!(ac && audio.unlocked && audio.on && !hidden);
+const chainFx = (m) => (E.chain && E.chain.fx && typeof E.chain.fx[m] === 'function' ? E.chain.fx[m] : null);
+function latency() {
+  if (!ac) return 0;
+  const l = ac.outputLatency != null ? ac.outputLatency : (ac.baseLatency != null ? ac.baseLatency : 0);
+  return Math.min(0.25, Math.max(0, +l || 0));
+}
+function outTs() {
+  try { const ts = ac.getOutputTimestamp ? ac.getOutputTimestamp() : null; return ts && ts.performanceTime > 0 ? ts : null; } catch (e) { return null; }
+}
+/** perf ms at which context time T is audible (A6.3); NaN while locked. */
+function toPerf(T) {
+  if (!ac) return NaN;
+  const ts = outTs();
+  return ts ? ts.performanceTime + (T - ts.contextTime) * 1000 : performance.now() + (T - ac.currentTime) * 1000 + 1000 * latency();
+}
+/** ctx seconds such that toPerf(result) = perfMs; NaN while locked. */
+function ctxTimeFor(perfMs) {
+  if (!ac) return NaN;
+  const ts = outTs();
+  return ts ? ts.contextTime + (perfMs - ts.performanceTime) / 1000 : ac.currentTime + (perfMs - performance.now()) / 1000 - latency();
+}
+function rmsDb() {
+  if (!analyser) return -120;
+  try {
+    analyser.getFloatTimeDomainData(timeBuf);
+    let s = 0;
+    for (let i = 0; i < timeBuf.length; i++) s += timeBuf[i] * timeBuf[i];
+    const r = Math.sqrt(s / timeBuf.length);
+    return r > 1e-6 ? Math.max(-120, 20 * Math.log10(r)) : -120;
+  } catch (e) { return -120; }
+}
+function call(m, args, locked) {
+  if (!fxReady()) return locked;
+  const f = chainFx(m);
+  if (!f) return locked;
+  try { const r = f.apply(E.chain.fx, args); return r === undefined ? locked : r; } catch (e) { logOnce(`audio:fx:${m}`, e); return locked; }
+}
+
+audio.fx = {
+  latency,
+  toPerf,
+  ctxTimeFor,
+  ready: fxReady,
+  gate(ms = 400, opts = {}) {
+    const at = opts && opts.at != null ? opts.at : (ac ? ac.currentTime : 0);
+    const r = call('gate', [ms, { ...(opts || {}), at }], null);
+    if (!r || r.hitAt == null) return { hitAt: null };
+    gateLog.push({ at: toPerf(at), hitAt: toPerf(r.hitAt) });
+    if (gateLog.length > 16) gateLog.shift();
+    return r;
+  },
+  advanceHit(at) {
+    const r = call('advanceHit', [at], null);
+    if (r != null && gateLog.length) gateLog[gateLog.length - 1].hitAt = toPerf(r);
+    return r != null ? r : null;
+  },
+  muffle(hzv, ms = 0, opts = {}) { call('muffle', [hzv, ms, opts || {}], undefined); },
+  pop(ms = 700, opts = {}) { const r = call('pop', [ms, opts || {}], null); return r != null ? r : null; },
+  width(w, ms, opts = {}) { call('width', [w, ms, opts || {}], undefined); },
+  tape(stopMs = 900, opts = {}) { call('tape', [stopMs, opts || {}], undefined); },
+  tapeReset(opts = {}) { call('tapeReset', [opts || {}], undefined); },
+  shadow(gainDb) { call('shadow', [gainDb], undefined); },
+  snapshot() {
+    let snap = null;
+    const f = chainFx('snapshot');
+    if (f) { try { snap = f.call(E.chain.fx); } catch (e) { logOnce('audio:fx:snapshot', e); } }
+    snap = snap || {};
+    return {
+      gateLog: gateLog.map((g) => ({ at: g.at, hitAt: g.hitAt })),
+      muffleHz: snap.muffleHz != null ? snap.muffleHz : 20000,
+      width: snap.width != null ? snap.width : 1,
+      buffersReady: !!snap.buffersReady,
+      rmsDb: rmsDb(),
+    };
+  },
 };

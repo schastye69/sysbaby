@@ -6,7 +6,7 @@
 //
 // Also the WP0 texture registry (A2): every module that creates a GPU texture registers it with its byte size so the
 // test hook can report `_stats.texMB`.
-import { Vector2, Vector3, Color, Matrix4 } from 'three';
+import { Vector2, Vector3, Vector4, Color, Matrix4 } from 'three';
 
 export const LAYER = Object.freeze({ DEFAULT: 0, EMISSIVE: 1, NOFOG: 2 });
 
@@ -26,6 +26,20 @@ export const U = {
   uInvert: { value: 0 },                     // 0..1 ИЗНАНКА mix
   uNight: { value: 0 },                      // 0..1 sleep mix
   uEmissivePass: { value: 0 },               // WP0 addition: 1 while the composite renders the T3 emissive layer
+  // H3 (X§2.2.2): addendum uniforms. Identity defaults → zero visual change.
+  uWorldTime: { value: 0 },                  // s: loop.worldNow / 1000 (every idle shader animation reads this)
+  uWave0a: { value: new Vector4() },         // (cx, cy, cz, r) render space — WP12 wave.js
+  uWave0b: { value: new Vector4() },         // (ampRel, width, gain, mode 0 off · 1 sphere · 2 axis)
+  uWave1a: { value: new Vector4() },
+  uWave1b: { value: new Vector4() },
+  uImpact: { value: 0 },                     // ПРОСВЕТ 0..1 (WP12)
+  uImpactWarm: { value: 0 },                 // 1 only on the warm frame (WP12)
+  uPulse: { value: 0 },                      // sub-pulse twin (WP12 pulse.js)
+  uFocus: { value: new Vector3() },          // (focalDepth render units, aperture CSS px, on 0/1) — WP12 focus.js
+  uFxCaps: { value: new Vector2() },         // x width terms allowed · y heptagon bokeh allowed — WP12
+  uFxLineA: { value: 1 },                    // global alpha multiplier on R3 ribbons + lattice — WP12 setLineAlpha
+  uGap: { value: 0.020 },                    // current Key strata gap (m) — WP1 key.update
+  uCut: { value: [0, 0, 0, 0, 0, 0, 0] },    // КОДЕКС reveal per stratum 0..1 — WP1 key.setLaw
   // palette (display-space values; palette.js writes them)
   cVoid: col(), cAbyss: col(), cDeep: col(), cSteel: col(), cSlate: col(), cPewter: col(), cSilver: col(),
   cWhite: col(), cObsidian: col(), cEmber: col(), cEmberDeep: col(), cElectrum: col(), cPaper: col(), cInk: col(),

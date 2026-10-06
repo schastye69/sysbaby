@@ -123,12 +123,13 @@ export function createComposite(renderer) {
   const MASK_SCENE = (1 << LAYER.DEFAULT) | (1 << LAYER.NOFOG);
   const MASK_EMISSIVE = 1 << LAYER.EMISSIVE;
 
+  let frozen = false;   // H6: grain freeze (ПАУЗА, СВЁРТКА, ПРОВАЛ twin — WP12)
   const comp = {
     render(dt) {
       void dt;
       if (renderer.lost) return;
       // Grain clock + pointer.
-      uniforms.uSeed.value = ENV.reducedMotion ? 7 : Math.floor(loop.now / (1000 / R7.grainFps)) % 997;
+      if (!frozen) uniforms.uSeed.value = ENV.reducedMotion ? 7 : Math.floor(loop.now / (1000 / R7.grainFps)) % 997;
       const p = input.pointer;
       const none = p.x < -9000 || p.inside === false || (p.type === 'touch' && !p.down);
       uniforms.uPointer.value.set(none ? -9999 : p.x, none ? -9999 : p.y);
@@ -192,6 +193,8 @@ export function createComposite(renderer) {
     },
     /** luminance amplitude: 0.025 during boot 0–1,800 ms, then 0.02 (WP2 calls) */
     setGrain(amount) { uniforms.uGrain.value = Math.max(0, +amount || 0); },
+    /** H6: true → uSeed stops stepping (the 24 fps grain stops); false resumes. */
+    freezeGrain(b) { frozen = !!b; },
     /** switches bloom ↔ sprites path */
     setTier(t) { tier = t; sizeT3(); },
     onFirstFrame(fn) { if (first) firstFns.push(fn); else { try { fn(); } catch (e) { /* ignore */ } } },

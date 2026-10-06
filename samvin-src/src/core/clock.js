@@ -15,6 +15,9 @@ export const breath = {
   amp: ENV.reducedMotion ? BREATH.reducedAmp : 1,
   /** Changes the period without a phase jump (normal 4,200 · drowsy 5,600 · night 7,000). */
   setPeriod(ms) { if (ms > 0) breath.periodMs = ms; },
+  /** H2: true → the phase stops advancing (ПРОВАЛ, A6.5.6). */
+  held: false,
+  hold(b) { breath.held = !!b; },
   /** a + (b − a)·(0.5 + (value − 0.5)·amp) */
   mix(a, b) { return a + (b - a) * (0.5 + (breath.value - 0.5) * breath.amp); },
 };
@@ -84,7 +87,9 @@ function clockFrame(dt, t) {
   breath.amp = ENV.reducedMotion ? BREATH.reducedAmp : 1;
   const stepMs = lastT < 0 ? 0 : Math.max(0, t - lastT);
   lastT = t;
-  breath.phase = (breath.phase + stepMs / breath.periodMs) % 1;
+  // H2 (X§2.2.1): the breath advances by dt · loop.timeScale · (held ? 0 : 1) — ПАУЗА, СВЁРТКА and ПРОВАЛ stop it.
+  const ts01 = Math.min(1, Math.max(0, +loop.timeScale || 0));
+  breath.phase = (breath.phase + (stepMs * ts01 * (breath.held ? 0 : 1)) / breath.periodMs) % 1;
   breath.value = breathValue(breath.phase);
 
   // Timers.

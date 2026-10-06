@@ -33,6 +33,7 @@
 .kn-row:hover .kn-letter,.kn-row:focus-visible .kn-letter,.kn-row.is-hot .kn-letter{font-variation-settings:"wght" 700,"wdth" 87.5;color:var(--silver)}
 .kn-row[aria-current="true"] .kn-letter,.kn-row[data-flash] .kn-letter{color:var(--ember)}
 .kn-row[data-glint] .kn-letter{color:var(--electrum)}
+.kn-row[data-glint="white"] .kn-letter{color:var(--white)}
 .kn-row[data-blink] .kn-letter{animation:kn-blink .48s}
 .kn-row[data-shudder]{animation:kn-shudder .24s linear}
 @keyframes kn-blink{40%{color:var(--ember)}}

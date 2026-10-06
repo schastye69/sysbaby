@@ -69,6 +69,17 @@ export function sendProbe(code) {
   return true;
 }
 
+/** H28e (ARCH-ADDENDUM X§2.8.4): the chamber shows `ЗАПИСЬ ЗОНДА` → probes[code].read = true once; emits
+ *  'probe:read' {code} (WP13's deed `finish` listens). → boolean (true when newly read) */
+export function markLogRead(code) {
+  const pr = state.data && state.data.probes ? state.data.probes[code] : null;
+  if (!pr || !pr.back || pr.read === true) return false;
+  pr.read = true;
+  saveSoon();
+  bus.emit('probe:read', { code });
+  return true;
+}
+
 /** Probes sent before today and not back → back = true. → codes (caller shows status/visuals, emits 'probe:back'). */
 export function collectReturnedProbes() {
   const out = [];

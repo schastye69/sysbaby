@@ -13,6 +13,9 @@ float fogVis(float dist) { float f = uFogDensity * dist; return exp(-f * f); }
 vec3 applyFog(vec3 col, float dist) { return mix(cAbyss, col, fogVis(dist)); }`;
 
 let active = null;
+const factors = new Map();   // H5: multiplicative channels ('impact', 'ears', 'close' — WP12)
+let product = 1;
+const write = () => { U.uFogDensity.value = fog.density * product; };
 
 export const fog = {
   density: U.uFogDensity.value,
@@ -20,14 +23,24 @@ export const fog = {
   set(d) {
     if (active) { active.cancel(); active = null; }
     fog.density = d;
-    U.uFogDensity.value = d;
+    write();
   },
   /** Tween to d over ms on loop time. → Promise */
   to(d, ms, ease = EASE.camera) {
     if (active) { active.cancel(); active = null; }
     const from = fog.density;
-    const tw = tween(ms, (k) => { fog.density = from + (d - from) * k; U.uFogDensity.value = fog.density; }, ease);
+    const tw = tween(ms, (k) => { fog.density = from + (d - from) * k; write(); }, ease);
     active = tw;
     return tw.done.then(() => { if (active === tw) active = null; });
   },
+  /** H5: multiplicative factor channel (f > 0; 1 removes it). Cleared only by its writer. */
+  factor(name, f) {
+    const v = +f;
+    if (v === 1 || !(v > 0)) factors.delete(name); else factors.set(name, v);
+    product = 1;
+    factors.forEach((x) => { product *= x; });
+    write();
+  },
+  /** H5: Π of all channels. */
+  factors() { return product; },
 };

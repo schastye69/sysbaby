@@ -44,13 +44,17 @@ function tick(ts) {
   if (step > STEP_MAX) step = STEP_MAX;
   loop.now += step;
   loop.frame++;
+  // H1 (X§2.2.1): world time — callbacks with 30 <= order < 50 receive dt · timeScale; t stays loop.now.
+  const ts01 = Math.min(1, Math.max(0, +loop.timeScale || 0));
+  loop.worldNow += step * ts01;
   const dt = Math.min(DT_MAX, step / 1000);
+  const dtw = dt * ts01;
   const t = loop.now;
   const snap = list;
   for (let i = 0; i < snap.length; i++) {
     const e = snap[i];
     if (e.dead) continue;
-    try { e.fn(dt, t); } catch (err) {
+    try { e.fn(e.order >= 30 && e.order < 50 ? dtw : dt, t); } catch (err) {
       logOnce(`loop:${e.id}`, 'frame callback threw and was removed', err);
       loop.remove(e.id);
     }
@@ -62,6 +66,10 @@ export const loop = {
   frame: 0,
   /** loop time in ms (stops while hidden / stopped) */
   now: 0,
+  /** H1: 0..1 world time scale. ONLY WP12 writes it (ПАУЗА ramp, СВЁРТКА tape curve); read clamped by the tick. */
+  timeScale: 1,
+  /** H1: world time in ms; advances by step · timeScale (stops while hidden, like loop.now). */
+  worldNow: 0,
   /** WP0 addition: the loop time of THIS instant between two frames — loop.now plus the real time since the last
    *  frame's timestamp (capped like a frame step). A travel started from an input event starts its clock here, so its
    *  first frame advances by the part of the interval after the event (durations stay wall-clock exact). */

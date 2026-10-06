@@ -25,6 +25,21 @@ let ctxRef = null;
 let throwRoom = null;                 // dev: ?throw=<RoomId>
 
 const NOOP = () => {};
+/** H18 (ARCH-ADDENDUM X§2.4.5): hall extensions — { name, arrive(hctx, info), depart(hctx), update?(hctx, dt), dispose(hctx) }. */
+let exts = [];
+function extCall(r, method, a) {
+  if (!exts.length || !r || r.dead) return;
+  const snap = exts;
+  for (let k = 0; k < snap.length; k++) {
+    const e = snap[k];
+    const f = e[method];
+    if (typeof f !== 'function') continue;
+    try { f.call(e, r.hctx, a); } catch (err) {
+      logOnce(`ext:${e.name}`, `hall extension ${e.name} failed — removed`, err);
+      exts = exts.filter((x) => x !== e);
+    }
+  }
+}
 /** The T0 stub (A17): every method inert; pose() a fixed pose; setSub() accepts any sub. */
 function stubHall(id) {
   const pose = { pos: new Vector3(0, 0.75, 7.2), target: new Vector3(), fov: CAMERA.fov, offsetY: 0, roll: 0 };
@@ -84,6 +99,7 @@ function createResident(id, factory) {
 }
 
 function destroy(r) {
+  extCall(r, 'dispose');
   r.dead = true;
   try { if (r.hall) r.hall.dispose(); } catch (e) { logOnce(`hall:${r.id}`, `hall ${r.id} dispose failed`, e); }
   if (r.shell) r.shell.dispose();
@@ -112,7 +128,10 @@ function fail(id, err) {
 
 function safe(r, method, a, b, c) {
   if (!r || r.dead || !r.hall || typeof r.hall[method] !== 'function') return undefined;
-  try { return r.hall[method](a, b, c); } catch (e) { fail(r.id, e); return undefined; }
+  let out;
+  try { out = r.hall[method](a, b, c); } catch (e) { fail(r.id, e); return undefined; }
+  if (method === 'arrive' || method === 'depart' || method === 'update') extCall(r, method, a);   // H18: right after the hall's own
+  return out;
 }
 
 function frame(dt, t) {
@@ -164,7 +183,17 @@ export const hallHost = {
     destroy(r);
   },
   /** Every call into a hall goes through this guard. */
-  call(id, method, a, b, c) { return safe(residents.get(id), method, a, b, c); },
+  call(id, method, a, b, c) {
+    const out = safe(residents.get(id), method, a, b, c);
+    if (method === 'lostSpots') return Array.isArray(out) ? out : [];   // H18: optional; [] when absent
+    return out;
+  },
+  /** H18: registers a hall extension for every resident hall. → remove() */
+  addExtension(ext) {
+    if (!ext || typeof ext !== 'object') return NOOP;
+    exts = exts.concat([ext]);
+    return () => { exts = exts.filter((x) => x !== ext); };
+  },
 
   // ── WP0 additions ──────────────────────────────────────────────────────────────────────────────────────
   /** The hall's shell (null when not resident / T0). */

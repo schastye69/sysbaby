@@ -5,7 +5,13 @@
 // letters 38 m tall, --silver, fogged like the rim lattice; plus the rim lit-node emitters (1.2 m, ember, one draw call)
 // beside it; an sr-only DOM duplicate of the name. Child of scaleEngine.root (canonical). The rim LATTICE is nest level 1.
 // burn() = showName() then resolve (WP2 adds the ember → silver burn).
-import { Group, Mesh, PlaneGeometry, ShaderMaterial, CanvasTexture, LinearFilter, ClampToEdgeWrapping } from 'three';
+// Hooks pass (ARCH-ADDENDUM X§2.8.2, H28d): burn({at}) honours `at` by delay; burnGuests(names) draws them instantly in
+// one row with his name on the same canvas; clearGuests; rows(); setRole(text) draws the subline (own small canvas,
+// created on first use); namePoint(i, out); letterHeightM().
+import { Group, Mesh, PlaneGeometry, ShaderMaterial, CanvasTexture, LinearFilter, ClampToEdgeWrapping, Vector3 } from 'three';
+import { rig } from '../render/cameraRig.js';
+import { after } from '../core/clock.js';
+import { registerHookField } from '../core/testhook.js';
 import { U, registerTexture } from '../render/uniforms.js';
 import { FOG_GLSL } from '../render/fog.js';
 import { createEmitterBatch } from '../render/glow.js';
@@ -47,14 +53,40 @@ export function createRim(ctx) {
   tex.wrapS = tex.wrapT = ClampToEdgeWrapping;
   registerTexture(tex, W * H * 4);
   let textW = 0.5;                                                 // name width as a fraction of the canvas
+  let guests = [];                                                 // H28d: guest names (uppercased), one row with his
+  let fontScale = 1;                                               // < 1 when the row had to shrink to fit
+  const nameX = [0.5];                                             // centre x of each name (canvas fraction)
+  const GAP = '   ';
   function paint() {
     const c = canvas.getContext('2d');
     c.clearRect(0, 0, W, H);
     c.fillStyle = '#fff';
-    c.font = CANVAS_FONT.burn.replace('{px}', String(Math.round(H * 0.78)));
     c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText(name, W / 2, H / 2 + H * 0.04);
-    textW = Math.min(1, c.measureText(name).width / W);
+    if (!guests.length) {
+      fontScale = 1;
+      c.font = CANVAS_FONT.burn.replace('{px}', String(Math.round(H * 0.78)));
+      c.fillText(name, W / 2, H / 2 + H * 0.04);
+      textW = Math.min(1, c.measureText(name).width / W);
+      nameX.length = 1; nameX[0] = 0.5;
+    } else {
+      const all = [name].concat(guests);
+      const line = all.join(GAP);
+      c.font = CANVAS_FONT.burn.replace('{px}', String(Math.round(H * 0.78)));
+      const w0 = c.measureText(line).width;
+      fontScale = Math.min(1, (W * 0.98) / Math.max(1, w0));
+      c.font = CANVAS_FONT.burn.replace('{px}', String(Math.max(8, Math.round(H * 0.78 * fontScale))));
+      const w = c.measureText(line).width, gw = c.measureText(GAP).width;
+      let x = W / 2 - w / 2;
+      c.textAlign = 'left';
+      nameX.length = 0;
+      for (const n of all) {
+        const nw = c.measureText(n).width;
+        c.fillText(n, x, H / 2 + H * 0.04);
+        nameX.push((x + nw / 2) / W);
+        x += nw + gw;
+      }
+      textW = Math.min(1, w / W);
+    }
     tex.needsUpdate = true;
     placeNodes();
   }
@@ -97,19 +129,84 @@ export function createRim(ctx) {
     (document.getElementById('overlay') || document.body).appendChild(sr);
   } catch (e) { sr = null; }
 
+  // H28d: the ОСНОВАТЕЛЬ subline (22 % letter height, 70 %), its own small canvas, created on first setRole(text).
+  let role = null, roleMesh = null, roleCanvas = null, roleTex = null;
+  function paintRole() {
+    if (!roleCanvas) {
+      roleCanvas = document.createElement('canvas');
+      roleCanvas.width = W; roleCanvas.height = 64;
+      roleTex = new CanvasTexture(roleCanvas);
+      roleTex.minFilter = LinearFilter; roleTex.magFilter = LinearFilter; roleTex.generateMipmaps = false;
+      registerTexture(roleTex, W * 64 * 4);
+      const rmat = new ShaderMaterial({
+        uniforms: { uTex: { value: roleTex }, cSilver: U.cSilver, uAlpha: { value: 0.7 * alpha }, cAbyss: U.cAbyss, uFogDensity: U.uFogDensity },
+        vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false,
+      });
+      const rh = (LETTER_M * 0.22) / 0.6;
+      roleMesh = new Mesh(new PlaneGeometry(rh * (W / 64), rh), rmat);
+      roleMesh.position.set(0, NAME_Y - planeH * 0.5 - rh * 0.2, zFace);
+      roleMesh.name = 'rimRole';
+      group.add(roleMesh);
+    }
+    const c = roleCanvas.getContext('2d');
+    c.clearRect(0, 0, W, 64);
+    c.fillStyle = '#fff';
+    c.font = CANVAS_FONT.burn.replace('{px}', String(Math.round(64 * 0.78)));
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    if (role) c.fillText(role, W / 2, 32 + 2);
+    roleTex.needsUpdate = true;
+    roleMesh.visible = !!role && plane.visible;
+  }
+  const _np = new Vector3();
+  const _pp = { x: 0, y: 0, depth: 0, visible: false };
+
   let alpha = 1;
   const rim = {
     group,
-    burn(opts) { void opts; rim.showName(); return Promise.resolve(); },
-    showName() { plane.visible = alpha > 0; },
+    /** opts: { dir, msPerLetter, height?, at? (perf ms: start exactly then) } — the seed shows the name (at `at`). */
+    burn(opts) {
+      const at = opts && Number.isFinite(opts.at) ? opts.at : null;
+      const wait = at != null ? Math.max(0, at - performance.now()) : 0;
+      if (wait <= 0) { rim.showName(); return Promise.resolve(); }
+      return new Promise((res) => after(wait, () => { rim.showName(); res(); }));
+    },
+    showName() { plane.visible = alpha > 0; if (roleMesh) roleMesh.visible = !!role && plane.visible; },
+    /** H28d seed: guest names drawn at once in one row with his (--white → --silver burn is WP2's). */
+    burnGuests(names, opts) {
+      void opts;
+      guests = (Array.isArray(names) ? names : []).map((n) => upper(String(n || ''))).filter(Boolean);
+      paint();
+      rim.showName();
+      return Promise.resolve();
+    },
+    clearGuests() { if (guests.length) { guests = []; paint(); } },
+    /** every name on the rim (test hook `rim`) */
+    rows() {
+      const h = LETTER_M * fontScale;
+      return [name].concat(guests).map((text) => ({ text, heightM: h, row: 0 }));
+    },
+    setRole(text) { role = text ? upper(String(text)) : null; if (role || roleMesh) paintRole(); },
+    /** screen point (CSS px) of rim name i (0 = his) */
+    namePoint(i, out) {
+      const o = out || { x: 0, y: 0 };
+      const fx = nameX[Math.max(0, Math.min(nameX.length - 1, i | 0))] != null ? nameX[Math.max(0, Math.min(nameX.length - 1, i | 0))] : 0.5;
+      _np.set((fx - 0.5) * planeH * (W / H), 0, 0);
+      plane.updateWorldMatrix(true, false);
+      plane.localToWorld(_np);
+      if (rig.camera) { rig.project(_np, _pp); o.x = _pp.x; o.y = _pp.y; } else { o.x = 0; o.y = 0; }
+      return o;
+    },
+    letterHeightM() { return LETTER_M; },
     setLitNodes(n) { lit = Math.max(0, Math.min(cap, n | 0)); nodes.setCount(lit); },
     setAlpha(a) {
       alpha = Math.max(0, Math.min(1, a));
       mat.uniforms.uAlpha.value = alpha;
+      if (roleMesh) roleMesh.material.uniforms.uAlpha.value = 0.7 * alpha;
       group.visible = alpha > 0;
       nodes.setIntensity(alpha);
     },
   };
   rim.setLitNodes(state.litNodes);
+  registerHookField('rim', () => rim.rows());   // H28d seed (WP2 owns the field)
   return rim;
 }

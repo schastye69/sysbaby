@@ -7,18 +7,28 @@
 //                session after 10 s > 58 fps; never within the first 300 ms of a transition; paused while hidden.
 //   A stable tier (10 s without change) is persisted to state.data.tier and used as the next start.
 //   Dev only (A3): ?tier=T1|T2|T3 forces a tier (no benchmark, no governor); ?gov=0 disables only the governor.
-import { logOnce } from './env.js';
+import { logOnce, ENV } from './env.js';
 import { bus } from './bus.js';
 import { app } from './store.js';
 import { state } from './state.js';
 import { loop, ORDER } from './loop.js';
 import { RENDER } from './tokens.js';
 
+// H15 (ARCH-ADDENDUM X§3, X§7.3.3): fx pools (WP12) and audio params (WP3) per tier; unused until those WPs land.
+const FX = {
+  T3: Object.freeze({ dustPool: 65536, dustAmbient: 49152, stir: true, heptagon: true, deposition: true, prosvetWidth: 1.5, threadDust: 2000, swarf: 900, shed: 300, puff: 200, widthDof: true }),
+  T2: Object.freeze({ dustPool: 32768, dustAmbient: 24576, stir: true, heptagon: true, deposition: true, prosvetWidth: 1.5, threadDust: 600, swarf: 900, shed: 300, puff: 200, widthDof: true }),
+  T1: Object.freeze({ dustPool: 6144, dustAmbient: 4096, stir: false, heptagon: false, deposition: false, prosvetWidth: 1.0, threadDust: 0, swarf: 300, shed: 0, puff: 0, widthDof: false }),
+};
+const AUDIO = (t) => Object.freeze({ dustLoops: t === 'T1' ? 1 : 2, shadowDb: ENV.coarse ? -12 : -26 });
+
 export const TIER_PARAMS = Object.freeze({
-  T3: Object.freeze({ dprCap: 2.0, msaa: true, grains: 24576, stars: Object.freeze({ signal: 2000, zenith: 3000 }), bloom: 'kawase', lattice: 1.0, atlas: 1024, contours: 12, ringTex: Object.freeze([2048, 128]), labels: 24, sandText: true }),
-  T2: Object.freeze({ dprCap: 1.5, msaa: true, grains: 16384, stars: Object.freeze({ signal: 2000, zenith: 3000 }), bloom: 'sprites', lattice: 1.0, atlas: 1024, contours: 12, ringTex: Object.freeze([2048, 128]), labels: 24, sandText: true }),
-  T1: Object.freeze({ dprCap: 1.25, msaa: false, grains: 8192, stars: Object.freeze({ signal: 800, zenith: 1200 }), bloom: 'sprites', lattice: 0.5, atlas: 512, contours: 8, ringTex: Object.freeze([1024, 64]), labels: 16, sandText: false }),
+  T3: Object.freeze({ dprCap: 2.0, msaa: true, grains: 24576, stars: Object.freeze({ signal: 2000, zenith: 3000 }), bloom: 'kawase', lattice: 1.0, atlas: 1024, contours: 12, ringTex: Object.freeze([2048, 128]), labels: 24, sandText: true, fx: FX.T3, audio: AUDIO('T3') }),
+  T2: Object.freeze({ dprCap: 1.5, msaa: true, grains: 16384, stars: Object.freeze({ signal: 2000, zenith: 3000 }), bloom: 'sprites', lattice: 1.0, atlas: 1024, contours: 12, ringTex: Object.freeze([2048, 128]), labels: 24, sandText: true, fx: FX.T2, audio: AUDIO('T2') }),
+  T1: Object.freeze({ dprCap: 1.25, msaa: false, grains: 8192, stars: Object.freeze({ signal: 800, zenith: 1200 }), bloom: 'sprites', lattice: 0.5, atlas: 512, contours: 8, ringTex: Object.freeze([1024, 64]), labels: 16, sandText: false, fx: FX.T1, audio: AUDIO('T1') }),
 });
+/** H15: the T2-phone fx adjustment. */
+const FX_T2_PHONE = Object.freeze({ ...FX.T2, dustPool: 16384, dustAmbient: 12288, heptagon: false, deposition: false, prosvetWidth: 1.0, threadDust: 300, swarf: 400, widthDof: false });
 const ORDER_T = ['T1', 'T2', 'T3'];
 const SOFTWARE = /SwiftShader|llvmpipe|Software|Mali-4|Adreno \(TM\) 3/i;
 const G = RENDER.governor;
@@ -35,7 +45,7 @@ function paramsFor(t) {
   const base = TIER_PARAMS[t];
   if (!base) return null;
   if (!isPhone()) return base;
-  return Object.freeze({ ...base, msaa: t === 'T2' ? false : base.msaa, labels: 16 });
+  return Object.freeze({ ...base, msaa: t === 'T2' ? false : base.msaa, labels: 16, fx: t === 'T2' ? FX_T2_PHONE : base.fx });
 }
 
 function devParam(name) {

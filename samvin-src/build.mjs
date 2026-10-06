@@ -156,10 +156,10 @@ fs.copyFileSync(path.join(HERE, 'src/static/_headers'), path.join(out, '_headers
     rows.push({ rel, raw: buf.length, gz: gz(buf), budgetGz });
   };
   add('index.html', 4 * KB);
-  add(JS, 230 * KB);
+  add(JS, 275 * KB);                 // ARCH-ADDENDUM X§7.3.1 (was 230)
   add(CSS, 8 * KB);
   for (const [, f] of FONTS) add(`fonts/${f}`, null);
-  add('world.js', 12 * KB);
+  add('world.js', 13 * KB);          // ARCH-ADDENDUM X§7.3.1 (was 12; A11 placeholder data)
   const fontsRaw = rows.filter((r) => r.rel.startsWith('fonts/')).reduce((s, r) => s + r.raw, 0);
   const totalRaw = rows.reduce((s, r) => s + r.raw, 0);
   const totalGz = rows.reduce((s, r) => s + r.gz, 0);

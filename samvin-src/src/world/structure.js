@@ -56,6 +56,34 @@ export function generatorParam(st, fam, g, t, kd = st.k) {
 const STRUT_FAMILIES = 2;
 const strutAt = (n, k, y) => Math.max(1e-4, (2 * radiusAt(y) * Math.sin(Math.PI / n) * n) / (k * STRUT_FAMILIES));
 
+// ─── H7 (X§2.2.6): the КОДЕКС law band on each stratum's back face jb(i) = floor(n_i / 2) ───────────────────────
+/** Face width (m) of stratum st at height y, and its slant height (m, summed over the loft segments). */
+const faceWidthAt = (st, y) => 2 * radiusAt(y) * Math.sin(Math.PI / st.n);
+function slantOf(st) {
+  const c = Math.cos(Math.PI / st.n);
+  let sl = 0;
+  for (let q = 0; q < LOFT_RINGS.length - 1; q++) {
+    const y0 = st.top + (st.bot - st.top) * LOFT_RINGS[q], y1 = st.top + (st.bot - st.top) * LOFT_RINGS[q + 1];
+    sl += Math.hypot(y0 - y1, (radiusAt(y0) - radiusAt(y1)) * c);
+  }
+  return sl;
+}
+/** 7 × { vc, vh, u0, u1 } in aFaceUV units: band centre, half-height, horizontal extent (u0 0.10 … u1 0.90).
+ *  vc = 0.5 (A M • V I) · S 5/6 (bottom = widest third) · N 1/6 (top = widest third);
+ *  vh = 0.5 · (0.8 · width_i(vc) / 8) / slant_i (keeps the 8:1 region undistorted at the band centre), capped at 0.14. */
+export const STRATA_CODE_BAND = Object.freeze(STRATA_GEOM.map((st) => {
+  const vc = st.i === 0 ? 5 / 6 : st.i === 6 ? 1 / 6 : 0.5;
+  const w = faceWidthAt(st, st.top + (st.bot - st.top) * vc);
+  const vh = Math.min(0.14, (0.5 * ((0.8 * w) / 8)) / slantOf(st));
+  return Object.freeze({ vc, vh, u0: 0.10, u1: 0.90 });
+}));
+/** The engraved cap height in metres of law i at that nest scale (≈ 0.75 · 2·vh·slant_i·scale). */
+export function codeCapHeightM(i, scale = 1) {
+  const st = STRATA_GEOM[i];
+  if (!st) return 0;
+  return 0.75 * 2 * STRATA_CODE_BAND[i].vh * slantOf(st) * scale;
+}
+
 /** Accumulates flat-shaded triangles with the structure attributes. */
 class Builder {
   constructor() { this.p = []; this.n = []; this.uv = []; this.eng = []; this.face = []; this.kind = []; this.strut = []; }

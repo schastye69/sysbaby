@@ -341,6 +341,18 @@ const directorConsumer = {
   },
 };
 
+// H24 (ARCH-ADDENDUM X§2.4.2): passive "down" observers — every pointerdown (document, capture) and every keydown
+// outside text inputs, before any consumer. One payload object per event.
+const downObservers = [];
+function notifyDown(x, y, type, target) {
+  if (!downObservers.length) return;
+  const ev = { x, y, type, target: target || null, t: performance.now() };
+  const snap = downObservers.slice();
+  for (let i = 0; i < snap.length; i++) {
+    try { snap[i](ev); } catch (err) { logOnce('input:downobserver', 'down observer threw', err); }
+  }
+}
+
 export const input = {
   pointer: { x: -9999, y: -9999, vx: 0, vy: 0, speed: 0, type: 'mouse', down: false, lastMove: 0, inside: false },
   /** Attaches listeners to #gl and #t0, the window observers, audio unlock, and the base consumer stack. */
@@ -359,10 +371,14 @@ export const input = {
     window.addEventListener('touchend', () => { try { audio.resume(); } catch (err) { /* ignore */ } }, { passive: true });
     // Keys: audio unlock + passive key observers (outside text inputs), in the capture phase so they precede
     // nav/keyboard.js (ARCH §3.9.3 order step 2).
+    document.addEventListener('pointerdown', (e) => {
+      notifyDown(e.clientX, e.clientY, e.pointerType === 'touch' || e.pointerType === 'pen' ? e.pointerType : 'mouse', e.target instanceof Element ? e.target : null);
+    }, { capture: true, passive: true });
     window.addEventListener('keydown', (e) => {
       unlock();
       const t = e.target;
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || ''))) return;
+      notifyDown(input.pointer.x, input.pointer.y, 'key', t instanceof Element ? t : null);
       for (let i = 0; i < keyObservers.length; i++) {
         try { keyObservers[i](e); } catch (err) { logOnce('input:keyobserver', 'key observer threw', err); }
       }
@@ -391,6 +407,13 @@ export const input = {
   observe(fn) {
     observers.push(fn);
     return () => { const i = observers.indexOf(fn); if (i >= 0) observers.splice(i, 1); };
+  },
+  /** H24: passive observer of every pointerdown (anywhere, incl. DOM controls) and every keydown outside text inputs,
+   *  called before any consumer: fn({ x, y, type: 'mouse'|'touch'|'pen'|'key', target, t }). → off() */
+  observeDown(fn) {
+    if (typeof fn !== 'function') return () => {};
+    downObservers.push(fn);
+    return () => { const i = downObservers.indexOf(fn); if (i >= 0) downObservers.splice(i, 1); };
   },
   /** Passive keydown observer outside text inputs. → remove() */
   observeKeys(fn) {

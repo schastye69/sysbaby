@@ -27,6 +27,7 @@ import { hallHost } from '../halls/host.js';
 import { parseHash, applyGuards, titleFor } from './router.js';
 import {
   buildDive, buildRecall, buildLift, buildSlice, buildRetarget, transitionKind, configurePaths, createPoseOut, copyPoseOut,
+  decorators,
 } from './paths.js';
 import { tOfU } from './pathKit.js';
 import { TIMING, MOTION } from '../core/tokens.js';
@@ -55,6 +56,26 @@ let arrivals = 0;
 const seen = new Set();
 
 const st = { phase: 'idle', path: null, from: null, to: null, u: 0, t: 0, speed: 1, scrubbing: false, swapped: false };
+// H23 (ARCH-ADDENDUM X§2.4.1): decorators, the preallocated fxOut, play(), planned cues.
+const fxOut = { active: false, kind: null };   // fields beyond these two are WP12's
+const decorated = new WeakSet();
+let playing = false, playSkipMs = 600;
+let cueCtx = null;                              // ctx whose audio.play skips the path's planned names
+function decorate(path, from, to, retargeted) {
+  if (!path || decorated.has(path)) return;
+  decorated.add(path);
+  const list = decorators();
+  if (!list.length) return;
+  const info = {
+    kind: path.kind, from: from ? from.room : app.room, to: to ? to.room : app.room,
+    first: path.kind === 'DIVE' ? !(state.data && state.data.firstDive) : !seen.has(to ? to.room : app.room),
+    reduced: !!(ENV.reducedMotion || app.tier === 'T0'), retarget: !!retargeted,
+  };
+  for (let k = 0; k < list.length; k++) {
+    try { list[k](path, info); } catch (e) { if (__DEV__) console.warn('path decorator failed', e); }   // eslint-disable-line no-console
+  }
+}
+const isPlanned = (name) => !!(st.path && st.path.planned && typeof st.path.planned.has === 'function' && st.path.planned.has(name));
 
 const has = (o, m) => o && typeof o[m] === 'function';
 const call = (o, m, a, b, c) => (has(o, m) ? o[m](a, b, c) : undefined);
@@ -163,6 +184,9 @@ function buildPath(start, from, to, retargetFrom) {
 }
 
 function begin(path, from, to, opts) {
+  decorate(path, from, to, !!opts.retargeted);
+  playing = !!opts.play;
+  if (playing) playSkipMs = opts.skipMs != null ? opts.skipMs : 600;
   st.path = path; st.from = from; st.to = to;
   st.t = 0; st.u = 0; st.speed = 1; st.swapped = false; st.phase = 'transition';
   st.scrubbing = !!opts.scrub; scrubU = 0; mode = 'forward';
@@ -241,7 +265,7 @@ function retarget(to, opts) {
   const from = { room: logical, sub: null, hash: `#/${ROOMS[logical].slug}` };
   const path = buildPath(tmp, from, to, logical);
   rec = null;
-  begin(path, from, to, opts);
+  begin(path, from, to, { ...opts, retargeted: true, play: false });
   return new Promise((res) => { pending = res; });
 }
 
@@ -272,6 +296,8 @@ function arrive() {
   applyWorld(out);
   copyPoseOut(out, cur);
   stopVoice();
+  fxOut.active = false;
+  if (playing) { arrivePlay(path, from, to); return; }
   const first = !seen.has(to.room);
   seen.add(to.room);
   arrivals += 1;
@@ -298,7 +324,7 @@ function arrive() {
   call(ctx.keyNav, 'setNeedle', ROOMS[to.room].alt);
   call(ctx.keyNav, 'setCurrent', to.room);
   call(ctx.keyNav, 'lockTwin');
-  if (ctx.audio) ctx.audio.play('arrivalLock', { root: ROOMS[to.room].root });
+  if (ctx.audio && !isPlanned('arrivalLock')) ctx.audio.play('arrivalLock', { root: ROOMS[to.room].root });
   call(ctx.edges, 'twitch');
   if (layout.isPhone) vibrate(VIBE.lock);
   document.title = titleFor(route);
@@ -317,6 +343,36 @@ function arrive() {
   if (r) r(true);
 }
 
+/** H23: the end of a play(): the normal arrival machinery WITHOUT a route change or history entry. */
+function arrivePlay(path, from, to) {
+  playing = false;
+  const room = to.room;
+  app.u = 0;
+  st.phase = 'idle'; st.scrubbing = false; st.u = 0;
+  if (ctx.renderer) nest.setHallLod(room);
+  hallHost.show(room, true);
+  hallHost.call(room, 'enter', 1);
+  setPhase('idle');
+  arrivals += 1;
+  hallHost.call(room, 'arrive', { first: false, sub: director.current.sub, kind: path.kind, arrivals });
+  call(ctx.datum, 'counter', ROOMS[room].alt, 0);
+  call(ctx.datum, 'flashCode', null);
+  call(ctx.datum, 'arrive', room);
+  call(ctx.keyNav, 'setNeedle', ROOMS[room].alt);
+  call(ctx.keyNav, 'setCurrent', room);
+  call(ctx.keyNav, 'lockTwin');
+  if (ctx.audio && !isPlanned('arrivalLock')) ctx.audio.play('arrivalLock', { root: ROOMS[room].root });
+  call(ctx.edges, 'twitch');
+  if (layout.isPhone) vibrate(VIBE.lock);
+  refreshRest();
+  director.lastTravel = { kind: path.kind, from: from.hash, to: director.current.hash, plannedMs: path.duration, ms: loop.at() - startNow, completed: true };
+  st.path = null;
+  bus.emit('room:arrive', { room, sub: director.current.sub, first: false, kind: path.kind, arrivals });
+  bus.emit('travel:end', { from, to: director.current, kind: path.kind, completed: true });
+  const r = pending; pending = null;
+  if (r) r(true);
+}
+
 /** Scrub released below 0.5: the travel plays back to u = 0 and the source is current again. */
 function revert() {
   const path = st.path, from = st.from, to = st.to;
@@ -324,6 +380,7 @@ function revert() {
   applyWorld(out);
   copyPoseOut(out, cur);
   stopVoice();
+  fxOut.active = false; playing = false;
   st.phase = 'idle'; st.scrubbing = false; st.u = 0; app.u = 0;
   const back = fromHall || from.room;
   if (ctx.renderer) nest.setHallLod(back);
@@ -364,15 +421,19 @@ function applyU(u) {
     }
   }
   p.pose(u, out);
+  fxOut.active = true; fxOut.kind = p.kind;
+  if (p.fx) { try { p.fx(u, fxOut); } catch (e) { if (__DEV__) console.warn('path.fx failed', e); } }   // eslint-disable-line no-console
   applyWorld(out);
-  if (fromHall && fromHall !== st.to.room) hallHost.call(fromHall, 'exit', out.exitU);
-  hallHost.call(st.to.room, 'enter', out.enterU);
+  if (!playing) {
+    if (fromHall && fromHall !== st.to.room) hallHost.call(fromHall, 'exit', out.exitU);
+    hallHost.call(st.to.room, 'enter', out.enterU);
+  }
   call(ctx.keyNav, 'setNeedle', out.alt);
   if (ctx.audio) ctx.audio.setRootU(st.from.room, st.to.room, u);
   call(ctx.datum, 'counter', out.alt, out.counter);
   call(ctx.datum, 'flashCode', out.flashCode);
   if (voice) { voiceParams.speed01 = out.speed01; voiceParams.pan = out.pan; voice.set(voiceParams); }
-  if (p.cues) p.cues(u, prevU, ctx);
+  if (p.cues) p.cues(u, prevU, cueCtx || ctx);
   if (!interactiveSent && u >= TIMING.interactiveU) {
     interactiveSent = true;
     hallHost.show(st.to.room);
@@ -402,7 +463,7 @@ function frame(dt) {
   let dms = now - lastNow;
   lastNow = now;
   if (fresh) { fresh = false; if (dms < 0) dms = 0; }
-  if (st.phase !== 'transition') { idleFrame(dt); return; }
+  if (st.phase !== 'transition') { fxOut.active = false; idleFrame(dt); return; }
   const D = st.path.duration;
   let u;
   if (st.scrubbing) u = scrubU;
@@ -500,6 +561,13 @@ export const director = {
     ctx = c;
     c.director = director;
     c.halls = hallHost;
+    // H23: path builders' cues see an audio whose play() skips every name in the current path's `planned` set.
+    if (c.audio) {
+      const cueAudio = Object.create(c.audio);
+      cueAudio.play = (name, params) => (isPlanned(name) ? null : c.audio.play(name, params));
+      cueCtx = Object.create(c);
+      cueCtx.audio = cueAudio;
+    }
     configurePaths({
       restPose: (id, sub, o) => hallHost.restPose(id, sub, o),
       faceFrame: c.key ? (i, o) => c.key.faceFrame(i, o) : null,
@@ -566,8 +634,57 @@ export const director = {
     }
   },
 
-  /** ×3 for the remainder (taps on empty space, non-navigation keys). */
-  speedUp() { if (st.phase === 'transition' && !st.scrubbing && mode === 'forward') st.speed = TIMING.skipSpeed; },
+  /** ×3 for the remainder (taps on empty space, non-navigation keys). During play() (H23): the remaining duration is
+   *  compressed to opts.skipMs instead. */
+  speedUp() {
+    if (st.phase !== 'transition' || st.scrubbing || mode !== 'forward') return;
+    if (playing) {
+      const left = st.path.duration - st.t;
+      if (left > playSkipMs) st.speed = Math.max(st.speed, left / Math.max(1, playSkipMs));
+      armEnd(loop.now, true);
+      return;
+    }
+    st.speed = TIMING.skipSpeed;
+  },
+
+  // ── H23 (ARCH-ADDENDUM X§2.4.1) ──
+  /** true while a play() path runs */
+  get playing() { return playing; },
+  /** → the live, preallocated fxOut (the director sets only `active` and `kind`) */
+  fxOut() { return fxOut; },
+  /** → the live PoseOut (read-only) */
+  pose() { return cur; },
+  /** → performance.now() ms at which the current path reaches msInPath (its own clock, speed 1); null while scrubbing,
+   *  idle, not playing forward, or msInPath < t. */
+  predict(msInPath) {
+    if (st.phase !== 'transition' || st.scrubbing || mode !== 'forward' || !(msInPath >= st.t)) return null;
+    return performance.now() + (msInPath - st.t) / Math.max(1e-6, st.speed);
+  },
+  /** Runs a SPECIAL path whose from === to === app.room through the normal machinery (phase transition, travel:start /
+   *  travel:end, datum depart / arrive, arrival lock) without a route change or history entry. → Promise<boolean>
+   *  (true at u = 1; false if superseded). A tap / non-navigation key / Esc compresses the rest to opts.skipMs. */
+  play(path, opts = { source: 'show', skipMs: 600 }) {
+    try {
+      if (!path || typeof path.pose !== 'function') return Promise.resolve(false);
+      if (st.phase === 'transition') return Promise.resolve(false);
+      cancelFocus();
+      const here = director.current;
+      if (!path.from) path.from = here.room;
+      if (!path.to) path.to = here.room;
+      snapshot();
+      fromHall = here.room;
+      setPhase('transition');
+      hallHost.call(here.room, 'depart');
+      call(ctx.datum, 'depart');
+      bus.emit('room:depart', { room: here.room, to: here });
+      const o = { source: 'show', skipMs: 600, ...(opts || {}), play: true };
+      begin(path, here, here, o);
+      return new Promise((res) => { pending = res; });
+    } catch (e) {
+      if (__DEV__) console.warn('director.play failed', e);   // eslint-disable-line no-console
+      return Promise.resolve(false);
+    }
+  },
 
   scrub: {
     /** idle: builds the path and parks at u = 0; travelling: takes over the current u. Reduced motion / T0: false. */

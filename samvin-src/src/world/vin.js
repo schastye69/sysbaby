@@ -17,6 +17,7 @@ import { radiusAt } from './structure.js';
 import { createLines } from '../render/lines.js';
 import { U, colorUniform } from '../render/uniforms.js';
 import { FOG_GLSL } from '../render/fog.js';
+import { FX_GLSL, fxUniforms } from '../render/fxChunk.js';
 import { HALL } from '../core/tokens.js';
 
 const TAU = Math.PI * 2;
@@ -148,6 +149,7 @@ void main() {
 }`;
 const BEAD_FRAG = /* glsl */ `
 ${FOG_GLSL}
+${FX_GLSL}
 uniform vec3 uColor; uniform vec3 uBase; uniform vec3 cWhite; uniform vec3 uLamp; uniform float uAlpha, uFlash;
 varying vec3 vN; varying vec3 vW;
 void main() {
@@ -160,6 +162,7 @@ void main() {
   float sp = pow(max(dot(N, normalize(L + V)), 0.0), 24.0);
   vec3 col = uBase + uColor * (0.06 + 0.10 * d + 0.55 * fr + 0.35 * sp);
   col = mix(col, cWhite, uFlash);
+  col = mix(col, cWhite, clamp(max(uImpact, fxWaveBright(vW)), 0.0, 1.0));   // H4: ПРОСВЕТ / ВОЛНА axis beads
   col = applyFog(col, length(vW - cameraPosition));
   gl_FragColor = vec4(col, uAlpha);
 }`;
@@ -183,7 +186,7 @@ export function createAxisPillar() {
   const geo = new OctahedronGeometry(HALL.beadR, 0);
   const mat = new ShaderMaterial({
     uniforms: { uColor: colorUniform('silver'), uBase: colorUniform('obsidian'), cWhite: U.cWhite, uLamp: U.uLamp, uAlpha: { value: 1 }, uFlash: { value: 0 },
-      cAbyss: U.cAbyss, uFogDensity: U.uFogDensity },
+      cAbyss: U.cAbyss, uFogDensity: U.uFogDensity, ...fxUniforms() },
     vertexShader: BEAD_VERT, fragmentShader: BEAD_FRAG,
   });
   const beads = new InstancedMesh(geo, mat, HALL.beadCount);

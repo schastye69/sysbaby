@@ -100,6 +100,19 @@ function tGlyph(raw, path, iss) {
   if (!g.length) return { ok: false };
   return { ok: true, v: g };
 }
+/** H10: Num(min, max, dp) that is NOT clamped: out of range → invalid (the caller's default) + issue. */
+function tNumStrict(raw, min, max, dp, path, iss) {
+  const n = toNum(raw, true);
+  if (!Number.isFinite(n)) { iss(`${path}: ${q(raw)} invalid`); return { ok: false }; }
+  const f = Math.pow(10, dp);
+  const v = Math.round(n * f) / f;
+  if (v < min || v > max) { iss(`${path}: ${q(raw)} out of range`); return { ok: false }; }
+  return { ok: true, v };
+}
+const WHERE = ['игра', 'жизнь'];
+/** H10: the `where` mark — Enum(игра|жизнь) or null; a present invalid value → null + issue; missing → null silently. */
+const whereOf = (o, p, iss) => field(o, 'where', (v) => tEnum(v, WHERE, `${p}.where`, iss), null);
+
 /** field(o, k, check, def): present → check (invalid → default); missing → default (silent). */
 function field(o, k, check, def) {
   if (!has(o, k)) return def;
@@ -167,6 +180,7 @@ function vAchievements(raw, iss) {
       date: earned ? field(o, 'date', (v) => tDate(v, `${p}.date`, iss), null) : null,
       who: idList(o, 'who', 12, `${p}.who`, iss),
       text: field(o, 'text', (v) => tText(v, 200, false, `${p}.text`, iss), ''),
+      where: whereOf(o, p, iss),
     };
   }, iss);
 }
@@ -236,6 +250,8 @@ function vMissions(raw, iss) {
       reward: field(o, 'reward', (v) => tId(v, `${p}.reward`, iss), null),
       log: field(o, 'log', (v) => tText(v, 200, false, `${p}.log`, iss), ''),
       decodeDays, unlockAtDays,
+      proposedBy: field(o, 'proposedBy', (v) => tId(v, `${p}.proposedBy`, iss), null),   // Ref(members), resolved in step 4
+      where: whereOf(o, p, iss),
     };
   }, iss);
 }
@@ -253,6 +269,7 @@ function vLegends(raw, iss) {
       kind: field(o, 'kind', (v) => tEnum(v, ['победа', 'смешное', 'эпичное'], `${p}.kind`, iss), 'эпичное'),
       title: title.v,
       text: field(o, 'text', (v) => tText(v, 300, false, `${p}.text`, iss), ''),
+      where: whereOf(o, p, iss),
     };
   }, iss);
 }
@@ -270,6 +287,7 @@ function vMoments(raw, iss) {
       title: title.v,
       who: idList(o, 'who', 12, `${p}.who`, iss),
       text: field(o, 'text', (v) => tText(v, 300, true, `${p}.text`, iss), title.v),
+      where: whereOf(o, p, iss),
     };
   }, iss);
 }
@@ -295,7 +313,7 @@ function vTransmissions(raw, iss) {
   return eachItem(raw, 'transmissions', (o, i, p) => {
     const text = has(o, 'text') ? tText(o.text, 240, true, `${p}.text`, iss) : { ok: false };
     if (!text.ok) { iss(`${p}: no text, dropped`); return null; }
-    return { from: field(o, 'from', (v) => tText(v, 16, true, `${p}.from`, iss), 'ШТАБ'), text: text.v };
+    return { from: field(o, 'from', (v) => tText(v, 16, true, `${p}.from`, iss), 'VIN'), text: text.v };   // O10: was ШТАБ
   }, iss);
 }
 
@@ -305,10 +323,31 @@ function vClan(o, iss) {
   return {
     name: field(o, 'name', (v) => tText(v, 24, true, 'clan.name', iss), D.name),
     motto: field(o, 'motto', (v) => tText(v, 80, true, 'clan.motto', iss), D.motto),
+    about: field(o, 'about', (v) => tText(v, 120, false, 'clan.about', iss), D.about),   // "" allowed (= hidden everywhere)
     founded: field(o, 'founded', (v) => tDate(v, 'clan.founded', iss), D.founded),
     frequency: field(o, 'frequency', (v) => tNum(v, 0, 99.99, 2, 'clan.frequency', iss), D.frequency),
     sigil: field(o, 'sigil', (v) => tGlyph(v, 'clan.sigil', iss), normalizeGlyph(D.sigil)),   // the default, normalised like any glyph
+    code: vCode(o, iss),
   };
+}
+
+/** H10: clan.code — List(Text(40), 7) with exactly 7 slots (A11.3): non-string item → "" (issue); missing items → that
+ *  slot's default; extra items dropped (issue); not an array → the 7 defaults. */
+function vCode(o, iss) {
+  const D = DEFAULT_WORLD.clan.code;
+  if (!has(o, 'code')) return D.slice();
+  const raw = o.code;
+  if (!Array.isArray(raw)) { iss('clan.code: not a list, default used'); return D.slice(); }
+  if (raw.length > 7) iss(`clan.code: more than 7, rest dropped`);
+  const out = [];
+  for (let i = 0; i < 7; i++) {
+    if (i >= raw.length) { out.push(D[i]); continue; }
+    const v = raw[i];
+    if (typeof v !== 'string') { iss(`clan.code[${i}]: ${q(v)} invalid → ""`); out.push(''); continue; }
+    const r = tText(v, 40, false, `clan.code[${i}]`, iss);
+    out.push(r.ok ? r.v : '');
+  }
+  return out;
 }
 
 function vOperator(o, members, iss) {
@@ -330,6 +369,8 @@ function vOperator(o, members, iss) {
     aliases: textList(o, 'aliases', 8, 24, 'operator.aliases', iss),   // completed in step 5
     callsign: field(o, 'callsign', (v) => tText(v, 16, false, 'operator.callsign', iss), om ? om.callsign : ''),
     birthday: field(o, 'birthday', (v) => tDate(v, 'operator.birthday', iss), null),
+    heightM: field(o, 'heightM', (v) => tNumStrict(v, 0.8, 2.2, 2, 'operator.heightM', iss), D.heightM != null ? D.heightM : 1.3),
+    papaHeightM: field(o, 'papaHeightM', (v) => tNumStrict(v, 1.4, 2.3, 2, 'operator.papaHeightM', iss), null),
   };
 }
 
@@ -412,6 +453,7 @@ export function validateWorld(raw) {
     w.missions.forEach((m, i) => {
       m.crew = refs(m.crew, mIds, `missions[${i}].crew`);
       if (m.reward != null && !aIds.has(m.reward)) { iss(`missions[${i}].reward: unknown "${m.reward}" removed`); m.reward = null; }
+      if (m.proposedBy != null && !mIds.has(m.proposedBy)) { iss(`missions[${i}].proposedBy: unknown "${m.proposedBy}" removed`); m.proposedBy = null; }
     });
     w.achievements.forEach((a, i) => { a.who = refs(a.who, mIds, `achievements[${i}].who`); });
     w.moments.forEach((m, i) => { m.who = refs(m.who, mIds, `moments[${i}].who`); });
@@ -469,6 +511,11 @@ export function missionByCode(code) {
 }
 export function achievementById(id) { return WORLD.achievements.find((a) => a.id === id) || null; }
 
+/** H10 (X§4.2, A11.6): the one display string of the `where` mark. Every surface uses it; nobody re-spells the label. */
+export function whereLabel(where) {
+  return where === 'игра' ? 'В ИГРЕ' : where === 'жизнь' ? 'В ЖИЗНИ' : null;
+}
+
 // ─── §4.5 calm lines ──────────────────────────────────────────────────────────────────────────────────────────
 export const EMPTY_LINE = Object.freeze({ members: 'Здесь пока никого нет.', missions: 'Вылазок пока нет.', achievements: 'Трофеев пока нет.',
   transmissions: 'Передач пока нет.', probeLog: 'Зонд вернулся. Записи нет.' });
@@ -507,5 +554,6 @@ export function worldCounts() {
     secrets: found,   // = secrets.count() (§3.14.2): the found ids, counted from the same persisted record
     shards: d.shards | 0,
     nadirOpen: !!d.nadirOpen,
+    life: WORLD.missions.filter((m) => m.where === 'жизнь').length,   // H10: V ring `· В ЖИЗНИ {n}` (shown when ≥ 1)
   };
 }

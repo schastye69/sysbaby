@@ -3,10 +3,82 @@
 // DOM section per route showing the room's level line only (the datum/title are the WP0 datum's). show(route) swaps
 // the section; boot() resolves after 600 ms; showLost()/hideLost() put the T0 CORE over the canvas on context loss.
 // t0.css stays an empty seed, so the few layout rules live here as CSSOM writes.
+// Hooks pass (ARCH-ADDENDUM X§2.8.3, H27): twin(kind, opts) (no-op seed) and `rim` — a minimal DOM Rim with the full
+// Rim API (his uppercased name in an .sr-only + a visible span under the SVG Key; burn = show; rows() real).
 import { STRATA_GEOM, radiusAt } from '../core/tokens.js';
 import { ROOMS } from '../world/rooms.js';
 import { layout } from '../core/layout.js';
 import { after } from '../core/clock.js';
+import { WORLD } from '../data/world.js';
+import { upper } from '../core/ru.js';
+import { registerHookField } from '../core/testhook.js';
+
+/** H27: the T0 DOM rim (WP11 replaces it). */
+function createDomRim(root, owner) {
+  const name = upper(WORLD.operator.name || '');
+  const LETTER_M = 38;
+  let guests = [], role = null, alpha = 1, shown = false, lit = 0;
+  const box = document.createElement('div');
+  Object.assign(box.style, { position: 'absolute', left: '50%', top: `calc(50% + ${(KEY_FRAC * 50).toFixed(1)}vh + 24px)`,
+    transform: 'translateX(-50%)', textAlign: 'center', whiteSpace: 'nowrap', color: 'var(--silver)' });
+  box.hidden = true;
+  const line = document.createElement('p');
+  line.className = 't-label';
+  line.setAttribute('aria-hidden', 'true');
+  line.style.margin = '0';
+  const sub = document.createElement('p');
+  sub.className = 't-micro';
+  sub.setAttribute('aria-hidden', 'true');
+  sub.style.margin = '4px 0 0';
+  sub.style.opacity = '0.7';
+  box.appendChild(line); box.appendChild(sub);
+  const sr = document.createElement('span');
+  sr.className = 'sr-only';
+  sr.textContent = name;
+  if (root) { root.appendChild(box); root.appendChild(sr); }
+  const spans = [];
+  function paint() {
+    line.textContent = '';
+    spans.length = 0;
+    [name].concat(guests).forEach((n, i) => {
+      if (i) line.appendChild(document.createTextNode('   '));
+      const sp = document.createElement('span');
+      sp.textContent = n;
+      line.appendChild(sp);
+      spans.push(sp);
+    });
+    sub.textContent = role || '';
+    sub.hidden = !role;
+    box.style.opacity = String(alpha);
+  }
+  paint();
+  const rim = {
+    group: null,
+    burn(opts) {
+      const at = opts && Number.isFinite(opts.at) ? opts.at : null;
+      const wait = at != null ? Math.max(0, at - performance.now()) : 0;
+      if (wait <= 0) { rim.showName(); return Promise.resolve(); }
+      return new Promise((res) => after(wait, () => { rim.showName(); res(); }));
+    },
+    showName() { shown = true; box.hidden = !(alpha > 0); },
+    burnGuests(names) { guests = (Array.isArray(names) ? names : []).map((n) => upper(String(n || ''))).filter(Boolean); paint(); rim.showName(); return Promise.resolve(); },
+    clearGuests() { guests = []; paint(); },
+    rows() { return [name].concat(guests).map((text) => ({ text, heightM: LETTER_M, row: 0 })); },
+    setRole(text) { role = text ? upper(String(text)) : null; paint(); },
+    namePoint(i, out) {
+      const o = out || { x: 0, y: 0 };
+      const sp = spans[Math.max(0, Math.min(spans.length - 1, i | 0))];
+      const r = sp && !box.hidden ? sp.getBoundingClientRect() : null;
+      if (r && r.width) { o.x = r.left + r.width / 2; o.y = r.top + r.height / 2; } else { o.x = layout.w / 2; o.y = layout.h * 0.85; }
+      return o;
+    },
+    letterHeightM() { return LETTER_M; },
+    setLitNodes(n) { lit = Math.max(0, n | 0); void lit; },
+    setAlpha(a) { alpha = Math.max(0, Math.min(1, +a || 0)); box.style.opacity = String(alpha); box.hidden = !shown || !(alpha > 0); },
+  };
+  if (owner) registerHookField('rim', () => rim.rows());   // only when T0 is the tier (not the context-loss overlay)
+  return rim;
+}
 
 const SVG = 'http://www.w3.org/2000/svg';
 const KEY_FRAC = 0.56;            // Key height as a fraction of the viewport height
@@ -61,8 +133,13 @@ export function mountT0(ctx) {
     }
     root.hidden = ctx.app.tier !== 'T0';
   }
+  const domRim = createDomRim(root, ctx.app.tier === 'T0');
   const t0 = {
     root,
+    /** H27: the DOM rim (full Rim API); main.js uses it as ctx.rim in T0. */
+    rim: domRim,
+    /** H27 seed: CSS/SVG picture twins driven by createFxT0 (WP12) — no-op until WP11. */
+    twin(kind, opts) { void kind; void opts; },
     boot(opts) { void opts; return new Promise((res) => after(600, res)); },
     show(route) {
       const id = route && ROOMS[route.room] ? route.room : 'CORE';

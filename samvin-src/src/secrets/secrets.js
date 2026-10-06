@@ -3,8 +3,9 @@
 // First discovery: persist found[id] (ISO) + foundVars[id]; emit 'secret:found'; await flyShard(from → the next empty N
 // slot, or the I letter once NADIR is open / all 5 slots are full); on landing: shards += 1 (while < 5 and sealed),
 // slots refresh, 'shard' sound, vibrate, BR relock, status 'found' then 'shard' {k}; 'shard:landed'; the rank check
-// ('rank:change' + status 'rank' + audio.setRank); the 5th shard unseals NADIR (nadirOpen, LEAD «Внизу что-то
-// открылось.» 3,000 ms, keyNav.crack(), 'nadir:open').
+// ('rank:change' + status 'rank' + audio.setRank); the 5th shard unseals NADIR (status 'shard' {k:5}, await
+// ctx.fx.pieces.nadirUnseal() (H25), nadirOpen, LEAD «Внизу что-то открылось.» 3,000 ms, keyNav.crack(), status
+// 'nadir.open', 'nadir:open').
 // The DOM pieces are reached through ctx (keyNav, chrome, lead, status), each guarded, so T0 and early boot work too.
 import { SECRETS, secretById } from './registry.js';
 import { flyShard } from './shardFlight.js';
@@ -51,11 +52,16 @@ async function land(id, from) {
     if (has(audio, 'setRank')) audio.setRank(r.index);
   }
   if (sealedSlot && d.shards >= 5 && !d.nadirOpen) {
-    state.set('nadirOpen', true);
+    // H25 (ARCH-ADDENDUM X§2.4.7): slot 5 + 'shard' sound are done; status, then the ИСТОК unseal FX (WP12; resolves on
+    // the hit frame — the seed at once), then the opening itself.
     say('shard', { k: 5 });
-    say('nadir.open');
+    const pieces = ctx && ctx.fx && ctx.fx.pieces;
+    if (has(pieces, 'nadirUnseal')) { try { await pieces.nadirUnseal(); } catch (e) { /* the FX is cosmetic */ } }
+    if (state.data.nadirOpen) return;
+    state.set('nadirOpen', true);
     if (ctx && has(ctx.lead, 'show')) ctx.lead.show('Внизу что-то открылось.', { ms: 3000 });
     if (has(kn, 'crack')) kn.crack();
+    say('nadir.open');
     bus.emit('nadir:open', {});
   }
 }

@@ -1,4 +1,5 @@
-// ui/statusCopy.js — every status key of SPEC §8.4, exactly (ARCH §3.12.5). P1 discovery … P5 idle facts.
+// ui/statusCopy.js — every status key of SPEC §8.4, exactly (ARCH §3.12.5), plus SPEC-ADDENDUM A8.3 (hook H13).
+// P1 discovery … P5 idle facts.
 // Template: {var} substitutes; {var:one|few|many} is the Russian plural word for var (core/ru.js plural()).
 // {name} is WORLD.operator.name as written (capitalised); the caller passes it.
 export const STATUS_COPY = Object.freeze({
@@ -40,6 +41,22 @@ export const STATUS_COPY = Object.freeze({
   'hint.time': { text: 'остальное придёт само. возвращайся.', p: 1 },
   'sealed': { text: 'запечатано. осколков {k} из 5.', p: 1 },
   'route.missing': { text: 'здесь ничего нет. пока.', p: 1 },
-  'idle.nodes': { text: '{n} {n:узел|узла|узлов} горит.', p: 5 },
+  'idle.nodes': { text: '{n} {n:узел горит|узла горят|узлов горят}.', p: 5 },   // A11.5 O48 (H13): the verb agrees
   'idle.mission': { text: 'вылазка {code} ждёт.', p: 5 },
+  // H13 (ARCH-ADDENDUM X§2.9.4; SPEC-ADDENDUM A8.3, A11.4)
+  'echo': { text: 'эхо от стены: {m} м.', p: 4 },
+  'guests.in': { text: 'гости приняты.', p: 1 },
+  'guests.none': { text: 'покажу сам.', p: 4 },
+  'sbor.done': { text: 'клан откликнулся.', p: 1 },
+  'code.new': { text: 'новое правило клана.', p: 1 },
+  'lost.here': { text: 'кто-то маленький потерялся.', p: 4 },
+  'lost.saved': { text: 'ты не прошёл мимо.', p: 1 },
+  'lost.gentle': { text: 'ты был бережным.', p: 1 },
+  'pair.here': { text: 'двое не слышат друг друга.', p: 4 },
+  'pair.done': { text: 'договорились.', p: 1 },
+  'pair.fact': { text: 'ты помог им услышать друг друга.', p: 1 },
+  'proposal.saved': { text: 'записано. покажи папе.', p: 1 },
+  'proposal.real': { text: 'твоя вылазка {code} стала настоящей.', p: 2 },
+  'reply.saved': { text: 'ответ сохранён. покажи папе.', p: 1 },
+  'show.dark': { text: 'разбуди меня.', p: 1 },
 });

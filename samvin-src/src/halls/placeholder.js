@@ -222,6 +222,17 @@ export function createPlaceholderHall(hctx, opts = {}) {
       applyAlpha();
     },
     pose(s) { void s; return restPose(id, hctx.layout.kind, vAlt, poseOut); },
+    /** H18 (X§2.4.5): 6 hall-local points on a ring of radius 11 m around the rest camera's target, at deck height
+     *  (so WP13's ПОТЕРЯШКА works before the hall WPs land). PURE. */
+    lostSpots() {
+      const p = restPose(id, hctx.layout.kind, vAlt, { pos: new Vector3(), target: new Vector3(), fov: 0, offsetY: 0, roll: 0 });
+      const out = [];
+      for (let k = 0; k < 6; k++) {
+        const a = (TAU * k) / 6;
+        out.push(new Vector3(p.target.x + Math.sin(a) * 11, 0, p.target.z + Math.cos(a) * 11));
+      }
+      return out;
+    },
     livePose(out) {
       // VOYAGES wheel altitude 60–140 m (desktop pitch kept); allocation-free.
       if (id !== 'VOYAGES' || vAlt === CAMERA.voyages.pos[1] || hctx.layout.kind === 'phone') return false;

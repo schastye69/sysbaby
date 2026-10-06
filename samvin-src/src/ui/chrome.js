@@ -18,6 +18,8 @@ const levels = new Float32Array(8);
 const barH = new Float32Array(8);
 let ctxRef = null, bars = [], minuteTimer = 0, lastWave = -1e9, t0Marker = false, soundOn = true, relockTimer = 0;
 let foundEl = null, rankEl = null, labelEl = null;
+// H20 (ARCH-ADDENDUM X§2.4.4): the TL verb (third TL line) and the MICRO override.
+let verbEl = null, verbV = null, verbTimer = 0, microOverride = null, microRoom = '';
 
 function mk(tag, cls, text, parent, id) {
   const n = document.createElement(tag);
@@ -129,7 +131,44 @@ export const chrome = {
   /** TL MICRO `${code} · ▽ ${level}`. */
   setRoom(roomId) {
     const m = ROOMS[roomId] || ROOMS.CORE;
-    if (chrome.el.tlMicro) chrome.el.tlMicro.textContent = `${m.code} · ▽ ${m.level}`;
+    microRoom = `${m.code} · ▽ ${m.level}`;
+    if (chrome.el.tlMicro && microOverride == null) chrome.el.tlMicro.textContent = microRoom;
+  },
+
+  /** H20: one LABEL verb as a third TL line (`.verb`, hit ≥ 44 × 44, data-qa = v.qa); null hides it. */
+  setTLVerb(v, opts = { fadeMs: 240 }) {
+    const tl = chrome.el.tl;
+    if (!tl) return;
+    const ms = opts && opts.fadeMs != null ? opts.fadeMs : 240;
+    if (verbTimer) { cancelAfter(verbTimer); verbTimer = 0; }
+    if (v && typeof v === 'object') {
+      verbV = v;
+      if (!verbEl) {
+        verbEl = mk('button', 'verb t-label', null, tl, 'c-tl-verb');
+        verbEl.type = 'button';
+        verbEl.style.pointerEvents = 'auto';
+        verbEl.addEventListener('click', () => { if (verbV && typeof verbV.onActivate === 'function') verbV.onActivate(); });
+        verbEl.style.opacity = '0';
+      }
+      verbEl.textContent = String(v.label || '');
+      if (v.qa) verbEl.setAttribute('data-qa', String(v.qa)); else verbEl.removeAttribute('data-qa');
+      verbEl.hidden = false;
+      verbEl.style.transition = `opacity ${ms}ms linear`;
+      void verbEl.offsetWidth;
+      verbEl.style.opacity = '1';
+    } else if (verbEl) {
+      verbV = null;
+      verbEl.style.transition = `opacity ${ms}ms linear`;
+      verbEl.style.opacity = '0';
+      const el = verbEl;
+      verbTimer = after(ms, () => { verbTimer = 0; if (!verbV) el.hidden = true; });
+    }
+  },
+
+  /** H20: overrides the TL MICRO (ПОКАЗ · ВЕДЁТ {ИМЯ}); null restores `${code} · ▽ ${level}`. */
+  setTLMicro(text) {
+    microOverride = text == null ? null : String(text);
+    if (chrome.el.tlMicro) chrome.el.tlMicro.textContent = microOverride != null ? microOverride : microRoom;
   },
 
   /** BL day/nodes/clock (re-armed every minute) and BR found count + rank. */

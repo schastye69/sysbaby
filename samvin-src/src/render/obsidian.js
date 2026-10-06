@@ -17,17 +17,20 @@
 // A region key (e.g. 'capital:3') maps that atlas region over the geometry's `uv`.
 // Uniforms added: uAlpha, uFlash (→ cWhite), uEdgeEmber (reserved, tints nothing), uHideCapsOf (hall LOD: caps of that
 // stratum are discarded; −1 none).
-import { ShaderMaterial, FrontSide, Vector4 } from 'three';
+import { ShaderMaterial, FrontSide, Vector2, Vector4 } from 'three';
 import { U, colorUniform, identityStrata, onesStrata } from './uniforms.js';
 import { FOG_GLSL } from './fog.js';
 import { R1_GLSL, STRATA_GLSL } from './madeOfItself.js';
 import { atlas } from './engraveAtlas.js';
 import { RENDER, KEY } from '../core/tokens.js';
 import { quality } from '../core/quality.js';
+import { FX_GLSL, fxUniforms } from './fxChunk.js';
+import { STRATA_CODE_BAND, STRATA_GEOM } from '../world/structure.js';
 
 const VERT = /* glsl */ `
 ${R1_GLSL}
 ${STRATA_GLSL}
+${FX_GLSL}
 #ifdef USE_KEYGEO
 attribute float aFace; attribute vec2 aFaceUV; attribute vec4 aEng; attribute float aKind;
 varying vec2 vFaceUV; varying vec4 vEng; varying float vKind; varying float vFace; varying vec3 vLocal;
@@ -56,6 +59,7 @@ void main() {
   vUv = uv;
 #endif
   vec4 w = M * vec4(position, 1.0);
+  w.xyz = fxDisplace(w.xyz);                                 // H4: ВОЛНА displacement only (R2 shading untouched)
   vec4 v = viewMatrix * w;
   gl_Position = projectionMatrix * v;
   vWorld = w.xyz;
@@ -81,6 +85,7 @@ uniform vec3 uBase; uniform vec3 cSilver; uniform vec3 cWhite; uniform vec3 cPap
 uniform vec3 uLamp; uniform float uLampOn; uniform float uAlpha, uFlash, uRim, uInvert, uPixelRatio, uHideCapsOf;
 uniform sampler2D uAtlas; uniform float uTexel; uniform vec4 uRegion;
 uniform float uFriezeH, uTickL, uApertureR;
+uniform float uCut[7]; uniform float uN[7]; uniform vec2 uCodeBand[7]; uniform vec4 uCodeRect[7]; uniform vec2 uCodeU;
 varying vec3 vWorld; varying vec3 vN; varying float vSolid;
 #ifdef USE_KEYGEO
 varying vec2 vFaceUV; varying vec4 vEng; varying float vKind; varying float vFace; varying vec3 vLocal;
@@ -107,10 +112,20 @@ vec2 engraveUV() {
     return vec2(clamp(vFaceUV.x, 0.0, 1.0), 0.15625 + clamp((vEng.z - uFriezeH) / uTickL, 0.0, 1.0) * 0.03125);
   }
   bool sign = fj < 0.5;
-  bool back = abs(si - 3.0) < 0.5 && abs(fj - 6.0) < 0.5;
-  if ((sign || back) && vEng.x > 0.0 && vEng.x < 1.0 && vEng.y > 0.0 && vEng.y < 1.0) {
+  bool glyphFace = abs(si - 3.0) < 0.5 && abs(fj - 5.0) < 0.5;   // H7: glyph:back moved from face (3, 6) to (3, 5)
+  if ((sign || glyphFace) && vEng.x > 0.0 && vEng.x < 1.0 && vEng.y > 0.0 && vEng.y < 1.0) {
     vec2 o = sign ? vec2(si * 0.125, 0.0) : vec2(0.875, 0.0);
     return o + vEng.xy * 0.125;
+  }
+  int ii = int(si + 0.5);                                       // H7: the КОДЕКС law on back face jb(i) = floor(n_i / 2)
+  bool codeFace = abs(fj - floor(uN[ii] / 2.0)) < 0.5;
+  if (codeFace) {
+    vec2 cb = uCodeBand[ii];
+    float u = (vFaceUV.x - uCodeU.x) / (uCodeU.y - uCodeU.x);
+    if (abs(vFaceUV.y - cb.x) < cb.y && u >= 0.0 && u <= 1.0 && u < uCut[ii]) {
+      vec4 r = uCodeRect[ii];
+      return r.xy + vec2(u, (vFaceUV.y - (cb.x - cb.y)) / (2.0 * cb.y)) * r.zw;
+    }
   }
   return vec2(-1.0);
 #elif defined(USE_REGION)
@@ -174,6 +189,8 @@ void main() {
   gl_FragColor = vec4(col, 1.0);
 }`;
 
+let CODE_U = null;   // H7: shared КОДЕКС uniforms (n counts, bands, atlas rects), built on first use
+
 /** @returns {import('three').ShaderMaterial} */
 export function createObsidian(opts = {}) {
   const defines = {};
@@ -189,6 +206,14 @@ export function createObsidian(opts = {}) {
   if (!atlas.texture) atlas.init(quality.tier);        // the atlas exists from boot; this only guards early callers
   const reg = typeof engrave === 'string' && engrave !== 'key' ? atlas.region(engrave) : null;
   const size = atlas.size || 1024;
+  if (!CODE_U) {
+    CODE_U = {
+      uN: { value: STRATA_GEOM.map((st) => st.n) },
+      uCodeBand: { value: STRATA_CODE_BAND.map((b) => new Vector2(b.vc, b.vh)) },
+      uCodeRect: { value: STRATA_GEOM.map((st, i) => { const r = atlas.region(`code:${i}`).rect; return new Vector4(r.x, r.y, r.z - r.x, r.w - r.y); }) },
+      uCodeU: { value: new Vector2(STRATA_CODE_BAND[0].u0, STRATA_CODE_BAND[0].u1) },
+    };
+  }
   const mat = new ShaderMaterial({
     uniforms: {
       uBase: colorUniform(opts.tint || 'obsidian'),
@@ -205,6 +230,7 @@ export function createObsidian(opts = {}) {
       cSilver: U.cSilver, cWhite: U.cWhite, cPaper: U.cPaper, cInk: U.cInk, cAbyss: U.cAbyss,
       uLamp: U.uLamp, uLampOn: U.uLampOn, uInvert: U.uInvert, uPixelRatio: U.uPixelRatio, uPxPerUnit: U.uPxPerUnit,
       uFogDensity: U.uFogDensity,
+      uCut: U.uCut, ...CODE_U, ...fxUniforms(),
     },
     defines, vertexShader: VERT, fragmentShader: FRAG,
     side: opts.side != null ? opts.side : FrontSide,

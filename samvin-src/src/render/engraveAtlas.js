@@ -8,6 +8,7 @@
 // The texture is uploaded with flipY = false: v = 0 is the canvas top (shaders map face-top → region-top).
 import { CanvasTexture, Vector4, LinearFilter, ClampToEdgeWrapping } from 'three';
 import { registerTexture } from './uniforms.js';
+import { logOnce } from '../core/env.js';
 
 /** Regions at 1024² (x, y, w, h in px). Scaled by size/1024 at runtime. */
 const R = {};
@@ -18,6 +19,16 @@ R.ticks = [0, 160, 1024, 32];
 for (let k = 0; k < 16; k++) R[`capital:${k}`] = [128 * (k % 8), 192 + 128 * Math.floor(k / 8), 128, 128];
 R.deck = [0, 448, 256, 256];
 for (let m = 0; m < 7; m++) R[`free:${m}`] = m < 3 ? [256 * (m + 1), 448, 256, 256] : [256 * (m - 3), 704, 256, 256];
+// H7 (X§2.2.6): the КОДЕКС law strips, drawn by WP1 key.setLaw. code:2/3 sit inside capital:12…15 (never drawn: members
+// ≤ 12), code:4…6 inside the WITHDRAWN free:3 + free:4 (WP7/WP8 must not draw them). (0, 896, 512 × 64) stays free.
+R['code:0'] = [0, 960, 512, 64];
+R['code:1'] = [512, 960, 512, 64];
+R['code:2'] = [512, 320, 512, 64];
+R['code:3'] = [512, 384, 512, 64];
+R['code:4'] = [0, 704, 512, 64];
+R['code:5'] = [0, 768, 512, 64];
+R['code:6'] = [0, 832, 512, 64];
+const RESERVED = /^(free:[34]|capital:1[2-5])$/;
 
 let canvas = null, ctx2d = null;
 let scratchH = null, scratchI = null;
@@ -86,6 +97,7 @@ export const atlas = {
 
   /** Clears the region and paints it: painters.height / painters.inlay get (ctx2d, w, h) in region-local px. */
   draw(key, painters = {}) {
+    if (__DEV__ && RESERVED.test(key)) logOnce('atlas:reserved', key);
     if (!atlas.texture) return false;
     const reg = atlas.region(key);
     if (!reg) return false;

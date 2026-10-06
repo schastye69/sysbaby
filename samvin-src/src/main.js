@@ -62,7 +62,7 @@ import { cursor } from './ui/cursor.js';
 import { keyNav } from './nav/navigator.js';
 import { navMap } from './nav/navMap.js';
 import { hint } from './nav/hint.js';
-import { installKeyboard } from './nav/keyboard.js';
+import { installKeyboard, keyboard } from './nav/keyboard.js';
 import * as registry from './audio/registry.js';
 import { runBoot } from './boot/boot.js';
 import { mountT0 } from './t0/t0.js';
@@ -78,6 +78,13 @@ import * as strokeModel from './halls/signal/stroke.js';
 import * as dialModel from './halls/signal/dial.js';
 import * as shapes from './halls/insignia/shapes.js';
 import * as capsuleModel from './halls/insignia/capsuleModel.js';
+// H16 (ARCH-ADDENDUM X§2.1): the FX layer (WP12), host & deeds (WP13), and the dev handles of the hooks pass.
+import { createFx, createFxT0 } from './fx/fx.js';
+import { initHost } from './host/index.js';
+import * as fxChunk from './render/fxChunk.js';
+import * as audioMaster from './audio/master.js';
+import * as prerender from './audio/prerender.js';
+import * as deedsModel from './deeds/deedsModel.js';
 
 /** AppCtx (ARCH §3.1.2) — created once; the same object goes to every factory and init. */
 const ctx = {
@@ -86,6 +93,7 @@ const ctx = {
   overlay: null, dims: null, datum: null, chrome: null, keyNav: null, director: null, halls: null,
   renderer: null, scene: null, camera: null, rig: null, scale: null, nest: null, key: null, rim: null, lamp: null,
   U: null, worldFx: null, t0: null, composite: null, navMap: null, cursor: null, pillar: null,
+  fx: null, host: null, deeds: null, wake: null,   // H16 (X§2.1)
 };
 
 function step(name, fn) {
@@ -123,6 +131,8 @@ function boot() {
     if (!step('webgl', () => { ctx.composite = initWebGL(gl); })) fallbackT0();
   }
   if (app.tier === 'T0' && !ctx.t0) step('t0', () => { ctx.t0 = mountT0(ctx); app.tier = 'T0'; });
+  // 6b+ (H16): in T0 the rim is WP11's DOM rim with the Rim API.
+  if (app.tier === 'T0') ctx.rim = ctx.t0 && ctx.t0.rim ? ctx.t0.rim : ctx.rim;
 
   // 7. DOM layer, in §3.1.1 order.
   const domOk = step('dom', () => {
@@ -143,6 +153,10 @@ function boot() {
   // 8. Audio (no AudioContext yet).
   const audioOk = step('audio', () => { audio.init(ctx); });
 
+  // 8a (H16). FX — needs overlay/dims/lead/status (step 7) and the audio facade (step 8). A failure here does NOT switch
+  //     to T0: ctx.fx falls back to the T0 facade (its visual twins are no-ops without ctx.t0).
+  if (!step('fx', () => { ctx.fx = app.tier === 'T0' ? createFxT0(ctx) : createFx(ctx); })) step('fx:t0', () => { ctx.fx = createFxT0(ctx); });
+
   // 9. Input + keyboard (motion is passive).
   const inputOk = step('input', () => { input.init(ctx); installKeyboard(ctx); });
 
@@ -156,13 +170,18 @@ function boot() {
   });
 
   // 11. Secrets, WP10's installs, the hint, the test hook.
-  const secOk = step('secrets', () => { secrets.init(ctx); initSecrets(ctx); hint.init(ctx); });
+  let secOk = step('secrets', () => { secrets.init(ctx); initSecrets(ctx); });
+  // 11a (H16). Host & deeds, right after initSecrets.
+  step('host', () => initHost(ctx));
+  secOk = step('hint', () => { hint.init(ctx); }) && secOk;
   step('hook', () => { installTestHook(ctx); });
 
   // Steps 6–11 failed in the WebGL path → T0 instead of a blank screen.
   if (app.tier !== 'T0' && !(domOk && audioOk && inputOk && navOk && secOk)) {
     fallbackT0();
     step('t0', () => { ctx.t0 = mountT0(ctx); if (ctx.chrome) chrome.setT0Marker(true); });
+    if (ctx.t0 && ctx.t0.rim) ctx.rim = ctx.t0.rim;
+    step('fx:t0', () => { ctx.fx = createFxT0(ctx); });
   }
 
   // 12. Loop. The composite removes #ff-grain after the first presented WebGL frame; body.is-ff goes with it.
@@ -194,7 +213,10 @@ function boot() {
         scale: scaleEngine, nest, rig, lamp, palette, fog, atlas, U, vin, structure: structureMod,
         paths, director, hallHost, overlay, datum, sheet, status, lead, dims, chrome, edges, cursor, keyNav, navMap, hint,
         secrets, secretRegistry,
-        models: { resonanceModel, workshopModel, missionModel, timeline, strokeModel, dialModel, shapes, capsuleModel } },
+        models: { resonanceModel, workshopModel, missionModel, timeline, strokeModel, dialModel, shapes, capsuleModel },
+        // H16: set after this literal → getters.
+        get fx() { return ctx.fx; }, get host() { return ctx.host; }, get deeds() { return ctx.deeds; },
+        fxChunk, audioMaster, prerender, deedsModel, keyboard },
       discover(id, vars) { return secrets.discover(id, { vars: vars || null }); },
       say(key, vars) { return status.say(key, vars || {}); },
       emit(name, payload) { bus.emit(name, payload); },
@@ -238,7 +260,7 @@ function initWebGL(gl) {
   rig.setPose(corePose());
   // Until the director exists (stage 0C) the CORE rest pose follows layout changes.
   bus.on('layout:change', () => { if (!ctx.director) rig.setPose(corePose()); });
-  loop.add((dt, t) => { U.uTime.value = t / 1000; U.uBreath.value = breath.mix(0, 1); }, ORDER.CLOCK);
+  loop.add((dt, t) => { U.uTime.value = t / 1000; U.uWorldTime.value = loop.worldNow / 1000; U.uBreath.value = breath.mix(0, 1); }, ORDER.CLOCK);
   loop.add((dt) => lamp.update(dt), ORDER.LAMP);
   loop.add((dt) => rig.apply(dt), ORDER.CAMERA);
   // Context loss: the T0 CORE is drawn over the canvas until the context is restored (mounted lazily).

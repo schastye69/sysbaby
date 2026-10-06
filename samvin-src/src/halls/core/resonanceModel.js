@@ -107,13 +107,36 @@ export function sampleGlyphTargets(edges, count, out) {
  *  sigil in sand + a random affectionate joke as the BODY caption) → … The pointer persists in resonanceNext.
  *  On his birthday the subject is his age as a numeral (the pointer does not advance).
  *  → { kind:'name'|'clan'|'member'|'joke'|'age', text, glyph:number[][]|null, caption, captionClass } */
-export function nextSubject() {
+// H28e (ARCH-ADDENDUM X§2.7; SPEC-ADDENDUM A4.1 Payoff B): while guests are active the subject queue is each guest in
+// selection order, then his own name last; resonanceNext is NOT advanced (his private cycle resumes untouched).
+let guestKey = '', guestPos = 0;
+function guestSubject(guests, sigil) {
+  const key = guests.map((g) => `${g.id || ''}:${g.name || ''}`).join('|');
+  if (key !== guestKey) { guestKey = key; guestPos = 0; }
+  const n = guests.length + 1;
+  const i = guestPos % n;
+  guestPos = (guestPos + 1) % n;
+  if (i < guests.length) {
+    const g = guests[i];
+    const m = g.id ? WORLD.members.find((x) => x.id === g.id) : null;
+    const text = upper(String(g.name || (m ? m.name : '')));
+    return { kind: 'guest', text, glyph: m && m.glyph && m.glyph.length ? m.glyph : sigil, caption: text, captionClass: 't-heading' };
+  }
+  const name = upper(WORLD.operator.name);
+  const d = state.data || {};
+  const own = (d.glyph && d.glyph.length) ? d.glyph : (operatorMember() && operatorMember().glyph) || sigil;
+  return { kind: 'name', text: name, glyph: own, caption: name, captionClass: 't-heading' };
+}
+
+export function nextSubject(opts = { guests: [] }) {
   const t = now();
   const sigil = WORLD.clan.sigil;
   if (isBirthday(t)) {
     const age = String(ageOn(t));
     return { kind: 'age', text: age, glyph: sigil, caption: age, captionClass: 't-heading' };
   }
+  const guests = opts && Array.isArray(opts.guests) ? opts.guests.filter((g) => g && (g.name || g.id)) : [];
+  if (guests.length) return guestSubject(guests, sigil);
   const members = WORLD.members;
   const len = 2 + members.length + 1;
   const d = state.data || {};

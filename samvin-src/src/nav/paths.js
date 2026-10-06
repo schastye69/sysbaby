@@ -572,3 +572,30 @@ export function buildRetarget(start, logicalRoom, toRoute, opts = {}) {
   path.from = logicalRoom;
   return path;
 }
+
+// ─── H23 (ARCH-ADDENDUM X§2.4.1): decorators and SPECIAL builders ───────────────────────────────────────────────
+// Decorators: (path, info: { kind, from, to, first, reduced, retarget }) => void. The director passes every path it
+// builds or receives through every registered decorator ONCE, before its first frame. A decorator may set path.fx
+// (PURE in u, writes into the director's fxOut), wrap path.cues (calling the original first) and fill path.planned;
+// it never changes pose, duration or swapAt.
+const DECORATORS = [];
+const SPECIALS = new Map();
+
+/** → off() */
+export function registerDecorator(fn) {
+  if (typeof fn !== 'function') return () => {};
+  DECORATORS.push(fn);
+  return () => { const k = DECORATORS.indexOf(fn); if (k >= 0) DECORATORS.splice(k, 1); };
+}
+/** The registered decorators (the director iterates them; read-only). */
+export function decorators() { return DECORATORS; }
+/** builder: (start: PoseOut, opts) => Path */
+export function registerSpecial(name, builder) {
+  if (typeof name === 'string' && typeof builder === 'function') SPECIALS.set(name, builder);
+}
+/** → Path | null (unknown name) */
+export function buildSpecial(name, start, opts = {}) {
+  const b = SPECIALS.get(name);
+  if (!b) return null;
+  return b(start, opts || {}) || null;
+}

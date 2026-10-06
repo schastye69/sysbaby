@@ -12,15 +12,17 @@ import { BufferGeometry, BufferAttribute, Points, ShaderMaterial, NormalBlending
 import { U, LAYER, colorUniform, identityStrata, onesStrata } from './uniforms.js';
 import { FOG_GLSL } from './fog.js';
 import { STRATA_GLSL } from './madeOfItself.js';
+import { FX_GLSL, FX_HEPTAGON_GLSL, fxUniforms } from './fxChunk.js';
 
 const VERT = /* glsl */ `
+${FX_GLSL}
 attribute float aSize; attribute float aAlpha;
 #ifdef USE_STRATA
 attribute float aFace;
 ${STRATA_GLSL}
 #endif
 uniform float uSize, uPixelRatio;
-varying float vAlpha; varying float vDist; varying float vPx;
+varying float vAlpha; varying float vDist; varying float vPx; varying float vCoc; varying float vBright;
 void main() {
   mat4 M = modelMatrix;
   float a = aAlpha;
@@ -28,9 +30,17 @@ void main() {
   M = modelMatrix * strataMatrix(aFace);
   a *= strataAlpha(aFace);
 #endif
-  vec4 v = viewMatrix * (M * vec4(position, 1.0));
+  vec4 w = M * vec4(position, 1.0);
+  w.xyz = fxDisplace(w.xyz);
+  vec4 v = viewMatrix * w;
   gl_Position = projectionMatrix * v;
   float px = max(uSize * aSize * uPixelRatio, 1.0);
+  float coc = fxCoc(-v.z);
+  px = px + coc * uPixelRatio;
+  float s0 = max(uSize * aSize, 1.0);
+  a *= pow(s0 / (s0 + coc), 2.0);
+  vCoc = coc;
+  vBright = 1.0 + fxWaveBright(w.xyz);
   gl_PointSize = px + 1.0;
   vPx = px;
   vAlpha = a;
@@ -39,14 +49,16 @@ void main() {
 
 const FRAG = /* glsl */ `
 ${FOG_GLSL}
-uniform vec3 uColor; uniform float uAlpha;
-varying float vAlpha; varying float vDist; varying float vPx;
+${FX_HEPTAGON_GLSL}
+uniform vec3 uColor; uniform float uAlpha; uniform vec2 uFxCaps;
+varying float vAlpha; varying float vDist; varying float vPx; varying float vCoc; varying float vBright;
 void main() {
   float r = length(gl_PointCoord - 0.5) * (vPx + 1.0);     // device px from the centre
   float cov = clamp(0.5 * vPx + 0.5 - r, 0.0, 1.0);
+  if (uFxCaps.y > 0.5 && vCoc >= 2.0) cov = clamp((0.9009689 - fxHeptagon((gl_PointCoord - 0.5) * 2.0)) * (vPx + 1.0) * 0.5, 0.0, 1.0);
   float a = cov * vAlpha * uAlpha;
   if (a <= 0.003) discard;
-  vec3 col = uColor;
+  vec3 col = uColor * vBright;
 #ifdef USE_FOG
   col = applyFog(col, vDist);
 #endif
@@ -76,6 +88,7 @@ export function createPoints(opts = {}) {
     uStrataM: opts.strata || identityStrata(),
     uStrataA: opts.strataAlpha || onesStrata(),
     uPixelRatio: U.uPixelRatio, cAbyss: U.cAbyss, uFogDensity: U.uFogDensity,
+    ...fxUniforms(),
   };
   const mat = new ShaderMaterial({
     uniforms, defines, vertexShader: VERT, fragmentShader: FRAG,

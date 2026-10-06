@@ -4,14 +4,21 @@
 // the rim name, breathing ring, idle breath → status → phase idle (≤ 3,000 ms; reduced motion ≤ 1,200 ms, no lock).
 // Desktop and phone are identical here (no stroke; WP2 adds the start screen). Any input during the boot skips to the
 // end (a boot input consumer on top of the stack, keys via onKey). T0: ctx.t0.boot() draws the SVG Key.
-// runRelaunch (on 'relaunch' from the navigator's ПЕРЕЗАПУСК): scramble, douse, «сплю. разбуди меня.»; the next click
-// on the Key replays the lock + ignition + the signature.
+// runRelaunch (on 'relaunch' from the navigator's ПЕРЕЗАПУСК): ctx.fx.pieces.fold({context:'relaunch'}) (seed: scramble +
+// douse), «сплю. разбуди меня.»; the next click on the Key runs runWake (seed: lock + ignition + the signature).
+// Hooks pass (ARCH-ADDENDUM X§2.8.2, H28d): runWake export, ctx.wake, the `boot` test-hook field.
 import { after, cancelAfter, tween } from '../core/clock.js';
 import { EASE } from '../core/ease.js';
 import { ENV } from '../core/env.js';
 import { app, setPhase } from '../core/store.js';
 import { state } from '../core/state.js';
 import { layout } from '../core/layout.js';
+import { registerHookField } from '../core/testhook.js';
+
+// H28d: the boot test-hook field { t0, nLockAt, ignitionAt, idleAt } (perf ms, measured by the seed).
+const marks = { t0: null, nLockAt: null, ignitionAt: null, idleAt: null };
+registerHookField('boot', () => ({ ...marks }));
+const perf = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 let relaunchHooked = false;
 
@@ -24,7 +31,9 @@ function bootStatus(ctx) {
 
 /** → Promise<void> (resolves at phase 'idle') */
 export function runBoot(ctx, initialRoute) {
+  ctx.wake = (o) => runWake(ctx, o);          // H28d: before anything else
   void initialRoute;
+  marks.t0 = perf(); marks.nLockAt = null; marks.ignitionAt = null; marks.idleAt = null;
   if (!relaunchHooked) { relaunchHooked = true; ctx.bus.on('relaunch', () => runRelaunch(ctx)); }
   const k = ctx.key, rm = ENV.reducedMotion;
   const timers = [], tweens = [];
@@ -37,6 +46,7 @@ export function runBoot(ctx, initialRoute) {
   if (app.phase !== 'boot') setPhase('boot');
 
   const ignite = () => {
+    if (marks.ignitionAt == null) marks.ignitionAt = perf();
     if (!k) return;
     k.ignite({ color: app.night ? 'electrum' : 'ember', flash: true });
     ctx.bus.emit('boot:ignite', { returning: state.returning });
@@ -69,6 +79,7 @@ export function runBoot(ctx, initialRoute) {
     bootStatus(ctx);
     setPhase('idle');
     app.booting = false;
+    marks.idleAt = perf();
     ctx.bus.emit('boot:done', { returning: state.returning, sameDay: state.sameDaySession, phone: layout.isPhone });
     resolveBoot();
   };
@@ -105,6 +116,7 @@ export function runBoot(ctx, initialRoute) {
   at(1000, () => {
     k.lockSequence({ order: 'down', stepMs: 220, spin: false, snap: 0.04 }).then(() => {
       if (finished) return;
+      if (marks.nLockAt == null) marks.nLockAt = perf();   // order 'down': N locks last
       ignite();
       bootStatus(ctx);                 // said with the ignition, so it has faded in by the time the boot is idle
       k.shootAxis(3.2, 240).then(() => { if (!finished) finish(false); });
@@ -113,9 +125,26 @@ export function runBoot(ctx, initialRoute) {
   return done;
 }
 
-/** ПЕРЕЗАПУСК (seed): the Key sleeps until the next click on it, which replays the lock + ignition + signature. */
-export function runRelaunch(ctx) {
+/** H28d (X§2.8.2): the wake after СВЁРТКА (seed = the relaunch wake: lock + ignition + signature). → Promise<void>
+ *  ПОКАЗ scene 1 passes show:true (WP2's real timeline burns the guest names after his). */
+export function runWake(ctx, opts = { show: false }) {
+  void opts;
   const k = ctx.key;
+  if (ctx.fx && ctx.fx.pieces && typeof ctx.fx.pieces.wakeReset === 'function') { try { ctx.fx.pieces.wakeReset(); } catch (e) { /* cosmetic */ } }
+  if (!k) return Promise.resolve();
+  return k.lockSequence({ order: 'down', stepMs: 220, spin: false, snap: 0.04 }).then(() => {
+    k.ignite({ color: app.night ? 'electrum' : 'ember', flash: true });
+    ctx.bus.emit('boot:ignite', { returning: true, wake: true });
+    if (ctx.audio) ctx.audio.play('signature', { found: ctx.secrets ? ctx.secrets.found() : [] });
+  });
+}
+
+/** ПЕРЕЗАПУСК (seed): СВЁРТКА (ctx.fx.pieces.fold), «сплю. разбуди меня.»; the Key sleeps until the next click on it,
+ *  which runs runWake. */
+export async function runRelaunch(ctx) {
+  const k = ctx.key;
+  const pieces = ctx.fx && ctx.fx.pieces;
+  if (pieces && typeof pieces.fold === 'function') { try { await pieces.fold({ context: 'relaunch' }); } catch (e) { /* cosmetic */ } }
   if (ctx.status) ctx.status.say('relaunch');
   if (!k) return;
   k.setScramble('golden');
@@ -126,11 +155,7 @@ export function runRelaunch(ctx) {
     onGesture(g) {
       if (g.type !== 'tap' || app.room !== 'CORE' || k.pick(g.x, g.y) < 0) return false;
       remove();
-      k.lockSequence({ order: 'down', stepMs: 220, spin: false, snap: 0.04 }).then(() => {
-        k.ignite({ color: app.night ? 'electrum' : 'ember', flash: true });
-        ctx.bus.emit('boot:ignite', { returning: true });
-        if (ctx.audio) ctx.audio.play('signature', { found: ctx.secrets ? ctx.secrets.found() : [] });
-      });
+      runWake(ctx, { show: false });
       return true;
     },
   });

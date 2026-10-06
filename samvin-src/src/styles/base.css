@@ -16,8 +16,8 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 .t-body,.t-brief,.t-lead{-webkit-user-select:text;user-select:text}
 
 /* Layers (ARCH §1.5): #giant 0 · #gl 10 · #t0 12 · #leaders 20 · #overlay 30 · #halls 40 · #frame 45 · #chrome 60 ·
-   #sheets 70 · #fx 80 · #ff-grain 90 (#gl and #ff-grain are also set inline for the first frame). */
-#giant,#t0,#leaders,#overlay,#halls,#frame,#chrome,#sheets,#fx{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none}
+   #hoststrip 62 (H17) · #sheets 70 · #fx 80 · #ff-grain 90 (#gl and #ff-grain are also set inline for the first frame). */
+#giant,#t0,#leaders,#overlay,#halls,#frame,#chrome,#hoststrip,#sheets,#fx{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none}
 #giant{z-index:0;width:auto;height:auto;margin:0;will-change:transform}
 #gl{z-index:10;cursor:none}
 #t0{z-index:12;pointer-events:auto}
@@ -26,9 +26,10 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 #halls{z-index:40}
 #frame{z-index:45}
 #chrome{z-index:60}
+#hoststrip{z-index:62}
 #sheets{z-index:70}
 #fx{z-index:80;overflow:hidden}
-#overlay button,#halls button,#halls .verb,#halls [data-interactive],#chrome button,#sheets>*{pointer-events:auto}
+#overlay button,#halls button,#halls .verb,#halls [data-interactive],#chrome button,#hoststrip button,#sheets>*{pointer-events:auto}
 #halls .hall{position:absolute;inset:0}
 /* WP0 placeholder halls: the one BODY line on a scrim, left column under the datum (halls/placeholder.js). */
 #halls .ph-block{position:absolute;left:var(--margin);top:calc(var(--datum-y) + 48px);max-width:var(--measure)}

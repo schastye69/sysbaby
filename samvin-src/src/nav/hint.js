@@ -19,10 +19,14 @@ function arrive(room) {
   if (!p || loop.now - p.at > TIMING.hintArriveWindow) { pending = null; return; }
   if (p.room !== room) return;
   pending = null;
-  bus.emit('hint:arrive', { secret: p.secret, room });
+  bus.emit('hint:arrive', { secret: p.secret, room, source: 'hint' });   // H22: source (additive)
 }
 
 export const hint = {
+  /** H22 (ARCH-ADDENDUM X§2.4.4): replays a motion hint WITHOUT touching app.hintTarget ('sbor' → WP5's ghost ring). */
+  playMotion(id, opts = { source: 'show' }) {
+    bus.emit('hint:arrive', { secret: id, room: app.room, source: (opts && opts.source) || 'show' });
+  },
   init(c) {
     ctx = c;
     c.hint = hint;
