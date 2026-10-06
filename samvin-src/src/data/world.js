@@ -206,13 +206,15 @@ function vMissions(raw, iss) {
   for (const o of raw) if (isObj(o) && has(o, 'code')) { const r = tCode(o.code, '', () => {}); if (r.ok) explicit.add(r.v); }
   const used = new Set();
   return eachItem(raw, 'missions', (o, i, p) => {
-    let code;
+    let code = null;
     if (has(o, 'code')) {
-      const r = tCode(o.code, `${p}.code`, iss);
-      if (!r.ok) { iss(`${p}: bad code, dropped`); return null; }
-      code = r.v;
-      if (used.has(code)) { iss(`${p}: duplicate code ${code}, dropped`); return null; }
-    } else {
+      const r = tCode(o.code, `${p}.code`, iss);   // invalid → the default code below (§4.2)
+      if (r.ok) {
+        code = r.v;
+        if (used.has(code)) { iss(`${p}: duplicate code ${code}, dropped`); return null; }
+      }
+    }
+    if (code === null) {
       code = String(i + 1).padStart(3, '0');
       if (used.has(code) || explicit.has(code)) { iss(`${p}: no code (${code} taken), dropped`); return null; }
     }
@@ -305,7 +307,7 @@ function vClan(o, iss) {
     motto: field(o, 'motto', (v) => tText(v, 80, true, 'clan.motto', iss), D.motto),
     founded: field(o, 'founded', (v) => tDate(v, 'clan.founded', iss), D.founded),
     frequency: field(o, 'frequency', (v) => tNum(v, 0, 99.99, 2, 'clan.frequency', iss), D.frequency),
-    sigil: field(o, 'sigil', (v) => tGlyph(v, 'clan.sigil', iss), clone(D.sigil)),
+    sigil: field(o, 'sigil', (v) => tGlyph(v, 'clan.sigil', iss), normalizeGlyph(D.sigil)),   // the default, normalised like any glyph
   };
 }
 

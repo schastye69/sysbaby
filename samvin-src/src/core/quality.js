@@ -143,7 +143,7 @@ export const quality = {
       else if (fine && hc >= 8) tier = 'T3';
       else if (!phone || (mem != null && mem >= 6)) tier = 'T2';
       else tier = 'T2';
-      if (soft || (mem != null && mem <= 3)) tier = 'T1';                // the T1 cap always wins
+      if (soft) tier = 'T1';                                              // the regex T1 cap always wins (even over a stored tier)
       const want = devParam('tier');
       if (want && /^T[0-3]$/.test(want)) { tier = want; forced = true; }
       if (devParam('gov') === '0') govOn = false;
@@ -157,7 +157,8 @@ export const quality = {
       });
       if (!gl) throw new Error('context creation failed');
     } catch (e) {
-      if (String(e && e.message) !== 'forced T0') logOnce('quality', 'WebGL2 unavailable → T0', String(e && e.message || e));
+      // No WebGL2 is an expected environment (T0 is a designed mode): silent in production (ARCH §7.5).
+      if (__DEV__ && String(e && e.message) !== 'forced T0') logOnce('quality', 'WebGL2 unavailable → T0', String(e && e.message || e));
       tier = 'T0';
       gl = null;
     }
@@ -213,12 +214,14 @@ export const quality = {
         if (lowSince < 0) lowSince = now;
         const r = ctxRef && ctxRef.renderer;
         const cap = Math.min(typeof devicePixelRatio === 'number' ? devicePixelRatio : 1, TIER_PARAMS[quality.tier].dprCap);
+        if (now - lowSince > G.dropAfterMs) {
+          // Still below 52 fps 3 s after it first dropped: one tier down (T1 is the floor; DPR steps keep going there).
+          if (quality.tier !== 'T1') { quality.setTier(tierDown(quality.tier), `governor ${fps.toFixed(0)} fps`); return; }
+        }
         if (r && cap - RENDER.dprStep * (quality.governor.dropSteps + 1) >= 1.0 - 1e-6) {
           quality.governor.dropSteps++;
           try { r.setDprDrop(quality.governor.dropSteps); } catch (e) { logOnce('quality:dpr', e); }
-          ringN = 0; ringI = 0; ringSum = 0;      // measure the new DPR afresh (keep lowSince)
-        } else if (now - lowSince > G.dropAfterMs && quality.tier !== 'T1') {
-          quality.setTier(tierDown(quality.tier), `governor ${fps.toFixed(0)} fps`);
+          ringN = 0; ringI = 0; ringSum = 0;      // measure the new DPR afresh over 90 frames (keep lowSince)
         }
       } else {
         lowSince = -1;

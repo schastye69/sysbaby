@@ -7,12 +7,18 @@
 import { ENV, logOnce } from './core/env.js';
 import { layout, measureLayout } from './core/layout.js';
 import { bus } from './core/bus.js';
+import * as store from './core/store.js';
 import { app } from './core/store.js';
 import { loop } from './core/loop.js';
 import * as clock from './core/clock.js';
 import * as ru from './core/ru.js';
 import * as time from './core/time.js';
 import * as glyph from './core/glyph.js';
+import * as ease from './core/ease.js';
+import * as spring from './core/spring.js';
+import * as rng from './core/rng.js';
+import * as env from './core/env.js';
+import { motion } from './core/motion.js';
 import { state, initState } from './core/state.js';
 import { fontsReady } from './core/fonts.js';
 import { quality } from './core/quality.js';
@@ -92,7 +98,10 @@ function boot() {
     // A3: dev-only handle for QA (removed from production builds). Later stages add their modules to `mods`.
     window.__SAMVIN_DEV__ = Object.freeze({
       ctx,
-      mods: { bus, app, state, clock, ru, time, glyph, world, quality, audio, router, loop },
+      // ARCH A3 names (later stages add rooms, paths, director, secrets, registry, status, lead, keyNav, overlay, datum,
+      // hallHost) plus WP0-internal extras for qa/wp0/unit.mjs (ease, spring, rng, env, layout, input, motion, fonts).
+      mods: { bus, app, state, clock, ru, time, glyph, world, quality, audio, router, loop,
+        store, ease, spring, rng, env, layout, input, motion, fonts: { fontsReady } },
       discover() { return false; },
       say() { return false; },
       emit(name, payload) { bus.emit(name, payload); },

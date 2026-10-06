@@ -16,14 +16,16 @@ export const bus = {
   off(name, fn) {
     const list = map.get(name);
     if (!list) return;
-    const i = list.indexOf(fn);
+    let i = list.indexOf(fn);
+    if (i < 0) i = list.findIndex((l) => l.orig === fn);   // a listener added with once()
     if (i >= 0) list.splice(i, 1);
   },
   /** → off() */
   once(name, fn) {
     const wrap = (p) => { bus.off(name, wrap); fn(p); };
     wrap.orig = fn;
-    return bus.on(name, wrap);
+    bus.on(name, wrap);
+    return () => bus.off(name, wrap);
   },
   emit(name, payload) {
     const list = map.get(name);

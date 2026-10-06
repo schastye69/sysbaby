@@ -84,10 +84,11 @@ function readStore() {
   try {
     const s = localStorage.getItem(KEY);
     if (s == null) return {};
-    try { return JSON.parse(s); } catch (e) { logOnce('state:json', 'saved state unreadable — starting fresh'); return {}; }
+    try { return JSON.parse(s); } catch (e) { if (__DEV__) logOnce('state:json', 'saved state unreadable — starting fresh'); return {}; }
   } catch (e) {
     state.storageOk = false;
-    logOnce('state:storage', 'localStorage blocked — state lives in memory for this session');
+    // An expected environment (private mode, blocked site data): silent in production (ARCH §7.5 allows no warn here).
+    if (__DEV__) logOnce('state:storage', 'localStorage blocked — state lives in memory for this session');
     return {};
   }
 }
@@ -103,7 +104,7 @@ export function flush() {
   if (!state.storageOk) return;
   try { localStorage.setItem(KEY, JSON.stringify(state.data)); } catch (e) {
     state.storageOk = false;
-    logOnce('state:write', 'localStorage write failed — state lives in memory for this session');
+    if (__DEV__) logOnce('state:write', 'localStorage write failed — state lives in memory for this session');
   }
 }
 

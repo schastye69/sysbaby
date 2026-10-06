@@ -122,28 +122,48 @@ function onDown(e) {
     holdTimer = 0;
     if (!seq.active || seq.dragging || seq.pinch) return;
     seq.holdFired = true;
-    g.t = now() - seq.t0; g.dx = 0; g.dy = 0; g.afterHold = true;
+    timerGesture();
     dispatch('hold', null);
     longTimer = setTimeout(() => {
       longTimer = 0;
       if (!seq.active || seq.dragging || seq.pinch) return;
       seq.longFired = true;
-      g.t = now() - seq.t0;
+      timerGesture();
       dispatch('longpress', null);
     }, GESTURE.LONG_MS - GESTURE.HOLD_MS);
   }, GESTURE.HOLD_MS);
+}
+
+/** Fills the reused gesture for timer-fired events (hold / longpress) from the primary sequence: the last gesture
+ *  dispatched may have belonged to another pointer (hover), so nothing is inherited from it. */
+function timerGesture() {
+  g.x = seq.lastX; g.y = seq.lastY; g.dx = 0; g.dy = 0; g.tx = seq.lastX - seq.x0; g.ty = seq.lastY - seq.y0;
+  g.vx = 0; g.vy = 0; g.speed = 0; g.t = now() - seq.t0; g.id = seq.id; g.pointerType = seq.type; g.button = seq.button;
+  g.scale = 1; g.dScale = 1; g.deltaY = 0; g.afterHold = true;
 }
 
 function startPinch(e) {
   clearTimers();
   if (seq.dragging) { g.t = now() - seq.t0; dispatch('dragend', e); }
   seq.pinch = true; seq.dragging = false;
-  const [a, b] = [...touches.values()];
-  pinchD0 = pinchDPrev = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
-  fill(e, (a.x + b.x) / 2, (a.y + b.y) / 2);
+  readTwoTouches();
+  pinchD0 = pinchDPrev = Math.max(1, Math.hypot(two.ax - two.bx, two.ay - two.by));
+  fill(e, (two.ax + two.bx) / 2, (two.ay + two.by) / 2);
   g.scale = 1; g.dScale = 1;
   dispatch('pinchstart', e);
 }
+
+// First two active touches, read without allocating (module-scope callback + scratch).
+const two = { ax: 0, ay: 0, bx: 0, by: 0, i: 0 };
+function twoTouch(p) {
+  if (two.i === 0) { two.ax = p.x; two.ay = p.y; } else if (two.i === 1) { two.bx = p.x; two.by = p.y; }
+  two.i++;
+}
+function readTwoTouches() { two.i = 0; touches.forEach(twoTouch); }
+
+// Gesture surfaces: #gl, and #t0 with its children (T0). DOM controls never produce canvas gestures.
+let surfGl = null, surfT0 = null, overSurface = false;
+function onSurface(t) { return !!t && (t === surfGl || (surfT0 !== null && surfT0.contains(t))); }
 
 function onMove(e) {
   updatePointer(e);
@@ -153,16 +173,22 @@ function onMove(e) {
   }
   if (seq.pinch) {
     if (touches.size < 2) return;
-    let ax = 0, ay = 0, bx = 0, by = 0, i = 0;
-    touches.forEach((p) => { if (i === 0) { ax = p.x; ay = p.y; } else if (i === 1) { bx = p.x; by = p.y; } i++; });
-    const d = Math.max(1, Math.hypot(ax - bx, ay - by));
-    fill(e, (ax + bx) / 2, (ay + by) / 2);
+    readTwoTouches();
+    const d = Math.max(1, Math.hypot(two.ax - two.bx, two.ay - two.by));
+    fill(e, (two.ax + two.bx) / 2, (two.ay + two.by) / 2);
     g.scale = d / pinchD0; g.dScale = d / pinchDPrev; pinchDPrev = d;
     dispatch('pinch', e);
     return;
   }
   if (!seq.active || e.pointerId !== seq.id) {
     if (!seq.active && (e.pointerType || 'mouse') === 'mouse' && (e.buttons | 0) === 0) {
+      const over = onSurface(e.target);
+      if (!over) {
+        // Moved from the canvas onto a DOM control (navigator, chrome, sheet): the canvas loses its hover.
+        if (overSurface) { overSurface = false; fill(e, e.clientX, e.clientY); dispatch('leave', e); }
+        return;
+      }
+      overSurface = true;
       fill(e, e.clientX, e.clientY);
       g.dx = e.movementX || 0; g.dy = e.movementY || 0; g.tx = 0; g.ty = 0;
       g.vx = input.pointer.vx; g.vy = input.pointer.vy; g.speed = input.pointer.speed; g.t = 0; g.afterHold = false;
@@ -255,6 +281,7 @@ function onWheel(e) {
 function onLeaveWindow(e) {
   if (e.relatedTarget) return;   // moved to another element, still inside the window
   input.pointer.inside = false;
+  overSurface = false;
   fill(e, e.clientX, e.clientY);
   dispatch('leave', e);
 }
@@ -301,8 +328,10 @@ export const input = {
   /** Attaches listeners to #gl and #t0, the window observers, audio unlock, and the base consumer stack. */
   init(ctx) {
     ctxRef = ctx;
-    attach(document.getElementById('gl'));
-    attach(document.getElementById('t0'));
+    surfGl = document.getElementById('gl');
+    surfT0 = document.getElementById('t0');
+    attach(surfGl);
+    attach(surfT0);
     // Raw samples anywhere in the window (hover over DOM too): pointer position, velocity, observers.
     window.addEventListener('pointermove', onMove, { passive: true });
     document.addEventListener('pointerout', onLeaveWindow);
