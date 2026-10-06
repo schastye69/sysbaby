@@ -97,10 +97,21 @@ function buildProps(kind, hctx) {
     case 'bands':
       for (let k = 0; k < 12; k++) ring(seg, CAMERA.archive.tubeR, 2.0 - 1.6 * k, 56);
       break;
-    case 'sky':
-      ring(seg, CAMERA.signal.apexR, CAMERA.signal.apexH, 36);
+    case 'sky': {
+      // The ceiling converging 110 m up into the open apex: two twisted families of 24 hairline generators from the
+      // deck ring (r 60) to the 12 m apex ring, plus the apex ring itself.
+      const H = CAMERA.signal.apexH, Ra = CAMERA.signal.apexR;
+      ring(seg, Ra, H, 36);
+      for (let k = 1; k < 6; k++) ring(seg, 60 + (Ra - 60) * (k / 6), (H * k) / 6, 48);   // survey rings up the cone
+      for (const sgn of [1, -1]) {
+        for (let g = 0; g < 24; g++) {
+          const a = (TAU * g) / 24, b = a + sgn * (TAU / 6);
+          seg.push(Math.sin(a) * 60, 0, Math.cos(a) * 60, Math.sin(b) * Ra, H, Math.cos(b) * Ra);
+        }
+      }
       pts = stars(300, 0x5161, CAMERA.signal.apexH, 900);
       break;
+    }
     case 'dome': {
       const e = new EdgesGeometry(new IcosahedronGeometry(CAMERA.insignia.sphereR, 1), 1);
       const a = e.attributes.position.array;
@@ -192,9 +203,10 @@ export function createPlaceholderHall(hctx, opts = {}) {
     },
     pose(s) { void s; return restPose(id, hctx.layout.kind, vAlt); },
     livePose(out) {
-      if (id !== 'VOYAGES' || vAlt === CAMERA.voyages.pos[1]) return false;
-      const p = restPose(id, hctx.layout.kind, vAlt);
-      out.pos.copy(p.pos); out.target.copy(p.target); out.fov = p.fov; out.offsetY = 0; out.roll = 0;
+      // VOYAGES wheel altitude 60–140 m (desktop pitch kept); allocation-free.
+      if (id !== 'VOYAGES' || vAlt === CAMERA.voyages.pos[1] || hctx.layout.kind === 'phone') return false;
+      out.pos.set(0, vAlt, vAlt * (44 / 70)); out.target.set(0, 0, -6 * (vAlt / 70));
+      out.fov = CAMERA.fov; out.offsetY = 0; out.roll = 0;
       return true;
     },
     enter(u) { enterA = u; if (u > 0) exitA = 0; applyAlpha(); },

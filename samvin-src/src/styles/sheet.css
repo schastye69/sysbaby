@@ -32,3 +32,10 @@
   .sheet-handle{display:none}
 }
 @media (prefers-reduced-motion:reduce){.sheet,.sheet[data-state],.sheet-veil{transition-duration:.16s}}
+/* Landscape phone: the sheet is a right-side panel (44 % of the width left of the 72 px band), peek = shown. */
+@media (pointer:coarse) and (max-height:499.98px){
+  #sheet{left:auto;top:0;bottom:0;right:calc(var(--band-side-w) + var(--safe-r));width:calc((100vw - var(--band-side-w)) * .44);
+    max-height:none;border-top:0;border-left:1px solid var(--slate);transform:translateX(calc(100% + var(--band-side-w)))}
+  #sheet[data-state="peek"],#sheet[data-state="full"]{transform:none}
+  #sheet .sheet-body{overflow-y:auto}
+}

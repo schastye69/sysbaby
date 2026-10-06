@@ -35,7 +35,6 @@ const env = {
 /** WP0 addition: { restPose(roomId, sub, out), faceFrame(i, out) } (set by director.init). */
 export function configurePaths(o) { Object.assign(env, o || {}); }
 
-const _poseScratch = { pos: new Vector3(), target: new Vector3(), fov: 35, offsetY: 0, roll: 0 };
 /** Canonical rest pose of a room (falls back to a generic pose before the host is wired). */
 function restPose(roomId, sub) {
   const out = { pos: new Vector3(), target: new Vector3(), fov: CAMERA.fov, offsetY: 0, roll: 0 };
@@ -47,7 +46,6 @@ function restPose(roomId, sub) {
   }
   return out;
 }
-void _poseScratch;
 
 // ─── Kinds & durations ───────────────────────────────────────────────────────────────────────────────────────
 /** A5: hidden rooms take their parent's place for the kind (WORKSHOP ≡ MEMBERS, ZENITH ≡ SIGNAL). */

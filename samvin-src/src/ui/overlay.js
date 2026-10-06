@@ -10,6 +10,7 @@ import { Vector3 } from 'three';
 import { rig } from '../render/cameraRig.js';
 import { scaleEngine } from '../render/scale.js';
 import { loop, ORDER } from '../core/loop.js';
+import { after } from '../core/clock.js';
 import { layout } from '../core/layout.js';
 import { LAYOUT, TIMING } from '../core/tokens.js';
 
@@ -192,7 +193,7 @@ export const overlay = {
         return new Promise((res) => {
           requestAnimationFrame(() => {
             if (a.path) { a.path.classList.add('is-drawing'); a.path.style.transitionDuration = `${ms}ms`; a.path.style.strokeDashoffset = '0'; }
-            setTimeoutLoop(ms, () => { if (a.el) a.el.classList.remove('is-pending'); res(); });
+            after(ms, () => { if (a.el) a.el.classList.remove('is-pending'); res(); });
           });
         });
       },
@@ -223,9 +224,3 @@ export const overlay = {
     for (let i = anchors.length - 1; i >= 0; i--) if (anchors[i].owner === owner) anchors[i].api.remove();
   },
 };
-
-/** A loop-time timeout (the overlay must not pull in clock.js' cycle-sensitive imports at module load). */
-function setTimeoutLoop(ms, fn) {
-  const t0 = loop.now;
-  const id = loop.add(() => { if (loop.now - t0 >= ms) { loop.remove(id); fn(); } }, ORDER.UI);
-}

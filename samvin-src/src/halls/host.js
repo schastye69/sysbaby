@@ -169,6 +169,8 @@ export const hallHost = {
   // ── WP0 additions ──────────────────────────────────────────────────────────────────────────────────────
   /** The hall's shell (null when not resident / T0). */
   shell(id) { const r = residents.get(id); return r ? r.shell : null; },
+  /** The hall's canonical group (null when not resident / T0). */
+  group(id) { const r = residents.get(id); return r ? r.group : null; },
   /** Resident ids (oldest first). */
   residents() { return list.map((r) => r.id); },
   /** CANONICAL rest pose of a hall for a sub: hall.pose(sub) (hall-local) + anchor. Falls back to SPEC poses. */

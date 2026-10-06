@@ -47,6 +47,7 @@ let prevU = 0, lastNow = 0, startNow = 0;
 let mode = 'forward';          // 'forward' | 'inertia' | 'reverse'
 let inertiaV = 0, scrubU = 0;
 let interactiveSent = false;
+let fresh = false;              // the first frame of a path adds no time (go() may land just before a frame)
 let fromHall = null;           // the hall receiving exit(u) (the logical source)
 let voice = null;
 let focusTimer = -1, focusResolve = null;
@@ -166,7 +167,7 @@ function begin(path, from, to, opts) {
   st.path = path; st.from = from; st.to = to;
   st.t = 0; st.u = 0; st.speed = 1; st.swapped = false; st.phase = 'transition';
   st.scrubbing = !!opts.scrub; scrubU = 0; mode = 'forward';
-  prevU = 0; lastNow = loop.now; startNow = loop.now; interactiveSent = false; rec = null;
+  prevU = 0; lastNow = loop.now; startNow = loop.now; interactiveSent = false; rec = null; fresh = true;
   opts0 = opts;
   app.u = 0;
   if (path.kind === 'SLICE') sliceLine();
@@ -174,11 +175,18 @@ function begin(path, from, to, opts) {
   bus.emit('travel:start', { from, to, kind: path.kind, duration: path.duration });
 }
 
+/** Compiles the destination hall's shader programs now, so a first visit never hitches inside the travel clock. */
+function warm(id) {
+  const g = hallHost.group(id);
+  if (!g || !ctx.renderer || !rig.camera) return;
+  try { ctx.renderer.three.compile(g, rig.camera, ctx.scene); } catch (e) { /* compile is an optimisation only */ }
+}
+
 function startTravel(to, opts) {
   const from = director.current;
   snapshot();
-  const toHall = hallHost.ensure(to.room);
-  void toHall;
+  hallHost.ensure(to.room);
+  warm(to.room);
   fromHall = from.room;
   const path = buildPath(cur, from, to, null);
   setPhase('transition');
@@ -220,6 +228,7 @@ function retarget(to, opts) {
   if (logical === oldTo && oldTo !== to.room) { hallHost.call(oldTo, 'depart'); hallHost.call(oldTo, 'exit', 1); }
   fromHall = logical;
   hallHost.ensure(to.room);
+  warm(to.room);
   for (const id of hallHost.residents()) {
     if (id !== to.room && id !== logical && id !== oldFrom) hallHost.release(id);
   }
@@ -247,7 +256,7 @@ function writeHistory(route, source, replace) {
   const target = route.hash;
   try {
     const here = location.hash;
-    if (source === 'history') { if (parseHash(here).hash !== target) window.history.replaceState(null, '', target); }
+    if (source === 'history') { if (here !== target && !(here === '' && target === '#/core')) window.history.replaceState(null, '', target); }
     else if (replace || source === 'hash' || source === 'go' || source === 'deeplink' || here === target) window.history.replaceState(null, '', target);
     else window.history.pushState(null, '', target);
   } catch (e) { /* history unavailable (sandboxed frame) — the route still applies */ }
@@ -387,8 +396,9 @@ function idleFrame(dt) {
 
 function frame(dt) {
   const now = loop.now;
-  const dms = now - lastNow;
+  let dms = now - lastNow;
   lastNow = now;
+  if (fresh) { dms = 0; fresh = false; startNow = now; }
   if (st.phase !== 'transition') { idleFrame(dt); return; }
   const D = st.path.duration;
   let u;
@@ -526,7 +536,7 @@ export const director = {
       const now = director.current;
       if (r.hash === now.hash) {
         cancelFocus();
-        if (location.hash && parseHash(location.hash).hash !== r.hash) writeHistory(r, 'history', true);
+        if (location.hash && location.hash !== r.hash) writeHistory(r, 'history', true);
         return Promise.resolve(true);
       }
       if (r.room === now.room) return focus(r, o);

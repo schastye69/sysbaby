@@ -4,20 +4,25 @@
 import { app } from '../core/store.js';
 import { bus } from '../core/bus.js';
 
-const COPY = { 'tab.back': { text: 'вот ты где.', p: 3 } };
+const COPY = {
+  'tab.back': { text: 'вот ты где.', p: 3 },
+  'sealed': { text: 'запечатано. осколков {k} из 5.', p: 1 },          // router guard (stage 0C)
+  'route.missing': { text: 'здесь ничего нет. пока.', p: 1 },          // router guard (stage 0C)
+};
 
 export const status = {
   current: null,
   init(ctx) { void ctx; },
   say(key, vars = {}, opts = { force: false }) {
-    void vars; void opts;
+    void opts;
     const c = COPY[key];
     if (!c) return false;
-    status.current = { key, text: c.text, p: c.p, at: Date.now() };
-    app.status = c.text;
+    const text = c.text.replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] != null ? String(vars[k]) : m));
+    status.current = { key, text, p: c.p, at: Date.now() };
+    app.status = text;
     const live = document.getElementById('status-live');
-    if (live) live.textContent = c.text;
-    bus.emit('status:show', { key, text: c.text, p: c.p });
+    if (live) live.textContent = text;
+    bus.emit('status:show', { key, text, p: c.p });
     return true;
   },
   clear() { status.current = null; app.status = ''; },

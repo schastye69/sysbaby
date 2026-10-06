@@ -12,13 +12,14 @@ import { CAMERA, ZOOM, GAP } from '../../core/tokens.js';
 export function createCoreHall(hctx) {
   const app = hctx.app;
   let dist = ZOOM.rest, current = false, offKey = null, open = false;
+  const C = CAMERA.core;
+  const restPos = new Vector3(...C.pos), restTarget = new Vector3(...C.target);
 
   function restPose() {
     const c = CAMERA.core;
     return { pos: new Vector3(...c.pos), target: new Vector3(...c.target), fov: c.fov,
       offsetY: hctx.layout.kind === 'desktop' ? 0 : c.phoneOffsetY, roll: 0 };
   }
-  const rest = restPose();
 
   function onKeyClick({ index }) {
     if (!current || hctx.director.busy() || (app.phase !== 'idle' && app.phase !== 'unfolded')) return;
@@ -42,10 +43,9 @@ export function createCoreHall(hctx) {
     pose() { return restPose(); },
     livePose(out) {
       if (Math.abs(dist - ZOOM.rest) < 1e-4) return false;
-      const p = restPose();
-      out.target.copy(p.target);
-      out.pos.copy(p.pos).sub(p.target).multiplyScalar(dist / ZOOM.rest).add(p.target);
-      out.fov = p.fov; out.offsetY = p.offsetY; out.roll = 0;
+      out.target.copy(restTarget);
+      out.pos.copy(restPos).sub(restTarget).multiplyScalar(dist / ZOOM.rest).add(restTarget);
+      out.fov = C.fov; out.offsetY = hctx.layout.kind === 'desktop' ? 0 : C.phoneOffsetY; out.roll = 0;
       return true;
     },
     enter() {},
@@ -83,7 +83,7 @@ export function createCoreHall(hctx) {
       if (e.key === 'Escape' && open) { hctx.director.go('#/core', { source: 'kbd' }); return true; }
       return false;
     },
-    resize() { const p = restPose(); rest.pos.copy(p.pos); rest.offsetY = p.offsetY; },
+    resize() {},
     dispose() {
       if (offKey) { offKey(); offKey = null; }
       if (open) setOpen(false);

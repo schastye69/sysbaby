@@ -48,6 +48,26 @@ import { ROOMS } from './world/rooms.js';
 import { createKey } from './key/key.js';
 import { createRim } from './world/rim.js';
 import { CAMERA } from './core/tokens.js';
+import { setPhase } from './core/store.js';
+import { hallHost } from './halls/host.js';
+import { director } from './nav/director.js';
+import * as paths from './nav/paths.js';
+import { datum } from './ui/datum.js';
+import { overlay } from './ui/overlay.js';
+import { sheet } from './ui/sheet.js';
+import { status } from './ui/status.js';
+import { installTestHook } from './core/testhook.js';
+import { secrets } from './secrets/secrets.js';
+import { initSecrets } from './secrets/index.js';
+import * as secretRegistry from './secrets/registry.js';
+import * as resonanceModel from './halls/core/resonanceModel.js';
+import * as workshopModel from './halls/members/workshopModel.js';
+import * as missionModel from './halls/voyages/missionModel.js';
+import * as timeline from './halls/archive/timeline.js';
+import * as strokeModel from './halls/signal/stroke.js';
+import * as dialModel from './halls/signal/dial.js';
+import * as shapes from './halls/insignia/shapes.js';
+import * as capsuleModel from './halls/insignia/capsuleModel.js';
 
 /** AppCtx (ARCH §3.1.2) — created once; the same object goes to every factory and init. */
 const ctx = {
@@ -96,7 +116,15 @@ function boot() {
   }
   // 6b. T0 path — stage 0D: ctx.t0 = mountT0(ctx); app.tier = 'T0'.
 
-  // 7. DOM layer — stage 0D: chrome, status, lead, overlay, dims, datum, edges, sheet, navMap, keyNav, cursor.
+  // 7. DOM layer. Stage 0C: overlay, datum, sheet (the hall frame + readable-block mechanisms). Stage 0D adds chrome,
+  //    status (full engine), lead, dims, edges, navMap, keyNav, cursor — in this order: chrome, status, lead, overlay, dims,
+  //    datum, edges, sheet, navMap, keyNav, cursor.
+  step('dom', () => {
+    ctx.status = status; status.init(ctx);
+    ctx.overlay = overlay; overlay.init(ctx);
+    ctx.datum = datum; datum.init(ctx);
+    ctx.sheet = sheet; sheet.init(ctx);
+  });
 
   // 8. Audio (no AudioContext yet).
   step('audio', () => { audio.init(ctx); });
@@ -104,8 +132,18 @@ function boot() {
   // 9. Input (+ keyboard, stage 0D).
   step('input', () => { input.init(ctx); });
 
-  // 10. Navigation — stage 0C: hallHost.init, director.init, router listeners, initial route, CORE built.
-  // 11. Secrets & test hook — stage 0D.
+  // 10. Navigation: hall host, director (+ router listeners: hashchange, popstate). The initial route is parsed but not
+  //     travelled to yet; CORE is built and made current with pose(null).
+  let initialRoute = router.parseHash('#/core');
+  const navOk = step('navigation', () => {
+    initialRoute = router.parseHash(location.hash);
+    hallHost.init(ctx);
+    director.init(ctx);
+  });
+  if (!navOk && app.tier !== 'T0') fallbackT0();
+  // 11. Secrets & test hook. Stage 0D adds secrets.init, initSecrets (WP10 seed) and hint.init before the hook.
+  step('secrets', () => { secrets.init(ctx); initSecrets(ctx); });
+  step('hook', () => { installTestHook(ctx); });
 
   // 12. Loop. The composite (0B) removes #ff-grain after the first presented WebGL frame; body.is-ff goes then.
   step('loop', () => {
@@ -122,7 +160,8 @@ function boot() {
   // 13. Boot — stage 0D seed / WP2: runBoot(ctx, initialRoute).
   //     STAND-IN until runBoot exists (stage 0B): the rim rises from 600 ms, the Key reveals from 1,000 ms (400 ms),
   //     ignited, the axis shot, the rim name shown, breath on. Stage 0D replaces this block with runBoot.
-  if (ctx.key) step('boot-standin', () => standInBoot(composite));
+  if (ctx.key) step('boot-standin', () => standInBoot(composite, initialRoute));
+  else step('boot-standin', () => finishBoot(initialRoute));
 
   if (__DEV__) {
     // A3: dev-only handle for QA (removed from production builds). Later stages add their modules to `mods`.
@@ -132,8 +171,10 @@ function boot() {
       // hallHost) plus WP0-internal extras for qa/wp0/unit.mjs (ease, spring, rng, env, layout, input, motion, fonts).
       mods: { bus, app, state, clock, ru, time, glyph, world, quality, audio, router, loop, rooms,
         store, ease, spring, rng, env, layout, input, motion, fonts: { fontsReady },
-        scale: scaleEngine, nest, rig, lamp, palette, fog, atlas, U, vin, structure: structureMod },
-      discover() { return false; },
+        scale: scaleEngine, nest, rig, lamp, palette, fog, atlas, U, vin, structure: structureMod,
+        paths, director, hallHost, overlay, datum, sheet, status, secrets, secretRegistry,
+        models: { resonanceModel, workshopModel, missionModel, timeline, strokeModel, dialModel, shapes, capsuleModel } },
+      discover(id, vars) { return secrets.discover(id, { vars: vars || null }); },
       say() { return false; },
       emit(name, payload) { bus.emit(name, payload); },
     });
@@ -186,7 +227,7 @@ function initWebGL(gl) {
 
 /** Stage-0B stand-in for runBoot (see step 13): SPEC §4.1's first 600 ms are void + grain only, then the rim lattice
  *  rises (600–1,600 ms) and the Key reveals (1,000–1,400 ms), ignites and shoots its axis. Replaced by runBoot (0D). */
-function standInBoot(composite) {
+function standInBoot(composite, initialRoute) {
   const k = ctx.key;
   nest.setFade(1, 0);
   const go = () => {
@@ -198,10 +239,22 @@ function standInBoot(composite) {
         if (ctx.rim) ctx.rim.showName();
         k.setIdle(true);
         if (composite) composite.setGrain(0.02);
+        finishBoot(initialRoute);
       });
     });
   };
   if (composite) composite.onFirstFrame(go); else go();
+}
+
+/** End of the (stand-in) boot: phase idle, datum «ЯДРО», the CORE hall arrives, then the deep link (ARCH §3.1.1 step 13). */
+function finishBoot(initialRoute) {
+  setPhase('idle');
+  app.booting = false;
+  if (ctx.datum) ctx.datum.arrive('CORE');
+  if (ctx.director) {
+    ctx.director.settle();
+    if (initialRoute && (initialRoute.room !== 'CORE' || initialRoute.sub)) ctx.director.go(initialRoute.hash, { source: 'deeplink' });
+  }
 }
 
 /** A failure in steps 6–11 switches to T0 (the T0 mount itself is stage 0D / WP11). */
