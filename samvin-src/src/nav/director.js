@@ -166,7 +166,7 @@ function begin(path, from, to, opts) {
   st.path = path; st.from = from; st.to = to;
   st.t = 0; st.u = 0; st.speed = 1; st.swapped = false; st.phase = 'transition';
   st.scrubbing = !!opts.scrub; scrubU = 0; mode = 'forward';
-  prevU = 0; lastNow = loop.now; startNow = loop.now; interactiveSent = false; rec = null; fresh = true;
+  prevU = 0; lastNow = loop.at(); startNow = lastNow; interactiveSent = false; rec = null; fresh = true;
   opts0 = opts;
   app.u = 0;
   if (path.kind === 'SLICE') sliceLine();
@@ -397,7 +397,7 @@ function frame(dt) {
   const now = loop.now;
   let dms = now - lastNow;
   lastNow = now;
-  if (fresh) { dms = 0; fresh = false; startNow = now; }
+  if (fresh) { fresh = false; if (dms < 0) dms = 0; }
   if (st.phase !== 'transition') { idleFrame(dt); return; }
   const D = st.path.duration;
   let u;

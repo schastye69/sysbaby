@@ -18,28 +18,37 @@ const TAU = Math.PI * 2;
 const ELEVATOR_ROOMS = new Set(['SIGNAL', 'MEMBERS', 'INSIGNIA', 'NADIR', 'ZENITH', 'ARCHIVE']);
 const COPY = 'Зал строится.';
 
-/** Hall-local rest pose (SPEC §6, ARCH §6.1.5) for the current layout. */
-function restPose(id, kind, alt) {
+// Pose writers (module level: pose() is on the G9 hot-path list — no allocation, no closures per call).
+const _pp = [0, 0, 0];
+function P(out, pos, tx, ty, tz, fov = CAMERA.fov, offsetY = 0) {
+  out.pos.set(pos[0], pos[1], pos[2]); out.target.set(tx, ty, tz);
+  out.fov = fov; out.offsetY = offsetY; out.roll = 0;
+  return out;
+}
+/** Looking along −Z, pitched by deg, aimed where the ray meets y = groundY. */
+function pitched(out, pos, deg, groundY, fov) {
+  return P(out, pos, pos[0], groundY, pos[2] + (groundY - pos[1]) / Math.tan(deg * DEG), fov);
+}
+function xyz(x, y, z) { _pp[0] = x; _pp[1] = y; _pp[2] = z; return _pp; }
+
+/** Hall-local rest pose (SPEC §6, ARCH §6.1.5) for the current layout, written into `out`. */
+function restPose(id, kind, alt, out) {
   const phone = kind === 'phone';
-  const P = (pos, target, fov = CAMERA.fov, offsetY = 0) => ({ pos: new Vector3(...pos), target: new Vector3(...target), fov, offsetY, roll: 0 });
-  const pitchTarget = (pos, deg, groundY) => {       // looking along −Z, pitched by deg, aimed where the ray meets y
-    const dy = groundY - pos[1];
-    return [pos[0], groundY, pos[2] + dy / Math.tan(deg * DEG)];
-  };
+  let t;
   switch (id) {
-    case 'MEMBERS': return phone ? P(CAMERA.members.phonePos, CAMERA.members.target) : P(CAMERA.members.pos, CAMERA.members.target);
-    case 'VOYAGES': {
-      const pos = phone ? CAMERA.voyages.phonePos : [0, alt, alt * (44 / 70)];
-      return P(pos, phone ? pitchTarget(pos, -CAMERA.voyages.phonePitchDeg, 0) : [0, 0, -6 * (alt / 70)]);
-    }
-    case 'ARCHIVE': return P([0, 1.6, 0], [0, 1.6, CAMERA.archive.tubeR]);
-    case 'SIGNAL': return phone ? P(CAMERA.signal.phonePos, [0, 2 + 30 * Math.tan(CAMERA.signal.phonePitchDeg * DEG), 0], CAMERA.fovWide)
-      : P(CAMERA.signal.pos, CAMERA.signal.target, CAMERA.signal.fov);
-    case 'INSIGNIA': return P(CAMERA.insignia.pos, [0, 1.7, -10], CAMERA.insignia.fov);
-    case 'NADIR': return P([0, 20, 40], [0, 0, 0]);
-    case 'ZENITH': { const pos = [0, 50, 30]; return P(pos, pitchTarget(pos, phone ? CAMERA.zenith.phonePitchDeg : CAMERA.zenith.pitchDeg, -110)); }
-    case 'WORKSHOP': return P([0, 0, 3.2], [0, 0, 0]);
-    default: return P(CAMERA.core.pos, CAMERA.core.target, CAMERA.core.fov, kind === 'desktop' ? 0 : CAMERA.core.phoneOffsetY);
+    case 'MEMBERS': t = CAMERA.members.target; return P(out, phone ? CAMERA.members.phonePos : CAMERA.members.pos, t[0], t[1], t[2]);
+    case 'VOYAGES':
+      if (phone) return pitched(out, CAMERA.voyages.phonePos, -CAMERA.voyages.phonePitchDeg, 0);
+      return P(out, xyz(0, alt, alt * (44 / 70)), 0, 0, -6 * (alt / 70));
+    case 'ARCHIVE': return P(out, xyz(0, 1.6, 0), 0, 1.6, CAMERA.archive.tubeR);
+    case 'SIGNAL':
+      if (phone) return P(out, CAMERA.signal.phonePos, 0, 2 + 30 * Math.tan(CAMERA.signal.phonePitchDeg * DEG), 0, CAMERA.fovWide);
+      t = CAMERA.signal.target; return P(out, CAMERA.signal.pos, t[0], t[1], t[2], CAMERA.signal.fov);
+    case 'INSIGNIA': return P(out, CAMERA.insignia.pos, 0, 1.7, -10, CAMERA.insignia.fov);
+    case 'NADIR': return P(out, xyz(0, 20, 40), 0, 0, 0);
+    case 'ZENITH': return pitched(out, xyz(0, 50, 30), phone ? CAMERA.zenith.phonePitchDeg : CAMERA.zenith.pitchDeg, -110);
+    case 'WORKSHOP': return P(out, xyz(0, 0, 3.2), 0, 0, 0);
+    default: t = CAMERA.core.target; return P(out, CAMERA.core.pos, t[0], t[1], t[2], CAMERA.core.fov, kind === 'desktop' ? 0 : CAMERA.core.phoneOffsetY);
   }
 }
 
@@ -149,6 +158,7 @@ export function createPlaceholderHall(hctx, opts = {}) {
   const proxies = [];
   let enterA = 0, exitA = 0, sub = null, current = false, vAlt = CAMERA.voyages.pos[1];
   const _v = new Vector3();
+  const poseOut = { pos: new Vector3(), target: new Vector3(), fov: CAMERA.fov, offsetY: 0, roll: 0 };
 
   function applyAlpha() {
     const a = clamp01(enterA) * (1 - clamp01(exitA));
@@ -201,7 +211,7 @@ export function createPlaceholderHall(hctx, opts = {}) {
       if (ELEVATOR_ROOMS.has(id)) elevator = createElevator(hctx);
       applyAlpha();
     },
-    pose(s) { void s; return restPose(id, hctx.layout.kind, vAlt); },
+    pose(s) { void s; return restPose(id, hctx.layout.kind, vAlt, poseOut); },
     livePose(out) {
       // VOYAGES wheel altitude 60–140 m (desktop pitch kept); allocation-free.
       if (id !== 'VOYAGES' || vAlt === CAMERA.voyages.pos[1] || hctx.layout.kind === 'phone') return false;

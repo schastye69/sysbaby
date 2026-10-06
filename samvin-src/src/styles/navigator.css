@@ -21,7 +21,7 @@
 #keynav.is-shown{opacity:1;visibility:visible;transition:var(--kn-t),opacity var(--d-480)}
 #keynav[data-expanded]{width:var(--nav-hover-w)}
 .kn-draw{position:absolute;right:0;top:0;width:var(--nav-w);height:100%;pointer-events:none}
-.kn-stratum,.kn-crack,.kn-twin path,#map svg *{fill:none;stroke:var(--slate);stroke-width:1;vector-effect:non-scaling-stroke}
+.kn-stratum,.kn-crack,.kn-twin path,#map svg *{fill:none;stroke:rgba(var(--slate-rgb),.8);stroke-width:1;vector-effect:non-scaling-stroke}
 .kn-stratum{transition:stroke var(--d-240)}
 .kn-stratum.is-current,#map svg .is-current{stroke:var(--silver)}
 .kn-crack{stroke:var(--electrum);transition:stroke .6s}
@@ -63,7 +63,7 @@
 #keynav-ring{position:absolute;right:calc(var(--nav-w) / 2 - 22px);width:44px;height:44px;margin-top:-22px;opacity:0;
   pointer-events:none;transition:opacity var(--d-120)}
 #keynav-ring svg{width:44px;height:44px;transform:rotate(-90deg)}
-#keynav-ring circle{fill:none;stroke:var(--slate)}
+#keynav-ring circle{fill:none;stroke:rgba(var(--slate-rgb),.8)}
 #keynav-ring .fill{stroke:var(--silver)}
 #keynav-ring .t-label{position:absolute;right:52px;top:15px;white-space:nowrap}
 #keynav-name{display:none}
@@ -98,7 +98,7 @@
 }
 
 /* ─── КАРТА (phone): full-height solid --deep sheet, VIN elevation, one ≥ 56 px row per hall ───────────────── */
-#map{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;background:var(--deep);border-top:1px solid var(--slate);
+#map{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;background:var(--deep);border-top:1px solid rgba(var(--slate-rgb),.8);
   padding:calc(24px + var(--safe-t)) 16px calc(16px + var(--safe-b));overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;
   transition:transform var(--d-480) var(--ease-reveal)}
 #map.is-closing{transform:translateY(100%)}

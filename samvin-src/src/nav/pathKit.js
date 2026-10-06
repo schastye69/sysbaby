@@ -6,7 +6,7 @@
 // Time ↔ u. During auto-travel u = EASE.camera(t / D) (SPEC §7.1). A choreography window [a, b] ms applies for
 // u ∈ [msU(a), msU(b)] (ARCH §3.6.1), progress inside a window is linear in u. Events that SPEC times in ms and that
 // other modules evaluate in ms (the Key's setMorph is PURE in tMs) use tOfU(u, D), the exact inverse of the ease.
-import { Vector3, CatmullRomCurve3 } from 'three';
+import { Vector3 } from 'three';
 import { EASE, clamp01, lerp } from '../core/ease.js';
 
 // ─── PoseOut ─────────────────────────────────────────────────────────────────────────────────────────────────
@@ -91,6 +91,43 @@ export function ratchet(x, steps = 7) {
 }
 
 // ─── Knot curves ─────────────────────────────────────────────────────────────────────────────────────────────
+/** Centripetal Catmull-Rom through `points` (open): the same math as three's CatmullRomCurve3('centripetal').getPoint,
+ *  without the Curve base class (bundle size). getPoint(t ∈ [0,1], out) → out. */
+function centripetalCR(points) {
+  const tmp = new Vector3(), tmp2 = new Vector3();
+  const coef = new Float64Array(12);           // x, y, z: c0..c3
+  const init = (o, x0, x1, x2, x3, dt0, dt1, dt2) => {
+    let t1 = (x1 - x0) / dt0 - (x2 - x0) / (dt0 + dt1) + (x2 - x1) / dt1;
+    let t2 = (x2 - x1) / dt1 - (x3 - x1) / (dt1 + dt2) + (x3 - x2) / dt2;
+    t1 *= dt1; t2 *= dt1;
+    coef[o] = x1; coef[o + 1] = t1; coef[o + 2] = -3 * x1 + 3 * x2 - 2 * t1 - t2; coef[o + 3] = 2 * x1 - 2 * x2 + t1 + t2;
+  };
+  const calc = (o, t) => coef[o] + coef[o + 1] * t + coef[o + 2] * t * t + coef[o + 3] * t * t * t;
+  return {
+    points,
+    getPoint(t, out = new Vector3()) {
+      const l = points.length;
+      const p = (l - 1) * t;
+      let ip = Math.floor(p);
+      let w = p - ip;
+      if (w === 0 && ip === l - 1) { ip = l - 2; w = 1; }
+      const p0 = ip > 0 ? points[ip - 1] : tmp2.subVectors(points[0], points[1]).add(points[0]);
+      const p1 = points[ip % l], p2 = points[(ip + 1) % l];
+      const p3 = ip + 2 < l ? points[ip + 2] : tmp.subVectors(points[l - 1], points[l - 2]).add(points[l - 1]);
+      let dt0 = Math.pow(p0.distanceToSquared(p1), 0.25);
+      let dt1 = Math.pow(p1.distanceToSquared(p2), 0.25);
+      let dt2 = Math.pow(p2.distanceToSquared(p3), 0.25);
+      if (dt1 < 1e-4) dt1 = 1.0;
+      if (dt0 < 1e-4) dt0 = dt1;
+      if (dt2 < 1e-4) dt2 = dt1;
+      init(0, p0.x, p1.x, p2.x, p3.x, dt0, dt1, dt2);
+      init(4, p0.y, p1.y, p2.y, p3.y, dt0, dt1, dt2);
+      init(8, p0.z, p1.z, p2.z, p3.z, dt0, dt1, dt2);
+      return out.set(calc(0, w), calc(4, w), calc(8, w));
+    },
+  };
+}
+
 /** A centripetal Catmull-Rom through `points` (Vector3[], copied) reached at the monotone parameters `knots`
  *  (same length; usually u values). sample(x, out): piecewise-linear x → curve parameter, allocation-free. */
 export function knotCurve(points, knots) {
@@ -102,7 +139,7 @@ export function knotCurve(points, knots) {
     pts.push(points[i].clone()); ks.push(knots[i]);
   }
   if (pts.length === 1) { pts.push(pts[0].clone()); ks.push(ks[0] + 1e-6); }
-  const curve = new CatmullRomCurve3(pts, false, 'centripetal');
+  const curve = centripetalCR(pts);
   const n = pts.length - 1;
   return {
     curve, points: pts, knots: ks,

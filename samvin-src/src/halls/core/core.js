@@ -15,10 +15,12 @@ export function createCoreHall(hctx) {
   const C = CAMERA.core;
   const restPos = new Vector3(...C.pos), restTarget = new Vector3(...C.target);
 
+  const poseOut = { pos: new Vector3(), target: new Vector3(), fov: C.fov, offsetY: 0, roll: 0 };
+  /** Allocation-free (pose() is on the G9 hot-path list). */
   function restPose() {
-    const c = CAMERA.core;
-    return { pos: new Vector3(...c.pos), target: new Vector3(...c.target), fov: c.fov,
-      offsetY: hctx.layout.kind === 'desktop' ? 0 : c.phoneOffsetY, roll: 0 };
+    poseOut.pos.copy(restPos); poseOut.target.copy(restTarget); poseOut.fov = C.fov;
+    poseOut.offsetY = hctx.layout.kind === 'desktop' ? 0 : C.phoneOffsetY; poseOut.roll = 0;
+    return poseOut;
   }
 
   function onKeyClick({ index }) {

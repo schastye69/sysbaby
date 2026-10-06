@@ -170,6 +170,7 @@ function boot() {
     quality.init(ctx);
     const composite = app.tier !== 'T0' ? ctx.composite : null;
     if (composite) {
+      warmPrograms();
       loop.add(composite.render, ORDER.RENDER);
       composite.onFirstFrame(() => document.body.classList.remove('is-ff'));
     } else document.body.classList.remove('is-ff');
@@ -244,6 +245,18 @@ function initWebGL(gl) {
   bus.on('gl:lost', () => { try { if (!ctx.t0) ctx.t0 = mountT0(ctx); ctx.t0.showLost(); } catch (e) { logOnce('main:t0', e); } });
   bus.on('gl:restored', () => { if (ctx.t0 && ctx.t0.hideLost) ctx.t0.hideLost(); });
   return createComposite(renderer);
+}
+
+/** Compiles every program the boot scene will need (incl. objects that only appear later: the rim name, the axis
+ *  extension, the breathing ring), before the loop starts, so no shader link stalls a frame mid-boot or the first
+ *  travel right after it (SwiftShader links take 100–300 ms each). Visibility is restored afterwards. */
+function warmPrograms() {
+  const three = ctx.renderer && ctx.renderer.three;
+  if (!three || !ctx.scene || !ctx.camera) return;
+  const hidden = [];
+  ctx.scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
+  try { three.compile(ctx.scene, ctx.camera); } catch (e) { logOnce('main:warm', e); }
+  for (const o of hidden) o.visible = false;
 }
 
 /** After runBoot resolves (phase idle, datum «ЯДРО»): the CORE hall gets its arrival, then the deep link

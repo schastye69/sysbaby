@@ -62,6 +62,14 @@ export const loop = {
   frame: 0,
   /** loop time in ms (stops while hidden / stopped) */
   now: 0,
+  /** WP0 addition: the loop time of THIS instant between two frames — loop.now plus the real time since the last
+   *  frame's timestamp (capped like a frame step). A travel started from an input event starts its clock here, so its
+   *  first frame advances by the part of the interval after the event (durations stay wall-clock exact). */
+  at() {
+    if (!loop.running || lastTs < 0 || typeof performance === 'undefined') return loop.now;
+    const d = performance.now() - lastTs;
+    return loop.now + (d > 0 ? Math.min(d, STEP_MAX) : 0);
+  },
   /** fn(dt seconds ≤ 0.05, t loop ms) → id */
   add(fn, order = ORDER.UI) {
     const id = nextId++;

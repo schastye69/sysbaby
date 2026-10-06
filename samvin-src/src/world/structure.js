@@ -20,8 +20,11 @@
 // its bottom edge) and aKind (0 outer wall, 1 top cap, 2 bottom cap, 3 inner wall). Face j of stratum i has horizontal
 // outward normal (sin 2πj/n, 0, cos 2πj/n): face 0 looks at +Z.
 import {
-  BufferGeometry, Float32BufferAttribute, Group, Mesh, LineSegments, Matrix4,
+  BufferGeometry, Float32BufferAttribute, BufferAttribute, Group, Mesh, LineSegments, Matrix4, Vector3,
 } from 'three';
+import { loop, ORDER } from '../core/loop.js';
+import { U } from '../render/uniforms.js';
+import { rig } from '../render/cameraRig.js';
 import { PROFILE, STRATA_GEOM, radiusAt, LOFT_RINGS, GAP, KEY, RENDER } from '../core/tokens.js';
 import { createObsidian } from '../render/obsidian.js';
 import { createLines, createLatticeMaterial } from '../render/lines.js';
@@ -219,6 +222,36 @@ function vertexData() {
   return { pos: new Float32Array(pos), face: new Float32Array(face) };
 }
 
+// ─── R1 CPU culling (WP0, exact) ─────────────────────────────────────────────────────────────────────────────────
+// The R1 shaders already make a lattice vertex collapse when its alpha < 0.002 and a solid fragment discard when its
+// interpolated solid alpha is 0. On a software rasteriser (SwiftShader) those invisible draws still cost a full-screen
+// pass (VIN's solid surrounds the camera in every hall). Once per frame, after the camera is placed, each structure
+// therefore checks on the CPU with the shaders' own formula:
+//  • lattice: a bounding-sphere bound — every vertex's spacing < 3 px → the draw is skipped (identical: all collapsed);
+//  • merged solid (VIN levels): per triangle — a triangle whose three vertices are all fully lattice (sp ≥ 6 px, or
+//    behind the camera, exactly like the vertex shader) is left out of the index list (identical: it discards anyway).
+const CULLS = [];
+let cullLoop = -1;
+const _mv = new Matrix4(), _gw = new Matrix4(), _c = new Vector3(), _f = new Vector3(), _t = new Vector3();
+function cullFrame() {
+  const cam = rig.camera;
+  if (!cam) return;
+  for (let k = 0; k < CULLS.length; k++) CULLS[k](cam);
+}
+function registerCull(fn) {
+  CULLS.push(fn);
+  if (cullLoop < 0) cullLoop = loop.add(cullFrame, ORDER.CAMERA + 5);
+}
+function unregisterCull(fn) { const k = CULLS.indexOf(fn); if (k >= 0) CULLS.splice(k, 1); }
+/** Largest |p| over a position attribute (local units). */
+function maxRadius(attr) {
+  let m = 0;
+  const a = attr.array;
+  for (let i = 0; i < a.length; i += 3) { const r = a[i] * a[i] + a[i + 1] * a[i + 1] + a[i + 2] * a[i + 2]; if (r > m) m = r; }
+  return Math.sqrt(m);
+}
+function maxOf(arr) { let m = 0; for (let i = 0; i < arr.length; i++) if (arr[i] > m) m = arr[i]; return m; }
+
 /** @returns {Structure}
  *  opts: { scale = 1, perStratum = false, solid = true, lattice = true, edges = true, vertices = false,
  *          latticeDensity = 1, hallLod = false, far = 700 } */
@@ -300,14 +333,100 @@ export function buildStructure(opts = {}) {
 
   let fade = 1;
   const parts = { solid: 1, lattice: 1, edges: 1, vertices: 1 };
+  let latOn = true, latCulled = false, solidOn = true;
+  let solidCullers = null;
   const applyAlpha = () => {
     group.visible = fade > 0;
     if (solidMat) solidMat.uniforms.uAlpha.value = fade * parts.solid;
-    for (const m of solids) m.visible = fade * parts.solid > 0;
-    if (latMat) { latMat.uniforms.uFade.value = fade * parts.lattice; lattice.visible = fade * parts.lattice > 0; }
+    solidOn = fade * parts.solid > 0;
+    for (let k = 0; k < solids.length; k++) solids[k].visible = solidOn && !(solidCullers && solidCullers[k] && solidCullers[k].empty);
+    if (latMat) { latMat.uniforms.uFade.value = fade * parts.lattice; latOn = fade * parts.lattice > 0; lattice.visible = latOn && !latCulled; }
     for (const e of edges) e.setAlpha(EDGE_ALPHA * fade * parts.edges);
     if (vpts) vpts.setAlpha(V_ALPHA * fade * parts.vertices);
   };
+
+  // R1 CPU culling (see above). Local bounds: radius of the lattice + its largest strut; merged solid: per-vertex data.
+  const latR = lattice ? maxRadius(lattice.geometry.attributes.position) : 0;
+  let latStrutMax = lattice ? maxOf(lattice.geometry.attributes.aStrut.array) : 0;
+  const latticeCull = (cam) => {
+    if (!lattice || !latOn) return;
+    group.updateWorldMatrix(true, false);
+    const e = group.matrixWorld.elements;
+    const s = Math.hypot(e[0], e[1], e[2]);
+    // Largest per-stratum displacement / scale (strata move by translations; rotations keep |p| about their origin).
+    let tMax = 0, sMax = 1;
+    for (let i = 0; i < 7; i++) {
+      const m = per ? strata[i].matrix.elements : strataM.value[i].elements;
+      const t = Math.hypot(m[12], m[13], m[14]); if (t > tMax) tMax = t;
+      const c = Math.hypot(m[0], m[1], m[2]); if (c > sMax) sMax = c;
+    }
+    const R = (latR * sMax + tMax) * s;
+    _c.set(e[12], e[13], e[14]);
+    cam.getWorldDirection(_f);
+    const dMin = _t.copy(_c).sub(cam.position).dot(_f) - R;
+    const off = dMin > 0 && (latStrutMax * sMax * s * U.uPxPerUnit.value) / dMin <= 3.0;
+    if (off !== latCulled) { latCulled = off; lattice.visible = latOn && !latCulled; }
+  };
+  // Per-triangle solid culling: merged (VIN) → one mesh moved per stratum by uStrataM; perStratum (Key) → one mesh per
+  // stratum group, its own matrixWorld.
+  solidCullers = solids.map((mesh) => {
+    const geo = mesh.geometry;
+    const P = geo.attributes.position.array, ST = geo.attributes.aStrut.array, F = geo.attributes.aFace.array;
+    const nv = P.length / 3, nt = nv / 3;
+    const idx = new BufferAttribute(nv > 65535 ? new Uint32Array(nv) : new Uint16Array(nv), 1);
+    for (let i = 0; i < nv; i++) idx.array[i] = i;
+    geo.setIndex(idx);
+    const keep = new Uint8Array(nt).fill(1);
+    const rowZ = new Float32Array(7 * 4), colS = new Float32Array(7);
+    const st = { mesh, empty: false };
+    st.run = (cam) => {
+      if (per) {
+        mesh.updateWorldMatrix(true, false);
+        _mv.multiplyMatrices(cam.matrixWorldInverse, mesh.matrixWorld);
+        const m = _mv.elements, w = mesh.matrixWorld.elements;
+        rowZ[0] = m[2]; rowZ[1] = m[6]; rowZ[2] = m[10]; rowZ[3] = m[14];
+        colS[0] = Math.hypot(w[0], w[1], w[2]);
+      } else {
+        group.updateWorldMatrix(true, false);
+        _gw.multiplyMatrices(cam.matrixWorldInverse, group.matrixWorld);
+        for (let i = 0; i < 7; i++) {
+          _mv.multiplyMatrices(_gw, strataM.value[i]);
+          const m = _mv.elements;
+          rowZ[i * 4] = m[2]; rowZ[i * 4 + 1] = m[6]; rowZ[i * 4 + 2] = m[10]; rowZ[i * 4 + 3] = m[14];
+          _mv.multiplyMatrices(group.matrixWorld, strataM.value[i]);
+          const w = _mv.elements;
+          colS[i] = Math.hypot(w[0], w[1], w[2]);
+        }
+      }
+      const ppu = U.uPxPerUnit.value;
+      let changed = false;
+      for (let t = 0; t < nt; t++) {
+        let any = 0;
+        for (let q = 0; q < 3 && !any; q++) {
+          const v = t * 3 + q, o = v * 3;
+          const si = per ? 0 : Math.min(6, Math.max(0, Math.floor(F[v] / 16 + 0.001)));
+          const r = si * 4;
+          const depth = -(rowZ[r] * P[o] + rowZ[r + 1] * P[o + 1] + rowZ[r + 2] * P[o + 2] + rowZ[r + 3]);
+          if ((ST[v] * colS[si] * ppu) / Math.max(depth, 1e-6) < 6.001) any = 1;   // still carries solid alpha → keep
+        }
+        if (keep[t] !== any) { keep[t] = any; changed = true; }
+      }
+      if (!changed) return;
+      let w = 0;
+      for (let t = 0; t < nt; t++) if (keep[t]) { idx.array[w++] = t * 3; idx.array[w++] = t * 3 + 1; idx.array[w++] = t * 3 + 2; }
+      idx.clearUpdateRanges(); idx.addUpdateRange(0, Math.max(1, w)); idx.needsUpdate = true;
+      geo.setDrawRange(0, w);
+      st.empty = w === 0;
+      mesh.visible = solidOn && !st.empty;
+    };
+    return st;
+  });
+  const solidCull = solidCullers.length ? (cam) => {
+    if (!solidOn || !group.visible) return;
+    for (let k = 0; k < solidCullers.length; k++) solidCullers[k].run(cam);
+  } : null;
+  const cullFn = (cam) => { latticeCull(cam); if (solidCull) solidCull(cam); };
+  registerCull(cullFn);
 
   const structure = {
     group, strata, solids, lattice, edges, vertices,
@@ -336,9 +455,11 @@ export function buildStructure(opts = {}) {
       density = d;
       const old = lattice.geometry;
       lattice.geometry = latticeGeometry(d);
+      latStrutMax = maxOf(lattice.geometry.attributes.aStrut.array);
       old.dispose();
     },
     dispose() {
+      unregisterCull(cullFn);
       for (const m of solids) m.geometry.dispose();
       if (solidMat) solidMat.dispose();
       if (lattice) { lattice.geometry.dispose(); latMat.dispose(); }

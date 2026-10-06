@@ -17,8 +17,8 @@ button.proxy{width:var(--hit);height:var(--hit);margin:-22px 0 0 -22px;font-size
 #leaders *{fill:none;vector-effect:non-scaling-stroke}
 .leader{stroke:var(--c-leader);stroke-width:var(--leader-w)}
 .leader.focus{stroke:var(--ember)}
-#leaders .cross{stroke:var(--slate);stroke-width:1px;shape-rendering:crispEdges}
+#leaders .cross{stroke:rgba(var(--slate-rgb),.8);stroke-width:1px;shape-rendering:crispEdges}
 #leaders .cross.focus{stroke:var(--ember)}
-#leaders .dim{stroke:var(--slate);stroke-width:var(--leader-w)}
+#leaders .dim{stroke:rgba(var(--slate-rgb),.8);stroke-width:var(--leader-w)}
 #leaders .is-drawing{transition:stroke-dashoffset var(--d-240) var(--ease-reveal)}
 @media (prefers-reduced-motion:reduce){#leaders .is-drawing{transition:none}.anchor{transition-duration:.16s}}
