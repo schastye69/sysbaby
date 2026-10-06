@@ -3,7 +3,7 @@
 
    DOM contract (nav/navigator.js, nav/navMap.js; QA selectors ARCH §6.1.8, A10):
    nav#keynav (.is-shown after show(); [data-expanded] while hovered / scrubbing)
-     > svg.kn-draw > path.kn-stratum[data-sign] ×7 (.is-current) + path.kn-crack (.is-cool)
+     > svg.kn-draw > path.kn-stratum[data-stratum] ×7 (.is-current) + path.kn-crack (.is-cool)
      > button.kn-row[data-sign][data-room][aria-label] ×7, style="--i:<stratum 0…6>" (desktop: JS sets style.top = row
          centre px); aria-current="true" · [data-glint="electrum"] · [data-shudder] · [data-blink] · .is-hot (hovered)
          > span.kn-letter.t-label + span.kn-text > (span.kn-code.t-label 'S · SIGNAL', span.kn-name.t-body.t-body--15.t-body--em,
@@ -114,3 +114,9 @@
 .map-row[data-sealed] .t-body{color:var(--pewter)}
 
 @media (prefers-reduced-motion:reduce){#keynav,#map{transition-duration:.16s}.kn-row[data-shudder]{animation:none}}
+#keynav-slots.is-flash .slot{background:var(--silver)}
+/* Expanded rows are two lines (code + name, then the level) so neighbours 35 px apart never collide. */
+.kn-head{display:flex;align-items:baseline;gap:8px}
+.kn-text .kn-name{line-height:20px}
+.kn-text .kn-level{line-height:12px}
+#keynav-ring.is-on{transition:none}

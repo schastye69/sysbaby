@@ -1,9 +1,7 @@
 // main.js — bootstrap (ARCH §3.1.1). Runs once, after the DOM is parsed (the bundle is `defer`).
 // Every step runs inside try/catch; a failure in steps 6–11 switches to T0 (step 6b) instead of a blank screen.
 //
-// STAGE 0A: steps 1–5, 8, 9 (input), 12 are live. Steps 6a/6b (renderer, nest, Key, rim, lamp, rig, composite / T0),
-// 7 (DOM layer), 9 (keyboard), 10 (navigation), 11 (secrets + test hook) and 13 (boot) are wired by stages 0B–0D at the
-// marked places, keeping this order.
+// Extra ctx fields (WP0 additions): ctx.composite (the boot sets the grain), ctx.navMap, ctx.cursor, ctx.pillar.
 import { ENV, logOnce } from './core/env.js';
 import { layout, measureLayout } from './core/layout.js';
 import { bus } from './core/bus.js';
@@ -56,6 +54,18 @@ import { datum } from './ui/datum.js';
 import { overlay } from './ui/overlay.js';
 import { sheet } from './ui/sheet.js';
 import { status } from './ui/status.js';
+import { chrome } from './ui/chrome.js';
+import { lead } from './ui/lead.js';
+import { dims } from './ui/dims.js';
+import { edges } from './ui/edges.js';
+import { cursor } from './ui/cursor.js';
+import { keyNav } from './nav/navigator.js';
+import { navMap } from './nav/navMap.js';
+import { hint } from './nav/hint.js';
+import { installKeyboard } from './nav/keyboard.js';
+import * as registry from './audio/registry.js';
+import { runBoot } from './boot/boot.js';
+import { mountT0 } from './t0/t0.js';
 import { installTestHook } from './core/testhook.js';
 import { secrets } from './secrets/secrets.js';
 import { initSecrets } from './secrets/index.js';
@@ -75,7 +85,7 @@ const ctx = {
   secrets: null, status: null, sheet: null, edges: null, hint: null, fog: null, palette: null, atlas: null, lead: null,
   overlay: null, dims: null, datum: null, chrome: null, keyNav: null, director: null, halls: null,
   renderer: null, scene: null, camera: null, rig: null, scale: null, nest: null, key: null, rim: null, lamp: null,
-  U: null, worldFx: null, t0: null,
+  U: null, worldFx: null, t0: null, composite: null, navMap: null, cursor: null, pillar: null,
 };
 
 function step(name, fn) {
@@ -108,29 +118,33 @@ function boot() {
   let gl = null;
   step('quality', () => { gl = quality.detect().gl; });
 
-  // 6a. WebGL path (tier ≥ T1).
-  let composite = null;
+  // 6a. WebGL path (tier ≥ T1) — 6b. T0 path (no WebGL, or 6a failed).
   if (app.tier !== 'T0') {
-    const ok = step('webgl', () => { composite = initWebGL(gl); });
-    if (!ok) fallbackT0();
+    if (!step('webgl', () => { ctx.composite = initWebGL(gl); })) fallbackT0();
   }
-  // 6b. T0 path — stage 0D: ctx.t0 = mountT0(ctx); app.tier = 'T0'.
+  if (app.tier === 'T0' && !ctx.t0) step('t0', () => { ctx.t0 = mountT0(ctx); app.tier = 'T0'; });
 
-  // 7. DOM layer. Stage 0C: overlay, datum, sheet (the hall frame + readable-block mechanisms). Stage 0D adds chrome,
-  //    status (full engine), lead, dims, edges, navMap, keyNav, cursor — in this order: chrome, status, lead, overlay, dims,
-  //    datum, edges, sheet, navMap, keyNav, cursor.
-  step('dom', () => {
+  // 7. DOM layer, in §3.1.1 order.
+  const domOk = step('dom', () => {
+    ctx.chrome = chrome; chrome.init(ctx);
     ctx.status = status; status.init(ctx);
+    ctx.lead = lead; lead.init(ctx);
     ctx.overlay = overlay; overlay.init(ctx);
+    ctx.dims = dims; dims.init(ctx);
     ctx.datum = datum; datum.init(ctx);
+    ctx.edges = edges; edges.init(ctx);
     ctx.sheet = sheet; sheet.init(ctx);
+    ctx.navMap = navMap; navMap.init(ctx);
+    ctx.keyNav = keyNav; keyNav.init(ctx);
+    ctx.cursor = cursor; cursor.init(ctx);
+    if (app.tier === 'T0') chrome.setT0Marker(true);
   });
 
   // 8. Audio (no AudioContext yet).
-  step('audio', () => { audio.init(ctx); });
+  const audioOk = step('audio', () => { audio.init(ctx); });
 
-  // 9. Input (+ keyboard, stage 0D).
-  step('input', () => { input.init(ctx); });
+  // 9. Input + keyboard (motion is passive).
+  const inputOk = step('input', () => { input.init(ctx); installKeyboard(ctx); });
 
   // 10. Navigation: hall host, director (+ router listeners: hashchange, popstate). The initial route is parsed but not
   //     travelled to yet; CORE is built and made current with pose(null).
@@ -140,42 +154,48 @@ function boot() {
     hallHost.init(ctx);
     director.init(ctx);
   });
-  if (!navOk && app.tier !== 'T0') fallbackT0();
-  // 11. Secrets & test hook. Stage 0D adds secrets.init, initSecrets (WP10 seed) and hint.init before the hook.
-  step('secrets', () => { secrets.init(ctx); initSecrets(ctx); });
+
+  // 11. Secrets, WP10's installs, the hint, the test hook.
+  const secOk = step('secrets', () => { secrets.init(ctx); initSecrets(ctx); hint.init(ctx); });
   step('hook', () => { installTestHook(ctx); });
 
-  // 12. Loop. The composite (0B) removes #ff-grain after the first presented WebGL frame; body.is-ff goes then.
+  // Steps 6–11 failed in the WebGL path → T0 instead of a blank screen.
+  if (app.tier !== 'T0' && !(domOk && audioOk && inputOk && navOk && secOk)) {
+    fallbackT0();
+    step('t0', () => { ctx.t0 = mountT0(ctx); if (ctx.chrome) chrome.setT0Marker(true); });
+  }
+
+  // 12. Loop. The composite removes #ff-grain after the first presented WebGL frame; body.is-ff goes with it.
   step('loop', () => {
     quality.init(ctx);
+    const composite = app.tier !== 'T0' ? ctx.composite : null;
     if (composite) {
       loop.add(composite.render, ORDER.RENDER);
       composite.onFirstFrame(() => document.body.classList.remove('is-ff'));
-    }
+    } else document.body.classList.remove('is-ff');
     loop.start();
     if (app.tier !== 'T0') quality.benchmark();
     bus.emit('app:ready', {});
   });
 
-  // 13. Boot — stage 0D seed / WP2: runBoot(ctx, initialRoute).
-  //     STAND-IN until runBoot exists (stage 0B): the rim rises from 600 ms, the Key reveals from 1,000 ms (400 ms),
-  //     ignited, the axis shot, the rim name shown, breath on. Stage 0D replaces this block with runBoot.
-  if (ctx.key) step('boot-standin', () => standInBoot(composite, initialRoute));
-  else step('boot-standin', () => finishBoot(initialRoute));
+  // 13. Boot (WP2). It owns app.phase until setPhase('idle'); then CORE settles and the deep link is travelled to.
+  step('boot', () => {
+    const start = () => runBoot(ctx, initialRoute).then(() => finishBoot(initialRoute), (e) => { logOnce('main:boot', e); finishBoot(initialRoute); });
+    if (ctx.composite && app.tier !== 'T0') ctx.composite.onFirstFrame(start); else start();
+  });
 
   if (__DEV__) {
-    // A3: dev-only handle for QA (removed from production builds). Later stages add their modules to `mods`.
+    // A3: dev-only handle for QA (removed from production builds).
     window.__SAMVIN_DEV__ = Object.freeze({
       ctx,
-      // ARCH A3 names (later stages add rooms, paths, director, secrets, registry, status, lead, keyNav, overlay, datum,
-      // hallHost) plus WP0-internal extras for qa/wp0/unit.mjs (ease, spring, rng, env, layout, input, motion, fonts).
-      mods: { bus, app, state, clock, ru, time, glyph, world, quality, audio, router, loop, rooms,
+      mods: { bus, app, state, clock, ru, time, glyph, world, quality, audio, router, loop, rooms, registry,
         store, ease, spring, rng, env, layout, input, motion, fonts: { fontsReady },
         scale: scaleEngine, nest, rig, lamp, palette, fog, atlas, U, vin, structure: structureMod,
-        paths, director, hallHost, overlay, datum, sheet, status, secrets, secretRegistry,
+        paths, director, hallHost, overlay, datum, sheet, status, lead, dims, chrome, edges, cursor, keyNav, navMap, hint,
+        secrets, secretRegistry,
         models: { resonanceModel, workshopModel, missionModel, timeline, strokeModel, dialModel, shapes, capsuleModel } },
       discover(id, vars) { return secrets.discover(id, { vars: vars || null }); },
-      say() { return false; },
+      say(key, vars) { return status.say(key, vars || {}); },
       emit(name, payload) { bus.emit(name, payload); },
     });
   }
@@ -220,48 +240,31 @@ function initWebGL(gl) {
   loop.add((dt, t) => { U.uTime.value = t / 1000; U.uBreath.value = breath.mix(0, 1); }, ORDER.CLOCK);
   loop.add((dt) => lamp.update(dt), ORDER.LAMP);
   loop.add((dt) => rig.apply(dt), ORDER.CAMERA);
-  bus.on('gl:lost', () => { if (ctx.t0 && ctx.t0.showLost) ctx.t0.showLost(); });
+  // Context loss: the T0 CORE is drawn over the canvas until the context is restored (mounted lazily).
+  bus.on('gl:lost', () => { try { if (!ctx.t0) ctx.t0 = mountT0(ctx); ctx.t0.showLost(); } catch (e) { logOnce('main:t0', e); } });
   bus.on('gl:restored', () => { if (ctx.t0 && ctx.t0.hideLost) ctx.t0.hideLost(); });
   return createComposite(renderer);
 }
 
-/** Stage-0B stand-in for runBoot (see step 13): SPEC §4.1's first 600 ms are void + grain only, then the rim lattice
- *  rises (600–1,600 ms) and the Key reveals (1,000–1,400 ms), ignites and shoots its axis. Replaced by runBoot (0D). */
-function standInBoot(composite, initialRoute) {
-  const k = ctx.key;
-  nest.setFade(1, 0);
-  const go = () => {
-    clock.after(600, () => clock.tween(1000, (u) => nest.setFade(1, u), ease.EASE.reveal));
-    clock.after(1000, () => {
-      clock.tween(400, (u) => k.setReveal({ points: u, scanY: null, fill: u, alpha: u }), ease.EASE.reveal).done.then(() => {
-        k.ignite({ color: app.night ? 'electrum' : 'ember', flash: true });
-        k.shootAxis(3.2, 240);
-        if (ctx.rim) ctx.rim.showName();
-        k.setIdle(true);
-        if (composite) composite.setGrain(0.02);
-        finishBoot(initialRoute);
-      });
-    });
-  };
-  if (composite) composite.onFirstFrame(go); else go();
-}
-
-/** End of the (stand-in) boot: phase idle, datum «ЯДРО», the CORE hall arrives, then the deep link (ARCH §3.1.1 step 13). */
+/** After runBoot resolves (phase idle, datum «ЯДРО»): the CORE hall gets its arrival, then the deep link
+ *  (ARCH §3.1.1 step 13, §4.3 "deep link on any visit"). */
 function finishBoot(initialRoute) {
-  setPhase('idle');
+  if (app.phase === 'boot' || app.phase === 'start') setPhase('idle');
   app.booting = false;
-  if (ctx.datum) ctx.datum.arrive('CORE');
   if (ctx.director) {
     ctx.director.settle();
     if (initialRoute && (initialRoute.room !== 'CORE' || initialRoute.sub)) ctx.director.go(initialRoute.hash, { source: 'deeplink' });
   }
 }
 
-/** A failure in steps 6–11 switches to T0 (the T0 mount itself is stage 0D / WP11). */
+/** A failure in steps 6–11 switches to T0 (step 6b): the three.js objects are dropped and the canvas hidden. */
 function fallbackT0() {
   ctx.renderer = ctx.scene = ctx.camera = ctx.key = ctx.rim = ctx.rig = ctx.scale = ctx.nest = ctx.lamp = null;
+  ctx.composite = null;
   quality.tier = 'T0';
   app.tier = 'T0';
+  const gl = document.getElementById('gl');
+  if (gl) gl.hidden = true;
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });

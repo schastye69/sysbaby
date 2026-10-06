@@ -5,13 +5,11 @@
 // slots refresh, 'shard' sound, vibrate, BR relock, status 'found' then 'shard' {k}; 'shard:landed'; the rank check
 // ('rank:change' + status 'rank' + audio.setRank); the 5th shard unseals NADIR (nadirOpen, LEAD «Внизу что-то
 // открылось.» 3,000 ms, keyNav.crack(), 'nadir:open').
-// STAGE 0C writes this module because the shared models (workshopModel, capsuleModel) call discover(); stage 0D owns
-// the DOM pieces it reaches through ctx (keyNav, chrome, lead, status) and completes the polish.
+// The DOM pieces are reached through ctx (keyNav, chrome, lead, status), each guarded, so T0 and early boot work too.
 import { SECRETS, secretById } from './registry.js';
 import { flyShard } from './shardFlight.js';
 import { state } from '../core/state.js';
 import { bus } from '../core/bus.js';
-import { app } from '../core/store.js';
 import { layout } from '../core/layout.js';
 import { audio } from '../audio/engine.js';
 import { vibrate, VIBE } from '../ui/tactile.js';
@@ -55,6 +53,7 @@ async function land(id, from) {
   if (sealedSlot && d.shards >= 5 && !d.nadirOpen) {
     state.set('nadirOpen', true);
     say('shard', { k: 5 });
+    say('nadir.open');
     if (ctx && has(ctx.lead, 'show')) ctx.lead.show('Внизу что-то открылось.', { ms: 3000 });
     if (has(kn, 'crack')) kn.crack();
     bus.emit('nadir:open', {});
@@ -77,7 +76,6 @@ export const secrets = {
     const anchor = screenOf(opts && opts.anchor);
     bus.emit('secret:found', { id, anchor });
     land(id, anchor);
-    void app;
     return true;
   },
   isFound(id) { return !!(state.data && state.data.found && state.data.found[id]); },

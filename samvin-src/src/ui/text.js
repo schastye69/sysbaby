@@ -43,14 +43,19 @@ export function lockIn(el, opts = {}) {
   const text = el.textContent;
   const letters = splitLetters(el, text);
   const shrp = state.shrp || 28;
+  // The variation axes step in 6 levels: every new (SHRP, wght) pair re-rasterises the glyphs at DISPLAY size, so
+  // per-frame values would cost a full text raster each frame; the jitter (a transform) stays per frame.
+  let lastQ = -1;
   const set = (u) => {
     const L = EASE.reveal(u);
-    const fvs = `"SHRP" ${(shrp * L).toFixed(1)}, "wght" ${Math.round(120 + (weight - 120) * L)}, "CRSV" 0, "slnt" 0`;
+    const q = Math.round(L * 5) / 5;
+    const fvs = q !== lastQ ? `"SHRP" ${(shrp * q).toFixed(1)}, "wght" ${Math.round(120 + (weight - 120) * q)}, "CRSV" 0, "slnt" 0` : null;
+    lastQ = q;
     const tt = loop.now / 1000;
     for (let i = 0; i < letters.length; i++) {
       const s = letters[i].style;
-      s.fontVariationSettings = fvs;
-      s.transform = L < 1 ? `translateY(${(Math.sin(17 * tt + i) * (1 - L) * 4).toFixed(2)}px)` : '';
+      if (fvs) s.fontVariationSettings = fvs;
+      s.transform = L < 1 ? `translateX(${(Math.sin(17 * tt + i) * (1 - L) * 4).toFixed(2)}px)` : '';
     }
   };
   set(0);

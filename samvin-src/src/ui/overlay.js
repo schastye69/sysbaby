@@ -20,6 +20,7 @@ let overlayEl = null, leadersEl = null;
 const _w = new Vector3(), _c = new Vector3();
 const _p = { x: 0, y: 0, depth: 0, visible: false };
 let lastCoord = 0;
+let prScratch = new Float64Array(64);
 
 function svg(tag, cls, owner) {
   const n = document.createElementNS(SVG, tag);
@@ -75,10 +76,12 @@ function frame(dt) {
   // Priority culling: more visible than max → hide the lowest priorities this frame.
   let cut = -Infinity;
   if (visible > overlay.max) {
-    const pr = [];
-    for (const a of anchors) if (a.want) pr.push(a.priority);
-    pr.sort((x, y) => y - x);
-    cut = pr[overlay.max - 1];
+    // k-th highest priority without allocating: a preallocated scratch array, sorted in place.
+    if (prScratch.length < anchors.length) prScratch = new Float64Array(anchors.length * 2);
+    let n = 0;
+    for (let i = 0; i < anchors.length; i++) if (anchors[i].want) prScratch[n++] = anchors[i].priority;
+    const view = prScratch.subarray(0, n).sort();
+    cut = view[n - overlay.max];
   }
   overlay.visibleCount = 0;
   for (let i = 0; i < anchors.length; i++) {

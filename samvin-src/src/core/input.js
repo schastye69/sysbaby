@@ -356,6 +356,16 @@ export const input = {
     stack.push(consumer);
     return () => { const i = stack.indexOf(consumer); if (i >= 0) stack.splice(i, 1); };
   },
+  /** WP0 addition (nav/keyboard.js, ARCH §3.9.3 step 3): offers a keydown to the consumers that define onKey(e)
+   *  (top → bottom; e.g. the boot consumer skips on any key). → true when one consumed it. */
+  offerKey(e) {
+    for (let i = stack.length - 1; i >= 0; i--) {
+      const c = stack[i];
+      if (typeof c.onKey !== 'function') continue;
+      try { if (c.onKey(e)) return true; } catch (err) { logOnce(`input:${c.name}:key`, 'key consumer threw', err); }
+    }
+    return false;
+  },
   /** Exclusive capture of the current pointer sequence until its up/cancel. */
   capture(consumer) { captured = consumer; },
   release(consumer) { if (!consumer || captured === consumer) captured = null; },

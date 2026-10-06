@@ -102,3 +102,18 @@
   #giant,#lead,#status,.corner{transition-duration:.16s}
   .beam-letter.is-lit{animation-duration:.16s}
 }
+/* Phone: the status line sits 12 px above the band's current-hall name (which sits on the band). */
+@media (pointer:coarse) and (max-width:600px){#status{bottom:calc(var(--status-bottom) + 26px)}}
+/* Hairlines on dense screens: a 1 px drawing line is one device pixel (construction-drawing weight). */
+@media (min-resolution:2dppx){
+  #datum-line{height:.5px}
+  .edge,.kn-stratum,.kn-crack,.kn-twin path,#map svg *{stroke-width:.5}
+}
+/* The aria-live mirror stays a 1 px screen-reader box, but inside the viewport (not at −1 px). */
+#status-live{left:0;top:0;margin:0}
+/* LEAD appears at once (its text reveal / BEAM WRITE is the entrance); only the exit fades. */
+#lead.is-in{transition:none}
+/* Compositor layers for what animates, so SwiftShader / low-end GPUs re-raster small rects, not the whole #frame. */
+.edge-strip{position:absolute;left:0;top:0;overflow:visible;will-change:transform}
+#datum,#lead{will-change:opacity}
+#datum-line,#datum-title .lock-letter{will-change:transform}

@@ -106,7 +106,7 @@ function onVisibility() {
   } else {
     try { document.title = titleFor(app.route); } catch (e) { document.title = 'SAM.VIN'; }
     if (resumeOnVisible) loop.start();
-    try { status.say('tab.back'); } catch (e) { logOnce('loop:status', e); }
+    try { status.say('tab.back', {}, { force: true }); } catch (e) { logOnce('loop:status', e); }
     bus.emit('visibility', { hidden: false });
   }
 }

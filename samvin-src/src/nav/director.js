@@ -16,7 +16,6 @@ import { after, cancelAfter } from '../core/clock.js';
 import { ENV } from '../core/env.js';
 import { EASE, clamp01 } from '../core/ease.js';
 import { state } from '../core/state.js';
-import { input } from '../core/input.js';
 import { layout } from '../core/layout.js';
 import { vibrate, VIBE } from '../ui/tactile.js';
 import { ROOMS, ROOM_ORDER } from '../world/rooms.js';
@@ -456,17 +455,6 @@ function focus(r, opts) {
 }
 
 // ─── Input consumers, history listeners ──────────────────────────────────────────────────────────────────────
-function hallConsumer(g) {
-  if (st.phase === 'transition') return false;
-  return hallHost.call(app.room, 'onGesture', g) === true;
-}
-function directorConsumer(g) {
-  if (st.phase !== 'transition') return false;
-  if (st.scrubbing) return true;
-  if (st.u >= TIMING.interactiveU && hallHost.call(st.to.room, 'onGesture', g) === true) return true;
-  if (g.type === 'tap') director.speedUp();
-  return true;                          // nothing else reaches a hall mid-flight
-}
 function onPop() { lastHash = location.hash; director.go(location.hash, { source: 'history' }); }
 function onHash() { if (location.hash === lastHash) return; lastHash = location.hash; director.go(location.hash, { source: 'hash' }); }
 
@@ -492,8 +480,8 @@ export const director = {
     seen.add('CORE');
     lastHash = location.hash;
     loop.add(frame, ORDER.DIRECTOR);
-    input.push({ name: 'hall', onGesture: hallConsumer });
-    input.push({ name: 'director', onGesture: directorConsumer });
+    // The base consumer stack (hall, then director) is installed once by core/input.js (ARCH §3.9.2); pushing it
+    // again here dispatched every unconsumed gesture to the hall twice.
     window.addEventListener('popstate', onPop);
     window.addEventListener('hashchange', onHash);
     bus.on('layout:change', refreshRest);
