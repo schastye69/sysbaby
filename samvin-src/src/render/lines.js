@@ -2,23 +2,35 @@
 //
 // createLines(opts) → Lines: one instanced screen-space quad per segment, ONE draw call per Lines.
 //   • width in CSS px (× uPixelRatio), 1 px AA feather; near-plane clipped in view space (camera may sit among struts)
-//   • wire glint: brightness × (1 + pow(1 − |dot(dir, normalize(uLamp − P))|, 24) · glint)
+//   • wire glint: brightness × (1 + pow(1 − |dot(dir, normalize(uLamp − P))|, 24) · glint · lampReach(P))
 //   • distance fade: alpha × (1 − smoothstep(0.55·far, far, depth)); depth is CANONICAL (render depth ÷ uWorldScale)
 //     so a hall's `far` keeps meaning metres while the director scales the world
 //   • optional R1 density fade (strut), dash, flatten (SIGNAL «Голос»), fog, additive, layer, partial draw range
 //   • colours are the shared palette uniforms (token) or per-segment rgb; ИЗНАНКА follows automatically (A15)
 // createLatticeMaterial({strut}) — the hairline (1 device px) material for the Key/VIN lattice twin LineSegments:
 //   same glint, fog, far fade and R1 vertex collapse.
-// WP0 additions (optional opts): faces (per-segment aFace = i·16 + j) + strata (uniform of 7 Matrix4) to move each
-// segment with its stratum inside one draw call (structure.js).
+// WP0 additions (optional opts): faces (per-segment aFace = i·16 + j) + strata (uniform of 7 Matrix4) + strataAlpha
+// (uniform of 7 floats) to move/fade each segment with its stratum inside one draw call (structure.js); depthTest,
+// renderOrder.
 import {
   InstancedBufferGeometry, InstancedInterleavedBuffer, InterleavedBufferAttribute, InstancedBufferAttribute,
   BufferAttribute, ShaderMaterial, Mesh, NormalBlending, AdditiveBlending, Vector2,
 } from 'three';
-import { U, colorUniform, identityStrata } from './uniforms.js';
+import { U, colorUniform, identityStrata, onesStrata } from './uniforms.js';
 import { FOG_GLSL } from './fog.js';
 import { R1_GLSL, STRATA_GLSL } from './madeOfItself.js';
 import { RENDER } from '../core/tokens.js';
+import { ROOMS } from '../world/rooms.js';
+import { app } from '../core/store.js';
+
+/** Default distance-fade far: the current room's ROOMS[id].far (ARCH §3.5.4). */
+const defaultFar = () => (ROOMS[app.room] || ROOMS.CORE).far;
+
+/** The lamp's reach for the wire glint: full on struts near the lamp, fading with distance on the scale of the
+ *  camera–lamp distance, so highlights slide along the struts around the focus while walls hundreds of metres away keep
+ *  their fogged 8–14 % (every far-wall strut is perpendicular to L − P, so the bare SPEC term would light them all). */
+export const GLINT_GLSL = /* glsl */ `
+float lampReach(vec3 p) { float r = 2.0 * max(length(uCamPos - uLamp), 1e-4); float d = length(p - uLamp) / r; return 1.0 / (1.0 + d * d); }`;
 
 const QUAD_POS = new Float32Array([0, -1, 0, 1, -1, 0, 0, 1, 0, 1, 1, 0]);
 const QUAD_IDX = [0, 1, 2, 2, 1, 3];
@@ -35,7 +47,8 @@ ${STRATA_GLSL}
 #endif
 uniform vec3 uColor; uniform vec3 cWhite;
 uniform float uWidth, uAlpha, uFar, uGlint, uFlatten, uFlattenY, uDrawA, uDrawB, uCount, uFlash, uStrut;
-uniform vec2 uResolution; uniform float uPixelRatio; uniform vec3 uLamp; uniform float uWorldScale;
+uniform vec2 uResolution; uniform float uPixelRatio; uniform vec3 uLamp; uniform float uWorldScale; uniform vec3 uCamPos;
+${GLINT_GLSL}
 varying vec3 vCol; varying float vAlpha; varying float vSide; varying float vHalfW; varying float vAlong; varying float vDist;
 void main() {
   vec3 a = aA, b = aB;
@@ -71,13 +84,16 @@ void main() {
   vAlong = position.x * len / uPixelRatio;
   float depth = -v.z;
   float al = aAl * uAlpha;
+#ifdef USE_STRATA
+  al *= strataAlpha(aFace);
+#endif
 #ifdef USE_STRUT
   al *= r1Lattice(uStrut, length(M[0].xyz), depth);
 #endif
   al *= 1.0 - smoothstep(0.55 * uFar, uFar, depth / max(uWorldScale, 1e-9));
   vec3 wp = mix(wa.xyz, wb.xyz, position.x);
   vec3 sd = wb.xyz - wa.xyz; float sl = length(sd);
-  float g = sl > 1e-9 ? pow(1.0 - abs(dot(sd / sl, normalize(uLamp - wp))), 24.0) * uGlint : 0.0;
+  float g = sl > 1e-9 ? pow(1.0 - abs(dot(sd / sl, normalize(uLamp - wp))), 24.0) * uGlint * lampReach(wp) : 0.0;
 #ifdef USE_COL_ATTR
   vec3 col = aCol;
 #else
@@ -145,7 +161,7 @@ export function createLines(opts = {}) {
     uColor: colorUniform(colorIsArray ? 'silver' : (opts.color || 'silver')),
     uWidth: { value: typeof opts.width === 'number' ? opts.width : 1 },
     uAlpha: { value: typeof opts.alpha === 'number' ? opts.alpha : (opts.alpha instanceof Float32Array ? 1 : RENDER.r3.alpha) },
-    uFar: { value: opts.far != null ? opts.far : 700 },
+    uFar: { value: opts.far != null ? opts.far : defaultFar() },
     uGlint: { value: opts.glint != null ? opts.glint : RENDER.r3.glintGain },
     uFlatten: { value: 0 }, uFlattenY: { value: 0 },
     uDrawA: { value: 0 }, uDrawB: { value: 1 }, uCount: { value: count },
@@ -153,7 +169,8 @@ export function createLines(opts = {}) {
     uStrut: { value: opts.strut != null ? opts.strut : 0 },
     uDash: { value: new Vector2(opts.dash ? opts.dash[0] : 1, opts.dash ? opts.dash[1] : 0) },
     uStrataM: opts.strata || identityStrata(),
-    cWhite: U.cWhite, cAbyss: U.cAbyss, uFogDensity: U.uFogDensity, uLamp: U.uLamp,
+    uStrataA: opts.strataAlpha || onesStrata(),
+    cWhite: U.cWhite, cAbyss: U.cAbyss, uFogDensity: U.uFogDensity, uLamp: U.uLamp, uCamPos: U.uCamPos,
     uResolution: U.uResolution, uPixelRatio: U.uPixelRatio, uPxPerUnit: U.uPxPerUnit, uWorldScale: U.uWorldScale,
   };
 
@@ -220,7 +237,8 @@ attribute float aStrut;
 #ifdef USE_DIR
 attribute vec3 aDir;
 #endif
-uniform float uStrut, uAlpha, uFar, uGlint, uWorldScale, uFade; uniform vec3 uLamp; uniform vec3 uColor;
+uniform float uStrut, uAlpha, uFar, uGlint, uWorldScale, uFade; uniform vec3 uLamp; uniform vec3 uColor; uniform vec3 uCamPos;
+${GLINT_GLSL}
 varying vec3 vCol; varying float vAlpha; varying float vDist;
 void main() {
   mat4 M = modelMatrix;
@@ -241,10 +259,13 @@ void main() {
   float g = 0.0;
 #ifdef USE_DIR
   vec3 dw = normalize(mat3(M) * aDir);
-  g = pow(1.0 - abs(dot(dw, normalize(uLamp - w.xyz))), 24.0) * uGlint;
+  g = pow(1.0 - abs(dot(dw, normalize(uLamp - w.xyz))), 24.0) * uGlint * lampReach(w.xyz);
 #endif
   vCol = uColor * (1.0 + g);
   vAlpha = uAlpha * uFade * la * (1.0 - smoothstep(0.55 * uFar, uFar, depth / max(uWorldScale, 1e-9)));
+#ifdef USE_STRATA
+  vAlpha *= strataAlpha(aFace);
+#endif
   vDist = length(v.xyz);
 }`;
 
@@ -261,7 +282,7 @@ void main() {
 }`;
 
 /** Hairline lattice material (1 device px GL lines). opts: { strut?: number (else per-vertex aStrut), color = 'silver',
- *  alpha = 0.55, far = 700, glint = 0.9, fog = true, strata?: uniform, dir?: boolean (geometry has aDir) } */
+ *  alpha = 0.55, far = 700, glint = 0.9, fog = true, strata?: uniform, strataAlpha?: uniform, dir?: boolean (geometry has aDir) } */
 export function createLatticeMaterial(opts = {}) {
   const defines = {};
   if (opts.strut == null) defines.USE_ASTRUT = '';
@@ -273,11 +294,12 @@ export function createLatticeMaterial(opts = {}) {
       uStrut: { value: opts.strut != null ? opts.strut : 0 },
       uAlpha: { value: opts.alpha != null ? opts.alpha : RENDER.r3.alpha },
       uFade: { value: 1 },
-      uFar: { value: opts.far != null ? opts.far : 700 },
+      uFar: { value: opts.far != null ? opts.far : defaultFar() },
       uGlint: { value: opts.glint != null ? opts.glint : RENDER.r3.glintGain },
       uColor: colorUniform(opts.color || 'silver'),
       uStrataM: opts.strata || identityStrata(),
-      uLamp: U.uLamp, uWorldScale: U.uWorldScale, uPxPerUnit: U.uPxPerUnit, cAbyss: U.cAbyss, uFogDensity: U.uFogDensity,
+      uStrataA: opts.strataAlpha || onesStrata(),
+      uLamp: U.uLamp, uCamPos: U.uCamPos, uWorldScale: U.uWorldScale, uPxPerUnit: U.uPxPerUnit, cAbyss: U.cAbyss, uFogDensity: U.uFogDensity,
     },
     defines, vertexShader: LVERT, fragmentShader: LFRAG,
     transparent: true, depthWrite: false, blending: NormalBlending,

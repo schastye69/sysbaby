@@ -25,6 +25,7 @@ export const U = {
   uFogDensity: { value: 0.00485 },
   uInvert: { value: 0 },                     // 0..1 ИЗНАНКА mix
   uNight: { value: 0 },                      // 0..1 sleep mix
+  uEmissivePass: { value: 0 },               // WP0 addition: 1 while the composite renders the T3 emissive layer
   // palette (display-space values; palette.js writes them)
   cVoid: col(), cAbyss: col(), cDeep: col(), cSteel: col(), cSlate: col(), cPewter: col(), cSilver: col(),
   cWhite: col(), cObsidian: col(), cEmber: col(), cEmberDeep: col(), cElectrum: col(), cPaper: col(), cInk: col(),
@@ -44,6 +45,10 @@ export function identityStrata() {
   const a = new Array(7);
   for (let i = 0; i < 7; i++) a[i] = new Matrix4();
   return { value: a };
+}
+/** Seven per-stratum alphas (all 1): the default for STRATA_GLSL's uStrataA. */
+export function onesStrata() {
+  return { value: [1, 1, 1, 1, 1, 1, 1] };
 }
 
 // ─── Texture registry (A2) ───────────────────────────────────────────────────────────────────────────────────

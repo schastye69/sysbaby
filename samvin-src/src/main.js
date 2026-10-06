@@ -27,6 +27,27 @@ import * as world from './data/world.js';
 import { WORLD } from './data/world.js';
 import { audio } from './audio/engine.js';
 import * as router from './nav/router.js';
+import { Group, Vector3 } from 'three';
+import { breath } from './core/clock.js';
+import { ORDER } from './core/loop.js';
+import { createRenderer } from './render/renderer.js';
+import { createComposite } from './render/composite.js';
+import { U } from './render/uniforms.js';
+import { palette } from './render/palette.js';
+import { fog } from './render/fog.js';
+import { atlas } from './render/engraveAtlas.js';
+import { scaleEngine } from './render/scale.js';
+import { rig } from './render/cameraRig.js';
+import { lamp } from './render/lamp.js';
+import { nest } from './world/nest.js';
+import * as vin from './world/vin.js';
+import { createAxisPillar } from './world/vin.js';
+import * as structureMod from './world/structure.js';
+import * as rooms from './world/rooms.js';
+import { ROOMS } from './world/rooms.js';
+import { createKey } from './key/key.js';
+import { createRim } from './world/rim.js';
+import { CAMERA } from './core/tokens.js';
 
 /** AppCtx (ARCH §3.1.2) — created once; the same object goes to every factory and init. */
 const ctx = {
@@ -67,11 +88,13 @@ function boot() {
   let gl = null;
   step('quality', () => { gl = quality.detect().gl; });
 
-  // 6a. WebGL path (tier ≥ T1) — stage 0B: createRenderer(#gl, gl, tier); palette, U, fog; scaleEngine.init(scene);
-  //     nest.init(ctx); ctx.key = createKey(ctx); ctx.rim = createRim(ctx); lamp.init(ctx); rig.init(camera);
-  //     composite = createComposite(renderer) (+ loop.add(composite.render, ORDER.RENDER), onFirstFrame).
+  // 6a. WebGL path (tier ≥ T1).
+  let composite = null;
+  if (app.tier !== 'T0') {
+    const ok = step('webgl', () => { composite = initWebGL(gl); });
+    if (!ok) fallbackT0();
+  }
   // 6b. T0 path — stage 0D: ctx.t0 = mountT0(ctx); app.tier = 'T0'.
-  void gl;
 
   // 7. DOM layer — stage 0D: chrome, status, lead, overlay, dims, datum, edges, sheet, navMap, keyNav, cursor.
 
@@ -87,12 +110,19 @@ function boot() {
   // 12. Loop. The composite (0B) removes #ff-grain after the first presented WebGL frame; body.is-ff goes then.
   step('loop', () => {
     quality.init(ctx);
+    if (composite) {
+      loop.add(composite.render, ORDER.RENDER);
+      composite.onFirstFrame(() => document.body.classList.remove('is-ff'));
+    }
     loop.start();
     if (app.tier !== 'T0') quality.benchmark();
     bus.emit('app:ready', {});
   });
 
   // 13. Boot — stage 0D seed / WP2: runBoot(ctx, initialRoute).
+  //     STAND-IN until runBoot exists (stage 0B): the rim rises from 600 ms, the Key reveals from 1,000 ms (400 ms),
+  //     ignited, the axis shot, the rim name shown, breath on. Stage 0D replaces this block with runBoot.
+  if (ctx.key) step('boot-standin', () => standInBoot(composite));
 
   if (__DEV__) {
     // A3: dev-only handle for QA (removed from production builds). Later stages add their modules to `mods`.
@@ -100,13 +130,85 @@ function boot() {
       ctx,
       // ARCH A3 names (later stages add rooms, paths, director, secrets, registry, status, lead, keyNav, overlay, datum,
       // hallHost) plus WP0-internal extras for qa/wp0/unit.mjs (ease, spring, rng, env, layout, input, motion, fonts).
-      mods: { bus, app, state, clock, ru, time, glyph, world, quality, audio, router, loop,
-        store, ease, spring, rng, env, layout, input, motion, fonts: { fontsReady } },
+      mods: { bus, app, state, clock, ru, time, glyph, world, quality, audio, router, loop, rooms,
+        store, ease, spring, rng, env, layout, input, motion, fonts: { fontsReady },
+        scale: scaleEngine, nest, rig, lamp, palette, fog, atlas, U, vin, structure: structureMod },
       discover() { return false; },
       say() { return false; },
       emit(name, payload) { bus.emit(name, payload); },
     });
   }
+}
+
+/** The CORE rest pose (SPEC §6.1): desktop (0, 0.75, 7.2) → origin, fov 35; phone the same with offsetY −0.06. */
+function corePose() {
+  const c = CAMERA.core;
+  return { pos: new Vector3(...c.pos), target: new Vector3(...c.target), fov: c.fov, offsetY: layout.kind === 'desktop' ? 0 : c.phoneOffsetY, roll: 0 };
+}
+
+/** Step 6a: renderer, palette/U/fog, scale engine, nest, Key, rim, lamp, rig, composite. → composite */
+function initWebGL(gl) {
+  const renderer = createRenderer(document.getElementById('gl'), gl, app.tier);
+  ctx.renderer = renderer; ctx.scene = renderer.scene; ctx.camera = renderer.camera;
+  ctx.palette = palette; ctx.U = U; ctx.fog = fog;
+  palette.init();
+  atlas.init(app.tier);
+  ctx.atlas = atlas;
+  fog.set(ROOMS.CORE.fog);
+  scaleEngine.init(renderer.scene, ctx);
+  ctx.scale = scaleEngine;
+  ctx.worldFx = new Group();
+  ctx.worldFx.name = 'worldFx';
+  scaleEngine.root.add(ctx.worldFx);
+  nest.init(ctx);
+  ctx.nest = nest;
+  ctx.pillar = createAxisPillar();
+  scaleEngine.root.add(ctx.pillar);
+  ctx.key = createKey(ctx);
+  nest.level(0).add(ctx.key.group);
+  loop.add(ctx.key.update, ORDER.WORLD);
+  ctx.rim = createRim(ctx);
+  scaleEngine.root.add(ctx.rim.group);
+  lamp.init(ctx);
+  ctx.lamp = lamp;
+  rig.init(renderer.camera);
+  ctx.rig = rig;
+  rig.setPose(corePose());
+  // Until the director exists (stage 0C) the CORE rest pose follows layout changes.
+  bus.on('layout:change', () => { if (!ctx.director) rig.setPose(corePose()); });
+  loop.add((dt, t) => { U.uTime.value = t / 1000; U.uBreath.value = breath.mix(0, 1); }, ORDER.CLOCK);
+  loop.add((dt) => lamp.update(dt), ORDER.LAMP);
+  loop.add((dt) => rig.apply(dt), ORDER.CAMERA);
+  bus.on('gl:lost', () => { if (ctx.t0 && ctx.t0.showLost) ctx.t0.showLost(); });
+  bus.on('gl:restored', () => { if (ctx.t0 && ctx.t0.hideLost) ctx.t0.hideLost(); });
+  return createComposite(renderer);
+}
+
+/** Stage-0B stand-in for runBoot (see step 13): SPEC §4.1's first 600 ms are void + grain only, then the rim lattice
+ *  rises (600–1,600 ms) and the Key reveals (1,000–1,400 ms), ignites and shoots its axis. Replaced by runBoot (0D). */
+function standInBoot(composite) {
+  const k = ctx.key;
+  nest.setFade(1, 0);
+  const go = () => {
+    clock.after(600, () => clock.tween(1000, (u) => nest.setFade(1, u), ease.EASE.reveal));
+    clock.after(1000, () => {
+      clock.tween(400, (u) => k.setReveal({ points: u, scanY: null, fill: u, alpha: u }), ease.EASE.reveal).done.then(() => {
+        k.ignite({ color: app.night ? 'electrum' : 'ember', flash: true });
+        k.shootAxis(3.2, 240);
+        if (ctx.rim) ctx.rim.showName();
+        k.setIdle(true);
+        if (composite) composite.setGrain(0.02);
+      });
+    });
+  };
+  if (composite) composite.onFirstFrame(go); else go();
+}
+
+/** A failure in steps 6–11 switches to T0 (the T0 mount itself is stage 0D / WP11). */
+function fallbackT0() {
+  ctx.renderer = ctx.scene = ctx.camera = ctx.key = ctx.rim = ctx.rig = ctx.scale = ctx.nest = ctx.lamp = null;
+  quality.tier = 'T0';
+  app.tier = 'T0';
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });

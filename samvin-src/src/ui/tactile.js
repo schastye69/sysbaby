@@ -22,7 +22,13 @@ export function ripple(x, y) {
   fx.appendChild(el);
 }
 
-/** Guarded navigator.vibrate. */
+/** Guarded navigator.vibrate. Chrome blocks (and logs a console error for) vibrate() before the page has user
+ *  activation — a first touch-down is not activation yet — so it is skipped until navigator.userActivation says so. */
 export function vibrate(pattern) {
-  try { if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') navigator.vibrate(pattern); } catch (e) { /* ignore */ }
+  try {
+    if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+    const ua = navigator.userActivation;
+    if (ua && !ua.hasBeenActive) return;
+    navigator.vibrate(pattern);
+  } catch (e) { /* ignore */ }
 }

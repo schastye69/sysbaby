@@ -78,7 +78,7 @@ function stepTween(tw) {
   }
 }
 
-loop.add((dt, t) => {
+function clockFrame(dt, t) {
   curT = t;
   // Breath — advanced by loop time (not the clamped dt) so the period stays wall-clock exact at low fps.
   breath.amp = ENV.reducedMotion ? BREATH.reducedAmp : 1;
@@ -101,4 +101,10 @@ loop.add((dt, t) => {
 
   // Tweens (Set.forEach visits entries added during the walk; a tween created this frame starts at x = 0).
   if (tweens.size) tweens.forEach(stepTween);
-}, ORDER.CLOCK);
+}
+
+// Registration is cycle-safe: core/state.js → key/litNodes.js → the render graph can import this module while
+// core/loop.js is still evaluating (an ESM import cycle); then `loop` is not initialised yet and the registration waits
+// for a microtask (all modules have evaluated by then, and the first animation frame comes later still).
+function registerClock() { loop.add(clockFrame, ORDER.CLOCK); }
+try { registerClock(); } catch (e) { Promise.resolve().then(registerClock); }
