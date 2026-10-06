@@ -50,6 +50,7 @@ const evTime = (e) => {
   return ts > 0 && ts <= n + 1 && ts > n - 5000 ? ts : n;
 };
 
+let owner = null;   // the consumer that took the current press's 'down'
 function dispatch(type, e) {
   g.type = type;
   if (e) { g.shift = !!e.shiftKey; g.alt = !!e.altKey; }
@@ -58,11 +59,21 @@ function dispatch(type, e) {
     try { captured.onGesture(g); } catch (err) { logOnce(`input:${captured.name}`, 'captured consumer threw', err); }
     return;
   }
+  // A press belongs to the consumer that took its 'down' (e.g. the boot skip, or the director during a travel): the
+  // rest of that sequence (drag, swipe, tap, up…) goes only to it, and is dropped once it has left the stack, so a
+  // gesture started in one context never fires in the next one (a boot-skip stroke must not ride the elevator).
+  const inSeq = type !== 'down' && type !== 'hover' && type !== 'leave' && type !== 'wheel';
+  if (type === 'down') owner = null;
+  else if (inSeq && owner) {
+    if (stack.indexOf(owner) < 0) return;
+    try { owner.onGesture(g); } catch (err) { logOnce(`input:${owner.name}`, 'consumer threw', err); }
+    return;
+  }
   for (let i = stack.length - 1; i >= 0; i--) {
     const c = stack[i];
     let used = false;
     try { used = !!c.onGesture(g); } catch (err) { logOnce(`input:${c.name}`, 'consumer threw', err); }
-    if (used) return;
+    if (used) { if (type === 'down') owner = c; return; }
   }
 }
 
