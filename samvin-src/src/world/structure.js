@@ -1,0 +1,502 @@
+// world/structure.js — the structure generator (ARCH §3.3.3, SPEC §3.1, §3.2, §3.10).
+//
+// One generator builds the Key (perStratum: 7 animated stratum groups) and every VIN level (merged: one group,
+// scaled ×1000^j by its nest level). Units are Key metres; the owner scales the group.
+//
+//   solids   R2 obsidian with R4 engraving and R1 solid alpha. Per stratum: n faces × 3 loft segments (4 rings:
+//            top, ⅓, ⅔, bottom following r(y)), caps (stratum 3: annuli around the hollow), stratum 3's inner wall
+//            (faces facing the axis); the 0.09 m through-aperture is cut in the shader.
+//            perStratum: 7 meshes (one per stratum group); merged: ONE mesh moved per stratum by uStrataM.
+//   lattice  the R1 lattice twin: two families of k = 24·n straight generators per stratum, each joining perimeter
+//            parameter s on the top ring to s ± 0.75 face widths on the bottom ring, 8 segments, lying on the surface.
+//            ONE LineSegments for all strata (2,016 generators / 16,128 segments at density 1) plus, as a WP0 addition,
+//            stratum 3's inner wall (2 × 288 generators) — that inner wall is the CORE hall's horizon rim.
+//   edges    R3 ribbons in ONE draw call: vertical creases 1 px, top/bottom ring outlines (12 primary per stratum, the
+//            faces nearest face 0, at 1.5 px), the hollow's inner rings.
+//   vertices 7 × 4 rings × n points, 2 px --white 40 % (optional).
+//
+// Attributes (WP0 defines them, nobody changes them): position, normal, aFaceUV (0..1 across / down the face),
+// aFace (i·16 + j), aStrut (local perimeter / 2k — see strutAt), plus aEng (sign u, sign v, metres from the face's top edge, metres to
+// its bottom edge) and aKind (0 outer wall, 1 top cap, 2 bottom cap, 3 inner wall). Face j of stratum i has horizontal
+// outward normal (sin 2πj/n, 0, cos 2πj/n): face 0 looks at +Z.
+import {
+  BufferGeometry, Float32BufferAttribute, BufferAttribute, Group, Mesh, LineSegments, Matrix4, Vector3,
+} from 'three';
+import { loop, ORDER } from '../core/loop.js';
+import { U } from '../render/uniforms.js';
+import { rig } from '../render/cameraRig.js';
+import { PROFILE, STRATA_GEOM, radiusAt, LOFT_RINGS, GAP, KEY, RENDER } from '../core/tokens.js';
+import { createObsidian } from '../render/obsidian.js';
+import { createLines, createLatticeMaterial } from '../render/lines.js';
+import { createPoints } from '../render/points.js';
+
+export { PROFILE, STRATA_GEOM, radiusAt };
+
+const TAU = Math.PI * 2;
+const NO_ENG = 99;                               // aEng.zw for faces that carry no engraving
+const SIGN_FRAC = KEY.sign.heightFrac;           // the sign square side = 70 % of the face height
+
+/** Point on stratum st's n-gon of circumradius r at height y, at perimeter parameter s (face units, face j = ⌊s⌋). */
+function ringPoint(n, r, y, s, out, o) {
+  const j = Math.floor(s);
+  const f = s - j;
+  const a0 = (TAU * j) / n - Math.PI / n, a1 = a0 + TAU / n;
+  const x0 = Math.sin(a0) * r, z0 = Math.cos(a0) * r, x1 = Math.sin(a1) * r, z1 = Math.cos(a1) * r;
+  out[o] = x0 + (x1 - x0) * f; out[o + 1] = y; out[o + 2] = z0 + (z1 - z0) * f;
+}
+/** Perimeter parameter (face units, unwrapped) of generator g of family fam (+1 | −1) at height fraction t (0 top … 1
+ *  bottom), for kd generators per family. The two families are offset by half a spacing so their crossings sit between
+ *  the rings. key/litNodes.js uses this to find the lattice crossings. */
+export function generatorParam(st, fam, g, t, kd = st.k) {
+  return (g * st.n) / kd + (fam < 0 ? (0.5 * st.n) / kd : 0) + fam * KEY.lattice.faceShift * t;
+}
+/** aStrut: the spacing between NEIGHBOURING struts of the two interleaved families = local perimeter / (2k). With R1's
+ *  smoothstep(3, 6) px this keeps the Key solid at the 7.2 m rest distance and dissolves it below ≈ 2.4 m, exactly as
+ *  SPEC §3.2 describes (perimeter / k alone would leave the 7-gon strata ≈ 10 % dissolved at rest). */
+const STRUT_FAMILIES = 2;
+const strutAt = (n, k, y) => Math.max(1e-4, (2 * radiusAt(y) * Math.sin(Math.PI / n) * n) / (k * STRUT_FAMILIES));
+
+// ─── H7 (X§2.2.6): the КОДЕКС law band on each stratum's back face jb(i) = floor(n_i / 2) ───────────────────────
+/** Face width (m) of stratum st at height y, and its slant height (m, summed over the loft segments). */
+const faceWidthAt = (st, y) => 2 * radiusAt(y) * Math.sin(Math.PI / st.n);
+function slantOf(st) {
+  const c = Math.cos(Math.PI / st.n);
+  let sl = 0;
+  for (let q = 0; q < LOFT_RINGS.length - 1; q++) {
+    const y0 = st.top + (st.bot - st.top) * LOFT_RINGS[q], y1 = st.top + (st.bot - st.top) * LOFT_RINGS[q + 1];
+    sl += Math.hypot(y0 - y1, (radiusAt(y0) - radiusAt(y1)) * c);
+  }
+  return sl;
+}
+/** 7 × { vc, vh, u0, u1 } in aFaceUV units: band centre, half-height, horizontal extent (u0 0.10 … u1 0.90).
+ *  vc = 0.5 (A M • V I) · S 5/6 (bottom = widest third) · N 1/6 (top = widest third);
+ *  vh = 0.5 · (0.8 · width_i(vc) / 8) / slant_i (keeps the 8:1 region undistorted at the band centre), capped at 0.14. */
+export const STRATA_CODE_BAND = Object.freeze(STRATA_GEOM.map((st) => {
+  const vc = st.i === 0 ? 5 / 6 : st.i === 6 ? 1 / 6 : 0.5;
+  const w = faceWidthAt(st, st.top + (st.bot - st.top) * vc);
+  const vh = Math.min(0.14, (0.5 * ((0.8 * w) / 8)) / slantOf(st));
+  return Object.freeze({ vc, vh, u0: 0.10, u1: 0.90 });
+}));
+/** The engraved cap height in metres of law i at that nest scale (≈ 0.75 · 2·vh·slant_i·scale). */
+export function codeCapHeightM(i, scale = 1) {
+  const st = STRATA_GEOM[i];
+  if (!st) return 0;
+  return 0.75 * 2 * STRATA_CODE_BAND[i].vh * slantOf(st) * scale;
+}
+
+/** Accumulates flat-shaded triangles with the structure attributes. */
+class Builder {
+  constructor() { this.p = []; this.n = []; this.uv = []; this.eng = []; this.face = []; this.kind = []; this.strut = []; }
+  /** v = [x,y,z, u,v, eu,ev,ez,ew, strut] × 3; the winding is fixed so the normal agrees with `want`. */
+  tri(v0, v1, v2, face, kind, want) {
+    let ax = v1[0] - v0[0], ay = v1[1] - v0[1], az = v1[2] - v0[2];
+    let bx = v2[0] - v0[0], by = v2[1] - v0[1], bz = v2[2] - v0[2];
+    let nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;
+    const len = Math.hypot(nx, ny, nz);
+    if (len < 1e-12) return;                                    // degenerate (apex)
+    nx /= len; ny /= len; nz /= len;
+    let a = v0, b = v1, c = v2;
+    if (nx * want[0] + ny * want[1] + nz * want[2] < 0) { b = v2; c = v1; nx = -nx; ny = -ny; nz = -nz; }
+    for (const v of [a, b, c]) {
+      this.p.push(v[0], v[1], v[2]); this.n.push(nx, ny, nz); this.uv.push(v[3], v[4]);
+      this.eng.push(v[5], v[6], v[7], v[8]); this.face.push(face); this.kind.push(kind); this.strut.push(v[9]);
+    }
+  }
+  geometry() {
+    const g = new BufferGeometry();
+    g.setAttribute('position', new Float32BufferAttribute(this.p, 3));
+    g.setAttribute('normal', new Float32BufferAttribute(this.n, 3));
+    g.setAttribute('aFaceUV', new Float32BufferAttribute(this.uv, 2));
+    g.setAttribute('aEng', new Float32BufferAttribute(this.eng, 4));
+    g.setAttribute('aFace', new Float32BufferAttribute(this.face, 1));
+    g.setAttribute('aKind', new Float32BufferAttribute(this.kind, 1));
+    g.setAttribute('aStrut', new Float32BufferAttribute(this.strut, 1));
+    g.computeBoundingSphere();
+    return g;
+  }
+}
+
+const _p = new Float32Array(3);
+/** Adds stratum st's solid triangles to builder b. */
+function addStratumSolid(b, st) {
+  const { i, n, k, top, bot, hollow } = st;
+  const H = top - bot, mid = (top + bot) / 2, S = SIGN_FRAC * H;
+  const ys = LOFT_RINGS.map((f) => top + (bot - top) * f);
+  const rs = ys.map((y) => radiusAt(y));
+  for (let j = 0; j < n; j++) {
+    const th = (TAU * j) / n, tx = Math.cos(th), tz = -Math.sin(th);   // face tangent (left → right seen from outside)
+    const want = [Math.sin(th), 0, Math.cos(th)];
+    const face = i * 16 + j;
+    const V = (q, side) => {                                           // side 0 = left vertex A, 1 = right vertex B
+      ringPoint(n, rs[q], ys[q], j + side, _p, 0);
+      const x = _p[0] * tx + _p[2] * tz;
+      return [_p[0], _p[1], _p[2], side, (top - ys[q]) / H, x / S + 0.5, 0.5 - (ys[q] - mid) / S, top - ys[q], ys[q] - bot,
+        strutAt(n, k, ys[q])];
+    };
+    for (let q = 0; q < 3; q++) {
+      const At = V(q, 0), Bt = V(q, 1), Ab = V(q + 1, 0), Bb = V(q + 1, 1);
+      b.tri(At, Ab, Bb, face, 0, want);
+      b.tri(At, Bb, Bt, face, 0, want);
+    }
+    // Caps (stratum 3: annuli around the hollow).
+    for (const [y, r, kind, ny] of [[top, rs[0], 1, 1], [bot, rs[3], 2, -1]]) {
+      if (r <= 1e-6) continue;
+      const sv = strutAt(n, k, y);
+      const P = (rad, s) => { ringPoint(n, rad, y, s, _p, 0); return [_p[0], _p[1], _p[2], 0.5, kind === 1 ? 0 : 1, -1, -1, NO_ENG, NO_ENG, sv]; };
+      if (hollow > 0) {
+        const o0 = P(r, j), o1 = P(r, j + 1), i0 = P(hollow, j), i1 = P(hollow, j + 1);
+        b.tri(o0, o1, i1, face, kind, [0, ny, 0]);
+        b.tri(o0, i1, i0, face, kind, [0, ny, 0]);
+      } else {
+        b.tri([0, y, 0, 0.5, kind === 1 ? 0 : 1, -1, -1, NO_ENG, NO_ENG, sv], P(r, j), P(r, j + 1), face, kind, [0, ny, 0]);
+      }
+    }
+    // Inner wall of the hollow (faces facing the axis).
+    if (hollow > 0) {
+      const sv = (2 * hollow * Math.sin(Math.PI / n) * n) / (k * STRUT_FAMILIES);
+      const P = (y, s) => { ringPoint(n, hollow, y, s, _p, 0); return [_p[0], _p[1], _p[2], s - j, (top - y) / H, -1, -1, NO_ENG, NO_ENG, sv]; };
+      const a = P(top, j), c = P(top, j + 1), d = P(bot, j), e = P(bot, j + 1);
+      const inward = [-Math.sin(th), 0, -Math.cos(th)];
+      b.tri(a, d, e, face, 3, inward);
+      b.tri(a, e, c, face, 3, inward);
+    }
+  }
+}
+
+/** Lattice twin positions (+ aFace, aStrut, aDir) for the given strata at density d. */
+function latticeGeometry(density) {
+  const pos = [], face = [], strut = [], dir = [];
+  const a = new Float32Array(3), b = new Float32Array(3);
+  const push = (st, s, p, q, sv0, sv1) => {
+    const dx = q[0] - p[0], dy = q[1] - p[1], dz = q[2] - p[2];
+    const l = Math.hypot(dx, dy, dz) || 1;
+    const f = st.i * 16 + (((Math.floor(s) % st.n) + st.n) % st.n);
+    pos.push(p[0], p[1], p[2], q[0], q[1], q[2]);
+    face.push(f, f); strut.push(sv0, sv1);
+    dir.push(dx / l, dy / l, dz / l, dx / l, dy / l, dz / l);
+  };
+  const SEG = KEY.lattice.segmentsPerGenerator;
+  for (const st of STRATA_GEOM) {
+    const kd = Math.max(1, Math.round(st.k * density));
+    const walls = st.hollow > 0 ? [false, true] : [false];
+    for (const inner of walls) {
+      for (const fam of [1, -1]) {
+        for (let g = 0; g < kd; g++) {
+          for (let m = 0; m < SEG; m++) {
+            const t0 = m / SEG, t1 = (m + 1) / SEG;
+            const y0 = st.top + (st.bot - st.top) * t0, y1 = st.top + (st.bot - st.top) * t1;
+            const r0 = inner ? st.hollow : radiusAt(y0), r1 = inner ? st.hollow : radiusAt(y1);
+            const sA = generatorParam(st, fam, g, t0, kd), sB = generatorParam(st, fam, g, t1, kd);
+            const wrap = (s) => ((s % st.n) + st.n) % st.n;
+            ringPoint(st.n, r0, y0, wrap(sA), a, 0);
+            ringPoint(st.n, r1, y1, wrap(sB), b, 0);
+            const sv0 = inner ? (2 * st.hollow * Math.sin(Math.PI / st.n) * st.n) / (st.k * STRUT_FAMILIES) : strutAt(st.n, st.k, y0);
+            const sv1 = inner ? sv0 : strutAt(st.n, st.k, y1);
+            push(st, wrap((sA + sB) / 2), a, b, sv0, sv1);
+          }
+        }
+      }
+    }
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+  g.setAttribute('aFace', new Float32BufferAttribute(face, 1));
+  g.setAttribute('aStrut', new Float32BufferAttribute(strut, 1));
+  g.setAttribute('aDir', new Float32BufferAttribute(dir, 3));
+  g.computeBoundingSphere();
+  return g;
+}
+
+/** Edge ribbons (segments, per-segment widths, faces). */
+function edgeData() {
+  const seg = [], width = [], face = [];
+  const a = new Float32Array(3), b = new Float32Array(3);
+  const add = (i, j, w) => { seg.push(a[0], a[1], a[2], b[0], b[1], b[2]); width.push(w); face.push(i * 16 + j); };
+  for (const st of STRATA_GEOM) {
+    const { i, n, top, bot, hollow } = st;
+    const ys = LOFT_RINGS.map((f) => top + (bot - top) * f);
+    // Primary: ring outline faces nearest face 0, alternating top / bottom, 12 per stratum.
+    const order = [...Array(n).keys()].sort((p, q) => Math.min(p, n - p) - Math.min(q, n - q));
+    let primary = 0;
+    const prim = new Set();
+    for (const j of order) { for (const ring of [0, 3]) { if (primary < RENDER.r3.primaryEdges && radiusAt(ys[ring]) > 1e-6) { prim.add(`${ring}:${j}`); primary++; } } }
+    for (let j = 0; j < n; j++) {
+      for (let q = 0; q < 3; q++) {                         // vertical crease through vertex j (left vertex of face j)
+        ringPoint(n, radiusAt(ys[q]), ys[q], j, a, 0); ringPoint(n, radiusAt(ys[q + 1]), ys[q + 1], j, b, 0);
+        add(i, j, RENDER.r3.widthPx);
+      }
+      for (const ring of [0, 3]) {
+        const r = radiusAt(ys[ring]);
+        if (r <= 1e-6) continue;
+        ringPoint(n, r, ys[ring], j, a, 0); ringPoint(n, r, ys[ring], j + 0.999999, b, 0);
+        add(i, j, prim.has(`${ring}:${j}`) ? RENDER.r3.primaryPx : RENDER.r3.widthPx);
+      }
+      if (hollow > 0) {
+        for (const y of [top, bot]) { ringPoint(n, hollow, y, j, a, 0); ringPoint(n, hollow, y, j + 0.999999, b, 0); add(i, j, RENDER.r3.widthPx); }
+      }
+    }
+  }
+  return { seg: new Float32Array(seg), width: new Float32Array(width), face: new Float32Array(face) };
+}
+
+function vertexData() {
+  const pos = [], face = [];
+  for (const st of STRATA_GEOM) {
+    for (const f of LOFT_RINGS) {
+      const y = st.top + (st.bot - st.top) * f, r = radiusAt(y);
+      for (let j = 0; j < st.n; j++) { ringPoint(st.n, r, y, j, _p, 0); pos.push(_p[0], _p[1], _p[2]); face.push(st.i * 16 + j); if (r <= 1e-6) break; }
+    }
+  }
+  return { pos: new Float32Array(pos), face: new Float32Array(face) };
+}
+
+// ─── R1 CPU culling (WP0, exact) ─────────────────────────────────────────────────────────────────────────────────
+// The R1 shaders already make a lattice vertex collapse when its alpha < 0.002 and a solid fragment discard when its
+// interpolated solid alpha is 0. On a software rasteriser (SwiftShader) those invisible draws still cost a full-screen
+// pass (VIN's solid surrounds the camera in every hall). Once per frame, after the camera is placed, each structure
+// therefore checks on the CPU with the shaders' own formula:
+//  • lattice: a bounding-sphere bound — every vertex's spacing < 3 px → the draw is skipped (identical: all collapsed);
+//  • merged solid (VIN levels): per triangle — a triangle whose three vertices are all fully lattice (sp ≥ 6 px, or
+//    behind the camera, exactly like the vertex shader) is left out of the index list (identical: it discards anyway).
+const CULLS = [];
+let cullLoop = -1;
+const _mv = new Matrix4(), _gw = new Matrix4(), _c = new Vector3(), _f = new Vector3(), _t = new Vector3();
+function cullFrame() {
+  const cam = rig.camera;
+  if (!cam) return;
+  for (let k = 0; k < CULLS.length; k++) CULLS[k](cam);
+}
+function registerCull(fn) {
+  CULLS.push(fn);
+  if (cullLoop < 0) cullLoop = loop.add(cullFrame, ORDER.CAMERA + 5);
+}
+function unregisterCull(fn) { const k = CULLS.indexOf(fn); if (k >= 0) CULLS.splice(k, 1); }
+/** Largest |p| over a position attribute (local units). */
+function maxRadius(attr) {
+  let m = 0;
+  const a = attr.array;
+  for (let i = 0; i < a.length; i += 3) { const r = a[i] * a[i] + a[i + 1] * a[i + 1] + a[i + 2] * a[i + 2]; if (r > m) m = r; }
+  return Math.sqrt(m);
+}
+function maxOf(arr) { let m = 0; for (let i = 0; i < arr.length; i++) if (arr[i] > m) m = arr[i]; return m; }
+
+/** @returns {Structure}
+ *  opts: { scale = 1, perStratum = false, solid = true, lattice = true, edges = true, vertices = false,
+ *          latticeDensity = 1, hallLod = false, far = 700 } */
+export function buildStructure(opts = {}) {
+  const per = !!opts.perStratum;
+  const group = new Group();
+  group.name = per ? 'structure:key' : 'structure';
+  const sc = opts.scale != null ? opts.scale : 1;
+  group.scale.setScalar(sc);
+  const far = opts.far != null ? opts.far : 700;
+
+  const strataM = { value: Array.from({ length: 7 }, () => new Matrix4()) };
+  const strataA = { value: [1, 1, 1, 1, 1, 1, 1] };
+  const strata = [];
+  if (per) for (let i = 0; i < 7; i++) { const g = new Group(); g.name = `stratum:${i}`; group.add(g); strata.push(g); }
+  else strata.push(group);
+
+  // Per-stratum matrices: perStratum → copied from the stratum groups before each draw; merged → owned here.
+  const syncStrata = () => { if (per) for (let i = 0; i < 7; i++) strataM.value[i].copy(strata[i].matrix); };
+
+  const solids = [];
+  let solidMat = null;
+  if (opts.solid !== false) {
+    if (per) {
+      solidMat = createObsidian({ engrave: 'key', strataAlpha: strataA });
+      for (const st of STRATA_GEOM) {
+        const b = new Builder();
+        addStratumSolid(b, st);
+        const m = new Mesh(b.geometry(), solidMat);
+        m.name = `solid:${st.i}`;
+        m.userData.stratum = st.i;
+        strata[st.i].add(m);
+        solids.push(m);
+      }
+    } else {
+      solidMat = createObsidian({ engrave: 'key', strata: strataM, strataAlpha: strataA });
+      const b = new Builder();
+      for (const st of STRATA_GEOM) addStratumSolid(b, st);
+      const m = new Mesh(b.geometry(), solidMat);
+      m.name = 'solid';
+      m.frustumCulled = false;
+      group.add(m);
+      solids.push(m);
+    }
+  }
+
+  let lattice = null, latMat = null;
+  let density = opts.latticeDensity != null ? opts.latticeDensity : 1;
+  if (opts.lattice !== false) {
+    latMat = createLatticeMaterial({ strata: strataM, strataAlpha: strataA, far, dir: true });
+    lattice = new LineSegments(latticeGeometry(density), latMat);
+    lattice.name = 'lattice';
+    lattice.frustumCulled = false;
+    lattice.onBeforeRender = syncStrata;
+    group.add(lattice);
+  }
+
+  const edges = [];
+  const EDGE_ALPHA = RENDER.r3.alpha;
+  if (opts.edges !== false) {
+    const d = edgeData();
+    const l = createLines({ segments: d.seg, width: d.width, faces: d.face, strata: strataM, strataAlpha: strataA, far, alpha: EDGE_ALPHA });
+    l.mesh.name = 'edges';
+    l.mesh.onBeforeRender = syncStrata;
+    group.add(l.mesh);
+    edges.push(l);
+  }
+
+  let vertices = null, vpts = null;
+  const V_ALPHA = 0.4;
+  if (opts.vertices) {
+    const d = vertexData();
+    vpts = createPoints({ positions: d.pos, faces: d.face, strata: strataM, strataAlpha: strataA, sizePx: 2, color: 'white', alpha: V_ALPHA });
+    vertices = vpts.object;
+    vertices.name = 'vertices';
+    vertices.onBeforeRender = syncStrata;
+    group.add(vertices);
+  }
+
+  let fade = 1;
+  const parts = { solid: 1, lattice: 1, edges: 1, vertices: 1 };
+  let latOn = true, latCulled = false, solidOn = true;
+  let solidCullers = null;
+  const applyAlpha = () => {
+    group.visible = fade > 0;
+    if (solidMat) solidMat.uniforms.uAlpha.value = fade * parts.solid;
+    solidOn = fade * parts.solid > 0;
+    for (let k = 0; k < solids.length; k++) solids[k].visible = solidOn && !(solidCullers && solidCullers[k] && solidCullers[k].empty);
+    if (latMat) { latMat.uniforms.uFade.value = fade * parts.lattice; latOn = fade * parts.lattice > 0; lattice.visible = latOn && !latCulled; }
+    for (const e of edges) e.setAlpha(EDGE_ALPHA * fade * parts.edges);
+    if (vpts) vpts.setAlpha(V_ALPHA * fade * parts.vertices);
+  };
+
+  // R1 CPU culling (see above). Local bounds: radius of the lattice + its largest strut; merged solid: per-vertex data.
+  const latR = lattice ? maxRadius(lattice.geometry.attributes.position) : 0;
+  let latStrutMax = lattice ? maxOf(lattice.geometry.attributes.aStrut.array) : 0;
+  const latticeCull = (cam) => {
+    if (!lattice || !latOn) return;
+    group.updateWorldMatrix(true, false);
+    const e = group.matrixWorld.elements;
+    const s = Math.hypot(e[0], e[1], e[2]);
+    // Largest per-stratum displacement / scale (strata move by translations; rotations keep |p| about their origin).
+    let tMax = 0, sMax = 1;
+    for (let i = 0; i < 7; i++) {
+      const m = per ? strata[i].matrix.elements : strataM.value[i].elements;
+      const t = Math.hypot(m[12], m[13], m[14]); if (t > tMax) tMax = t;
+      const c = Math.hypot(m[0], m[1], m[2]); if (c > sMax) sMax = c;
+    }
+    const R = (latR * sMax + tMax) * s;
+    _c.set(e[12], e[13], e[14]);
+    cam.getWorldDirection(_f);
+    const dMin = _t.copy(_c).sub(cam.position).dot(_f) - R;
+    const off = dMin > 0 && (latStrutMax * sMax * s * U.uPxPerUnit.value) / dMin <= 3.0;
+    if (off !== latCulled) { latCulled = off; lattice.visible = latOn && !latCulled; }
+  };
+  // Per-triangle solid culling: merged (VIN) → one mesh moved per stratum by uStrataM; perStratum (Key) → one mesh per
+  // stratum group, its own matrixWorld.
+  solidCullers = solids.map((mesh) => {
+    const geo = mesh.geometry;
+    const P = geo.attributes.position.array, ST = geo.attributes.aStrut.array, F = geo.attributes.aFace.array;
+    const nv = P.length / 3, nt = nv / 3;
+    const idx = new BufferAttribute(nv > 65535 ? new Uint32Array(nv) : new Uint16Array(nv), 1);
+    for (let i = 0; i < nv; i++) idx.array[i] = i;
+    geo.setIndex(idx);
+    const keep = new Uint8Array(nt).fill(1);
+    const rowZ = new Float32Array(7 * 4), colS = new Float32Array(7);
+    const st = { mesh, empty: false };
+    st.run = (cam) => {
+      if (per) {
+        mesh.updateWorldMatrix(true, false);
+        _mv.multiplyMatrices(cam.matrixWorldInverse, mesh.matrixWorld);
+        const m = _mv.elements, w = mesh.matrixWorld.elements;
+        rowZ[0] = m[2]; rowZ[1] = m[6]; rowZ[2] = m[10]; rowZ[3] = m[14];
+        colS[0] = Math.hypot(w[0], w[1], w[2]);
+      } else {
+        group.updateWorldMatrix(true, false);
+        _gw.multiplyMatrices(cam.matrixWorldInverse, group.matrixWorld);
+        for (let i = 0; i < 7; i++) {
+          _mv.multiplyMatrices(_gw, strataM.value[i]);
+          const m = _mv.elements;
+          rowZ[i * 4] = m[2]; rowZ[i * 4 + 1] = m[6]; rowZ[i * 4 + 2] = m[10]; rowZ[i * 4 + 3] = m[14];
+          _mv.multiplyMatrices(group.matrixWorld, strataM.value[i]);
+          const w = _mv.elements;
+          colS[i] = Math.hypot(w[0], w[1], w[2]);
+        }
+      }
+      const ppu = U.uPxPerUnit.value;
+      let changed = false;
+      for (let t = 0; t < nt; t++) {
+        let any = 0;
+        for (let q = 0; q < 3 && !any; q++) {
+          const v = t * 3 + q, o = v * 3;
+          const si = per ? 0 : Math.min(6, Math.max(0, Math.floor(F[v] / 16 + 0.001)));
+          const r = si * 4;
+          const depth = -(rowZ[r] * P[o] + rowZ[r + 1] * P[o + 1] + rowZ[r + 2] * P[o + 2] + rowZ[r + 3]);
+          if ((ST[v] * colS[si] * ppu) / Math.max(depth, 1e-6) < 6.001) any = 1;   // still carries solid alpha → keep
+        }
+        if (keep[t] !== any) { keep[t] = any; changed = true; }
+      }
+      if (!changed) return;
+      let w = 0;
+      for (let t = 0; t < nt; t++) if (keep[t]) { idx.array[w++] = t * 3; idx.array[w++] = t * 3 + 1; idx.array[w++] = t * 3 + 2; }
+      idx.clearUpdateRanges(); idx.addUpdateRange(0, Math.max(1, w)); idx.needsUpdate = true;
+      geo.setDrawRange(0, w);
+      st.empty = w === 0;
+      mesh.visible = solidOn && !st.empty;
+    };
+    return st;
+  });
+  const solidCull = solidCullers.length ? (cam) => {
+    if (!solidOn || !group.visible) return;
+    for (let k = 0; k < solidCullers.length; k++) solidCullers[k].run(cam);
+  } : null;
+  const cullFn = (cam) => { latticeCull(cam); if (solidCull) solidCull(cam); };
+  registerCull(cullFn);
+
+  const structure = {
+    group, strata, solids, lattice, edges, vertices,
+    /** WP0 additions: the shared per-stratum uniforms, materials and helpers (owners may read / tune them). */
+    strataMatrices: strataM, strataAlpha: strataA, solidMaterial: solidMat, latticeMaterial: latMat,
+    perStratum: per,
+    setGap(g) {
+      for (let i = 0; i < 7; i++) {
+        const dy = (3 - i) * (g - GAP.rest);
+        if (per) strata[i].position.y = dy;
+        else strataM.value[i].makeTranslation(0, dy, 0);
+      }
+    },
+    setFade(a) { fade = Math.max(0, Math.min(1, a)); applyAlpha(); },
+    get fade() { return fade; },
+    setStratumFade(i, a) { if (i >= 0 && i < 7) strataA.value[i] = Math.max(0, Math.min(1, a)); },
+    /** Part multipliers (0..1) under the overall fade: { solid, lattice, edges, vertices }. */
+    setParts(p) { for (const k in p) if (k in parts) parts[k] = p[k]; applyAlpha(); },
+    /** Distance-fade far (canonical m) for lattice + edges (the current room's ROOMS[id].far). */
+    setFar(f) { if (latMat) latMat.uniforms.uFar.value = f; for (const e of edges) e.uniforms.uFar.value = f; },
+    /** Hall LOD: discard the caps of stratum i (−1 = none). */
+    setHideCaps(i) { if (solidMat) solidMat.uniforms.uHideCapsOf.value = i; },
+    /** Rebuilds the lattice twin at a new density (tier change: 0.5 on T1 for hall walls). */
+    setLatticeDensity(d) {
+      if (!lattice || d === density) return;
+      density = d;
+      const old = lattice.geometry;
+      lattice.geometry = latticeGeometry(d);
+      latStrutMax = maxOf(lattice.geometry.attributes.aStrut.array);
+      old.dispose();
+    },
+    dispose() {
+      unregisterCull(cullFn);
+      for (const m of solids) m.geometry.dispose();
+      if (solidMat) solidMat.dispose();
+      if (lattice) { lattice.geometry.dispose(); latMat.dispose(); }
+      for (const e of edges) e.dispose();
+      if (vpts) vpts.dispose();
+      if (group.parent) group.parent.remove(group);
+    },
+  };
+  structure.setGap(GAP.rest);
+  if (opts.hallLod) structure.setHideCaps(-1);
+  return structure;
+}

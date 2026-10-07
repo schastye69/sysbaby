@@ -1,0 +1,43 @@
+/* sam.vin — sheet.css (WP0). The phone bottom sheet and the landscape side panel (SPEC §6.0, §10.2; ARCH §3.12.6):
+   solid --deep, a 1 px --slate top hairline, a 24 px handle, max 62 % height, 120 px peek, above the 88 px Key band.
+   Never frosted (backdrop-filter: none), never a bordered card. Desktop: the hall sheet is never shown.
+   DOM contract (ui/sheet.js):
+   #sheets > section#sheet.sheet[data-state="closed|peek|full"] (.is-dragging: JS writes transform while dragging)
+             > div.sheet-handle (≥ 44 px grab area) > div.sheet-peek > div.sheet-body
+           > section.sheet.sheet--modal#<id>[data-state] (createSheet, e.g. #sheet-owner) · div.sheet-veil (.is-on) */
+.sheet{position:fixed;left:0;right:0;bottom:calc(var(--band-h) + var(--safe-b));z-index:2;max-height:var(--sheet-max);
+  display:flex;flex-direction:column;background:var(--deep);border-top:1px solid rgba(var(--slate-rgb),.8);backdrop-filter:none;
+  padding:0 var(--margin) 16px;touch-action:none;overscroll-behavior:contain;transform:translateY(100%);visibility:hidden;
+  transition:transform var(--d-480) var(--ease-reveal),visibility 0s var(--d-480)}
+.sheet[data-state="peek"],.sheet[data-state="full"]{visibility:visible;transition:transform var(--d-480) var(--ease-reveal)}
+.sheet[data-state="peek"]{transform:translateY(calc(100% - var(--sheet-peek)))}
+.sheet[data-state="full"]{transform:none}
+.sheet.is-dragging{transition:none}
+.sheet-handle{flex:none;position:relative;height:var(--hit);width:96px;margin:0 auto}
+.sheet-handle::before{content:"";position:absolute;left:36px;top:12px;width:var(--sheet-handle);height:1px;background:var(--silver)}
+.sheet-peek{flex:none}
+.sheet-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding-top:8px}
+.sheet[data-state="peek"] .sheet-body{overflow:hidden}
+.sheet--modal{z-index:4}
+.sheet-veil{position:fixed;inset:0;z-index:3;background:rgba(var(--void-rgb),.4);opacity:0;visibility:hidden;
+  transition:opacity var(--d-240),visibility 0s var(--d-240)}
+.sheet-veil.is-on{opacity:1;visibility:visible;transition:opacity var(--d-240)}
+@media not all and (pointer:coarse){#sheet{display:none}}
+@media (pointer:coarse) and (min-width:600.02px) and (min-height:600.02px){#sheet{display:none}}
+/* Landscape phone: a right-side panel, 44 % wide, left of the vertical Key band. */
+@media (pointer:coarse) and (max-height:499.98px){
+  .sheet{left:auto;top:0;bottom:0;right:calc(var(--band-side-w) + var(--safe-r));width:var(--sheet-side-w);max-height:none;
+    border:0;border-left:1px solid rgba(var(--slate-rgb),.8);padding:calc(8px + var(--safe-t)) 16px 16px;transform:translateX(100%)}
+  .sheet[data-state="peek"]{transform:translateX(calc(100% - 160px))}
+  .sheet-handle{display:none}
+}
+/* Portrait phone: sheets live above the Key band — they slide in from behind its top edge, never across it. */
+@media (pointer:coarse) and (max-width:600px) and (min-height:500px){#sheets{clip-path:inset(0 0 calc(var(--band-h) + var(--safe-b)) 0)}}
+@media (prefers-reduced-motion:reduce){.sheet,.sheet[data-state],.sheet-veil{transition-duration:.16s}}
+/* Landscape phone: the sheet is a right-side panel (44 % of the width left of the 72 px band), peek = shown. */
+@media (pointer:coarse) and (max-height:499.98px){
+  #sheet{left:auto;top:0;bottom:0;right:calc(var(--band-side-w) + var(--safe-r));width:calc((100vw - var(--band-side-w)) * .44);
+    max-height:none;border-top:0;border-left:1px solid rgba(var(--slate-rgb),.8);transform:translateX(calc(100% + var(--band-side-w)))}
+  #sheet[data-state="peek"],#sheet[data-state="full"]{transform:none}
+  #sheet .sheet-body{overflow-y:auto}
+}

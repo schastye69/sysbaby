@@ -1,0 +1,198 @@
+/* sam.vin — DESIGN TOKENS (SPEC §2). Verbatim copy → samvin-src/src/styles/tokens.css (WP0).
+   The single source of every CSS colour, type style, duration, easing and chrome measure.
+   Nobody writes a hex colour, a font stack or a type size anywhere else in CSS: use var(--…) and the .t-* classes.
+   JS twin: src/core/tokens.js (ARCH-tokens.js) — same values. */
+
+/* ─── 1. Palette (SPEC §2.1) ─────────────────────────────────────────────────────────────────────────── */
+:root{
+  --void:#04060A;        /* body background, clear colour. Never pure black. */
+  --abyss:#070B12;       /* fog colour, far space */
+  --deep:#0C1420;        /* radial text scrims at 60 %; phone sheets (solid, never frosted) */
+  --steel:#13202F;       /* far lattice, floor survey rings, inactive grid */
+  --slate:#233446;       /* mid lattice, datum lines, edge strings at rest, survey crosses, dimension lines */
+  --pewter:#5E6E80;      /* micro text, inactive labels, locked things */
+  --silver:#B8C4D0;      /* lines, edges, body text, leader lines */
+  --white:#EEF2F6;       /* titles, hot glints, vertices, giant numerals (at 7 %) */
+  --obsidian:#0B1119;    /* base albedo of every solid face */
+  --ember:#FF6A2B;       /* THE accent: "lit by the clan / yours / now" — lines ≤ 2 px, dots ≤ 6×6 px, text ≤ 11 px only */
+  --ember-deep:#B23A12;  /* pre-blended ember for distance / phosphor tails. Never a UI colour. */
+  --electrum:#E8C872;    /* rare: "the world accepted something" — one element, ≤ 2,500 ms, then cools to silver over 600 ms */
+  --paper:#E6EAEE;       /* ИЗНАНКА background only */
+  --ink:#0C1420;         /* ИЗНАНКА lines and text only */
+
+  /* r,g,b triplets of the same tokens, for alpha use: rgba(var(--silver-rgb), .85). Kept in sync with the hexes
+     (palette.setInverted writes both the hex and the -rgb variable). */
+  --void-rgb:4,6,10;  --abyss-rgb:7,11,18;  --deep-rgb:12,20,32;  --steel-rgb:19,32,47;  --slate-rgb:35,52,70;
+  --pewter-rgb:94,110,128;  --silver-rgb:184,196,208;  --white-rgb:238,242,246;  --obsidian-rgb:11,17,25;
+  --ember-rgb:255,106,43;  --ember-deep-rgb:178,58,18;  --electrum-rgb:232,200,114;  --paper-rgb:230,234,238;  --ink-rgb:12,20,32;
+
+  /* derived role colours (SPEC alphas) */
+  --c-giant:rgba(var(--white-rgb),.07);       /* GIANT numeral at rest */
+  --c-counter:rgba(var(--white-rgb),.12);     /* GIANT elevator counter during travel (SPEC §7.4) */
+  --c-status:rgba(var(--silver-rgb),.85);     /* STATUS line */
+  --c-leader:rgba(var(--silver-rgb),.7);      /* 0.5 px leader hairlines */
+  --c-marginalia:rgba(var(--silver-rgb),.8);  /* ARCHIVE joke marginalia */
+  --c-ghost:rgba(var(--silver-rgb),.6);       /* motion-hint ghost dot (phone start) */
+  --c-ghost-stroke:rgba(var(--silver-rgb),.3);/* SIGNAL ghost star stroke */
+  --c-scrim:rgba(var(--deep-rgb),.6);         /* radial scrim core (breathes .58 ↔ .62 via --scrim-a) */
+  --scrim-a:.6;
+  --c-nucleus:var(--ember);                   /* T0/DOM nucleus colour; night → electrum */
+  --nucleus-a:1;                              /* night → .55 */
+  --lit-a:1;                                  /* lit nodes; night → .7 ("warm windows") */
+
+  /* ─── 2. Type (SPEC §2.2) ─────────────────────────────────────────────────────────────────────────── */
+  --font-sans:"Geologica",system-ui,sans-serif;
+  --font-mono:"Martian",ui-monospace,monospace;
+  --shrp:28;             /* bond meter: round(20 + 80·bond). main.js overwrites once at boot (inline style on :root). Never animated globally. */
+
+  /* ─── 3. Motion (SPEC §2.5) ───────────────────────────────────────────────────────────────────────── */
+  --d-120:120ms; --d-240:240ms; --d-480:480ms; --d-960:960ms; --d-1920:1920ms;   /* the octaves */
+  --ease-camera:cubic-bezier(0.7,0,0.15,1);     /* "excavation": camera, transitions */
+  --ease-reveal:cubic-bezier(0.16,1,0.3,1);     /* reveals, lock-in */
+  --ease-phosphor:cubic-bezier(0.2,0,0,1);      /* beam-write colour decay white → ember → silver (900 ms) */
+  --breath:4200ms;       /* world breath period (inhale 1,800 / exhale 2,400); drowsy 5,600 is JS-only; night below */
+  --breath-amp:1;        /* reduced motion → .25 */
+  --lockin:480ms;        /* lock-in reveal; reduced motion → 160 ms opacity fade */
+  --status-in:240ms;     /* status line fade-in */
+  --depart:120ms;        /* readable blocks fade out on departure */
+
+  /* ─── 4. Grid & chrome (SPEC §2.3, §10.2) — desktop values ────────────────────────────────────────── */
+  --safe-t:env(safe-area-inset-top,0px); --safe-r:env(safe-area-inset-right,0px);
+  --safe-b:env(safe-area-inset-bottom,0px); --safe-l:env(safe-area-inset-left,0px);
+  --cols:12; --margin:48px; --gutter:24px;     /* invisible grid (≥ 1280 px) */
+  --measure:36ch;                              /* readable block max width */
+  --chrome-t:24px; --chrome-r:24px; --chrome-b:24px; --chrome-l:24px;   /* corner chrome insets */
+  --edge-inset:14px;                           /* the four edge strings */
+  --status-bottom:40px;                        /* status line baseline box above the bottom edge */
+  --status-measure:44ch;
+  --datum-y:62vh;                              /* datum line (desktop: 62 % of viewport height) */
+  --title-x:var(--margin);                     /* DISPLAY title left edge */
+  --title-top:auto;                            /* desktop: the title sits on the datum; phone: fixed from the top */
+  --hit:44px;                                  /* minimum hit area */
+  --hit-row:56px;                              /* КАРТА rows */
+  --cross:7px;                                 /* survey '+' size */
+  --leader-w:.5px;  --dim-arrow:6px;  --dim-ext:4px;  --dim-gap:4px;
+  --scrim-scale:1.4; --scrim-feather:40px;     /* scrim ellipse = 1.4 × block, feathered 40 px */
+  --nav-w:56px; --nav-h:300px; --nav-hover-w:260px; --nav-right:24px;   /* the Key navigator gauge */
+  --nav-needle:12px; --nav-slot:3px; --nav-twin:40px;
+  --band-h:88px;                               /* phone Key band (plus safe area) */
+  --band-side-w:72px;                          /* landscape phone: vertical band at the right */
+  --sheet-max:62vh; --sheet-peek:120px; --sheet-handle:24px; --sheet-side-w:44vw;
+  --sound-w:32px; --sound-h:12px;              /* ЗВУК 8-bar waveform */
+  --cursor:6px;                                /* hollow ember cursor ring */
+  --ripple:48px;                               /* touch ripple: 1 px ring grows 0 → 48 px over 260 ms */
+  --beam-head:3px;                             /* BEAM WRITE head */
+  --dot:6px;                                   /* status dot (member STATUS) */
+}
+
+@supports (height:1dvh){ :root{ --sheet-max:62dvh; } }
+
+/* ─── Phone (layout.kind 'phone' | 'phone-land': coarse pointer and short side ≤ 600 px — same rule as core/layout.js) ── */
+@media (pointer:coarse) and (max-width:600px), (pointer:coarse) and (max-height:600px){
+  :root{
+    --cols:4; --margin:16px; --gutter:12px;
+    --chrome-t:calc(16px + var(--safe-t)); --chrome-r:calc(16px + var(--safe-r));
+    --chrome-b:calc(16px + var(--safe-b)); --chrome-l:calc(16px + var(--safe-l));
+    --edge-inset:10px;
+    --status-bottom:calc(var(--band-h) + var(--safe-b) + 12px);   /* 12 px above the Key band */
+    --datum-y:calc(120px + var(--safe-t));                         /* datum at 120 px, title at 72 px */
+    --title-top:calc(72px + var(--safe-t));
+    --title-x:16px;
+  }
+}
+/* Landscape phone (layout.kind 'phone-land': h < 500): band moves to the right edge, sheets become a right panel. */
+@media (pointer:coarse) and (max-height:499.98px){
+  :root{
+    --band-h:0px;
+    --status-bottom:calc(16px + var(--safe-b));
+  }
+}
+
+/* ─── ИЗНАНКА (SPEC §2.1 rule 5): set by palette.setInverted at u ≥ 0.5; during the 1,400 ms roll palette writes the
+   interpolated values inline on :root. Ember stays ember. The abyss/deep entries complete the SPEC list so fog and
+   scrims are paper on paper, not dark blotches (ARCH §5.1). ─────────────────────────────────────────────────── */
+:root[data-inverted]{
+  color-scheme:light;
+  --void:#E6EAEE;     --void-rgb:230,234,238;
+  --abyss:#E6EAEE;    --abyss-rgb:230,234,238;
+  --deep:#E6EAEE;     --deep-rgb:230,234,238;
+  --steel:#9AA6B4;    --steel-rgb:154,166,180;
+  --slate:#9AA6B4;    --slate-rgb:154,166,180;
+  --silver:#0C1420;   --silver-rgb:12,20,32;
+  --white:#0C1420;    --white-rgb:12,20,32;
+  --obsidian:#D3D9DF; --obsidian-rgb:211,217,223;
+}
+
+/* ─── НОЧЬ (S10): set by palette.setNight (<html data-night>). The nucleus sleeps in electrum at 55 %. ───────── */
+:root[data-night]{
+  --breath:7000ms;
+  --c-nucleus:var(--electrum);
+  --nucleus-a:.55;
+  --lit-a:.7;
+}
+
+@media (prefers-reduced-motion:reduce){
+  :root{ --breath-amp:.25; --lockin:160ms; }
+}
+
+/* ─── 5. The ten type styles (SPEC §2.2) — QA checks these class names. ──────────────────────────────────
+   Geologica axes: wght, SHRP (= var(--shrp), the bond), CRSV 0, slnt 0. Martian axes: wght, wdth.
+   font-weight / font-stretch duplicate the axis values so fallback fonts get a sensible weight. */
+.t-giant,.t-display,.t-heading,.t-lead,.t-brief,.t-body,.t-status{font-family:var(--font-sans);font-style:normal}
+.t-label,.t-data,.t-micro{font-family:var(--font-mono);font-style:normal}
+
+.t-giant{   /* room level numeral behind the canvas (+460, ±0), elevator counter */
+  font-size:38vw;line-height:.8;letter-spacing:-.04em;font-weight:100;
+  font-variation-settings:"wght" 100,"SHRP" var(--shrp),"CRSV" 0,"slnt" 0;
+  font-variant-numeric:tabular-nums;color:var(--c-giant);white-space:nowrap}
+.t-display{ /* Russian room title on the datum (КЛАН) */
+  font-size:clamp(56px,8.4vw,148px);line-height:.9;letter-spacing:-.035em;font-weight:220;
+  font-variation-settings:"wght" 220,"SHRP" var(--shrp),"CRSV" 0,"slnt" 0;color:var(--white)}
+.t-heading{ /* item titles: member name, mission title, legend title */
+  font-size:28px;line-height:34px;font-weight:560;
+  font-variation-settings:"wght" 560,"SHRP" var(--shrp),"CRSV" 0,"slnt" 0;color:var(--white)}
+.t-lead{    /* motto, transmissions, the big status messages */
+  font-size:22px;line-height:30px;font-weight:300;
+  font-variation-settings:"wght" 300,"SHRP" var(--shrp),"CRSV" 0,"slnt" 0;color:var(--white)}
+.t-brief{   /* mission briefs, legend stories */
+  font-size:19px;line-height:28px;font-weight:380;
+  font-variation-settings:"wght" 380,"SHRP" var(--shrp),"CRSV" 0,"slnt" 0;color:var(--silver)}
+.t-body{    /* all other readable Russian copy */
+  font-size:17px;line-height:25px;font-weight:380;max-width:var(--measure);
+  font-variation-settings:"wght" 380,"SHRP" var(--shrp),"CRSV" 0,"slnt" 0;color:var(--silver)}
+.t-status{  /* the single bottom status line (copy is already lowercase) */
+  font-size:16px;line-height:22px;font-weight:400;max-width:var(--status-measure);
+  font-variation-settings:"wght" 400,"SHRP" var(--shrp),"CRSV" 0,"slnt" 0;color:var(--c-status)}
+.t-label{   /* codenames, leader titles (PLAYER), button verbs */
+  font-size:11px;line-height:14px;font-weight:500;font-stretch:87.5%;letter-spacing:.08em;text-transform:uppercase;
+  font-variation-settings:"wght" 500,"wdth" 87.5;color:var(--silver)}
+.t-data{    /* big counts in readouts (LEVEL 12, НАЙДЕНО 04) */
+  font-size:72px;line-height:1;font-weight:250;font-stretch:100%;
+  font-variation-settings:"wght" 250,"wdth" 100;font-variant-numeric:tabular-nums;color:var(--white)}
+.t-micro{   /* corner chrome, coordinates, dimension values */
+  font-size:9.5px;line-height:12px;font-weight:450;font-stretch:75%;letter-spacing:.1em;text-transform:uppercase;
+  font-variation-settings:"wght" 450,"wdth" 75;color:var(--pewter)}
+
+/* Named variants SPEC uses (sizes never below the 15 px readability floor for readable copy). */
+.t-body--15{font-size:15px;line-height:22px}                 /* hover-leader line 2, hatch titles, marginalia, «Нужно хотя бы две линии.» */
+.t-body--em{font-weight:560;font-variation-settings:"wght" 560,"SHRP" var(--shrp),"CRSV" 0,"slnt" 0;color:var(--white)}
+                                                              /* hover-leader title (BODY 17 wght 560 white); navigator rows use .t-body--15.t-body--em */
+.t-label--13{font-size:13px;line-height:16px}                /* phone Key band letters */
+.t-data--48{font-size:48px}                                  /* SIGNAL dial DATA 48 px (desktop and phone) */
+.t-note{    /* ИЗНАНКА handwritten-style notes (S08): Geologica wght 300, slnt −8, --ink, 16 px */
+  font-family:var(--font-sans);font-size:16px;line-height:22px;font-weight:300;
+  font-variation-settings:"wght" 300,"SHRP" var(--shrp),"CRSV" 0,"slnt" -8;color:var(--ink)}
+
+/* Phone sizes (SPEC §2.2 "Phone" column). vmin = the short side, so portrait values equal SPEC's vw values exactly
+   and landscape phones use the same proportions of their short side. */
+@media (pointer:coarse) and (max-width:600px), (pointer:coarse) and (max-height:600px){
+  .t-giant{font-size:62vmin}
+  .t-display{font-size:13vmin}                                /* 51 px at 390 */
+  .t-heading{font-size:26px;line-height:31px}
+  .t-lead{font-size:19px;line-height:26px}
+  .t-brief{font-size:17px;line-height:25px}
+  .t-body{font-size:16px;line-height:24px}
+  .t-body--15{font-size:15px;line-height:22px}
+  .t-data{font-size:48px}
+  .t-micro{font-size:10px;line-height:13px}
+}

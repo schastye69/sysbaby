@@ -1,0 +1,24 @@
+/* sam.vin — overlay.css (WP0). Anchors, leaders, survey crosses, live coordinates, DOM proxies, dimension lines.
+   DOM contract (ui/overlay.js, ui/dims.js; ARCH §3.12.2, A1) — JS writes only transform: translate3d(...) and SVG d:
+   #overlay > .anchor[data-owner][data-id] (the owner's block; .is-hidden, .is-pending) · button.proxy[data-owner][data-id]
+            (≥ 44 × 44, centred on the anchor; .is-hidden) · span.t-micro.coord · span.t-micro.dim-label[data-owner]
+   #leaders > path.leader[data-owner] (.is-drawing, .focus) · g.cross[data-owner] (2 lines; .focus = ember) · g.dim (.is-drawing)
+   Construction-drawing grammar only: hairlines, crosses, open arrowheads. No boxes, no borders, no blur. */
+#overlay>*{position:absolute;left:0;top:0;will-change:transform;white-space:nowrap}
+.anchor{transition:opacity var(--d-240)}
+.anchor.is-hidden,.anchor.is-pending{opacity:0}
+.anchor.is-hidden,.proxy.is-hidden,.dim-label.is-hidden,#leaders .is-hidden{visibility:hidden}
+.anchor :is(a,button,.verb,[data-interactive]){pointer-events:auto}
+.coord,.dim-label{color:var(--pewter)}
+.dim-label{padding:0 var(--dim-gap)}
+/* DOM proxies: real buttons projected onto 3D items (Tab / Enter / phone hit targets); focus = the ember cross. */
+button.proxy{width:var(--hit);height:var(--hit);margin:-22px 0 0 -22px;font-size:0;color:transparent}
+@media (pointer:fine){button.proxy{cursor:none}}
+#leaders *{fill:none;vector-effect:non-scaling-stroke}
+.leader{stroke:var(--c-leader);stroke-width:var(--leader-w)}
+.leader.focus{stroke:var(--ember)}
+#leaders .cross{stroke:rgba(var(--slate-rgb),.8);stroke-width:1px;shape-rendering:crispEdges}
+#leaders .cross.focus{stroke:var(--ember)}
+#leaders .dim{stroke:rgba(var(--slate-rgb),.8);stroke-width:var(--leader-w)}
+#leaders .is-drawing{transition:stroke-dashoffset var(--d-240) var(--ease-reveal)}
+@media (prefers-reduced-motion:reduce){#leaders .is-drawing{transition:none}.anchor{transition-duration:.16s}}
