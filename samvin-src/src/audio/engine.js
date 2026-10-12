@@ -23,11 +23,10 @@ import { prerender, PRERENDER_ORDER } from './prerender.js';
 const MASTER = Math.pow(10, -6 / 20);
 const NOOP_LIVE = Object.freeze({ set() {}, stop() {}, alive: false });
 const voices = [];
-const bins = new Uint8Array(32);
 let irLong = null;
 let ac = null, master = null, analyser = null, comp = null, wetBus = null, sends = null, hidden = false, suspendTimer = 0;
 let bootDone = false, restQueued = false;
-const timeBuf = new Float32Array(64);
+const timeBuf = new Float32Array(512);   // the analyser's time-domain window (≈ 11 ms: half a 49 Hz cycle)
 const gateLog = [];   // real gates only (unlocked and on), perf ms, last 16
 
 /** E — what recipes receive (ARCH §3.10.2). */
@@ -89,13 +88,13 @@ function resumeFadeIn() {
 }
 
 function build() {
+  E.ctx = ac;   // first: createMasterChain (below) builds its nodes on E.ctx
   comp = ac.createDynamicsCompressor();
   comp.threshold.value = -18; comp.ratio.value = 3; comp.attack.value = 0.003; comp.release.value = 0.25;
   master = ac.createGain();
   master.gain.value = 0;
   analyser = ac.createAnalyser();
-  analyser.fftSize = 64;
-  analyser.smoothingTimeConstant = 0.6;
+  analyser.fftSize = 512;
   master.connect(analyser).connect(ac.destination);
   // WET BUS → A/B convolvers sharing one IR (the live one swaps at every gate — WP3's chain).
   wetBus = ac.createGain();
@@ -124,7 +123,6 @@ function build() {
   try { E.chain = createMasterChain(E, comp, master); } catch (e) { logOnce('audio:chain', e); comp.connect(master); E.chain = null; }
   E.bus.bed = ac.createGain();
   E.bus.bed.connect(comp);
-  E.ctx = ac;
 }
 
 export const audio = {
@@ -222,14 +220,17 @@ export const audio = {
   /** UI-bus recipes transpose −5 semitones while inverted. */
   setInverted(b) { E.transpose = b ? -5 : 0; },
 
-  /** 8 bar levels 0..1 from the analyser (fftSize 64); zeros when off / locked. */
+  /** 8 bar levels 0..1: the live waveform (SPEC §9.8) — the post-gate time-domain window in 8 slices, each bar the
+   *  slice's peak |x| on a 60 dB scale (−6 dBFS → 1, −66 dBFS → 0), so the bed (≈ −40 dBFS) moves every frame and a
+   *  gated master reads as the flat 1 px line (SPEC-ADDENDUM A6.3 ПАУЗА). Zeros when off / locked / hidden. */
   levels(out8) {
     if (!out8) return;
     if (!analyser || !audio.on || hidden) { out8.fill(0); return; }
-    analyser.getByteFrequencyData(bins);
-    for (let i = 0; i < 8; i++) {
-      const s = bins[i * 2] + bins[i * 2 + 1];
-      out8[i] = Math.min(1, (s / 510) * 1.6);
+    analyser.getFloatTimeDomainData(timeBuf);
+    for (let i = 0, k = 0; i < 8; i++) {
+      let m = 0;
+      for (const e = k + 64; k < e; k++) { const x = Math.abs(timeBuf[k]); if (x > m) m = x; }
+      out8[i] = m > 1e-6 ? Math.max(0, Math.min(1, (20 * Math.log10(m) + 66) / 60)) : 0;
     }
   },
 
@@ -241,7 +242,7 @@ function queueRest() {
   if (!bootDone || !ac || restQueued) return;
   restQueued = true;
   const items = PRERENDER_ORDER.slice(1);
-  const idle = (fn) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(fn) : setTimeout(fn, 200));
+  const idle = (fn) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(fn, { timeout: 300 }) : setTimeout(fn, 200));
   const next = () => {
     const name = items.shift();
     if (!name) return;
