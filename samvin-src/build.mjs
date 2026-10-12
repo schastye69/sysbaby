@@ -47,6 +47,36 @@ const OUT_A = path.join(out, 'a');
 const OUT_FONTS = path.join(out, 'fonts');
 for (const d of [out, OUT_A, OUT_FONTS]) fs.mkdirSync(d, { recursive: true });
 
+// ─── 3a. three: drop the GLSL of materials this site never renders (integrator, merge step 3: X§7.3.1 G2) ─────────
+// The site draws only ShaderMaterial with its own self-contained GLSL (no `#include <…>`), NoToneMapping and an
+// UnsignedByteType output, no scene.background, no envMap/PMREM, no shadows. three's built-in material shaders and
+// internal passes are therefore dead weight (~27 KB gz). Every module-level GLSL string of three.module.js is emptied
+// except the chunks WebGLProgram splices into every ShaderMaterial (KEEP). Should a built-in shader ever be compiled
+// (a Mesh without material, a background, a PMREM), the empty source fails to compile and three logs a console error,
+// which every QA case reports (G3). src/** must not use `#include <` (checked below).
+const THREE_GLSL_KEEP = new Set(['colorspace_pars_fragment', 'tonemapping_pars_fragment']);
+const threeGlsl = {
+  name: 'three-unused-glsl',
+  setup(b) {
+    b.onLoad({ filter: /three[\\/]build[\\/]three\.module\.js$/ }, (a) => {
+      let s = fs.readFileSync(a.path, 'utf8');
+      let n = 0;
+      s = s.replace(/^(var|const) ([A-Za-z_$][\w$]*) = "((?:[^"\\\n]|\\.)*)";$/gm, (m, kw, name, body) => {
+        if (THREE_GLSL_KEEP.has(name) || !body.includes('\\n')) return m;
+        n++; return `${kw} ${name} = "";`;
+      });
+      s = s.replace(/\/\* glsl \*\/`([^`]*)`/g, (m, body) => (body.includes('${') ? m : (n++, '``')));
+      for (const k of THREE_GLSL_KEEP) if (!new RegExp(`^(var|const) ${k} = "[^"]`, 'm').test(s)) fail(`three-unused-glsl: ${k} not found`);
+      if (n < 100) fail(`three-unused-glsl: only ${n} GLSL strings found (three layout changed?)`);
+      return { contents: s, loader: 'js' };
+    });
+  },
+};
+{
+  const walkSrc = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walkSrc(path.join(d, e.name)) : [path.join(d, e.name)]));
+  for (const f of walkSrc(path.join(HERE, 'src'))) if (f.endsWith('.js') && fs.readFileSync(f, 'utf8').includes('#include <')) fail(`${path.relative(HERE, f)}: GLSL #include <…> is not available (three chunks are stripped)`);
+}
+
 // ─── 3–4. Bundles ─────────────────────────────────────────────────────────────────────────────────
 let jsResult, cssResult;
 try {
@@ -59,7 +89,7 @@ try {
     legalComments: 'none', charset: 'utf8', treeShaking: true,
     define: { __DEV__: String(dev) },
     drop: dev ? [] : ['debugger'],
-    metafile: true, write: true, logLevel: 'warning',
+    metafile: true, write: true, logLevel: 'warning', plugins: [threeGlsl],
     absWorkingDir: HERE,
   });
   cssResult = await esbuild.build({

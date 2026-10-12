@@ -1,135 +1,139 @@
-// fx/fx.js — ctx.fx, the time & scale layer (ARCH-ADDENDUM X§2.5; SPEC-ADDENDUM A2, A6.3). OWNER: WP12.
-// WP0 SEED (hook H28a): the full Fx surface with inert-but-correct behaviour so every caller works before WP12 lands:
-//   stage.run runs fn at once (serially chained) → 'ran'; cue.at fires visual (+ audio at ctxTimeFor(V) when ready) at V;
-//   impact.pause resolves after 400 ms with NO freeze and NO gate; prosvet → false; wave.fire returns the 343 m/s arrival
-//   clock without uniforms; focus / scale bar / figure / dust are no-ops (dust.enabled = false, emitters are no-op
-//   handles); pulse.run → a no-op handle; pieces.fold = key.setScramble('golden') + key.douse(), resolving after 600 ms;
-//   pieces.owner / nadirUnseal resolve at once; setLineAlpha / fogFactor write through. createFxT0 has the same surface.
+// fx/fx.js — ctx.fx, «ВРЕМЯ И МАСШТАБ»: the time grammar and the truthful-scale layer (ARCH-ADDENDUM X§2.5; SPEC-ADDENDUM
+// A1.1 L1–L6, A2, A6.3). OWNER: WP12. createFx (WebGL tiers) and createFxT0 (T0) expose the same surface with the same
+// timing; in T0 the pictures are ctx.t0.twin() calls and dust / focus / the scale figure are no-ops.
+// One fx frame at loop order 25 (after the director, before WORLD, so a ПАУЗА's timeScale applies to the same frame):
+// clock → cue clock → ПАУЗА / ПРОСВЕТ → pulse → wave → path decorators → pieces → focus → scale figure → dust.
+// Hook fields: fx, scaleBar, figure. Bus: fx:stage, fx:impact (emitted by stage / impact).
 import { U } from '../render/uniforms.js';
 import { fog } from '../render/fog.js';
 import { loop } from '../core/loop.js';
-import { after, cancelAfter } from '../core/clock.js';
-import { audio } from '../audio/engine.js';
+import { bus } from '../core/bus.js';
 import { app } from '../core/store.js';
+import { logOnce } from '../core/env.js';
 import { registerHookField } from '../core/testhook.js';
+import { clk, tickClock, createCue, perf } from './cue.js';
+import { createStage } from './stage.js';
+import { createImpact } from './impact.js';
+import { createWave } from './wave.js';
+import { createFocus } from './focus.js';
+import { createPulse } from './pulse.js';
+import { createScalebar } from './scalebar.js';
+import { createScaleFigure } from './scaleFigure.js';
+import { createPathDeco } from './pathDeco.js';
+import { createEars } from './ears.js';
+import { createTwins } from './t0fx.js';
+import { createDust } from './dust/dust.js';
+import { titleFx } from './pieces/title.js';
+import { createFold } from './pieces/fold.js';
+import { createOwner } from './pieces/owner.js';
+import { createNadir } from './pieces/nadir.js';
+import { swarf } from './pieces/swarf.js';
 
-export const SPEED_OF_SOUND = 343;
-const perf = () => performance.now();
-const noopHandle = () => ({ set() {}, release() {}, alive: false });
+export { SPEED_OF_SOUND } from './cue.js';
 
-function createSurface(ctx, t0mode) {
-  // ── stage lock (seed: serial, never reduced, never deferred) ──
-  let chain = Promise.resolve();
-  const stage = {
-    current: null,
-    queue: [],
-    run(name, fn, opts = { maxWaitMs: 1200 }) {
-      void opts;
-      const p = chain.then(async () => {
-        stage.current = name; app.fx.stage = name;
-        try { await (typeof fn === 'function' ? fn({ reduced: false, signal: { aborted: false } }) : null); } catch (e) { /* the piece's own */ }
-        stage.current = null; app.fx.stage = null;
-        return 'ran';
-      });
-      chain = p.catch(() => 'ran');
-      return p;
-    },
-    busy() { return stage.current != null; },
-    deferToIdleCore(name, fn) { return stage.run(name, fn); },
+const NOFIG = { show() {}, hide() {}, state: () => ({ visible: false, heightPx: 0 }), frame() {} };
+const NODUST = { enabled: false, live: 0, splats: 0, emitter: () => ({ set() {}, release() {}, alive: false }), splat() {}, impulse() {},
+  sheet() {}, stats: () => ({ pool: 0, live: 0 }), ambientTerm() {}, deposit() {}, collapse() {}, frame() {} };
+
+function build(ctx, t0) {
+  const F = { ctx, t0, warmNext: false, warmNow: false, folded: false };
+  const tw = createTwins(ctx, t0);
+  F.twin = tw.twin; F.freeze = tw.freeze;
+  // Tweened fog factor channels ('impact', 'ears', 'close'): immediate when ms is 0.
+  const fogVal = new Map(), fogT = new Map();
+  const fogSet = (name, f) => { fogVal.set(name, f); fog.factor(name, f); };
+  F.fogFactor = (name, f, ms) => {
+    if (t0) return;
+    if (!(ms > 0)) { fogT.delete(name); fogSet(name, f); return; }
+    fogT.set(name, { from: fogVal.get(name) || 1, to: f, t0: perf(), ms });
   };
-
-  // ── cue clock (seed: loop-time timers; no latency compensation beyond the facade mapping) ──
-  const cue = {
-    at(V, spec) {
-      const s = spec || {};
-      const id = after(Math.max(0, V - perf()), () => {
-        try { if (s.visual) s.visual(); } catch (e) { /* caller's */ }
-        try { if (s.audio && audio.fx.ready()) s.audio(audio.fx.ctxTimeFor(V)); } catch (e) { /* caller's */ }
-      });
-      return { cancel() { cancelAfter(id); } };
-    },
-    now(spec) {
-      const s = spec || {};
-      try { if (s.visual) s.visual(); } catch (e) { /* caller's */ }
-      try { if (s.audio && audio.fx.ready()) s.audio(); } catch (e) { /* caller's */ }
-    },
-    cancelAfter(V) { void V; },
-    presentAt(rafTs) { return rafTs + 16.7; },
-    log() { return []; },
-    nowPerf() { return perf(); },
+  let lineT = null;
+  F.setLineAlpha = (a, ms) => {
+    if (!(ms > 0)) { lineT = null; U.uFxLineA.value = Math.max(0, +a || 0); return; }
+    lineT = { from: U.uFxLineA.value, to: Math.max(0, +a || 0), t0: perf(), ms };
   };
+  const ticks = [];
+  F.addTick = (fn) => { const e = { fn, on: true }; ticks.push(e); return () => { e.on = false; }; };
 
-  // ── ПАУЗА / ПРОСВЕТ (seed: timing only) ──
-  const impact = {
-    lastPauseAt: -Infinity,
-    lastProsvetAt: -Infinity,
-    pause(opts = {}) {
-      const at = opts && Number.isFinite(opts.at) ? opts.at : perf();
-      impact.lastPauseAt = at;
-      return new Promise((res) => after(Math.max(0, at + 400 - perf()), () => {
-        const hitAt = at + 400;
-        try { if (opts && opts.onHit) opts.onHit(hitAt); } catch (e) { /* caller's */ }
-        res({ hitAt, advanced: false, skipped: false });
-      }));
-    },
-    inPause() { return false; },
-    prosvet(opts) { void opts; return false; },
-  };
+  F.cue = createCue();
+  F.stage = createStage(ctx);
+  F.pulse = createPulse(F);
+  F.impact = createImpact(F);
+  F.dust = t0 ? NODUST : createDust(F);
+  F.wave = createWave(F);
+  F.focus = createFocus();
+  F.scalebar = createScalebar(F);
+  F.figure = t0 || !ctx.nest ? NOFIG : createScaleFigure(F);
+  const deco = createPathDeco(F);
+  const { ears, provalFor } = createEars(F);
+  const fold = createFold(F);
+  F.focus.caps();
+  bus.on('tier:change', () => F.focus.caps());
+  bus.on('layout:change', () => F.focus.caps());
+  bus.on('travel:start', () => { if (F.folded) fold.wakeReset(); });
 
-  // ── ВОЛНА 343 (seed: the arrival clock only) ──
-  const wave = {
-    fire(opts) {
-      void opts;
-      const startAt = perf();
-      return { startAt, arrival: (distM) => startAt + (1000 * (+distM || 0)) / SPEED_OF_SOUND, stop() {} };
-    },
-  };
-
-  const focus = { rack(opts) { void opts; return Promise.resolve(); }, set() {}, clear() {} };
-  const pulse = { run(opts) { void opts; return { stop() {} }; }, stopAll() {} };
-  const scalebar = { show() {}, hide() {}, set() {}, rmLabel() {} };
-  const scaleFigure = { show() {}, hide() {}, state: () => ({ visible: false, heightPx: 0 }) };
-  const dust = {
-    enabled: false,
-    emitter() { return noopHandle(); },
-    splat() {}, impulse() {}, sheet() {},
-    stats: () => ({ pool: 0, live: 0 }),
-  };
-
-  // ── pieces ──
-  const twin = (kind, opts) => { try { if (ctx.t0 && typeof ctx.t0.twin === 'function') ctx.t0.twin(kind, opts); } catch (e) { /* cosmetic */ } };
-  const pieces = {
-    titleFx(opts) { void opts; return { stop() {} }; },
-    swarf() {},
-    fold(opts) {
-      void opts;
-      const k = ctx.key;
-      if (k) { k.setScramble('golden'); k.douse(); } else if (t0mode) twin('close', { phase: 'asleep', t01: 1 });
-      return new Promise((res) => after(600, res));
-    },
-    wakeReset() {},
-    owner(opts) { void opts; return Promise.resolve({ hitAt: perf(), rimAt: null, echoAt: null }); },
-    nadirUnseal() { return Promise.resolve({ hitAt: perf() }); },
-  };
+  function frame() {
+    tickClock();
+    F.cue.frame();
+    F.impact.frame();
+    F.pulse.frame();
+    F.wave.frame();
+    F.scalebar.frame();
+    deco.frame();
+    for (let i = ticks.length - 1; i >= 0; i--) {
+      const e = ticks[i];
+      let keep = false;
+      if (e.on) { try { keep = e.fn() !== false; } catch (err) { logOnce('fx:tick', err); } }
+      if (!keep) { e.on = false; ticks.splice(i, 1); }
+    }
+    fogT.forEach(stepFog);
+    if (lineT) {
+      const x = Math.min(1, (perf() - lineT.t0) / lineT.ms);
+      U.uFxLineA.value = lineT.from + (lineT.to - lineT.from) * x;
+      if (x >= 1) lineT = null;
+    }
+    F.focus.frame();
+    F.figure.frame();
+    F.dust.frame();
+  }
+  function stepFog(o, name) {
+    const x = Math.min(1, (perf() - o.t0) / o.ms);
+    fogSet(name, o.from + (o.to - o.from) * x);
+    if (x >= 1) fogT.delete(name);
+  }
+  loop.add(frame, 25);
 
   const fx = {
-    stage, cue, impact, wave, focus, pulse, scalebar, scaleFigure, dust, pieces,
-    setLineAlpha(a, ms) { void ms; U.uFxLineA.value = Math.max(0, +a || 0); },
-    fogFactor(name, f, ms) { void ms; fog.factor(name, f); },
-    ears: { tabReturn() {}, descent() {}, popAt() {} },
-    provalFor(ms) { return new Promise((res) => after(Math.max(0, ms || 0), res)); },
-    setTier(tier) { void tier; },
+    stage: F.stage, cue: F.cue, impact: F.impact, wave: F.wave, focus: F.focus, pulse: F.pulse,
+    scalebar: F.scalebar, scaleFigure: F.figure, dust: F.dust,
+    pieces: {
+      titleFx: (o) => titleFx(F, o),
+      swarf: (i) => swarf(F, i),
+      fold: fold.fold,
+      wakeReset: fold.wakeReset,
+      owner: createOwner(F),
+      nadirUnseal: createNadir(F),
+    },
+    setLineAlpha: F.setLineAlpha,
+    fogFactor: F.fogFactor,
+    ears,
+    provalFor,
+    setTier(tier) { void tier; F.focus.caps(); },
     snapshot() {
-      return { stage: stage.current, queue: stage.queue.slice(), impacts: [], prosvet: [], waveArrivalMs: null, timeScale: loop.timeScale, dust: dust.stats() };
+      const s = F.impact.snapshot();
+      return { stage: F.stage.current, queue: F.stage.queue.slice(), impacts: s.impacts, prosvet: s.prosvet,
+        waveArrivalMs: F.wave.lastArrival300, timeScale: loop.timeScale, dust: F.dust.stats() };
     },
   };
+  if (__DEV__) fx._F = F;                                  // dev QA / debugging only (stripped from production)
   registerHookField('fx', () => fx.snapshot());
-  registerHookField('scaleBar', () => null);
-  registerHookField('figure', () => null);
+  registerHookField('scaleBar', () => { const l = F.scalebar.label; return l ? { label: l } : null; });
+  registerHookField('figure', () => (t0 ? null : F.figure.state()));
+  void clk; void app;
   return fx;
 }
 
 /** → Fx (WebGL tiers) */
-export function createFx(ctx) { return createSurface(ctx, false); }
-/** → Fx (T0): identical method names and timing; visuals via ctx.t0?.twin(kind, opts) (no-ops without ctx.t0). */
-export function createFxT0(ctx) { return createSurface(ctx, true); }
+export function createFx(ctx) { return build(ctx, false); }
+/** → Fx (T0): identical method names and timing; visuals via ctx.t0?.twin(kind, opts); dust / focus / figure no-ops. */
+export function createFxT0(ctx) { return build(ctx, true); }

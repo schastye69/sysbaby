@@ -196,10 +196,14 @@ export const chrome = {
     const full = nodes.map((n) => n.textContent);
     const len = Math.max(1, ...full.map((s) => s.length));
     for (const n of nodes) n.textContent = '';
+    // A corner rewritten while it types (ЗВУК → ТИХО on M, a found count, a rank) becomes its new full text: the typing
+    // never writes back a stale string (integrator, step 3: 3-runtime-rm).
+    const last = nodes.map(() => '');
+    const adopt = (i) => { const t = nodes[i].textContent; if (t !== last[i]) full[i] = t; };
     return tween(len * msPerChar, (u) => {
       const k = Math.round(u * len);
-      for (let i = 0; i < nodes.length; i++) { const s = full[i].slice(0, k); if (nodes[i].textContent !== s) nodes[i].textContent = s; }
-    }).done.then(() => { for (let i = 0; i < nodes.length; i++) nodes[i].textContent = full[i]; });
+      for (let i = 0; i < nodes.length; i++) { adopt(i); const s = full[i].slice(0, k); if (nodes[i].textContent !== s) nodes[i].textContent = s; last[i] = s; }
+    }).done.then(() => { for (let i = 0; i < nodes.length; i++) { adopt(i); nodes[i].textContent = full[i]; } });
   },
 
   /** Chrome to full alpha. → Promise */

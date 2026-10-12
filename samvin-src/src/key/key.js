@@ -136,6 +136,16 @@ export function createKey(ctx) {
   bus.on('tier:change', ({ tier }) => { const p = TIER_PARAMS[tier]; if (p) grains.setTierCount(p.grains); });
 
   const idleI = createIdle(K);
+  // A2.7.1 stir: the flinch adds one dust splat at the nucleus with a radial 0.08 m/s impulse toward the hot side
+  // (X§2.7 `dust.splat` is public for this). Render-space point and velocity; Key-scale m → render via the group scale.
+  const _fp = new Vector3(), _fv = new Vector3();
+  bus.on('key:flinch', () => {
+    const d = ctx.fx && ctx.fx.dust;
+    if (!d || !d.splat || ENV.reducedMotion || app.night) return;
+    _fp.copy(K.nucleusLocal).applyMatrix4(group.matrixWorld);
+    _fv.copy(idleI.hot).transformDirection(group.matrixWorld).multiplyScalar(0.08 * group.matrixWorld.getMaxScaleOnAxis());
+    d.splat(_fp, _fv);
+  });
   const H = createHover(K, ctx);
   const D = createDrag(K);
   const marks = createMarks(K);

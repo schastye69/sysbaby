@@ -64,7 +64,7 @@ function frame(dt) {
     const a = anchors[i];
     a.get(_w);
     rig.project(_w, _p);
-    const inView = _p.depth > 0 || !a.hideBehind;
+    const inView = (_p.depth > 0 || !a.hideBehind) && Number.isFinite(_p.x) && Number.isFinite(_p.y);   // a degenerate anchor never reaches the DOM
     a.want = a.visible && inView;
     if (!a.want) continue;
     visible++;
