@@ -46,7 +46,8 @@ export const palette = {
   /** Writes the base palette into U (called once at module load; safe to call again). */
   init() { writeUniforms(palette.mode.inverted); },
 
-  setNight(b) {
+  /** instant: no 1,200 ms tween (the load: a night visit boots night from its first frame) */
+  setNight(b, instant = false) {
     const on = !!b;
     if (typeof document !== 'undefined') {
       if (on) document.documentElement.setAttribute('data-night', '');
@@ -54,7 +55,8 @@ export const palette = {
     }
     if (on === palette.mode.night && !nightTween) { U.uNight.value = on ? 1 : 0; return; }
     palette.mode.night = on;
-    if (nightTween) nightTween.cancel();
+    if (nightTween) { nightTween.cancel(); nightTween = null; }
+    if (instant) { U.uNight.value = on ? 1 : 0; return; }
     const from = U.uNight.value, to = on ? 1 : 0;
     nightTween = tween(NIGHT.mixMs, (k) => { U.uNight.value = from + (to - from) * k; });
     nightTween.done.then(() => { nightTween = null; });

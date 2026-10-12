@@ -114,6 +114,24 @@ export function createMasterChain(E, input /* the compressor */, output /* the m
       st.gateAt = a; st.hitAt = hit;
       return { hitAt: hit };
     },
+    /** Cancels a gate that has not begun to close (its 6 ms close and the A/B swap are still in the future): the post-gate
+     *  gain and the wet sends keep their present values. → true when cancelled; false once the close has begun. */
+    ungate() {
+      const n = now();
+      if (!(st.gateAt - 0.007 > n)) return false;
+      const g = gate.gain;
+      g.cancelScheduledValues(n); g.setValueAtTime(1, n);
+      const W = E.wet;
+      if (W && W.inA) {
+        const live = W.live === 'B' ? 'A' : 'B', idle = live === 'A' ? 'B' : 'A';      // the swap is undone
+        for (const [k, v] of [['in' + live, 1], ['ret' + live, 1], ['in' + idle, 0], ['ret' + idle, 0]]) {
+          const p = W[k].gain; p.cancelScheduledValues(n); p.setValueAtTime(v, n);
+        }
+        W.live = live;
+      }
+      st.gateAt = -1; st.hitAt = -1;
+      return true;
+    },
     advanceHit(at) {
       const n = now();
       if (!(st.hitAt > n)) return null;

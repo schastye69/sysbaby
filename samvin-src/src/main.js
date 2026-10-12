@@ -236,6 +236,9 @@ function initWebGL(gl) {
   ctx.renderer = renderer; ctx.scene = renderer.scene; ctx.camera = renderer.camera;
   ctx.palette = palette; ctx.U = U; ctx.fog = fog;
   palette.init();
+  // Night at load (SPEC §4.3 / S10): the palette is night from the first frame, so the boot ignites electrum 55 %
+  // (WP10 owns the later 21:00 crossing and night:change).
+  if (app.night) palette.setNight(true, true);
   atlas.init(app.tier);
   ctx.atlas = atlas;
   fog.set(ROOMS.CORE.fog);

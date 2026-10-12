@@ -207,7 +207,9 @@ export function createKey(ctx) {
 
     idleI.update(dt, t, si);
     const rest = K.interactive && app.room === 'CORE' && app.phase === 'idle' && morphG.gap < 0;
-    H.update(dt, t, si, rest);
+    // A14 dims: drawn as soon as the Key is interactive in CORE, including the boot's ASSEMBLY (6,400, SPEC A2.1.1),
+    // not only once the phase is idle; hover/leaders still wait for idle.
+    H.update(dt, t, si, rest, rest || (K.interactive && app.room === 'CORE' && app.phase === 'boot' && morphG.gap < 0));
     D.update(dt, t);
     K.hoverAmt = H.amt;
     // Idle blends back over 1,600 ms after a rebase; it holds still while the layers are being read (hover).
@@ -355,13 +357,15 @@ export function createKey(ctx) {
       structure.setParts({ vertices: r.points != null ? clamp01(r.points) : 1, solid: revealFill, edges: 1, lattice: revealFill });
       structure.setFade(revealA);
       for (let q = 0; q < structure.edges.length; q++) structure.edges[q].uniforms.uFlash.value = r.scanY != null ? 0.35 : 0;
-      const on = revealA > 0;
+      // The axis core and the grains belong to the solid object: DETECTION (points only, fill 0) shows the vertices
+      // and nothing else (SPEC-ADDENDUM A2.1.1); they appear with the fill and fade with the alpha.
+      const on = revealA > 0 && revealFill > 0;
       axisCore.mesh.visible = on;
       axisExt.mesh.visible = on && extLen > 0;
       nucleus.reveal = revealFill;
       nucleus.setRing(nucleus.ringOn);
       marks.lit.object.visible = on && marks.lit.count > 0;
-      grains.setReveal(revealA);
+      grains.setReveal(revealA * revealFill);
     },
     setScramble(angles) {
       for (let i = 0; i < 7; i++) {

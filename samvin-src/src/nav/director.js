@@ -294,6 +294,9 @@ function arrive() {
   const path = st.path, from = st.from, to = st.to;
   path.pose(1, out);
   applyWorld(out);
+  // The camera takes the arrival pose now (not at ORDER.CAMERA of the next frame), so whatever the hall shows on
+  // arrival — its overlay proxies (Tab order, A1) — is projected from where the visitor actually stands.
+  if (ctx.renderer) rig.apply(0);
   copyPoseOut(out, cur);
   stopVoice();
   fxOut.active = false;

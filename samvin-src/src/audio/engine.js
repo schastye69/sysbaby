@@ -261,7 +261,14 @@ function latency() {
   return Math.min(0.25, Math.max(0, +l || 0));
 }
 function outTs() {
-  try { const ts = ac.getOutputTimestamp ? ac.getOutputTimestamp() : null; return ts && ts.performanceTime > 0 ? ts : null; } catch (e) { return null; }
+  try {
+    const ts = ac.getOutputTimestamp ? ac.getOutputTimestamp() : null;
+    if (!(ts && ts.performanceTime > 0)) return null;
+    // A context created (or resumed) moments ago can report a stale stamp for its first render quanta (seen: 3.1 s off
+    // on the phone's first touch): it is trusted only while it agrees with the currentTime estimate within 250 ms.
+    const est = performance.now() + (ts.contextTime - ac.currentTime) * 1000 + 1000 * latency();
+    return Math.abs(est - ts.performanceTime) <= 250 ? ts : null;
+  } catch (e) { return null; }
 }
 /** perf ms at which context time T is audible (A6.3); NaN while locked. */
 function toPerf(T) {
@@ -304,6 +311,12 @@ audio.fx = {
     gateLog.push({ at: toPerf(at), hitAt: toPerf(r.hitAt) });
     if (gateLog.length > 16) gateLog.shift();
     return r;
+  },
+  /** cancels a gate whose close is still ahead (fx.impact.cancel); true when cancelled */
+  ungate() {
+    const r = call('ungate', [], false);
+    if (r === true) gateLog.pop();
+    return r === true;
   },
   advanceHit(at) {
     const r = call('advanceHit', [at], null);

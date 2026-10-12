@@ -142,9 +142,10 @@ export function createHover(K, ctx) {
     for (const d of dims) { d.setVisible(on); if (on) d.drawIn(TIMING.dimsDraw); }
   }
 
-  /** dt s · t loop ms · si Key screen info · interactiveRest: interactive, CORE, idle phase, not travelling */
-  H.update = function update(dt, t, si, interactiveRest) {
-    if (t - dimsCheck > 250 || !interactiveRest) { dimsCheck = t; setDims(interactiveRest && dimsKey >= 0, si); }
+  /** dt s · t loop ms · si Key screen info · interactiveRest: interactive, CORE, idle phase, not travelling ·
+   *  dimsRest: interactive in CORE (idle or the boot's ASSEMBLY) — the A14 dims draw on the first such frame */
+  H.update = function update(dt, t, si, interactiveRest, dimsRest = interactiveRest) {
+    if (t - dimsCheck > 250 || !dimsRest || !dimsOn) { dimsCheck = t; setDims(dimsRest && dimsKey >= 0, si); }
     const p = input.pointer;
     const can = interactiveRest && !K.dragging && layout.kind === 'desktop' && p.type === 'mouse' && p.x > -9000 && !p.down;
     let inside = false;

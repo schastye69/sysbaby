@@ -33,8 +33,11 @@ export function createWave(F) {
       last = now;
       const origin = new Vector3();
       if (o.origin) origin.copy(o.origin);
+      // o.at: the perf ms the shell leaves (the exact hit of a ПАУЗА, delivered on the frame nearest to it — maybe up to
+      // half a frame before or a stalled frame after); the shell, its arrivals and the echo all count from it.
+      const start = Number.isFinite(o.at) ? Math.max(now - 1000, Math.min(now + 250, o.at)) : now;
       const w = { origin, mode: o.mode === 'axis' ? 2 : 1, amp: o.ampRel != null ? o.ampRel : 0.004, width: o.width != null ? o.width : 9,
-        gain: o.gain != null ? o.gain : 0.6, max: o.maxDist != null ? o.maxDist : 1300, startAt: now, on: true, slot: null,
+        gain: o.gain != null ? o.gain : 0.6, max: o.maxDist != null ? o.maxDist : 1300, startAt: start, on: true, slot: null,
         flat: false, fo: null };
       if (!F.t0 && ENV.reducedMotion && w.mode === 2 && rig.camera) {
         w.flat = true;
@@ -46,7 +49,7 @@ export function createWave(F) {
       }
       const arrival = (d) => w.startAt + (1000 * (+d || 0)) / C;
       wave.lastArrival300 = Math.round(arrival(300) - w.startAt);
-      if (F.impact) F.impact.note('wave', now);
+      if (F.impact) F.impact.note('wave', w.startAt);
       if (!F.t0) {
         const s = slots[next]; next = 1 - next;
         if (s.w) s.w.on = false;

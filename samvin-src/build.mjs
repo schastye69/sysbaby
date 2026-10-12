@@ -55,6 +55,21 @@ for (const d of [out, OUT_A, OUT_FONTS]) fs.mkdirSync(d, { recursive: true });
 // (a Mesh without material, a background, a PMREM), the empty source fails to compile and three logs a console error,
 // which every QA case reports (G3). src/** must not use `#include <` (checked below).
 const THREE_GLSL_KEEP = new Set(['colorspace_pars_fragment', 'tonemapping_pars_fragment']);
+const THREE_STUBS = [
+  [/^function WebGLShadowMap\( renderer, objects, capabilities \) \{[\s\S]*?^\}$/m,
+    'function WebGLShadowMap() { this.enabled = false; this.autoUpdate = true; this.needsUpdate = false; this.type = PCFShadowMap; this.render = function () {}; }'],
+  [/^class PMREMGenerator \{[\s\S]*?^\}$/m,
+    "class PMREMGenerator { constructor() { throw new Error( 'sam.vin build: PMREMGenerator is stripped (no envMap)' ); } }"],
+  [/^class WebXRDepthSensing \{[\s\S]*?^\}$/m, ''],
+  [/^function WebGLEnvironments\( renderer \) \{[\s\S]*?^\}$/m,
+    "function WebGLEnvironments() { return { get( t ) { if ( t === null || t === undefined ) return null; throw new Error( 'sam.vin build: envMap / background textures are stripped' ); }, dispose() {} }; }"],
+  [/^function WebGLMorphtargets\( gl, capabilities, textures \) \{[\s\S]*?^\}$/m,
+    "function WebGLMorphtargets() { return { update() { throw new Error( 'sam.vin build: morph targets are stripped' ); } }; }"],
+  [/^class WebXRManager extends EventDispatcher \{[\s\S]*?^\}$/m,
+    'class WebXRManager extends EventDispatcher { constructor() { super(); this.enabled = false; this.isPresenting = false; this.cameraAutoUpdate = true; }'
+    + ' getCamera() { return null; } updateCamera() {} setAnimationLoop() {} dispose() {} getEnvironmentBlendMode() { return undefined; }'
+    + ' getDepthSensingMesh() { return null; } hasDepthSensing() { return false; } }'],
+];
 const threeGlsl = {
   name: 'three-unused-glsl',
   setup(b) {
@@ -68,6 +83,13 @@ const threeGlsl = {
       s = s.replace(/\/\* glsl \*\/`([^`]*)`/g, (m, body) => (body.includes('${') ? m : (n++, '``')));
       for (const k of THREE_GLSL_KEEP) if (!new RegExp(`^(var|const) ${k} = "[^"]`, 'm').test(s)) fail(`three-unused-glsl: ${k} not found`);
       if (n < 100) fail(`three-unused-glsl: only ${n} GLSL strings found (three layout changed?)`);
+      // Merge step 4 (X§7.3.1 G2): the renderer's subsystems this site never enters are replaced by inert stubs with the
+      // same surface WebGLRenderer reads (no WebXR session, no shadow-casting lights, no envMap/PMREM). The stubs keep
+      // every flag at its default; a PMREM request throws, so a future envMap fails loudly (G3) instead of silently.
+      for (const [re, stub] of THREE_STUBS) {
+        if (!re.test(s)) fail(`three-unused-glsl: ${re} not found (three layout changed?)`);
+        s = s.replace(re, stub);
+      }
       return { contents: s, loader: 'js' };
     });
   },

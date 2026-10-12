@@ -79,16 +79,29 @@ export function createImpact(F) {
           if (hitAt <= now + 1) go(); else F.cue.at(hitAt, { id: 'hit', visual: go });
         });
       }
+      const prevPauseAt = impact.lastPauseAt;
       impact.lastPauseAt = at;
       F.pulse.stopAll(at);
       const ready = audio.fx.ready();
       if (ready) audio.fx.gate(400, { at: Math.max(audio.fx.ctxTimeFor(at), audio.now() + 0.008) });
       return new Promise((res) => {
-        P = { o, at, hitAt: at + 400, adv: false, res, started: false, warm: false, hit: false };
+        P = { o, at, hitAt: at + 400, adv: false, res, started: false, warm: false, hit: false, prevPauseAt };
         rec('pause', at);
       });
     },
     inPause() { return !!(P && P.started); },
+    /** A planned pause whose freeze has not begun (a skip landed between the plan and `at`): no freeze, no gate (its
+     *  close is still ahead), no hit of its own; resolves { hitAt: now, skipped, cancelled } and frees the 20 s cap.
+     *  → false once the freeze has begun (an input inside the window already brings the hit to now + 30 ms). */
+    cancel() {
+      if (!P || P.started || P.hit) return false;
+      const p = P; P = null;
+      impact.lastPauseAt = p.prevPauseAt;
+      if (audio.fx.ready() && audio.fx.ungate) audio.fx.ungate();
+      for (let i = impacts.length - 1; i >= 0; i--) if (impacts[i].kind === 'pause' && impacts[i].at === p.at) { impacts.splice(i, 1); break; }
+      p.res({ hitAt: perf(), advanced: false, skipped: true, cancelled: true });
+      return true;
+    },
     /** opts { kind: 'first'|'wake'|'dive'|'s05'|'nadir' } → false when capped */
     prosvet(opts) {
       const kind = (opts && opts.kind) || 'first';
