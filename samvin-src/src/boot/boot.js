@@ -153,7 +153,10 @@ export async function runRelaunch(ctx) {
   remove = ctx.input.push({
     name: 'relaunch',
     onGesture(g) {
-      if (g.type !== 'tap' || app.room !== 'CORE' || k.pick(g.x, g.y) < 0) return false;
+      // Take the press's 'down' too: the input layer routes the rest of a press only to the consumer that took its
+      // 'down', and the real Key (WP1) takes 'down' on a stratum, so its 'tap' would become key:click (UNFOLD).
+      if ((g.type !== 'tap' && g.type !== 'down') || app.room !== 'CORE' || k.pick(g.x, g.y) < 0) return false;
+      if (g.type === 'down') return true;
       remove();
       runWake(ctx, { show: false });
       return true;

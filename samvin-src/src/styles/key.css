@@ -1,1 +1,17 @@
-/* owned by WP1 — seed */
+/* key.css (WP1) — the Key's hover label blocks (SPEC §3.4): construction-drawing annotation, no box, no border.
+   #overlay > .anchor.key-lbl (the overlay positions it at the leader's end; .scrim = a tight, faint --deep scrim that
+   only protects the text where it crosses the grain rings — over the void it must not read as a patch)
+     > button.proxy.key-lbl__b[data-owner=key][data-id]  LABEL · title (BODY 17 / 560 --white) · line (BODY 15 --silver) · MICRO */
+#overlay .key-lbl__b.proxy{display:flex;flex-direction:column;align-items:flex-start;width:auto;height:auto;margin:0;
+  padding:2px 10px 2px 2px;font-size:inherit;color:var(--silver);text-align:left;background:none;border:0;border-radius:0;
+  transition:opacity var(--d-240) var(--ease-reveal)}
+.key-lbl.scrim::before{inset:-12px -18px -12px -14px;
+  background:radial-gradient(closest-side,rgba(var(--deep-rgb),.4) calc(100% - 26px),transparent)}
+.key-lbl__b .t-label{color:var(--silver);margin-bottom:2px}
+.key-lbl__t{line-height:21px;letter-spacing:-.005em}
+.key-lbl__l{line-height:19px}
+.key-lbl__b .t-micro{margin-top:2px}
+.key-lbl__b:hover .key-lbl__t,.key-lbl__b:focus-visible .key-lbl__t{text-decoration:underline 1px;text-underline-offset:4px}
+.key-lbl__b:focus-visible{outline:none}
+.dim-label[data-owner="key"]{text-shadow:0 0 2px var(--void),0 0 4px var(--void)}
+@media (prefers-reduced-motion:reduce){#overlay .key-lbl__b.proxy{transition-duration:.16s}}

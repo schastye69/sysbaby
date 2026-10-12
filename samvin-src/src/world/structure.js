@@ -77,11 +77,14 @@ export const STRATA_CODE_BAND = Object.freeze(STRATA_GEOM.map((st) => {
   const vh = Math.min(0.14, (0.5 * ((0.8 * w) / 8)) / slantOf(st));
   return Object.freeze({ vc, vh, u0: 0.10, u1: 0.90 });
 }));
-/** The engraved cap height in metres of law i at that nest scale (≈ 0.75 · 2·vh·slant_i·scale). */
+/** Per-stratum fit factor of the painted law (≤ 1): WP1's signs.paintLaw writes it when a long line has to shrink to
+ *  span the band (A3.3: the cap is the smaller of the band cap and the height at which the line spans the band width). */
+export const CODE_FIT = new Float32Array(7).fill(1);
+/** The engraved cap height in metres of law i at that nest scale (0.75 · 2·vh·slant_i·scale · CODE_FIT[i]). */
 export function codeCapHeightM(i, scale = 1) {
   const st = STRATA_GEOM[i];
   if (!st) return 0;
-  return 0.75 * 2 * STRATA_CODE_BAND[i].vh * slantOf(st) * scale;
+  return 0.75 * 2 * STRATA_CODE_BAND[i].vh * slantOf(st) * scale * CODE_FIT[i];
 }
 
 /** Accumulates flat-shaded triangles with the structure attributes. */
@@ -348,11 +351,25 @@ export function buildStructure(opts = {}) {
     edges.push(l);
   }
 
-  let vertices = null, vpts = null;
+  let vertices = null, vpts = null, vertexExtra = null;
   const V_ALPHA = 0.4;
   if (opts.vertices) {
     const d = vertexData();
-    vpts = createPoints({ positions: d.pos, faces: d.face, strata: strataM, strataAlpha: strataA, sizePx: 2, color: 'white', alpha: V_ALPHA });
+    // WP0 addition (int step 2): opts.extraVertices = { pos, face } appended after the ring vertices, in the same draw
+    // (the Key's N slot dots); structure.vertexExtra = { base, count, sizes, alphas, touch() } lets the owner restyle them.
+    const ex = opts.extraVertices, nv = d.pos.length / 3, ne = ex ? ex.pos.length / 3 : 0;
+    let pos = d.pos, face = d.face, sizes, alphas;
+    if (ne) {
+      pos = new Float32Array((nv + ne) * 3); pos.set(d.pos); pos.set(ex.pos, nv * 3);
+      face = new Float32Array(nv + ne); face.set(d.face); face.set(ex.face, nv);
+      sizes = new Float32Array(nv + ne).fill(1); alphas = new Float32Array(nv + ne).fill(1);
+    }
+    vpts = createPoints({ positions: pos, faces: face, sizes, alphas, strata: strataM, strataAlpha: strataA, sizePx: 2, color: 'white', alpha: V_ALPHA });
+    if (ne) {
+      const g = vpts.object.geometry;
+      vertexExtra = { base: nv, count: ne, sizes, alphas,
+        touch() { g.attributes.aSize.needsUpdate = true; g.attributes.aAlpha.needsUpdate = true; } };
+    }
     vertices = vpts.object;
     vertices.name = 'vertices';
     vertices.onBeforeRender = syncStrata;
@@ -457,7 +474,7 @@ export function buildStructure(opts = {}) {
   registerCull(cullFn);
 
   const structure = {
-    group, strata, solids, lattice, edges, vertices,
+    group, strata, solids, lattice, edges, vertices, vertexExtra,
     /** WP0 additions: the shared per-stratum uniforms, materials and helpers (owners may read / tune them). */
     strataMatrices: strataM, strataAlpha: strataA, solidMaterial: solidMat, latticeMaterial: latMat,
     perStratum: per,

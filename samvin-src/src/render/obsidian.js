@@ -108,16 +108,8 @@ vec2 engraveUV() {
     float c = mod((si * 12.0 + fj) * 3.0 + floor(clamp(vFaceUV.x, 0.0, 0.999) * 3.0), 64.0);
     return vec2((c + fract(vFaceUV.x * 3.0)) / 64.0, 0.125 + clamp(1.0 - vEng.w / uFriezeH, 0.0, 1.0) * 0.03125);
   }
-  if (vEng.z < uFriezeH + uTickL) {                          // the 12 radial ticks along the top edge
-    return vec2(clamp(vFaceUV.x, 0.0, 1.0), 0.15625 + clamp((vEng.z - uFriezeH) / uTickL, 0.0, 1.0) * 0.03125);
-  }
-  bool sign = fj < 0.5;
-  bool glyphFace = abs(si - 3.0) < 0.5 && abs(fj - 5.0) < 0.5;   // H7: glyph:back moved from face (3, 6) to (3, 5)
-  if ((sign || glyphFace) && vEng.x > 0.0 && vEng.x < 1.0 && vEng.y > 0.0 && vEng.y < 1.0) {
-    vec2 o = sign ? vec2(si * 0.125, 0.0) : vec2(0.875, 0.0);
-    return o + vEng.xy * 0.125;
-  }
-  int ii = int(si + 0.5);                                       // H7: the КОДЕКС law on back face jb(i) = floor(n_i / 2)
+  int ii = int(si + 0.5);                                       // H7: the КОДЕКС law on back face jb(i) = floor(n_i / 2), tested
+                                                                //   before the ticks: N's band (vc 1/6) reaches into the tick zone
   bool codeFace = abs(fj - floor(uN[ii] / 2.0)) < 0.5;
   if (codeFace) {
     vec2 cb = uCodeBand[ii];
@@ -126,6 +118,15 @@ vec2 engraveUV() {
       vec4 r = uCodeRect[ii];
       return r.xy + vec2(u, (vFaceUV.y - (cb.x - cb.y)) / (2.0 * cb.y)) * r.zw;
     }
+  }
+  if (vEng.z < uFriezeH + uTickL) {                          // the 12 radial ticks along the top edge
+    return vec2(clamp(vFaceUV.x, 0.0, 1.0), 0.15625 + clamp((vEng.z - uFriezeH) / uTickL, 0.0, 1.0) * 0.03125);
+  }
+  bool sign = fj < 0.5;
+  bool glyphFace = abs(si - 3.0) < 0.5 && abs(fj - 5.0) < 0.5;   // H7: glyph:back moved from face (3, 6) to (3, 5)
+  if ((sign || glyphFace) && vEng.x > 0.0 && vEng.x < 1.0 && vEng.y > 0.0 && vEng.y < 1.0) {
+    vec2 o = sign ? vec2(si * 0.125, 0.0) : vec2(0.875, 0.0);
+    return o + vEng.xy * 0.125;
   }
   return vec2(-1.0);
 #elif defined(USE_REGION)
