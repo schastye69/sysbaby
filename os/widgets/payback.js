@@ -115,7 +115,7 @@
 
   function fieldMarkup(id, label, min, max, step, value) {
     return '<label class="pb-field"><span class="pb-label">' + esc(label) + "</span>" +
-      '<input class="pb-input" type="number" id="pb-' + id + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + value + '"></label>';
+      '<input class="pb-input" type="number" autocomplete="off" id="pb-' + id + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + value + '"></label>';
   }
 
   function resultMarkup(id, label) {

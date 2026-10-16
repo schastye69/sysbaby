@@ -134,6 +134,76 @@
   var adding = false;
   var query = "";
   var wipeTimer = null;
+  var clipOwed = false;    /* в буфере может лежать пароль, скопированный здесь */
+  var clipGen = 0;         /* номер копирования: поздний ответ стирания снимает только свой долг */
+  var lastWin = null;      /* окно комнаты — чтобы спрятать раскрытое без касания */
+  var watch = null;
+
+  /* ── РАСКРЫТОЕ ЖИВЁТ НЕ ДОЛЬШЕ ПРИСУТСТВИЯ · решение D-360 ──────────────
+     Граница Р-S2.4: пароль, показанный после слова, оставался на экране и
+     после окна присутствия (D-308, две минуты), а поиск и новое открытие
+     комнаты рисовали его снова — без слова. Теперь раскрытое держится, пока
+     свежо присутствие: кончилось окно — пароль уходит с экрана сам, и
+     вернуть его можно только новым подтверждением. Закрытие комнаты тоже
+     прячет всё: ни «Отменить», ни новое открытие пароля не возвращают.
+     Без замка присутствие всегда свежее (D-308) — там ничего не меняется.
+     Охраняется tools/keys-presence-check.mjs. */
+  function presenceFresh() {
+    try { return !window.sbVault || !window.sbVault.presence || !!window.sbVault.presence.fresh(); }
+    catch (e) { return false; }
+  }
+  function hideAll() {
+    if (!Object.keys(shown).length) return;
+    shown = {};
+    if (lastWin) render(lastWin);
+  }
+  /* ПОСТОЯННАЯ: секунда — пароль уходит с экрана не позже чем через секунду
+     после конца окна присутствия; сторож живёт, только пока что-то раскрыто. */
+  var PRESENCE_TICK_MS = 1000;
+  function watchShown() {
+    if (watch) return;
+    watch = setInterval(function () {
+      if (!Object.keys(shown).length) { clearInterval(watch); watch = null; return; }
+      if (!presenceFresh()) hideAll();
+    }, PRESENCE_TICK_MS);
+  }
+  if (window.sbBus && window.sbBus.on) window.sbBus.on("window:closed", function (e) { if (e && e.id === "keys") hideAll(); });
+
+  /* ── БУФЕР СТИРАЕТСЯ И ПРИ ЗАПИРАНИИ · решение D-360 ────────────────────
+     Обещание «буфер сотрётся через 20 секунд» держал таймер страницы — а
+     «Запереть сейчас» и пятое неверное слово перезагружают страницу, и
+     таймер умирал с ней: пароль оставался в буфере у самой двери. Теперь
+     комната объявлена закрытию сеанса (sbOnSessionClose): раскрытое прячется,
+     буфер, если в нём наш пароль, стирается — и только потом ключи уходят.
+     Браузер отказал в записи (нет фокуса или права) — человеку сказано
+     прямо, а не молча: и по сроку, и при запирании. */
+  /* ПОСТОЯННАЯ: секунда — запись в буфер идёт миллисекунды; не ответил за
+     секунду — считаем, что не стёрто, и говорим это. */
+  var WIPE_WAIT_MS = 1000;
+  function wipeClip() {
+    if (!clipOwed) return Promise.resolve(true);
+    var gen = clipGen;
+    return new Promise(function (resolve) {
+      var settled = false;
+      /* Стёрто, пусть и позже ожидания, — долг этого копирования снят: иначе
+         закрытие сеанса стёрло бы то, что человек скопировал себе после. */
+      var end = function (okp) { if (okp && gen === clipGen) clipOwed = false; if (settled) return; settled = true; resolve(okp); };
+      setTimeout(function () { end(false); }, WIPE_WAIT_MS);
+      try {
+        if (!navigator.clipboard || !navigator.clipboard.writeText) { end(false); return; }
+        navigator.clipboard.writeText("").then(function () { end(true); }, function () { end(false); });
+      } catch (e) { end(false); }
+    });
+  }
+  function keptTruth() {
+    var T = window.sbT || function (k) { return k; };
+    return { title: T("keys.clipKeptTitle"), text: T("keys.clipKept") };
+  }
+  if (typeof window.sbOnSessionClose === "function") window.sbOnSessionClose(function () {
+    hideAll();
+    if (wipeTimer) { clearTimeout(wipeTimer); wipeTimer = null; }
+    return wipeClip().then(function (okp) { return okp ? null : keptTruth(); });
+  });
 
   function vaultOpen() {
     try { return !!(window.sbVault && window.sbVault.available() && window.sbVault.isLocked() && window.sbVault.isOpen()); }
@@ -160,15 +230,20 @@
       if (wipeTimer) clearTimeout(wipeTimer);
       /* Буфер затирается сам. Сказано вслух: если между копированием и
          затиранием человек скопировал что-то своё, сотрётся оно — поэтому
-         срок короткий и объявленный, а не тайный. */
+         срок короткий и объявленный, а не тайный. Не стёрлось — сказано
+         (D-360), и долг остаётся: закрытие сеанса попробует ещё раз. */
       wipeTimer = setTimeout(function () {
-        try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(""); }
-        catch (e) { /* ignore */ }
+        wipeTimer = null;
+        wipeClip().then(function (okp) {
+          if (okp || !window.showToast) return;
+          var k = keptTruth();
+          try { window.showToast(k.title, k.text, "", true, "toast-warn", "event"); } catch (e) { /* ignore */ }
+        });
       }, WIPE_AFTER);
     };
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done, done);
+        navigator.clipboard.writeText(text).then(function () { clipGen++; clipOwed = true; done(); }, done);
         return;
       }
     } catch (e) { /* ниже */ }
@@ -178,6 +253,10 @@
   function render(win) {
     var host = (win && win.el) ? win.el.querySelector(".window-body") : win;
     if (!host) return;
+    if (win && win.el) lastWin = win;
+    /* Окно присутствия кончилось — перерисовка (поиск, новое открытие) не
+       раскрывает ничего без нового подтверждения (D-360). */
+    if (!presenceFresh()) shown = {};
     var L = lang();
     /* ОТКАТ: перевода на этот язык нет — честно падаем на английский.
        Это объявленный договор перевода, а не подмена. */
@@ -198,18 +277,26 @@
       "</header>";
 
     out += '<div class="ky-bar">' +
-      '<input type="search" class="ky-search" id="kySearch" placeholder="' + esc(t.search) + '" aria-label="' + esc(t.search) + '" value="' + esc(query) + '">' +
+      '<input type="search" class="ky-search" id="kySearch" autocomplete="off" placeholder="' + esc(t.search) + '" aria-label="' + esc(t.search) + '" value="' + esc(query) + '">' +
       '<button type="button" class="ky-add" id="kyAdd">+ ' + esc(t.addPlace) + "</button>" +
       "</div>";
 
     if (adding) {
+      /* НАБРАННОЕ ЗДЕСЬ НЕ УХОДИТ В ПАМЯТЬ БРАУЗЕРА (Р-S2.2, D-358). Без
+         autocomplete="off" место, логин и заметка ложились открытым видом в базу
+         автозаполнения (Default/Web Data) и в файлы восстановления сеанса — мимо
+         замка; у них теперь "off". У пароля сайта — "one-time-code" (ниже). */
       out += '<form class="ky-form" id="kyForm">' +
-        '<input type="text" name="place" required placeholder="' + esc(t.place) + '" aria-label="' + esc(t.place) + '">' +
-        '<input type="text" name="login" placeholder="' + esc(t.login) + '" aria-label="' + esc(t.login) + '">' +
+        '<input type="text" name="place" required autocomplete="off" placeholder="' + esc(t.place) + '" aria-label="' + esc(t.place) + '">' +
+        '<input type="text" name="login" autocomplete="off" placeholder="' + esc(t.login) + '" aria-label="' + esc(t.login) + '">' +
         '<label class="ky-mode"><input type="radio" name="mode" value="derived" checked> ' + esc(t.modeDerived) + "</label>" +
         '<label class="ky-mode"><input type="radio" name="mode" value="stored"> ' + esc(t.modeStored) + "</label>" +
-        '<input type="password" name="secret" placeholder="' + esc(t.own) + '" aria-label="' + esc(t.own) + '" autocomplete="new-password">' +
-        '<input type="text" name="note" placeholder="' + esc(t.note) + '" aria-label="' + esc(t.note) + '">' +
+        /* one-time-code, а не off: на off Chromium считал форму входом на
+           sys.baby и после «Запереть сейчас» писал логин в свой файл паролей
+           (Р-S2.2, решение основателя 06.10.2026, вариант А). Поле остаётся
+           полем пароля: точки, экранный диктор пароль не читает. */
+        '<input type="password" name="secret" placeholder="' + esc(t.own) + '" aria-label="' + esc(t.own) + '" autocomplete="one-time-code">' +
+        '<input type="text" name="note" autocomplete="off" placeholder="' + esc(t.note) + '" aria-label="' + esc(t.note) + '">' +
         '<div class="ky-form-acts">' +
           '<button type="submit" class="ky-save">' + esc(t.save) + "</button>" +
           '<button type="button" class="ky-cancel" id="kyCancel">' + esc(t.cancel) + "</button>" +
@@ -360,9 +447,14 @@
               secretOf(rec).then(function (v) {
                 if (v == null) { say(t.needLock); return; }
                 shown[id] = true;
+                watchShown();
                 render(win);
+                /* Присутствие могло погаснуть между подтверждением и этой
+                   перерисовкой: render тогда сбросил shown — и пароль в
+                   разметку не пишется, сторожу прятать нечего (рецензия s24,
+                   круг 3, гонка присутствия). */
                 var el = host.querySelector('[data-secret="' + id + '"]');
-                if (el) el.textContent = v;
+                if (el && shown[id]) el.textContent = v;
               });
             });
             return;

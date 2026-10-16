@@ -125,7 +125,7 @@
 
     host.innerHTML = '<div class="qt-body">' +
       '<label class="qt-field"><span class="qt-label" data-i18n-skip="1">' + esc(MARKUP_LABELS.rateLabel) + "</span>" +
-        '<input class="qt-input" type="number" id="qt-rate" min="5" max="300" step="1" value="' + DEFAULT_RATE + '"></label>' +
+        '<input class="qt-input" type="number" autocomplete="off" id="qt-rate" min="5" max="300" step="1" value="' + DEFAULT_RATE + '"></label>' +
       '<div class="qt-units" id="qt-units">' +
         UNITS.map(function (unit) {
           return '<div class="qt-unit" data-unit="' + unit.id + '">' +

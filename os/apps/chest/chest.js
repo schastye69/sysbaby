@@ -1663,14 +1663,14 @@
       var own = (window.SysBaby && window.SysBaby.apps[id]) ? window.SysBaby.apps[id] : null;
       var base = own ? ((own.i18n && own.i18n[lang()] && own.i18n[lang()].label) || own.label || own.title || id) : id;
       out += '<label class="ch-rename-row"><span class="ch-rename-base">' + esc(base) + '</span>' +
-        '<input type="text" class="ch-rename" data-room="' + esc(id) + '" maxlength="18" value="' + esc(st.names[id] || "") + '" placeholder="' + esc(base) + '" data-sb-userdata></label>';
+        '<input type="text" class="ch-rename" autocomplete="off" data-room="' + esc(id) + '" maxlength="18" value="' + esc(st.names[id] || "") + '" placeholder="' + esc(base) + '" data-sb-userdata></label>';
     });
     return out + "</section>";
   }
   function countHtml(t) {
     return '<section class="ch-count"><p class="ch-count-k">' + esc(t.countLead) + "</p>" +
-      '<div class="ch-count-row"><label><span>' + esc(t.countDate) + '</span><input type="date" id="chCountDate" data-sb-nolang></label>' +
-      '<label><span>' + esc(t.countLabel) + '</span><input type="text" id="chCountLabel" maxlength="60" data-sb-userdata></label>' +
+      '<div class="ch-count-row"><label><span>' + esc(t.countDate) + '</span><input type="date" id="chCountDate" autocomplete="off" data-sb-nolang></label>' +
+      '<label><span>' + esc(t.countLabel) + '</span><input type="text" id="chCountLabel" maxlength="60" autocomplete="off" data-sb-userdata></label>' +
       '<button type="button" class="ch-seal" id="chCountAdd">' + esc(t.countAdd) + '</button></div>' +
       '<p class="ch-count-done" id="chCountDone" hidden>' + esc(t.countDone) + "</p></section>";
   }
@@ -1693,7 +1693,7 @@
     if (st.letter && st.letter.delivered) return '<section class="ch-letter"><p class="ch-letter-k">' + esc(fmt(t.letterCame, { b: dateOf(st.letter.due) })) + "</p></section>";
     if (st.letter) return '<section class="ch-letter"><p class="ch-letter-k">' + esc(fmt(t.letterSealed, { a: dateOf(st.letter.at), b: dateOf(st.letter.due) })) + "</p></section>";
     return '<section class="ch-letter"><p class="ch-letter-k">' + esc(fmt(t.letterLead, { d: d })) + "</p>" +
-      '<textarea id="chLetterText" rows="4" data-sb-userdata></textarea>' +
+      '<textarea id="chLetterText" rows="4" autocomplete="off" data-sb-userdata></textarea>' +
       '<button type="button" class="ch-seal" id="chLetterSeal">' + esc(t.letterSeal) + "</button></section>";
   }
   function wire(host, win) {

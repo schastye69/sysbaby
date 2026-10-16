@@ -428,7 +428,7 @@
         /* Leading newline compensates for the one HTML parsing eats right
          * after <textarea>: without it a file starting with a blank line
          * would lose it the first time the preview is edited. */
-        ? '<textarea class="fv-preview-edit" id="fvEditArea" spellcheck="false">\n' + esc(node.content || "") + "</textarea>"
+        ? '<textarea class="fv-preview-edit" id="fvEditArea" spellcheck="false" autocomplete="off">\n' + esc(node.content || "") + "</textarea>"
         /* Содержимое файла — данные посетителя. */
         : '<pre class="fv-preview-body" data-sb-userdata>' + esc(node.content || "") + "</pre>") +
     "</div>";
@@ -732,6 +732,7 @@
     input.className = "fv-rename";
     input.value = node.name;
     input.spellcheck = false;
+    input.setAttribute("autocomplete", "off");
     label.replaceWith(input);
     input.focus();
     input.select();

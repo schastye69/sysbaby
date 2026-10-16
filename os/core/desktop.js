@@ -353,7 +353,7 @@
   function mountCapture() {
     var body = window.sbWidgetHost("capture");
     if (!body) return;
-    body.innerHTML = '<form class="cap-form"><input type="text" id="sbCaptureInput" maxlength="500" placeholder="' + esc(tr("capture.placeholder")) + '" aria-label="' + esc(tr("capture.aria")) + '" /></form>' +
+    body.innerHTML = '<form class="cap-form"><input type="text" id="sbCaptureInput" maxlength="500" autocomplete="off" placeholder="' + esc(tr("capture.placeholder")) + '" aria-label="' + esc(tr("capture.aria")) + '" /></form>' +
       '<ul class="cap-recent" id="sbCaptureRecent"></ul>';
     var form = body.querySelector(".cap-form");
     var input = body.querySelector("#sbCaptureInput");
@@ -814,8 +814,8 @@
           '<svg class="ic-max" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M4.5 7.5 2.5 9.5M2.5 9.5V7M2.5 9.5H5M7.5 4.5 9.5 2.5M9.5 2.5V5M9.5 2.5H7"/></svg>' +
           '<svg class="ic-min" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M3 6h6"/></svg></button>' +
       '</div>' +
-      '<textarea class="note-text" rows="1" placeholder="' + esc(tr("note.placeholder")) + '" aria-label="' + esc(tr("note.aria")) + '"></textarea>' +
-      '<textarea class="note-body" placeholder="' + esc(tr("note.bodyPlaceholder")) + '" aria-label="' + esc(tr("note.body")) + '"></textarea>' +
+      '<textarea class="note-text" rows="1" autocomplete="off" placeholder="' + esc(tr("note.placeholder")) + '" aria-label="' + esc(tr("note.aria")) + '"></textarea>' +
+      '<textarea class="note-body" autocomplete="off" placeholder="' + esc(tr("note.bodyPlaceholder")) + '" aria-label="' + esc(tr("note.body")) + '"></textarea>' +
       '<div class="note-chip-host"></div>';
     var ta = el.querySelector(".note-text");
     var bodyEl = el.querySelector(".note-body");

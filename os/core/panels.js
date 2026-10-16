@@ -135,7 +135,10 @@
         '<h3>' + esc(tr(irr ? "confirm.irrTitle" : "confirm.title")) + "</h3>" +
         (irr && irr.question ? '<p class="sb-confirm-what">' + esc(irr.question) + "</p>" : "") +
         '<p class="sb-confirm-why">' + esc(tr(irr ? "confirm.irrWhy" : "confirm.why")) + "</p>" +
-        '<input type="password" id="sbConfirmWord" autocomplete="current-password" aria-label="' + esc(tr("confirm.word")) + '" placeholder="' + esc(tr("confirm.word")) + '">' +
+        /* one-time-code, а не current-password: окно стоит поверх открытого
+           мира без формы, и менеджер паролей Chromium брал «логином» набранное
+           в соседнем поле мира и писал его в Login Data (Р-S2.2, D-358). */
+        '<input type="password" id="sbConfirmWord" autocomplete="one-time-code" aria-label="' + esc(tr("confirm.word")) + '" placeholder="' + esc(tr("confirm.word")) + '">' +
         '<p class="sb-confirm-err" id="sbConfirmErr" role="alert"></p>' +
         '<div class="sb-confirm-acts">' +
           '<button type="button" class="btn primary" id="sbConfirmGo">' + esc(tr("confirm.go")) + "</button>" +
@@ -873,8 +876,10 @@
     var pref = rawGet("sysbaby.incognito.timerPref") || "600";
     body.innerHTML = '<div class="panel-scroll">' +
       '<p class="panel-copy">A second desktop with its own storage. Nothing crosses between the two. The word you choose cannot be recovered — if you forget it, that space is gone.</p>' +
-      '<label class="field"><span>Passphrase</span><input type="password" id="sbIncogPw" autocomplete="off" minlength="4" /></label>' +
-      (hasHash ? "" : '<label class="field"><span>Confirm</span><input type="password" id="sbIncogPw2" autocomplete="off" /></label>') +
+      /* one-time-code, а не off: на off менеджер паролей Chromium поле пароля
+         всё равно берёт себе (Р-S2.2, D-358, вариант А основателя). */
+      '<label class="field"><span>Passphrase</span><input type="password" id="sbIncogPw" autocomplete="one-time-code" minlength="4" /></label>' +
+      (hasHash ? "" : '<label class="field"><span>Confirm</span><input type="password" id="sbIncogPw2" autocomplete="one-time-code" /></label>') +
       '<label class="field"><span>Self-destruct after idle</span><select id="sbIncogTimer">' +
       [["0", "Never"], ["300", "5 min"], ["900", "15 min"], ["1800", "30 min"], ["3600", "60 min"]].map(function (o) {
         return '<option value="' + o[0] + '"' + (o[0] === pref ? " selected" : "") + ">" + esc(o[1]) + "</option>";
@@ -939,6 +944,84 @@
     window.sbIncognitoSelfDestruct = { reset: reset, seconds: function () { return Math.max(0, Math.round((deadline - Date.now()) / 1000)); } };
   })();
 
+  /* ══════ СЕАНС УХОДИТ ПОСЛЕ ТОГО, КАК РАСКРЫТОЕ УБРАНО · решение D-360 ═════
+     Граница Р-S2.4: «Запереть сейчас», пятое неверное слово и постановка
+     замка закрывают сеанс перезагрузкой — и вместе со страницей умирал таймер,
+     который через 20 секунд стирает скопированный пароль «Ключей». Пароль
+     оставался в буфере обмена у самой двери, хотя интерфейс обещал обратное.
+     Теперь путь закрытия один: комната, которой есть что убрать, объявляет
+     это (sbOnSessionClose), а закрывающий зовёт sbSessionClose(go) — убрать
+     всё, дождаться, и только потом уйти к двери. Если комната убрать не
+     смогла (браузер отказал в записи в буфер), она возвращает правду
+     { title, text } — и правда показывается ДО ухода, а не теряется вместе
+     со страницей.
+     Этим путём идут: «Запереть сейчас», постановка замка, пятое неверное
+     слово, покой, «Уйти сейчас» (sbVanish), «Выйти» (sbSignOut — панель,
+     Центр управления, «К двери» в Настройках), «Выйти» в Настройках,
+     «Удалить все локальные данные» в Настройках при замке и — сведение H2 с
+     D-359 — соседняя вкладка, получившая весть «сеанс закрыт» или «профиль
+     стирается» (store.js shutHere). ПОРЯДОК на каждом из них: комнаты
+     убирают своё первыми (они зовутся в тот же такт, что и sbSessionClose),
+     затем несохранённое ложится (I1), и только когда буфер ответил — ключи
+     уходят и вкладка идёт к двери.
+     ТИХО (opts.quiet) — без правды на экране и без ожидания: кнопка тревоги
+     (человек уходит немедля), покой (у экрана никого: правду прочёл бы тот,
+     кто подошёл, а сеанс держался бы ради неё открытым; по сроку она уже
+     сказана таймером комнаты), пятое неверное слово (правду прочёл бы тот,
+     кто пять раз ошибся словом) и соседняя вкладка, закрытая вестью (у неё
+     человека может не быть). Тихий уход не теряется за уже начатым.
+     ЧЕГО ЭТО НЕ ДАЁТ, вслух: закрытие вкладки самим человеком и прочие
+     перезагрузки (снятие замка, инкогнито, импорт настроек, устаревшая
+     вкладка) этим путём не идут; буфер там стирает только таймер комнаты,
+     пока страница жива. Фоновая вкладка, закрытая вестью, в настоящем
+     браузере может получить отказ в записи в буфер (нет фокуса) — тогда её
+     скопированный пароль остаётся в буфере, а правда тиха (закон судит этот
+     путь в Chromium без окон, где фокус есть у каждой вкладки).
+     Охраняется tools/keys-presence-check.mjs. */
+  var sessionClosers = [];
+  window.sbOnSessionClose = function (fn) { if (typeof fn === "function") sessionClosers.push(fn); };
+  /* ПОСТОЯННАЯ: 1,5 с — дольше комнату не ждать: запись в буфер обмена идёт
+     миллисекунды; закрываемый сеанс не держится открытым ради зависшей. */
+  var SESSION_SEAL_MS = 1500;
+  /* ПОСТОЯННАЯ: 4 с — прочесть правду о неочищенном буфере до ухода к
+     двери: одна фраза тому, кто только что нажал «Запереть». */
+  var SESSION_SAY_MS = 4000;
+  var sessionClosing = false;
+  var sealing = null;
+  /* Комнаты убирают своё один раз за жизнь страницы; ответ — правды тех,
+     кому убрать не удалось. */
+  function sessionSeal() {
+    if (sealing) return sealing;
+    sealing = new Promise(function (resolveAll) {
+      var says = [];
+      var each = sessionClosers.map(function (fn) {
+        return new Promise(function (resolve) {
+          try {
+            Promise.resolve(fn()).then(function (s) { if (s && s.text) says.push(s); resolve(); }, function () { resolve(); });
+          } catch (e) { resolve(); }
+        });
+      });
+      var done = false;
+      var finish = function () { if (done) return; done = true; resolveAll(says); };
+      setTimeout(finish, SESSION_SEAL_MS);
+      Promise.all(each).then(finish, finish);
+    });
+    return sealing;
+  }
+  window.sbSessionClose = function (go, opts) {
+    go = typeof go === "function" ? go : function () { window.location.reload(); };
+    var quiet = !!(opts && opts.quiet);
+    if (sessionClosing && !quiet) return;
+    sessionClosing = true;
+    sessionSeal().then(function (says) {
+      if (quiet || !says.length) { go(); return; }
+      says.forEach(function (s) {
+        if (window.showToast) { try { window.showToast(s.title || "", s.text, "", true, "toast-warn", "event"); } catch (e) { /* ignore */ } }
+      });
+      setTimeout(go, SESSION_SAY_MS);
+    });
+  };
+
   /* ══════ ЗАМОК БЕРЕЖЁТ И СЕАНС · решение D-254 ═════════════════════════════
      Дыра из описи (zamok-ne-berezhet-seans): человек, отошедший от открытой
      вкладки, был защищён только самой вкладкой — всё расшифрованное жило в
@@ -965,7 +1048,11 @@
       return (isFinite(m) && m >= 0) ? m : DEFAULT;
     }
     var last = Date.now();
-    function touch() { last = Date.now(); }
+    /* Движение говорится и соседним вкладкам: покой считается по вкладкам
+       ТОГО ЖЕ мира (D-359) — сеанс закрывается во всех, значит и держится
+       движением в любой вкладке своего мира; движение во вкладке другого
+       мира (второго слова) весть не продлевает — её подпись не сойдётся. */
+    function touch() { last = Date.now(); if (V && V.stir) { try { V.stir(); } catch (e) { /* ignore */ } } }
     var EVENTS = ["pointerdown", "keydown", "wheel", "touchstart"];
     EVENTS.forEach(function (e) { doc.addEventListener(e, touch, true); });
     /* ── ДВИЖЕНИЕ ВНУТРИ ОКНА-РАМКИ ТОЖЕ ДВИЖЕНИЕ (D-254, поправка v159) ────
@@ -1002,16 +1089,25 @@
       catch (e) { /* без наблюдателя обойдёмся опросом в check() */ }
     }
     hookFrames();
+    /* Сеанс закрывается во всех вкладках профиля (D-359), не только здесь. */
     function shut() {
+      /* К двери — тем же путём, что «Запереть сейчас»: раскрытое убрано,
+         скопированный пароль стёрт до ухода ключей (D-360). Тихо: у экрана
+         никого, правда о буфере пустому экрану не показывается. Порядок
+         сведения H2: комнаты убирают своё в этот же такт (раньше всего), затем
+         несохранённое ложится, затем весть соседям (D-359); к двери — когда
+         буфер ответил. */
+      window.sbSessionClose(function () { location.reload(); }, { quiet: true });
       if (window.sbDB && window.sbDB.flushSync) { try { window.sbDB.flushSync(); } catch (e) { /* ignore */ } }
-      location.reload();
+      if (V && V.shutAll) { try { V.shutAll(); } catch (e) { /* ignore */ } }
     }
     function check() {
       hookFrames();                           /* рамки, появившиеся с тех пор */
       if (!V || !V.isLocked() || !V.isOpen()) return;
       var m = minutes();
       if (!(m > 0)) return;
-      if (Date.now() - last >= m * 60000) shut();
+      var heard = V.stirredAt ? V.stirredAt() : 0;
+      if (Date.now() - Math.max(last, heard) >= m * 60000) shut();
     }
     setInterval(check, 15000);
     doc.addEventListener("visibilitychange", function () { if (doc.visibilityState === "visible") check(); });
@@ -1256,10 +1352,12 @@
     var anywayBtn = body.querySelector("#sbLockDoAnyway");
     function setLock(p1) {
       busy(true);
-      V.lock(p1).then(function () { window.location.reload(); }, function (e) {
+      /* Замок встал — сеанс без замка закрывается тем же путём (D-360). */
+      var toDoor = function () { window.sbSessionClose(function () { window.location.reload(); }); };
+      V.lock(p1).then(toDoor, function (e) {
         var m = e && e.message;
         /* Замок встал, хвост поворота уже под ним — как удача (Р-A5.2). */
-        if (m === "locked") { window.location.reload(); return; }
+        if (m === "locked") { toDoor(); return; }
         /* Замок встал, а последние правки ещё не под ним: мир открыт в этой
            вкладке и держит их. Окно постановки замка больше не нужно. */
         if (m === "kept") {
@@ -1473,7 +1571,15 @@
       try { window.print(); } catch (e) { drop(); }
     });
     var nowBtn = body.querySelector("#sbLockNow");
-    if (nowBtn) nowBtn.addEventListener("click", function () { window.location.reload(); });
+    /* «Запереть сейчас» закрывает сеанс во всех вкладках профиля (D-359) и
+       уходит к двери после того, как раскрытое убрано и буфер со скопированным
+       паролем очищен (D-360). */
+    if (nowBtn) nowBtn.addEventListener("click", function () {
+      /* Комнаты убирают своё в этот же такт, весть уходит следом; соседние
+         закрываются немедля, эта — когда буфер ответил (или правда прочитана). */
+      window.sbSessionClose(function () { window.location.reload(); });
+      if (V && V.shutAll) { try { V.shutAll(); } catch (e) { /* ignore */ } }
+    });
     /* «Никогда» снимает самозапирание — при замке только словом (D-350);
        отмена возвращает прежний выбор, а не оставляет в поле неправду. */
     var idleSel = body.querySelector("#sbLockIdle");

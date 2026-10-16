@@ -324,11 +324,11 @@
       "</div>" +
       /* Копия говорит, откуда она и не устарела ли (D-267). */
       (note.source && window.sbHand && window.sbHand.sourceHtml ? window.sbHand.sourceHtml(note.source) : "") +
-      '<input type="text" class="notes-title" id="noteTitleInput" placeholder="' + esc(t("nt.ph.title")) + '" spellcheck="false" value="' + esc(title) + '">' +
+      '<input type="text" class="notes-title" id="noteTitleInput" placeholder="' + esc(t("nt.ph.title")) + '" spellcheck="false" autocomplete="off" value="' + esc(title) + '">' +
       /* The leading newline compensates for the one HTML parsing eats right
        * after <textarea>. Without it a note written as "Title\n\nbody" would
        * silently lose its blank line the next time it was edited. */
-      '<textarea class="notes-body" id="noteBodyInput" placeholder="' + esc(t("nt.ph.body")) + '">\n' + esc(body) + "</textarea>";
+      '<textarea class="notes-body" id="noteBodyInput" autocomplete="off" placeholder="' + esc(t("nt.ph.body")) + '">\n' + esc(body) + "</textarea>";
   }
 
   /* Запись как вещь: первая строка — имя, остальное — текст. Одна мерка и

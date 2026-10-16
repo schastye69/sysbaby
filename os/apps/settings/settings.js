@@ -928,10 +928,18 @@
         /* Вопрос своим голосом (D-335), а не плашкой браузера. */
         window.sbAsk({ question: t("set.privacy.signOutConfirm"), ok: t("ask.signOut") }).then(function (yes) {
           if (!yes) return;
+          /* Выход закрывает сеанс мира во всех вкладках профиля (D-359), как
+             и «Выйти» в панели аккаунта (sbSignOut): весть — первым шагом. */
+          try { if (window.sbVault && window.sbVault.shutAll) window.sbVault.shutAll(); } catch (e) { /* ignore */ }
+          /* Выход закрывает сеанс одним путём: скопированный пароль стёрт до
+             ухода (D-360). Порядок сведения H2: комнаты убирают своё в этот же
+             такт (sbSessionClose уходит не раньше следующего), затем
+             несохранённое ложится и вход снимается, затем — к двери. */
+          var bye = function () { location.reload(); };
+          if (typeof window.sbSessionClose === "function") window.sbSessionClose(bye); else setTimeout(bye, 0);
           dbFlush();
           try { localStorage.removeItem(AUTHED_KEY); }
           catch (err) { console.error("[settings] sign-out failed", err); }
-          location.reload();
         });
       });
     }
@@ -969,6 +977,15 @@
              правду диска, и сеанс закрывается: система открывается заново. */
           var V = window.sbVault;
           var sealed = !!(V && V.isLocked && V.isLocked());
+          /* ПРИ ЗАМКЕ ОЧИСТКА — ЗАКРЫТИЕ СЕАНСА, И ОНО ИДЁТ ОБЩИМ ПУТЁМ (сведение
+             H2, D-360): раскрытое в комнатах прячется, скопированный «Ключами»
+             пароль стирается из буфера — первым, до стирания и до ухода. Не
+             стёрся — правда сказана (человек здесь: он только что набрал слово),
+             и перезагрузка ждёт, пока её прочтут. Без замка сеанс не
+             закрывается вовсе: страница живёт, и буфер стирает таймер комнаты. */
+          var closed = Promise.resolve();
+          if (sealed && typeof window.sbSessionClose === "function") closed = new Promise(function (res) { window.sbSessionClose(res); });
+          var reload = function () { location.reload(); };
           /* При замке сперва уходят склады базы — носитель, вещи, снимки — одной
              транзакцией со сверкой своей ячейки (D-353, шаг 4): «удалить все
              локальные данные» должно быть правдой. Отказ — ничего не удалено. */
@@ -977,6 +994,17 @@
              в пустые склады (разбор №3). Отказ — страница поднимается заново
              (ниже): запрет записи снимает только перезагрузка. */
           if (sealed) window.sbVanishing = true;
+          /* Сеанс мира закрывается во всех вкладках профиля (D-359) — до
+             стирания: весть «стирается» (стирать при замке вправе только
+             писатель), соседние уходят, не поднимаясь на стёртом профиле (как
+             при «Стереть всё» кнопкой тревоги, D-174). Сказано вслух (рецензия
+             s23, круг 4): «до стирания» — порядок кода, законом он не охраняется
+             (весть после стирания закон не отличает); право стирать проверено
+             выше — в миг клика, до вопроса, а не в миг ответа, как у sbVanish
+             (там признак считается в миг вызова). Писатель с Web Lock прав за
+             время вопроса не теряет; если бы потерял — eraseAll откажет и не
+             сотрёт ничего, а соседние всё равно уйдут на about:blank. */
+          if (sealed && V.shutAll) { try { V.shutAll(true); } catch (e) { /* ignore */ } }
           /* Без замка — тоже все склады базы: запасная копия снятия, снимки,
              вещи (разбор №4). */
           var stores = V && V.eraseAll ? V.eraseAll() : Promise.resolve(true);
@@ -985,7 +1013,7 @@
             clearNamespace(typeof sessionStorage !== "undefined" ? sessionStorage : null);
             toast(t("set.privacy.clearedTitle"), t(sealed ? "set.privacy.clearedLocked" : "set.privacy.clearedBody"));
             /* ПОСТОЯННАЯ: две секунды — прочесть извещение до того, как сеанс закроется. */
-            if (sealed) setTimeout(function () { location.reload(); }, 2000);
+            if (sealed) setTimeout(function () { closed.then(reload, reload); }, 2000);
           }, function (e) {
             /* Без Web Locks при замке — не «читает другая вкладка», а «писатель
                здесь не доказан» (A1). */
@@ -995,7 +1023,7 @@
                пока шло стирание, чтение отдавало диск (разбор №4), и память
                модулей могла взять пустоту за правду. Не стёрто ничего. */
             /* ПОСТОЯННАЯ: две секунды — прочесть извещение до того, как сеанс закроется. */
-            if (sealed) setTimeout(function () { location.reload(); }, 2000);
+            if (sealed) setTimeout(function () { closed.then(reload, reload); }, 2000);
           });
         });
       });

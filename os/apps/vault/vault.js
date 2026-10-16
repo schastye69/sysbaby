@@ -251,8 +251,10 @@
                  замке (D-349): ключ пересобирает обе ячейки носителя (до v177 —
                  обе двери), и без этого слова ячейка второго мира становится
                  шумом — прежде это случалось молча. Поле не говорит, есть ли
-                 второй мир, — оно говорит, что будет, если он есть. */
-              '<input type="password" class="vw-keyother" placeholder="' + esc(t.keyOther) + '" autocomplete="off">' +
+                 второй мир, — оно говорит, что будет, если он есть.
+                 one-time-code, а не off: на off менеджер паролей Chromium поле
+                 пароля всё равно берёт себе (Р-S2.2, D-358, вариант А). */
+              '<input type="password" class="vw-keyother" placeholder="' + esc(t.keyOther) + '" autocomplete="one-time-code">' +
               '<p class="vw-note vw-keyothernote">' + esc(t.keyOtherNote) + '</p>' +
               (second.on ? '<label class="vw-keyfile"><span>' + esc(t.keyFile) + '</span><input type="file" class="vw-keyinput"></label>' : '') +
               '<div class="vw-keyacts">' +

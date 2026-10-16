@@ -253,12 +253,12 @@
           /* У каждой ручки есть имя (D-321): подпись над полем и слова перед
              списком видны глазом — и слышны теми же словами. */
           '<label class="hf-lab">' + esc(t.text) + '</label>' +
-          '<textarea class="hf-text" rows="5" maxlength="' + MAX + '" aria-label="' + esc(t.text) + '"></textarea>' +
+          '<textarea class="hf-text" rows="5" autocomplete="off" maxlength="' + MAX + '" aria-label="' + esc(t.text) + '"></textarea>' +
           '<div class="hf-pick"><span class="hf-pick-l">' + esc(t.pick) + '</span>' +
             '<select class="hf-src" aria-label="' + esc(t.pick) + '"><option value="">—</option></select></div>' +
           '<label class="hf-mode"><input type="radio" name="hfmode" value="k" checked> ' + esc(t.modeKey) + '</label>' +
           '<label class="hf-mode"><input type="radio" name="hfmode" value="w"> ' + esc(t.modeWord) + '</label>' +
-          '<input type="text" class="hf-sendword" placeholder="' + esc(t.word) + '" hidden>' +
+          '<input type="text" class="hf-sendword" autocomplete="off" placeholder="' + esc(t.word) + '" hidden>' +
           '<button type="button" class="hf-act" data-act="hf-seal">' + esc(t.make) + '</button>' +
           '<div class="hf-link" hidden></div>' +
           '<p class="hf-say" role="status"></p>' +
@@ -422,7 +422,10 @@
         '<div class="hf-ask">' +
           '<h3>' + esc(t.gotTitle) + '</h3>' +
           '<p>' + esc(t.ask) + '</p>' +
-          '<input type="password" class="hf-word" placeholder="' + esc(t.word) + '">' +
+          /* one-time-code, а не off: поле пароля без формы Chromium на off считал
+             входом на sys.baby и писал соседний набранный текст «логином» в свой
+             файл паролей (Р-S2.2, D-358, вариант А основателя). */
+          '<input type="password" class="hf-word" autocomplete="one-time-code" placeholder="' + esc(t.word) + '">' +
           '<button type="button" class="hf-act" data-act="hf-open">' + esc(t.openIt) + '</button>' +
         '</div>';
       return;

@@ -1454,7 +1454,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       });
     }).then(function () { bytes.fill(0); }, function (e) { bytes.fill(0); throw e; });
   }
-  function dropMaster() { masterBox = null; siteBase = null; wordCheck = null; presentAt = 0; }
+  /* Ключ метки движения (D-359) выводится из мастера и уходит вместе с ним. */
+  var stirKeyBox = null;
+  function dropMaster() { masterBox = null; siteBase = null; wordCheck = null; presentAt = 0; stirKeyBox = null; }
   /* Обнулить всё, что дверь отдала этому вызову, — на любом исходе (D-300). */
   function zero() { for (var i = 0; i < arguments.length; i++) if (arguments[i] && arguments[i].fill) arguments[i].fill(0); }
   /* Байты мастера — на один шаг и обратно в ноль, что бы шаг ни вернул. */
@@ -2041,6 +2043,188 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     if (!carrierNews) return;
     try { carrierNews.postMessage({ t: "carrier" }); } catch (e) { /* соседей нет — сказать некому */ }
   }
+  /* ── ОДИН ПОВОРОТ КЛЮЧА — ВСЕ ВКЛАДКИ (D-359, граница Р-S2.3) ────────────
+     Сеанс закрывался перезагрузкой СВОЕЙ вкладки: «Запереть сейчас», покой,
+     пятое неверное слово. Ключи живут в памяти каждой вкладки отдельно —
+     другая вкладка того же профиля оставалась открытой без слова до своего
+     покоя (15 минут), с «Отменить» и свежим чтением, а писатель ещё и писал.
+     Теперь закрывающая говорит соседям «сеанс закрыт» двумя путями:
+       · весть {t:"shut"} по тому же каналу — без номера, без признака мира,
+         без тайн: закрывается вся система этого профиля, а не один мир;
+       · запасной путь — событие storage: запись SHUT_KEY с номером эпохи,
+         стёртая тем же шагом (на диске не остаётся; номер — счёт от
+         случайного начала, ни времени, ни тайны в нём нет). Он доходит и
+         туда, где BroadcastChannel нет.
+     Получившая вкладка, чей мир под замком открыт (или замёрз): сперва её
+     комнаты прячут раскрытое и стирают СВОЙ скопированный пароль (D-360,
+     тихо — сведение H2, ниже в shutHere); писатель ЛЮБОГО вида затем кладёт
+     несохранённое (I1: правка не пропадает молча)
+     — писатель ячейки в позднюю щель, а что в щель не влезло (больше 64 КиБ)
+     и писатель без Web Locks ("cas", щели у него нет) — полной печатью своей
+     ячейки, тем же carrierCommit, что и всякая запись (D-353 не тронут:
+     сверка своей ячейки, отказ отставшему). Затем ключи сеанса, мастер и
+     ключи носителя выбрасываются (carrierStaleNow "auth", без извещения
+     «сменили полномочия» — их не меняли), — с этого мига она не читает и не
+     пишет ничего, — и перезагрузка к двери стирает память страницы вместе с
+     «Отменить». Вкладка у двери, посреди своего поворота ключа или снятия
+     замка — не трогается.
+     «СТЕРЕТЬ ВСЁ» — ВЕСТЬ ДРУГОГО ВИДА (третий круг D-359, D-174). Писатель,
+     стирающий профиль, говорит {t:"gone"} (запасной путь — номер с меткой
+     «g»): соседняя вкладка не перезагружается — поднявшись на уже стёртом
+     профиле, она засеяла бы систему заново (ключи, база), и «уйти, не
+     оставив следов» стало бы неправдой. Она ничего не кладёт (несохранённого
+     у неё нет: стирает писатель ячейки, а она читающая), замерзает сразу — с
+     этого мига она не пишет на диск ничего (D-353), — роняет ключи, когда её
+     комнаты убрали раскрытое и буфер (D-360), и уходит на about:blank, как и
+     стирающая.
+     Тайн в этой вести нет: что профиль стирается, вкладка увидит и так.
+     ЧЕГО ЭТО НЕ ДАЁТ, вслух: вкладка в кеше истории (bfcache) вести не
+     слышит; вернувшись, она замерзает, как и прежде (pageshow ниже), — но
+     ключей сама не роняет. Окна другого профиля браузера и другого
+     браузера — другое хранилище: их это не касается.
+     Охраняется tools/one-key-all-tabs-check.mjs; уборка комнат соседней
+     вкладкой до того, как она уронит ключи, — tools/keys-presence-check.mjs
+     (разделы 17 и 21). */
+  var SHUT_KEY = "sysbaby.lock.shut";
+  /* ПОСТОЯННАЯ: 3 с — дольше писатель не держит закрытый сеанс открытым,
+     кладя несохранённое: поздняя щель — миллисекунды, полная печать ячейки
+     (1 МиБ, шифр и подпись) на стенде — доли секунды; три — запас на
+     медленное устройство, и это меньше срока, в который закон требует
+     двери (5 с). */
+  var SHUT_KEEP_MS = 3000;
+  /* ПОСТОЯННАЯ: 1e9 — начало счёта эпох случайно в пределах миллиарда:
+     номер в запасном пути не говорит, сколько раз закрывали сеанс, и
+     остаётся числом, которое точно влезает в строку и в Number. */
+  var shutSeq = Math.floor(Math.random() * 1000000000), shutDone = false;
+  function shutTell(gone) {
+    if (carrierNews) { try { carrierNews.postMessage({ t: gone ? "gone" : "shut" }); } catch (e) { /* соседей нет */ } }
+    try {
+      shutSeq++;
+      rawStore.set.call(window.localStorage, SHUT_KEY, (gone ? "g" : "") + String(shutSeq));
+      rawStore.del.call(window.localStorage, SHUT_KEY);
+    } catch (e) { try { rawStore.del.call(window.localStorage, SHUT_KEY); } catch (e2) { /* ignore */ } }
+  }
+  function shutHere(gone) {
+    if (shutDone || removingNow || turning) return;
+    /* Без проверки записи замка: «Стереть всё» в соседней вкладке снимает её
+       раньше, чем сюда дойдёт событие storage, — а открытый мир (vaultOpen
+       бывает только под замком) закрывается всё равно. */
+    if (!vaultOpen && !carrierStale) return;
+    shutDone = true;
+    /* ── СВЕДЕНИЕ H2 (D-359 + D-360): ВЕСТЬ — ТОЖЕ ЗАКРЫТИЕ СЕАНСА ──────────
+       Порядок тот же, что у закрывающей вкладки. Первым — раскрытое в
+       комнатах прячется и стирание СВОЕГО скопированного пароля начинается
+       (sbSessionClose зовёт комнаты в этот же такт; тихо: у этой вкладки
+       человека может не быть, правда о буфере пустому экрану не
+       показывается). Затем писатель кладёт несохранённое (I1). Ключи падают
+       и вкладка уходит, только когда и буфер ответил (не дольше
+       SESSION_SEAL_MS в panels.js), и несохранённое легло (не дольше
+       SHUT_KEEP_MS). Прежде (до сведения) вестью закрытая вкладка уходила
+       мимо sbSessionClose: раскрытый пароль держался на экране, пока писатель
+       клал правку, а скопированный ею пароль оставался в буфере у двери. */
+    var sealed = sessionSealQuiet();
+    if (gone) {
+      /* Профиль стирается: ни записи, ни перезагрузки на стёртое (D-174).
+         Вкладка замерзает сразу (с этого мига на диск не идёт ничего, D-353),
+         ключи роняет, когда буфер ответил, и уходит на about:blank. */
+      carrierStaleNow("records", true);
+      sealed.then(function () {
+        carrierStaleNow("auth", true);
+        try { window.location.replace("about:blank"); } catch (e) { /* ignore */ }
+      });
+      return;
+    }
+    var done = false;
+    var drop = function () {
+      if (done) return;
+      done = true;
+      carrierStaleNow("auth", true);
+      try { window.location.reload(); } catch (e) { /* ignore */ }
+    };
+    var after = function () { sealed.then(drop, drop); };
+    if (vaultOpen && !carrierStale && (writeRight === "lock" || writeRight === "cas")) {
+      try { if (window.sbDB && window.sbDB.flushSync) window.sbDB.flushSync(); } catch (e) { /* ignore */ }
+      setTimeout(after, SHUT_KEEP_MS);
+      /* Щель легла — несохранённое в ней; нет (не влезло, щели нет у "cas") —
+         полная печать своей ячейки, и ключи падают, когда она легла. */
+      (writeRight === "lock" ? carrierLateNow() : Promise.resolve(false))
+        .then(function (put) { return put === true ? null : carrierFlushNow(); })
+        .then(after, after);
+      return;
+    }
+    after();
+  }
+  /* Комнаты убирают своё перед закрытием сеанса (D-360, panels.js
+     sbSessionClose) — тихо; обещание исполняется, когда убрано или вышел
+     срок ожидания. Без panels.js (страница без комнат) убирать некому. */
+  function sessionSealQuiet() {
+    return new Promise(function (resolve) {
+      var close = window.sbSessionClose;
+      if (typeof close !== "function") { resolve(); return; }
+      try { close(resolve, { quiet: true }); } catch (e) { resolve(); }
+    });
+  }
+  try {
+    window.addEventListener("storage", function (ev) {
+      try { if (ev && ev.key === SHUT_KEY && ev.newValue != null) shutHere(ev.newValue.charAt(0) === "g"); } catch (e) { /* ignore */ }
+    });
+  } catch (e) { /* ignore */ }
+  /* ПОКОЙ — ПО ВСЕМ ВКЛАДКАМ ТОГО ЖЕ МИРА (D-359). Раз закрытие по покою
+     закрывает все вкладки, покой считается по вкладкам своего мира: движение
+     человека в одной открытой вкладке говорится соседям вестью, иначе
+     фоновая вкладка закрыла бы сеанс под руками работающего. Но движение во
+     вкладке ДРУГОГО мира (второго слова — принуждение) не держит открытым
+     этот: весть принимается, только если её подпись сходится с меткой своего
+     мира. Метка — ключ HMAC из мастера мира (HKDF, неизвлекаемый, только в
+     памяти) над номером эпохи сеанса, ролью и ячейкой; в весть идут лишь
+     случайные 16 байт и подпись над ними — ни мира, ни того, что миров два,
+     по ней не узнать, и две вести одной вкладки между собой не связать. На
+     диск не ложится ничего. */
+  /* ПОСТОЯННАЯ: 10 с — не чаще одной вести на движение: покой меряется
+     минутами, и десять секунд погрешности ничего не меняют. */
+  var STIR_MS = 10000;
+  /* ПОСТОЯННАЯ: 16 байт случайного числа и 32 байта подписи (HMAC-SHA-256) —
+     обычные длины: повтора числа не будет, подделки подписи — тоже. */
+  var STIR_NONCE = 16, STIR_SIG = 32;
+  var stirSent = 0, stirHeard = 0;
+  function stirKey() {
+    if (!masterBox || !vaultOpen) return Promise.resolve(null);
+    if (stirKeyBox && stirKeyBox.mb === masterBox) return stirKeyBox.p;
+    var subtle = window.crypto.subtle;
+    var p = withMaster(function (m) {
+      return subtle.importKey("raw", m, "HKDF", false, ["deriveKey"]).then(function (base) {
+        return subtle.deriveKey({ name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info: new TextEncoder().encode("sys.baby/stir/v1") },
+          base, { name: "HMAC", hash: "SHA-256", length: 256 }, false, ["sign", "verify"]);
+      });
+    }).then(null, function () { return null; });
+    stirKeyBox = { mb: masterBox, p: p };
+    return p;
+  }
+  function stirData(n) {
+    return cat(new TextEncoder().encode("sys.baby/stir/v1|" + vaultRole + "|" + vaultDoor + "|" + sessionG + "|"), n);
+  }
+  function stirTell() {
+    if (!carrierNews || !vaultOpen || !vaultLocked()) return;
+    var now = Date.now();
+    if (now - stirSent < STIR_MS && now >= stirSent) return;
+    stirSent = now;
+    stirKey().then(function (k) {
+      if (!k || !vaultOpen) return null;
+      var n = randBytes(STIR_NONCE);
+      return window.crypto.subtle.sign("HMAC", k, stirData(n)).then(function (sig) {
+        try { carrierNews.postMessage({ t: "stir", n: b64(n), m: b64(sig) }); } catch (e) { /* ignore */ }
+      });
+    }).then(null, function () { /* ignore */ });
+  }
+  function stirHear(msg) {
+    if (!vaultOpen || typeof msg.n !== "string" || typeof msg.m !== "string") return;
+    var n, sig;
+    try { n = unb64(msg.n); sig = unb64(msg.m); } catch (e) { return; }
+    if (n.length !== STIR_NONCE || sig.length !== STIR_SIG) return;
+    stirKey().then(function (k) {
+      return k ? window.crypto.subtle.verify("HMAC", k, sig, stirData(n)) : false;
+    }).then(function (good) { if (good === true && vaultOpen) stirHeard = Date.now(); }, function () { /* ignore */ });
+  }
   /* ── ПОВОРОТ КЛЮЧА — В ТИШИНЕ (разбор №4) ─────────────────────────────
      Пока одна вкладка собирает открытые записи под замок, другая могла бы
      дописать запись, которую первая тут же сотрёт как уже собранную (её
@@ -2131,6 +2315,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     var msg = ev && ev.data;
     if (msg && (msg.t === "quiet" || msg.t === "print")) { quietHere(msg.id, msg.t); return; }
     if (msg && msg.t === "quiet-ok") { if (quietWait && quietWait.id === msg.id) quietWait.on(msg.n, msg.p); return; }
+    if (msg && (msg.t === "shut" || msg.t === "gone")) { shutHere(msg.t === "gone"); return; }
+    if (msg && msg.t === "stir") { stirHear(msg); return; }
     if (!vaultOpen || vaultDoor < 0 || !ownBase) return;
     var r = vaultDoor;
     Promise.all([carrierRead(), thMacRead()]).then(function (got) {
@@ -4000,8 +4186,19 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   var PRESENCE_SHUT_SAY_MS = 1200;
   function presenceCloseSession() {
     presenceShut = true;
+    /* К двери — тем же путём, что «Запереть сейчас» (D-360), и в порядке
+       сведения H2: раскрытое прячется и стирание скопированного пароля
+       начинается сразу, в миг пятого промаха; несохранённое ложится; ключи
+       уходят после прежней паузы D-350, когда и буфер ответил. ТИХО: правду
+       о неочищенном буфере не показывают тому, кто пять раз подряд ошибся
+       словом (это и есть случай чужих рук у экрана), и сеанс не держится
+       ради неё открытым ещё 4 с (рецензия s24, круг 3). Правда по сроку уже
+       сказана таймером комнаты. */
+    var sealed = sessionSealQuiet();
+    shutTell();               /* сеанс закрывается во всех вкладках (D-359) */
     if (window.sbDB && window.sbDB.flushSync) { try { window.sbDB.flushSync(); } catch (e) { /* закрываемся всё равно */ } }
-    setTimeout(function () { window.location.reload(); }, PRESENCE_SHUT_SAY_MS);
+    var reload = function () { window.location.reload(); };
+    setTimeout(function () { sealed.then(reload, reload); }, PRESENCE_SHUT_SAY_MS);
   }
   function presenceMiss() {
     presenceMisses++;
@@ -4878,7 +5075,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      право записи. Сменили полномочия — ключи сеанса выбрасываются сразу. */
   /* Читающая (нет права) < правка в другой вкладке < сменились полномочия. */
   var STALE_RANK = { reader: 1, records: 2, auth: 3 };
-  function carrierStaleNow(kind) {
+  /* quiet — без извещения: сеанс закрыт соседней вкладкой (D-359), и
+     «сменили полномочия» было бы неправдой; вкладка уходит к двери сразу. */
+  function carrierStaleNow(kind, quiet) {
     if (!STALE_RANK[kind]) kind = "records";
     /* Своё снятие замка: отказы от своего же забора — не конфликт, и право
        писателя держится до конца снятия (иначе загрузка другой вкладки
@@ -4900,7 +5099,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       vaultOpen = false;
       if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: true, open: false, frozen: true });
     } else if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: true, open: true, frozen: true });
-    staleSay(kind);
+    if (!quiet) staleSay(kind);
   }
   /* Замёрзшая вкладка не пишет, но слушает: сменили полномочия — ключи сеанса
      выбрасываются. Читает и только читает. */
@@ -5807,6 +6006,13 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     /* Заморожена ли вкладка (D-353): null — нет; "records" — мир сохранили в
        другой вкладке; "auth" — там сменили то, чем он открывается. */
     frozen: function () { return carrierStale; },
+    /* Закрыть сеанс во всех вкладках профиля (D-359): весть и запасной путь.
+       Свою вкладку зовущий перезагружает сам, как и прежде. gone === true —
+       профиль стирается: соседние уходят на about:blank, не перезагружаясь. */
+    shutAll: function (gone) { if (vaultLocked()) shutTell(gone === true); },
+    /* Движение в открытом мире — соседям (покой по всем вкладкам, D-359). */
+    stir: function () { stirTell(); },
+    stirredAt: function () { return stirHeard; },
     /* Право записи сеанса (D-353, шаг 4): "lock" — писатель ячейки (Web
        Lock), "cas" — Web Locks нет, запись только сравнением-и-заменой,
        false — только чтение; null — мир не открыт. */

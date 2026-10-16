@@ -525,7 +525,7 @@
       /* The leading newline is compensation: HTML parsing eats exactly one
        * newline directly after <textarea>, which would otherwise silently drop
        * the blank first line every reply/forward body starts with. */
-      '<textarea id="composeBody" class="ml-field ml-body" placeholder="' + esc(studio ? t("ml.compose.bodyStudio") : t("ml.compose.bodyLocal")) + '">\n' + esc(d.body || "") + "</textarea>" +
+      '<textarea id="composeBody" class="ml-field ml-body" autocomplete="off" placeholder="' + esc(studio ? t("ml.compose.bodyStudio") : t("ml.compose.bodyLocal")) + '">\n' + esc(d.body || "") + "</textarea>" +
       (studio
         ? '<div class="ml-reply-row">' +
             '<label class="ml-reply-label">' + esc(t("ml.compose.howAnswer")) + "</label>" +

@@ -457,14 +457,17 @@
     if (win._mgPactOpen) {
       out += '<div class="mg-seal-panel" id="mgPactPanel">' +
         '<p class="mg-seal-what">' + esc(t("mg.pactWhat")) + "</p>" +
-        '<div class="mg-seal-row"><input type="password" id="mgPactInput" class="mg-input flat" autocomplete="off" placeholder="' + esc(t("mg.pactPh")) + '" aria-label="' + esc(t("mg.pact")) + '">' +
+        /* one-time-code, а не off: поле пароля без формы Chromium на off считал
+           входом на sys.baby и писал соседний набранный текст «логином» в свой
+           файл паролей (Р-S2.2, D-358, вариант А основателя). */
+        '<div class="mg-seal-row"><input type="password" id="mgPactInput" class="mg-input flat" autocomplete="one-time-code" placeholder="' + esc(t("mg.pactPh")) + '" aria-label="' + esc(t("mg.pact")) + '">' +
         '<button type="button" class="mg-seal-go" id="mgPactSave">' + esc(t("mg.pactSave")) + "</button></div>" +
         '<p class="mg-seal-say" id="mgPactSay" role="status"></p></div>';
     }
     if (win._mgSealed && String(win._mgSealed.convo) === String(c.id)) {
       out += '<div class="mg-seal-panel" id="mgSealedPanel">' +
         '<p class="mg-seal-what">' + esc(t("mg.sealedOut")) + "</p>" +
-        '<textarea id="mgSealedOut" class="mg-seal-text" readonly data-sb-nolang>' + esc(win._mgSealed.text) + "</textarea>" +
+        '<textarea id="mgSealedOut" class="mg-seal-text" readonly autocomplete="off" data-sb-nolang>' + esc(win._mgSealed.text) + "</textarea>" +
         '<div class="mg-seal-row"><button type="button" class="mg-seal-go" id="mgSealedCopy">' + esc(t("mg.copy")) + "</button>" +
         (navigator.share ? '<button type="button" class="mg-seal-go" id="mgSealedShare">' + esc(t("mg.share")) + "</button>" : "") +
         '<button type="button" class="mg-seal-go quiet" id="mgSealedClose">' + esc(t("mg.close")) + "</button></div>" +
@@ -473,7 +476,7 @@
     if (win._mgPasteOpen) {
       out += '<div class="mg-seal-panel" id="mgPastePanel">' +
         '<p class="mg-seal-what">' + esc(t("mg.pasteWhat")) + "</p>" +
-        '<textarea id="mgSealedIn" class="mg-seal-text" data-sb-nolang placeholder="sb1:…" aria-label="' + esc(t("mg.paste")) + '"></textarea>' +
+        '<textarea id="mgSealedIn" class="mg-seal-text" autocomplete="off" data-sb-nolang placeholder="sb1:…" aria-label="' + esc(t("mg.paste")) + '"></textarea>' +
         '<div class="mg-seal-row"><button type="button" class="mg-seal-go" id="mgSealedOpen">' + esc(t("mg.pasteOpen")) + "</button></div>" +
         '<p class="mg-seal-say" id="mgPasteSay" role="status"></p></div>';
     }
@@ -946,6 +949,7 @@
 
     var area = document.createElement("textarea");
     area.className = "mg-edit-area";
+    area.setAttribute("autocomplete", "off");
     area.value = msg.text || "";
     bubble.innerHTML = "";
     bubble.appendChild(area);

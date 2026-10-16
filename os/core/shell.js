@@ -1445,7 +1445,10 @@
         field.setAttribute("aria-label", opts.title || "");
         if (opts.field.placeholder) field.placeholder = opts.field.placeholder;
         field.value = opts.field.value || "";
-        field.setAttribute("autocomplete", "off");
+        /* Набранное не уходит в память браузера (Р-S2.2, D-358): текст — off;
+           секрет — one-time-code, потому что поле пароля на off менеджер
+           паролей Chromium всё равно берёт себе. */
+        field.setAttribute("autocomplete", opts.field.secret ? "one-time-code" : "off");
         t.appendChild(field);
       }
       var row = doc.createElement("div");
@@ -4053,7 +4056,7 @@
       if (capsule) return capsule;
       capsule = doc.createElement("form");
       capsule.className = "icon-capsule";
-      capsule.innerHTML = '<input type="text" placeholder="' + escapeHtml(CAPSULES[id]) + '" aria-label="' + escapeHtml(CAPSULES[id]) + '" />';
+      capsule.innerHTML = '<input type="text" autocomplete="off" placeholder="' + escapeHtml(CAPSULES[id]) + '" aria-label="' + escapeHtml(CAPSULES[id]) + '" />';
       capsule.addEventListener("submit", function (ev) {
         ev.preventDefault();
         var input = capsule.querySelector("input");
@@ -5426,6 +5429,15 @@
 
   /* sign-out farewell (§2.1) */
   window.sbSignOut = function () {
+    /* Выход закрывает сеанс мира во всех вкладках профиля (D-359): весть —
+       сразу, до прощания, а не после него. */
+    try { if (window.sbVault && window.sbVault.shutAll) window.sbVault.shutAll(); } catch (e) { /* ignore */ }
+    /* Выход — тоже закрытие сеанса: раскрытое убрано, скопированный
+       «Ключами» пароль стёрт до прощания (D-360). */
+    if (typeof window.sbSessionClose === "function") { window.sbSessionClose(farewell); return; }
+    farewell();
+  };
+  function farewell() {
     var curtain = doc.createElement("div");
     curtain.id = "sbFarewell";
     /* Прощание показывает тот же знак, что вход и занавес, — не пустую плитку.
@@ -5448,7 +5460,7 @@
       try { localStorage.removeItem("sysbaby.authed"); } catch (e) { /* ignore */ }
       location.reload();
     }, 2400);
-  };
+  }
 
   /* ═══════════════ УЙТИ, НЕ ОСТАВИВ СЛЕДОВ · решение D-174 ════════════════
      ПОВОД, дословно от основателя 27.08.2026: «в окне обязательно должна быть
@@ -5487,8 +5499,20 @@
     var report = { deep: deep, workers: 0, caches: 0, cookies: 0, idb: 0, local: 0, session: 0, url: null, title: null, left: false };
 
     /* С этого мига система не пишет НИЧЕГО: у неё есть отложенные записи и
-       таймеры, и любой из них воскресил бы стёртое через миг после уборки. */
+       таймеры, и любой из них воскресил бы стёртое через миг после уборки.
+       Одно исключение — следующий шаг: запасной путь вести о закрытии кладёт
+       номер эпохи (sysbaby.lock.shut) и стирает его тем же синхронным шагом
+       (D-359); на диске он не остаётся. */
     window.sbVanishing = true;
+    /* Сеанс мира закрывается во всех вкладках профиля (D-359) — первым шагом:
+       весть синхронная, ухода не задерживает, и уходит раньше, чем страница
+       сотрёт хранилища и покинет адрес. Тайн в ней нет. Стирает профиль
+       (глубокий уход писателя) — весть другого вида: соседние не
+       перезагружаются на стёртое, а уходят, как и эта (D-174). */
+    try {
+      var Vs = window.sbVault;
+      if (Vs && Vs.shutAll) Vs.shutAll(deep && !!(Vs.mayErase && Vs.mayErase()));
+    } catch (e) { /* ignore */ }
 
     function killWorkers() {
       if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return Promise.resolve();
@@ -5592,10 +5616,16 @@
       } catch (e) { /* ignore */ }
       if (quiet) return report;
       report.left = true;
-      try { location.replace("about:blank"); } catch (e) { /* ignore */ }
-      /* Закрыть вкладку удаётся только той, которую открыл скрипт. Пробуем —
-         и не изображаем успеха, если браузер откажет. */
-      setTimeout(function () { try { window.close(); } catch (e) { /* ignore */ } }, 60);
+      var away = function () {
+        try { location.replace("about:blank"); } catch (e) { /* ignore */ }
+        /* Закрыть вкладку удаётся только той, которую открыл скрипт. Пробуем —
+           и не изображаем успеха, если браузер откажет. */
+        setTimeout(function () { try { window.close(); } catch (e) { /* ignore */ } }, 60);
+      };
+      /* Уход — тоже закрытие сеанса (D-360): скопированный «Ключами» пароль
+         стирается до ухода. Тихо: кнопка тревоги не ждёт, пока прочтут. */
+      if (typeof window.sbSessionClose === "function") window.sbSessionClose(away, { quiet: true });
+      else away();
       return report;
     });
   };
