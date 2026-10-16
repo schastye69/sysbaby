@@ -87,6 +87,18 @@ function clearTimers() {
   if (holdTimer) { clearTimeout(holdTimer); holdTimer = 0; }
   if (longTimer) { clearTimeout(longTimer); longTimer = 0; }
 }
+// hold / longpress are decided on the wall clock, but the moves that would cancel them are continuous events that the
+// browser delivers rAF-aligned: on a long frame (a stalled GPU process, a busy main thread) a move made 120 ms after
+// the press can reach us after the 350 ms timer. The timer therefore only arms the decision; it is taken at the start
+// of the next frame, after every input event queued before that frame has been dispatched (a drag that started in
+// time stays a drag). seqN keeps a deferred decision from leaking into a later press. ≤ 1 frame later at 60 fps.
+let seqN = 0;
+function afterQueuedInput(fn) {
+  const n = seqN;
+  const run = () => { if (n === seqN) fn(); };
+  if (typeof requestAnimationFrame === 'function' && typeof document !== 'undefined' && !document.hidden) requestAnimationFrame(run);
+  else run();
+}
 
 function updatePointer(e) {
   const p = input.pointer;
@@ -134,21 +146,26 @@ function onDown(e) {
   input.pointer.down = true;
   fill(e, e.clientX, e.clientY);
   g.dx = 0; g.dy = 0; g.tx = 0; g.ty = 0; g.vx = 0; g.vy = 0; g.speed = 0; g.t = 0; g.afterHold = false;
+  seqN++;
   dispatch('down', e);
   clearTimers();
   holdTimer = setTimeout(() => {
     holdTimer = 0;
-    if (!seq.active || seq.dragging || seq.pinch) return;
-    seq.holdFired = true;
-    timerGesture();
-    dispatch('hold', null);
-    longTimer = setTimeout(() => {
-      longTimer = 0;
+    afterQueuedInput(() => {
       if (!seq.active || seq.dragging || seq.pinch) return;
-      seq.longFired = true;
+      seq.holdFired = true;
       timerGesture();
-      dispatch('longpress', null);
-    }, GESTURE.LONG_MS - GESTURE.HOLD_MS);
+      dispatch('hold', null);
+      longTimer = setTimeout(() => {
+        longTimer = 0;
+        afterQueuedInput(() => {
+          if (!seq.active || seq.dragging || seq.pinch) return;
+          seq.longFired = true;
+          timerGesture();
+          dispatch('longpress', null);
+        });
+      }, Math.max(0, seq.t0 + GESTURE.LONG_MS - now()));
+    });
   }, GESTURE.HOLD_MS);
 }
 
