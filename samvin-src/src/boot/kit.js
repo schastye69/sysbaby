@@ -22,7 +22,10 @@ export function createReveal(k) {
   const st = k.structure;
   const vObj = st && st.vertices;
   const aAl = vObj && vObj.geometry && vObj.geometry.attributes.aAlpha;
-  const n = aAl ? aAl.count : 0;
+  // only the ring vertices are detected one by one; the extra points after them in the same draw (WP1's N slot dots,
+  // structure.vertexExtra) keep the alphas their owner styled: hidden during detection, given back by restorePoints
+  const n = aAl ? (st.vertexExtra ? st.vertexExtra.base : aAl.count) : 0;
+  let saved = null;
   const order = new Uint32Array(n);
   for (let i = 0; i < n; i++) order[i] = i;
   let seed = 0x2f6b9d1;
@@ -38,15 +41,22 @@ export function createReveal(k) {
       const m = Math.round(clamp01(u) * n);
       if (m === shown) return 0;
       const arr = aAl.array;
-      if (shown < 0) { arr.fill(0); shown = 0; }
+      if (!saved && arr.length > n && m < n) { saved = arr.slice(n); arr.fill(0, n); }
+      if (shown < 0) { arr.fill(0, 0, n); shown = 0; }
       const was = shown;
       if (m > shown) for (let i = shown; i < m; i++) arr[order[i]] = 1;
       else for (let i = m; i < shown; i++) arr[order[i]] = 0;
       shown = m;
+      if (m === n && saved) { arr.set(saved, n); saved = null; }      // every ring vertex is in: the extras come back
       aAl.needsUpdate = true;
       return Math.max(0, m - was);
     },
-    restorePoints() { if (aAl && shown !== n) { aAl.array.fill(1); aAl.needsUpdate = true; shown = n; } },
+    restorePoints() {
+      if (!aAl || shown < 0 || (shown === n && !saved)) return;
+      aAl.array.fill(1, 0, n);
+      if (saved) { aAl.array.set(saved, n); saved = null; }
+      aAl.needsUpdate = true; shown = n;
+    },
     /** Key.setReveal + edges part. scanY: Key-local y of the plane (null = none). */
     set(points, fill, alpha, edges, scanY = null) {
       r.points = points; r.fill = fill; r.alpha = alpha; r.scanY = scanY;
