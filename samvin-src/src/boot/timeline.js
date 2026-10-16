@@ -20,7 +20,7 @@
 import { loop } from '../core/loop.js';
 
 const ORDER_BOOT = 22;
-const STALL = 120;              // real ms without a frame before the wall-clock pump steps the table
+const STALL = 50;               // real ms without a frame before the wall-clock pump steps the table (3 frames at 60 Hz)
 const LOOKAHEAD = 180;          // real ms: planned audio is handed to the cue clock this far ahead (≥ 100 ms, A6.3)
 
 const rafPerf = () => {
@@ -99,7 +99,7 @@ export function createTimeline(ctx, opts = {}) {
      *  and target still run on the next frame (a catch-up, not a jump). Used on the hit: the table resumes in step with
      *  the hit however late the frame that delivered it. */
     catchUp(target, at) {
-      if (!(target > v)) return;
+      if (!(target >= v)) return;
       v = target;
       lastPerf = at;
       replan();
@@ -120,7 +120,7 @@ export function createTimeline(ctx, opts = {}) {
       tl.t0Perf = lastPerf - (opts.from || 0);
       frameId = loop.add(frame, ORDER_BOOT);
       framePerf = performance.now();
-      pumpT = setTimeout(pump, 40);
+      pumpT = setTimeout(pump, 25);
       return tl;
     },
     stop() {
@@ -129,7 +129,9 @@ export function createTimeline(ctx, opts = {}) {
       loop.remove(frameId);
       if (pumpT) { clearTimeout(pumpT); pumpT = 0; }
       offVis();
-      for (const c of cues) if (c.h && !c.fired) { c.h.cancel(); c.h = null; }
+      // a cue the table has already passed stays with the cue clock (a stalled frame must not swallow the last
+      // ASSEMBLY click at the end); only cues still ahead of v are dropped
+      for (const c of cues) if (c.h && !c.fired && c.v > v) { c.h.cancel(); c.h = null; }
     },
   };
 
@@ -182,7 +184,7 @@ export function createTimeline(ctx, opts = {}) {
       lastPerf = p;
       step(d, false);
     }
-    if (running) pumpT = setTimeout(pump, 40);
+    if (running) pumpT = setTimeout(pump, 25);
   }
   let pumpT = 0;
   function step(d, isFrame) {

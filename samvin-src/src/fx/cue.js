@@ -1,6 +1,6 @@
 // fx/cue.js — the cue clock (SPEC-ADDENDUM A6.3, law L4; ARCH-ADDENDUM X§2.5.3). OWNER: WP12.
-// The picture is master. A PLANNED cue has a visual time V (perf ms): its audio(T) is called once, in the frame where
-// T − ctx.currentTime ≤ 60 ms + one frame, with T = audio.fx.ctxTimeFor(V) (so it is AUDIBLE at V); its visual() runs
+// The picture is master. A PLANNED cue has a visual time V (perf ms): its audio(T) is called once, in the frame (or the
+// between-frame pump) where T − ctx.currentTime ≤ 60 ms + two median frames, with T = audio.fx.ctxTimeFor(V) (so it is AUDIBLE at V); its visual() runs
 // in the frame whose presentAt is nearest V. A REACTIVE cue (now) fires both at once. Locked / off / muted: the audio
 // is skipped, the visual runs unchanged. clk (shared with every fx module) is refreshed once per frame at order 25:
 //   raf = the rAF timestamp of this frame, now = performance.now(), med = median of the last 30 frame deltas,
@@ -44,12 +44,41 @@ export function createCue() {
     log.push({ id: c.id, frameAt, audibleAt: c.aud });
     if (log.length > 64) log.shift();
   };
+  // A6.3: voices are created 60 ms (+ the frame lead) before T on the wall clock, not only in a frame pass: when the
+  // frames stall but the main thread is free (GPU-bound frames, a long upload), a light timer pump creates the due
+  // voices between frames under the same lead rule. It runs only while a planned cue still waits for its voices.
+  let pumpT = 0;
+  const startAudio = (c, ct, fs) => {
+    const T = audio.fx.ctxTimeFor(c.V);
+    if (!(T - ct <= 0.06 + 2 * fs)) return;
+    c.aDone = true; c.aStarted = true;
+    const Tc = Math.max(T, ct);
+    safe(c.audio, Tc);
+    c.aud = audio.fx.toPerf(Tc);
+  };
+  const pump = () => {
+    pumpT = 0;
+    let waiting = false;
+    if (!inPass && audio.fx.ready()) {
+      inPass = true;
+      const ct = audio.now(), fs = clk.med / 1000;
+      for (let i = 0; i < pend.length; i++) {
+        const c = pend[i];
+        if (c.dead || c.aDone) continue;
+        startAudio(c, ct, fs);
+        if (!c.aDone) waiting = true;
+      }
+      inPass = false;
+    } else for (let i = 0; i < pend.length && !waiting; i++) waiting = !pend[i].dead && !pend[i].aDone;
+    if (waiting) pumpT = setTimeout(pump, 15);
+  };
   const cue = {
     /** V perf ms, spec { id, audio?: (T) => void, visual?: () => void } → { cancel() } */
     at(V, spec) {
       const c = { V: +V || perf(), id: (spec && spec.id) || 'cue', audio: spec && spec.audio, visual: spec && spec.visual,
         aDone: !(spec && spec.audio), vDone: false, aud: null, dead: false, fAt: null };   // an audio-only cue still logs its visual frame (frameAt = the frame nearest V)
       pend.push(c);
+      if (!c.aDone && !pumpT) pumpT = setTimeout(pump, 15);
       return {
         cancel() { if (!c.aStarted) c.dead = true; },
         /** Re-times a cue whose voices are not yet created (path decorators follow the path clock every frame). */
@@ -81,15 +110,8 @@ export function createCue() {
         const c = pend[i];
         if (c.dead) continue;
         if (!c.aDone) {
-          if (ready) {
-            const T = audio.fx.ctxTimeFor(c.V);
-            if (T - ct <= 0.06 + 2 * fs) {
-              c.aDone = true; c.aStarted = true;
-              const Tc = Math.max(T, ct);
-              safe(c.audio, Tc);
-              c.aud = audio.fx.toPerf(Tc);
-            }
-          } else if (c.V <= clk.pres + clk.med / 2) c.aDone = true;
+          if (ready) startAudio(c, ct, fs);
+          else if (c.V <= clk.pres + clk.med / 2) c.aDone = true;
         }
         if (!c.vDone && c.V <= clk.pres + clk.med / 2) {
           c.vDone = true; c.fAt = clk.pres;

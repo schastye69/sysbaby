@@ -42,7 +42,8 @@ export async function runRelaunch(ctx, createSession, marks) {
   try { if (fx && fx.pieces && fx.pieces.fold) await fx.pieces.fold({ context: 'relaunch' }); } catch (e) { /* fx */ }
   cancelAfter(tGuests); cancelAfter(tName);            // the fold is over: its beats are settled below at once
   if (rim) { if (rim.clearGuests) rim.clearGuests(); if (rim.hideName) rim.hideName(); rim.setLitNodes(0); }
-  if (k) { k.douse(); k.setBreathingRing(false); k.setIdle(false); }
+  // asleep: dark nucleus and no ember axis (the axis belongs to the ignition; the wake shoots it again)
+  if (k) { k.douse(); k.shootAxis(0, 0); k.setBreathingRing(false); k.setIdle(false); }
   if (ctx.status) ctx.status.say('relaunch');
   if (layout.isPhone && k) { asleep = false; startWake(ctx, { show: false }, createSession, marks, true); return; }
   // desktop / T0: the next input wakes

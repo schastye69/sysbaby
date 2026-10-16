@@ -208,8 +208,10 @@ fs.copyFileSync(path.join(HERE, 'src/static/_headers'), path.join(out, '_headers
     rows.push({ rel, raw: buf.length, gz: gz(buf), budgetGz });
   };
   add('index.html', 4 * KB);
-  add(JS, 275 * KB);                 // ARCH-ADDENDUM X§7.3.1 (was 230)
-  add(CSS, 8 * KB);
+  // Orchestrator decision (merge step 4, recorded in qa/int/merged.json): app JS <= 360 KB gz, CSS <= 12 KB gz, total
+  // transfer <= 600 KB gz (BRIEF's binding ceiling is 1 MB); supersedes X§7.3.1's 275 / 8 / 450 and the per-WP allocations.
+  add(JS, 360 * KB);
+  add(CSS, 12 * KB);
   for (const [, f] of FONTS) add(`fonts/${f}`, null);
   add('world.js', 13 * KB);          // ARCH-ADDENDUM X§7.3.1 (was 12; A11 placeholder data)
   const fontsRaw = rows.filter((r) => r.rel.startsWith('fonts/')).reduce((s, r) => s + r.raw, 0);
@@ -218,7 +220,7 @@ fs.copyFileSync(path.join(HERE, 'src/static/_headers'), path.join(out, '_headers
   const over = [];
   for (const r of rows) if (r.budgetGz != null && r.gz > r.budgetGz) over.push(`OVER BUDGET ${r.rel}: ${(r.gz / KB).toFixed(1)} KB gz > ${(r.budgetGz / KB).toFixed(0)} KB`);
   if (fontsRaw > 140 * KB) over.push(`OVER BUDGET fonts: ${(fontsRaw / KB).toFixed(1)} KB raw > ≈136 KB`);
-  if (totalGz > 450 * KB) over.push(`OVER BUDGET total: ${(totalGz / KB).toFixed(1)} KB gz > 450 KB`);
+  if (totalGz > 600 * KB) over.push(`OVER BUDGET total: ${(totalGz / KB).toFixed(1)} KB gz > 600 KB`);
 
   const w = Math.max(...rows.map((r) => r.rel.length), 5) + 2;
   const fmt = (n) => (n / KB).toFixed(1).padStart(9) + ' KB';

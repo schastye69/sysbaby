@@ -55,7 +55,7 @@ export function runPhone(ctx, B, marks) {
   // ── the scene ──
   B.cam.at(START_D, Y16, OFF);
   B.strata.scramble('golden');
-  k.douse(); k.setInteractive(false); k.setIdle(false); k.setBreathingRing(false);
+  k.douse(); k.shootAxis(0, 0); k.setInteractive(false); k.setIdle(false); k.setBreathingRing(false);
   if (ctx.rim) { if (ctx.rim.hideName) ctx.rim.hideName(); ctx.rim.setLitNodes(0); }
   layer.start(true);
   if (firstAct && !rm) {

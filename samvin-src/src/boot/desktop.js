@@ -60,7 +60,7 @@ export function buildTitle(ctx, B, marks, o) {
     B.reveal.set(1, 1, 1, 0.4, null);
     B.reveal.points(0);
     B.strata.scramble('golden');
-    k.douse();
+    k.douse(); k.shootAxis(0, 0);
   }
   k.setInteractive(false);
   k.setIdle(false);

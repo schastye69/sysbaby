@@ -396,7 +396,7 @@ export function createRim(ctx) {
       plane.visible = alpha > 0; shown = true;
       const t = now();
       setSlot(0, t, 1, 2, 1, 1); auxs[0].x = Math.max(1, ms);
-      if (!roleShown) { showRoleAt(t + ms); auxs[1].x = Math.max(1, ms); }
+      if (!roleShown) { showRoleAt(t + ms + 300); auxs[1].x = Math.max(1, ms); }   // A3.1: 300 ms after the name is in
       rim.setLitNodes(Math.max(lit, state.litNodes));
       keepAlive(ms + 200);
     },

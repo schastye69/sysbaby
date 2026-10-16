@@ -122,10 +122,10 @@ export function createSession(ctx, kind, opts = {}) {
     if (B.ignited || B.finished) return false;
     if (B.sigH && Math.abs(hp - B.hitPlanned) > 25) { B.sigH.cancel(); B.sigH = null; B.sound.signed = false; B.sound.playSignatureNow(0); }
     if (B.hitPlanned && B.hitPlanned - hp > 80 && tl.v < hitV) tl.jumpTo(hitV);
-    // the hit arrives in fx's frame pass (after the timeline's), maybe on a late frame: the table resumes in step
-    // with the hit itself (v = hitV + the time since hp), so the beats after it keep their distance from it
-    const now = perf();
-    if (tl.v <= hitV + 1) tl.catchUp(hitV + Math.max(0, now - hp), now);
+    // the hit arrives in fx's frame pass (after the timeline's), maybe on a late frame, and hp is a presentation time
+    // (it can lie up to a frame AHEAD of now): the table resumes in step with the hit itself (v = hitV at perf hp),
+    // so the beats and cues after it keep their exact distance from it (never early by a frame)
+    if (tl.v <= hitV + 1) tl.catchUp(Math.max(tl.v, hitV), hp);
     // never blocking: a hit that came late itself (hp after its slot) is absorbed by the rest of the table (≤ ×2), so
     // the boot still ends on its scheduled frame (rate 1 only — a skip already runs ×2)
     if (B.endV > hitV && tl.rate === 1 && tl.t0Perf > 0) {
@@ -246,8 +246,8 @@ export function createSession(ctx, kind, opts = {}) {
       marks.idleAt = perf();
       ctx.bus.emit('boot:done', { returning: !!state.returning, sameDay: !!state.sameDaySession, phone: layout.isPhone });
     }
-    // the assembled CORE holds a beat before main.js travels a deep link (the dive starts from rest, not mid-assembly)
     B.settle();
+    // the assembled CORE holds a beat before main.js travels a deep link (the dive starts from rest, not mid-assembly)
     if (B.wake) B.resolve(); else after(140, () => B.resolve());
   };
 
