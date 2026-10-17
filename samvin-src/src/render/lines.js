@@ -8,18 +8,20 @@
 //   • optional R1 density fade (strut), dash, flatten (SIGNAL «Голос»), fog, additive, layer, partial draw range
 //   • colours are the shared palette uniforms (token) or per-segment rgb; ИЗНАНКА follows automatically (A15)
 // createLatticeMaterial({strut}) — the hairline (1 device px) material for the Key/VIN lattice twin LineSegments:
-//   same glint, fog, far fade and R1 vertex collapse.
+//   same glint, fog, far fade and R1 vertex collapse. attachDofTaps(ls): its circle of confusion is spread over two
+//   hairline taps (energy kept) instead of dimming the line away.
+// ПРОСВЕТ (A2.0.3) in both: every member takes its share of the flash from FX_LIGHT_GLSL (source, distance, sheet).
 // WP0 additions (optional opts): faces (per-segment aFace = i·16 + j) + strata (uniform of 7 Matrix4) + strataAlpha
 // (uniform of 7 floats) to move/fade each segment with its stratum inside one draw call (structure.js); depthTest,
 // renderOrder.
 import {
   InstancedBufferGeometry, InstancedInterleavedBuffer, InterleavedBufferAttribute, InstancedBufferAttribute,
-  BufferAttribute, ShaderMaterial, Mesh, NormalBlending, AdditiveBlending, Vector2,
+  BufferAttribute, ShaderMaterial, Mesh, LineSegments, NormalBlending, AdditiveBlending, Vector2,
 } from 'three';
 import { U, colorUniform, identityStrata, onesStrata } from './uniforms.js';
 import { FOG_GLSL } from './fog.js';
 import { R1_GLSL, STRATA_GLSL } from './madeOfItself.js';
-import { FX_GLSL, fxUniforms } from './fxChunk.js';
+import { FX_GLSL, FX_LIGHT_GLSL, fxUniforms } from './fxChunk.js';
 import { RENDER } from '../core/tokens.js';
 import { ROOMS } from '../world/rooms.js';
 import { app } from '../core/store.js';
@@ -51,6 +53,7 @@ uniform vec3 uColor; uniform vec3 cWhite;
 uniform float uWidth, uAlpha, uFar, uGlint, uFlatten, uFlattenY, uDrawA, uDrawB, uCount, uFlash, uStrut;
 uniform vec2 uResolution; uniform float uPixelRatio; uniform vec3 uLamp; uniform vec3 uCamPos;   // uWorldScale: FX_GLSL
 ${GLINT_GLSL}
+${FX_LIGHT_GLSL}
 varying vec3 vCol; varying float vAlpha; varying float vSide; varying float vHalfW; varying float vAlong; varying float vDist;
 void main() {
   vec3 a = aA, b = aB;
@@ -79,13 +82,14 @@ void main() {
   vec2 dir = len > 1e-5 ? d / len : vec2(1.0, 0.0);
   float coc = fxCoc(-va.z * 0.5 + -vb.z * 0.5);
   float wpx = max(aW * uWidth * uPixelRatio, 0.0);
+  float flm = uImpact > 0.0 ? fxImpactLight(0.5 * (wa.xyz + wb.xyz)) : 1.0;   // ПРОСВЕТ: this member's share of the flash
   float wpxQuad = wpx * (1.0 + 0.5 * max(uImpact, uImpactWarm) * uFxCaps.x) + coc * uFxCaps.x * uPixelRatio;
   float halfW = 0.5 * wpxQuad + 1.0;
   vec4 c = mix(ca, cb, position.x);
   vec4 v = mix(va, vb, position.x);
   c.xy += vec2(-dir.y, dir.x) * position.y * halfW / hr * c.w;
   gl_Position = c;
-  vSide = position.y * halfW; vHalfW = 0.5 * (wpx * (1.0 + 0.5 * uImpact * uFxCaps.x) + coc * uFxCaps.x * uPixelRatio);
+  vSide = position.y * halfW; vHalfW = 0.5 * (wpx * (1.0 + 0.5 * uImpact * flm * uFxCaps.x) + coc * uFxCaps.x * uPixelRatio);
   vAlong = position.x * len / uPixelRatio;
   float depth = -v.z;
   float al = aAl * uAlpha;
@@ -95,10 +99,13 @@ void main() {
 #ifdef USE_STRUT
   al *= r1Lattice(uStrut, length(M[0].xyz), depth);
 #endif
-  al *= 1.0 - smoothstep(0.55 * uFar, uFar, depth / max(uWorldScale, 1e-9));
+  // ПРОСВЕТ carries the distance fade out with the fog (fog × 0.15): the flash draws the hall to its 620 m walls (A2.0.3).
+  float farI = uFar * (1.0 + 0.7 * uImpact);
+  al *= 1.0 - smoothstep(0.55 * farI, farI, depth / max(uWorldScale, 1e-9));
   float w0 = max(aW * uWidth, 0.5);
-  al = mix(al, min(1.0, 2.5 * al), uImpact) * uFxLineA * (w0 / (w0 + coc));
   vec3 wp = mix(wa.xyz, wb.xyz, position.x);
+  float fl = uImpact > 0.0 ? fxImpactLight(wp) : 1.0;
+  al = mix(al, min(1.0, al * max(1.0, 4.0 * fl * fl)), uImpact) * uFxLineA * (w0 / (w0 + coc));
   vec3 sd = wb.xyz - wa.xyz; float sl = length(sd);
   float g = sl > 1e-9 ? pow(1.0 - abs(dot(sd / sl, normalize(uLamp - wp))), 24.0) * uGlint * lampReach(wp) : 0.0;
 #ifdef USE_COL_ATTR
@@ -107,7 +114,7 @@ void main() {
   vec3 col = uColor;
 #endif
   col = mix(col, cWhite, uFlash);
-  col = mix(col, cWhite, uImpact) * (1.0 + fxWaveBright(wp));
+  col = mix(col, cWhite, uImpact * fl) * (1.0 + fxWaveBright(wp));
   vCol = col * (1.0 + g);
   vAlpha = al;
   vDist = length(v.xyz);
@@ -247,8 +254,12 @@ attribute float aStrut;
 #ifdef USE_DIR
 attribute vec3 aDir;
 #endif
+#ifdef DOF_TAP
+uniform vec2 uResolution; uniform float uPixelRatio;
+#endif
 uniform float uStrut, uAlpha, uFar, uGlint, uFade; uniform vec3 uLamp; uniform vec3 uColor; uniform vec3 uCamPos; uniform vec3 cWhite;
 ${GLINT_GLSL}
+${FX_LIGHT_GLSL}
 varying vec3 vCol; varying float vAlpha; varying float vDist;
 void main() {
   mat4 M = modelMatrix;
@@ -272,12 +283,31 @@ void main() {
   vec3 dw = normalize(mat3(M) * aDir);
   g = pow(1.0 - abs(dot(dw, normalize(uLamp - w.xyz))), 24.0) * uGlint * lampReach(w.xyz);
 #endif
-  vCol = mix(uColor, cWhite, uImpact) * (1.0 + g + fxWaveBright(w.xyz));
-  vAlpha = uAlpha * uFade * la * (1.0 - smoothstep(0.55 * uFar, uFar, depth / max(uWorldScale, 1e-9)));
+  float fl = uImpact > 0.0 ? fxImpactLight(w.xyz) : 1.0;   // ПРОСВЕТ: this strut's share of the flash
+  vCol = mix(uColor, cWhite, uImpact * fl) * (1.0 + g + fxWaveBright(w.xyz));
+  float farI = uFar * (1.0 + 0.7 * uImpact);                // ПРОСВЕТ: the fade follows the fog out to the 620 m walls
+  vAlpha = uAlpha * uFade * la * (1.0 - smoothstep(0.55 * farI, farI, depth / max(uWorldScale, 1e-9)));
 #ifdef USE_STRATA
   vAlpha *= strataAlpha(aFace);
 #endif
-  vAlpha = min(1.0, vAlpha * uFxLineA * mix(1.0, 2.5, uImpact) * (1.0 / (1.0 + fxCoc(depth))));
+  // DOF (A2.6.2): a 1-device-px GL hairline cannot widen, so its circle of confusion is SPREAD, not discarded: the line and
+  // its two taps (attachDofTaps) sit across the CoC at −½, 0, +½ of it, a third of the alpha each — the energy of the
+  // SPEC's widened line (alpha · w0/(w0+coc) over w0+coc px). A soft far wall stays a soft wall instead of vanishing.
+  float coc = fxCoc(depth), spread = clamp(coc, 0.0, 1.0);
+#ifdef DOF_TAP
+  if (spread <= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+  vec2 pp = vec2(1.0, 0.0);
+#ifdef USE_DIR
+  vec4 c2 = projectionMatrix * viewMatrix * vec4(w.xyz + normalize(mat3(M) * aDir) * max(depth, 1e-3) * 0.01, 1.0);
+  vec2 sd = (c2.xy / c2.w - gl_Position.xy / gl_Position.w) * uResolution; float sl = length(sd);
+  if (sl > 1e-6) pp = vec2(-sd.y, sd.x) / sl;
+#endif
+  gl_Position.xy += pp * (DOF_TAP * coc * uPixelRatio / uResolution) * gl_Position.w;   // ±½ coc px (NDC = 2 px / res)
+  float tapW = spread / 3.0;
+#else
+  float tapW = 1.0 - spread * 2.0 / 3.0;
+#endif
+  vAlpha = min(1.0, vAlpha * uFxLineA * mix(1.0, max(1.0, 4.0 * fl * fl), uImpact) * tapW);
   vDist = length(v.xyz);
 }`;
 
@@ -312,9 +342,43 @@ export function createLatticeMaterial(opts = {}) {
       uStrataM: opts.strata || identityStrata(),
       uStrataA: opts.strataAlpha || onesStrata(),
       uLamp: U.uLamp, uCamPos: U.uCamPos, uWorldScale: U.uWorldScale, uPxPerUnit: U.uPxPerUnit, cAbyss: U.cAbyss, uFogDensity: U.uFogDensity,
-      cWhite: U.cWhite, ...fxUniforms(),
+      uResolution: U.uResolution, uPixelRatio: U.uPixelRatio, cWhite: U.cWhite, ...fxUniforms(),
     },
     defines, vertexShader: LVERT, fragmentShader: LFRAG,
     transparent: true, depthWrite: false, blending: NormalBlending,
   });
+}
+
+// ─── DOF taps for the hairline lattices (A2.6.2) ─────────────────────────────────────────────────────────────
+const TAPPED = [];
+/** Adds the two DOF taps (−½ coc, +½ coc) to a lattice LineSegments made with createLatticeMaterial: children sharing
+ *  its geometry and its uniform objects (fade, strata, far … follow), drawn only while a rack is on (syncDofTaps) and,
+ *  with `when`, only while when() is true. */
+export function attachDofTaps(ls, when) {
+  if (!ls || !ls.material || ls.userData.dofTaps) return;
+  ls.userData.dofWhen = typeof when === 'function' ? when : null;
+  const m = ls.material;
+  ls.userData.dofTaps = [-1, 1].map((k) => {
+    const tm = new ShaderMaterial({ uniforms: m.uniforms, defines: { ...m.defines, DOF_TAP: k.toFixed(1) },
+      vertexShader: m.vertexShader, fragmentShader: m.fragmentShader, transparent: true, depthWrite: false, blending: m.blending });
+    const t = new LineSegments(ls.geometry, tm);
+    t.name = 'latticeDofTap';
+    t.frustumCulled = false;
+    t.visible = false;
+    t.renderOrder = ls.renderOrder;
+    if (ls.onBeforeRender) t.onBeforeRender = ls.onBeforeRender;    // the strata sync, whichever draws first
+    ls.add(t);
+    return t;
+  });
+  TAPPED.push(ls);
+}
+/** Per frame (fx focus): taps on while the aperture is open; they follow a geometry rebuilt by a tier change. */
+export function syncDofTaps(on) {
+  for (let i = 0; i < TAPPED.length; i++) {
+    const ls = TAPPED[i];
+    // Only a lattice that is drawn at all takes taps (faded-out levels, a hidden Key, a Key whose lattice R1 keeps
+    // collapsed at its viewing distance cost no vertex work twice over).
+    const v = on && ls.material.uniforms.uFade.value > 0 && (!ls.userData.dofWhen || ls.userData.dofWhen());
+    for (const t of ls.userData.dofTaps) { t.visible = v; if (v && t.geometry !== ls.geometry) t.geometry = ls.geometry; }
+  }
 }

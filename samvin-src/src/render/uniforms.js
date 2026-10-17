@@ -34,6 +34,8 @@ export const U = {
   uWave1b: { value: new Vector4() },
   uImpact: { value: 0 },                     // ПРОСВЕТ 0..1 (WP12)
   uImpactWarm: { value: 0 },                 // 1 only on the warm frame (WP12)
+  uImpactSrc: { value: new Vector3() },      // ПРОСВЕТ light source, render space (the nucleus / the axis point) — impact.js
+  uImpactShape: { value: new Vector4(300, 0.55, 0.45, 0.12) },   // (R0 canonical m, κ falloff/octave, θh0, φ0 rad) — impact.js
   uPulse: { value: 0 },                      // sub-pulse twin (WP12 pulse.js)
   uFocus: { value: new Vector3() },          // (focalDepth render units, aperture CSS px, on 0/1) — WP12 focus.js
   uFxCaps: { value: new Vector2() },         // x width terms allowed · y heptagon bokeh allowed — WP12

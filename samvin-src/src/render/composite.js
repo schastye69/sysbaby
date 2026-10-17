@@ -7,7 +7,7 @@
 //           scene + bloom, then the same grain + vignette.
 // Grain: hash noise per device pixel, re-seeded on a 24 fps step clock (static under reduced motion), amplitude uGrain
 // (0.025 until the boot calls setGrain(0.02)); emitted as premultiplied white/black with alpha |g| so it shows on the
-// void too; × smoothstep(120, 180, CSS px distance to the pointer) — the grain clears around his cursor.
+// void too; × smoothstep(120, 180, CSS px distance to the pointer) — the grain clears around his cursor (its mean stays).
 // Vignette: 0.18 · smoothstep(0.35, 1, length(uvc · (aspect, 1)) / length((aspect, 1))), uvc ∈ [−1, 1].
 // After the first presented WebGL frame: #ff-grain is removed and the onFirstFrame callbacks run (main: body.is-ff).
 import {
@@ -36,12 +36,15 @@ void main() {
   vec2 uv = fc / uRes;
   float g = (hash(fc + vec2(uSeed * 61.0, uSeed * 37.0)) - 0.5) * 2.0 * uGrain;
   vec2 css = vec2(fc.x, uRes.y - fc.y) / uPR;
-  g *= smoothstep(${R7.clearInPx.toFixed(1)}, ${R7.clearOutPx.toFixed(1)}, distance(css, uPointer));
+  // The grain clears round his cursor as TEXTURE, not as light: the cleared disc keeps the grain's mean (alpha ½G,
+  // white ¼G for g uniform in ±G), so the void never shows a darker hole where the pointer rests.
+  float k = smoothstep(${R7.clearInPx.toFixed(1)}, ${R7.clearOutPx.toFixed(1)}, distance(css, uPointer));
+  g *= k;
   float aspect = uRes.x / uRes.y;
   vec2 c = (uv * 2.0 - 1.0) * vec2(aspect, 1.0);
   float v = uVig * smoothstep(${R7.vignetteFrom.toFixed(2)}, 1.0, length(c) / length(vec2(aspect, 1.0)));
-  float a = 1.0 - (1.0 - v) * (1.0 - abs(g));
-  float w = max(g, 0.0);
+  float a = 1.0 - (1.0 - v) * (1.0 - (abs(g) + (1.0 - k) * 0.5 * uGrain));
+  float w = max(g, 0.0) + (1.0 - k) * 0.25 * uGrain;
 #ifdef USE_SCENE
   vec4 s = texture2D(tScene, uv);
   vec3 b = texture2D(tBloom, uv).rgb * uBloom;

@@ -45,7 +45,7 @@ export function createDust(F) {
     E0: { value: E0 }, E1: { value: E1 }, E2: { value: E2 }, E3: { value: E3 }, uSp: { value: SP }, uSv: { value: SV },
     uImp: { value: new Vector4(0, 0, 0, -99) }, uSheet: { value: new Vector3() }, uDep: { value: new Vector4() },
     uThr: { value: thr }, uStr: { value: strM }, uStrY: { value: strY }, uStrN: { value: strN },
-    uLamp: U.uLamp, uCamPos: U.uCamPos, uNuc: { value: new Vector3() }, uT: { value: 0 }, uLampAng: { value: 0 },
+    uLamp: U.uLamp, uCamPos: U.uCamPos, uNuc: { value: new Vector3() }, uT: { value: 0 }, uLampAng: { value: 0 }, uLampI: { value: 1 },
     uAmb: { value: 0 }, uCol: { value: 0 }, uColT: { value: 0 }, uBreath: U.uBreath, uPixelRatio: U.uPixelRatio, uGap: U.uGap,
     uFogDensity: U.uFogDensity, cSilver: U.cSilver, cWhite: U.cWhite, cEmberDeep: U.cEmberDeep, ...fxUniforms(),
   };
@@ -183,6 +183,9 @@ export function createDust(F) {
     },
     stats() { return { pool: api.enabled ? pool : 0, live: api.enabled ? api.live : 0 }; },
     ambientTerm(a) { uni.uAmb.value = a; },
+    /** The lamp's (and the nucleus's) light on the dust, 0..1. The title holds it at 0 until THE LINE: the void and the
+     *  depth are unlit air (A2.1.1 — only the 3 % ambient term and the light sheet light dust there). */
+    lampTerm(a) { uni.uLampI.value = Math.max(0, Math.min(1, +a || 0)); },
     /** deposition (internal; title piece): startPerf = THE LINE's start, durMs its sweep */
     deposit(on, startPerf, durMs) {
       const d = uni.uDep.value;

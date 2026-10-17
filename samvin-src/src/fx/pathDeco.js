@@ -8,11 +8,15 @@
 // SLICE (reduced motion / T0): `×1 000` under the level mark on arrival in a hall from CORE.
 // path.fx(u, o) is PURE in u (tables sampled once at decoration); the cue plan is made on the path's first frame from
 // director.predict() and re-made on ×3 / retarget; while scrubbing nothing is planned and cues fire as u crosses them.
-import { Vector3 } from 'three';
+import { Vector3, Matrix4 } from 'three';
 import { registerDecorator, createPoseOut } from '../nav/paths.js';
 import { tOfU, msU } from '../nav/pathKit.js';
 import { ROOMS } from '../world/rooms.js';
-import { STRATA_GEOM, radiusAt } from '../core/tokens.js';
+import { STRATA_GEOM, radiusAt, KEY } from '../core/tokens.js';
+import { generatorParam } from '../world/structure.js';
+import { createLines } from '../render/lines.js';
+import { loop, ORDER } from '../core/loop.js';
+import { EASE } from '../core/ease.js';
 import { scaleEngine } from '../render/scale.js';
 import { rig } from '../render/cameraRig.js';
 import { audio } from '../audio/engine.js';
@@ -110,93 +114,191 @@ export function createPathDeco(F) {
     };
   });
 
-  // ── Strut dimension line (first DIVE, A2.2.2): the two adjacent struts of stratum i's far wall nearest the view centre
-  //    (the wall the lens looks at from inside the lattice), at the camera's height; the value is the true spacing
-  //    perimeter_i / k_i in Key units (3 s.f.). The WP0 DIVE path cuts its camera at the swap (in fog), so on the swap
-  //    frame the line keeps its place ON SCREEN — the same line, the same strut in the picture — and re-reads in hall
-  //    units: its ends are re-anchored at the same screen points and at the same depth ×(1000 / s). The value is a
-  //    .t-label --white block above the 0.5 px --slate line (the dims label stays empty so the short span keeps its line
-  //    and arrowheads visible; a 1.6 cm span is ≈ 27 px at the far wall).
-  const _pa = { x: 0, y: 0, depth: 0, visible: false }, _pb = { x: 0, y: 0, depth: 0, visible: false };
+  // ── Strut dimension line (first DIVE, A2.2.2) — "same strut, two scales" ──
+  // The two neighbouring struts of stratum i's far wall nearest the view centre are LIT: --white hairline ribbons along
+  // their whole generators (brightest at the measured height, fading toward the strata edges), drawn over the lattice.
+  // Between them the construction-drawing dimension: extension lines rising from both struts, the dimension line with
+  // 6 px open arrowheads (outside, pointing in, when the span is too short to hold them — standard drafting), the value
+  // .t-label --white above it on a void knock-out. The focus racks onto the measured wall as the line draws, so the
+  // dimensioned struts are the sharp plane and the lattice round the lens goes soft.
+  // Value: the SPEC's strut spacing perimeter_i / k_i at the face's mean radius r̄ = (r_top + r_bot) / 2, to the mm as the
+  // SPEC table states radii (MEMBERS: r̄ 0.444 m, 2.697 m / 168 → ↔ 1.61 СМ / ↔ 16.1 М). It is computed once, when the line draws, and held — it used to follow the
+  // camera's spline height every frame (1.64 → 1.63 on desktop, 1.65 → 1.63 on phone). The struts are two real
+  // generators of the Key's lattice (family +1, the same generatorParam the lattice is built from), both on one face
+  // (never across a crease), at the height where the lofted wall has radius r̄.
+  // The WP0 DIVE path cuts its camera at the swap (in fog), so on the swap frame every point keeps its place ON SCREEN
+  // — the same struts in the picture — at its depth × (1000 / s): the same dimension re-reads in hall units.
+  const SEG = KEY.lattice.segmentsPerGenerator, NPT = 2 * (SEG + 1) + 2, IA = NPT - 2, IB = NPT - 1;
+  const TAU = Math.PI * 2, ARROW = 6, EXT = 4, OFF = 22, OUTER = 14;
+  const SVG = 'http://www.w3.org/2000/svg';
+  const _m = new Matrix4(), _pp = { x: 0, y: 0, depth: 0, visible: false };
+  const ringPt = (n, r, y, s, out) => {
+    const j = Math.floor(s), f = s - j, a0 = (TAU * j) / n - Math.PI / n, a1 = a0 + TAU / n;
+    const x0 = Math.sin(a0) * r, z0 = Math.cos(a0) * r;
+    return out.set(x0 + (Math.sin(a1) * r - x0) * f, y, z0 + (Math.cos(a1) * r - z0) * f);
+  };
+  const wrapS = (s, n) => ((s % n) + n) % n;
+  /** Height (Key m) where stratum st's lofted wall has radius r (monotonic within a stratum off the equator). */
+  function heightAt(st, r) {
+    if (st.top > 0 === st.bot > 0) {
+      let lo = Math.min(st.top, st.bot), hi = Math.max(st.top, st.bot);
+      for (let q = 0; q < 40; q++) { const m = (lo + hi) / 2; if ((radiusAt(m) > r) === (st.mid > 0)) lo = m; else hi = m; }
+      return (lo + hi) / 2;
+    }
+    return st.mid;
+  }
   function strutBegin(i) {
-    if (!ctx.dims || !ctx.key || !ctx.overlay) return;
-    ctx.key.faceFrame(i, _f);                                     // live (render space): the face has turned and slid
-    const st = STRATA_GEOM[i];
-    const Fc = scaleEngine.toCanonical(_f.F, new Vector3());
-    const nh = new Vector3(_f.n.x, 0, _f.n.z).normalize(), tg = new Vector3(-nh.z, 0, nh.x);
-    const s = { st, nh, tg, Fc, y: st.mid, sp: 0.016, label: '', d: null, k: 1, v: -1, lk: 0,
-      A: new Vector3(), B: new Vector3(), M: new Vector3(), fixed: false, fixing: false, sa: { x: 0, y: 0, d: 0 }, sb: { x: 0, y: 0, d: 0 }, sPre: 1 };
-    const back = (y) => (st.n % 2 ? radiusAt(y) : Math.cos(Math.PI / st.n) * radiusAt(y)) + Math.cos(Math.PI / st.n) * radiusAt(st.mid);
-    const pt = (sign, out) => out.copy(s.Fc).addScaledVector(s.nh, -back(s.y)).addScaledVector(s.tg, sign * s.sp / 2)
-      .setY(s.Fc.y + s.y - s.st.mid);
-    // The swap re-anchoring runs inside the getters (ORDER.OVERLAY), i.e. after the rig has applied this frame's camera.
-    const fix = () => {
-      if (!s.fixing || !rig.camera) return;
-      const k = 1000 / Math.max(1e-6, s.sPre);
-      s.fixing = false;
-      // No valid pre-swap screen record (a scrub or a stalled frame jumped past the lattice frames, or an end was behind
-      // the lens): the line cannot keep its place across the swap, so it ends (never a NaN anchor).
-      if (!(s.sa.d > 0 && s.sb.d > 0)) { s.bad = true; return; }
-      rig.unproject(s.sa.x, s.sa.y, s.sa.d * k, s.A); rig.unproject(s.sb.x, s.sb.y, s.sb.d * k, s.B);
-      if (!(Number.isFinite(s.A.x + s.A.y + s.A.z) && Number.isFinite(s.B.x + s.B.y + s.B.z))) { s.bad = true; return; }
-      s.fixed = true;
-    };
-    s.a = (out) => { fix(); return s.fixed ? out.copy(s.A) : scaleEngine.toRender(pt(-1, out), out); };
-    s.b = (out) => { fix(); return s.fixed ? out.copy(s.B) : scaleEngine.toRender(pt(1, out), out); };
-    s.d = ctx.dims.add({ owner: 'fx', side: 'above', offset: 6, label: '', a: s.a, b: s.b });
-    s.g = document.querySelector('#leaders > g.dim:last-of-type');
-    const el = document.createElement('span');
-    el.className = 't-label fx-sd';
+    if (!ctx.key || !ctx.scene) return;
+    const st = STRATA_GEOM[i], n = st.n, k = st.k;
+    const rb = Math.round(((st.rTop + st.rBot) / 2) * 1000) / 1000, yh = heightAt(st, rb);   // the SPEC table's mm radii
+    const th = Math.max(0, Math.min(1, (st.top - yh) / (st.top - st.bot)));
+    const D = n / k, sBack = n / 2 + 0.5;                          // face 0 (the sign face) looks at +Z; the back is s = n/2 + ½
+    const sc = n % 2 ? sBack - 1.5 * D : sBack;                    // odd n: the back is a crease — take the pair beside it
+    const g = Math.round((sc - 0.5 * D - generatorParam(st, 1, 0, th, k)) / D);
+    const L = [];
+    for (const gi of [g, g + 1]) for (let m = 0; m <= SEG; m++) {
+      const t = m / SEG, y = st.top + (st.bot - st.top) * t;
+      L.push(ringPt(n, radiusAt(y), y, wrapS(generatorParam(st, 1, gi, t, k), n), new Vector3()));
+    }
+    const mi = Math.min(SEG - 1, Math.floor(th * SEG)), fi = th * SEG - mi;
+    L.push(new Vector3().lerpVectors(L[mi], L[mi + 1], fi), new Vector3().lerpVectors(L[SEG + 1 + mi], L[SEG + 2 + mi], fi));
+    const sp = (2 * n * rb * Math.sin(Math.PI / n)) / k;
+    // the lit struts (render space, rewritten each frame until the swap)
+    const segs = new Float32Array(2 * SEG * 6), al = new Float32Array(2 * SEG);
+    for (let q = 0; q < 2; q++) for (let m = 0; m < SEG; m++) al[q * SEG + m] = 0.95 * Math.max(0.1, 1 - Math.abs((m + 0.5) / SEG - th) / 0.5);
+    const lines = createLines({ segments: segs, alpha: al, color: 'white', width: 1, glint: 0, far: 1e12, fog: false, depthTest: false, renderOrder: 9 });
+    lines.mesh.name = 'strutLit';
+    lines.setAlpha(0);
+    ctx.scene.add(lines.mesh);
+    // the dimension (SVG in #leaders) and its value (#fx)
+    const leaders = document.getElementById('leaders');
+    const gEl = document.createElementNS(SVG, 'g');
+    gEl.setAttribute('class', 'fx-strut');
+    const ext = document.createElementNS(SVG, 'path'), dim = document.createElementNS(SVG, 'path');
+    ext.setAttribute('class', 'ext'); dim.setAttribute('class', 'dim');
+    for (const p of [ext, dim]) { p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; p.style.strokeDashoffset = '1'; }
+    gEl.append(ext, dim);
+    if (leaders) leaders.appendChild(gEl);
+    const el = document.createElement('div');
+    el.className = 'fx-sd';
     el.dataset.qa = 'strut-dim';
-    s.txt = document.createElement('span');
-    el.append(s.txt);
-    s.lab = el;
-    s.an = ctx.overlay.add({ owner: 'fx', id: 'strut', el, scrim: false, lowpass: 0, priority: 6, hideBehind: false,
-      get: (out) => { s.a(out); s.b(_t); return out.add(_t).multiplyScalar(0.5); } });
-    s.d.drawIn(120);
-    el.style.transition = 'none';                                  // appears at once when its line has drawn (no .anchor fade)
+    const txt = document.createElement('span');
+    txt.className = 't-label';
+    el.append(txt);
     el.classList.add('fx-out');
-    s.inAt = perf() + 120;                                         // the value appears as the line's draw completes
+    const root = document.getElementById('fx');
+    if (root) root.append(el);
+    const s = { i, st, L, W: L.map(() => new Vector3()), scr: new Float32Array(NPT * 3), segs, lines, gEl, ext, dim, el, txt,
+      sp, k: 1, label: '', sPre: 1, fixed: false, fixing: false, bad: false, ending: false, drawT0: perf(), inAt: perf() + 120,
+      mAt: 0, fadeAt: 0, focalC: -1, lastD: '' };
+    setLabel(s, `↔ ${fmt3(sp * 100)} СМ`);
     strut = s;
   }
-  function strutEnd() { if (strut) { strut.d.remove(); strut.an.remove(); strut = null; } }
+  function setLabel(s, l) { if (l !== s.label) { s.label = l; s.txt.textContent = l; } }
+  function strutEnd() {
+    const s = strut;
+    if (!s) return;
+    strut = null;
+    s.lines.dispose();
+    if (s.gEl.parentNode) s.gEl.parentNode.removeChild(s.gEl);
+    if (s.el.parentNode) s.el.parentNode.removeChild(s.el);
+  }
+  function toHall(s) {                                            // the swap frame's reading, in hall units
+    s.fixing = true; s.k = 1000; s.mAt = perf();
+    setLabel(s, `↔ ${fmt3(s.sp * 1000)} М`);
+  }
   // Past the swap the hall-unit reading is always seen for ≥ 150 ms, even when a slow frame jumps over its window.
   function strutLinger() {
     const s = strut;
     if (!s || s.ending) return;
     s.ending = true;
-    if (!s.mAt) { s.fixing = true; s.k = 1000; s.mAt = perf(); s.txt.textContent = s.label = `↔ ${fmt3(s.sp * 1000)} М`; }
-    s.inAt = 0; s.lab.classList.remove('fx-out');
+    if (!s.mAt) toHall(s);
+    s.inAt = 0; s.el.classList.remove('fx-out');
     after(Math.max(0, 150 - (perf() - s.mAt)), () => { if (strut === s) strutEnd(); });
   }
-  function strutFrame(mode, t) {
+  function strutFrame(mode) {
     const s = strut;
     if (!s) return;
     if (s.bad) { strutEnd(); return; }
     if (s.ending) return;
-    if (mode === 0) { if (s.sa.d > 0 && t >= 2000) strutLinger(); else strutEnd(); return; }   // 0 after the swap window
-    if (mode === 1 && rig.camera && !s.fixed) {
-      const y = scaleEngine.toCanonical(rig.camera.position, _c).y - s.Fc.y + s.st.mid;
-      s.y = Math.max(s.st.bot, Math.min(s.st.top, y));
-      s.sp = (2 * s.st.n * radiusAt(s.y) * Math.sin(Math.PI / s.st.n)) / s.st.k;
-      s.k = 1;
-      rig.project(s.a(_c), _pa); rig.project(s.b(_c), _pb);    // remembered for the swap frame
-      s.sa.x = _pa.x; s.sa.y = _pa.y; s.sa.d = _pa.depth; s.sb.x = _pb.x; s.sb.y = _pb.y; s.sb.d = _pb.depth;
-      s.sPre = scaleEngine.s;
-    } else if (mode >= 2 && !s.fixed && !s.fixing) {
-      s.fixing = true; s.k = 1000; s.mAt = perf();
-    }
-    const v = Math.round((s.k === 1 ? s.sp * 100 : s.sp * 1000) * 1e3);   // the label is rebuilt only when it changes
-    if (v !== s.v || s.k !== s.lk) {
-      s.v = v; s.lk = s.k;
-      const l = s.k === 1 ? `↔ ${fmt3(s.sp * 100)} СМ` : `↔ ${fmt3(s.sp * 1000)} М`;
-      if (l !== s.label) { s.label = l; s.txt.textContent = l; }
-    }
-    if (s.inAt && perf() >= s.inAt) { s.inAt = 0; s.lab.classList.remove('fx-out'); }
-    const fade = mode === 3 && perf() - (s.mAt || 0) >= 150;      // the hall-unit reading is always seen (≥ 150 ms)
-    if (fade && !s.lab.classList.contains('fx-out')) { s.lab.style.transition = 'opacity 240ms linear'; s.lab.classList.add('fx-out'); }
-    if (s.g) s.g.classList.toggle('fx-out', fade);
+    if (mode === 0) { if (s.scr[IA * 3 + 2] > 0 && s.mAt) strutLinger(); else strutEnd(); return; }   // 0 after the swap window
+    if (mode >= 2 && !s.fixed && !s.fixing) toHall(s);
+    if (mode === 3 && !s.fadeAt && perf() - s.mAt >= 150) s.fadeAt = perf();   // the hall-unit reading is always seen (≥ 150 ms)
   }
+  /** ORDER.OVERLAY (after the rig has applied this frame's camera): the lit struts, the dimension and its value. */
+  function strutDraw() {
+    const s = strut;
+    if (!s || !rig.camera) return;
+    if (!s.fixed && !s.fixing) {
+      const S = ctx.key.strata && ctx.key.strata[s.i];
+      if (S) S.updateWorldMatrix(true, false);
+      ctx.key.stratumMatrix(s.i, _m);
+      for (let j = 0; j < NPT; j++) {
+        s.W[j].copy(s.L[j]).applyMatrix4(_m);
+        rig.project(s.W[j], _pp);
+        s.scr[j * 3] = _pp.x; s.scr[j * 3 + 1] = _pp.y; s.scr[j * 3 + 2] = _pp.depth;
+      }
+      s.sPre = scaleEngine.s;
+      s.focalC = _c.copy(s.W[IA]).add(s.W[IB]).multiplyScalar(0.5).distanceTo(rig.camera.position) / Math.max(1e-9, scaleEngine.s);
+      writeSegs(s);
+    } else if (s.fixing) {
+      // No valid pre-swap screen record (a scrub or a stalled frame jumped past the lattice frames, or an end was behind
+      // the lens): the dimension cannot keep its place across the swap, so it ends (never a NaN anchor).
+      s.fixing = false;
+      const kk = 1000 / Math.max(1e-6, s.sPre);
+      for (let j = 0; j < NPT && !s.bad; j++) {
+        const d = s.scr[j * 3 + 2];
+        if (!(d > 0)) { s.bad = true; break; }
+        rig.unproject(s.scr[j * 3], s.scr[j * 3 + 1], d * kk, s.W[j]);
+        if (!Number.isFinite(s.W[j].x + s.W[j].y + s.W[j].z)) s.bad = true;
+      }
+      if (s.bad) { s.lines.setAlpha(0); s.gEl.style.opacity = '0'; s.el.classList.add('fx-out'); return; }
+      s.fixed = true;
+      writeSegs(s);
+    }
+    const now = perf();
+    const draw = Math.min(1, Math.max(0, (now - s.drawT0) / 120));
+    const fade = s.fadeAt ? Math.max(0, 1 - (now - s.fadeAt) / 240) : 1;
+    s.lines.setAlpha(EASE.reveal(draw) * fade);
+    // dimension geometry (screen px)
+    rig.project(s.W[IA], _pp); const ax = _pp.x, ay = _pp.y, ad = _pp.depth;
+    rig.project(s.W[IB], _pp); const bx = _pp.x, by = _pp.y, bd = _pp.depth;
+    const len = Math.hypot(bx - ax, by - ay);
+    const on = ad > 0 && bd > 0 && len >= 3;
+    if (on) {
+      const ux = (bx - ax) / len, uy = (by - ay) / len;
+      let nx = -uy, ny = ux;
+      if (ny > 0) { nx = -nx; ny = -ny; }                          // the dimension stands above the struts' crossing
+      const Ax = ax + nx * OFF, Ay = ay + ny * OFF, Bx = bx + nx * OFF, By = by + ny * OFF;
+      const f = (v) => v.toFixed(1);
+      const pe = `M${f(ax + nx * 3)} ${f(ay + ny * 3)}L${f(Ax + nx * EXT)} ${f(Ay + ny * EXT)}M${f(bx + nx * 3)} ${f(by + ny * 3)}L${f(Bx + nx * EXT)} ${f(By + ny * EXT)}`;
+      const inside = len >= 3 * ARROW + 4;
+      const k1 = inside ? 1 : -1;                                  // arrow wings point back along the line (inside) / outward
+      const wing = (x, y, dx, dy) => `M${f(x + (dx * 0.866 - dy * 0.5) * ARROW)} ${f(y + (dy * 0.866 + dx * 0.5) * ARROW)}L${f(x)} ${f(y)}L${f(x + (dx * 0.866 + dy * 0.5) * ARROW)} ${f(y + (dy * 0.866 - dx * 0.5) * ARROW)}`;
+      const pd = (inside ? `M${f(Ax)} ${f(Ay)}L${f(Bx)} ${f(By)}`
+        : `M${f(Ax - ux * OUTER)} ${f(Ay - uy * OUTER)}L${f(Ax)} ${f(Ay)}M${f(Bx)} ${f(By)}L${f(Bx + ux * OUTER)} ${f(By + uy * OUTER)}`)
+        + wing(Ax, Ay, ux * k1, uy * k1) + wing(Bx, By, -ux * k1, -uy * k1);
+      const dd = pe + '|' + pd;
+      if (dd !== s.lastD) { s.lastD = dd; s.ext.setAttribute('d', pe); s.dim.setAttribute('d', pd); }
+      const off = String(1 - EASE.reveal(draw));
+      s.ext.style.strokeDashoffset = off; s.dim.style.strokeDashoffset = off;
+      s.el.style.transform = `translate3d(${f((Ax + Bx) / 2 + nx * 9)}px,${f((Ay + By) / 2 + ny * 9)}px,0)`;
+    }
+    s.gEl.style.opacity = on ? String(fade) : '0';
+    if (s.inAt && now >= s.inAt) { s.inAt = 0; s.el.classList.remove('fx-out'); }
+    if (s.fadeAt && !s.el.classList.contains('fx-out')) s.el.classList.add('fx-out');
+    if (!on && !s.el.classList.contains('fx-out')) s.el.classList.add('fx-out');
+  }
+  function writeSegs(s) {
+    const a = s.segs;
+    let o = 0;
+    for (let q = 0; q < 2; q++) for (let m = 0; m < SEG; m++) {
+      const p = s.W[q * (SEG + 1) + m], r = s.W[q * (SEG + 1) + m + 1];
+      a[o++] = p.x; a[o++] = p.y; a[o++] = p.z; a[o++] = r.x; a[o++] = r.y; a[o++] = r.z;
+    }
+    s.lines.setSegments(a);
+  }
+  loop.add(strutDraw, ORDER.OVERLAY);
 
   const mk = (it, V) => F.cue.at(V, {
     id: it.id,
@@ -230,7 +332,7 @@ export function createPathDeco(F) {
       F.cue.frame();
     }
     cur = null; plan = [];
-    if (completed && strut && strut.sa.d > 0) strutLinger(); else strutEnd();
+    if (completed && strut && strut.scr[IA * 3 + 2] > 0 && !strut.bad) strutLinger(); else strutEnd();
   });
   bus.on('travel:start', ({ from, kind }) => { sliceFrom = kind === 'SLICE' || F.t0 || ENV.reducedMotion ? from && from.room : null; });
   bus.on('room:arrive', ({ room, kind }) => {
@@ -268,9 +370,12 @@ export function createPathDeco(F) {
       const d = p && o.deco;
       if (d && d.tabS) {
         if (o.sb === 1) { F.scalebar.show(); F.scalebar.set(o.scaleS, o.scaleDir); } else F.scalebar.hide(120);
-        if (o.aperturePx > 0.01) { drv = true; F.focus.drive(o.focalM, o.aperturePx); } else if (drv) { drv = false; F.focus.release(); }
+        let focal = o.focalM;
+        // The strut dimension pulls the focus onto the wall it measures while it draws (pre-swap only).
+        if (strut && !strut.fixed && !strut.fixing && strut.focalC > 0) focal += (strut.focalC - focal) * EASE.camera(Math.min(1, (perf() - strut.drawT0) / 240));
+        if (o.aperturePx > 0.01) { drv = true; F.focus.drive(focal, o.aperturePx); } else if (drv) { drv = false; F.focus.release(); }
         if (o.strutDim && !strut) strutBegin(st.path.stratum | 0);
-        if (strut) strutFrame(o.strutDim, o.t);
+        if (strut) strutFrame(o.strutDim);
       } else {
         F.scalebar.hide(120);
         if (drv) { drv = false; F.focus.release(); }

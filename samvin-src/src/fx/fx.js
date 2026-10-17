@@ -16,6 +16,11 @@ import { createStage } from './stage.js';
 import { createImpact } from './impact.js';
 import { createWave } from './wave.js';
 import { createFocus } from './focus.js';
+import { attachDofTaps } from '../render/lines.js';
+import { Vector3 } from 'three';
+import { rig } from '../render/cameraRig.js';
+import { scaleEngine } from '../render/scale.js';
+import { KEY } from '../core/tokens.js';
 import { createPulse } from './pulse.js';
 import { createScalebar } from './scalebar.js';
 import { createScaleFigure } from './scaleFigure.js';
@@ -33,7 +38,7 @@ export { SPEED_OF_SOUND } from './cue.js';
 
 const NOFIG = { show() {}, hide() {}, state: () => ({ visible: false, heightPx: 0 }), frame() {} };
 const NODUST = { enabled: false, live: 0, splats: 0, emitter: () => ({ set() {}, release() {}, alive: false }), splat() {}, impulse() {},
-  sheet() {}, stats: () => ({ pool: 0, live: 0 }), ambientTerm() {}, deposit() {}, collapse() {}, frame() {} };
+  sheet() {}, stats: () => ({ pool: 0, live: 0 }), ambientTerm() {}, lampTerm() {}, deposit() {}, collapse() {}, frame() {} };
 
 function build(ctx, t0) {
   const F = { ctx, t0, warmNext: false, warmNow: false, folded: false };
@@ -62,6 +67,16 @@ function build(ctx, t0) {
   F.dust = t0 ? NODUST : createDust(F);
   F.wave = createWave(F);
   F.focus = createFocus();
+  // The hairline lattices (the Key's and VIN's) spread their circle of confusion over two DOF taps (A2.6.2).
+  // The Key's own lattice only shows (R1) once the camera is within ≈ 2.4 m of it — the DIVE; at rest and through the
+  // title it is collapsed, so its taps are only drawn while the camera is that close.
+  if (!t0) {
+    const _k = new Vector3();
+    const keyNear = () => !!(ctx.key && rig.camera)
+      && _k.copy(ctx.key.nucleusWorld).distanceTo(rig.camera.position) / Math.max(1e-9, scaleEngine.s) < 2 * KEY.lattice.solidBelowCamDist;
+    if (ctx.key && ctx.key.structure && ctx.key.structure.lattice) attachDofTaps(ctx.key.structure.lattice, keyNear);
+    for (const j of [1, 2]) { const st = ctx.nest && ctx.nest.structure(j); if (st && st.lattice) attachDofTaps(st.lattice); }
+  }
   F.scalebar = createScalebar(F);
   F.figure = t0 || !ctx.nest ? NOFIG : createScaleFigure(F);
   const deco = createPathDeco(F);

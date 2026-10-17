@@ -11,6 +11,7 @@ import { loop } from '../core/loop.js';
 import { bus } from '../core/bus.js';
 import { audio } from '../audio/engine.js';
 import { input } from '../core/input.js';
+import { app } from '../core/store.js';
 import { vibrate } from '../ui/tactile.js';
 import { clk, perf } from './cue.js';
 
@@ -54,6 +55,20 @@ export function createImpact(F) {
     if (pv) { pv = null; U.uImpact.value = 0; F.fogFactor('impact', 1); }
     U.uImpactWarm.value = 0;
   });
+
+  // The flash has a source (FX_LIGHT_GLSL): the nucleus (or the caller's render-space origin — the axis point of a hall).
+  // CORE: the nearest lit walls are the 300 m rim, the 620 m walls take about half; the light is a sheet out of the
+  // gap planes, centred behind the Key. The first DIVE stands INSIDE the Key's lattice: the struts round the lens take
+  // the full flash and the hall beyond falls off over its 2–3 decades of distance, with no sheet (the light is all round).
+  function lightFrom(kind, origin) {
+    const src = U.uImpactSrc.value;
+    if (origin) src.copy(origin);
+    else if (ctx.key && ctx.key.nucleusWorld) src.copy(ctx.key.nucleusWorld);
+    else src.set(0, 0, 0);
+    if (kind === 'dive') U.uImpactShape.value.set(1.0, 0.08, 3.2, 3.2);
+    else if (!origin && app.room === 'CORE') U.uImpactShape.value.set(300, 0.55, 0.45, 0.12);
+    else U.uImpactShape.value.set(1e7, 0, 3.2, 3.2);              // any other hall (S05 away from CORE, NADIR): the even SPEC flash
+  }
 
   const impact = {
     lastPauseAt: -Infinity,
@@ -102,7 +117,7 @@ export function createImpact(F) {
       p.res({ hitAt: perf(), advanced: false, skipped: true, cancelled: true });
       return true;
     },
-    /** opts { kind: 'first'|'wake'|'dive'|'s05'|'nadir' } → false when capped */
+    /** opts { kind: 'first'|'wake'|'dive'|'s05'|'nadir', origin?: Vector3 (render space; default the nucleus) } → false when capped */
     prosvet(opts) {
       const kind = (opts && opts.kind) || 'first';
       const now = perf();
@@ -115,6 +130,7 @@ export function createImpact(F) {
       prosvetLog.push(e);
       if (prosvetLog.length > 16) prosvetLog.shift();
       pv = { e, p0: -1, hold: -1 };
+      lightFrom(kind, opts && opts.origin);
       U.uImpact.value = 1;
       F.fogFactor('impact', 0.15);
       F.twin('prosvet', {});

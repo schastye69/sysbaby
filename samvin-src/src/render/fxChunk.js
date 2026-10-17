@@ -46,6 +46,28 @@ float fxHeptagon(vec2 pc) {                             // 7-blade aperture SDF,
   float r = cos(floor(0.5 + a / k) * k - a) * length(pc); return r;  // < cos(π/7) inside
 }`;
 
+/** ПРОСВЕТ light (lines and lattice only; needs uCamPos): how much of the flash a line point at render position p takes,
+ *  0..1. The flash is the nucleus's light leaving the Key — a source, not a screen tint:
+ *    • distance: 1 at the nearest lit wall R0 (canonical m), −κ per octave beyond it (the 620 m walls take ≈ ½ of the
+ *      300 m ones), floor 0.18 — a cathedral lit by one flash reads in depth, not as wallpaper;
+ *    • direction: the light leaves the strata through their horizontal gap planes, so it is a sheet centred on the
+ *      source — strongest straight behind it (the Key stands against the brightest wall), falling off with the
+ *      horizontal angle (θh0) and, faster, with elevation (φ0); 30 % of the light fills the rest of the hall;
+ *    • near field (≤ 0.1·R0, the Key itself) takes the full flash. */
+export const FX_LIGHT_GLSL = /* glsl */ `
+uniform vec3 uImpactSrc; uniform vec4 uImpactShape;
+float fxImpactLight(vec3 p) {
+  vec3 v = p - uImpactSrc;
+  float dl = length(v), dc = dl / max(uWorldScale, 1e-9), q = dc / uImpactShape.x;
+  float bd = clamp(1.0 - uImpactShape.y * log2(max(q, 1e-6)), 0.18, 1.0);
+  vec2 ax = (uImpactSrc - uCamPos).xz;
+  float la = length(ax), lh = length(v.xz);
+  float c = la > 1e-6 && lh > 1e-6 ? dot(ax, v.xz) / (la * lh) : 1.0;     // cos of the horizontal angle off the view axis
+  float sp = v.y / max(dl, 1e-6);                                          // sin of the elevation from the source
+  float ba = exp(-2.0 * (1.0 - c) / max(uImpactShape.z * uImpactShape.z, 1e-6) - sp * sp / max(uImpactShape.w * uImpactShape.w, 1e-6));
+  return mix(bd * mix(0.22, 1.0, ba), 1.0, 1.0 - smoothstep(0.1, 0.25, q));
+}`;
+
 /** → { uWave0a, uWave0b, uWave1a, uWave1b, uImpact, uImpactWarm, uPulse, uFxLineA, uFocus, uFxCaps, uWorldScale }
  *  (the shared U objects, by reference). */
 export function fxUniforms() {
@@ -53,5 +75,6 @@ export function fxUniforms() {
     uWave0a: U.uWave0a, uWave0b: U.uWave0b, uWave1a: U.uWave1a, uWave1b: U.uWave1b,
     uImpact: U.uImpact, uImpactWarm: U.uImpactWarm, uPulse: U.uPulse, uFxLineA: U.uFxLineA,
     uFocus: U.uFocus, uFxCaps: U.uFxCaps, uWorldScale: U.uWorldScale,
+    uImpactSrc: U.uImpactSrc, uImpactShape: U.uImpactShape,
   };
 }

@@ -9,9 +9,11 @@ import { quality } from '../core/quality.js';
 import { ENV } from '../core/env.js';
 import { EASE } from '../core/ease.js';
 import { perf } from './cue.js';
+import { syncDofTaps } from '../render/lines.js';
 
 export function createFocus() {
   const st = { f0: 30, f1: 30, a0: 0, a1: 0, t0: 0, ms: 0, ease: EASE.camera, res: null, focal: 30, aper: 0, ext: false, maxA: 10 };
+  let tapsOn = -1;
   const done = () => { const r = st.res; st.res = null; if (r) r(); };
   const focus = {
     /** opts { focalM, apertPx, ms, ease?, force? } → Promise */
@@ -54,6 +56,7 @@ export function createFocus() {
       }
       const on = st.aper > 0.01 ? 1 : 0;
       U.uFocus.value.set(st.focal * scaleEngine.s, on ? Math.min(st.aper, st.maxA) : 0, on);
+      if (on !== tapsOn) { tapsOn = on; syncDofTaps(!!on); } else if (on) syncDofTaps(true);
     },
     get state() { return st; },
   };

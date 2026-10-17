@@ -12,7 +12,7 @@ export const DUST_VERT = /* glsl */ `
 ${FX_GLSL}
 uniform vec4 E0[8], E1[8], E2[8], E3[8], uSp[8], uSv[8], uImp, uSheet, uDep;
 uniform vec3 uThr[24], uLamp, uCamPos, uNuc; uniform mat4 uStr[7];
-uniform float uT, uLampAng, uAmb, uCol, uColT, uBreath, uPixelRatio, uGap, uFogDensity, uStrY[14], uStrN[7];
+uniform float uT, uLampAng, uLampI, uAmb, uCol, uColT, uBreath, uPixelRatio, uGap, uFogDensity, uStrY[14], uStrN[7];
 varying float vA, vCoc, vPx, vW, vE;
 float h1(float n){ return fract(sin(n * 12.9898) * 43758.5453); }
 vec3 cr(vec3 a, vec3 b, vec3 c, vec3 d, float t){ float t2 = t*t, t3 = t2*t; return 0.5*((2.0*b) + (-a+c)*t + (2.0*a-5.0*b+4.0*c-d)*t2 + (-a+3.0*b-3.0*c+d)*t3); }
@@ -89,7 +89,7 @@ void main(){
   float c = dot(tl / max(dl, 1e-5), normalize(uCamPos - wp.xyz));
   float hg = 0.6156 / pow(1.3844 - 1.24 * c, 1.5) / 11.2;
   float r0 = e3.z * uWorldScale;
-  float b = 18.0 * hg / (1.0 + (dl/r0)*(dl/r0));
+  float b = 18.0 * uLampI * hg / (1.0 + (dl/r0)*(dl/r0));   // uLampI: 0 while the title's world is still unlit
   b *= 0.6 + 0.4 * step(0.92, fract(sw * 91.7 + uLampAng * 7.0));
   b = max(b, self);
   float wh = 0.0;
@@ -99,7 +99,7 @@ void main(){
     float rn = max(length(p - uNuc), 0.12), ne = (0.12/rn)*(0.12/rn);
     float gl = 0.0; for (int i = 1; i < 7; i++) { float gy = (uStrY[i*2-1] + uStrY[i*2]) * 0.5; gl = max(gl, step(abs(p.y - gy), 0.01)); }
     float rx = max(length(p.xz), 0.12);
-    vE = max(ne * 0.4, gl * 0.4 * smoothstep(0.03, 0.09, uGap) * (0.12/rx)*(0.12/rx));
+    vE = max(ne * 0.4, gl * 0.4 * smoothstep(0.03, 0.09, uGap) * (0.12/rx)*(0.12/rx)) * uLampI;
     b = max(b, vE * 2.0);
   }
   float coc = fxCoc(-v.z);
