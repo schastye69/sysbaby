@@ -13,7 +13,7 @@
 //  4,540   ПАУЗА 0.4 (fx.impact.pause; ПРОСВЕТ on the first visit and the wake)
 //  4,940   IGNITION: nucleus 1 frame white → ember, axis ±3.2 m in 240 ms, ВОЛНА 343 with its echo, the signature;
 //          the notice (setIdle) and «вижу тебя.» / «система проснулась.»
-//  5,600   THE WORLD OPENS: camera 9.5 → 7.2 m (+3°), the pillar fires to the irises (±260 m, 600 ms), sub-drop
+//  5,600   THE WORLD OPENS: camera 9.5 m → the CORE rest pose (A12), the pillar fires to the irises (±260 m, 600 ms), sub-drop
 //  5,815   the wave reaches the rim: rim 6 → 12 %, his name burns (70 ms/letter, ember → silver 1,200 ms)
 //  6,400   ASSEMBLY: navigator + dims + chrome + datum «ЯДРО» (latch gen 2 +0.6) · 6,640 edge strings (−0.6) ·
 //          6,880 «ЯДРО» locked (0); each a 2 px struck twitch · bed fades in over 2,000 ms · 6,690 the echo

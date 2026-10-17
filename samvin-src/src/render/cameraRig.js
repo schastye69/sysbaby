@@ -28,7 +28,7 @@ const trem = { until: 0, ms: 0, amp: 0, off: new Vector3() };
 export const rig = {
   camera: null,
   /** base pose for this frame (render space) */
-  pose: { pos: new Vector3(0, 0.75, 7.2), target: new Vector3(0, 0, 0), fov: CAMERA.fov, offsetY: 0, roll: 0 },
+  pose: { pos: new Vector3().fromArray(CAMERA.core.pos), target: new Vector3().fromArray(CAMERA.core.target), fov: CAMERA.fov, offsetY: 0, roll: 0 },
   /** render-space camera velocity, m/s, one-pole smoothed (τ 80 ms) */
   velocity: new Vector3(),
 

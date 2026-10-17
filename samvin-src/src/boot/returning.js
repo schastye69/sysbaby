@@ -8,7 +8,7 @@
 //  2,240   ПАУЗА (no ПРОСВЕТ)
 //  2,640   ignition: nucleus white → ember (night: electrum 55 %), the new lit node's 1-frame electrum flash, the thump
 //          (signature, no echo, no wave); S blinks if a transmission arrived; returned probes; the greeting by priority
-//  2,640–3,500 camera 9.5 → 7.2 m, the name burns (70 ms/letter), all chrome at once (480 ms), latch gen 2 at 3,120
+//  2,640–3,500 camera 9.5 m → the CORE rest pose (A12), the name burns (70 ms/letter), all chrome at once (480 ms), latch gen 2 at 3,120
 // Same calendar day, new session (SPEC unchanged), 2,000 ms: 110 ms locks with ratchets, no pause, «снова ты.»
 import { setPhase } from '../core/store.js';
 import { state } from '../core/state.js';
@@ -75,7 +75,7 @@ export function runReturning(ctx, B, marks) {
   B.reveal.hidden();
   B.strata.scramble('random');
   k.douse(); k.setInteractive(false); k.setIdle(false); k.setBreathingRing(false);
-  // on the rest line of sight (the CORE pitch): the dolly to 7.2 m then leaves the far rim — and his name burning on it
+  // on the rest line of sight (the CORE pitch): the dolly to the rest distance then leaves the far rim — and his name burning on it
   // from the ignition — standing still in its band above the greeting
   B.cam.at(9.5, Y_REST16);
   B.world.rim(0); B.world.beads(0); B.world.ribbon(0);

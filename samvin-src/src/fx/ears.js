@@ -10,6 +10,7 @@ import { rig } from '../render/cameraRig.js';
 import { bus } from '../core/bus.js';
 import { app } from '../core/store.js';
 import { perf } from './cue.js';
+import { CORE_REST_D } from '../core/tokens.js';
 
 export function createEars(F) {
   const { ctx } = F;
@@ -22,7 +23,7 @@ export function createEars(F) {
       const at = pc != null ? audio.fx.toPerf(pc) : now + 900;
       F.fogFactor('ears', 1.5);
       F.fogFactor('ears', 1, 900);
-      const fd = rig.camera ? rig.camera.position.distanceTo(rig.pose.target) : 7.2;
+      const fd = rig.camera ? rig.camera.position.distanceTo(rig.pose.target) : CORE_REST_D;
       if (!F.t0) F.focus.rack({ focalM: fd, focalFrom: fd, from: 4, apertPx: 0, ms: 900, force: true });
       F.twin('ears', { blurPx: 2, ms: 900 });
       F.cue.at(Number.isFinite(at) ? at : now + 900, { id: 'popClick', visual: () => { if (ctx.edges) ctx.edges.twitch(1); } });

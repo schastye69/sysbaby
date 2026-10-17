@@ -42,7 +42,7 @@ function extCall(r, method, a) {
 }
 /** The T0 stub (A17): every method inert; pose() a fixed pose; setSub() accepts any sub. */
 function stubHall(id) {
-  const pose = { pos: new Vector3(0, 0.75, 7.2), target: new Vector3(), fov: CAMERA.fov, offsetY: 0, roll: 0 };
+  const pose = { pos: new Vector3().fromArray(CAMERA.core.pos), target: new Vector3().fromArray(CAMERA.core.target), fov: CAMERA.fov, offsetY: 0, roll: 0 };
   return { id, build: NOOP, pose: () => pose, enter: NOOP, exit: NOOP, arrive: NOOP, depart: NOOP, setSub: () => 0,
     update: NOOP, onGesture: () => false, onKey: () => false, resize: NOOP, dispose: NOOP, stub: true };
 }

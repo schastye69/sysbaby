@@ -51,7 +51,7 @@ export function generatorParam(st, fam, g, t, kd = st.k) {
   return (g * st.n) / kd + (fam < 0 ? (0.5 * st.n) / kd : 0) + fam * KEY.lattice.faceShift * t;
 }
 /** aStrut: the spacing between NEIGHBOURING struts of the two interleaved families = local perimeter / (2k). With R1's
- *  smoothstep(3, 6) px this keeps the Key solid at the 7.2 m rest distance and dissolves it below ≈ 2.4 m, exactly as
+ *  smoothstep(3, 6) px this keeps the Key solid at the CORE rest distance and dissolves it below ≈ 2.4 m, exactly as
  *  SPEC §3.2 describes (perimeter / k alone would leave the 7-gon strata ≈ 10 % dissolved at rest). */
 const STRUT_FAMILIES = 2;
 const strutAt = (n, k, y) => Math.max(1e-4, (2 * radiusAt(y) * Math.sin(Math.PI / n) * n) / (k * STRUT_FAMILIES));

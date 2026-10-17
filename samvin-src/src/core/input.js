@@ -231,7 +231,7 @@ function onMove(e) {
     }
     return;
   }
-  const t = now();
+  const t = evTime(e);
   fill(e, e.clientX, e.clientY);
   g.dx = e.clientX - seq.lastX; g.dy = e.clientY - seq.lastY;
   g.tx = e.clientX - seq.x0; g.ty = e.clientY - seq.y0;
@@ -250,7 +250,10 @@ function onMove(e) {
 }
 
 function endSequence(e, cancelled) {
-  const t = now();
+  // The press is timed on the events' own clock, like its start (seq.t0 = evTime(down)): a lift handled late — a long
+  // frame between down and up (a heavy Key frame on a slow phone GPU, SwiftShader in QA) — is still the quick tap the
+  // finger made, not a 450 ms "press" that silently drops the tap-to-open.
+  const t = evTime(e);
   clearTimers();
   input.pointer.down = false;
   try { if (e.currentTarget && e.currentTarget.hasPointerCapture && e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }

@@ -13,7 +13,7 @@ import { U } from '../render/uniforms.js';
 import { rig } from '../render/cameraRig.js';
 import { breath } from '../core/clock.js';
 import { smoothstep } from '../core/ease.js';
-import { NUCLEUS, NIGHT } from '../core/tokens.js';
+import { NUCLEUS, NIGHT, CORE_REST_D } from '../core/tokens.js';
 
 const VERT = /* glsl */ `
 varying vec3 vN; varying vec3 vVN; varying vec3 vP;
@@ -104,7 +104,7 @@ export function createNucleus(group, stratum3, faceZ) {
       u.uFlash.value = n.flashFrames > 0 ? 1 : 0;
       glow.setFlash(u.uFlash.value);
       if (n.flashFrames > 0) n.flashFrames--;
-      let vis = NUCLEUS.minVisibility, d = 7.2, align = 0, open = 0;
+      let vis = NUCLEUS.minVisibility, d = CORE_REST_D, align = 0, open = 0;
       const cam = rig.camera;
       if (cam) {
         _n.set(0, 0, 1).transformDirection(s3);

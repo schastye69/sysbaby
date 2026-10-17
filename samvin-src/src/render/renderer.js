@@ -36,7 +36,7 @@ export function createRenderer(canvas, gl, tier) {
   scene.background = null;
   scene.matrixWorldAutoUpdate = true;
   const camera = new PerspectiveCamera(CAMERA.fov, Math.max(1, layout.w) / Math.max(1, layout.h), 0.01, 1000);
-  camera.position.set(0, 0.75, 7.2);
+  camera.position.fromArray(CAMERA.core.pos);
 
   let cap = params.dprCap;
   let pinned = 0;

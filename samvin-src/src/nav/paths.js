@@ -8,7 +8,7 @@
 // then Q(s) + s·p with Q following scaleAbout continuity from the start (s0, Q0) about a fixed pivot. At the swap the
 // world is rebased (s = 1, Q = 0) and the same q continues at VIN scale (render = 1000·q): the stratum's displacement
 // is dropped exactly as ARCH §3.6.3 prescribes. RECALL is authored in render space around a pivot P chosen so the
-// shrunk VIN centre lands 7.2 m in front of the camera. LIFT / retargets / slices are authored in canonical space with
+// shrunk VIN centre lands at the CORE rest pose in front of the camera. LIFT / retargets / slices are authored in canonical space with
 // s easing back to 1 about the current fixed point.
 //
 // Choreography windows given in ms are mapped through msU (ARCH §3.6.1); millisecond-exact channels (the Key morph,
@@ -246,7 +246,7 @@ export function buildDive(start, stratum, opts = {}) {
 
 // ─── RECALL ──────────────────────────────────────────────────────────────────────────────────────────────────
 /** Any hall → CORE (SPEC §7.3): the world shrinks ×1 → ×0.001 about P while the camera holds; VIN becomes the Key
- *  7.2 m in front of it; swap at 1,000 ms; the Key closes its gaps with 7 ratchets. opts: { D } (retargets). */
+ *  at the CORE rest pose in front of it; swap at 1,000 ms; the Key closes its gaps with 7 ratchets. opts: { D } (retargets). */
 export function buildRecall(start, fromRoom, opts = {}) {
   const D = opts.D || TIMING.recall;
   const k = D / TIMING.recall;

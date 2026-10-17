@@ -81,6 +81,7 @@ export function createHover(K, ctx) {
   // ── Label blocks (overlay anchors) ──
   const anchors = [], blocks = [], leaders = [], titleEls = [], lineEls = [], wraps = [];
   const zv = new Float64Array(7), pv = new Float64Array(7), pw = new Float64Array(7), pn = new Float64Array(7);
+  const capHi = new Float64Array(7), capLo = new Float64Array(7);   // hard block limits from text its elbow must not cross
   const sy = new Float32Array(7), ty = new Float32Array(7), sxs = new Float32Array(7), lastX = new Float32Array(7), lastY = new Float32Array(7);
   const blockW = new Float32Array(7), blockH = new Float32Array(7), coordPick = new Int8Array(7).fill(-1), placed = new Float32Array(28);
   const csz = { w: 0, h: 0 };
@@ -169,7 +170,7 @@ export function createHover(K, ctx) {
   }
   /** The rest offsets, every frame (the camera may still be settling — the boot's ASSEMBLY draws them mid-dolly):
    *  ↕ clears the grain rings (outer edge 1.90 × 0.62 m) where the screen allows; Ø sits keyBelowPx under the real
-   *  projected (assembled) tip — the camera looks down, so the tip is not si.ry below the centre. → ↕ offset. */
+   *  projected (assembled) tip — the camera is pitched (A12: below, looking up), so the tip is not si.ry below the centre. → ↕ offset. */
   function idleOffsets(si) {
     const ring = (1.9 * 0.62 * si.r) / KEY.radius;
     P(0, -1.2)(_w); rig.project(_w, _pp); const tipY = _pp.y;
@@ -301,12 +302,21 @@ export function createHover(K, ctx) {
       const near = gapX < COORD_W;
       const need = Math.max(near ? NEAR_RISE : MIN_RISE, gapX - runMax);
       let tgt = sy[i] + (i <= 3 || near ? -need : need);
+      capHi[i] = Infinity; capLo[i] = -Infinity;
       // A leader's run never crosses text the drawing owns (his name on the rim, the status line…): its block moves
       // to the nearer side of that box (the column solve below keeps every block clear of the others).
       for (let q = 0; q < keepout.boxes.length; q++) {
         const b = keepout.boxes[q];
         if (!b.on || b.id.startsWith('fig:') || colX < b.x0 || sxs[i] > b.x1) continue;
         if (tgt > b.y0 - 10 && tgt < b.y1 + 10) tgt = tgt - (b.y0 - 10) < b.y1 + 10 - tgt ? b.y0 - 10 : b.y1 + 10;
+        // …nor does its 45° elbow: МОНОЛИТ's low CORE camera (A12) brings N's tip close above his name, and an elbow
+        // dropping to a block below the name would cut through its letters — the block then stays on the near side.
+        const rise = tgt - sy[i];
+        if (Math.abs(rise) > 1 && (sy[i] < b.y0 - 10 || sy[i] > b.y1 + 10)
+          && segHits(sxs[i], sy[i], sxs[i] + Math.abs(rise), tgt, b.x0 - 8, b.y0 - 8, b.x1 + 8, b.y1 + 8)) {
+          tgt = rise > 0 ? Math.max(sy[i], b.y0 - 10) : Math.min(sy[i], b.y1 + 10);
+          if (rise > 0) capHi[i] = Math.min(capHi[i], tgt); else capLo[i] = Math.max(capLo[i], tgt);
+        }
       }
       zv[i] = tgt - i * BLOCK_H;
     }
@@ -322,6 +332,12 @@ export function createHover(K, ctx) {
     // Keep the column on screen (a 64 px margin top and bottom), shifting the whole stack.
     const lo = 64 + BLOCK_H / 2 - ty[0], hi = layout.h - 64 - BLOCK_H / 2 - ty[6];
     const shift = lo > 0 ? lo : hi < 0 ? hi : 0;
+    // The text limits are hard (the least-squares stack may have pushed a block back across them): clamp the block and
+    // carry the spacing on to its neighbours — the blocks beyond it move with it, the leaders' elbows take the rest.
+    for (let i = 0; i < 7; i++) {
+      if (ty[i] + shift > capHi[i]) { ty[i] = capHi[i] - shift; for (let j = i - 1; j >= 0; j--) ty[j] = Math.min(ty[j], ty[j + 1] - BLOCK_H); }
+      if (ty[i] + shift < capLo[i]) { ty[i] = capLo[i] - shift; for (let j = i + 1; j < 7; j++) ty[j] = Math.max(ty[j], ty[j - 1] + BLOCK_H); }
+    }
     // Every shoulder at least a lane long: the column moves right of the furthest elbow (never off the screen's
     // right side, where the widest block and the navigator need COL_RESERVE px).
     for (let i = 0; i < 7; i++) colX = Math.max(colX, sxs[i] + Math.abs(ty[i] + shift - sy[i]) + shoulder);

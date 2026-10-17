@@ -238,13 +238,18 @@ export const LN_WORLD_SCALE = Math.log(1000);    // 6.907755… (SPEC writes 6.9
 export const NEST_LEVELS = Object.freeze([-1, 0, 1, 2]);   // mini Key, the Key, VIN, parent VIN
 export const LEVEL_GLOW_FACTOR = 1.5;            // a level's nucleus glow draws only beyond 1.5 × its height
 export const CLIP = Object.freeze({ near: 0.002, far: 400 });   // near = 0.002·d, far = 400·d (no log depth buffer)
-/** CORE zoom, PULL and DESCENT (SPEC §3.8). */
-export const ZOOM = Object.freeze({ min: 3.2, max: 12.0, rest: 7.2, wheelFactor: 1.1, wheelStepPx: 100 });
+/** The CORE rest camera (SPEC §6.1 as amended by SPEC-ADDENDUM A12 «КЛЮЧ = МОНОЛИТ»): a low hero angle, looking up at the
+ *  Key. Every rest distance below derives from it — nothing may hard-code SPEC's old (0, 0.75, 7.2) / 7.2 m. */
+const CORE_POS = Object.freeze([0, -0.74, 6.05]);
+/** |CAMERA.core.pos − target| ≈ 6.095 m: the CORE rest distance (zoom start, PULL settle, the boot's and the unfold's rest). */
+export const CORE_REST_D = Math.hypot(CORE_POS[0], CORE_POS[1], CORE_POS[2]);
+/** CORE zoom, PULL and DESCENT (SPEC §3.8). The zoom range is real metres from the Key; rest = the CORE pose's distance. */
+export const ZOOM = Object.freeze({ min: 3.2, max: 12.0, rest: CORE_REST_D, wheelFactor: 1.1, wheelStepPx: 100 });
 export const PULL = Object.freeze({
   d0: 12, k: LN_WORLD_SCALE,                  // d = 12·e^(k·s); s = 1 → ×1000
   wheelDiv: 2400, pinchGain: 1.5,             // wheel s += deltaY/2400; pinch s += 1.5·log10(f)
   pauseMs: 400, decay: 0.92, elevationDeg: 8,
-  settleIdleMs: 600, settleMs: 1600, settleTo: 7.2, leadMs: 4000, strutTickMax: 30,
+  settleIdleMs: 600, settleMs: 1600, settleTo: CORE_REST_D, leadMs: 4000, strutTickMax: 30,
   stages: Object.freeze([['КЛЮЧ', 60], ['ЗАЛ ЯДРА', 600], ['VIN', 3600], ['VIN ЦЕЛИКОМ', 12000]]),   // MICRO label while d < limit
   passLatticeD: [300, 620],
 });
@@ -285,7 +290,7 @@ export const KEY = Object.freeze({
   hoverSlide: 0.06, diveSlide: 0.25, diveTurnAwayDeg: 20, contract: 0.03, nucleusAnticipation: 1.6,
   lattice: Object.freeze({ faceShift: 0.75, segmentsPerGenerator: 8, generators: 2016, segments: 16128, solidBelowCamDist: 2.4 }),
   r1: Object.freeze({ spLo: 3.0, spHi: 6.0 }),    // R1: lattice alpha = smoothstep(3, 6, projected strut spacing px)
-  unfold: Object.freeze({ camFrom: 7.2, camTo: Object.freeze([0, 0.04, 0.95]), ringScale: 2.4, ringR: 1.3, ringArcDeg: 300,
+  unfold: Object.freeze({ camFrom: CORE_REST_D, camTo: Object.freeze([0, 0.04, 0.95]), ringScale: 2.4, ringR: 1.3, ringArcDeg: 300,
     ringCap: 0.06, coreRingCap: 0.12, platesR: 0.16, plateSize: 0.05, platesPeriodS: 24, orbitYawDeg: 35 }),
   pitchFlipDeg: 110, pitchResist: 0.35, pitchResistMaxDeg: 30, yawMaxDeg: 180, yawReturnMs: 2000,
 });
@@ -332,8 +337,8 @@ export const HALL = Object.freeze({
 /** Rest camera poses from SPEC (hall-local metres; owners build CameraPose from these). pitch in degrees when no target is given. */
 export const CAMERA = Object.freeze({
   fov: 35, fovWide: 40,
-  core:     Object.freeze({ pos: [0, -0.74, 6.05], target: [0, 0, 0], fov: 35, phoneOffsetY: -0.06 }),   // МОНОЛИТ: a low hero angle, looking up at it   // phone: Key centred at 44 %
-  boot:     Object.freeze({ start: [0, 0.4, 16], dolly: 9.5, rest: 7.2, driftM: 0.08, driftHz: [0.13, 0.11], tiltDeg: 3 }),
+  core:     Object.freeze({ pos: CORE_POS, target: [0, 0, 0], fov: 35, phoneOffsetY: -0.06 }),   // МОНОЛИТ (A12): low, looking up at it; phone: Key centred at 44 %
+  boot:     Object.freeze({ start: [0, 0.4, 16], dolly: 9.5, rest: CORE_REST_D, driftM: 0.08, driftHz: [0.13, 0.11], tiltDeg: 3 }),
   phoneStart: Object.freeze({ dist: 5.2, keyFrac: 0.78, centreFrac: 0.47 }),
   members:  Object.freeze({ pos: [0, 10, 48], target: [0, 12.5, 0], fov: 35, phonePos: [0, 11, 40] }),
   voyages:  Object.freeze({ pos: [0, 70, 44], target: [0, 0, -6], fov: 35, altRange: [60, 140], phonePos: [0, 96, 30], phonePitchDeg: -70 }),

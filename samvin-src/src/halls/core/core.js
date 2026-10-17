@@ -11,9 +11,12 @@ import { CAMERA, ZOOM, GAP } from '../../core/tokens.js';
 /** @returns {Hall} */
 export function createCoreHall(hctx) {
   const app = hctx.app;
-  let dist = ZOOM.rest, current = false, offKey = null, open = false;
   const C = CAMERA.core;
   const restPos = new Vector3(...C.pos), restTarget = new Vector3(...C.target);
+  // The zoom works in real metres from the Key (SPEC §3.8: 3.2–12.0 m) and starts at the rest pose's own distance (A12:
+  // МОНОЛИТ's low hero angle sits ≈ 6.1 m out) — measured from the pose itself, so it can never disagree with it.
+  const REST_D = restPos.distanceTo(restTarget);
+  let dist = REST_D, current = false, offKey = null, open = false;
 
   const poseOut = { pos: new Vector3(), target: new Vector3(), fov: C.fov, offsetY: 0, roll: 0 };
   /** Allocation-free (pose() is on the G9 hot-path list). */
@@ -44,15 +47,15 @@ export function createCoreHall(hctx) {
     build() { offKey = hctx.bus.on('key:click', onKeyClick); },
     pose() { return restPose(); },
     livePose(out) {
-      if (Math.abs(dist - ZOOM.rest) < 1e-4) return false;
+      if (Math.abs(dist - REST_D) < 1e-4) return false;
       out.target.copy(restTarget);
-      out.pos.copy(restPos).sub(restTarget).multiplyScalar(dist / ZOOM.rest).add(restTarget);
+      out.pos.copy(restPos).sub(restTarget).multiplyScalar(dist / REST_D).add(restTarget);
       out.fov = C.fov; out.offsetY = hctx.layout.kind === 'desktop' ? 0 : C.phoneOffsetY; out.roll = 0;
       return true;
     },
     enter() {},
     exit() {},
-    arrive() { current = true; dist = ZOOM.rest; },
+    arrive() { current = true; dist = REST_D; },
     depart() {
       current = false;
       if (open) setOpen(false);

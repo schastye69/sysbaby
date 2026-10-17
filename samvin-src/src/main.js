@@ -224,7 +224,7 @@ function boot() {
   }
 }
 
-/** The CORE rest pose (SPEC §6.1): desktop (0, 0.75, 7.2) → origin, fov 35; phone the same with offsetY −0.06. */
+/** The CORE rest pose (SPEC §6.1 / A12 МОНОЛИТ: CAMERA.core, (0, −0.74, 6.05) → origin, fov 35); phone the same with offsetY −0.06. */
 function corePose() {
   const c = CAMERA.core;
   return { pos: new Vector3(...c.pos), target: new Vector3(...c.target), fov: c.fov, offsetY: layout.kind === 'desktop' ? 0 : c.phoneOffsetY, roll: 0 };

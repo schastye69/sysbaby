@@ -26,7 +26,7 @@ import { fontsReady } from '../core/fonts.js';
 import { loop } from '../core/loop.js';
 import { audio } from '../audio/engine.js';
 import { ENV } from '../core/env.js';
-import { GAP, KEY, AXIS, MOTION, TIMING, LOFT_RINGS, RENDER, IDLE } from '../core/tokens.js';
+import { GAP, KEY, AXIS, MOTION, TIMING, LOFT_RINGS, RENDER, IDLE, CORE_REST_D } from '../core/tokens.js';
 import { signs } from './signs.js';
 import { createNucleus } from './nucleus.js';
 import { createGrains, SPARK } from './grains.js';
@@ -528,7 +528,7 @@ export function createKey(ctx) {
 
     shudder(px = 6) {
       if (ENV.reducedMotion) px = Math.min(px, 2);
-      const d = rig.camera ? rig.camera.position.distanceTo(nucleusWorld) : 7.2;
+      const d = rig.camera ? rig.camera.position.distanceTo(nucleusWorld) : CORE_REST_D;
       shud.amp = (px * d) / Math.max(1, U.uPxPerUnit.value);
       shud.t0 = nowMs;
       marks.flashSlots();                                      // SPEC §3.5: N shudders and its 5 slot dots flash

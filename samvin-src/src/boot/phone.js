@@ -6,7 +6,7 @@
 // the consumer), plays its note + a ratchet tick, vibrate(7), flashes its edges and leaves a 2 px ember trail.
 // ≥ 5 of 7 strata within 1,500 ms in one touch activates: the rest cascade (60 ms each), ПАУЗА (first activation /
 // new calendar day / wake), the hit (ПРОСВЕТ + ВОЛНА on the first activation and the wake), the signature, the axis, the
-// pull-back 5.2 → 7.2 m (900 ms), the name (on the wave's arrival, else with the pull; right-to-left after an upward
+// pull-back 5.2 m → the CORE rest pose (A12) (900 ms), the name (on the wave's arrival, else with the pull; right-to-left after an upward
 // stroke), the band (480 ms) and the chrome (480 ms) with one latch gen 2. Partial strokes: no deny, the crossed strata
 // hold 2,500 ms then drift back over 900 ms with soft ticks; after 3 partials the hint becomes «До конца ↓» and the ghost
 // runs every 1,600 ms. A horizontal flick on one stratum spins it (fidget, never counted).
