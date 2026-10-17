@@ -303,15 +303,22 @@ export function buildStructure(opts = {}) {
   // Per-stratum matrices: perStratum → copied from the stratum groups before each draw; merged → owned here.
   const syncStrata = () => { if (per) for (let i = 0; i < 7; i++) strataM.value[i].copy(strata[i].matrix); };
 
+  // МОНОЛИТ (Key only): the forged surface holds solid until the camera is ≈ 0.55× as close (zoom close-ups stay metal;
+  // the DIVE still passes between the struts). One factor on aStrut keeps solid, lattice and the CPU culls in step.
+  const strutK = per && opts.strutScale != null ? opts.strutScale : 1;
+  function scaleStrut(g) {
+    if (strutK !== 1) { const a = g.attributes.aStrut.array; for (let q = 0; q < a.length; q++) a[q] *= strutK; }
+    return g;
+  }
   const solids = [];
   let solidMat = null;
   if (opts.solid !== false) {
     if (per) {
-      solidMat = createObsidian({ engrave: 'key', strataAlpha: strataA });
+      solidMat = createObsidian({ engrave: 'key', strataAlpha: strataA, mono: opts.mono !== false });
       for (const st of STRATA_GEOM) {
         const b = new Builder();
         addStratumSolid(b, st);
-        const m = new Mesh(b.geometry(), solidMat);
+        const m = new Mesh(scaleStrut(b.geometry()), solidMat);
         m.name = `solid:${st.i}`;
         m.userData.stratum = st.i;
         strata[st.i].add(m);
@@ -333,7 +340,7 @@ export function buildStructure(opts = {}) {
   let density = opts.latticeDensity != null ? opts.latticeDensity : 1;
   if (opts.lattice !== false) {
     latMat = createLatticeMaterial({ strata: strataM, strataAlpha: strataA, far, dir: true });
-    lattice = new LineSegments(latticeGeometry(density), latMat);
+    lattice = new LineSegments(scaleStrut(latticeGeometry(density)), latMat);
     lattice.name = 'lattice';
     lattice.frustumCulled = false;
     lattice.onBeforeRender = syncStrata;
@@ -499,7 +506,7 @@ export function buildStructure(opts = {}) {
       if (!lattice || d === density) return;
       density = d;
       const old = lattice.geometry;
-      lattice.geometry = latticeGeometry(d);
+      lattice.geometry = scaleStrut(latticeGeometry(d));
       latStrutMax = maxOf(lattice.geometry.attributes.aStrut.array);
       old.dispose();
     },

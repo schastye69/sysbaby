@@ -11,6 +11,7 @@
 // hold 2,500 ms then drift back over 900 ms with soft ticks; after 3 partials the hint becomes «До конца ↓» and the ghost
 // runs every 1,600 ms. A horizontal flick on one stratum spins it (fidget, never counted).
 import { Vector3 } from 'three';
+import { CAMERA } from '../core/tokens.js';
 import { setPhase, app } from '../core/store.js';
 import { state } from '../core/state.js';
 import { EASE } from '../core/ease.js';
@@ -23,7 +24,7 @@ import { sayGreeting } from './returning.js';
 import { bootNews } from './boot.js';
 
 const ORIGIN = new Vector3(0, 0, 0);
-const START_D = 5.2, Y16 = (0.75 * 16) / 7.2, OFF = -0.03;   // the rest elevation at 5.2 m; Key centre at 47 %
+const START_D = 5.2, Y16 = (CAMERA.core.pos[1] * 16) / Math.hypot(CAMERA.core.pos[1], CAMERA.core.pos[2]), OFF = -0.03;   // the rest elevation at 5.2 m; Key centre at 47 %
 // SPEC §4.2 states both «78 % of the height» and «camera at 5.2 m»; at the CORE's 35° lens 5.2 m gives 72.5 %. The
 // distance is kept: at 78 % the standard start stroke of every QA pre-roll (ARCH §6.0.4, y 230 → 650) crosses only
 // 4 strata and never activates.

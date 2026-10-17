@@ -24,7 +24,7 @@ ${FX_GLSL}
 attribute vec4 aG; attribute vec4 aM; attribute vec4 aPT;
 uniform float uPlaneY[7]; uniform vec3 uRo[4]; uniform vec3 uRd[4]; uniform float uRw[4];
 uniform float uKep, uT, uSpiral, uScatter, uShiver, uShell, uPlate, uFromRing, uStepT, uDelayMax, uTravel, uArc, uStagger,
-  uWarm, uCool, uHalf, uFall, uReform, uMarks, uPairs, uGap, uPixelRatio, uA, uRev;
+  uWarm, uCool, uHalf, uFall, uReform, uMarks, uPairs, uGap, uPixelRatio, uA, uRev, uSpark;
 uniform vec4 uNM; uniform mat4 uPlateM;
 uniform vec3 cSilver, cWhite, cEmber, cEmberDeep;
 varying vec3 vCol; varying float vA; varying float vPx; varying float vDist; varying float vCoc; varying float vSaved;
@@ -44,7 +44,13 @@ void main() {
   }
   float rr = r * (1.0 - uSpiral) * (1.0 + 0.25 * (1.0 - uReform));
   float ang = th + 0.06 * pow(max(r, 0.05), -1.5) * uKep;
-  vec3 ring = vec3(sin(ang) * rr, uPlaneY[int(aG.x + 0.5)], cos(ang) * rr);
+  float pY = uPlaneY[int(aG.x + 0.5)];
+  vec3 ring = vec3(sin(ang) * rr, pY, cos(ang) * rr);
+  // МОНОЛИТ: the rings loosen into drifting motes — a soft vertical spread (most grains near the plane, a few far),
+  // most of them nearly dark and a few catching the light, warmed by the seam they hover over.
+  float spread = (fract(s * 23.71) - 0.5) * 2.0;
+  ring.y += spread * abs(spread) * (0.030 + 0.11 * fract(s * 3.31)) * (1.0 - uPlate);
+  ring.y += 0.012 * sin(uT * (0.21 + 0.17 * fract(s * 9.1)) + s * 40.0);
   ring += 0.002 * vec3(sin(uT * 1.3 + s * 91.0), sin(uT * 1.7 + s * 37.0), sin(uT * 1.1 + s * 53.0));
   ring.xz += normalize(ring.xz + 1e-6) * uScatter;
   vec3 push = vec3(0.0);
@@ -71,6 +77,26 @@ void main() {
     pos = mix(pos, pp, uPlate);
   }
   pos += uShiver * vec3(sin(uT * 97.0 + s * 300.0), sin(uT * 89.0 + s * 211.0), sin(uT * 101.0 + s * 157.0));
+  float rpl = max(0.12, 0.62 * (1.0 - pow(min(abs(pY) / 1.2, 1.0), 1.35)));
+  float warmI = (1.0 - smoothstep(1.12, 1.55, r / rpl)) * (1.0 - uPlate) * (sv > 0.5 ? 0.0 : 1.0);
+  float glint = mix(0.16 + 0.84 * pow(fract(s * 5.37), 6.0), 1.0, max(uPlate, sv));
+  col = mix(col, mix(cEmberDeep, cEmber, 0.55), warmI * 0.62);
+  a *= glint * (1.0 + 0.9 * warmI);
+  // МОНОЛИТ: most of the dust is thinned out (it read as noise); 1 grain in 16 on the gap planes is an EMBER SPARK
+  // breathed out of the seam: it leaves the lip, rises 0.2–0.6 m on a slow curl, cools from white-hot to deep ember, dies.
+  bool idleG = uPlate < 0.001 && sv < 0.5 && uShell < 0.001;
+  if (idleG) a *= step(0.62, fract(s * 31.17)) * 0.7;
+  if (idleG && aG.x > 0.5 && fract(s * 7.77) < 0.024 * (1.0 - 0.75 * smoothstep(0.35, 0.95, abs(pY))) * uSpark) {
+    float life = fract(uT * (0.06 + 0.07 * fract(s * 3.13)) + s * 17.0);
+    float th2 = th + life * (0.6 + 0.8 * fract(s * 5.1)) * (fract(s * 2.9) > 0.5 ? 1.0 : -1.0);
+    float r2 = rpl * (1.02 + 0.10 * fract(s * 4.3)) + life * 0.10;
+    pos = vec3(sin(th2) * r2, pY + life * (0.20 + 0.40 * fract(s * 8.3)) + 0.02 * sin(uT * 2.1 + s * 50.0), cos(th2) * r2);
+    col = mix(cEmber, cWhite, 0.35 * (1.0 - smoothstep(0.0, 0.25, life)));
+    col = mix(col, cEmberDeep, smoothstep(0.4, 1.0, life));
+    a = 2.6 * smoothstep(0.0, 0.06, life) * (1.0 - smoothstep(0.55, 1.0, life));
+    px = 1.0 + 1.3 * pow(fract(s * 6.1), 2.0);
+    a *= 0.35 + 0.65 * uSpark;
+  }
   if (aG.x > 0.5) col = mix(col, cEmberDeep, 0.40 * smoothstep(0.03, 0.09, uGap) * pow(0.12 / max(length(pos.xz), 0.12), 2.0));  // СВЕТ ИЗ ЩЕЛЕЙ
   vec4 wp = modelMatrix * vec4(pos, 1.0);
   wp.xyz = fxDisplace(wp.xyz);
@@ -110,6 +136,9 @@ const MARKS = 64;
 const PLANE0 = [0];
 for (let q = 1; q < 7; q++) PLANE0.push((STRATA_GEOM[q - 1].bot + STRATA_GEOM[q].top) / 2);
 
+/** МОНОЛИТ: 0…1, how awake the seams are (key.js writes it): the spark count and heat follow it. */
+export const SPARK = { value: 1 };
+
 export function createGrains(tierCount) {
   const cap = GRAINS.T3;
   const G = new Float32Array(cap * 4), M = new Float32Array(cap * 4), PT = new Float32Array(cap * 4), next = new Float32Array(cap * 2);
@@ -138,7 +167,7 @@ export function createGrains(tierCount) {
     uKep: { value: 0 }, uT: { value: 0 }, uSpiral: { value: 0 }, uScatter: { value: 0 }, uShiver: { value: 0 }, uShell: { value: 0 },
     uPlate: { value: 0 }, uFromRing: { value: 1 }, uStepT: { value: 0 }, uDelayMax: { value: 120 }, uTravel: { value: 260 },
     uArc: { value: 1 }, uStagger: { value: 0 }, uWarm: { value: 0 }, uCool: { value: 1500 }, uHalf: { value: 0.6 },
-    uFall: { value: -1 }, uReform: { value: 1 }, uMarks: { value: 0 }, uPairs: { value: 0 }, uA: { value: 0.35 }, uRev: { value: 1 },
+    uFall: { value: -1 }, uReform: { value: 1 }, uMarks: { value: 0 }, uPairs: { value: 0 }, uA: { value: 0.35 }, uRev: { value: 1 }, uSpark: SPARK,
     uNM: { value: new Vector4(1, 2, 1, 2) }, uPlateM: { value: new Matrix4() },
     uGap: U.uGap, uPulse: U.uPulse, uPixelRatio: U.uPixelRatio, uFogDensity: U.uFogDensity, cAbyss: U.cAbyss,
     cSilver: U.cSilver, cWhite: U.cWhite, cEmber: U.cEmber, cEmberDeep: U.cEmberDeep, ...fxUniforms(),

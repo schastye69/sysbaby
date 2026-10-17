@@ -26,6 +26,8 @@ import { RENDER, KEY } from '../core/tokens.js';
 import { quality } from '../core/quality.js';
 import { FX_GLSL, fxUniforms } from './fxChunk.js';
 import { STRATA_CODE_BAND, STRATA_GEOM } from '../world/structure.js';
+import { MONO_GLSL } from './monolith.js';
+import { Vector3 } from 'three';
 
 const VERT = /* glsl */ `
 ${R1_GLSL}
@@ -43,6 +45,9 @@ varying vec2 vUv;
 #endif
 uniform float uStrut;
 varying vec3 vWorld; varying vec3 vN; varying float vSolid;
+#ifdef USE_MONO
+varying vec3 vUp;
+#endif
 void main() {
   mat4 M = modelMatrix;
   float sa = 1.0;
@@ -64,6 +69,9 @@ void main() {
   gl_Position = projectionMatrix * v;
   vWorld = w.xyz;
   vN = normalize(mat3(M) * normal);
+#ifdef USE_MONO
+  vUp = normalize(mat3(M) * vec3(0.0, 1.0, 0.0));
+#endif
 #ifdef USE_ASTRUT
   float strut = aStrut;
 #else
@@ -94,17 +102,20 @@ varying vec2 vFaceUV; varying vec4 vEng; varying float vKind; varying float vFac
 varying vec2 vUv;
 #endif
 
-// → atlas uv of the engraving under this fragment (x < 0: none)
+// → atlas uv of the engraving under this fragment (x < 0: none); gEng: 0 none · 1 frieze · 2 ticks · 3 law · 4 sign/glyph
+float gEng = 0.0;
 vec2 engraveUV() {
 #ifdef USE_KEYGEO
   float si = floor(vFace / 16.0 + 0.001);
   float fj = vFace - si * 16.0;
   if (vKind > 0.5) return vec2(-1.0);
   if (vEng.z < uFriezeH) {                                   // top bevel: frieze cells ((i·12 + j)·3 + c) mod 64
+    gEng = 1.0;
     float c = mod((si * 12.0 + fj) * 3.0 + floor(clamp(vFaceUV.x, 0.0, 0.999) * 3.0), 64.0);
     return vec2((c + fract(vFaceUV.x * 3.0)) / 64.0, 0.125 + clamp(vEng.z / uFriezeH, 0.0, 1.0) * 0.03125);
   }
   if (vEng.w < uFriezeH) {                                   // bottom bevel
+    gEng = 1.0;
     float c = mod((si * 12.0 + fj) * 3.0 + floor(clamp(vFaceUV.x, 0.0, 0.999) * 3.0), 64.0);
     return vec2((c + fract(vFaceUV.x * 3.0)) / 64.0, 0.125 + clamp(1.0 - vEng.w / uFriezeH, 0.0, 1.0) * 0.03125);
   }
@@ -116,16 +127,19 @@ vec2 engraveUV() {
     float u = (vFaceUV.x - uCodeU.x) / (uCodeU.y - uCodeU.x);
     if (abs(vFaceUV.y - cb.x) < cb.y && u >= 0.0 && u <= 1.0 && u < uCut[ii]) {
       vec4 r = uCodeRect[ii];
+      gEng = 3.0;
       return r.xy + vec2(u, (vFaceUV.y - (cb.x - cb.y)) / (2.0 * cb.y)) * r.zw;
     }
   }
   if (vEng.z < uFriezeH + uTickL) {                          // the 12 radial ticks along the top edge
+    gEng = 2.0;
     return vec2(clamp(vFaceUV.x, 0.0, 1.0), 0.15625 + clamp((vEng.z - uFriezeH) / uTickL, 0.0, 1.0) * 0.03125);
   }
   bool sign = fj < 0.5;
   bool glyphFace = abs(si - 3.0) < 0.5 && abs(fj - 5.0) < 0.5;   // H7: glyph:back moved from face (3, 6) to (3, 5)
   if ((sign || glyphFace) && vEng.x > 0.0 && vEng.x < 1.0 && vEng.y > 0.0 && vEng.y < 1.0) {
     vec2 o = sign ? vec2(si * 0.125, 0.0) : vec2(0.875, 0.0);
+    gEng = 4.0;
     return o + vEng.xy * 0.125;
   }
   return vec2(-1.0);
@@ -136,6 +150,9 @@ vec2 engraveUV() {
 #endif
 }
 
+#ifdef USE_MONO
+${MONO_GLSL}
+#else
 void main() {
 #ifdef USE_KEYGEO
   float si = floor(vFace / 16.0 + 0.001);
@@ -188,7 +205,8 @@ void main() {
     col = mix(col, cInk, hatch * uInvert);
   }
   gl_FragColor = vec4(col, 1.0);
-}`;
+}
+#endif`;
 
 let CODE_U = null;   // H7: shared КОДЕКС uniforms (n counts, bands, atlas rects), built on first use
 
@@ -203,6 +221,7 @@ export function createObsidian(opts = {}) {
   if (opts.strata) defines.USE_STRATA = '';
   else if (opts.strataAlpha) defines.USE_STRATA_A = '';
   if (opts.fog !== false) defines.USE_FOG = '';
+  if (opts.mono) { defines.USE_MONO = ''; defines.MONO_Q = quality.tier === 'T1' ? 1 : quality.tier === 'T2' ? 2 : 3; }
 
   if (!atlas.texture) atlas.init(quality.tier);        // the atlas exists from boot; this only guards early callers
   const reg = typeof engrave === 'string' && engrave !== 'key' ? atlas.region(engrave) : null;
@@ -232,6 +251,11 @@ export function createObsidian(opts = {}) {
       uLamp: U.uLamp, uLampOn: U.uLampOn, uInvert: U.uInvert, uPixelRatio: U.uPixelRatio, uPxPerUnit: U.uPxPerUnit,
       uFogDensity: U.uFogDensity,
       uCut: U.uCut, ...CODE_U, ...fxUniforms(),
+      ...(opts.mono ? {
+        cEmber: U.cEmber, cEmberDeep: U.cEmberDeep, cSteel: U.cSteel, cPewter: U.cPewter, cSlate: U.cSlate,
+        cObsidian: U.cObsidian, cElectrum: U.cElectrum, uNight: U.uNight, uEmissivePass: U.uEmissivePass, uBreath: U.uBreath, uWorldTime: U.uWorldTime,
+        uGap: U.uGap, uNuc: { value: new Vector3() }, uNucI: { value: 0 }, uNucS: { value: 1 }, uSeam: { value: 0 },
+      } : {}),
     },
     defines, vertexShader: VERT, fragmentShader: FRAG,
     side: opts.side != null ? opts.side : FrontSide,

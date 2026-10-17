@@ -332,7 +332,7 @@ export const HALL = Object.freeze({
 /** Rest camera poses from SPEC (hall-local metres; owners build CameraPose from these). pitch in degrees when no target is given. */
 export const CAMERA = Object.freeze({
   fov: 35, fovWide: 40,
-  core:     Object.freeze({ pos: [0, 0.75, 7.2], target: [0, 0, 0], fov: 35, phoneOffsetY: -0.06 }),   // phone: Key centred at 44 %
+  core:     Object.freeze({ pos: [0, -0.74, 6.05], target: [0, 0, 0], fov: 35, phoneOffsetY: -0.06 }),   // МОНОЛИТ: a low hero angle, looking up at it   // phone: Key centred at 44 %
   boot:     Object.freeze({ start: [0, 0.4, 16], dolly: 9.5, rest: 7.2, driftM: 0.08, driftHz: [0.13, 0.11], tiltDeg: 3 }),
   phoneStart: Object.freeze({ dist: 5.2, keyFrac: 0.78, centreFrac: 0.47 }),
   members:  Object.freeze({ pos: [0, 10, 48], target: [0, 12.5, 0], fov: 35, phonePos: [0, 11, 40] }),

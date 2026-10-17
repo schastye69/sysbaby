@@ -16,17 +16,34 @@ import { smoothstep } from '../core/ease.js';
 import { NUCLEUS, NIGHT } from '../core/tokens.js';
 
 const VERT = /* glsl */ `
-varying vec3 vN;
-void main() { vN = normal; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+varying vec3 vN; varying vec3 vVN; varying vec3 vP;
+void main() { vN = normal; vVN = normalize(normalMatrix * normal); vP = position;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const FRAG = /* glsl */ `
-uniform vec3 uColor, cElectrum, cWhite, uHot; uniform float uNight, uNightMix, uI, uFlash, uEmissivePass, uGlowVis;
-varying vec3 vN;
+uniform vec3 uColor, cElectrum, cWhite, cEmberDeep, uHot; uniform float uNight, uNightMix, uI, uFlash, uEmissivePass, uGlowVis, uWorldTime;
+varying vec3 vN; varying vec3 vVN; varying vec3 vP;
+// МОНОЛИТ: a living core — a slow molten convection (two drifting noise layers) under a white-gold heart that faces the
+// viewer, cooling to the deep ember at its limb; the hot side (g) still burns +40 %.
+float nh(vec3 p) { p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
+float nv(vec3 p) { vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(nh(i), nh(i + vec3(1, 0, 0)), f.x), mix(nh(i + vec3(0, 1, 0)), nh(i + vec3(1, 1, 0)), f.x), f.y),
+             mix(mix(nh(i + vec3(0, 0, 1)), nh(i + vec3(1, 0, 1)), f.x), mix(nh(i + vec3(0, 1, 1)), nh(i + vec3(1, 1, 1)), f.x), f.y), f.z); }
 void main() {
   vec3 c = mix(uColor, cElectrum, uNight * uNightMix);
   float k = uI * mix(1.0, ${NIGHT.nucleusIntensity.toFixed(2)}, uNight * uNightMix);
   k *= 1.0 + ${NUCLEUS.hotGain.toFixed(2)} * smoothstep(-0.15, 0.55, dot(normalize(vN), uHot));   // the hot side
   k *= mix(1.0, uGlowVis, uEmissivePass);   // the T3 bloom source obeys the visibility rule like the sprite
-  gl_FragColor = vec4(mix(c * k, cWhite, uFlash), 1.0);
+  vec3 q = vP * 70.0;
+  float t = uWorldTime;
+  float conv = nv(q + vec3(0.0, -t * 0.9, t * 0.3)) * 0.6 + nv(q * 2.3 + vec3(t * 0.7, 0.0, -t * 0.5)) * 0.4;
+  float face = clamp(normalize(vVN).z, 0.0, 1.0);
+  float heat = clamp(0.25 + 0.75 * pow(face, 0.8) * (0.55 + 0.75 * conv), 0.0, 1.2);
+  vec3 hot = mix(c, cElectrum, smoothstep(0.55, 0.95, heat) * (1.0 - uNight * uNightMix * 0.0));
+  hot = mix(hot, cWhite, smoothstep(0.95, 1.18, heat) * 0.7);
+  vec3 body = mix(cEmberDeep * 0.8, hot, smoothstep(0.15, 0.6, heat));
+  body *= 0.9 + 0.5 * heat;
+  if (uFlash > 0.5) body = c;
+  gl_FragColor = vec4(mix(body * k, cWhite, uFlash), 1.0);
 }`;
 
 const COS35 = Math.cos((NUCLEUS.apertureAlignDeg[0] * Math.PI) / 180), COS10 = Math.cos((NUCLEUS.apertureAlignDeg[1] * Math.PI) / 180);
@@ -36,7 +53,7 @@ const _v = new Vector3(), _n = new Vector3(), _c = new Vector3(), _a = new Vecto
 export function createNucleus(group, stratum3, faceZ) {
   const u = {
     uColor: { value: U.cEmber.value }, cElectrum: U.cElectrum, cWhite: U.cWhite, uNight: U.uNight, uNightMix: { value: 1 },
-    uI: { value: 1 }, uFlash: { value: 0 }, uEmissivePass: U.uEmissivePass, uGlowVis: { value: 1 }, uHot: { value: new Vector3(0, 0, 1) },
+    uI: { value: 1 }, uFlash: { value: 0 }, uEmissivePass: U.uEmissivePass, cEmberDeep: U.cEmberDeep, uWorldTime: U.uWorldTime, uGlowVis: { value: 1 }, uHot: { value: new Vector3(0, 0, 1) },
   };
   const mesh = new Mesh(new IcosahedronGeometry(NUCLEUS.r, NUCLEUS.detail), new ShaderMaterial({ uniforms: u, vertexShader: VERT, fragmentShader: FRAG }));
   mesh.name = 'nucleus';
@@ -44,6 +61,14 @@ export function createNucleus(group, stratum3, faceZ) {
   const glow = createEmitter({ color: 'ember', radius: NUCLEUS.glowR, intensity: 1, core: mesh, depthTest: false,
     night: true, nightIntensity: NIGHT.nucleusIntensity, fog: false, renderOrder: 6 });
   group.add(glow.object);
+
+  // МОНОЛИТ: the eye — the nucleus light pouring out of the • window into the dusty air in front of it (a soft ember halo
+  // 4 cm in front of the face, depth-tested, strongest when the window looks at the camera; T3 also blooms it).
+  const eye = createEmitter({ color: 'ember', radius: 0.30, intensity: 0, depthTest: true, night: true,
+    nightIntensity: NIGHT.nucleusIntensity, fog: false, renderOrder: 7 });
+  eye.object.position.set(0, 0, faceZ + 0.04);
+  stratum3.add(eye.object);
+  const COS70 = Math.cos((70 * Math.PI) / 180);
 
   // Breathing ring.
   const RN = 48, seg = new Float32Array(RN * 6), R = NUCLEUS.breathRingR;
@@ -56,7 +81,7 @@ export function createNucleus(group, stratum3, faceZ) {
   stratum3.add(ring.mesh);
 
   const n = {
-    mesh, glow, ring,
+    mesh, glow, ring, eye,
     on: true, ringOn: false, pulse: 1, morph: 1, level: null, reveal: 1,
     flashFrames: 0, tokenUntil: 0, yawnUntil: 0,
     /** colour token for the next frames: 'ember' | 'electrum' | 'white' */
@@ -117,7 +142,10 @@ export function createNucleus(group, stratum3, faceZ) {
       glow.setRadius(Math.min(NUCLEUS.glowR, (26 * d) / ppu));
       // Lying on the visible body (w), the halo only blooms round it: the two never add up past the palette colour, so the
       // window shows ember by day and true electrum (not a clipped yellow-white) at night.
-      glow.setIntensity(k * vis * n.reveal * (1 - 0.45 * w));
+      glow.setIntensity(k * vis * n.reveal * (1 - 0.45 * w) * (0.4 + 0.6 * smoothstep(1.6, 3.6, d)));   // МОНОЛИТ: up close the molten body shows
+      let face = 0;
+      if (cam) { _v.copy(cam.position).sub(nucleusWorld).normalize(); face = smoothstep(COS70, COS10, _v.dot(_n)); }
+      eye.setIntensity(k * n.reveal * face * (0.30 + 0.06 * breath.mix(0, 1)) * (1 - 0.6 * open) * (1 - smoothstep(70, 160, (0.30 * (U.uPxPerUnit.value > 1 ? U.uPxPerUnit.value : 1427)) / Math.max(d, 0.1))));
       u.uGlowVis.value = vis * n.reveal;
       if (ring.mesh.visible) {
         const b = breath.mix(0, 1);

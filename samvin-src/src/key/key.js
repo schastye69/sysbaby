@@ -8,7 +8,7 @@
 //   group:      drift + notice (idle.js) + drag / yawTo / addYaw (drag.js) + bow + nudge + overrides; lean; press
 //   stratum 6:  + the sealed-N shudder (6 px, 3 cycles, 240 ms)
 // Sub-modules: signs (atlas), nucleus, grains, idle, hover, drag, marks, litNodes.
-import { Group, Vector3, Matrix4 } from 'three';
+import { Group, Vector3, Matrix4, Mesh, PlaneGeometry, ShaderMaterial, AdditiveBlending } from 'three';
 import { buildStructure, STRATA_GEOM, radiusAt } from '../world/structure.js';
 import { createLines } from '../render/lines.js';
 import { atlas } from '../render/engraveAtlas.js';
@@ -29,7 +29,7 @@ import { ENV } from '../core/env.js';
 import { GAP, KEY, AXIS, MOTION, TIMING, LOFT_RINGS, RENDER, IDLE } from '../core/tokens.js';
 import { signs } from './signs.js';
 import { createNucleus } from './nucleus.js';
-import { createGrains } from './grains.js';
+import { createGrains, SPARK } from './grains.js';
 import { createIdle } from './idle.js';
 import { createHover } from './hover.js';
 import { createDrag } from './drag.js';
@@ -83,7 +83,7 @@ export function createKey(ctx) {
   // SPEC §6.7: the 5 N slot dots ride in the vertex draw (stratum 6, a row 0.06 m under the apex; styled by marks.js).
   const slotPos = new Float32Array(15), slotFace = new Float32Array(5).fill(6 * 16);
   for (let k = 0; k < 5; k++) { slotPos[k * 3] = (k - 2) * 0.04; slotPos[k * 3 + 1] = STRATA_GEOM[6].bot - 0.06; slotPos[k * 3 + 2] = 0.01; }
-  const structure = buildStructure({ perStratum: true, vertices: true, far: 700, extraVertices: { pos: slotPos, face: slotFace } });
+  const structure = buildStructure({ perStratum: true, vertices: true, far: 700, strutScale: 0.55, extraVertices: { pos: slotPos, face: slotFace } });
   group.add(structure.group);
   const strata = structure.strata;
 
@@ -112,7 +112,8 @@ export function createKey(ctx) {
   const nucleus = createNucleus(group, strata[3], zFace);
 
   // Axis: core ±1.20 at α .35 + extensions (+len beyond each tip, fading to 0).
-  const axisCore = createLines({ segments: new Float32Array([0, -AXIS.half, 0, 0, AXIS.half, 0]), color: 'ember', width: AXIS.widthPx, alpha: AXIS.alphaInside, glint: 0.3 });
+  // МОНОЛИТ: the core axis skips the hollow (r 0.30) so it never draws a dark bar across the lit window.
+  const axisCore = createLines({ segments: new Float32Array([0, -AXIS.half, 0, 0, -KEY.hollowR, 0, 0, KEY.hollowR, 0, 0, AXIS.half, 0]), color: 'ember', width: AXIS.widthPx, alpha: AXIS.alphaInside, glint: 0.3 });
   // The extensions break behind text, as a centre line does on a drawing: wherever the projected axis would run
   // through a keep-out box (his name and subline, the Ø value, the status line, … ui/keepout.js) it is cut, 4 px clear
   // of the glyphs. Each of the EXT_N fade steps may split into up to 3 pieces (capacity), unused pieces are empty.
@@ -181,6 +182,24 @@ export function createKey(ctx) {
     writeExt();
   }
 
+  // МОНОЛИТ: the cavern air behind it — a cold backlit haze (billboard 1.6 m behind the Key, never rotating with it) so the
+  // silhouette stands out of the dark like something huge in a mine, with a faint warm breath at the heart.
+  const hazeU = { uI: { value: 0 }, uWarm: { value: 0 }, cSlate: U.cSlate, cSteel: U.cSteel, cEmberDeep: U.cEmberDeep, cElectrum: U.cElectrum, uNight: U.uNight };
+  const haze = new Mesh(new PlaneGeometry(1, 1), new ShaderMaterial({
+    uniforms: hazeU, transparent: true, depthWrite: false, blending: AdditiveBlending, premultipliedAlpha: true,
+    vertexShader: `varying vec2 vUv; void main() { vUv = position.xy;
+      float s = length(modelMatrix[0].xyz); vec4 v = viewMatrix * (modelMatrix * vec4(0.0, 0.05, 0.0, 1.0));
+      v.z -= 1.6 * s; v.xy += position.xy * vec2(6.4, 7.6) * s; gl_Position = projectionMatrix * v; }`,
+    fragmentShader: `uniform float uI, uWarm, uNight; uniform vec3 cSlate, cSteel, cEmberDeep, cElectrum; varying vec2 vUv;
+      void main() { vec2 q = vUv * vec2(1.0, 1.0); float r2 = dot(q, q) * 4.0;
+        float a = exp(-r2 * 2.2) * 0.55 + exp(-r2 * 7.0) * 0.45;
+        float w = exp(-dot(vUv * vec2(1.6, 2.6), vUv * vec2(1.6, 2.6)) * 9.0);
+        vec3 c = mix(cSteel, cSlate, 0.6) * a * uI + mix(cEmberDeep, cElectrum, uNight) * w * uWarm;
+        float o = max(c.r, max(c.g, c.b)); if (o <= 0.002) discard; gl_FragColor = vec4(c, o); }`,
+  }));
+  haze.name = 'keyHaze'; haze.frustumCulled = false; haze.renderOrder = -2;
+  group.add(haze);
+
   // Grains.
   const grains = createGrains((quality.params || TIER_PARAMS.T2).grains);
   group.add(grains.object);
@@ -222,6 +241,10 @@ export function createKey(ctx) {
   const _p = { x: 0, y: 0, depth: 0, visible: false }, _p2 = { x: 0, y: 0, depth: 0, visible: false };
   const nucleusWorld = new Vector3();
   const pickables = structure.solids.concat([nucleus.mesh]);
+  const monoU = structure.solidMaterial ? structure.solidMaterial.uniforms : null;
+  // МОНОЛИТ: the solids join the T3 bloom layer (their shader writes only the ember light in that pass), so the seams,
+  // the forged letters' lips and the window really glow; the solids also occlude the nucleus bloom behind the metal.
+  for (const m of structure.solids) m.layers.enable(LAYER.EMISSIVE);
   const inPause = () => { try { return !!(ctx.fx && ctx.fx.impact && ctx.fx.impact.inPause()); } catch (e) { return false; } };
 
   function resetMorph() {
@@ -345,6 +368,17 @@ export function createKey(ctx) {
     nucleus.setHot(idleI.hot.x, idleI.hot.y, idleI.hot.z);
     nucleus.morph = morphG.nucleus;
     nucleus.update(K.idle, t, gap, nucleusWorld, strata[3].matrixWorld);
+    // МОНОЛИТ: the surface knows where the nucleus burns and how bright (the seams breathe with it).
+    hazeU.uI.value = 0.95 * revealA * revealFill;
+    hazeU.uWarm.value = 0.22 * (monoU ? monoU.uSeam.value : 0);
+    if (monoU && monoU.uNuc) {
+      monoU.uNuc.value.copy(nucleusWorld);
+      monoU.uNucS.value = group.matrixWorld.getMaxScaleOnAxis();
+      const ni = nucleus.mesh.material.uniforms.uI.value * nucleus.reveal;
+      monoU.uNucI.value = ni;
+      monoU.uSeam.value = Math.max(ni, 0.14) * revealFill;     // asleep, the seams still smoulder
+      SPARK.value = Math.min(1, Math.max(0.2, ni * 1.1)) * revealFill;
+    }
     H.layout(dt, si);
     breakExt();
     marks.update(revealA);
@@ -407,7 +441,10 @@ export function createKey(ctx) {
       if (!r) return;
       revealFill = r.fill != null ? clamp01(r.fill) : 1;
       revealA = r.alpha != null ? clamp01(r.alpha) : 1;
-      structure.setParts({ vertices: r.points != null ? clamp01(r.points) : 1, solid: revealFill, edges: 1, lattice: revealFill });
+      // МОНОЛИТ: the forged surface carries its own creases (worn bevels), so the R3 hairlines and the 2 px vertex points
+      // recede as the solid fills (DETECTION, fill 0, still shows them at full strength).
+      structure.setParts({ vertices: (r.points != null ? clamp01(r.points) : 1) * (1 - 0.9 * revealFill), solid: revealFill,
+        edges: 1 - 0.9 * revealFill, lattice: revealFill });
       structure.setFade(revealA);
       for (let q = 0; q < structure.edges.length; q++) structure.edges[q].uniforms.uFlash.value = r.scanY != null ? 0.35 : 0;
       // The axis core and the grains belong to the solid object: DETECTION (points only, fill 0) shows the vertices

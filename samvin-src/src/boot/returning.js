@@ -16,12 +16,13 @@ import { layout } from '../core/layout.js';
 import { WORLD } from '../data/world.js';
 import { EASE, clamp01 } from '../core/ease.js';
 import { Vector3 } from 'three';
+import { CAMERA } from '../core/tokens.js';
 import { audio } from '../audio/engine.js';
 import { layer } from './layer.js';
 import { cueLatch, LATCH_PANS } from './signature.js';
 import { bootNews } from './boot.js';
 
-const Y_REST16 = (0.75 * 16) / 7.2;     // CAMERA.core pos y at 16 m along its line (rest pitch)
+const Y_REST16 = (CAMERA.core.pos[1] * 16) / Math.hypot(CAMERA.core.pos[1], CAMERA.core.pos[2]);     // CAMERA.core pos y at 16 m along its line (rest pitch)
 const _v = new Vector3();
 const _p = { x: 0, y: 0, depth: 0, visible: false };
 function proj(ctx, y) { if (!ctx.rig) return { x: 0, y: 0 }; _v.set(0, y, 0); ctx.rig.project(_v, _p); return { x: _p.x, y: _p.y }; }
