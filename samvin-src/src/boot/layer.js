@@ -14,7 +14,8 @@ const SVG = 'http://www.w3.org/2000/svg';
 const TRAIL_MS = 600;
 const TRAIL_MAX = 160;
 
-let root = null, scanEl = null, traceSvg = null, tracePath = null, topEl = null, hintEl = null, ghostEl = null;
+let root = null, scanEl = null, traceSvg = null, tracePath = null, topEl = null, hintEl = null, ghostEl = null, ghostTail = null;
+const GHOST_TAIL = 170;            // px: the ghost stroke drawn behind the dot (it grows from the S tip, then trails)
 let trailCv = null, trailG = null, trailFrame = 0;
 const trail = new Float32Array(TRAIL_MAX * 3);   // x, y, t
 let trailN = 0, trailHead = 0;
@@ -39,7 +40,7 @@ export const layer = {
   unmount() {
     layer.stopTrail();
     if (root && root.parentNode) root.parentNode.removeChild(root);
-    root = scanEl = traceSvg = tracePath = topEl = hintEl = ghostEl = trailCv = trailG = null;
+    root = scanEl = traceSvg = tracePath = topEl = hintEl = ghostEl = ghostTail = trailCv = trailG = null;
   },
 
   // ── THE LINE ──
@@ -105,13 +106,21 @@ export const layer = {
     hintEl.classList.add('is-in');
   },
   hintText() { return hintEl && hintEl.classList.contains('is-in') ? hintEl.textContent : ''; },
-  /** the ghost dot at (x, y) with alpha a; null hides */
-  ghost(p, a = 1) {
+  /** the ghost dot at (x, y) with alpha a; null hides. `from` (the stroke's start, the S tip): the ghost stroke — a
+   *  hairline drawn from there to the dot, fading behind it over GHOST_TAIL px — so the motion reads as a stroke to
+   *  copy, not a stray point. */
+  ghost(p, a = 1, from = null, dotA = a) {
     if (!root) return;
-    if (!p) { if (ghostEl) ghostEl.style.opacity = '0'; return; }
+    if (!p) { if (ghostEl) ghostEl.style.opacity = '0'; if (ghostTail) ghostTail.style.opacity = '0'; return; }
+    if (!ghostTail) ghostTail = mk('i', 'boot-ghost-tail', root);
     if (!ghostEl) ghostEl = mk('i', 'boot-ghost', root);
     ghostEl.style.transform = `translate3d(${(p.x - 2).toFixed(1)}px,${(p.y - 2).toFixed(1)}px,0)`;
-    ghostEl.style.opacity = String(a);
+    ghostEl.style.opacity = String(dotA);
+    const dx = from ? from.x - p.x : 0, dy = from ? from.y - p.y : 0, len = Math.min(GHOST_TAIL, Math.hypot(dx, dy));
+    if (len < 2) { ghostTail.style.opacity = '0'; return; }
+    const ang = Math.atan2(-dx, dy);
+    ghostTail.style.transform = `translate3d(${(p.x - 1).toFixed(1)}px,${p.y.toFixed(1)}px,0) rotate(${ang.toFixed(4)}rad) scaleY(${(len / 100).toFixed(3)})`;
+    ghostTail.style.opacity = String(a);
   },
 
   // ── the finger's ember trail ──

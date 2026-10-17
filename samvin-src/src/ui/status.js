@@ -9,6 +9,11 @@
 //     queue is empty and nothing more important is holding.
 // Renders #status (.is-in → 240 ms fade-in), mirrors the text into #status-live (aria-live="polite"), sets app.status,
 // emits 'status:show' {key, text, p}.
+//   • The line speaks about the place he is in (SPEC §2.7 "event-driven from real state only"): when a travel starts,
+//     a greeting / fact (P3–P5) or any message whose hold is over fades out (240 ms); a P1/P2 still inside its hold
+//     finishes it and then leaves, unless the queue has the next one. So a boot «вижу тебя.» never follows him into
+//     MEMBERS. The idle facts rotate again from the new hall.
+//   • Its box is a keep-out (ui/keepout.js): the drawing's lines break behind it.
 import { STATUS_COPY } from './statusCopy.js';
 import { plural } from '../core/ru.js';
 import { app } from '../core/store.js';
@@ -19,9 +24,34 @@ import { state } from '../core/state.js';
 import { WORLD } from '../data/world.js';
 import { missionView } from '../halls/voyages/missionModel.js';
 import { TIMING } from '../core/tokens.js';
+import { keepout } from './keepout.js';
 
 const queue = [];
-let el = null, live = null, holdTimer = 0, idleTimer = 0, idleIdx = 0, raf = 0;
+let el = null, live = null, holdTimer = 0, idleTimer = 0, idleIdx = 0, raf = 0, boxRaf = 0;
+
+/** The line's box → keep-out (one layout read per message / relayout, in the frame after it is written). */
+function boxSoon() {
+  if (!el || boxRaf) return;
+  boxRaf = requestAnimationFrame(() => {
+    boxRaf = 0;
+    if (!el || !status.current) { keepout.off('status'); return; }
+    try {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0) keepout.set('status', r.left, r.top, r.right, r.bottom); else keepout.off('status');
+    } catch (e) { keepout.off('status'); }
+  });
+}
+
+/** The line leaves (fade-out 240 ms); the text stays in place under opacity 0 until the next message. */
+function fadeOut() {
+  status.current = null;
+  app.status = '';
+  if (holdTimer) { cancelAfter(holdTimer); holdTimer = 0; }
+  if (raf) { cancelAnimationFrame(raf); raf = 0; }
+  if (el) el.classList.remove('is-in');
+  if (live) live.textContent = '';
+  keepout.off('status');
+}
 
 /** Fill a template: {var} → value; {var:one|few|many} → plural word for var. Unknown vars stay visible as written. */
 export function fillStatus(tpl, vars) {
@@ -44,6 +74,7 @@ function render(msg) {
   }
   if (holdTimer) cancelAfter(holdTimer);
   holdTimer = after(TIMING.statusHold, onHoldEnd);
+  boxSoon();
   bus.emit('status:show', { key: msg.key, text: msg.text, p: msg.p });
 }
 
@@ -52,9 +83,19 @@ function held() { return !status.current || loop.now - status.current.at >= TIMI
 function onHoldEnd() {
   holdTimer = 0;
   if (queue.length) show(queue.shift());
+  else if (status.current && status.current.leaving) fadeOut();
 }
 
-function show(msg) { msg.at = loop.now; render(msg); }
+function show(msg) { msg.at = loop.now; msg.leaving = false; render(msg); }
+
+/** A travel starts: what was said about the old place goes (see the header). */
+function onTravel() {
+  const cur = status.current;
+  if (!cur) return;
+  if (cur.p < 3 && !held()) { cur.leaving = true; return; }
+  if (queue.length) show(queue.shift());
+  else fadeOut();
+}
 
 function enqueue(msg) {
   if (queue.some((q) => q.text === msg.text)) return;
@@ -106,6 +147,8 @@ export const status = {
     live = document.getElementById('status-live');
     if (live && live.getAttribute('aria-live') !== 'polite') live.setAttribute('aria-live', 'polite');
     if (!idleTimer) idleTimer = after(TIMING.idleRotate, onIdleTick);
+    bus.on('travel:start', onTravel);
+    bus.on('layout:change', boxSoon);
     return status;
   },
 
@@ -124,6 +167,7 @@ export const status = {
   },
 
   clear() {
+    keepout.off('status');
     queue.length = 0;
     status.current = null;
     app.status = '';

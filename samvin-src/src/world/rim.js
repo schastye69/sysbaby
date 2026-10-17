@@ -30,7 +30,8 @@ import { WORLD, operatorMember } from '../data/world.js';
 import { state } from '../core/state.js';
 import { layout } from '../core/layout.js';
 import { bus } from '../core/bus.js';
-import { CANVAS_FONT, HALL, LIT_NODES, CAMERA, TIMING } from '../core/tokens.js';
+import { CANVAS_FONT, HALL, LIT_NODES, CAMERA, TIMING, LAYOUT } from '../core/tokens.js';
+import { keepout } from '../ui/keepout.js';
 
 /** His letter (cap) height, canonical m. SPEC §4.1 states both «38 m at 300 m» and «≈ 60 px»; the two disagree at
  *  FOV 35° (38 m would be ≈ 186 px). The on-screen size is the one SPEC, A3.1 (subline ≈ 13 px) and ARCH 2-rim agree
@@ -40,7 +41,12 @@ const LETTER_M = 12.5;
  *  so the stack keeps its air; desktop and landscape keep SPEC's ≈ 60 px. */
 const letterM = () => (layout.kind === 'desktop' || (layout.w || 0) > (layout.h || 1) ? LETTER_M : LETTER_M * 0.86);
 const ROLE_FRAC = 0.22;               // A3.1
-const DIM_CLEAR = 40;                 // px under the Key's lower tip kept for its Ø dimension line
+const ROLE_GAP = 0.24;                // cap bottom → subline cap top (× h): name + subline read as one caption
+/** px under the Key's lower tip down to the bottom of its `Ø 1.24 М` value (the line + half the 12 px MICRO box) */
+const DIM_CLEAR = LAYOUT.dims.keyBelowPx + 6;
+/** The caption hangs from the Ø value: its cap line sits CAP_AIR × cap height below it (min 12 px), so the Key, its
+ *  dimension and his name read as one drawing, and the space left over opens up above the status line. */
+const CAP_AIR = 0.3;
 const MICRO_FRAC = 0.16;              // `ГОСТИ · {n}` (MICRO-sized rim text)
 const GAP_FRAC = 0.3;                 // A4.1 gap between names in a row (× h_g)
 const ROW_FRAC = 1.25;                // A4.1 row pitch (× h_g)
@@ -224,7 +230,7 @@ export function createRim(ctx) {
       left = nl; right = nr; side = -side; gi++;
     }
     const roleH = ROLE_FRAC * hName;
-    const roleY = -(hName / 2 + 0.32 * hName + roleH / 2);
+    const roleY = -(hName / 2 + ROLE_GAP * hName + roleH / 2);
     items.push({ text: roleText, kind: 'role', h: roleH, x: 0, y: roleY, w: roleText ? textWidthM(roleText, roleH, 'role') : 0, row: 0, slot: 1 });
     // further rows: centred, alternating right / left of the row centre
     let rowY = roleY - roleH / 2 - ROW_FRAC * hGuest + hGuest / 2, row = 1, lastY = roleY - roleH / 2;
@@ -264,13 +270,17 @@ export function createRim(ctx) {
     const keyBottom = screenY(-1.2, 0);
     // above the status line: its real box (desktop ≈ h − 62; phone: band 88 + safe + 12 + 26 + the line), 10 px air
     const limit = statusTop(h) - 10;
-    // under the Key's `Ø 1.24 М` dimension line (WP1, A14: tip + 26 px, its 11 px label centred on it) with 8 px air
-    const topY = worldYForScreen(keyBottom + DIM_CLEAR), bottomY = worldYForScreen(limit);
+    // under the Key's `Ø 1.24 М` value (WP1, A14), the cap line CAP_AIR × cap height lower (≥ 12 px); the caption is
+    // hung from there, not centred, so the air collects above the status line (grouping: Key + Ø · name + subline ·
+    // status). Cap-accurate extents: the name's cap top is +h/2 above its row; the lowest line's baseline is −h/2.
+    let cTop = -Infinity, cBot = Infinity;
+    for (const it of items) { if (it.kind === 'role' && !roleText) continue; cTop = Math.max(cTop, it.y + it.h / 2); cBot = Math.min(cBot, it.y - it.h / 2); }
+    const capPx = Math.max(1, screenY(0, zFace) - screenY(hName, zFace));
+    const topY = worldYForScreen(keyBottom + DIM_CLEAR + Math.max(12, CAP_AIR * capPx)), bottomY = worldYForScreen(limit);
     lastAvail = topY - bottomY;
-    lastBlockH = (y1 - y0) - 0.5 * (items[0].h + items[items.length - 1].h) * 0.5;
-    nameY = (topY + bottomY) / 2 - (y0 + y1) / 2;                 // the whole block centred in the band
-    const blockBottom = nameY + y0 + 0.25 * items[items.length - 1].h;
-    if (blockBottom < bottomY) nameY += bottomY - blockBottom;
+    lastBlockH = cTop - cBot;
+    nameY = topY - cTop;
+    if (nameY + cBot < bottomY) nameY += bottomY - (nameY + cBot);   // never under the status line
     plane.scale.set(pw, ph, 1);
     plane.position.set((x0 + x1) / 2, nameY + (y0 + y1) / 2, zFace);
     // draw (block → canvas: x about the box centre, y flipped)
@@ -295,6 +305,14 @@ export function createRim(ctx) {
       }
     }
     for (let k = gslot; k < SLOTS; k++) rects[k].set(2, 2, 2, 2);
+    // the caption's cap-accurate box (m, group space) — the keep-out the Key's axis breaks behind
+    let cx0 = Infinity, cx1 = -Infinity, cy0 = Infinity, cy1 = -Infinity;
+    for (const it of items) {
+      if (it.kind === 'role' && !roleText) continue;
+      cx0 = Math.min(cx0, it.x - it.w / 2); cx1 = Math.max(cx1, it.x + it.w / 2);
+      cy0 = Math.min(cy0, it.y - it.h / 2); cy1 = Math.max(cy1, it.y + it.h / 2);
+    }
+    cap4.set(cx0, nameY + cy0, cx1, nameY + cy1);
     tex.needsUpdate = true;
     placeNodes();
     writeSr();
@@ -306,14 +324,17 @@ export function createRim(ctx) {
     }
   }
   let fitting = false;
+  const cap4 = new Vector4();
 
   function placeNodes() {
     const it = items[0];
     if (!it) return;
-    const step = it.h * 0.42, x0 = it.x + it.w / 2 + it.h * 0.55, yc = nameY + it.y;
+    // A ledger set like type: node 1 sits on the baseline right after the last letter (a full stop, not a stray
+    // spark), the next ones climb the cap height (baseline, x-height, cap line), then the next column.
+    const step = it.h * 0.42, x0 = it.x + it.w / 2 + it.h * 0.3, yb = nameY + it.y - it.h / 2 + it.h * 0.08;
     for (let k = 0; k < cap; k++) {
       const col = Math.floor(k / 3), row = k % 3;
-      pos[k * 3] = x0 + col * step; pos[k * 3 + 1] = yc + (1 - row) * step; pos[k * 3 + 2] = zFace + 0.6;
+      pos[k * 3] = x0 + col * step; pos[k * 3 + 1] = yb + row * step; pos[k * 3 + 2] = zFace + 0.6;
     }
     nodes.setPositions(pos, cap);
     nodes.setCount(lit);
@@ -345,7 +366,17 @@ export function createRim(ctx) {
   }
   let activeUntil = 0;
   function keepAlive(ms) { activeUntil = Math.max(activeUntil, now() + ms + 100); }
+  const _k0 = new Vector3(), _k1 = new Vector3();
+  const _q0 = { x: 0, y: 0, depth: 0, visible: false }, _q1 = { x: 0, y: 0, depth: 0, visible: false };
   loop.add(() => {
+    // keep-out: the caption's screen box while it is on (the axis and the coordinates stay clear of his name)
+    if (shown && alpha > 0.05 && plane.visible && group.visible && rig.camera) {
+      _k0.set(cap4.x, cap4.w, zFace); _k1.set(cap4.z + (lit > 0 ? 0.3 * hName + Math.ceil(lit / 3) * 0.42 * hName : 0), cap4.y, zFace);
+      group.localToWorld(_k0); group.localToWorld(_k1);
+      rig.project(_k0, _q0); rig.project(_k1, _q1);
+      if (_q0.depth > 0 && _q1.depth > 0) keepout.set('rim', Math.min(_q0.x, _q1.x), Math.min(_q0.y, _q1.y), Math.max(_q0.x, _q1.x), Math.max(_q0.y, _q1.y));
+      else keepout.off('rim');
+    } else keepout.off('rim');
     if (flashFrames > 0) { flashFrames--; if (!flashFrames) { flash.object.visible = false; flash.setIntensity(0); } }
     const t = now();
     if (t <= activeUntil) mat.uniforms.uNow.value = t;

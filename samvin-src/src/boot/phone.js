@@ -94,7 +94,11 @@ export function runPhone(ctx, B, marks) {
         const u = EASE.camera(ph / 900);
         ghostP.x = ghostA.x + (ghostB.x - ghostA.x) * u; ghostP.y = ghostA.y + (ghostB.y - ghostA.y) * u;
         const a = ph < 120 ? ph / 120 : ph > 780 ? (900 - ph) / 120 : 1;
-        layer.ghost(ghostP, a);
+        layer.ghost(ghostP, Math.max(a, ph > 780 ? 1 : 0), ghostA, a);
+      } else if (ph < 1500) {
+        // the dot has landed on N; its ghost stroke stays a moment and fades (600 ms), so the gesture reads whole
+        proj(ctx, 1.2, ghostA); proj(ctx, -1.2, ghostB);
+        layer.ghost(ghostB, 1 - EASE.camera((ph - 900) / 600), ghostA, 0);
       } else layer.ghost(null);
     } else layer.ghost(null);
   };

@@ -36,7 +36,7 @@ function setLeaderGeom(a) {
   const s = L.side === 'left' ? -1 : 1;
   const r = L.rise || 0;
   const ex = a.sx + s * Math.abs(r), ey = a.sy + r;
-  const lx = ex + s * Math.max(LAYOUT.leader.elbowMin, Math.min(LAYOUT.leader.runMax, L.len || 40));
+  const lx = ex + s * Math.max(LAYOUT.leader.elbowMin, Math.min(L.runMax || LAYOUT.leader.runMax, L.len || 40));
   a.path.setAttribute('d', `M${a.sx.toFixed(1)} ${a.sy.toFixed(1)}L${ex.toFixed(1)} ${ey.toFixed(1)}L${lx.toFixed(1)} ${ey.toFixed(1)}`);
   a.endX = lx + s * 6; a.endY = ey;
 }
@@ -71,7 +71,12 @@ function frame(dt) {
     if (!a.init || a.lowpass <= 0) { a.sx = _p.x; a.sy = _p.y; a.init = true; }
     else { const kk = a.lowpass === 120 ? k : 1 - Math.exp(-(dt * 1000) / a.lowpass); a.sx += (_p.x - a.sx) * kk; a.sy += (_p.y - a.sy) * kk; }
     a.screen.x = a.sx; a.screen.y = a.sy;
-    if (doCoord && a.coordEl) { scaleEngine.toCanonical(_w, _c); a.coordEl.textContent = `x ${fmtC(_c.x)} · y ${fmtC(_c.y)}`; }
+    if (doCoord && a.coordEl) {
+      scaleEngine.toCanonical(_w, _c);
+      a.coordEl.textContent = `x ${fmtC(_c.x)} · y ${fmtC(_c.y)}`;
+      // The coordinate's box, measured once (fixed-width MICRO: every value has the same length).
+      if (!a.cw && a.coordOn) { a.cw = a.coordEl.offsetWidth; a.ch = a.coordEl.offsetHeight; }
+    }
   }
   // Priority culling: more visible than max → hide the lowest priorities this frame.
   let cut = -Infinity;
@@ -96,7 +101,10 @@ function frame(dt) {
     const x = a.sx.toFixed(1), y = a.sy.toFixed(1);
     if (a.button) a.button.style.transform = `translate3d(${x}px,${y}px,0)`;
     if (a.cross) a.cross.setAttribute('transform', `translate(${x} ${y})`);
-    if (a.coordEl) a.coordEl.style.transform = `translate3d(${(a.sx + 8).toFixed(1)}px,${(a.sy + 6).toFixed(1)}px,0)`;
+    if (a.coordEl) {
+      // Beside the cross: right-below by default; an owner's layout pass may move it to another quadrant (setCoordPlace).
+      a.coordEl.style.transform = `translate3d(${(a.sx + a.cdx).toFixed(1)}px,${(a.sy + a.cdy).toFixed(1)}px,0)${a.cleft ? ' translate(-100%,0)' : ''}`;
+    }
     setLeaderGeom(a);
     if (a.el) {
       const ex = a.path && (a.leader || a.focused) ? a.endX : a.sx, ey = a.path && (a.leader || a.focused) ? a.endY : a.sy;
@@ -130,7 +138,7 @@ export const overlay = {
       crossOn: opts.cross != null ? !!opts.cross : !!opts.leader, coordOn: !!opts.coord,
       priority: opts.priority || 0, lowpass: opts.lowpass != null ? opts.lowpass : TIMING.labelLowpass,
       hideBehind: opts.hideBehind !== false, visible: true, want: false, shown: true, focused: false, init: false,
-      sx: 0, sy: 0, wx: NaN, wy: NaN, endX: 0, endY: 0,
+      sx: 0, sy: 0, wx: NaN, wy: NaN, endX: 0, endY: 0, cdx: 8, cdy: 6, cleft: false, cw: 0, ch: 0,
       screen: { x: 0, y: 0, visible: false },
       el: opts.el || null, button: null, path: null, cross: null, coordEl: null,
     };
@@ -202,6 +210,13 @@ export const overlay = {
         show(a, true);
         if (a.button) a.button.style.transform = `translate3d(${a.sx.toFixed(1)}px,${a.sy.toFixed(1)}px,0)`;
       },
+      /** The live coordinate's place relative to the cross: its top-left (or, with left, its top-right) at (dx, dy). */
+      setCoordPlace(dx, dy, left) {
+        if (a.cdx === dx && a.cdy === dy && a.cleft === !!left) return;
+        a.cdx = dx; a.cdy = dy; a.cleft = !!left; a.wx = NaN;
+      },
+      /** The coordinate's measured size (0 until its first value is written). */
+      coordSize(out) { out.w = a.cw; out.h = a.ch; return out; },
       setAlpha(x) { const s = String(Math.max(0, Math.min(1, x))); if (a.el) a.el.style.opacity = s; if (a.path) a.path.style.opacity = s; },
       drawIn(ms = TIMING.leaderDraw) {
         if (a.el) a.el.classList.add('is-pending');

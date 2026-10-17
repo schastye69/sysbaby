@@ -352,7 +352,8 @@ export const LAYOUT = Object.freeze({
   phone:   Object.freeze({ cols: 4, margin: 16, gutter: 12, chrome: 16, edgeInset: 10, statusAboveBand: 12, datumPx: 120, titleTopPx: 72 }),
   measureCh: 36, statusMeasureCh: 44, hit: 44, hitRow: 56, crossPx: 7,
   leader: Object.freeze({ widthPx: 0.5, alpha: 0.70, elbowMin: 24, elbowMax: 64, runMax: 120, maxAnchors: 24, maxAnchorsLow: 16 }),
-  dims: Object.freeze({ widthPx: 0.5, arrowPx: 6, extPx: 4, gapPx: 4, offsetPx: 24 }),
+  // keyBelowPx: the Key's `Ø 1.24 М` line under its lower tip (WP1 A14) — the rim caption hangs from it (world/rim.js)
+  dims: Object.freeze({ widthPx: 0.5, arrowPx: 6, extPx: 4, gapPx: 4, offsetPx: 24, keyBelowPx: 22 }),
   scrim: Object.freeze({ scale: 1.4, featherPx: 40 }),
   nav: Object.freeze({ w: 56, h: 300, hoverW: 260, right: 24, widthScale: 0.36, needlePx: 12, slotPx: 3, zenithDotPx: 2, zenithDotAbove: 10,
     twinPx: 40, magnetPx: 12, wheelPxPerDetent: 120, rubber: 0.35, rubberMax: 48, overpullPx: 140, letterPx: 11 }),

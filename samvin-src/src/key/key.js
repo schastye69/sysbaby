@@ -34,6 +34,7 @@ import { createIdle } from './idle.js';
 import { createHover } from './hover.js';
 import { createDrag } from './drag.js';
 import { createMarks } from './marks.js';
+import { keepout } from '../ui/keepout.js';
 
 const DEG = Math.PI / 180;
 const TAU = Math.PI * 2;
@@ -112,21 +113,72 @@ export function createKey(ctx) {
 
   // Axis: core ±1.20 at α .35 + extensions (+len beyond each tip, fading to 0).
   const axisCore = createLines({ segments: new Float32Array([0, -AXIS.half, 0, 0, AXIS.half, 0]), color: 'ember', width: AXIS.widthPx, alpha: AXIS.alphaInside, glint: 0.3 });
-  const EXT_N = 8, extSeg = new Float32Array(EXT_N * 12), extAlpha = new Float32Array(EXT_N * 2);
+  // The extensions break behind text, as a centre line does on a drawing: wherever the projected axis would run
+  // through a keep-out box (his name and subline, the Ø value, the status line, … ui/keepout.js) it is cut, 4 px clear
+  // of the glyphs. Each of the EXT_N fade steps may split into up to 3 pieces (capacity), unused pieces are empty.
+  const EXT_N = 8, EXT_CAP = EXT_N * 2 * 3, extSeg = new Float32Array(EXT_CAP * 6), extAlpha = new Float32Array(EXT_CAP);
   const axisExt = createLines({ segments: extSeg, alpha: extAlpha, color: 'ember', width: AXIS.widthPx, glint: 0.3 });
   for (const l of [axisCore, axisExt]) { l.mesh.layers.enable(LAYER.EMISSIVE); l.mesh.renderOrder = 4; group.add(l.mesh); }
   let extLen = -1;
+  const brk = new Float32Array(16);            // screen y intervals from keepout
+  const cut = new Float32Array(2 * 2 * 8);      // per side: up to 8 (lo, hi) |y| intervals in Key metres
+  const cutN = new Int8Array(2), lastCut = new Float32Array(2 * 2 * 8), lastCutN = new Int8Array(2);
+  function writeExt() {
+    let n = 0;
+    for (let s = 0; s < 2; s++) for (let k = 0; k < EXT_N; k++) {
+      const sg = s ? -1 : 1, al = AXIS.alphaInside * (1 - (k + 0.5) / EXT_N);
+      let a = AXIS.half + (extLen * k) / EXT_N;
+      const b = AXIS.half + (extLen * (k + 1)) / EXT_N;
+      for (let c = 0; c < cutN[s] && a < b; c++) {
+        const lo = cut[(s * 8 + c) * 2], hi = cut[(s * 8 + c) * 2 + 1];
+        if (hi <= a || lo >= b) continue;
+        if (lo > a && n < EXT_CAP) { const o = n * 6; extSeg[o] = 0; extSeg[o + 1] = sg * a; extSeg[o + 2] = 0; extSeg[o + 3] = 0; extSeg[o + 4] = sg * lo; extSeg[o + 5] = 0; extAlpha[n++] = al; }
+        a = Math.max(a, hi);
+      }
+      if (a < b && n < EXT_CAP) { const o = n * 6; extSeg[o] = 0; extSeg[o + 1] = sg * a; extSeg[o + 2] = 0; extSeg[o + 3] = 0; extSeg[o + 4] = sg * b; extSeg[o + 5] = 0; extAlpha[n++] = al; }
+    }
+    for (let k = n; k < EXT_CAP; k++) { extSeg.fill(0, k * 6, k * 6 + 6); extAlpha[k] = 0; }
+    axisExt.setSegments(extSeg);
+    axisExt.mesh.geometry.attributes.aAl.needsUpdate = true;
+  }
   function setExt(len) {
     if (len === extLen) return;
     extLen = len;
-    for (let s = 0; s < 2; s++) for (let k = 0; k < EXT_N; k++) {
-      const sg = s ? -1 : 1, a = AXIS.half + (len * k) / EXT_N, b = AXIS.half + (len * (k + 1)) / EXT_N, o = (s * EXT_N + k) * 6;
-      extSeg[o] = 0; extSeg[o + 1] = sg * a; extSeg[o + 2] = 0; extSeg[o + 3] = 0; extSeg[o + 4] = sg * b; extSeg[o + 5] = 0;
-      extAlpha[s * EXT_N + k] = AXIS.alphaInside * (1 - (k + 0.5) / EXT_N);
-    }
-    axisExt.setSegments(extSeg);
-    axisExt.mesh.geometry.attributes.aAl.needsUpdate = true;
+    writeExt();
     axisExt.mesh.visible = len > 0 && revealA > 0;
+  }
+  /** Screen y of the Key-local axis point (0, y, 0). */
+  const axisY = (y) => { _v.set(0, y, 0).applyMatrix4(group.matrixWorld); return rig.project(_v, _p).y; };
+  /** |y| (Key metres, along side sg) whose projection is screen y `ys`, between |y| a and b (monotonic; bisection). */
+  function axisInv(ys, sg, a, b) {
+    const ya = axisY(sg * a), up = axisY(sg * b) > ya;
+    for (let k = 0; k < 14; k++) { const m = (a + b) / 2; if ((axisY(sg * m) < ys) === up) a = m; else b = m; }
+    return (a + b) / 2;
+  }
+  /** Per frame, after the pose: recompute the cuts; rewrite the ribbon only when they moved (≥ 2 mm). */
+  function breakExt() {
+    if (extLen <= 0 || !rig.camera || !axisExt.mesh.visible) { if (cutN[0] || cutN[1]) { cutN[0] = cutN[1] = 0; lastCutN[0] = lastCutN[1] = 0; writeExt(); } return; }
+    let changed = false;
+    for (let s = 0; s < 2; s++) {
+      const sg = s ? -1 : 1, a = AXIS.half, b = AXIS.half + extLen;
+      _v.set(0, sg * a, 0).applyMatrix4(group.matrixWorld); rig.project(_v, _p);
+      const xa = _p.x, ya = _p.y;
+      _v.set(0, sg * b, 0).applyMatrix4(group.matrixWorld); rig.project(_v, _p);
+      const xb = _p.x, yb = _p.y;
+      const nb = _p.depth > 0 ? keepout.verticalBreaks((xa + xb) / 2, 1 + Math.abs(xb - xa) / 2, Math.min(ya, yb), Math.max(ya, yb), 4, brk, 28) : 0;
+      let m = 0;
+      for (let q = 0; q < nb && m < 8; q++) {
+        let lo = axisInv(brk[q * 2], sg, a, b), hi = axisInv(brk[q * 2 + 1], sg, a, b);
+        if (lo > hi) { const t = lo; lo = hi; hi = t; }
+        cut[(s * 8 + m) * 2] = Math.round(lo * 500) / 500; cut[(s * 8 + m) * 2 + 1] = Math.round(hi * 500) / 500; m++;
+      }
+      cutN[s] = m;
+      if (m !== lastCutN[s]) changed = true;
+      for (let q = 0; q < m * 2 && !changed; q++) if (cut[s * 16 + q] !== lastCut[s * 16 + q]) changed = true;
+    }
+    if (!changed) return;
+    lastCut.set(cut); lastCutN[0] = cutN[0]; lastCutN[1] = cutN[1];
+    writeExt();
   }
 
   // Grains.
@@ -294,6 +346,7 @@ export function createKey(ctx) {
     nucleus.morph = morphG.nucleus;
     nucleus.update(K.idle, t, gap, nucleusWorld, strata[3].matrixWorld);
     H.layout(dt, si);
+    breakExt();
     marks.update(revealA);
     if (t - litAt > 2000) { litAt = t; marks.setLitCount(state.litNodes); }
   }

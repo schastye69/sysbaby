@@ -120,3 +120,39 @@
 .edge-strip{position:absolute;left:0;top:0;overflow:visible;will-change:transform}
 #datum,#lead{will-change:opacity}
 #datum-line,#datum-title .lock-letter{will-change:transform}
+
+/* ─── Chrome legibility over any world (every hall, every tier) ─────────────────────────────────────────────────
+   Two layers, like a drawing's title block over its hatching:
+   1. #veil (z 14, under every DOM layer, over the world): protected zones — soft --void gradients that only exist
+      where chrome text lives (the four corners, the navigator gauge, the datum/title column, the status line; phone:
+      the top title band and the bottom band). Over empty space they are void on void, i.e. invisible.
+   2. A --void knock-out halo behind every chrome/overlay glyph (text-shadow; no blur filters, no boxes): a line of the
+      world that still reaches a glyph stops a hair short of it.
+   Both follow the palette (ИЗНАНКА: paper on paper). */
+:root{--halo:0 0 1px rgba(var(--void-rgb),.92),0 0 3px rgba(var(--void-rgb),.8),0 0 7px rgba(var(--void-rgb),.55);
+  --halo-s:0 0 1px rgba(var(--void-rgb),.95),0 0 2px rgba(var(--void-rgb),.95),0 0 4px rgba(var(--void-rgb),.85),0 0 9px rgba(var(--void-rgb),.6)}
+#chrome,#frame,#overlay .coord,#overlay .dim-label,#overlay .anchor,#hoststrip{text-shadow:var(--halo)}
+/* MICRO / LABEL are 9.5–11 px pewter: the knock-out is wider and denser for them */
+#chrome .t-micro,#chrome .t-label,#chrome .kn-letter,#frame .t-micro,#frame .t-label,#overlay .t-micro,#overlay .t-label{text-shadow:var(--halo-s)}
+#veil{pointer-events:none;transition:opacity var(--d-480) linear;
+  --vz:rgba(var(--void-rgb),.9);--vm:rgba(var(--void-rgb),.62);--v0:rgba(var(--void-rgb),0);
+  background:
+    radial-gradient(ellipse 340px 120px at 0 0,var(--vz),var(--vm) 42%,var(--v0)),
+    radial-gradient(ellipse 260px 104px at 100% 0,var(--vz),var(--vm) 42%,var(--v0)),
+    radial-gradient(ellipse 360px 104px at 0 100%,var(--vz),var(--vm) 42%,var(--v0)),
+    radial-gradient(ellipse 280px 112px at 100% 100%,var(--vz),var(--vm) 42%,var(--v0)),
+    radial-gradient(ellipse 120px 240px at calc(100% - var(--nav-right) - var(--nav-w) / 2) 50%,var(--vz),var(--vm) 48%,var(--v0)),
+    radial-gradient(ellipse 560px 210px at 0 calc(var(--datum-y) - 30px),rgba(var(--void-rgb),.8),rgba(var(--void-rgb),.5) 50%,var(--v0)),
+    radial-gradient(ellipse 300px 42px at 50% calc(100% - var(--status-bottom) - 11px),rgba(var(--void-rgb),.78),var(--v0))}
+@media (pointer:coarse) and (max-width:600px){
+  #veil{background:
+    linear-gradient(to bottom,var(--vz) 0,rgba(var(--void-rgb),.7) calc(var(--datum-y) - 40px),var(--v0) calc(var(--datum-y) + 34px)),
+    linear-gradient(to top,var(--vz) 0,rgba(var(--void-rgb),.7) calc(var(--band-h) + var(--safe-b)),var(--v0) calc(var(--band-h) + var(--safe-b) + 92px))}
+}
+@media (pointer:coarse) and (max-height:499.98px){
+  #veil{background:
+    linear-gradient(to bottom,var(--vz) 0,var(--v0) 96px),
+    linear-gradient(to left,var(--vz) 0,rgba(var(--void-rgb),.6) calc(var(--band-side-w) + var(--safe-r)),var(--v0) calc(var(--band-side-w) + var(--safe-r) + 64px))}
+}
+/* the phone start screen is the Key alone (its own hint layer sits above the veil) */
+body.boot-start #veil{opacity:0}

@@ -3,6 +3,9 @@
 //   trigger   desktop pointer inside the Key's projected ellipse for ≥ 120 ms (or resting on one of its labels)
 //   explode   heavy spring: gaps 0.020 → 0.090 m; the hovered stratum's neighbours pushed a further 0.012 m; the hovered
 //             stratum slides 0.06 m toward the lamp and turns its sign face toward it (ω 6; ≤ 24° so it stays legible)
+//   layout    a construction-drawing pass in screen space: the blocks never overlap (isotonic column); each live
+//             coordinate takes the quadrant beside its cross that collides with nothing — the label column, every
+//             leader, the dimension values, the rim name, the scale figure (ui/keepout.js) — with hysteresis
 //   leaders   7 overlay anchors (owner 'key', id = sign), each from a 7 px survey cross at the stratum's right silhouette
 //             point, one 45° elbow, to a column 64 px right of the Key's box; 40 ms stagger; the 4-line SPEC block;
 //             hovered 100 %, the others 55 %; the block is a real button (click = key:click, Tab-focusable while shown)
@@ -21,18 +24,38 @@ import { ROOMS, ROOM_ORDER, NADIR_LINE_OPEN } from '../world/rooms.js';
 import { rig } from '../render/cameraRig.js';
 import { U } from '../render/uniforms.js';
 import { audio } from '../audio/engine.js';
+import { keepout } from '../ui/keepout.js';
 import { GAP, KEY, STRATA_GEOM, TIMING, MOTION, LAYOUT, radiusAt } from '../core/tokens.js';
 
 const DEG = Math.PI / 180;
 const zetaFor = (os) => -Math.log(os) / Math.sqrt(Math.PI * Math.PI + Math.log(os) ** 2);
 const OUT_ZETA = zetaFor(MOTION.settleOvershoot);           // 2 % overshoot
 const BLOCK_H = 78, MIN_RISE = 17, NEAR_RISE = 40, COORD_W = 122, HYST = 5;
+/** Live-coordinate candidates beside the cross: [dx, dy, left] — dy > 0 = top edge below the cross by dy, dy < 0 =
+ *  bottom edge above it by −dy; then the cost bias (right of the cross first: left of it lies on the Key's faces). */
+const CAND = [[8, 6, 0, 0], [8, -6, 0, 4], [8, 20, 0, 40], [8, -20, 0, 44], [30, 6, 0, 60], [30, -6, 0, 64],
+  [8, 34, 0, 90], [8, -34, 0, 94], [-8, 6, 1, 4000], [-8, -6, 1, 4004]];
+const COORD_PAD = 3;
+function clip(p, q, t) {          // one Liang–Barsky edge; t = [t0, t1] (shared scratch), false = outside
+  if (p === 0) return q >= 0;
+  const r = q / p;
+  if (p < 0) { if (r > t[1]) return false; if (r > t[0]) t[0] = r; } else { if (r < t[0]) return false; if (r < t[1]) t[1] = r; }
+  return true;
+}
+const LB = new Float64Array(2);
+function segHits(ax, ay, bx, by, x0, y0, x1, y1) {
+  const dx = bx - ax, dy = by - ay;
+  LB[0] = 0; LB[1] = 1;
+  return clip(-dx, ax - x0, LB) && clip(dx, x1 - ax, LB) && clip(-dy, ay - y0, LB) && clip(dy, y1 - ay, LB);
+}
 const UPD = {};
 /** SPEC §9.4: on desktop hover the stratum's note plays at −30 dB (ARCH stratumNote {i, quiet}); shared option objects. */
 const HOV = { index: -1 };   // shared key:hover payload (G9: nothing allocated in the frame)
 const NOTE = [0, 1, 2, 3, 4, 5, 6].map((i) => ({ i, quiet: true }));
 /** The right silhouette point of each stratum: at its mid height, on its profile radius there. */
 const MID_R = STRATA_GEOM.map((s) => radiusAt(s.mid));
+/** N's tip (Key metres) and its cone's half-width per unit of depth below its top ring (screen-scale invariant). */
+const N_BOT = STRATA_GEOM[6].bot, N_SLOPE = radiusAt(STRATA_GEOM[6].top) / Math.max(1e-3, STRATA_GEOM[6].top - STRATA_GEOM[6].bot);
 
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
@@ -53,6 +76,8 @@ export function createHover(K, ctx) {
   const anchors = [], blocks = [], leaders = [], titleEls = [], lineEls = [], wraps = [];
   const zv = new Float64Array(7), pv = new Float64Array(7), pw = new Float64Array(7), pn = new Float64Array(7);
   const sy = new Float32Array(7), ty = new Float32Array(7), sxs = new Float32Array(7), lastX = new Float32Array(7), lastY = new Float32Array(7);
+  const blockW = new Float32Array(7), blockH = new Float32Array(7), coordPick = new Int8Array(7).fill(-1), placed = new Float32Array(28);
+  const csz = { w: 0, h: 0 };
   const anchorPoint = (i) => (out) => {
     // Right silhouette point at the widest ring, in render space (camera-right of the stratum axis).
     out.set(0, STRATA_GEOM[i].mid, 0).applyMatrix4(K.strata[i].matrixWorld);
@@ -87,7 +112,8 @@ export function createHover(K, ctx) {
       b.addEventListener('focus', () => { H.focusIdx = i; H.kbd = true; });
       b.addEventListener('blur', () => { H.kbd = false; });
       wrap.append(b);
-      const L = { side: 'right', len: 40, rise: -MIN_RISE };
+      // runMax: the column is one aligned edge; a run may outgrow the default cap when its block had to step around text
+      const L = { side: 'right', len: 40, rise: -MIN_RISE, runMax: 1e4 };
       const a = ctx.overlay.add({ owner: 'key', id: r.sign, el: wrap, get: getters[i], leader: L, cross: true, coord: true, priority: 5 });
       a.setVisible(false);
       anchors.push(a); blocks.push(b); leaders.push(L); wraps.push(wrap);
@@ -115,7 +141,7 @@ export function createHover(K, ctx) {
         after(i * TIMING.leaderStagger, () => { if (active) { a.drawIn(TIMING.leaderDraw); w.classList.remove('is-pending'); } });
       }
     }
-    if (on) nadirCopy();
+    if (on) { nadirCopy(); blockW.fill(0); blockH.fill(0); coordPick.fill(-1); }
     const fig = ctx.fx && ctx.fx.scaleFigure;
     try { if (fig) { if (on) fig.show('hover'); else fig.hide(); } } catch (e) { /* the FX layer's own */ }
     if (on && dimsOn) for (const d of dims) d.drawIn(TIMING.dimsDraw);
@@ -123,17 +149,26 @@ export function createHover(K, ctx) {
 
   // ── A14 dimension lines ──
   const dims = [];
-  let dimRx = 0;
+  let dimRx = 0, vOffIdle = 0, vOff = 0, oOff = 0, oAt = 0.5, vAt = 0.5;
   const P = (x, y) => (out) => out.set(x, y, 0).applyMatrix4(K.group.parent ? K.group.parent.matrixWorld : K.group.matrixWorld);
   function makeDims(si) {
     for (const d of dims) d.remove();
     dims.length = 0;
     if (!ctx.dims) return;
     dimRx = si.rx;
-    // ↕ clears the grain rings (outer edge 1.90 × 0.62 m) where the screen allows; Ø sits under the bottom tip.
+    vOffIdle = vOff = idleOffsets(si);
+    dims.push(ctx.dims.add({ owner: 'key', a: P(0, 1.2), b: P(0, -1.2), side: 'left', label: '↕ 2.40 М', offset: vOff }));
+    dims.push(ctx.dims.add({ owner: 'key', a: P(-0.62, 0), b: P(0.62, 0), side: 'below', label: 'Ø 1.24 М', offset: oOff }));
+  }
+  /** The rest offsets, every frame (the camera may still be settling — the boot's ASSEMBLY draws them mid-dolly):
+   *  ↕ clears the grain rings (outer edge 1.90 × 0.62 m) where the screen allows; Ø sits keyBelowPx under the real
+   *  projected (assembled) tip — the camera looks down, so the tip is not si.ry below the centre. → ↕ offset. */
+  function idleOffsets(si) {
     const ring = (1.9 * 0.62 * si.r) / KEY.radius;
-    dims.push(ctx.dims.add({ owner: 'key', a: P(0, 1.2), b: P(0, -1.2), side: 'left', label: '↕ 2.40 М', offset: Math.max(si.rx + 26, Math.min(ring + 46, si.x - 40)) }));
-    dims.push(ctx.dims.add({ owner: 'key', a: P(-0.62, 0), b: P(0.62, 0), side: 'below', label: 'Ø 1.24 М', offset: si.ry + 26 }));
+    P(0, -1.2)(_w); rig.project(_w, _pp); const tipY = _pp.y;
+    P(0, 0)(_w); rig.project(_w, _pp);
+    oOff = (tipY > _pp.y ? tipY - _pp.y : si.ry) + LAYOUT.dims.keyBelowPx;
+    return Math.max(si.rx + 26, Math.min(ring + 46, si.x - 40));
   }
   function setDims(on, si) {
     if (on && (!dims.length || Math.abs(si.rx - dimRx) > dimRx * 0.08)) { makeDims(si); dimsOn = false; }
@@ -146,6 +181,45 @@ export function createHover(K, ctx) {
    *  dimsRest: interactive in CORE (idle or the boot's ASSEMBLY) — the A14 dims draw on the first such frame */
   H.update = function update(dt, t, si, interactiveRest, dimsRest = interactiveRest) {
     if (t - dimsCheck > 250 || !dimsRest || !dimsOn) { dimsCheck = t; setDims(dimsRest && dimsKey >= 0, si); }
+    // ↕ 2.40 М and the scale figure: while «ТЫ» stands beside the Key the height dimension runs in the aisle between
+    // them (its value clear of the figure's head and of its own ↕ value), and glides back to clear the grain rings
+    // when the figure leaves. Too narrow an aisle → it goes outside the figure.
+    if (dims.length && rig.camera) {
+      vOffIdle = idleOffsets(si);
+      dims[1].setOffset(oOff);
+      const fb = keepout.get('fig:ty');
+      let want = vOffIdle, wantAt = 0.5;
+      if (fb) {
+        const keyL = si.x - si.rx * 1.02, aisle = keyL - fb.x1;
+        want = si.x - (aisle >= 70 ? (fb.x1 + keyL) / 2 : fb.x0 - 44);
+        // in the aisle the value rides high, beside S·A·M where the grain orbits are narrow (the • orbits fill the
+        // aisle at mid-height) and well above the figure's head
+        if (aisle >= 70) wantAt = 0.26;
+      }
+      const kk = 1 - Math.exp(-(dt * 1000) / 90);
+      vOff += (want - vOff) * kk;
+      if (Math.abs(want - vOff) < 0.25) vOff = want;
+      dims[0].setOffset(vOff);
+      vAt += (wantAt - vAt) * kk;
+      if (Math.abs(wantAt - vAt) < 0.002) vAt = wantAt;
+      dims[0].setLabelAt(vAt);
+      // Ø 1.24 М stays the assembled Key's diameter, under the assembled tip. When the exploded N reaches through it, the
+      // line breaks around the cone (it passes behind the object) and the value steps aside to the left of the tip.
+      if (dims[1] && rig.camera) {
+        _w.set(0, N_BOT, 0).applyMatrix4(K.strata[6].matrixWorld); rig.project(_w, _pp);
+        const lineY = si.y + dims[1].offset, depth = _pp.y - lineY;
+        let at = 0.5, bh = 0, bt = 0.5;
+        if (depth > -3 && si.rx > 4) {
+          bt = (_pp.x - (si.x - si.rx)) / (2 * si.rx);
+          bh = Math.max(0, depth + 3) * N_SLOPE + 5;
+          at = Math.max(0.16, bt - (bh + 40) / (2 * si.rx));
+        }
+        oAt += (at - oAt) * kk;
+        if (Math.abs(at - oAt) < 0.002) oAt = at;
+        dims[1].setLabelAt(oAt);
+        dims[1].setBreak(bt, bh);
+      }
+    }
     const p = input.pointer;
     const can = interactiveRest && !K.dragging && layout.kind === 'desktop' && p.type === 'mouse' && p.x > -9000 && !p.down;
     let inside = false;
@@ -204,7 +278,15 @@ export function createHover(K, ctx) {
       const gapX = colX - sxs[i];
       const near = gapX < COORD_W;
       const need = Math.max(near ? NEAR_RISE : MIN_RISE, gapX - LAYOUT.leader.runMax);
-      zv[i] = sy[i] + (i <= 3 || near ? -need : need) - i * BLOCK_H;
+      let tgt = sy[i] + (i <= 3 || near ? -need : need);
+      // A leader's run never crosses text the drawing owns (his name on the rim, the status line…): its block moves
+      // to the nearer side of that box (the column solve below keeps every block clear of the others).
+      for (let q = 0; q < keepout.boxes.length; q++) {
+        const b = keepout.boxes[q];
+        if (!b.on || b.id.startsWith('fig:') || colX < b.x0 || sxs[i] > b.x1) continue;
+        if (tgt > b.y0 - 10 && tgt < b.y1 + 10) tgt = tgt - (b.y0 - 10) < b.y1 + 10 - tgt ? b.y0 - 10 : b.y1 + 10;
+      }
+      zv[i] = tgt - i * BLOCK_H;
     }
     let nb = 0;
     for (let i = 0; i < 7; i++) {
@@ -215,6 +297,16 @@ export function createHover(K, ctx) {
       }
     }
     for (let b = 0, i = 0; b < nb; b++) for (let k = 0; k < pn[b]; k++, i++) ty[i] = pv[b] + i * BLOCK_H;
+    // A live coordinate sits right-below its cross; where it reaches into the column (a stratum whose silhouette is near
+    // it: M, •) the blocks below start under it, so it never has to dodge onto the Key's faces.
+    let lb = -Infinity;
+    for (let i = 0; i < 7; i++) {
+      if (ty[i] < lb) ty[i] = lb;
+      if (i > 0 && ty[i] < ty[i - 1] + BLOCK_H) ty[i] = ty[i - 1] + BLOCK_H;
+      anchors[i].coordSize(csz);
+      const cw = (csz.w || COORD_W) + 2 * COORD_PAD, ch = (csz.h || 12) + 2 * COORD_PAD;
+      if (sxs[i] + 8 + cw > colX && ty[i] + BLOCK_H / 2 <= sy[i] + 6) lb = Math.max(lb, sy[i] + 6 + ch + 6 + BLOCK_H / 2);
+    }
     // Keep the column on screen (a 64 px margin top and bottom), shifting the whole stack.
     const lo = 64 + BLOCK_H / 2 - ty[0], hi = layout.h - 64 - BLOCK_H / 2 - ty[6];
     const shift = lo > 0 ? lo : hi < 0 ? hi : 0;
@@ -240,7 +332,54 @@ export function createHover(K, ctx) {
       if (blocks[i].style.opacity !== op) blocks[i].style.opacity = op;
     }
     laid = true;
+    placeCoords();
   };
+
+  /** The live coordinates (MICRO, beside each survey cross): a deterministic, greedy screen-space pass. For each
+   *  anchor, every candidate quadrant is scored by its overlap with the label column, the coordinates already placed,
+   *  every leader (its own one counts double) and the keep-out boxes (dimension values, rim name, scale figure,
+   *  status); the cheapest wins, but the current one is kept unless the new one is clearly better (no flicker). */
+  function placeCoords() {
+    const W = layout.w || 1440, Hh = layout.h || 900;
+    for (let i = 0; i < 7; i++) if (!blockW[i]) { blockW[i] = Math.max(120, wraps[i].offsetWidth || 0); blockH[i] = Math.min(BLOCK_H, Math.max(40, wraps[i].offsetHeight || 0)); }
+    let n = 0;
+    for (let i = 0; i < 7; i++) {
+      const a = anchors[i];
+      a.coordSize(csz);
+      const cw = csz.w || COORD_W, ch = csz.h || 12;
+      const cx = a.screen.x, cy = a.screen.y;
+      let best = -1, bestC = Infinity, prevC = Infinity;
+      for (let c = 0; c < CAND.length; c++) {
+        const cd = CAND[c], dx = cd[0], dy = cd[1], left = cd[2], bias = cd[3];
+        const x0 = left ? cx + dx - cw : cx + dx, x1 = x0 + cw;
+        const y0 = dy >= 0 ? cy + dy : cy + dy - ch, y1 = y0 + ch;
+        const X0 = x0 - COORD_PAD, Y0 = y0 - COORD_PAD, X1 = x1 + COORD_PAD, Y1 = y1 + COORD_PAD;
+        let cost = bias + keepout.overlap(X0, Y0, X1, Y1);
+        if (x0 < 8 || x1 > W - 8 || y0 < 8 || y1 > Hh - 8) cost += 1e5;
+        for (let j = 0; j < 7; j++) {
+          const bx0 = colShown - 4, by0 = blockY[j] - blockH[j] / 2 - 5;     // a block keeps 5 px of air around it
+          const w = Math.min(X1, bx0 + blockW[j] + 4) - Math.max(X0, bx0), h = Math.min(Y1, by0 + blockH[j] + 10) - Math.max(Y0, by0);
+          if (w > 0 && h > 0) cost += 2 * w * h;
+          const L = leaders[j], sx = anchors[j].screen.x, sy2 = anchors[j].screen.y;
+          const ex = sx + Math.abs(L.rise), ey = sy2 + L.rise;
+          if (segHits(sx, sy2, ex, ey, X0, Y0, X1, Y1) || segHits(ex, ey, colShown, ey, X0, Y0, X1, Y1)) cost += j === i ? 900 : 500;
+        }
+        for (let k = 0; k < n; k++) {
+          const w = Math.min(X1, placed[k * 4 + 2]) - Math.max(X0, placed[k * 4]), h = Math.min(Y1, placed[k * 4 + 3]) - Math.max(Y0, placed[k * 4 + 1]);
+          if (w > 0 && h > 0) cost += 2 * w * h;
+        }
+        if (c === coordPick[i]) prevC = cost;
+        if (cost < bestC) { bestC = cost; best = c; }
+      }
+      if (coordPick[i] >= 0 && prevC <= bestC + 60) best = coordPick[i];
+      coordPick[i] = best;
+      const cd = CAND[best], dx = cd[0], dy = cd[1], left = cd[2];
+      const y0 = dy >= 0 ? dy : dy - ch;
+      a.setCoordPlace(dx, y0, !!left);
+      const x0 = left ? cx + dx - cw : cx + dx;
+      placed[n * 4] = x0; placed[n * 4 + 1] = cy + y0; placed[n * 4 + 2] = x0 + cw; placed[n * 4 + 3] = cy + y0 + ch; n++;
+    }
+  }
   /** A14: the dims may be withheld (e.g. while UNFOLD is open) — WP1-internal switch. */
   H.setDimsAllowed = (b) => { dimsKey = b ? 0 : -1; };
   return H;

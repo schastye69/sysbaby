@@ -13,6 +13,7 @@ import { scaleEngine } from '../render/scale.js';
 import { rig } from '../render/cameraRig.js';
 import { WORLD } from '../data/world.js';
 import { thin } from '../core/ru.js';
+import { keepout } from '../ui/keepout.js';
 
 const BODY = [0.030, 0.860, 0.105, 0.830, 0.135, 0.790, 0.140, 0.640, 0.130, 0.470, 0.108, 0.465, 0.102, 0.640, 0.092, 0.735,
   0.088, 0.500, 0.078, 0.020, 0.080, 0.000, 0.018, 0.000, 0.012, 0.455];
@@ -38,6 +39,7 @@ export function createScaleFigure(F) {
   const hTy = +op.heightM > 0 ? +op.heightM : 1.30;
   const hPa = +op.papaHeightM > 0 ? +op.papaHeightM : 0;
   const figs = hPa ? [{ id: 'ty', name: 'ТЫ', h: hTy, x: -1.15 }, { id: 'papa', name: 'ПАПА', h: hPa, x: -1.75 }] : [{ id: 'ty', name: 'ТЫ', h: hTy, x: -1.25 }];
+  for (const f of figs) f.kid = `fig:${f.id}`;
   const seg = new Float32Array(figs.length * 51 * 6);
   let n = 0;
   for (const f of figs) n = outline(f.h, f.x, seg, n);
@@ -93,6 +95,7 @@ export function createScaleFigure(F) {
     hide(ms = 240) {
       if (!vis) return;
       vis = false; ctxName = null;
+      for (const f of figs) keepout.off(f.kid);
       fade(0, ms);
       clearDom();
     },
@@ -112,6 +115,14 @@ export function createScaleFigure(F) {
         tiny = t;
         for (const an of anchors) an.update({ leader: t ? { side: 'left', len: 48, rise: -32 } : null, cross: false });
         for (const d of dimsList) d.setVisible(!t);
+      }
+      // The figure's screen box (outline + label above the head) is a keep-out for the drawing's own text and lines.
+      for (const g of figs) {
+        if (!vis || tiny) { keepout.off(g.kid); continue; }
+        rig.project(toR(g.x - 0.15 * g.h, 0, _a), pa); rig.project(toR(g.x + 0.15 * g.h, g.h, _b), pb);
+        if (pa.depth > 0 && pb.depth > 0) {
+          keepout.set(g.kid, Math.min(pa.x, pb.x), Math.min(pa.y, pb.y) - 22, Math.max(pa.x, pb.x), Math.max(pa.y, pb.y));
+        } else keepout.off(g.kid);
       }
       lines.setAlpha(0.7 * alpha * (tiny ? 0 : 1));
       dot.setAlpha(tiny ? alpha : 0);

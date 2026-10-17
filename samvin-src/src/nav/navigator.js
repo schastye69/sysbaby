@@ -23,6 +23,7 @@ import { worldCounts } from '../data/world.js';
 import { vibrate, VIBE } from '../ui/tactile.js';
 import { adjacentRoom } from './elevator.js';
 import { GESTURE } from '../core/input.js';
+import { keepout } from '../ui/keepout.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const SIGNS = ['S', 'A', 'M', '•', 'V', 'I', 'N'];
@@ -30,7 +31,16 @@ const C = new Float64Array(7);                 // row / cell centres along the g
 const ALT = ROOM_ORDER.map((id) => ROOMS[id].alt);
 let ctx = null, mode = 'desktop', W = 56, H = 300;
 let root = null, drawSvg = null, crackPath = null, needleEl = null, tickEl = null, twinEl = null, twinPaths = null;
-let slotsEl = null, zenithEl = null, ringEl = null, ringFill = null, nameEl = null;
+let slotsEl = null, zenithEl = null, ringEl = null, ringFill = null, nameEl = null, nameRaf = 0;
+/** Phone: the hall name above the band is a keep-out (the drawing's lines break behind it); one read per change. */
+function nameBox() {
+  if (nameRaf) return;
+  nameRaf = requestAnimationFrame(() => {
+    nameRaf = 0;
+    const r = nameEl && root && root.classList.contains('is-shown') ? nameEl.getBoundingClientRect() : null;
+    if (r && r.width > 0 && r.height > 0) keepout.set('navname', r.left, r.top, r.right, r.bottom); else keepout.off('navname');
+  });
+}
 const rows = [], strata = [];
 let current = 'CORE', liveAlt = 0, shownNeedle = NaN, hot = -1, expanded = false, wheelAcc = 0, wheelT = -1e9;
 // needle overrides: a pendulum (hint swing), the rubber band (overpull), the S13 pull hint
@@ -413,7 +423,7 @@ export const keyNav = {
     if (state.data && state.data.nadirOpen) { crackPath.style.strokeDashoffset = '0'; crackPath.classList.add('is-cool'); }
     keyNav.showZenith(!!(state.data && state.data.found && state.data.found.S13));
     keyNav.setCurrent(app.room || 'CORE');
-    bus.on('layout:change', () => { layoutDom(); setExpanded(false); });
+    bus.on('layout:change', () => { layoutDom(); setExpanded(false); nameBox(); });
     bus.on('secret:found', (e) => { if (e.id === 'S13') keyNav.showZenith(true); });
     bus.on('room:arrive', () => { try { if (worldCounts().unread > 0) keyNav.blink('S'); } catch (err) { /* counts unavailable */ } });
     loop.add(frame, ORDER.UI);
@@ -425,11 +435,12 @@ export const keyNav = {
     if (!root) return Promise.resolve();
     const ms = opts.ms != null ? opts.ms : TIMING.drawIn;
     root.classList.add('is-shown');
+    nameBox(); after(520, nameBox);   // again once the band has slid in
     for (const s of strata) { s.style.transition = 'none'; s.style.strokeDasharray = '1'; s.style.strokeDashoffset = '1'; }
     requestAnimationFrame(() => { for (const s of strata) { s.style.transition = `stroke-dashoffset ${ms}ms cubic-bezier(.16,1,.3,1),stroke .24s`; s.style.strokeDashoffset = '0'; } });
     return new Promise((res) => after(ms, () => { for (const s of strata) { s.style.strokeDasharray = ''; s.style.strokeDashoffset = ''; s.style.transition = ''; } res(); }));
   },
-  hide() { if (root) { root.classList.remove('is-shown'); setExpanded(false); } },
+  hide() { if (root) { root.classList.remove('is-shown'); setExpanded(false); } keepout.off('navname'); },
 
   /** Outline --silver + letter --ember; phone: the Russian name above the band. */
   setCurrent(roomId) {
@@ -440,7 +451,7 @@ export const keyNav = {
       strata[i].classList.toggle('is-current', i === k);
     }
     const m = ROOMS[current];
-    if (nameEl) nameEl.textContent = current === 'NADIR' && state.data && state.data.nadirOpen ? m.nameOpen : m.name;
+    if (nameEl) { nameEl.textContent = current === 'NADIR' && state.data && state.data.nadirOpen ? m.nameOpen : m.name; nameBox(); }
     liveAlt = m.alt;
   },
   /** The needle at the live canonical altitude (m). */

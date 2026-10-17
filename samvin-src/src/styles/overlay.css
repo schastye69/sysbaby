@@ -11,6 +11,10 @@
 .anchor :is(a,button,.verb,[data-interactive]){pointer-events:auto}
 .coord,.dim-label{color:var(--pewter)}
 .dim-label{padding:0 var(--dim-gap)}
+/* Figures over the world (dimension values, live coordinates) are knocked out of it, as a drawing interrupts its
+   hatching around a figure: a feathered --void field behind the glyphs (no box, no border), plus the glyph halo. */
+.dim-label,.coord{background:radial-gradient(ellipse farthest-side,rgba(var(--void-rgb),.88) 72%,rgba(var(--void-rgb),0))}
+.coord{padding:2px 7px;margin:-2px -7px}
 /* DOM proxies: real buttons projected onto 3D items (Tab / Enter / phone hit targets); focus = the ember cross. */
 button.proxy{width:var(--hit);height:var(--hit);margin:-22px 0 0 -22px;font-size:0;color:transparent}
 @media (pointer:fine){button.proxy{cursor:none}}

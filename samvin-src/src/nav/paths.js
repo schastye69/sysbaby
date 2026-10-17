@@ -211,7 +211,9 @@ export function buildDive(start, stratum, opts = {}) {
         out.fog = logLerp(fog0, toFog, clamp01(fogT));
         const fadeOut = 1 - win(u, sw0, tSwap, D);
         out.fade.vin = vin0 * fadeOut;
-        out.rim = rim0 * fadeOut; out.pillar = pil0 * fadeOut;
+        // His name (and its subline + lit nodes) is the CORE's caption, not a wall the camera flies past: it leaves
+        // with the departure (as in LIFT / RECALL), before the flight carries it under the bottom chrome.
+        out.rim = rim0 * (1 - win(u, 0, TIMING.depart, D)); out.pillar = pil0 * fadeOut;
         out.shellFrom = fadeOut; out.shellTo = 0;
         out.morph.kind = 'dive'; out.morph.i = i; out.morph.tMs = first ? tb * K : tb; out.morph.D = first ? TIMING.diveFirst : TIMING.dive;
       } else {
