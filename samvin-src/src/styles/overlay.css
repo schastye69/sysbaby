@@ -13,8 +13,13 @@
 .dim-label{padding:0 var(--dim-gap)}
 /* Figures over the world (dimension values, live coordinates) are knocked out of it, as a drawing interrupts its
    hatching around a figure: a feathered --void field behind the glyphs (no box, no border), plus the glyph halo. */
-.dim-label,.coord{background:radial-gradient(ellipse farthest-side,rgba(var(--void-rgb),.88) 72%,rgba(var(--void-rgb),0))}
-.coord{padding:2px 7px;margin:-2px -7px}
+.dim-label{background:radial-gradient(ellipse farthest-side,rgba(var(--void-rgb),.88) 72%,rgba(var(--void-rgb),0))}
+/* a live coordinate rides on its leader's shoulder: its field is the full text line (feathered at all four sides, so it
+   reads as the drawing stopping around the figure, never as a box); dust and far struts pass behind it */
+.coord{padding:3px 9px;margin:-3px -9px;
+  background:linear-gradient(90deg,rgba(var(--void-rgb),0),rgba(var(--void-rgb),.94) 8px,rgba(var(--void-rgb),.94) calc(100% - 8px),rgba(var(--void-rgb),0));
+  -webkit-mask-image:linear-gradient(transparent,#000 3px,#000 calc(100% - 3px),transparent);
+  mask-image:linear-gradient(transparent,#000 3px,#000 calc(100% - 3px),transparent)}
 /* DOM proxies: real buttons projected onto 3D items (Tab / Enter / phone hit targets); focus = the ember cross. */
 button.proxy{width:var(--hit);height:var(--hit);margin:-22px 0 0 -22px;font-size:0;color:transparent}
 @media (pointer:fine){button.proxy{cursor:none}}

@@ -267,7 +267,7 @@ export function runPhone(ctx, B, marks) {
         sayGreeting(ctx, news);
         B.said = true;
         if (news.transmission) tl.at(hitV + 1400, () => { if (ctx.keyNav) ctx.keyNav.blink('S'); });
-      } else if (!wake) B.sayNotice();
+      } else if (!wake) B.sayNotice(prosvet);
     };
     B.planPause(tl, lastAt, hitV, { kind: wake ? 'wake' : 'boot', prosvet, pause: pauseOn, lead: 150 }, hit);
     // the axis, the pull-back, the band and the chrome

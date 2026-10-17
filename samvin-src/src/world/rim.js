@@ -41,12 +41,13 @@ const LETTER_M = 12.5;
  *  so the stack keeps its air; desktop and landscape keep SPEC's ≈ 60 px. */
 const letterM = () => (layout.kind === 'desktop' || (layout.w || 0) > (layout.h || 1) ? LETTER_M : LETTER_M * 0.86);
 const ROLE_FRAC = 0.22;               // A3.1
-const ROLE_GAP = 0.24;                // cap bottom → subline cap top (× h): name + subline read as one caption
+const ROLE_GAP = 0.2;                 // cap bottom → subline cap top (× h): name + subline read as one caption
+const NODE_ROW = 12;                  // lit nodes per row of his ledger (on the subline)
 /** px under the Key's lower tip down to the bottom of its `Ø 1.24 М` value (the line + half the 12 px MICRO box) */
 const DIM_CLEAR = LAYOUT.dims.keyBelowPx + 6;
 /** The caption hangs from the Ø value: its cap line sits CAP_AIR × cap height below it (min 12 px), so the Key, its
  *  dimension and his name read as one drawing, and the space left over opens up above the status line. */
-const CAP_AIR = 0.3;
+const CAP_AIR = 0.2;
 const MICRO_FRAC = 0.16;              // `ГОСТИ · {n}` (MICRO-sized rim text)
 const GAP_FRAC = 0.3;                 // A4.1 gap between names in a row (× h_g)
 const ROW_FRAC = 1.25;                // A4.1 row pitch (× h_g)
@@ -276,7 +277,7 @@ export function createRim(ctx) {
     let cTop = -Infinity, cBot = Infinity;
     for (const it of items) { if (it.kind === 'role' && !roleText) continue; cTop = Math.max(cTop, it.y + it.h / 2); cBot = Math.min(cBot, it.y - it.h / 2); }
     const capPx = Math.max(1, screenY(0, zFace) - screenY(hName, zFace));
-    const topY = worldYForScreen(keyBottom + DIM_CLEAR + Math.max(12, CAP_AIR * capPx)), bottomY = worldYForScreen(limit);
+    const topY = worldYForScreen(keyBottom + DIM_CLEAR + Math.max(10, CAP_AIR * capPx)), bottomY = worldYForScreen(limit);
     lastAvail = topY - bottomY;
     lastBlockH = cTop - cBot;
     nameY = topY - cTop;
@@ -326,15 +327,29 @@ export function createRim(ctx) {
   let fitting = false;
   const cap4 = new Vector4();
 
+  let nodeX1 = 0;                  // the ledger's right edge (group m), for the keep-out
   function placeNodes() {
     const it = items[0];
     if (!it) return;
-    // A ledger set like type: node 1 sits on the baseline right after the last letter (a full stop, not a stray
-    // spark), the next ones climb the cap height (baseline, x-height, cap line), then the next column.
-    const step = it.h * 0.42, x0 = it.x + it.w / 2 + it.h * 0.3, yb = nameY + it.y - it.h / 2 + it.h * 0.08;
-    for (let k = 0; k < cap; k++) {
-      const col = Math.floor(k / 3), row = k % 3;
-      pos[k * 3] = x0 + col * step; pos[k * 3 + 1] = yb + row * step; pos[k * 3 + 2] = zFace + 0.6;
+    const role = roleText ? items.find((q) => q.kind === 'role') : null;
+    if (role && role.w > 0) {
+      // The founder's lamp: the ledger is set on his ОСНОВАТЕЛЬ line — one letter-space after the word, on the line's
+      // centre — so node 1 reads as the light of his role (a lit window), never as a spark beside the big letters; the
+      // next nodes follow it along the line like windows, NODE_ROW to a row, further rows a line-pitch lower.
+      const step = role.h * 1.5, x0 = role.x + role.w / 2 + role.h * 1.3, yc = nameY + role.y;
+      for (let k = 0; k < cap; k++) {
+        const col = k % NODE_ROW, row = Math.floor(k / NODE_ROW);
+        pos[k * 3] = x0 + col * step; pos[k * 3 + 1] = yc - row * step; pos[k * 3 + 2] = zFace + 0.6;
+      }
+      nodeX1 = x0 + (Math.min(Math.max(lit, 1), NODE_ROW) - 1) * step + role.h * 0.5;
+    } else {
+      // no role line: node 1 sits on the name's baseline after the last letter, the next ones climb the cap height
+      const step = it.h * 0.42, x0 = it.x + it.w / 2 + it.h * 0.3, yb = nameY + it.y - it.h / 2 + it.h * 0.08;
+      for (let k = 0; k < cap; k++) {
+        const col = Math.floor(k / 3), row = k % 3;
+        pos[k * 3] = x0 + col * step; pos[k * 3 + 1] = yb + row * step; pos[k * 3 + 2] = zFace + 0.6;
+      }
+      nodeX1 = x0 + Math.ceil(Math.max(lit, 1) / 3) * step;
     }
     nodes.setPositions(pos, cap);
     nodes.setCount(lit);
@@ -371,7 +386,7 @@ export function createRim(ctx) {
   loop.add(() => {
     // keep-out: the caption's screen box while it is on (the axis and the coordinates stay clear of his name)
     if (shown && alpha > 0.05 && plane.visible && group.visible && rig.camera) {
-      _k0.set(cap4.x, cap4.w, zFace); _k1.set(cap4.z + (lit > 0 ? 0.3 * hName + Math.ceil(lit / 3) * 0.42 * hName : 0), cap4.y, zFace);
+      _k0.set(cap4.x, cap4.w, zFace); _k1.set(lit > 0 ? Math.max(cap4.z, nodeX1) : cap4.z, cap4.y, zFace);
       group.localToWorld(_k0); group.localToWorld(_k1);
       rig.project(_k0, _q0); rig.project(_k1, _q1);
       if (_q0.depth > 0 && _q1.depth > 0) keepout.set('rim', Math.min(_q0.x, _q1.x), Math.min(_q0.y, _q1.y), Math.max(_q0.x, _q1.x), Math.max(_q0.y, _q1.y));
@@ -515,7 +530,7 @@ export function createRim(ctx) {
     setLitNodes(n) {
       const v = Math.max(0, Math.min(cap, n | 0));
       lit = v;
-      nodes.setCount(lit);
+      placeNodes();
     },
     /** WP2 internal: the new day's node appears with a 1-frame electrum flash (SPEC §4.3). */
     flashNewNode() {

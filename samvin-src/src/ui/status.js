@@ -25,19 +25,36 @@ import { WORLD } from '../data/world.js';
 import { missionView } from '../halls/voyages/missionModel.js';
 import { TIMING } from '../core/tokens.js';
 import { keepout } from './keepout.js';
+import { layout } from '../core/layout.js';
 
 const queue = [];
 let el = null, live = null, holdTimer = 0, idleTimer = 0, idleIdx = 0, raf = 0, boxRaf = 0;
 
-/** The line's box → keep-out (one layout read per message / relayout, in the frame after it is written). */
+/** The line's box → keep-out (one layout read per message / relayout, in the frame after it is written). Until that
+ *  read, the new line holds the last measured line band, centred, at an estimated width (16 px STATUS ≈ 0.52 em per
+ *  glyph): a line said on a hit frame (ПРОСВЕТ) is clear of the axis from its first frame, without a forced layout. */
+const lastBand = { top: 0, bottom: 0, cx: 0, ok: false };
 function boxSoon() {
-  if (!el || boxRaf) return;
+  if (!el) return;
+  if (status.current && lastBand.ok) {
+    const hw = Math.min(lastBand.cx - 8, status.current.text.length * 4.2 + 4);
+    keepout.set('status', lastBand.cx - hw, lastBand.top, lastBand.cx + hw, lastBand.bottom);
+  }
+  if (boxRaf) return;
   boxRaf = requestAnimationFrame(() => {
     boxRaf = 0;
-    if (!el || !status.current) { keepout.off('status'); return; }
+    if (!el || !status.current) {
+      keepout.off('status');
+      // no line: still learn where the line band is (its bottom is fixed; one 22 px line), for the first message
+      try { const r = el && el.getBoundingClientRect(); if (r) { lastBand.bottom = r.bottom; lastBand.top = r.bottom - 22; lastBand.cx = (layout.w || innerWidth) / 2; lastBand.ok = r.bottom > 0; } } catch (e) { /* none */ }
+      return;
+    }
     try {
       const r = el.getBoundingClientRect();
-      if (r.width > 0) keepout.set('status', r.left, r.top, r.right, r.bottom); else keepout.off('status');
+      if (r.width > 0) {
+        keepout.set('status', r.left, r.top, r.right, r.bottom);
+        lastBand.top = r.top; lastBand.bottom = r.bottom; lastBand.cx = (r.left + r.right) / 2; lastBand.ok = true;
+      } else keepout.off('status');
     } catch (e) { keepout.off('status'); }
   });
 }
@@ -62,15 +79,21 @@ export function fillStatus(tpl, vars) {
   });
 }
 
-function render(msg) {
+function render(msg, cut) {
   status.current = msg;
   app.status = msg.text;
   if (live) live.textContent = msg.text;
   if (el) {
-    el.classList.remove('is-in');
-    el.textContent = msg.text;
     if (raf) cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => { raf = 0; el.classList.add('is-in'); });
+    el.textContent = msg.text;
+    if (cut) {
+      // a line said on a hit (the flash of ПРОСВЕТ) is there with the flash: no fade-in to be caught half-way
+      el.classList.add('is-cut', 'is-in');
+      raf = requestAnimationFrame(() => { raf = 0; el.classList.remove('is-cut'); });
+    } else {
+      el.classList.remove('is-in');
+      raf = requestAnimationFrame(() => { raf = 0; el.classList.add('is-in'); });
+    }
   }
   if (holdTimer) cancelAfter(holdTimer);
   holdTimer = after(TIMING.statusHold, onHoldEnd);
@@ -86,7 +109,7 @@ function onHoldEnd() {
   else if (status.current && status.current.leaving) fadeOut();
 }
 
-function show(msg) { msg.at = loop.now; msg.leaving = false; render(msg); }
+function show(msg, cut) { msg.at = loop.now; msg.leaving = false; render(msg, cut); }
 
 /** A travel starts: what was said about the old place goes (see the header). */
 function onTravel() {
@@ -149,6 +172,7 @@ export const status = {
     if (!idleTimer) idleTimer = after(TIMING.idleRotate, onIdleTick);
     bus.on('travel:start', onTravel);
     bus.on('layout:change', boxSoon);
+    boxSoon();
     return status;
   },
 
@@ -159,8 +183,9 @@ export const status = {
     const msg = { key, text: fillStatus(c.text, vars), p: c.p, at: 0 };
     const cur = status.current;
     if (cur && cur.text === msg.text && !held()) return true;            // already on screen
-    if (opts && opts.force) { show(msg); return true; }
-    if (!cur || held()) { show(msg); return true; }
+    const cut = !!(opts && opts.cut);
+    if (opts && opts.force) { show(msg, cut); return true; }
+    if (!cur || held()) { show(msg, cut); return true; }
     if (msg.p === 1 && cur.p > 1) { show(msg); return true; }
     enqueue(msg);
     return true;

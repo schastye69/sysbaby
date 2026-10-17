@@ -95,6 +95,11 @@ function setPillarAlpha(a) {
   }
   p.visible = a > 0.001;
 }
+/** A travel's end pose leaves the Key at rest (RECALL's u = 1, a reverted DIVE's u = 0): the morph channel is released,
+ *  so the Key is the CORE's interactive object again (hover, leaders, the A14 dims) — not a morph frozen at its rest. */
+function releaseMorph() {
+  if (ctx.key && applied.morph !== 'none') { ctx.key.setMorph('none', 3, 0, 1); applied.morph = 'none'; }
+}
 function setRim(a) { if (ctx.rim && applied.rim !== a) { applied.rim = a; ctx.rim.setAlpha(a); } }
 
 function applyWorld(o) {
@@ -298,6 +303,7 @@ function arrive() {
   // arrival — its overlay proxies (Tab order, A1) — is projected from where the visitor actually stands.
   if (ctx.renderer) rig.apply(0);
   copyPoseOut(out, cur);
+  releaseMorph();
   stopVoice();
   fxOut.active = false;
   if (playing) { arrivePlay(path, from, to); return; }
@@ -382,6 +388,7 @@ function revert() {
   path.pose(0, out);
   applyWorld(out);
   copyPoseOut(out, cur);
+  releaseMorph();
   stopVoice();
   fxOut.active = false; playing = false;
   st.phase = 'idle'; st.scrubbing = false; st.u = 0; app.u = 0;

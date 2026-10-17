@@ -83,13 +83,18 @@ void main() {
   float coc = fxCoc(-va.z * 0.5 + -vb.z * 0.5);
   float wpx = max(aW * uWidth * uPixelRatio, 0.0);
   float flm = uImpact > 0.0 ? fxImpactLight(0.5 * (wa.xyz + wb.xyz)) : 1.0;   // ПРОСВЕТ: this member's share of the flash
-  float wpxQuad = wpx * (1.0 + 0.5 * max(uImpact, uImpactWarm) * uFxCaps.x) + coc * uFxCaps.x * uPixelRatio;
+  // ПРОСВЕТ width (T3 / T2 desktop, uFxCaps.x): SPEC's × (1 + 0.5·u), plus the light's own weight — a hall member the
+  // flash lights fully (the near walls on the sheet) draws up to 3× its width, the far / off-sheet ones barely widen, the
+  // Key itself (near field) keeps the SPEC's × 1.5: near/far
+  // line weight, so the flash reads as a hall in depth lit from one source (quad sized for the widest case).
+  float wpxQuad = wpx * (1.0 + 2.0 * max(uImpact, uImpactWarm) * uFxCaps.x) + coc * uFxCaps.x * uPixelRatio;
   float halfW = 0.5 * wpxQuad + 1.0;
   vec4 c = mix(ca, cb, position.x);
   vec4 v = mix(va, vb, position.x);
   c.xy += vec2(-dir.y, dir.x) * position.y * halfW / hr * c.w;
   gl_Position = c;
-  vSide = position.y * halfW; vHalfW = 0.5 * (wpx * (1.0 + 0.5 * uImpact * flm * uFxCaps.x) + coc * uFxCaps.x * uPixelRatio);
+  vSide = position.y * halfW; vHalfW = 0.5 * (wpx * (1.0 + uImpact * uFxCaps.x * (0.5 * flm
+    + 1.5 * smoothstep(0.4, 0.9, flm) * (uImpact > 0.0 ? fxImpactHall(0.5 * (wa.xyz + wb.xyz)) : 0.0))) + coc * uFxCaps.x * uPixelRatio);
   vAlong = position.x * len / uPixelRatio;
   float depth = -v.z;
   float al = aAl * uAlpha;
@@ -105,7 +110,7 @@ void main() {
   float w0 = max(aW * uWidth, 0.5);
   vec3 wp = mix(wa.xyz, wb.xyz, position.x);
   float fl = uImpact > 0.0 ? fxImpactLight(wp) : 1.0;
-  al = mix(al, min(1.0, al * max(1.0, 4.0 * fl * fl)), uImpact) * uFxLineA * (w0 / (w0 + coc));
+  al = mix(al, min(1.0, al * max(PV_FLOOR, 4.0 * fl * fl)), uImpact) * uFxLineA * (w0 / (w0 + coc));
   vec3 sd = wb.xyz - wa.xyz; float sl = length(sd);
   float g = sl > 1e-9 ? pow(1.0 - abs(dot(sd / sl, normalize(uLamp - wp))), 24.0) * uGlint * lampReach(wp) : 0.0;
 #ifdef USE_COL_ATTR
@@ -307,7 +312,8 @@ void main() {
 #else
   float tapW = 1.0 - spread * 2.0 / 3.0;
 #endif
-  vAlpha = min(1.0, vAlpha * uFxLineA * mix(1.0, max(1.0, 4.0 * fl * fl), uImpact) * tapW);
+  // the flash's share: the lit struts up to 4×, the ones it barely reaches recede (the eye adapts to the flash)
+  vAlpha = min(1.0, vAlpha * uFxLineA * mix(1.0, max(PV_FLOOR, 4.0 * fl * fl), uImpact) * tapW);
   vDist = length(v.xyz);
 }`;
 

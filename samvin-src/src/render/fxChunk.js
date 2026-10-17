@@ -55,6 +55,7 @@ float fxHeptagon(vec2 pc) {                             // 7-blade aperture SDF,
  *      horizontal angle (θh0) and, faster, with elevation (φ0); 30 % of the light fills the rest of the hall;
  *    • near field (≤ 0.1·R0, the Key itself) takes the full flash. */
 export const FX_LIGHT_GLSL = /* glsl */ `
+#define PV_FLOOR 0.45
 uniform vec3 uImpactSrc; uniform vec4 uImpactShape;
 float fxImpactLight(vec3 p) {
   vec3 v = p - uImpactSrc;
@@ -66,6 +67,9 @@ float fxImpactLight(vec3 p) {
   float sp = v.y / max(dl, 1e-6);                                          // sin of the elevation from the source
   float ba = exp(-2.0 * (1.0 - c) / max(uImpactShape.z * uImpactShape.z, 1e-6) - sp * sp / max(uImpactShape.w * uImpactShape.w, 1e-6));
   return mix(bd * mix(0.22, 1.0, ba), 1.0, 1.0 - smoothstep(0.1, 0.25, q));
+}
+float fxImpactHall(vec3 p) {                            // 0 in the near field (the Key itself), 1 on the hall's walls
+  return smoothstep(0.1, 0.25, length(p - uImpactSrc) / max(uWorldScale, 1e-9) / uImpactShape.x);
 }`;
 
 /** → { uWave0a, uWave0b, uWave1a, uWave1b, uImpact, uImpactWarm, uPulse, uFxLineA, uFocus, uFxCaps, uWorldScale }

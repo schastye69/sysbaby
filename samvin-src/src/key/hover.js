@@ -31,11 +31,17 @@ const DEG = Math.PI / 180;
 const zetaFor = (os) => -Math.log(os) / Math.sqrt(Math.PI * Math.PI + Math.log(os) ** 2);
 const OUT_ZETA = zetaFor(MOTION.settleOvershoot);           // 2 % overshoot
 const BLOCK_H = 78, MIN_RISE = 17, NEAR_RISE = 40, COORD_W = 122, HYST = 5;
+/** The coordinate lane: every leader's horizontal run (its shoulder) is at least SHOULDER px long, and its live
+ *  coordinate rides on it — right-aligned SHOULDER_END px short of the label column, above the run (a note on a
+ *  leader's shoulder, as a drawing sets it). The lane lies between the Key's silhouette and the column, so the MICRO
+ *  text never enters the column, never sits on the Key's faces, and no other leader crosses it (every diagonal ends
+ *  before the lane, every shoulder is a block pitch from the next). COL_RESERVE: the widest block + the navigator. */
+const SHOULDER_END = 10, SHOULDER_AIR = 16, COL_RESERVE = 330;
 /** Live-coordinate candidates beside the cross: [dx, dy, left] — dy > 0 = top edge below the cross by dy, dy < 0 =
  *  bottom edge above it by −dy; then the cost bias (right of the cross first: left of it lies on the Key's faces). */
 const CAND = [[8, 6, 0, 0], [8, -6, 0, 4], [8, 20, 0, 40], [8, -20, 0, 44], [30, 6, 0, 60], [30, -6, 0, 64],
   [8, 34, 0, 90], [8, -34, 0, 94], [-8, 6, 1, 4000], [-8, -6, 1, 4004]];
-const COORD_PAD = 3;
+const COORD_PAD = 3, NC = CAND.length + 2;
 function clip(p, q, t) {          // one Liang–Barsky edge; t = [t0, t1] (shared scratch), false = outside
   if (p === 0) return q >= 0;
   const r = q / p;
@@ -67,7 +73,7 @@ export function createHover(K, ctx) {
   const slide = [], turn = [];
   for (let i = 0; i < 7; i++) { slide.push(Spring.from(SPRING.heavy)); turn.push(Spring.from(SPRING.heavy)); }
   let insideSince = -1, overLabel = false, active = false, lastIdx = -1, lastPick = -1e9, emitted = -2;
-  let dimsOn = false, dimsKey = 0, dimsCheck = 0, laid = false, colShown = 0;
+  let dimsOn = false, dimsSnap = true, dimsKey = 0, dimsCheck = 0, laid = false, colShown = 0;
   const blockY = new Float32Array(7);
   const _w = new Vector3(), _r = new Vector3(), _l = new Vector3();
   const _pp = { x: 0, y: 0, depth: 0, visible: false };
@@ -78,6 +84,7 @@ export function createHover(K, ctx) {
   const sy = new Float32Array(7), ty = new Float32Array(7), sxs = new Float32Array(7), lastX = new Float32Array(7), lastY = new Float32Array(7);
   const blockW = new Float32Array(7), blockH = new Float32Array(7), coordPick = new Int8Array(7).fill(-1), placed = new Float32Array(28);
   const csz = { w: 0, h: 0 };
+  let shoulder = COORD_W + 2 * COORD_PAD + SHOULDER_END + SHOULDER_AIR;
   const anchorPoint = (i) => (out) => {
     // Right silhouette point at the widest ring, in render space (camera-right of the stratum axis).
     out.set(0, STRATA_GEOM[i].mid, 0).applyMatrix4(K.strata[i].matrixWorld);
@@ -171,9 +178,11 @@ export function createHover(K, ctx) {
     return Math.max(si.rx + 26, Math.min(ring + 46, si.x - 40));
   }
   function setDims(on, si) {
+    if (on && !(Number.isFinite(si.x) && Number.isFinite(si.r))) on = false;
     if (on && (!dims.length || Math.abs(si.rx - dimRx) > dimRx * 0.08)) { makeDims(si); dimsOn = false; }
     if (on === dimsOn) return;
     dimsOn = on;
+    if (on) dimsSnap = true;
     for (const d of dims) { d.setVisible(on); if (on) d.drawIn(TIMING.dimsDraw); }
   }
 
@@ -184,7 +193,10 @@ export function createHover(K, ctx) {
     // ↕ 2.40 М and the scale figure: while «ТЫ» stands beside the Key the height dimension runs in the aisle between
     // them (its value clear of the figure's head and of its own ↕ value), and glides back to clear the grain rings
     // when the figure leaves. Too narrow an aisle → it goes outside the figure.
-    if (dims.length && rig.camera) {
+    // (a frame whose Key projection is degenerate — the camera mid-cut, the nucleus behind it — leaves the dims as they
+    // were: a non-finite offset would otherwise stick in the low-pass and write NaN paths)
+    const siOk = Number.isFinite(si.x) && Number.isFinite(si.y) && Number.isFinite(si.r) && Number.isFinite(si.ry);
+    if (dims.length && rig.camera && siOk && (dimsRest || dimsOn)) {
       vOffIdle = idleOffsets(si);
       dims[1].setOffset(oOff);
       const fb = keepout.get('fig:ty');
@@ -197,6 +209,12 @@ export function createHover(K, ctx) {
         if (aisle >= 70) wantAt = 0.26;
       }
       const kk = 1 - Math.exp(-(dt * 1000) / 90);
+      // the low-pass glides only between rest frames; dims drawn (again) start at their place — after a travel the Key
+      // returns from another scale, and its projection there is no place to glide from
+      if (dimsSnap || !Number.isFinite(vOff)) vOff = want;
+      if (dimsSnap || !Number.isFinite(vAt)) vAt = wantAt;
+      if (dimsSnap || !Number.isFinite(oAt)) oAt = 0.5;
+      dimsSnap = false;
       vOff += (want - vOff) * kk;
       if (Math.abs(want - vOff) < 0.25) vOff = want;
       dims[0].setOffset(vOff);
@@ -268,7 +286,11 @@ export function createHover(K, ctx) {
     // Leader layout: the seven blocks never overlap (≥ BLOCK_H apart). Each block prefers to sit MIN_RISE above (S A M •)
     // or below (V I N) its anchor so every leader shows its 45° elbow; the least-squares placement under the spacing
     // constraint is an isotonic regression of (preferred − i·BLOCK_H), solved exactly by pool-adjacent-violators.
-    const colX = si.x + si.rx * 1.04 + 64;
+    // The lane for the live coordinates is the leaders' shoulder: the column stands a shoulder further right.
+    anchors[3].coordSize(csz);
+    shoulder = (csz.w || COORD_W) + 2 * COORD_PAD + SHOULDER_END + SHOULDER_AIR;
+    const runMax = shoulder + 72;
+    let colX = si.x + si.rx * 1.04 + 24 + shoulder;
     for (let i = 0; i < 7; i++) {
       getters[i](_w); rig.project(_w, _pp);
       sy[i] = _pp.y; sxs[i] = _pp.x;
@@ -277,7 +299,7 @@ export function createHover(K, ctx) {
       // the block) puts its block above the coordinate line.
       const gapX = colX - sxs[i];
       const near = gapX < COORD_W;
-      const need = Math.max(near ? NEAR_RISE : MIN_RISE, gapX - LAYOUT.leader.runMax);
+      const need = Math.max(near ? NEAR_RISE : MIN_RISE, gapX - runMax);
       let tgt = sy[i] + (i <= 3 || near ? -need : need);
       // A leader's run never crosses text the drawing owns (his name on the rim, the status line…): its block moves
       // to the nearer side of that box (the column solve below keeps every block clear of the others).
@@ -297,19 +319,13 @@ export function createHover(K, ctx) {
       }
     }
     for (let b = 0, i = 0; b < nb; b++) for (let k = 0; k < pn[b]; k++, i++) ty[i] = pv[b] + i * BLOCK_H;
-    // A live coordinate sits right-below its cross; where it reaches into the column (a stratum whose silhouette is near
-    // it: M, •) the blocks below start under it, so it never has to dodge onto the Key's faces.
-    let lb = -Infinity;
-    for (let i = 0; i < 7; i++) {
-      if (ty[i] < lb) ty[i] = lb;
-      if (i > 0 && ty[i] < ty[i - 1] + BLOCK_H) ty[i] = ty[i - 1] + BLOCK_H;
-      anchors[i].coordSize(csz);
-      const cw = (csz.w || COORD_W) + 2 * COORD_PAD, ch = (csz.h || 12) + 2 * COORD_PAD;
-      if (sxs[i] + 8 + cw > colX && ty[i] + BLOCK_H / 2 <= sy[i] + 6) lb = Math.max(lb, sy[i] + 6 + ch + 6 + BLOCK_H / 2);
-    }
     // Keep the column on screen (a 64 px margin top and bottom), shifting the whole stack.
     const lo = 64 + BLOCK_H / 2 - ty[0], hi = layout.h - 64 - BLOCK_H / 2 - ty[6];
     const shift = lo > 0 ? lo : hi < 0 ? hi : 0;
+    // Every shoulder at least a lane long: the column moves right of the furthest elbow (never off the screen's
+    // right side, where the widest block and the navigator need COL_RESERVE px).
+    for (let i = 0; i < 7; i++) colX = Math.max(colX, sxs[i] + Math.abs(ty[i] + shift - sy[i]) + shoulder);
+    colX = Math.min(colX, (layout.w || 1440) - COL_RESERVE);
     // The blocks hold still while the Key settles (explode spring, notice, lean): a block moves only when its ideal place
     // drifts more than HYST px; meanwhile the leader's elbow absorbs the anchor's motion. The rise is set against the
     // overlay's own low-passed anchor for this frame (same projection, same τ), so the block lands exactly on blockY.
@@ -320,7 +336,7 @@ export function createHover(K, ctx) {
       if (!laid || Math.abs(want - blockY[i]) > HYST) blockY[i] = Math.round(want);
       const scr = anchors[i].screen, fresh = scr.x === 0 && scr.y === 0;
       const ex = fresh ? sxs[i] : scr.x + (sxs[i] - scr.x) * k, ey = fresh ? sy[i] : scr.y + (sy[i] - scr.y) * k;
-      const room = Math.max(0, colShown - ex - LAYOUT.leader.elbowMin);   // the 45° elbow must end before the column
+      const room = Math.max(0, colShown - ex - Math.max(LAYOUT.leader.elbowMin, shoulder));   // the elbow ends before the lane
       const rise = Math.max(-room, Math.min(room, blockY[i] - ey));
       const len = colShown - (ex + Math.abs(rise));
       const L = leaders[i];
@@ -348,11 +364,16 @@ export function createHover(K, ctx) {
       a.coordSize(csz);
       const cw = csz.w || COORD_W, ch = csz.h || 12;
       const cx = a.screen.x, cy = a.screen.y;
+      const runY = cy + leaders[i].rise, elbowX = cx + Math.abs(leaders[i].rise);
       let best = -1, bestC = Infinity, prevC = Infinity;
-      for (let c = 0; c < CAND.length; c++) {
-        const cd = CAND[c], dx = cd[0], dy = cd[1], left = cd[2], bias = cd[3];
-        const x0 = left ? cx + dx - cw : cx + dx, x1 = x0 + cw;
-        const y0 = dy >= 0 ? cy + dy : cy + dy - ch, y1 = y0 + ch;
+      for (let c = 0; c < NC; c++) {
+        // 0, 1: on the shoulder (above, below its run), right-aligned short of the column; then the fallbacks beside
+        // the cross (a column pushed against the screen edge leaves no lane)
+        const sh = c < 2;
+        const cd = sh ? null : CAND[c - 2], left = sh ? 0 : cd[2];
+        const x0 = sh ? colShown - SHOULDER_END - cw : left ? cx + cd[0] - cw : cx + cd[0], x1 = x0 + cw;
+        const y0 = sh ? (c === 0 ? runY - 4 - ch : runY + 4) : cd[1] >= 0 ? cy + cd[1] : cy + cd[1] - ch, y1 = y0 + ch;
+        const bias = sh ? (c === 0 ? 0 : 24) + (x0 - COORD_PAD < elbowX + 4 ? 6000 : 0) : 200 + cd[3];
         const X0 = x0 - COORD_PAD, Y0 = y0 - COORD_PAD, X1 = x1 + COORD_PAD, Y1 = y1 + COORD_PAD;
         let cost = bias + keepout.overlap(X0, Y0, X1, Y1);
         if (x0 < 8 || x1 > W - 8 || y0 < 8 || y1 > Hh - 8) cost += 1e5;
@@ -363,6 +384,7 @@ export function createHover(K, ctx) {
           const L = leaders[j], sx = anchors[j].screen.x, sy2 = anchors[j].screen.y;
           const ex = sx + Math.abs(L.rise), ey = sy2 + L.rise;
           if (segHits(sx, sy2, ex, ey, X0, Y0, X1, Y1) || segHits(ex, ey, colShown, ey, X0, Y0, X1, Y1)) cost += j === i ? 900 : 500;
+          if (j !== i && segHits(sx - 5, sy2, sx + 5, sy2, X0, Y0, X1, Y1)) cost += 500;   // another survey cross
         }
         for (let k = 0; k < n; k++) {
           const w = Math.min(X1, placed[k * 4 + 2]) - Math.max(X0, placed[k * 4]), h = Math.min(Y1, placed[k * 4 + 3]) - Math.max(Y0, placed[k * 4 + 1]);
@@ -373,11 +395,17 @@ export function createHover(K, ctx) {
       }
       if (coordPick[i] >= 0 && prevC <= bestC + 60) best = coordPick[i];
       coordPick[i] = best;
-      const cd = CAND[best], dx = cd[0], dy = cd[1], left = cd[2];
-      const y0 = dy >= 0 ? dy : dy - ch;
-      a.setCoordPlace(dx, y0, !!left);
-      const x0 = left ? cx + dx - cw : cx + dx;
-      placed[n * 4] = x0; placed[n * 4 + 1] = cy + y0; placed[n * 4 + 2] = x0 + cw; placed[n * 4 + 3] = cy + y0 + ch; n++;
+      let x0, y0;
+      if (best < 2) {
+        x0 = colShown - SHOULDER_END - cw; y0 = best === 0 ? runY - 4 - ch : runY + 4;
+        a.setCoordPlace(Math.round(x0 - cx), Math.round(y0 - cy), false);
+      } else {
+        const cd = CAND[best - 2], dx = cd[0], dy = cd[1], left = cd[2];
+        const ry = dy >= 0 ? dy : dy - ch;
+        a.setCoordPlace(dx, ry, !!left);
+        x0 = left ? cx + dx - cw : cx + dx; y0 = cy + ry;
+      }
+      placed[n * 4] = x0; placed[n * 4 + 1] = y0; placed[n * 4 + 2] = x0 + cw; placed[n * 4 + 3] = y0 + ch; n++;
     }
   }
   /** A14: the dims may be withheld (e.g. while UNFOLD is open) — WP1-internal switch. */

@@ -223,7 +223,9 @@ export function buildDive(start, stratum, opts = {}) {
         out.fog = toFog;
         // The hall's frame (walls, deck/rings, pillar) is up within 240 ms of the swap, so the grown stratum hands over
         // to a lit room instead of a dark void (SPEC §7.2 "no cut, no fade to black"); props build on enterU.
-        const a = win(u, tSwap, Math.min(D, tSwap + TIMING.depart), D);
+        // The cut itself (in fog) already shows the room at 35 %: the grown stratum's dimension re-reads in hall units
+        // with the hall round it, never over a void.
+        const a = 0.35 + 0.65 * win(u, tSwap, Math.min(D, tSwap + TIMING.depart), D);
         for (let j = 0; j < 7; j++) out.vinStrata[j] = j === i ? 1 : a;
         out.rim = 0; out.pillar = a; out.shellFrom = 0; out.shellTo = a;
       }

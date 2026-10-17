@@ -157,10 +157,11 @@ export function createSession(ctx, kind, opts = {}) {
   };
 
   /** The status said at the ignition / notice (first visit: pointer seen or not). */
-  B.sayNotice = () => {
+  /** cut: said on the hit frame (the ignition, phone activation) — the line arrives with the flash, not fading in under it */
+  B.sayNotice = (cut) => {
     if (B.said || !ctx.status) return;
     B.said = true;
-    ctx.status.say(ctx.input.pointer.lastMove > 0 ? 'boot.pointer' : 'boot.nopointer');
+    ctx.status.say(ctx.input.pointer.lastMove > 0 ? 'boot.pointer' : 'boot.nopointer', {}, cut ? { cut: true } : undefined);
   };
 
   // ── ASSEMBLY pieces (each idempotent) ──

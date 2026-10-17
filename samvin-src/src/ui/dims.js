@@ -31,6 +31,7 @@ function geometry(d) {
   const s = d.side;
   if ((s === 'left' && nx > 0) || (s === 'right' && nx < 0) || (s === 'above' && ny > 0) || (s === 'below' && ny < 0)) { nx = -nx; ny = -ny; }
   const o = d.offset;
+  if (!Number.isFinite(o + pa.x + pa.y + pb.x + pb.y + d.at)) return false;   // never a NaN path
   const ax = pa.x + nx * o, ay = pa.y + ny * o, bx = pb.x + nx * o, by = pb.y + ny * o;
   // The value sits at d.at along the line (½ = centred; an owner moves it aside when the centre is taken).
   const tl = len * d.at, mx = ax + dx * tl, my = ay + dy * tl;

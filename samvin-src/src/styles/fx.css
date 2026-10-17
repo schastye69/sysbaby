@@ -8,7 +8,10 @@ background:linear-gradient(var(--silver),var(--silver)) 0 0/1px 4px no-repeat,li
 #fx .fx-rm{left:var(--title-x);top:calc(var(--datum-y) + 26px);opacity:0;will-change:auto}
 #fx .fx-sb.is-on,#fx .fx-rm.is-on{opacity:1}
 .fx-sd>span{display:inline-block;transform:translate(-50%,-100%);margin-top:-2px;color:var(--white);white-space:nowrap;
-  text-shadow:0 0 2px var(--void),0 0 5px var(--void),0 0 9px var(--void)}
+  text-shadow:0 0 2px var(--void),0 0 5px var(--void),0 0 9px var(--void);
+  /* the value is knocked out of the lattice (no strut crosses its letters): a feathered void field, no box */
+  padding:4px 12px;background:linear-gradient(90deg,rgba(var(--void-rgb),0),rgba(var(--void-rgb),.94) 10px,rgba(var(--void-rgb),.94) calc(100% - 10px),rgba(var(--void-rgb),0));
+  -webkit-mask-image:linear-gradient(transparent,#000 4px,#000 calc(100% - 4px),transparent);mask-image:linear-gradient(transparent,#000 4px,#000 calc(100% - 4px),transparent)}
 #leaders .fx-strut .dim{stroke:rgba(var(--silver-rgb),.92);stroke-width:1}
 #leaders .fx-strut .ext{stroke:rgba(var(--silver-rgb),.6);stroke-width:1}
 .fx-fl>span{display:inline-block;transform:translate(-50%,-100%);margin-top:-8px;color:var(--silver)}

@@ -57,7 +57,7 @@ export function createImpact(F) {
   });
 
   // The flash has a source (FX_LIGHT_GLSL): the nucleus (or the caller's render-space origin — the axis point of a hall).
-  // CORE: the nearest lit walls are the 300 m rim, the 620 m walls take about half; the light is a sheet out of the
+  // CORE: the nearest lit walls are the 300 m rim, the 620 m walls take about a sixth (the floor); the light is a sheet out of the
   // gap planes, centred behind the Key. The first DIVE stands INSIDE the Key's lattice: the struts round the lens take
   // the full flash and the hall beyond falls off over its 2–3 decades of distance, with no sheet (the light is all round).
   function lightFrom(kind, origin) {
@@ -66,7 +66,7 @@ export function createImpact(F) {
     else if (ctx.key && ctx.key.nucleusWorld) src.copy(ctx.key.nucleusWorld);
     else src.set(0, 0, 0);
     if (kind === 'dive') U.uImpactShape.value.set(1.0, 0.08, 3.2, 3.2);
-    else if (!origin && app.room === 'CORE') U.uImpactShape.value.set(300, 0.55, 0.45, 0.12);
+    else if (!origin && app.room === 'CORE') U.uImpactShape.value.set(300, 0.65, 0.45, 0.12);
     else U.uImpactShape.value.set(1e7, 0, 3.2, 3.2);              // any other hall (S05 away from CORE, NADIR): the even SPEC flash
   }
 

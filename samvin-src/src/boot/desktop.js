@@ -119,7 +119,7 @@ export function buildTitle(ctx, B, marks, o) {
     // arrival is hit + 874.6 ms — from the exact hit, not from the frame that delivered it (a slow frame can run the
     // fx hit pass up to half a frame either side of hitAt)
     B.arrival = hitPerf + 300000 / 343;
-    if (!wake) B.sayNotice();
+    if (!wake) B.sayNotice(true);
   };
   B.planPause(tl, PAUSE_AT, HIT, { kind: wake ? 'wake' : 'boot', prosvet: true, end: 7200 }, hit);
   // ── THE WORLD OPENS (5,600–6,400) ──
