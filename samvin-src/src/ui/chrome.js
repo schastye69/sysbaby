@@ -122,6 +122,9 @@ export const chrome = {
     bus.on('sound:change', (e) => setSoundUi(!!e.on));
     bus.on('rank:change', () => chrome.refresh());
     bus.on('visibility', (e) => { if (!e.hidden) chrome.refresh(); });
+    // the veil's mid-screen zones step back while the camera travels (chrome.css body.in-travel; A12)
+    const travel = (ph) => { try { document.body.classList.toggle('in-travel', ph === 'transition'); } catch (e) { /* no DOM */ } };
+    bus.on('phase:change', (e) => travel(e.phase));
     chrome.setRoom('CORE');
     chrome.refresh();
     loop.add(wave, ORDER.UI);

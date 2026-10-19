@@ -15,7 +15,7 @@
 export const MONO_GLSL = /* glsl */ `
 uniform vec3 cEmber, cEmberDeep, cSteel, cPewter, cSlate, cObsidian, cElectrum;
 uniform float uNight, uBreath, uWorldTime, uGap, uEmissivePass;
-uniform vec3 uNuc; uniform float uNucI, uNucS, uSeam, uOpenK;
+uniform vec3 uNuc; uniform float uNucI, uNucS, uSeam;
 varying vec3 vUp;
 
 float h31(vec3 p) { p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
@@ -65,6 +65,14 @@ void main() {
     float drdy = -0.62 * 1.35 * pow(max(ay, 1e-4), 0.35) / 1.2 * sign(p.y) * cos(3.14159265 / n);
     vec3 Nh = N - up * dot(N, up);
     N = normalize(normalize(Nh) - up * drdy);
+  }
+  // the hollow is a bored shaft: its wall turns smoothly round the axis (the flat facets would mirror the cavern's
+  // strip lights as hard-edged bright panels seen down the shaft through an open gap) — the facet normal is turned
+  // about the stratum's up by the fragment's angle from its facet's centre (face j faces 2πj/n)
+  if (inner) {
+    float dA = atan(p.x, p.z) - 6.28318531 * fj / n;
+    dA -= 6.28318531 * floor(dA / 6.28318531 + 0.5);
+    N = normalize(N * cos(dA) + cross(up, N) * sin(dA));
   }
 
   // ── micro-detail ──
@@ -134,7 +142,7 @@ void main() {
   // (the • window's iris, bore and spill below are the nucleus's own light: electrum at 55 % at night, like it — S10)
   vec3 emberC = lin(mix(cEmber, cElectrum, uNight)) * mix(1.0, 0.55, uNight);
   float open = smoothstep(0.022, 0.09, uGap);
-  float seamS = uSeam * (0.30 + 0.70 * exp(-abs(si - 3.0) * 0.55)) * (0.78 + 0.22 * uBreath) * (1.0 + 1.5 * open * uOpenK);
+  float seamS = uSeam * (0.30 + 0.70 * exp(-abs(si - 3.0) * 0.55)) * (0.78 + 0.22 * uBreath) * (1.0 + 1.5 * open);
   // a sleeping machine: the heat is uneven round the ring and slowly travels
   float ang = atan(p.x, p.z);
 #if MONO_Q > 1
@@ -326,6 +334,19 @@ void main() {
   float mx = max(col.r, max(col.g, col.b));
   if (mx > 1.0) col = col / mx + (1.0 - 1.0 / mx) * 0.12;
   col = sqrt(max(col, vec3(0.0)));
+#if MONO_Q < 3
+  // T1 / T2 have no bloom pass. On T3 the bloom of the solids' ember light is what turns a parted cap and the nucleus-lit
+  // shaft below it into molten metal — white-hot at the core, ember toward the rim (the approved look). Without it the
+  // same light is an even orange plate, so while the strata stand apart the heat gradient is put in the surface itself,
+  // from its own ember light: ember → amber-gold → white-gold (electrum, A12: the molten cap centres) where it is
+  // hottest. Closed (the rest pose) nothing changes.
+  if (!outer && open > 0.0) {
+    float hm = max(em.r, max(em.g, em.b));
+    float th = inner ? smoothstep(0.05, 0.55, hm) : smoothstep(0.10, 0.85, hm);   // the shaft: nearer the nucleus, hotter
+    vec3 heat = mix(mix(cEmber, cElectrum, 0.66), mix(cElectrum, cWhite, 0.6), smoothstep(0.45, 1.0, th));
+    col = mix(col, heat * (0.86 + 0.14 * th), th * 0.95 * open);
+  }
+#endif
 
   col = mix(col, cWhite, uFlash);
 #ifdef USE_FOG

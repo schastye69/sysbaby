@@ -16,7 +16,7 @@ export function createCoreHall(hctx) {
   // The zoom works in real metres from the Key (SPEC §3.8: 3.2–12.0 m) and starts at the rest pose's own distance (A12:
   // МОНОЛИТ's low hero angle sits ≈ 6.1 m out) — measured from the pose itself, so it can never disagree with it.
   const REST_D = restPos.distanceTo(restTarget);
-  let dist = REST_D, current = false, offKey = null, open = false;
+  let dist = REST_D, current = false, offKey = null, open = false, slotOn = false;
 
   const poseOut = { pos: new Vector3(), target: new Vector3(), fov: C.fov, offsetY: 0, roll: 0 };
   /** Allocation-free (pose() is on the G9 hot-path list). */
@@ -71,7 +71,11 @@ export function createCoreHall(hctx) {
       }
       return false;
     },
-    update() {},
+    update() {
+      // phone portrait veil (chrome.css body.axis-slot): the top band lets the axis through only at the rest view
+      const slot = current && app.phase === 'idle' && dist >= REST_D - 1e-3;
+      if (slot !== slotOn) { slotOn = slot; try { document.body.classList.toggle('axis-slot', slot); } catch (e) { /* no DOM */ } }
+    },
     onGesture(g) {
       if (hctx.key && hctx.key.onGesture(g)) return true;
       if (g.type === 'wheel') {

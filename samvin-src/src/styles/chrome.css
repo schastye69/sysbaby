@@ -141,20 +141,35 @@
     radial-gradient(ellipse 340px 120px at 0 0,var(--vz),var(--vm) 42%,var(--v0)),
     radial-gradient(ellipse 260px 104px at 100% 0,var(--vz),var(--vm) 42%,var(--v0)),
     radial-gradient(ellipse 400px 150px at 0 100%,var(--vx) 50%,var(--vm) 74%,var(--v0)),
-    radial-gradient(ellipse 330px 150px at 100% 100%,var(--vx) 50%,var(--vm) 74%,var(--v0)),
+    radial-gradient(ellipse 330px 150px at 100% 100%,var(--vx) 50%,var(--vm) 74%,var(--v0))}
+/* the mid-screen zones (navigator gauge, datum/title column, status line) lie over the world itself: during a travel
+   (DIVE / RECALL / LIFT, body.in-travel) their title and status text are gone and the camera flies through lit
+   interiors (КЛЮЧ = МОНОЛИТ, A12: the haze and the lattice are lit), where a void ellipse would read as a dark smudge —
+   they fade out with the travel and back in on arrival; the corners keep their text and half their zones (the glyphs
+   keep their own knock-out halo) */
+#veil::after{content:"";position:absolute;inset:0;transition:opacity var(--d-480) linear;background:
     radial-gradient(ellipse 104px 340px at calc(100% - var(--nav-right) - var(--nav-w) / 2) 50%,var(--vx) 52%,var(--vm) 76%,var(--v0)),
     radial-gradient(ellipse 560px 210px at 0 calc(var(--datum-y) - 30px),rgba(var(--void-rgb),.8),rgba(var(--void-rgb),.5) 50%,var(--v0)),
     radial-gradient(ellipse 300px 42px at 50% calc(100% - var(--status-bottom) - 11px),rgba(var(--void-rgb),.78),var(--v0))}
+body.in-travel #veil{opacity:.5}
+body.in-travel #veil::after{opacity:0;transition-duration:var(--d-240)}
 @media (pointer:coarse) and (max-width:600px){
+  #veil::after{content:none}
+  body.in-travel #veil{opacity:1}
   #veil{background:
     linear-gradient(to bottom,var(--vz) 0,rgba(var(--void-rgb),.7) calc(var(--datum-y) - 40px),var(--v0) calc(var(--datum-y) + 34px)),
     linear-gradient(to top,var(--vz) 0,rgba(var(--void-rgb),.7) calc(var(--band-h) + var(--safe-b)),var(--v0) calc(var(--band-h) + var(--safe-b) + 92px));
-  /* the top band protects the corner columns, not the centre line: the Key's axis rises there through no chrome text
-     (КЛЮЧ = МОНОЛИТ, A12: the ember axis to the top edge is part of the approved phone view) */
-  -webkit-mask:linear-gradient(to right,#000 calc(50% - 40px),rgba(0,0,0,.12) calc(50% - 10px),rgba(0,0,0,.12) calc(50% + 10px),#000 calc(50% + 40px)) 0 0/100% calc(var(--datum-y) + 40px) no-repeat,linear-gradient(#000,#000) 0 calc(var(--datum-y) + 40px)/100% 100% no-repeat;
+}
+@media (pointer:coarse) and (max-width:600px){
+  /* at the CORE rest view (body.axis-slot: idle, not zoomed in) the top band protects the corner columns, not the centre
+     line: the Key's axis rises there through no chrome text (КЛЮЧ = МОНОЛИТ, A12: the ember axis to the top edge is part
+     of the approved phone view). Zoomed in, travelling or in a hall, the band is whole. */
+  body.axis-slot #veil{-webkit-mask:linear-gradient(to right,#000 calc(50% - 40px),rgba(0,0,0,.12) calc(50% - 10px),rgba(0,0,0,.12) calc(50% + 10px),#000 calc(50% + 40px)) 0 0/100% calc(var(--datum-y) + 40px) no-repeat,linear-gradient(#000,#000) 0 calc(var(--datum-y) + 40px)/100% 100% no-repeat;
   mask:linear-gradient(to right,#000 calc(50% - 40px),rgba(0,0,0,.12) calc(50% - 10px),rgba(0,0,0,.12) calc(50% + 10px),#000 calc(50% + 40px)) 0 0/100% calc(var(--datum-y) + 40px) no-repeat,linear-gradient(#000,#000) 0 calc(var(--datum-y) + 40px)/100% 100% no-repeat}
 }
 @media (pointer:coarse) and (max-height:499.98px){
+  #veil::after{content:none}
+  body.in-travel #veil{opacity:1}
   #veil{background:
     linear-gradient(to bottom,var(--vz) 0,var(--v0) 96px),
     linear-gradient(to left,var(--vz) 0,rgba(var(--void-rgb),.6) calc(var(--band-side-w) + var(--safe-r)),var(--v0) calc(var(--band-side-w) + var(--safe-r) + 64px))}

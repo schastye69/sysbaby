@@ -228,7 +228,7 @@ export function createKey(ctx) {
   const over = [], morph = [];
   for (let i = 0; i < 7; i++) { over.push(null); morph.push(zeroO()); }
   let overG = null, overW = 1;
-  const morphG = { scale: 1, nucleus: 1, gap: -1, dive: 0 };
+  const morphG = { scale: 1, nucleus: 1, gap: -1 };
   const gapS = new Spring(6, 1, GAP.rest);
   let litAt = 0, revealFill = 1, revealA = 1, nowMs = 0, curGap = GAP.rest, rebaseAt = -1e9, lawPending = false;
   const shud = { t0: -1, amp: 0 }, wob = { t0: -1, amp: 0, hz: 0, decay: 1, ms: 0 }, bowS = { t0: -1, ms: 600, deg: 8 }, strk = { t0: -1, amp: 0 };
@@ -249,7 +249,7 @@ export function createKey(ctx) {
 
   function resetMorph() {
     for (let i = 0; i < 7; i++) Object.assign(morph[i], zeroO());
-    morphG.scale = 1; morphG.nucleus = 1; morphG.gap = -1; morphG.dive = 0;
+    morphG.scale = 1; morphG.nucleus = 1; morphG.gap = -1;
   }
   /** Cryptex yaw of stratum i as displayed: lagged by quant.lag ms and quantised to quant.step face angles. */
   function shownYaw(i) {
@@ -376,12 +376,7 @@ export function createKey(ctx) {
       monoU.uNucS.value = group.matrixWorld.getMaxScaleOnAxis();
       const ni = nucleus.mesh.material.uniforms.uI.value * nucleus.reveal;
       monoU.uNucI.value = ni;
-      // asleep, the seams still smoulder. The DIVE's nucleus anticipation (×1.6) is the core's own flare, not the seams':
-      // they keep the steady light, and the gap's molten "open" boost (an UNFOLD / hover presentation) stays off while
-      // the strata part for a DIVE — seen from the close transit camera the caps would otherwise flood the frame with
-      // ember far past the SPEC §2.1 3 % viewport budget (the open views the client approved are unchanged).
-      monoU.uSeam.value = Math.max(ni / Math.max(1, morphG.nucleus), 0.14) * revealFill;
-      monoU.uOpenK.value = 1 - morphG.dive;
+      monoU.uSeam.value = Math.max(ni, 0.14) * revealFill;     // asleep, the seams still smoulder
       SPARK.value = Math.min(1, Math.max(0.2, ni * 1.1)) * revealFill;
     }
     H.layout(dt, si);
@@ -506,7 +501,6 @@ export function createKey(ctx) {
         morphG.scale = tt < 120 ? 1 - KEY.contract * EASE.camera(c) : 1 - KEY.contract * (1 - smoothstep(120, 480, tt));
         morphG.nucleus = 1 + (KEY.nucleusAnticipation - 1) * (tt < 120 ? c : 1 - smoothstep(120, 480, tt));
         morphG.gap = lerp(GAP.rest, GAP.dive, e);
-        morphG.dive = e;
         for (let j = 0; j < 7; j++) {
           const m = morph[j];
           if (j === i) { m.slide = KEY.diveSlide * e; m.yaw = -yaw[j].x * e; m.edgeFlash = tt < 120 ? c : 1 - smoothstep(480, 900, tt); }

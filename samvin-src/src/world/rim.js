@@ -32,6 +32,7 @@ import { layout } from '../core/layout.js';
 import { bus } from '../core/bus.js';
 import { CANVAS_FONT, HALL, LIT_NODES, CAMERA, TIMING, LAYOUT } from '../core/tokens.js';
 import { keepout } from '../ui/keepout.js';
+import { app } from '../core/store.js';
 
 /** His letter (cap) height, canonical m. SPEC §4.1 states both «38 m at 300 m» and «≈ 60 px»; the two disagree at
  *  FOV 35° (38 m would be ≈ 186 px). The on-screen size is the one SPEC, A3.1 (subline ≈ 13 px) and ARCH 2-rim agree
@@ -383,9 +384,26 @@ export function createRim(ctx) {
   function keepAlive(ms) { activeUntil = Math.max(activeUntil, now() + ms + 100); }
   const _k0 = new Vector3(), _k1 = new Vector3();
   const _q0 = { x: 0, y: 0, depth: 0, visible: false }, _q1 = { x: 0, y: 0, depth: 0, visible: false };
-  loop.add(() => {
+  // A Key standing open — UNFOLD (#/core/open, gaps 0.42) or RECALL's landing while its gaps still close — reaches down
+  // over his name, hung just under the rest tip (A12's low camera): the name, its subline and the lit nodes yield while
+  // the strata stand apart (gap > 0.11 m; the hover explode, 0.09, keeps them) and return as they close (240 ms).
+  let yieldK = 1;
+  function applyAlpha() {
+    const a = alpha * yieldK;
+    mat.uniforms.uAlpha.value = a;
+    group.visible = a > 0;
+    plane.visible = a > 0 && shown;
+    nodes.setIntensity(a);
+  }
+  loop.add((dt) => {
+    const yT = app.unfolded || U.uGap.value > 0.11 ? 0 : 1;
+    if (yieldK !== yT) {
+      const st = Math.min(1, dt / 0.24);
+      yieldK = yT > yieldK ? Math.min(yT, yieldK + st) : Math.max(yT, yieldK - st);
+      applyAlpha();
+    }
     // keep-out: the caption's screen box while it is on (the axis and the coordinates stay clear of his name)
-    if (shown && alpha > 0.05 && plane.visible && group.visible && rig.camera) {
+    if (shown && alpha * yieldK > 0.05 && plane.visible && group.visible && rig.camera) {
       _k0.set(cap4.x, cap4.w, zFace); _k1.set(lit > 0 ? Math.max(cap4.z, nodeX1) : cap4.z, cap4.y, zFace);
       group.localToWorld(_k0); group.localToWorld(_k1);
       rig.project(_k0, _q0); rig.project(_k1, _q1);
@@ -421,7 +439,7 @@ export function createRim(ctx) {
       const startPerf = Number.isFinite(opts.at) ? opts.at : performance.now();
       const start = startPerf - T0;
       const n = Math.max(1, nameText.length);
-      plane.visible = alpha > 0; shown = true;
+      plane.visible = alpha * yieldK > 0; shown = true;
       setSlot(0, start, n * ms, 0, opts.dir === 'rtl' ? -1 : 1, 1);
       if (opts.role !== false && !roleShown) showRoleAt(start + n * ms + COOL + 300);
       keepAlive(Math.max(0, start - now()) + n * ms + COOL + 900);
@@ -431,7 +449,7 @@ export function createRim(ctx) {
     },
     /** Instant (reduced motion, returning same-day, skips): name, subline and lit nodes at rest. */
     showName() {
-      plane.visible = alpha > 0; shown = true;
+      plane.visible = alpha * yieldK > 0; shown = true;
       setSlot(0, -NEVER, 1, 0, 1, 1);
       if (!roleShown) { roleShown = true; setSlot(1, -NEVER, 1, 2, 1, 0.7); auxs[1].x = 1; }
       rim.setLitNodes(Math.max(lit, state.litNodes));
@@ -439,7 +457,7 @@ export function createRim(ctx) {
     },
     /** WP2 internal: a fade-in of the name without a burn (reduced motion: 160 ms), then the subline. */
     fadeName(ms = 160) {
-      plane.visible = alpha > 0; shown = true;
+      plane.visible = alpha * yieldK > 0; shown = true;
       const t = now();
       setSlot(0, t, 1, 2, 1, 1); auxs[0].x = Math.max(1, ms);
       if (!roleShown) { showRoleAt(t + ms + 300); auxs[1].x = Math.max(1, ms); }   // A3.1: 300 ms after the name is in
@@ -478,7 +496,7 @@ export function createRim(ctx) {
       const ms = opts && opts.msPerLetter > 0 ? opts.msPerLetter : TIMING.burnMsPerLetter;
       const gapMs = opts && opts.gapMs != null ? opts.gapMs : 240;
       let t = now();
-      plane.visible = alpha > 0; shown = true;
+      plane.visible = alpha * yieldK > 0; shown = true;
       if (reburn) { setSlot(0, t, nameText.length * ms, 0, 1, 1); t += nameText.length * ms + gapMs; }
       else setSlot(0, -NEVER, 1, 0, 1, 1);
       if (!roleShown) { roleShown = true; setSlot(1, -NEVER, 1, 2, 1, 0.7); auxs[1].x = 1; }
@@ -542,10 +560,7 @@ export function createRim(ctx) {
     },
     setAlpha(a) {
       alpha = Math.max(0, Math.min(1, a));
-      mat.uniforms.uAlpha.value = alpha;
-      group.visible = alpha > 0;
-      plane.visible = alpha > 0 && shown;
-      nodes.setIntensity(alpha);
+      applyAlpha();
     },
   };
   relayout();
