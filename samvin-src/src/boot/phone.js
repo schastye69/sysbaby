@@ -24,7 +24,7 @@ import { sayGreeting } from './returning.js';
 import { bootNews } from './boot.js';
 
 const ORIGIN = new Vector3(0, 0, 0);
-const START_D = 5.2, Y16 = (CAMERA.core.pos[1] * 16) / Math.hypot(CAMERA.core.pos[1], CAMERA.core.pos[2]), OFF = -0.03;   // the rest elevation at 5.2 m; Key centre at 47 %
+const START_D = 5.2, Y16 = (CAMERA.core.pos[1] * 16) / CAMERA.core.pos[2], OFF = -0.03;   // the rest elevation at 5.2 m; Key centre at 47 %
 // SPEC §4.2 states both «78 % of the height» and «camera at 5.2 m»; at the CORE's 35° lens 5.2 m gives 72.5 %. The
 // distance is kept: at 78 % the standard start stroke of every QA pre-roll (ARCH §6.0.4, y 230 → 650) crosses only
 // 4 strata and never activates.

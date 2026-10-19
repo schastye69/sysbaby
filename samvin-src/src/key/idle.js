@@ -107,6 +107,10 @@ export function createIdle(K) {
     const px = moved ? p.x : layout.w / 3, py = moved ? p.y : layout.h / 2;
     const dist = Math.hypot(px - si.x, py - si.y), R = Math.max(8, si.r);
     const mouseIn = moved && p.inside && (p.type !== 'touch' || p.down);
+    // The pointer's speed is only known from its moves: once it rests, the last move's (flick) speed is stale. A pointer
+    // that stopped within the flinch radius — МОНОЛИТ's closer CORE camera (A12) makes the Key large enough that a flick
+    // across it usually ends there — would otherwise re-flinch (re-yawn at night) every 820 ms and never lean in.
+    const speed = t - p.lastMove < 260 ? p.speed : 0;
     const hasRay = ray(px, py);
 
     // Notice.
@@ -150,15 +154,15 @@ export function createIdle(K) {
     if (I.hot.lengthSq() < 1e-6) I.hot.set(0, 0, 1); else I.hot.normalize();
 
     // Lean in, flinch.
-    lean.target = live && mouseIn && !ENV.reducedMotion && p.speed < IDLE.leanSpeedPx && dist < IDLE.leanRadius * R ? 1 : 0;
+    lean.target = live && mouseIn && !ENV.reducedMotion && speed < IDLE.leanSpeedPx && dist < IDLE.leanRadius * R ? 1 : 0;
     lean.step(dt);
     I.lean = lean.x;
     fast.cx = si.x; fast.cy = si.y; fast.R = R;
-    const fastNow = t - fast.at < 260 || (moved && p.speed > IDLE.flinchSpeedPx && dist < IDLE.flinchRadius * R);
+    const fastNow = t - fast.at < 260 || (moved && speed > IDLE.flinchSpeedPx && dist < IDLE.flinchRadius * R);
     if (live && fastNow && t - flinchAt > IDLE.flinchInMs + IDLE.flinchRelaxMs) {
       fast.at = -1e9;
       flinchAt = t;
-      FL.speed = Math.round(Math.max(p.speed, IDLE.flinchSpeedPx)); bus.emit('key:flinch', FL);
+      FL.speed = Math.round(Math.max(speed, IDLE.flinchSpeedPx)); bus.emit('key:flinch', FL);
       if (app.night) { K.yawn(t); }
       else {
         audio.play('flinch', NO_OPTS);

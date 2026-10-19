@@ -338,6 +338,13 @@ export function createHover(K, ctx) {
       if (ty[i] + shift > capHi[i]) { ty[i] = capHi[i] - shift; for (let j = i - 1; j >= 0; j--) ty[j] = Math.min(ty[j], ty[j + 1] - BLOCK_H); }
       if (ty[i] + shift < capLo[i]) { ty[i] = capLo[i] - shift; for (let j = i + 1; j < 7; j++) ty[j] = Math.max(ty[j], ty[j - 1] + BLOCK_H); }
     }
+    // …but the screen is harder still: a cap carried down (or up) the stack must never push a block off the screen
+    // (seen while RECALL's gaps are still closing under a resting pointer — the Key then stands taller than the column).
+    // Clamping each block to its own on-screen slot keeps the BLOCK_H spacing intact.
+    for (let i = 0; i < 7; i++) {
+      const top = 64 + BLOCK_H / 2 + i * BLOCK_H - shift, bot = layout.h - 64 - BLOCK_H / 2 - (6 - i) * BLOCK_H - shift;
+      if (bot >= top) ty[i] = Math.min(bot, Math.max(top, ty[i]));
+    }
     // Every shoulder at least a lane long: the column moves right of the furthest elbow (never off the screen's
     // right side, where the widest block and the navigator need COL_RESERVE px).
     for (let i = 0; i < 7; i++) colX = Math.max(colX, sxs[i] + Math.abs(ty[i] + shift - sy[i]) + shoulder);
