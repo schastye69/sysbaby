@@ -15,7 +15,7 @@
 export const MONO_GLSL = /* glsl */ `
 uniform vec3 cEmber, cEmberDeep, cSteel, cPewter, cSlate, cObsidian, cElectrum;
 uniform float uNight, uBreath, uWorldTime, uGap, uEmissivePass;
-uniform vec3 uNuc; uniform float uNucI, uNucS, uSeam;
+uniform vec3 uNuc; uniform float uNucI, uNucS, uSeam, uOpenK;
 varying vec3 vUp;
 
 float h31(vec3 p) { p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
@@ -134,7 +134,7 @@ void main() {
   // (the • window's iris, bore and spill below are the nucleus's own light: electrum at 55 % at night, like it — S10)
   vec3 emberC = lin(mix(cEmber, cElectrum, uNight)) * mix(1.0, 0.55, uNight);
   float open = smoothstep(0.022, 0.09, uGap);
-  float seamS = uSeam * (0.30 + 0.70 * exp(-abs(si - 3.0) * 0.55)) * (0.78 + 0.22 * uBreath) * (1.0 + 1.5 * open);
+  float seamS = uSeam * (0.30 + 0.70 * exp(-abs(si - 3.0) * 0.55)) * (0.78 + 0.22 * uBreath) * (1.0 + 1.5 * open * uOpenK);
   // a sleeping machine: the heat is uneven round the ring and slowly travels
   float ang = atan(p.x, p.z);
 #if MONO_Q > 1

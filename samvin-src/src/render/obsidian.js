@@ -255,7 +255,7 @@ export function createObsidian(opts = {}) {
       ...(opts.mono ? {
         cEmber: U.cEmber, cEmberDeep: U.cEmberDeep, cSteel: U.cSteel, cPewter: U.cPewter, cSlate: U.cSlate,
         cObsidian: U.cObsidian, cElectrum: U.cElectrum, uNight: U.uNight, uEmissivePass: U.uEmissivePass, uBreath: U.uBreath, uWorldTime: U.uWorldTime,
-        uGap: U.uGap, uNuc: { value: new Vector3() }, uNucI: { value: 0 }, uNucS: { value: 1 }, uSeam: { value: 0 },
+        uGap: U.uGap, uNuc: { value: new Vector3() }, uNucI: { value: 0 }, uNucS: { value: 1 }, uSeam: { value: 0 }, uOpenK: { value: 1 },
       } : {}),
     },
     defines, vertexShader: VERT, fragmentShader: FRAG,
