@@ -23,7 +23,7 @@ import {
   BufferGeometry, Float32BufferAttribute, BufferAttribute, Group, Mesh, LineSegments, Matrix4, Vector3,
 } from 'three';
 import { loop, ORDER } from '../core/loop.js';
-import { U } from '../render/uniforms.js';
+import { U, LAYER } from '../render/uniforms.js';
 import { rig } from '../render/cameraRig.js';
 import { PROFILE, STRATA_GEOM, radiusAt, LOFT_RINGS, GAP, KEY, RENDER } from '../core/tokens.js';
 import { createObsidian } from '../render/obsidian.js';
@@ -311,18 +311,42 @@ export function buildStructure(opts = {}) {
     return g;
   }
   const solids = [];
-  let solidMat = null;
+  let solidMat = null, solidMain = null, solidEm = null;
   if (opts.solid !== false) {
     if (per) {
-      solidMat = createObsidian({ engrave: 'key', strataAlpha: strataA, mono: opts.mono !== false });
+      // The Key draws its seven strata as ONE merged mesh moved per stratum by uStrataM (synced from the stratum groups
+      // before each draw, like the lattice) — one draw call instead of seven (A9.2 call budget; МОНОЛИТ A12 added the
+      // haze, the eye and the bloom twin). The per-stratum meshes stay as raycast-only pick shells on LAYER.PICK (no
+      // camera pass renders that layer): they follow the stratum groups, keep the R1 per-triangle culls (so a dissolved
+      // face is not hit) and carry userData.stratum for K.pick.
+      solidMat = createObsidian({ engrave: 'key', strata: strataM, strataAlpha: strataA, mono: opts.mono !== false });
       for (const st of STRATA_GEOM) {
         const b = new Builder();
         addStratumSolid(b, st);
         const m = new Mesh(scaleStrut(b.geometry()), solidMat);
         m.name = `solid:${st.i}`;
         m.userData.stratum = st.i;
+        m.layers.set(LAYER.PICK);
         strata[st.i].add(m);
         solids.push(m);
+      }
+      const merged = () => { const b = new Builder(); for (const st of STRATA_GEOM) addStratumSolid(b, st); return scaleStrut(b.geometry()); };
+      solidMain = new Mesh(merged(), solidMat);
+      solidMain.name = 'solid:key';
+      solidMain.frustumCulled = false;
+      solidMain.onBeforeRender = () => syncStrata();
+      group.add(solidMain);
+      // МОНОЛИТ (A12, R6): the solids' ember light joins the T3 bloom pass as a merged twin on LAYER.EMISSIVE only,
+      // sharing every uniform of the main material and compiled ember-terms-only (MONO_EMISSIVE) — one cheap draw.
+      if (opts.solidEmissive) {
+        const emMat = createObsidian({ engrave: 'key', strata: strataM, strataAlpha: strataA, mono: opts.mono !== false, emissiveOnly: true });
+        for (const k in solidMat.uniforms) emMat.uniforms[k] = solidMat.uniforms[k];
+        solidEm = new Mesh(solidMain.geometry, emMat);
+        solidEm.name = 'solid:emissive';
+        solidEm.frustumCulled = false;
+        solidEm.layers.set(LAYER.EMISSIVE);
+        solidEm.onBeforeRender = () => syncStrata();
+        group.add(solidEm);
       }
     } else {
       solidMat = createObsidian({ engrave: 'key', strata: strataM, strataAlpha: strataA });
@@ -392,6 +416,8 @@ export function buildStructure(opts = {}) {
     if (solidMat) solidMat.uniforms.uAlpha.value = fade * parts.solid;
     solidOn = fade * parts.solid > 0;
     for (let k = 0; k < solids.length; k++) solids[k].visible = solidOn && !(solidCullers && solidCullers[k] && solidCullers[k].empty);
+    if (solidMain) solidMain.visible = solidOn;
+    if (solidEm) solidEm.visible = solidOn;
     if (latMat) { latMat.uniforms.uFade.value = fade * parts.lattice; latOn = fade * parts.lattice > 0; lattice.visible = latOn && !latCulled; }
     for (const e of edges) e.setAlpha(EDGE_ALPHA * fade * parts.edges);
     if (vpts) vpts.setAlpha(V_ALPHA * fade * parts.vertices);
@@ -481,7 +507,7 @@ export function buildStructure(opts = {}) {
   registerCull(cullFn);
 
   const structure = {
-    group, strata, solids, lattice, edges, vertices, vertexExtra,
+    group, strata, solids, solidEmissive: solidEm, lattice, edges, vertices, vertexExtra,
     /** WP0 additions: the shared per-stratum uniforms, materials and helpers (owners may read / tune them). */
     strataMatrices: strataM, strataAlpha: strataA, solidMaterial: solidMat, latticeMaterial: latMat,
     perStratum: per,
@@ -513,6 +539,8 @@ export function buildStructure(opts = {}) {
     dispose() {
       unregisterCull(cullFn);
       for (const m of solids) m.geometry.dispose();
+      if (solidMain) solidMain.geometry.dispose();
+      if (solidEm) solidEm.material.dispose();
       if (solidMat) solidMat.dispose();
       if (lattice) { lattice.geometry.dispose(); latMat.dispose(); }
       for (const e of edges) e.dispose();

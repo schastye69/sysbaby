@@ -148,7 +148,11 @@
 @media (pointer:coarse) and (max-width:600px){
   #veil{background:
     linear-gradient(to bottom,var(--vz) 0,rgba(var(--void-rgb),.7) calc(var(--datum-y) - 40px),var(--v0) calc(var(--datum-y) + 34px)),
-    linear-gradient(to top,var(--vz) 0,rgba(var(--void-rgb),.7) calc(var(--band-h) + var(--safe-b)),var(--v0) calc(var(--band-h) + var(--safe-b) + 92px))}
+    linear-gradient(to top,var(--vz) 0,rgba(var(--void-rgb),.7) calc(var(--band-h) + var(--safe-b)),var(--v0) calc(var(--band-h) + var(--safe-b) + 92px));
+  /* the top band protects the corner columns, not the centre line: the Key's axis rises there through no chrome text
+     (КЛЮЧ = МОНОЛИТ, A12: the ember axis to the top edge is part of the approved phone view) */
+  -webkit-mask:linear-gradient(to right,#000 calc(50% - 40px),rgba(0,0,0,.12) calc(50% - 10px),rgba(0,0,0,.12) calc(50% + 10px),#000 calc(50% + 40px)) 0 0/100% calc(var(--datum-y) + 40px) no-repeat,linear-gradient(#000,#000) 0 calc(var(--datum-y) + 40px)/100% 100% no-repeat;
+  mask:linear-gradient(to right,#000 calc(50% - 40px),rgba(0,0,0,.12) calc(50% - 10px),rgba(0,0,0,.12) calc(50% + 10px),#000 calc(50% + 40px)) 0 0/100% calc(var(--datum-y) + 40px) no-repeat,linear-gradient(#000,#000) 0 calc(var(--datum-y) + 40px)/100% 100% no-repeat}
 }
 @media (pointer:coarse) and (max-height:499.98px){
   #veil{background:

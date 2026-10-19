@@ -131,6 +131,7 @@ void main() {
   }
 
   // ── ember: the nucleus and the seams ──
+  // (the • window's iris, bore and spill below are the nucleus's own light: electrum at 55 % at night, like it — S10)
   vec3 emberC = lin(mix(cEmber, cElectrum, uNight)) * mix(1.0, 0.55, uNight);
   float open = smoothstep(0.022, 0.09, uGap);
   float seamS = uSeam * (0.30 + 0.70 * exp(-abs(si - 3.0) * 0.55)) * (0.78 + 0.22 * uBreath) * (1.0 + 1.5 * open);
@@ -231,7 +232,7 @@ void main() {
       recess *= 1.0 - iris;
       wear = mix(wear, max(lipE, 0.35), iris);
       cav *= 1.0 - 0.55 * grv * iris;
-      em += lin(cEmber) * uNucI * grv * iris * (0.55 + 0.45 * uBreath) * (1.4 - irisX) * 0.9;
+      em += emberC * uNucI * grv * iris * (0.55 + 0.45 * uBreath) * (1.4 - irisX) * 0.9;
     }
   }
   vec3 Nf = normalize(Nm);
@@ -239,7 +240,7 @@ void main() {
   // the • window: its bore and its rim spill the nucleus
   if (abs(si - 3.0) < 0.5 && outer && fj < 0.5) {
     float rA = length(p.xy) - uApertureR;
-    em += lin(cEmber) * uNucI * (1.15 * exp(-max(rA, 0.0) / 0.0045) + 0.32 * exp(-max(rA, 0.0) / 0.03));
+    em += emberC * uNucI * (1.15 * exp(-max(rA, 0.0) / 0.0045) + 0.32 * exp(-max(rA, 0.0) / 0.03));
   }
   // the seams: outer lips warm, caps glow from the axis outward (they show through the gaps)
   if (outer) {
@@ -266,6 +267,13 @@ void main() {
     base *= 0.5;
   }
 
+#ifdef MONO_EMISSIVE
+  // the T3 bloom twin (world/structure.js solidEmissive): only the ember light is needed — the metal's shading below is
+  // compiled out (the em terms never read it), so the second pass costs a fraction of the first
+  { vec3 e = em / (1.0 + 0.18 * max(em.r, max(em.g, em.b)));
+    gl_FragColor = vec4(sqrt(max(e, vec3(0.0))) * 1.35, 1.0);
+    return; }
+#endif
   // ── wear: polished metal ──
   F0 *= 1.0 - 0.3 * recess * (1.0 - relief);
   base *= 1.0 - 0.25 * recess;
@@ -296,7 +304,7 @@ void main() {
     float nearSeam = exp(-dz / 0.045) * max(-Nf.y + 0.35, 0.0) + exp(-dw / 0.045) * max(Nf.y + 0.35, 0.0);
     col += (F * 1.4 + base * 0.6) * emberC * seamS * seamMod * nearSeam * 1.3 * cav;
     // the window's spill on the polished iris and the face round it
-    col += F * lin(cEmber) * uNucI * (iris * 1.3 * exp(-max(irisX, 0.0) * 3.2) + 0.12 * exp(-max(irisX, 0.0) * 2.0)) * (abs(si - 3.0) < 0.5 && fj < 0.5 ? 1.0 : 0.0);
+    col += F * emberC * uNucI * (iris * 1.3 * exp(-max(irisX, 0.0) * 3.2) + 0.12 * exp(-max(irisX, 0.0) * 2.0)) * (abs(si - 3.0) < 0.5 && fj < 0.5 ? 1.0 : 0.0);
   }
   col += lin(cSilver) * 0.16 * pow(1.0 - nv, 4.0) * (0.35 + 0.65 * max(Nf.y, 0.0)) * cav;   // cold rim
   // the cavern's back light: a cold sheet of light behind and above-left — it draws the silhouette out of the dark,

@@ -8,7 +8,8 @@
 // test hook can report `_stats.texMB`.
 import { Vector2, Vector3, Vector4, Color, Matrix4 } from 'three';
 
-export const LAYER = Object.freeze({ DEFAULT: 0, EMISSIVE: 1, NOFOG: 2 });
+/** PICK: raycast-only proxies (no camera pass ever enables it) — e.g. the Key's per-stratum pick shells. */
+export const LAYER = Object.freeze({ DEFAULT: 0, EMISSIVE: 1, NOFOG: 2, PICK: 3 });
 
 const col = () => ({ value: new Color(0, 0, 0) });
 

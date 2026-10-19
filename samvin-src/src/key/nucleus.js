@@ -40,7 +40,9 @@ void main() {
   float heat = clamp(0.25 + 0.75 * pow(face, 0.8) * (0.55 + 0.75 * conv), 0.0, 1.2);
   vec3 hot = mix(c, cElectrum, smoothstep(0.55, 0.95, heat) * (1.0 - uNight * uNightMix * 0.0));
   hot = mix(hot, cWhite, smoothstep(0.95, 1.18, heat) * 0.7);
-  vec3 body = mix(cEmberDeep * 0.8, hot, smoothstep(0.15, 0.6, heat));
+  // the limb cools to deep ember by day; at night the whole core is the night electrum (SPEC S10), its limb a dimmer one
+  vec3 limb = mix(cEmberDeep * 0.8, c * 0.45, uNight * uNightMix);
+  vec3 body = mix(limb, hot, smoothstep(0.15, 0.6, heat));
   body *= 0.9 + 0.5 * heat;
   if (uFlash > 0.5) body = c;
   gl_FragColor = vec4(mix(body * k, cWhite, uFlash), 1.0);

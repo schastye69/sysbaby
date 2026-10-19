@@ -83,7 +83,7 @@ export function createKey(ctx) {
   // SPEC §6.7: the 5 N slot dots ride in the vertex draw (stratum 6, a row 0.06 m under the apex; styled by marks.js).
   const slotPos = new Float32Array(15), slotFace = new Float32Array(5).fill(6 * 16);
   for (let k = 0; k < 5; k++) { slotPos[k * 3] = (k - 2) * 0.04; slotPos[k * 3 + 1] = STRATA_GEOM[6].bot - 0.06; slotPos[k * 3 + 2] = 0.01; }
-  const structure = buildStructure({ perStratum: true, vertices: true, far: 700, strutScale: 0.55, extraVertices: { pos: slotPos, face: slotFace } });
+  const structure = buildStructure({ perStratum: true, vertices: true, far: 700, strutScale: 0.55, solidEmissive: true, extraVertices: { pos: slotPos, face: slotFace } });
   group.add(structure.group);
   const strata = structure.strata;
 
@@ -244,7 +244,7 @@ export function createKey(ctx) {
   const monoU = structure.solidMaterial ? structure.solidMaterial.uniforms : null;
   // МОНОЛИТ: the solids join the T3 bloom layer (their shader writes only the ember light in that pass), so the seams,
   // the forged letters' lips and the window really glow; the solids also occlude the nucleus bloom behind the metal.
-  for (const m of structure.solids) m.layers.enable(LAYER.EMISSIVE);
+  // That is structure.solidEmissive — one merged draw on LAYER.EMISSIVE (built with solidEmissive: true above).
   const inPause = () => { try { return !!(ctx.fx && ctx.fx.impact && ctx.fx.impact.inPause()); } catch (e) { return false; } };
 
   function resetMorph() {

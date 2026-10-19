@@ -222,6 +222,7 @@ export function createObsidian(opts = {}) {
   else if (opts.strataAlpha) defines.USE_STRATA_A = '';
   if (opts.fog !== false) defines.USE_FOG = '';
   if (opts.mono) { defines.USE_MONO = ''; defines.MONO_Q = quality.tier === 'T1' ? 1 : quality.tier === 'T2' ? 2 : 3; }
+  if (opts.mono && opts.emissiveOnly) defines.MONO_EMISSIVE = '';   // the T3 bloom twin: ember terms only
 
   if (!atlas.texture) atlas.init(quality.tier);        // the atlas exists from boot; this only guards early callers
   const reg = typeof engrave === 'string' && engrave !== 'key' ? atlas.region(engrave) : null;
