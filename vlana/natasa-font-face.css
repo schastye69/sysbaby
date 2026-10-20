@@ -1,0 +1,12 @@
+/* Шрифты natasa — из своей папки fonts/, без Google Fonts (CSP sys.baby: font-src 'self').
+   Заменяет в index.html строки 11–13: две строки preconnect и <link rel="stylesheet" href="https://fonts.googleapis.com/…">.
+   Блок кладётся в начало <style>. Имена семейств — те же, что в --f-display, --f-mono, --f-serif,
+   поэтому остальной CSS не меняется. Пути относительные: работают и на sys.baby/natasa/,
+   и на её будущем домене.
+   Geist и Geist Mono — переменные (ось wght 100–900): покрывают 100–600 и 300–500 из прежней ссылки.
+   Cormorant Garamond — только курсив 400 и 500, как в прежней ссылке (ital,wght@1,400;1,500).
+   Лицензия — fonts/OFL.txt. */
+@font-face{font-family:"Geist";src:url("fonts/Geist-Variable.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"Geist Mono";src:url("fonts/GeistMono-Variable.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"Cormorant Garamond";src:url("fonts/CormorantGaramond-Italic-400.woff2") format("woff2");font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:"Cormorant Garamond";src:url("fonts/CormorantGaramond-Italic-500.woff2") format("woff2");font-weight:500;font-style:italic;font-display:swap}

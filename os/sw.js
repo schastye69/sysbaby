@@ -75,6 +75,28 @@ function fromShelf(bare) {
   });
 }
 
+/* ── САЙТЫ КЛИЕНТОВ НЕ ПРОХОДЯТ ЧЕРЕЗ РАБОТНИКА (D-376) ─────────────────
+   На sys.baby/<имя>/ живут сайты клиентов — в той же области, что и
+   система. Полка работника им чужая: имена их файлов без номера сборки, и
+   «сначала с полки» держало бы у вернувшегося посетителя старый app.js
+   клиента до следующей сборки sys.baby, а сайт клиента ложился бы в
+   хранилище системы. Пути гостей работник не обслуживает и не кладёт на
+   полку — их берёт из сети сам браузер. Список повторяет GUESTS из
+   tools/deploy.mjs без тестовой копии; согласие списков стережёт
+   tools/guest-list-check.mjs, поведение — tools/client-site-check.mjs. */
+var GUESTS = ["kahjuabi24", "vlana"];
+
+/* Корень сайта для работника: дома он лежит в /os/ (корень — уровнем выше),
+   в вебе — в корне или в /test/. Гость — первая часть пути после корня. */
+function guestPath(url) {
+  try {
+    var base = new URL("./", self.location.href).pathname.replace(/os\/$/, "");
+    var p = new URL(url, self.location.href).pathname;
+    if (p.indexOf(base) !== 0) return false;
+    return GUESTS.indexOf(p.slice(base.length).split("/")[0]) !== -1;
+  } catch (e) { return false; }
+}
+
 function sameOrigin(url) {
   try { return new URL(url, self.location.href).origin === self.location.origin; }
   catch (e) { return false; }
@@ -84,6 +106,7 @@ self.addEventListener("fetch", function (ev) {
   var req = ev.request;
   if (req.method !== "GET") return;                       /* отправка — всегда живая */
   if (!sameOrigin(req.url)) return;                       /* наружу — только по-настоящему */
+  if (guestPath(req.url)) return;                         /* сайт клиента — мимо полки (D-376) */
 
   /* ДОКУМЕНТ: сначала сеть, потом хранилище. Так новая сборка приходит сама,
      как только сеть есть, и та же страница открывается, когда её нет.
