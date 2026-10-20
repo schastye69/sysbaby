@@ -494,6 +494,10 @@ export function createKey(ctx) {
     setBreathingRing(on) { nucleus.setRing(on); },
 
     setMorph(kind, i, tMs, D2) {
+      // the gap the morph last asked for: the director applies a travel's end pose (RECALL u = 1 → GAP.rest) and releases
+      // the morph in the same call, before any Key frame has drawn it — the release continues from that gap, not from the
+      // previous frame's (on a slow frame still RECALL's 0.30 open start, which would then spring shut seconds late)
+      const prevGap = morphG.gap;
       resetMorph();
       if (kind === 'dive') {
         const k = D2 > 1600 ? 1.375 : 1, tt = tMs / k;
@@ -512,7 +516,10 @@ export function createKey(ctx) {
         const x = clamp01(tau / (D2 - swapAt || 200));
         morphG.gap = GAP.rest + (GAP.recallStart - GAP.rest) * (1 - EASE.camera(x)) - (GAP.recallStart - GAP.rest) * MOTION.settleOvershoot * Math.sin(Math.PI * x);
         for (let j = 0; j < 7; j++) if (tau < TIMING.recallRatchetMs * (j + 1)) morph[j].yaw = (j % 2 ? -1 : 1) * 6 * DEG;
-      } else if (curGap !== gapS.x) { gapS.snap(curGap); gapS.target = GAP.rest; }
+      } else {
+        const g0 = prevGap >= 0 ? prevGap : curGap;
+        if (g0 !== gapS.x) { gapS.snap(g0); gapS.target = GAP.rest; }
+      }
     },
     override(i, o) { if (i >= 0 && i < 7) over[i] = o || null; },
     overrideGroup(o) { overG = o || null; },
