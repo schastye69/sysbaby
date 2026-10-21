@@ -1,22 +1,19 @@
 /* =====================================================================
-   ЖИВОЙ ИЗРАИЛЬ — Living Israel Tallinn, сайт церкви
-   Система «СВЕТИЛЬНИК»: «Слово Твое — светильник ноге моей» (Пс 118:105),
-   «…не ставят ее под сосудом, но на подсвечнике» (Мф 5:15).
-
-   Светлая бумага, чернила, одна вертикаль-свеча (тёмно-красная) и
-   маленькое золотое пламя. Свеча стоит у каждого места Писания, в
-   оглавлении пламя показывает, где вы сейчас. Никаких тёмных фото на
-   весь экран, никакого параллакса, никаких вкладок.
+   ЖИВОЙ ИЗРАИЛЬ — Living Israel Tallinn, сайт церкви · версия 2
+   Система «СВЕТИЛЬНИК»: «Слово Твое — светильник ноге моей и свет стезе моей»
+   (Пс 118:105). Светлая бумага, чернила, одна вертикаль-свеча и одно пламя.
 
    Голоса: Forum — надписи (римская капитель с кириллицей);
-           Literata — книжный текст (Синодальный перевод читается как книга).
-   Шрифты — файлами в fonts/, лицензия fonts/OFL.txt.
+           Literata — книжный текст (старинные цифры, настоящая капитель).
+   Движение — только transform и opacity; всё вне экрана спит;
+   при «меньше движения» и без JS всё неподвижно и видно сразу.
    ===================================================================== */
 @font-face{font-family:"Literata";src:url("fonts/Literata-Roman.woff2") format("woff2");font-weight:400 650;font-style:normal;font-display:swap}
 @font-face{font-family:"Literata";src:url("fonts/Literata-Italic.woff2") format("woff2");font-weight:400 500;font-style:italic;font-display:swap}
 @font-face{font-family:"Forum";src:url("fonts/Forum-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
 
 :root{
+  color-scheme:only light;
   --paper:#f7f2e8;
   --paper-2:#efe6d6;
   --paper-3:#e6dac5;
@@ -25,54 +22,73 @@
   --red:#8e2f25;
   --red-2:#74241b;
   --gold:#a8771f;
+  --gold-2:#c49a48;
   --gold-text:#7f5a12;
   --line:#d8ccb7;
   --line-2:#c4b49a;
+  /* позолота: каждая точка ≥ 3:1 к бумаге и к --paper-2 (крупный текст, WCAG AA) */
+  --gilt:linear-gradient(100deg,#4f3409 0%,#7a5210 22%,#956a19 40%,#6a470c 58%,#8a6216 78%,#4f3409 100%);
   --f-text:"Literata",Georgia,"Times New Roman",serif;
   --f-cap:"Forum","Literata",Georgia,serif;
   --gut:clamp(16px,4vw,48px);
+  --gl:var(--gut);            /* левое поле текста (у стези — шире) */
+  --spine-off:24px;          /* стезя — на столько левее текста */
   --rail:0px;
   --head:64px;
+  --e-out:cubic-bezier(.16,1,.3,1);
+  --e-io:cubic-bezier(.65,0,.35,1);
 }
+.js{--gl:calc(var(--gut) + 22px)}
 *,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-padding-top:calc(var(--head) + 12px)}
+html{background:var(--paper);-webkit-text-size-adjust:100%;text-size-adjust:100%;-webkit-tap-highlight-color:rgba(168,119,31,.18);scroll-padding-top:calc(var(--head) + 16px)}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
-body{margin:0;background:var(--paper);color:var(--ink);font:400 1.1875rem/1.62 var(--f-text);font-optical-sizing:auto;
-  font-variant-numeric:lining-nums proportional-nums;hyphens:manual;overflow-wrap:break-word}
+body{margin:0;background:transparent;color:var(--ink);font:400 1.1875rem/1.62 var(--f-text);font-optical-sizing:auto;
+  font-variant-numeric:oldstyle-nums proportional-nums;font-kerning:normal;hyphens:manual;overflow-wrap:break-word;hanging-punctuation:first allow-end last}
 @media (min-width:900px){body{font-size:1.25rem}}
 img{max-width:100%;height:auto;display:block}
-a{color:var(--red);text-decoration-thickness:1px;text-underline-offset:.18em}
+a{color:var(--red);text-decoration-thickness:1px;text-underline-offset:.2em}
 a:hover{color:var(--red-2);text-decoration-thickness:2px}
 :focus-visible{outline:3px solid var(--ink);outline-offset:3px;border-radius:2px;box-shadow:0 0 0 6px var(--paper)}
-h1,h2,h3,h4{font-weight:400;margin:0}
+h1,h2,h3,h4{font-weight:400;margin:0;text-wrap:balance}
+p,li,dd,blockquote{text-wrap:pretty}
+.day__time,.acct,.info,.person__links,.hero__nextbody,.hero__addr,.toc__num,.foot,.qr{font-variant-numeric:lining-nums tabular-nums}
 p{margin:0 0 1em}
-.vh{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-.skip{position:absolute;left:12px;top:-60px;z-index:100;background:var(--ink);color:var(--paper);padding:.6em 1em;border-radius:4px}
-.skip:focus{top:12px;color:var(--paper)}
+::selection{background:rgba(196,154,72,.34);color:var(--ink)}
+.vh{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+.skip{position:absolute;left:12px;top:-80px;z-index:500;background:var(--ink);color:var(--paper);padding:.7em 1.1em;border-radius:4px;min-height:44px}
+.skip:focus{top:max(12px,env(safe-area-inset-top));color:var(--paper)}
 main:focus{outline:none}
-.wrap{max-width:74rem;margin:0 auto;padding:0 var(--gut)}
-.kicker{font:400 .95rem/1.3 var(--f-cap);letter-spacing:.16em;text-transform:uppercase;color:var(--red);margin:0 0 1rem}
-.sec-title{font:400 clamp(2.1rem,6.4vw,3.6rem)/1.05 var(--f-cap);letter-spacing:.02em;margin:0 0 2rem}
+.wrap{max-width:74rem;margin:0 auto;padding:0 max(var(--gut),env(safe-area-inset-right)) 0 max(var(--gl),env(safe-area-inset-left))}
+/* узкие экраны и увеличение 200 %: ничто не выходит за край */
+@media (max-width:360px){.btn{padding:.55em .85em}.privacy a{overflow-wrap:anywhere}.acct__iban{display:flex;flex-wrap:wrap;column-gap:.32em;white-space:normal}.acct__iban span{margin-right:0}.acct__actions .btn{white-space:normal;flex:0 1 auto}.head__now{display:none}.person{grid-template-columns:minmax(0,1fr)}.person__ph{grid-row:auto;max-width:160px;margin:0 0 .8rem}.day{grid-template-columns:minmax(0,1fr)}.day__time{grid-column:1;grid-row:auto;margin:.3rem 0 .1rem}.index__name,.day__when,.day__what,.toc__list a,.sec-title,.min__head h3{overflow-wrap:anywhere}}
+
+/* подписи — настоящая капитель Literata (smcp/c2sc), разрядка как в наборе */
+.kicker{font:400 1.05rem/1.3 var(--f-text);font-variant-caps:all-small-caps;letter-spacing:.16em;color:var(--red);margin:0 0 1rem}
+.sec-title{font:400 clamp(2.2rem,6.6vw,3.9rem)/1.04 var(--f-cap);letter-spacing:.015em;margin:0 0 2.2rem}
+/* висячая пунктуация: «ёлочка» и многоточие в начале строки уходят на поля */
+.hp--q{margin-left:-.5em}
+.hp--dots{margin-left:-.92em}
+.hero .hp{margin-left:0}
 
 /* ── шапка ── */
-.head{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;height:var(--head);padding:0 var(--gut);
+.head{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;height:var(--head);padding:0 max(var(--gut),env(safe-area-inset-right)) 0 max(var(--gut),env(safe-area-inset-left));
   background:var(--paper);border-bottom:1px solid var(--line)}
 .head__logo{flex:none;display:block;line-height:0;padding:6px 0}
 .head__logo img,.head__mark{display:block;height:46px;width:auto}
 .head__now{flex:1;min-width:0;margin:0;font:400 .95rem/1.2 var(--f-text);color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
 .head__nowlabel{color:var(--gold-text);font-family:var(--f-cap);letter-spacing:.08em}
 .no-js .head__now,.head__now:empty{visibility:hidden}
-@media (max-width:520px){.head{gap:8px}.head__logo img,.head__mark{height:38px}.head__toc{padding:0 .7em;gap:.45em;font-size:.95rem}.head__nowlabel{display:none}.head__now{font-size:.8rem;line-height:1.15;white-space:normal;overflow-wrap:normal;word-break:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}}
-.head__nav{display:none}
-.head__toc{flex:none;display:inline-flex;align-items:center;gap:.55em;min-height:44px;padding:0 .9em;border:1px solid var(--ink);border-radius:999px;
+@media (max-width:520px){.head__glow{top:calc(6px + 38px * .147)}.head{gap:8px}.head__logo img,.head__mark{height:38px}.head__toc{padding:0 .7em;gap:.45em;font-size:.95rem}.head__nowlabel{display:none}.head__now{font-size:.8rem;line-height:1.15;white-space:normal;overflow-wrap:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}}
+.head__nav,.head__give{display:none}
+.head__toc{flex:none;display:inline-flex;align-items:center;gap:.55em;min-height:44px;padding:0 .95em;border:1px solid var(--ink);border-radius:999px;
   background:transparent;color:var(--ink);font:400 1rem/1 var(--f-cap);letter-spacing:.06em;cursor:pointer}
 .head__toc:hover{background:var(--paper-2)}
-.burner{display:inline-block;width:2px;height:16px;background:var(--red);position:relative;margin-top:5px}
-.burner::before{content:"";position:absolute;left:-3px;top:-10px;width:8px;height:8px;background:var(--gold);border-radius:50% 0 50% 50%;transform:rotate(-45deg)}
+.burner,.head__giveflame{display:inline-block;position:relative;width:2px;height:15px;margin-top:7px;background:linear-gradient(90deg,#7f5614,#c49a48 50%,#86601b)}
+.burner::before,.head__giveflame::before{content:"";position:absolute;left:-3px;bottom:calc(100% + 1px);width:8px;height:15px;background:url("img/flame.svg") center/contain no-repeat}
 .no-js .head__toc{display:none}
 @media (min-width:900px){
   .head__now{display:none}
-  .head__nav{display:flex;flex:1;justify-content:flex-end;gap:1.4rem;font:400 1.05rem/1 var(--f-cap);letter-spacing:.05em}
+  .head__nav{display:flex;flex:1;justify-content:flex-end;gap:1.5rem;font:400 1.05rem/1 var(--f-cap);letter-spacing:.05em}
   .head__nav a{color:var(--ink);text-decoration:none;padding:.6em 0}
   .head__nav a:hover{color:var(--red);text-decoration:underline}
 }
@@ -80,32 +96,39 @@ main:focus{outline:none}
 /* ── оглавление: на телефоне — лист, на широком экране — свеча слева ── */
 .toc{background:var(--paper)}
 .toc__inner{padding:1.2rem var(--gut) 2rem}
-.toc__title{font:400 1rem/1 var(--f-cap);letter-spacing:.16em;text-transform:uppercase;color:var(--red);margin:0 0 1.2rem}
+.toc__title{font:400 1.05rem/1 var(--f-text);letter-spacing:.16em;color:var(--red);margin:0 0 1.2rem}
 .toc__list{list-style:none;margin:0;padding:0 0 0 22px;position:relative}
-.toc__list::before{content:"";position:absolute;left:7px;top:.4em;bottom:.4em;width:2px;background:var(--line-2)}
+.toc__list::before{content:"";position:absolute;left:7px;top:.4em;bottom:.4em;width:1px;background:var(--line-2)}
 .toc__list li{position:relative}
 .toc__list a{display:flex;gap:.6em;align-items:baseline;padding:.42em 0;color:var(--ink);text-decoration:none;font:400 1.15rem/1.25 var(--f-cap);letter-spacing:.03em}
 .toc__list a:hover{color:var(--red);text-decoration:underline}
-.toc__list a::before{content:"";position:absolute;left:-19px;top:.95em;width:6px;height:6px;border-radius:50%;background:var(--paper);border:1.5px solid var(--line-2)}
+.toc__list a::before{content:"";position:absolute;left:-18px;top:.95em;width:5px;height:5px;transform:rotate(45deg);background:var(--paper);border:1px solid var(--line-2)}
 .toc__list .sub a{padding-left:.4em;font-size:1.02rem}
 .toc__num{font-size:.8em;color:var(--gold-text);min-width:2.2em;letter-spacing:.04em}
 .toc__list a[aria-current="true"]{color:var(--red)}
-.toc__list a[aria-current="true"]::before{left:-21px;top:.55em;width:10px;height:10px;border:0;background:var(--gold);border-radius:50% 0 50% 50%;transform:rotate(-45deg)}
+.toc__list a[aria-current="true"]::before{background:var(--gold);border-color:var(--gold)}
 .toc__list .ext{margin-top:.8rem}
 .toc__list .ext a::before{display:none}
 .toc__close{display:none}
 .js .toc{display:none}
-.js .toc.is-open{display:block;position:fixed;inset:0;z-index:60;overflow-y:auto;overscroll-behavior:contain}
+.js .toc.is-open{display:block;position:fixed;inset:0;z-index:60;overflow-y:auto;overscroll-behavior:contain;padding-bottom:env(safe-area-inset-bottom)}
 .js .toc.is-open .toc__close{display:inline-flex;align-items:center;margin-top:1.6rem;min-height:44px;padding:0 1.2em;border:1px solid var(--ink);border-radius:999px;background:transparent;color:var(--ink);font:400 1rem/1 var(--f-cap);letter-spacing:.06em;cursor:pointer}
 html.toc-open{overflow:hidden}
 .no-js .toc{border-bottom:1px solid var(--line)}
+.toc__track{position:relative}
+.toc__flame{display:none;position:absolute;left:3px;top:0;width:9px;height:17px;transform:translate3d(0,-40px,0);opacity:0;z-index:1;pointer-events:none}
+.toc__flame::before{content:"";position:absolute;inset:0;background:url("img/flame.svg") center/contain no-repeat;transform-origin:50% 100%}
+
 @media (min-width:1180px){
-  :root{--rail:252px}
+  :root{--rail:252px;--spine-off:44px}
+  .js{--gl:calc(var(--gut) + 40px)}
   body{padding-left:var(--rail)}
   .head__toc,.head__nav{display:none}
-  .head{justify-content:flex-start}
+  .head{justify-content:space-between}
+  .head__give{display:inline-flex;align-items:center;gap:.6em;min-height:44px;padding:0 .2em;color:var(--ink);text-decoration:none;font:400 1.05rem/1 var(--f-cap);letter-spacing:.06em}
+  .head__give:hover{color:var(--red);text-decoration:underline}
   .js .toc,.no-js .toc,.toc{display:block;position:fixed;left:0;top:0;bottom:0;width:var(--rail);z-index:45;overflow-y:auto;border-right:1px solid var(--line);border-bottom:0;background:var(--paper)}
-  .toc__inner{padding:1.6rem 1.2rem 2rem 1.6rem}
+  .toc__inner{padding:1.7rem 1.2rem 2rem 1.6rem}
   .toc__list a{font-size:1.02rem;padding:.32em 0}
   .toc__list .sub a{font-size:.95rem}
   .js .toc.is-open{position:fixed;inset:0 auto 0 0}
@@ -113,117 +136,174 @@ html.toc-open{overflow:hidden}
   html.toc-open{overflow:auto}
 }
 
-/* ── первый экран ── */
-.hero{position:relative;isolation:isolate;overflow:hidden;padding:clamp(2rem,6vw,5rem) 0 0;display:grid;grid-template-columns:minmax(0,1fr);gap:1.6rem}
-.hero__text,.hero__next{padding:0 var(--gut)}
-.hero__love{font:400 clamp(4.6rem,22vw,11rem)/.86 var(--f-cap);letter-spacing:-.01em;margin:0 0 1.2rem;color:var(--ink)}
-.hero__words{font:400 clamp(1.05rem,3.3vw,1.45rem)/1.6 var(--f-cap);letter-spacing:.08em;color:var(--red);max-width:30em;margin:0 0 2.2rem}
-.hero .verse{margin:0;max-width:30em}
-.hero__next{align-self:start}
-.hero__next>*{max-width:28rem}
-.hero__nexttitle{font:400 .95rem/1.3 var(--f-cap);letter-spacing:.16em;text-transform:uppercase;color:var(--red);margin:0 0 .6rem;padding-top:1.1rem;border-top:2px solid var(--ink)}
-.hero__nextbody{font-size:1.25rem;line-height:1.45;margin:0 0 .5rem}
-.hero__nextbody strong{font-weight:600}
-.hero__addr{font-size:1rem;color:var(--ink-2)}
+/* ── первый экран: крупное слово над эпиграфом, как на старом сайте ── */
+.hero{position:relative;isolation:isolate;overflow:hidden;padding:clamp(2.4rem,7vw,5.5rem) 0 0;display:grid;grid-template-columns:minmax(0,1fr);gap:clamp(1.6rem,4vw,2.6rem)}
+.hero__text,.hero__next{padding:0 max(var(--gut),env(safe-area-inset-right)) 0 max(var(--gut),env(safe-area-inset-left))}
+.hero__text{text-align:center;container-type:inline-size}
+.hero__kicker{display:flex;align-items:center;justify-content:center;gap:.9em;margin:0 0 clamp(2.2rem,6vw,3.4rem)}
+.hero__kicker span{flex:0 0 auto;max-width:100%;text-wrap:balance}
+@media (max-width:400px){.hero__kicker{letter-spacing:.11em;gap:.6em}}
+.hero__kicker::before,.hero__kicker::after{content:"";flex:0 1 4.5rem;min-width:0;height:1px;background:linear-gradient(90deg,rgba(168,119,31,0),rgba(168,119,31,.75))}
+.hero__kicker::after{transform:scaleX(-1)}
+/* печатная строка: место — по самому длинному слову «Благодари», чтобы ничего не сдвигалось */
+.tw{display:grid;justify-items:center;margin:0 0 clamp(.9rem,2.6vw,1.4rem);padding-top:.36em;font:400 clamp(2rem,19cqi,10.5rem)/1 var(--f-cap);letter-spacing:.004em;color:var(--ink)}
+@supports not (font-size:1cqi){.tw{font-size:clamp(3rem,17vw,10.5rem)}}
+.tw>*{grid-area:1 / 1}
+.tw__sizer{visibility:hidden;white-space:nowrap;padding:0 .26em .06em 0}
+.tw__line{display:inline-flex;align-items:flex-start;white-space:nowrap}
+.tw.is-run .tw__line{justify-self:start;transition:transform .32s var(--e-out)}
+.tw.is-abs .tw__line{position:relative}
+.tw.is-abs .tw__cursor{position:absolute;left:0;top:.144em;margin:0}
+.tw__w{position:relative;display:inline-block}
+.gilt-t,.gilt{background:var(--gilt);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.tw__word{display:inline-block;min-width:.01em;padding-bottom:.06em}
+.tw__word:empty::before{content:"\00a0";display:inline-block;width:0}
+.tw__glint{position:absolute;top:-.12em;bottom:-.12em;left:-.1em;right:-.1em;overflow:hidden;pointer-events:none;visibility:hidden}
+/* блик — одна полоса тёплого света проходит по слову (soft-light): на бумаге её почти не видно, на позолоте —
+   свет скользит по золоту. Один элемент, только transform: дублировать текст не нужно, рассинхрона нет */
+.tw__glintwin{position:absolute;inset:0;mix-blend-mode:soft-light;transform:translate3d(-100%,0,0);
+  background:radial-gradient(ellipse 17% 46% at 50% 56%,rgba(255,248,226,1) 0,rgba(255,238,196,.75) 40%,rgba(255,236,190,0) 100%)}
+.tw__glintin{display:none}
+.tw__glint.is-on{visibility:visible}
+.tw__glint.is-on .tw__glintwin{animation:li-glint-o 1.5s var(--e-io) both}
+@keyframes li-glint-o{0%{transform:translate3d(-100%,0,0)}100%{transform:translate3d(100%,0,0)}}
+/* курсор — свеча-I знака: позолоченная вертикаль, фитиль и пламя */
+/* курсор: высота — капитель Forum (660/1000), низ — на линии шрифта (asc 856, desc 248 → базовая линия .804em от верха строки) */
+.tw__cursor{position:relative;display:inline-block;flex:none;width:.064em;height:.66em;margin:.144em 0 0 .11em}
+.tw__stem{position:absolute;inset:0;background:linear-gradient(90deg,#6e4b10,#c49a48 46%,#86601b);border-radius:.01em .01em 0 0}
+.tw__stem::before{content:"";position:absolute;left:50%;bottom:100%;width:2px;height:.045em;margin-left:-1px;background:#2a2420;border-radius:1px}
+.tw__flame{position:absolute;left:50%;bottom:calc(100% + .03em);width:.2em;height:.39em;margin-left:-.1em;transform-origin:50% 100%;transition:opacity .5s ease,transform .7s var(--e-out)}
+.tw__flame::before{content:"";position:absolute;inset:0;background:url("img/flame.svg") center bottom/contain no-repeat;transform-origin:50% 100%}
+.tw__halo{position:absolute;left:50%;top:40%;width:1.5em;height:1.5em;margin:-.75em 0 0 -.75em;border-radius:50%;background:radial-gradient(circle,rgba(236,190,100,.34) 0,rgba(236,190,100,.12) 38%,rgba(236,190,100,0) 68%);pointer-events:none}
+.tw.is-dim .tw__flame{opacity:.4;transform:scale(.84)}
+.tw.is-bright .tw__flame{transform:scale(1.08)}
+.pro-on .tw__flame{opacity:0}
+.pro-landed .tw__flame{opacity:1;transition:opacity .25s ease}
+/* восемь слов — строкой под словом; текущее подчёркнуто тонкой позолотой */
+.hero__words{font:400 min(1.2rem,4cqi)/1.9 var(--f-text);font-variant-caps:all-small-caps;letter-spacing:.1em;color:var(--ink-2);margin:0 auto clamp(1.8rem,5vw,2.8rem)}
+@supports not (font-size:1cqi){.hero__words{font-size:min(1.2rem,3.6vw)}}
+.verbs__row{display:block;white-space:nowrap}
+.verbs__join{display:none}
+@media (min-width:900px){.hero__words{font-size:min(1.2rem,1.75cqi);letter-spacing:.15em}.verbs__row{display:inline}.verbs__join{display:inline}}
+.verb{position:relative;display:inline-block;white-space:nowrap}
+.verb::after{content:"";position:absolute;left:0;right:.15em;bottom:.12em;height:1px;background:var(--gold);transform:scaleX(0);transform-origin:0 50%}
+.verb.is-on::after{transform:scaleX(1)}
+.verb__dot{color:var(--gold-text)}
+.hero .verse{margin:0 auto;max-width:27em;padding:0;text-align:center}
+.hero .verse::before,.hero .verse::after{display:none}
+.hero .verse blockquote p{font-size:clamp(1.3rem,3.9vw,2.05rem);line-height:1.36;margin-bottom:.9rem}
+.hero__next{max-width:36rem;margin:0 auto;text-align:center;width:100%}
+.hero__nexttitle{display:flex;align-items:center;justify-content:center;gap:1em;font:400 1.05rem/1.3 var(--f-text);letter-spacing:.16em;color:var(--red);margin:0 0 .7rem}
+.hero__nexttitle::before,.hero__nexttitle::after{content:"";flex:0 1 5rem;height:1px;background:linear-gradient(90deg,rgba(29,26,34,0),rgba(29,26,34,.55))}
+.hero__nexttitle::after{transform:scaleX(-1)}
+/* две строки заняты заранее: JS заменяет ссылку «Расписание» на «день, время / что — где», и ничего не сдвигается */
+.hero__nextbody{font-size:clamp(1.15rem,3.4vw,1.35rem);line-height:1.45;margin:0 0 .5rem;min-height:2.9em}
+.hero__nextbody strong{font-weight:600;font-variant-numeric:lining-nums}
+.hero__addr{font-size:1rem;color:var(--ink-2);margin:0}
 .hero__addr a{color:var(--ink-2)}
-.strip{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:.4rem var(--gut) 1.4rem;scrollbar-width:thin}
-.strip .ph{flex:none;scroll-snap-align:start;height:min(62vw,300px)}
+.strip{position:relative;z-index:3;display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:.6rem var(--gut) 1.6rem;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.strip .ph{flex:none;scroll-snap-align:start;height:clamp(220px,62vw,320px)}
 .strip img{height:100%;width:auto;max-width:none}
-@media (min-width:900px){
-  .hero{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:end}
-  .hero__next{padding-left:0;padding-bottom:.5rem}
-  .strip{grid-column:1 / -1}
-}
 
-/* ── фото ── */
+/* ── фото: пергаментная подложка, тёплая виньетка ── */
 .ph{position:relative;display:block;background:var(--paper-3);overflow:hidden;border-radius:2px}
-.ph::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 42%,rgba(60,35,10,0) 58%,rgba(60,35,10,.2) 100%)}
-.ph img{transition:opacity .2s}
-.ph:hover img{opacity:.92}
-.gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:2.4rem 0 0}
+.ph::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(60,35,10,.08);background:radial-gradient(ellipse at 50% 42%,rgba(60,35,10,0) 60%,rgba(60,35,10,.18) 100%)}
+.ph:hover img{opacity:.94}
+/* галереи — журнальный ритм: первое фото крупно, остальные парами */
+.gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:2.6rem 0 0}
 .gallery .ph{aspect-ratio:4/3}
-.gallery img{width:100%;height:100%;object-fit:cover;object-position:50% 30%}
-@media (min-width:720px){.gallery--many,.gallery--3{grid-template-columns:repeat(3,minmax(0,1fr))}.gallery--4{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media (min-width:1180px){.gallery--many{grid-template-columns:repeat(4,minmax(0,1fr))}}
-.lead-photo{margin:0 0 2.2rem;max-width:46rem}
+.gallery img{width:100%;height:100%;object-fit:cover;object-position:50% 32%}
+.gallery--n5>.ph:first-child,.gallery--n7>.ph:first-child,.gallery--n9>.ph:first-child{grid-column:1 / -1;aspect-ratio:16/9}
+@media (min-width:720px){
+  .gallery{gap:10px}
+  .gallery--n4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .gallery--n4 .ph{aspect-ratio:3/4}
+  .gallery--n5,.gallery--n7,.gallery--n9{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .gallery--n5>.ph:first-child,.gallery--n7>.ph:first-child,.gallery--n9>.ph:first-child{grid-column:span 2;grid-row:span 2;aspect-ratio:auto}
+  .gallery--n7>.ph:nth-child(6),.gallery--n7>.ph:nth-child(7){grid-column:span 2;aspect-ratio:auto;height:100%}
+}
+.lead-photo{margin:0 0 2.4rem;max-width:52rem}
 .lead-photo .ph img{width:100%}
+@media (min-width:900px){.lead-photo .ph{aspect-ratio:16/9}.lead-photo .ph img{height:100%;object-fit:cover;object-position:50% 52%}}
 
 /* ── церковь ── */
-.band{background:var(--paper-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.church{padding:clamp(3rem,8vw,6.5rem) 0;margin-top:2rem}
-.church__title{font:400 clamp(1.6rem,4.6vw,2.7rem)/1.22 var(--f-cap);letter-spacing:.01em;max-width:30em;margin:0 0 2.4rem}
+.band{background:rgba(239,230,214,.86);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.church{padding:clamp(3.4rem,9vw,7rem) 0;margin-top:1.2rem}
+.church__title{font:400 clamp(1.6rem,4.6vw,2.8rem)/1.24 var(--f-cap);letter-spacing:.01em;max-width:28em;margin:0 0 2.6rem}
 .prose{max-width:36em}
-.prose--lead p:first-child::first-letter{font-family:var(--f-cap);float:left;font-size:3.6em;line-height:.82;padding:.06em .1em 0 0;color:var(--red)}
-@media (min-width:980px){.church .prose{columns:2;column-gap:3rem;max-width:none}.church .prose p{break-inside:avoid}}
+.prose p{margin:0 0 1em;margin:0 0 .62lh}
+.prose--lead p:first-child::first-letter{font-family:var(--f-cap);float:left;font-size:3.7em;line-height:.8;padding:.08em .1em 0 0;color:var(--red)}
+@media (min-width:980px){.church .prose{columns:2;column-gap:3.4rem;max-width:none}.church .prose p{break-inside:avoid}}
 
 /* ── расписание ── */
-.schedule{padding:clamp(3rem,8vw,6rem) 0}
-.days{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:0;border-top:2px solid var(--ink)}
+.schedule{padding:clamp(3.4rem,9vw,6.5rem) 0}
+.days{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);border-top:2px solid var(--ink)}
 .day{padding:1.2rem 0 1.3rem;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:1rem;align-items:baseline}
 .day p{margin:0}
 .day__when{font:400 1.05rem/1.3 var(--f-cap);letter-spacing:.06em;color:var(--red);grid-column:1}
-.day__time{grid-column:2;grid-row:1 / span 3;font:400 clamp(2.4rem,9vw,3.4rem)/1 var(--f-cap);color:var(--ink);font-variant-numeric:lining-nums tabular-nums}
+.day__time{grid-column:2;grid-row:1 / span 3;font:400 clamp(2.4rem,9vw,3.6rem)/1 var(--f-cap);color:var(--ink)}
 .day__what{grid-column:1;font-size:1.3rem;line-height:1.3;margin-top:.25rem}
 .day__where{grid-column:1;color:var(--ink-2);font-size:1rem}
-.day__badge{display:inline-block;margin-left:.5em;padding:.1em .55em;border-radius:999px;background:var(--red);color:#fffaf2;font:400 .8rem/1.4 var(--f-cap);letter-spacing:.08em;vertical-align:.1em}
+.day__badge{display:inline-block;margin-left:.5em;padding:.1em .6em;border-radius:999px;background:var(--red);color:#fffaf2;font:400 .8rem/1.4 var(--f-cap);letter-spacing:.08em;vertical-align:.1em}
 @media (min-width:900px){
   .days{grid-template-columns:repeat(4,minmax(0,1fr));border-top:0}
   .day{display:block;border:0;border-top:2px solid var(--ink);padding:1.1rem 1.4rem 1.4rem 0;margin-right:1.4rem}
   .day__time{margin:.6rem 0 .5rem}
-  .day:not(:has(.day__time)) .day__what{margin-top:.6rem}
+  .day__what{margin-top:.6rem}
+  .day__time+.day__what{margin-top:0}
 }
 
 /* ── девять служений: указатель ── */
-.ministries{padding:clamp(3rem,7vw,5rem) 0 clamp(2rem,5vw,3rem);border-top:1px solid var(--line)}
+.ministries{padding:clamp(3.4rem,8vw,5.5rem) 0 clamp(2rem,5vw,3rem);border-top:1px solid var(--line)}
 .index{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);border-top:1px solid var(--line)}
 .index li{border-bottom:1px solid var(--line)}
-.index a{display:flex;align-items:baseline;gap:1rem;padding:.9rem 0;text-decoration:none;color:var(--ink);min-height:48px}
+.index a{display:flex;align-items:baseline;gap:1rem;padding:.95rem 0;text-decoration:none;color:var(--ink);min-height:48px}
 .index a:hover .index__name{color:var(--red);text-decoration:underline;text-decoration-thickness:1px}
 .index__num{font:400 1rem/1 var(--f-cap);color:var(--gold-text);min-width:2.6em;letter-spacing:.06em}
-.index__name{font:400 clamp(1.45rem,4.6vw,1.9rem)/1.15 var(--f-cap)}
+.index__name{font:400 clamp(1.45rem,4.6vw,1.95rem)/1.15 var(--f-cap)}
 @media (min-width:720px){.index{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:2.4rem}}
-@media (min-width:1100px){.index{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1400px){.index{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 /* ── служение ── */
-.min{padding:clamp(3.2rem,8vw,6.5rem) var(--gut);max-width:calc(74rem + 2 * var(--gut));margin:0 auto;border-top:1px solid var(--line)}
+.min{padding:clamp(3.6rem,9vw,7rem) max(var(--gut),env(safe-area-inset-right)) clamp(3.6rem,9vw,7rem) max(var(--gl),env(safe-area-inset-left));max-width:74rem;margin:0 auto;border-top:1px solid var(--line)}
 .min:first-child{border-top:0}
-.min__head{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:baseline;column-gap:1rem;margin:0 0 2.2rem}
+.min__head{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:baseline;column-gap:1rem;margin:0 0 2.4rem}
 .min__num{font:400 clamp(1.1rem,3vw,1.4rem)/1 var(--f-cap);color:var(--gold-text);letter-spacing:.06em;margin:0;min-width:2.4em}
-.min__head h3{font:400 clamp(2.2rem,7vw,4.2rem)/1.02 var(--f-cap);letter-spacing:.01em}
-.min__back{margin:2.6rem 0 0;font:400 1rem/1 var(--f-cap);letter-spacing:.08em}
+.js .min__num{display:none}
+.min__head h3{font:400 clamp(2.3rem,7.4vw,4.6rem)/1.02 var(--f-cap);letter-spacing:.01em}
+.min__back{margin:2.8rem 0 0;font:400 1rem/1 var(--f-cap);letter-spacing:.08em}
 .min__back a{display:inline-block;padding:.7em 0}
 .min__back a::before{content:"↑ "}
-@media (min-width:900px){.min__body{padding-left:calc(2.4em + 1rem)}}
 .prose--cols{max-width:none}
-@media (min-width:1000px){.prose--cols{columns:2;column-gap:3rem}.prose--cols p{break-inside:avoid}}
+@media (min-width:1000px){.prose--cols{columns:2;column-gap:3.4rem}.prose--cols p{break-inside:avoid}}
 .split{display:grid;gap:2rem}
-.split__aside .ph{max-width:26rem}
-@media (min-width:900px){.split{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);align-items:start}.split__aside{position:sticky;top:calc(var(--head) + 1.5rem)}}
+.split__aside .ph{max-width:28rem}
+@media (min-width:900px){.split{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);align-items:start;gap:3rem}.split__aside{position:sticky;top:calc(var(--head) + 1.5rem)}}
 
-/* ── Писание: свеча и пламя ── */
-.verse{position:relative;margin:2.4rem 0;padding:.1rem 0 0 1.5rem;max-width:36em}
-.verse::after{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--red);transform-origin:50% 0}
-.verse::before{content:"";position:absolute;left:-7px;top:-19px;width:12px;height:12px;background:var(--gold);border-radius:50% 0 50% 50%;transform:rotate(-45deg)}
+/* ── Писание: свеча и пламя знака ── */
+.verse{position:relative;margin:2.6rem 0;padding:.1rem 0 0 1.6rem;max-width:36em}
+.verse::after{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,#86601b,var(--red) 30%,var(--red));transform-origin:50% 0}
+.verse::before{content:"";position:absolute;left:-4px;top:-22px;width:10px;height:19px;background:url("img/flame.svg") center bottom/contain no-repeat;transform-origin:50% 100%}
 .verse blockquote{margin:0}
 .verse blockquote p{margin:0 0 .7rem;font-style:italic;font-weight:400;font-size:1.12em;line-height:1.55}
-.verse--big blockquote p{font-size:clamp(1.34rem,3.4vw,1.85rem);line-height:1.42}
+.verse--big blockquote p{font-size:clamp(1.34rem,3.5vw,1.9rem);line-height:1.42}
 .verse .ln{display:block}
 .verse figcaption{margin:0}
 .verse cite{font:400 1rem/1 var(--f-cap);font-style:normal;letter-spacing:.1em;color:var(--red)}
 .verses{list-style:none;margin:0;padding:0}
 .verses li{break-inside:avoid;display:inline-block;width:100%;padding:1.6rem 0 .2rem}
 .verses .verse{margin:0 0 1.2rem}
-.verses .lamp .verse{padding:1.2rem 1.2rem 1rem 1.5rem;background:var(--paper-2)}
-@media (min-width:900px){.verses{columns:2;column-gap:3.5rem}}
+.verses .lamp .verse{padding:1.3rem 1.3rem 1.1rem 1.6rem;background:var(--paper-2)}
+@media (min-width:900px){.verses{columns:2;column-gap:3.6rem}}
 
 /* ── стихотворение ── */
-.poem{margin:2.6rem 0 0;font-style:italic;font-size:1.1em;line-height:1.6;display:grid;gap:0 3rem}
+.poem{margin:2.8rem 0 0;font-style:italic;font-size:1.1em;line-height:1.6;display:grid;gap:0 3rem}
 .poem p{margin:0 0 1.4em}
-@media (min-width:720px){.poem{grid-template-columns:repeat(2,max-content)}}
+@media (min-width:720px){.poem{grid-template-columns:repeat(2,minmax(0,max-content))}}
 
 /* ── реабилитация: факты ── */
-.facts{margin:2.8rem 0 0;padding:1.6rem 0 0;border-top:2px solid var(--ink)}
-.facts h4{font:400 1rem/1.2 var(--f-cap);letter-spacing:.16em;text-transform:uppercase;color:var(--red);margin:0 0 1rem}
+.facts{margin:3rem 0 0;padding:1.6rem 0 0;border-top:2px solid var(--ink)}
+.facts h4{font:400 1.05rem/1.2 var(--f-text);letter-spacing:.16em;color:var(--red);margin:0 0 1rem}
 .facts dl{margin:0 0 2rem}
 .facts dl>div{display:grid;grid-template-columns:minmax(0,1fr);gap:.2rem 2rem;padding:.9rem 0;border-bottom:1px solid var(--line)}
 .facts dt{font:400 1.05rem/1.3 var(--f-cap);letter-spacing:.05em;color:var(--ink-2)}
@@ -231,49 +311,54 @@ html.toc-open{overflow:hidden}
 @media (min-width:720px){.facts dl>div{grid-template-columns:13rem minmax(0,1fr)}}
 
 /* ── партнёрство и пожертвования ── */
-.partner{padding:clamp(3rem,8vw,6rem) 0}
+.partner{padding:clamp(3.4rem,9vw,6.5rem) 0}
 .benefits{list-style:none;margin:0 0 1.2em;padding:0}
 .benefits li{position:relative;padding-left:1.6em;margin:0 0 .9em}
-.benefits li::before{content:"";position:absolute;left:.25em;top:.62em;width:8px;height:8px;background:var(--gold);border-radius:50% 0 50% 50%;transform:rotate(-45deg)}
-.donate{padding:clamp(3rem,8vw,6rem) 0}
-.donate__grid{display:grid;gap:2.4rem}
-.donate__cta{margin:0 0 1.6rem}
+.benefits li::before{content:"";position:absolute;left:.3em;top:.18em;width:8px;height:15px;background:url("img/flame.svg") center bottom/contain no-repeat}
+.donate{padding:clamp(3.4rem,9vw,6.5rem) 0;overflow-x:hidden;overflow-x:clip}
+.donate__grid{display:grid;grid-template-columns:minmax(0,1fr);gap:2.6rem}
+.donate__cta{position:relative;display:inline-block;margin:0 0 1.8rem}
 .donate__lead{font-size:1.3rem;line-height:1.45;max-width:30em}
 .acct{margin:1.8rem 0 1rem;border-top:2px solid var(--ink)}
 .acct>div{padding:.9rem 0;border-bottom:1px solid var(--line)}
-.acct dt{font:400 .95rem/1.2 var(--f-cap);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);margin:0 0 .35rem}
+.acct dt{font:400 1.02rem/1.2 var(--f-text);letter-spacing:.14em;color:var(--ink-2);margin:0 0 .35rem}
 .acct dd{margin:0}
 .acct__payee{font-size:1.2rem;font-weight:500;letter-spacing:.02em}
-.acct__iban{font-size:clamp(1.3rem,5.4vw,1.7rem);font-weight:500;font-variant-numeric:tabular-nums lining-nums;letter-spacing:.03em;white-space:nowrap}
+.acct__iban{font-size:clamp(1.05rem,5.3vw,1.75rem);font-weight:500;letter-spacing:.03em;white-space:nowrap}
 .acct__iban span{margin-right:.32em}
 .acct__iban span:last-child{margin-right:0}
 .acct__actions{display:flex;flex-wrap:wrap;align-items:center;gap:.8rem}
 .acct__status{color:var(--ink-2);font-size:1rem}
 .acct__status.ok{color:#2d5a2a}
+.acct__status.ok::before{content:"✓ "}
 .donate__note{color:var(--ink-2);font-size:1.02rem;max-width:32em}
 .qr{margin:0;max-width:22rem}
 .qr figcaption{font-size:1.05rem;margin:0 0 .7rem}
-.qr img{width:100%;max-width:260px;image-rendering:pixelated;border:1px solid var(--line);background:#fff}
+.qr img{width:100%;max-width:260px;image-rendering:pixelated;border:1px solid var(--line);background:#fff;padding:10px}
 .qr__hint{font-size:.95rem;color:var(--ink-2);margin:.6rem 0 0}
 @media (min-width:900px){.donate__grid{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:start}.qr{justify-self:end}.qr img{max-width:300px}}
 
 /* ── кнопки ── */
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:.55em 1.25em;border-radius:999px;font:400 1.05rem/1.2 var(--f-cap);letter-spacing:.05em;text-decoration:none;cursor:pointer;text-align:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:.55em 1.3em;border-radius:999px;font:400 1.05rem/1.2 var(--f-cap);letter-spacing:.05em;text-decoration:none;cursor:pointer;text-align:center}
 .btn--flame{background:var(--red);color:#fffaf2;border:1px solid var(--red)}
 .btn--flame:hover{background:var(--red-2);color:#fffaf2}
 .btn--line{background:transparent;color:var(--ink);border:1px solid var(--ink)}
 .btn--line:hover{background:var(--paper-2);color:var(--ink)}
 
 /* ── контакты и люди ── */
-.contacts{padding:clamp(3rem,8vw,6rem) 0;border-top:1px solid var(--line)}
-.actions{display:flex;flex-wrap:wrap;gap:.7rem;margin:0 0 2.6rem}
-.info{display:grid;grid-template-columns:minmax(0,1fr);margin:0 0 3.4rem;border-top:2px solid var(--ink)}
+.contacts{padding:clamp(3.4rem,9vw,6.5rem) 0;border-top:1px solid var(--line)}
+.actions{display:flex;flex-wrap:wrap;gap:.7rem;margin:0 0 2.8rem}
+.info{display:grid;grid-template-columns:minmax(0,1fr);margin:0 0 3.2rem;border-top:2px solid var(--ink)}
 .info>div{padding:.9rem 0;border-bottom:1px solid var(--line)}
-.info dt{font:400 .95rem/1.2 var(--f-cap);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);margin:0 0 .3rem}
+.info dt{font:400 1.02rem/1.2 var(--f-text);letter-spacing:.14em;color:var(--ink-2);margin:0 0 .3rem}
 .info dd{margin:0;font-size:1.15rem}
-@media (min-width:900px){.info{grid-template-columns:repeat(4,minmax(0,1fr));column-gap:1.6rem}}
-.people__title{font:400 clamp(1.8rem,5vw,2.6rem)/1.1 var(--f-cap);margin:0 0 1.6rem}
-.people{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:2rem}
+.info dd a{overflow-wrap:anywhere}
+@media (min-width:900px){.info{grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr) minmax(0,.8fr) minmax(0,1.1fr);column-gap:1.6rem}.info dd a{overflow-wrap:normal;white-space:nowrap}}
+.route{margin:-1.4rem 0 3.4rem}
+.route__title{font:400 1.05rem/1.2 var(--f-text);letter-spacing:.14em;color:var(--ink-2);margin:0 0 .7rem}
+.route__links{display:flex;flex-wrap:wrap;gap:.6rem;margin:0}
+.people__title{font:400 clamp(1.9rem,5vw,2.7rem)/1.1 var(--f-cap);margin:0 0 1.7rem}
+.people{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:2.2rem}
 .person{display:grid;grid-template-columns:120px minmax(0,1fr);column-gap:1.1rem;align-items:start}
 .person__ph{grid-row:1 / span 3;background:var(--paper-3);border-radius:2px;overflow:hidden}
 .person__name{font:400 1.45rem/1.15 var(--f-cap);margin:0 0 .4rem}
@@ -281,132 +366,358 @@ html.toc-open{overflow:hidden}
 .person__roles{margin:0 0 .5rem;font-size:1rem;color:var(--red)}
 .person__roles span{display:block}
 .person__links{margin:0;display:flex;flex-direction:column;gap:.1rem;font-size:1rem}
-.person__links a{padding:.35em 0;word-break:break-all}
+.person__links a{padding:.35em 0;overflow-wrap:anywhere}
 @media (min-width:640px){.people{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (min-width:1100px){.people{grid-template-columns:repeat(4,minmax(0,1fr))}.person{display:block}.person__ph{margin:0 0 1rem}}
 
-/* ── конфиденциальность ── */
-.privacy{padding:clamp(2.6rem,6vw,4.5rem) 0;border-top:1px solid var(--line)}
+/* ── конфиденциальность и подвал ── */
+.privacy{padding:clamp(2.8rem,6vw,4.6rem) 0;border-top:1px solid var(--line)}
 .sec-title--small{font-size:clamp(1.7rem,4.6vw,2.4rem);margin-bottom:1.2rem}
 .privacy .prose{font-size:1.02rem;color:var(--ink-2)}
 .privacy .prose p{margin:0 0 .7em}
-
-/* ── подвал ── */
-.foot{background:var(--paper-2);border-top:1px solid var(--line);padding:3rem 0 3.4rem;font-size:1rem;color:var(--ink-2)}
+.foot{background:var(--paper-2);border-top:1px solid var(--line);padding:3rem 0 calc(3.4rem + env(safe-area-inset-bottom));font-size:1rem;color:var(--ink-2)}
 .foot__grid{display:grid;gap:1.4rem;align-items:end}
 .foot__logo{width:170px;height:auto}
 .foot p{margin:0}
 @media (min-width:900px){.foot__grid{grid-template-columns:auto 1fr auto;column-gap:3rem}}
 
 /* ── просмотр фото ── */
-.lb{border:0;padding:0;background:transparent;max-width:96vw;max-height:94vh;overflow:visible}
-.lb::backdrop{background:rgba(23,20,27,.88)}
-.lb img{max-width:94vw;max-height:84vh;width:auto;height:auto;margin:0 auto}
-.lb__close{display:block;margin:.8rem auto 0;min-height:44px;padding:0 1.2em;border:1px solid #f7f2e8;border-radius:999px;background:transparent;color:#f7f2e8;font:400 1rem/1 var(--f-cap);letter-spacing:.06em;cursor:pointer}
+.lb{border:0;padding:0;background:transparent;max-width:96vw;max-height:94vh;max-height:94dvh;overflow:visible}
+.lb::backdrop{background:rgba(23,20,27,.9)}
+.lb img{max-width:94vw;max-height:84vh;max-height:84svh;width:auto;height:auto;margin:0 auto}
+.lb__close{display:block;margin:.8rem auto 0;min-height:44px;padding:0 1.3em;border:1px solid #f7f2e8;border-radius:999px;background:transparent;color:#f7f2e8;font:400 1rem/1 var(--f-cap);letter-spacing:.06em;cursor:pointer}
 .lb__close:focus-visible{outline-color:#f7f2e8;box-shadow:none}
 
+/* касание: на сенсорных экранах каждая ссылка и кнопка — не меньше 44×44 */
+@media (pointer:coarse){
+  .head__nav a{display:inline-flex;align-items:center;min-height:44px}
+  .person__links a,.info dd a,.foot a,.toc__list a,.min__back a,.hero__addr a,.hero__nextbody a{display:inline-flex;align-items:center;min-height:44px}
+  .toc__list a{display:flex}
+  .btn{min-height:48px}
+}
+
+/* пергамент: едва заметное зерно бумаги (свой файл, неподвижно) */
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.26;background:url("img/grain.svg") repeat;background-size:220px 220px}
 
 /* =====================================================================
-   ВОЛШЕБСТВО — восемь тихих эффектов «Светильника».
-   Все движения — только transform и opacity; без backdrop-filter и больших
-   размытий. Класс .fx ставит app.js, и только если не просили «меньше
-   движения»; без JS и при reduced-motion всё неподвижно и видно сразу.
-   Приёмы — как у vlana (появление по IntersectionObserver, «expo-out»,
-   ступенчатые задержки через --i, линия, которая рисуется scale), облик — свой.
+   «СВЕТ СТЕЗЕ МОЕЙ» (Пс 118:105). Вертикаль свечи продолжается вниз одной стезёй:
+   на телефоне — у левого поля, на широком экране — ось колонки текста. Разделы —
+   узлы на ней, у служений — римская цифра в позолоте. Одно пламя идёт с читателем:
+   выше — пройденный путь (позолота), ниже — чернила. У «Пожертвовать» пламя
+   останавливается, у «Свяжитесь с нами» — приходит совсем. Один фиксированный элемент
+   пламени (transform), один слой золота (scaleY), одна пассивная прокрутка + rAF.
    ===================================================================== */
-:root{--e-out:cubic-bezier(.16,1,.3,1);--e-draw:cubic-bezier(.65,0,.35,1)}
+.spine{display:none;position:absolute;left:var(--x,0px);top:0;width:0;height:0;z-index:2;pointer-events:none}
+.js .spine{display:block;visibility:hidden}
+.js .spine.is-ready{visibility:visible}   /* видна, только когда узлы уже на своих местах (иначе — сдвиг вёрстки) */
+.spine__ink{position:absolute;left:-.5px;top:var(--top,0px);width:1px;height:var(--len,0px);background:rgba(29,26,34,.22)}
+/* пройденный путь — один слой золота, закреплённый на экране (как и пламя): от верха экрана до пламени,
+   transform: translate + scaleY; пока читатель просто читает, он не меняется вовсе */
+.spine__lit{display:none;position:fixed;left:0;top:0;width:1.5px;height:100px;margin-left:-.75px;z-index:3;pointer-events:none;transform-origin:0 0;transform:scaleY(0);background:linear-gradient(180deg,#c49a48,#a8771f 50%,#c49a48)}
+.fx .spine__lit{display:block}
+.spine.is-calm .spine__ink{left:-.75px;width:1.5px;background:linear-gradient(180deg,#c49a48,#a8771f 50%,#c49a48)}
+.spine__node{position:absolute;left:0;top:var(--y,0px);width:0;height:0}
+.spine__node::before,.spine__node::after{content:"";position:absolute;left:-4px;top:-4px;width:8px;height:8px;transform:rotate(45deg);background:var(--paper);border:1px solid rgba(29,26,34,.4)}
+.spine__node::after{background:#c49a48;border-color:#8a6418;opacity:0}
+.spine__node.is-lit::after{opacity:1}
+.spine__node--num{left:-12px;margin-top:-12px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;isolation:isolate;font:400 .62rem/1 var(--f-cap);letter-spacing:.02em;color:#4f3409}
+.spine__node--num::before,.spine__node--num::after{left:0;top:0;width:24px;height:24px;border-radius:50%;transform:none;z-index:-1}
+.spine__node--num::after{background:radial-gradient(circle at 50% 35%,#fbf3de 0,#efd9a4 75%);border:1px solid #a8771f}
+.spine__flame{display:none;position:fixed;left:0;top:0;width:0;height:0;z-index:36;pointer-events:none;opacity:0;transition:opacity .9s ease;transform:translate3d(0,-80px,0)}
+.fx .spine__flame{display:block}
+.spine__flame.is-on{opacity:1}
+.spine__flame span{position:absolute;left:-6px;top:-24px;width:12px;height:23px;transform-origin:50% 100%;transition:transform 1s var(--e-out)}
+.spine__flame span::before{content:"";position:absolute;inset:0;background:url("img/flame.svg") center bottom/contain no-repeat;transform-origin:50% 100%}
+.spine__flame span i{position:absolute;left:50%;top:45%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:radial-gradient(circle,rgba(240,200,120,.42),rgba(240,200,120,0) 68%)}
+.spine__flame.is-rest span{transform:scale(1.3)}
+@media (min-width:1180px){
+  .spine__node--num{left:-17px;margin-top:-17px;width:34px;height:34px;font-size:.8rem}
+  .spine__node--num::before,.spine__node--num::after{width:34px;height:34px}
+  .spine__flame span{left:-7px;top:-28px;width:14px;height:27px}
+}
+/* ветви: места Писания отходят от стези тонкой золотой нитью */
+.min .verse blockquote{position:relative}
+.min .verse.has-branch blockquote::before{content:"";position:absolute;top:.1em;right:calc(100% + 1.6rem);width:var(--b,0);height:1px;transform-origin:0 50%;background:linear-gradient(90deg,rgba(168,119,31,.8),rgba(168,119,31,.2))}
+/* без движения: стезя неподвижна и вся светится */
+.spine.is-calm .spine__node::after{opacity:1}
 
-/* 1. Живое пламя: знак в шапке зажигается за 0,8 с и тихо колышется */
+/* Девять состояний света — по одному на служение: слои неподвижны, меняется только
+   прозрачность (1,8 с); цвет текста не меняется никогда. */
+.sky{display:none;position:fixed;inset:0;z-index:-2;pointer-events:none}
+.fx .sky{display:block}
+.sky i{position:absolute;inset:0;opacity:0;transition:opacity 1.8s ease}
+.sky i.is-on{opacity:1}
+.sky [data-sky="worship"]{background:linear-gradient(180deg,rgba(242,182,156,.2),rgba(242,182,156,0) 58%)}
+.sky [data-sky="word"]{background:linear-gradient(180deg,rgba(214,228,240,.32),rgba(214,228,240,0) 64%)}
+.sky [data-sky="feed"]{background:radial-gradient(ellipse 90% 70% at 50% 0%,rgba(250,214,136,.26),rgba(250,214,136,0) 70%)}
+.sky [data-sky="children"]{background:linear-gradient(160deg,rgba(214,234,190,.3),rgba(214,234,190,0) 60%)}
+.sky [data-sky="prayer"]{background:radial-gradient(ellipse 60% 50% at 14% 92%,rgba(232,166,88,.16),rgba(232,166,88,0) 70%),linear-gradient(180deg,rgba(150,118,150,.08),rgba(150,118,150,0) 70%)}
+.sky [data-sky="evangelism"]{background:linear-gradient(180deg,rgba(255,252,244,.7),rgba(255,252,244,0) 74%)}
+.sky [data-sky="bible-school"]{background:radial-gradient(ellipse 52% 46% at 88% 16%,rgba(238,184,96,.24),rgba(238,184,96,0) 70%)}
+/* ночь с одним светлым окном: окно — самое светлое на странице (светлее бумаги), вокруг — тихая ночная синева */
+.sky [data-sky="prison"]{background:linear-gradient(rgba(255,250,236,.95),rgba(255,250,236,.95)) no-repeat 88% 11% / 18px 26px,radial-gradient(circle at 88% 13%,rgba(255,244,214,.75) 0,rgba(255,244,214,0) 12%),linear-gradient(180deg,rgba(58,64,92,.06),rgba(58,64,92,.035))}
+.sky [data-sky="rehabilitation"]{background:linear-gradient(0deg,rgba(246,176,116,.22),rgba(246,176,116,0) 58%)}
+
+/* =====================================================================
+   ВОЛШЕБСТВО (класс .fx ставит app.js, только без «меньше движения»)
+   ===================================================================== */
+/* 1. Живое пламя знака в шапке: зажигается и тихо колышется, пока виден первый экран */
 .head__mark .lf,.head__mark .lf-fire,.head__mark .lf-halo{transform-box:fill-box;transform-origin:50% 100%}
 .head__mark .lf-halo{transform-origin:50% 50%}
-.fx .head__mark .lf{animation:li-ignite .8s var(--e-out) .2s both}
-/* пламя знака колышется, пока виден первый экран: SVG анимируется в основном потоке, на прокрутке ему лучше отдыхать */
-.fx.fx-top .head__mark .lf-fire{animation:li-flick 3.9s ease-in-out 1.1s infinite}
-.fx.fx-top .head__mark .lf-halo{animation:li-halo 5.2s ease-in-out 1.1s infinite}
+.fx .head__mark .lf{animation:li-ignite .9s var(--e-out) .2s both}
+/* дальше знак дышит светом поверх пламени: отдельный слой, только opacity и transform (SVG-анимация шла бы в основном потоке) */
+.head__logo{position:relative}
+.head__glow{position:absolute;left:36.1%;top:calc(6px + 46px * .147);width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;pointer-events:none;opacity:0;
+  background:radial-gradient(circle,rgba(236,190,100,.55),rgba(236,190,100,0) 66%)}
+.fx .head__glow{animation:li-halo-glow 5.2s ease-in-out 1.2s infinite}
+.fx:not(.fx-top) .head__glow{animation-play-state:paused}
+@keyframes li-halo-glow{0%,100%{opacity:.45;transform:scale(.85)}50%{opacity:.95;transform:scale(1.12)}}
 @keyframes li-ignite{0%{opacity:0;transform:scale(.15,.05)}60%{opacity:1}100%{opacity:1;transform:scale(1,1)}}
 @keyframes li-flick{0%,100%{transform:scale(1,1) skewX(0deg)}18%{transform:scale(.96,1.05) skewX(-2deg)}41%{transform:scale(1.03,.97) skewX(1.4deg)}63%{transform:scale(.98,1.04) skewX(-.8deg)}82%{transform:scale(1.01,.99) skewX(.6deg)}}
-@keyframes li-halo{0%,100%{opacity:.78;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
-/* пламя у мест Писания и в оглавлении — своё дыхание, разные сроки */
-@keyframes li-flick-r{0%,100%{transform:rotate(-45deg) scale(1,1)}24%{transform:rotate(-45deg) scale(.9,1.08)}52%{transform:rotate(-45deg) scale(1.06,.95)}77%{transform:rotate(-45deg) scale(.96,1.04)}}
-.fx .verse.fx-vis::before,.fx .toc__flame::before{animation:li-flick-r 3.6s ease-in-out infinite}
+@keyframes li-halo{0%,100%{opacity:.75;transform:scale(1)}50%{opacity:1;transform:scale(1.07)}}
+.fx .tw__flame::before{animation:li-flick 3.4s ease-in-out infinite}
+.fx .tw__halo{animation:li-halo 4.6s ease-in-out infinite}
+.fx .spine__flame span::before{animation:li-flick 3.7s ease-in-out infinite}
+.fx .spine__flame span i{animation:li-halo 5s ease-in-out infinite}
+.fx .verse.fx-vis::before,.fx .toc__flame::before{animation:li-flick 3.6s ease-in-out infinite}
 .fx .verses li:nth-child(3n+1) .verse.fx-vis::before{animation-duration:4.3s;animation-delay:-1.1s}
 .fx .verses li:nth-child(3n+2) .verse.fx-vis::before{animation-duration:3.2s;animation-delay:-2.3s}
-.fx .min:nth-child(2n) .verse.fx-vis::before{animation-duration:4.7s}
+.fx .verb::after{transition:transform 1s var(--e-out)}
 
-/* 2. «Свет сверху»: мягкие лучи, медленно дрейфуют (80 и 110 с); рассвет теплеет при прокрутке */
-.hero__light{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
-.hero__rays{position:absolute;left:-40%;right:-40%;top:-30%;height:150%;transform-origin:50% 0;
+/* 2. «Свет сверху»: два узора мягких лучей медленно переливаются один в другой (только прозрачность:
+   геометрия лучей неизменна — никаких сдвигов вёрстки), спят вне экрана */
+/* свет сверху не зависит от высоты первого экрана: своя неизменная коробка и полная изоляция —
+   иначе подмена шрифта (на 2–4 px выше) заставляла бы пересчитывать вращающиеся лучи (сдвиг вёрстки) */
+.hero__light{position:absolute;left:0;right:0;top:0;height:1200px;z-index:-1;pointer-events:none;overflow:hidden;contain:strict}
+.hero__rays{position:absolute;left:-40%;right:-40%;top:-300px;height:1500px;transform-origin:50% 0;
   background:repeating-conic-gradient(from 168deg at 50% 0%,rgba(236,196,118,0) 0deg,rgba(236,196,118,.13) 2.2deg,rgba(236,196,118,0) 5deg,rgba(236,196,118,0) 9.5deg);
   -webkit-mask-image:radial-gradient(ellipse 60% 75% at 50% 0%,#000 0%,rgba(0,0,0,.55) 45%,transparent 78%);mask-image:radial-gradient(ellipse 60% 75% at 50% 0%,#000 0%,rgba(0,0,0,.55) 45%,transparent 78%)}
 .hero__rays--2{opacity:.7;background:repeating-conic-gradient(from 174deg at 46% 0%,rgba(246,214,150,0) 0deg,rgba(246,214,150,.11) 3deg,rgba(246,214,150,0) 7deg,rgba(246,214,150,0) 13deg)}
-.hero__dawn{position:absolute;inset:0;opacity:0;will-change:opacity;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(246,206,130,.34),rgba(246,206,130,0) 70%)}
-.no-js .hero__dawn{opacity:.5}
-.fx .hero__rays{animation:li-rays 80s ease-in-out infinite alternate}
-.fx .hero__rays--2{animation:li-rays-2 110s ease-in-out infinite alternate}
-@keyframes li-rays{0%{transform:rotate(-4deg)}100%{transform:rotate(4deg)}}
-@keyframes li-rays-2{0%{transform:rotate(3deg) scale(1.05)}100%{transform:rotate(-3deg) scale(1)}}
+.hero__rays{transform:rotate(-2deg)}
+.hero__rays--2{transform:rotate(3deg) scale(1.04)}
+.fx .hero__rays{animation:li-rays 11s ease-in-out infinite alternate}
+.fx .hero__rays--2{animation:li-rays-2 11s ease-in-out infinite alternate}
+@keyframes li-rays{0%{opacity:1}100%{opacity:.45}}
+@keyframes li-rays-2{0%{opacity:.25}100%{opacity:.8}}
 
-/* 5. Пылинки в луче: 14 тёплых точек, только в первом экране */
-.motes{position:absolute;inset:0;display:none}
-.fx .motes{display:block}
-.motes i{position:absolute;top:0;left:0;width:4px;height:4px;border-radius:50%;opacity:0;background:radial-gradient(circle,rgba(214,166,72,.95) 0,rgba(214,166,72,.4) 45%,rgba(214,166,72,0) 72%);
-  animation:li-mote 26s linear infinite}
-@keyframes li-mote{0%{opacity:0;transform:translate3d(0,0,0)}14%{opacity:.7}80%{opacity:.45}100%{opacity:0;transform:translate3d(34px,-150px,0)}}
-.motes i:nth-child(1){left:12%;top:52%;animation-duration:24s;animation-delay:-3s}
-.motes i:nth-child(2){left:22%;top:34%;width:3px;height:3px;animation-duration:31s;animation-delay:-11s}
-.motes i:nth-child(3){left:31%;top:63%;animation-duration:27s;animation-delay:-19s}
-.motes i:nth-child(4){left:39%;top:28%;width:5px;height:5px;animation-duration:36s;animation-delay:-7s}
-.motes i:nth-child(5){left:46%;top:48%;width:3px;height:3px;animation-duration:22s;animation-delay:-15s}
-.motes i:nth-child(6){left:53%;top:22%;animation-duration:29s;animation-delay:-2s}
-.motes i:nth-child(7){left:58%;top:58%;width:5px;height:5px;animation-duration:33s;animation-delay:-24s}
-.motes i:nth-child(8){left:64%;top:38%;width:3px;height:3px;animation-duration:25s;animation-delay:-9s}
-.motes i:nth-child(9){left:70%;top:66%;animation-duration:30s;animation-delay:-17s}
-.motes i:nth-child(10){left:76%;top:30%;width:4px;height:4px;animation-duration:38s;animation-delay:-28s}
-.motes i:nth-child(11){left:83%;top:50%;width:3px;height:3px;animation-duration:23s;animation-delay:-5s}
-.motes i:nth-child(12){left:88%;top:24%;animation-duration:34s;animation-delay:-21s}
-.motes i:nth-child(13){left:17%;top:20%;width:3px;height:3px;animation-duration:28s;animation-delay:-13s}
-.motes i:nth-child(14){left:61%;top:12%;width:4px;height:4px;animation-duration:32s;animation-delay:-26s}
-.hero.fx-off .hero__rays,.hero.fx-off .motes i{animation-play-state:paused}
+/* 3. Редкие угольки: четыре искры, длинные циклы, только пока первый экран виден */
+.embers{position:absolute;left:50%;bottom:calc(100% + .4em);width:0;height:0;display:none}
+.fx .embers{display:block}
+.embers i{position:absolute;left:-2px;top:0;width:4px;height:4px;border-radius:50%;opacity:0;background:radial-gradient(circle,rgba(242,200,112,.95) 0,rgba(242,200,112,.35) 50%,rgba(242,200,112,0) 72%);animation:li-ember 11s ease-out infinite}
+@keyframes li-ember{0%{opacity:0;transform:translate3d(0,0,0) scale(1)}8%{opacity:.85}40%,100%{opacity:0;transform:translate3d(var(--dx,6px),-150px,0) scale(.3)}}
+.embers i:nth-child(1){--dx:-14px;animation-duration:10s;animation-delay:-1s}
+.embers i:nth-child(2){--dx:12px;animation-duration:13s;animation-delay:-5.4s;width:3px;height:3px}
+.embers i:nth-child(3){--dx:-5px;animation-duration:11.5s;animation-delay:-8.6s}
+.embers i:nth-child(4){--dx:20px;animation-duration:14s;animation-delay:-3.2s;width:3px;height:3px}
+.hero.fx-off .hero__rays,.hero.fx-off .embers i,.hero.fx-off .tw__flame::before,.hero.fx-off .tw__halo{animation-play-state:paused}
+.pro-on .embers{display:none}
 
-/* 3. Золото заголовков: позолота внутри букв (все точки градиента ≥ 3:1 к бумаге,
-      крупный текст), блик проходит один раз при первом появлении */
-.gilt{padding-bottom:.12em;overflow:hidden;background:linear-gradient(100deg,#3e2b08 0%,#6b4a0e 30%,#94701f 48%,#7f5a12 62%,#4a3309 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;position:relative}
+/* 4. Золото заголовков: позолота внутри букв, блик проходит один раз при первом появлении */
+.gilt{padding-bottom:.12em;overflow:hidden;position:relative}
 .gilt::after{content:attr(data-gilt);position:absolute;left:0;top:0;right:0;pointer-events:none;opacity:0;padding-bottom:inherit;
-  background:linear-gradient(100deg,#5a3d0b 0%,#8a6418 34%,#a87b22 50%,#8a6418 66%,#5a3d0b 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
-.fx .gilt.fx-in::after{animation:li-sheen 2.6s ease-in-out .3s 1 both}
+  background:linear-gradient(100deg,#6a470c 0%,#8a6216 34%,#956a19 50%,#8a6216 66%,#6a470c 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.fx .gilt.fx-in::after{animation:li-sheen 2.6s ease-in-out .35s 1 both}
 @keyframes li-sheen{0%{opacity:0}45%{opacity:1}100%{opacity:0}}
-@media (forced-colors:active){.gilt{color:CanvasText;-webkit-text-fill-color:CanvasText;background:none}}
+@media (forced-colors:active){.tw__glint{display:none}.gilt,.gilt-t{color:CanvasText;-webkit-text-fill-color:CanvasText;background:none}}
 
-/* 4. Свеча Писания рисуется сверху вниз, затем вспыхивает пламя, затем проступает текст */
-.fx .verse::after{transition:transform 1.15s var(--e-draw)}
-.fx .verse::before{transition:opacity .5s ease .95s,transform .7s var(--e-out) .95s}
-.fx .verse blockquote p,.fx .verse .ln,.fx .verse figcaption{transition:opacity .9s ease,transform 1.1s var(--e-out);transition-delay:calc(.55s + var(--i,0) * 110ms)}
+/* 5. Свеча Писания рисуется сверху вниз, вспыхивает пламя, затем проступает текст */
+.fx .verse::after{transition:transform 1.15s var(--e-io)}
+.fx .verse::before{transition:opacity .6s ease .9s,transform .8s var(--e-out) .9s}
+.fx .verse blockquote p,.fx .verse .ln,.fx .verse figcaption{transition:opacity .9s ease,transform 1.1s var(--e-out);transition-delay:calc(.45s + var(--i,0) * 100ms)}
 .fx .verse.fx-wait::after{transform:scaleY(0)}
-.fx .verse.fx-wait::before{opacity:0;transform:rotate(-45deg) scale(.2)}
+.fx .verse.fx-wait::before{opacity:0;transform:scale(.2)}
 .fx .verse.fx-wait blockquote p:not(:has(.ln)),.fx .verse.fx-wait .ln,.fx .verse.fx-wait figcaption{opacity:0;transform:translate3d(0,12px,0)}
-.fx .verse .ln{transform:translate3d(0,0,0)}
-.fx .verse figcaption{transition-delay:calc(.9s + var(--n,0) * 110ms)}
+.fx .verse figcaption{transition-delay:calc(.8s + var(--n,0) * 100ms)}
 
-/* 7. Фото: мягкое проявление 1.04 → 1; тёплая виньетка (выше, у .ph::after); просмотр — плавно */
-.fx .ph img{transition:opacity 1s ease,transform 1.5s var(--e-out)}
-.fx .ph.fx-wait img{opacity:0;transform:scale(1.04)}
-.lb{opacity:0;transform:scale(.985);transition:opacity .35s ease,transform .45s var(--e-out)}
+/* 6. Фото проявляются мягко; просмотр — плавно */
+.fx .ph img{transition:opacity 1.1s ease}
+.fx .ph.fx-wait img{opacity:0}
+.lb{opacity:0;transform:scale(.985);transition:opacity .35s ease,transform .5s var(--e-out)}
 .lb.is-shown{opacity:1;transform:none}
 .no-js .lb,.lb:not(.fx-lb){opacity:1;transform:none}
 
-/* 6. Пергамент: едва заметное зерно бумаги (свой файл img/grain.svg, неподвижно) */
-body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.26;background:url("img/grain.svg") repeat;background-size:220px 220px}
-html{background:var(--paper)}
-body{background:transparent}
-.band{background:rgba(239,230,214,.86)}
-
-/* 8. Пламя оглавления скользит от пункта к пункту */
-.toc__track{position:relative}
-.toc__flame{display:none;position:absolute;left:2px;top:0;width:10px;height:10px;transform:translate3d(0,-40px,0);opacity:0;z-index:1;pointer-events:none}
-.toc__flame::before{content:"";position:absolute;inset:0;background:var(--gold);border-radius:50% 0 50% 50%;transform:rotate(-45deg)}
-.fx .toc__flame{display:block;transition:transform .75s var(--e-draw),opacity .4s ease}
+/* 7. Пламя оглавления скользит от пункта к пункту */
+.fx .toc__flame{display:block;transition:transform .8s var(--e-io),opacity .4s ease}
 .fx .toc__flame.is-on{opacity:1}
-.fx .toc__list a[aria-current="true"]::before{left:-19px;top:.95em;width:6px;height:6px;border:1.5px solid var(--red);border-radius:50%;background:var(--paper);transform:none}
+.fx .toc__list a[aria-current="true"]::before{opacity:0}
+@media (min-width:1180px){.toc__flame{display:none!important}.fx .toc__list a[aria-current="true"]::before{opacity:1}}
 
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}.motes{display:none!important}.hero__rays{transform:none!important}.gilt::after{display:none}}
-@media print{.head,.toc,.strip,.gallery,.lb{display:none!important}body{padding:0}}
+
+/* 9. Кнопка donationbox: медленное тёплое дыхание света за ней */
+.donate__cta::before{content:"";position:absolute;inset:-16px -22px;z-index:-1;border-radius:999px;pointer-events:none;opacity:0;background:radial-gradient(closest-side,rgba(214,166,72,.5),rgba(214,166,72,0))}
+.fx .donate.fx-vis .donate__cta::before{animation:li-breathe 4.8s ease-in-out infinite}
+@keyframes li-breathe{0%,100%{opacity:.25;transform:scale(.96)}50%{opacity:.85;transform:scale(1.04)}}
+
+/* 10. Касание света: где гость коснулся пустого места — расцветает тёплый свет */
+.touchlight{position:fixed;left:0;top:0;z-index:250;width:0;height:0;pointer-events:none;display:none}
+.fx .touchlight{display:block}
+.touchlight i{position:absolute;left:-60px;top:-60px;width:120px;height:120px;border-radius:50%;opacity:0;transform:scale(.3);background:radial-gradient(circle,rgba(246,206,130,.5),rgba(246,206,130,0) 68%)}
+.touchlight.is-on i{animation:li-touch .9s ease-out forwards}
+@keyframes li-touch{0%{opacity:0;transform:scale(.3)}25%{opacity:1}100%{opacity:0;transform:scale(1.6)}}
+
+/* =====================================================================
+   ПРОЛОГ «И свет во тьме светит» (Ин 1:5) — ~5,5 с, как начало фильма.
+   Тьма в кадре 2,39:1 и тихое зерно → чиркает спичка, искры → занимается фитиль,
+   рождается пламя, камера медленно наезжает → свет расцветает, золотые «титры»:
+   LIVING ISRAEL, «Таллинн» → карточка Ин 1:5 → пламя летит и становится курсором
+   первого экрана, полосы уходят, свет открывает пергамент, начинается «Люби».
+   Слой скрыт от читалок (aria-hidden), фокус не держит, снимается из DOM.
+   Без JS, при reduced-motion, по #ссылке, при перезагрузке и «назад» — его нет.
+   ===================================================================== */
+.pro,.pro-skip{display:none}
+/* --sv — единица «малой высоты экрана» (svh); где её нет (iOS < 15.4), берётся vh */
+html.pro-on .pro{display:block;position:fixed;inset:0;z-index:400;overflow:hidden;contain:strict;--sv:1vh;
+  --wx:50%;--wy:38%;--stem:calc(var(--sv) * 16);--fh:clamp(54px,12vmin,104px);--bar:calc(var(--sv) * 11);--dur:5.6s}
+@supports (height:1svh){html.pro-on .pro{--sv:1svh}}
+@media (orientation:landscape){html.pro-on .pro{--wy:33%;--stem:calc(var(--sv) * 19);--bar:max(0px,calc((var(--sv) * 100 - 100vw / 2.39) / 2))}}
+.pro__night{position:absolute;inset:0;background:radial-gradient(ellipse 80% 70% at var(--wx) var(--wy),#15110f 0%,#0b090b 46%,#040304 100%)}
+.pro__grain{position:absolute;inset:-60px;opacity:.13;background:url("img/grain.svg") repeat;background-size:180px 180px}
+.pro__glow{position:absolute;left:calc(var(--wx) - 70vmax);top:calc(var(--wy) - 70vmax);width:140vmax;height:140vmax;border-radius:50%;opacity:0;
+  background:radial-gradient(circle closest-side,rgba(226,170,86,.34) 0,rgba(196,130,60,.12) 30%,rgba(120,70,30,0) 62%)}
+.pro__stage{position:absolute;inset:0;transform-origin:var(--wx) var(--wy)}
+.pro__stem{position:absolute;left:var(--wx);top:calc(var(--wy) + var(--fh) * .1);width:clamp(5px,1.25vmin,9px);height:var(--stem);transform:translateX(-50%);opacity:.12;
+  background:linear-gradient(90deg,#6e4b10,#d8b062 46%,#86601b)}
+.pro__wick{position:absolute;left:var(--wx);top:calc(var(--wy) - var(--fh) * .02);width:2px;height:calc(var(--fh) * .14);margin-left:-1px;background:#3a2c20;border-radius:1px}
+.pro__match{position:absolute;left:var(--wx);top:var(--wy);width:0;height:0;opacity:0}
+.pro__stick{position:absolute;left:0;top:0;width:4px;height:clamp(90px,17vmin,150px);margin-left:-2px;transform-origin:50% 0;transform:rotate(-38deg);border-radius:2px;
+  background:linear-gradient(180deg,#a07a4c,#6e5134)}
+.pro__head{position:absolute;left:-6px;top:-7px;width:12px;height:14px;border-radius:50% 50% 45% 45%;background:radial-gradient(circle at 40% 35%,#9d3b28,#561a12)}
+.pro__flash{position:absolute;left:calc(var(--wx) - 80px);top:calc(var(--wy) - 80px);width:160px;height:160px;border-radius:50%;opacity:0;
+  background:radial-gradient(circle,rgba(255,244,214,.95) 0,rgba(255,206,120,.55) 22%,rgba(255,170,80,0) 62%)}
+.pro__sparks{position:absolute;left:var(--wx);top:var(--wy);width:0;height:0}
+.pro__sparks i{position:absolute;left:-1.5px;top:-1.5px;width:3px;height:3px;border-radius:50%;opacity:0;background:#ffd98a}
+.pro__sparks i:nth-child(1){--dx:-46px;--dy:-38px}.pro__sparks i:nth-child(2){--dx:38px;--dy:-52px}.pro__sparks i:nth-child(3){--dx:64px;--dy:-14px}
+.pro__sparks i:nth-child(4){--dx:-70px;--dy:6px}.pro__sparks i:nth-child(5){--dx:22px;--dy:30px}.pro__sparks i:nth-child(6){--dx:-24px;--dy:-70px}
+.pro__sparks i:nth-child(7){--dx:54px;--dy:22px}.pro__sparks i:nth-child(8){--dx:-40px;--dy:34px;width:2px;height:2px}.pro__sparks i:nth-child(9){--dx:8px;--dy:-84px;width:2px;height:2px}
+.pro__credits,.pro__verse{visibility:hidden;position:absolute;left:50%;top:calc(var(--wy) + var(--stem) + var(--sv) * 5);width:min(88vw,36rem);margin:0;transform:translateX(-50%);text-align:center}
+.pro-fonts .pro__credits,.pro-fonts .pro__verse{visibility:visible}
+.pro__title{margin:0;font:400 clamp(1.15rem,4.6vw,2.1rem)/1.2 var(--f-cap);letter-spacing:.44em;padding-left:.44em;opacity:0;
+  background:linear-gradient(100deg,#a87c2c,#f0d898 46%,#c49a48 70%,#a87c2c);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.pro__city{margin:.55em 0 0;font:italic 400 clamp(1rem,3.4vw,1.4rem)/1.3 var(--f-text);letter-spacing:.06em;color:#d9c296;opacity:0}
+.pro__verse blockquote{margin:0}
+.pro__verse p{margin:0 auto .7em;max-width:18em;font:italic 400 clamp(1.15rem,4.4vw,1.85rem)/1.4 var(--f-text);color:#efe4cc;opacity:0}
+.pro__verse figcaption{font:400 clamp(.85rem,2.6vw,1rem)/1 var(--f-cap);letter-spacing:.2em;color:#c49a48;opacity:0}
+.pro__bloom{position:absolute;left:calc(var(--wx) - 60vmax);top:calc(var(--wy) - 60vmax);width:120vmax;height:120vmax;border-radius:50%;opacity:0;pointer-events:none;
+  background:radial-gradient(circle closest-side,rgba(255,236,190,.55) 0,rgba(247,226,180,.3) 35%,rgba(247,242,232,0) 70%)}
+.pro__flame{position:absolute;left:calc(var(--wx) - var(--fh) * .26);top:calc(var(--wy) - var(--fh));width:calc(var(--fh) * .52);height:var(--fh);transform-origin:50% 100%;z-index:2}
+.pro__dolly{position:absolute;inset:0;transform-origin:50% 100%}
+.pro__fire{position:absolute;inset:0;background:url("img/flame-night.svg") center bottom/contain no-repeat;transform-origin:50% 100%;transform:scale(0,0)}
+.pro__halo{position:absolute;left:50%;top:45%;width:calc(var(--fh) * 3.4);height:calc(var(--fh) * 3.4);margin:calc(var(--fh) * -1.7) 0 0 calc(var(--fh) * -1.7);border-radius:50%;opacity:0;
+  background:radial-gradient(circle,rgba(255,214,140,.5) 0,rgba(240,180,90,.16) 34%,rgba(240,180,90,0) 66%)}
+.pro__bar{position:absolute;left:0;right:0;height:var(--bar);background:#000;z-index:3}
+.pro__bar--t{top:0}.pro__bar--b{bottom:0}
+html.pro-on .pro-skip{display:inline-flex;position:fixed;z-index:401;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));align-items:center;min-height:44px;min-width:44px;padding:0 1.15em;
+  border:1px solid rgba(239,228,204,.55);border-radius:999px;background:rgba(10,8,10,.55);color:#efe4cc;font:400 1rem/1 var(--f-cap);letter-spacing:.12em;cursor:pointer;opacity:0}
+html.pro-on .pro-skip:focus-visible{outline:2px solid #efe4cc;outline-offset:3px;box-shadow:none;opacity:1}
+/* партитура (обычная длина) */
+.pro-go .pro__grain{animation:li-grain .9s steps(3) infinite}
+.pro-go .pro__stage,.pro-go .pro__dolly{animation:li-dolly var(--dur) cubic-bezier(.45,0,.55,1) both}
+.pro-go .pro__match{animation:li-match 1.9s .25s both}
+.pro-go .pro__head{animation:li-head 1.4s .25s both}
+.pro-go .pro__flash{animation:li-flash .5s .84s both}
+.pro-go .pro__sparks i{animation:li-spark 1s .86s cubic-bezier(.2,.6,.4,1) both}
+.pro-go .pro__sparks i:nth-child(3n){animation-duration:1.3s}.pro-go .pro__sparks i:nth-child(3n+1){animation-delay:.92s}
+.pro-go .pro__fire{animation:li-born .9s 1s cubic-bezier(.3,1.5,.5,1) both,li-flick 3.2s 1.9s ease-in-out infinite}
+.pro-go .pro__halo{animation:li-halo-in 1.4s 1s ease-out both}
+.pro-go .pro__stem{animation:li-stem 1.2s 1.05s ease-out both}
+.pro-go .pro__wick{animation:li-wick 1s 1s ease-out both}
+.pro-go .pro__glow{animation:li-glow 1.6s 1s ease-out both}
+.pro-go .pro__bloom{animation:li-bloom 1.4s 2s ease-out both}
+.pro-go .pro__title{animation:li-cred 1.6s 2.1s var(--e-out) both,li-out .4s 3.5s ease-in forwards}
+.pro-go .pro__city{animation:li-cred 1.4s 2.6s var(--e-out) both,li-out .4s 3.55s ease-in forwards}
+.pro-go .pro__verse p{animation:li-cred 1.2s 3.75s var(--e-out) both}
+.pro-go .pro__verse figcaption{animation:li-cred 1s 4.05s var(--e-out) both}
+.pro-go .pro-skip{animation:li-in .8s .6s ease both,li-safety .3s 9.5s forwards}
+/* короткий пролог (медленное устройство или сеть) — ~2,5 с, без спички */
+.pro-short .pro{--dur:2.6s}
+.pro-short .pro__match,.pro-short .pro__flash{display:none}
+.pro-short.pro-go .pro__sparks i{animation-delay:.1s}
+.pro-short.pro-go .pro__fire{animation:li-born .6s .12s cubic-bezier(.3,1.5,.5,1) both,li-flick 3.2s .8s ease-in-out infinite}
+.pro-short.pro-go .pro__halo{animation:li-halo-in .8s .12s ease-out both}
+.pro-short.pro-go .pro__stem{animation:li-stem .7s .15s ease-out both}
+.pro-short.pro-go .pro__wick{animation:li-wick .6s .1s ease-out both}
+.pro-short.pro-go .pro__glow{animation:li-glow .9s .12s ease-out both}
+.pro-short.pro-go .pro__bloom{animation:li-bloom .9s .5s ease-out both}
+.pro-short.pro-go .pro__title{animation:li-cred .8s .45s var(--e-out) both}
+.pro-short.pro-go .pro__city{animation:li-cred .8s .6s var(--e-out) both}
+.pro-short .pro__verse{top:calc(var(--wy) + var(--stem) + var(--sv) * 5 + 4.6em)}
+.pro-short.pro-go .pro__verse p{animation:li-cred .8s .8s var(--e-out) both}
+.pro-short.pro-go .pro__verse figcaption{animation:li-cred .7s .95s var(--e-out) both}
+.pro-short.pro-go .pro-skip{animation:li-in .5s .2s ease both,li-safety .3s 9.5s forwards}
+/* финал: свет открывает пергамент, полосы уходят, пламя уже летит (boot.js) */
+.pro.is-end .pro__night{opacity:0;transition:opacity .85s ease .2s}
+.pro.is-end .pro__bar--t{transform:translate3d(0,-100%,0);transition:transform .8s var(--e-io)}
+.pro.is-end .pro__bar--b{transform:translate3d(0,100%,0);transition:transform .8s var(--e-io)}
+.pro.is-end .pro__bloom{animation:li-bloom-out 1.1s ease-out both}
+.pro.is-end .pro__halo{opacity:0;transition:opacity .7s ease}
+.pro-landed .pro__flame{opacity:0;transition:opacity .3s ease}
+.pro-landed .pro-skip,.pro-skip.is-cut{opacity:0!important;transition:opacity .25s ease}
+.pro.is-cut{opacity:0;transition:opacity .3s ease}
+/* страховка: если сценарий не дошёл до конца, слой гаснет сам */
+html.pro-on .pro{animation:li-safety .6s 9.5s forwards}
+@keyframes li-grain{0%{opacity:.13}33%{opacity:.09}66%{opacity:.16}100%{opacity:.11}}
+@keyframes li-dolly{0%{transform:scale(1)}100%{transform:scale(1.08)}}
+@keyframes li-match{0%{opacity:0;transform:translate3d(120px,110px,0)}18%{opacity:.9}32%{transform:translate3d(14px,6px,0)}36%{transform:translate3d(2px,2px,0)}52%{opacity:.9;transform:translate3d(8px,4px,0)}100%{opacity:0;transform:translate3d(90px,140px,0)}}
+@keyframes li-head{0%,40%{opacity:1;transform:scale(1)}44%{opacity:1;transform:scale(1.5)}100%{opacity:.3;transform:scale(.8)}}
+@keyframes li-flash{0%{opacity:0;transform:scale(.15)}25%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.6)}}
+@keyframes li-spark{0%{opacity:0;transform:translate3d(0,0,0)}8%{opacity:1}100%{opacity:0;transform:translate3d(var(--dx),calc(var(--dy) + 40px),0) scale(.4)}}
+@keyframes li-born{0%{transform:scale(.1,0)}100%{transform:scale(1,1)}}
+@keyframes li-halo-in{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:scale(1)}}
+@keyframes li-stem{0%{opacity:.12}100%{opacity:1}}
+@keyframes li-wick{0%{opacity:1}100%{opacity:.6}}
+@keyframes li-glow{0%{opacity:0}100%{opacity:1}}
+@keyframes li-bloom{0%{opacity:0}100%{opacity:.32}}
+@keyframes li-bloom-out{0%{opacity:.32}30%{opacity:.85}100%{opacity:0}}
+@keyframes li-cred{0%{opacity:0;transform:translate3d(0,12px,0) scale(.985)}100%{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+@keyframes li-out{0%{opacity:1}100%{opacity:0}}
+@keyframes li-in{0%{opacity:0}100%{opacity:1}}
+@keyframes li-safety{0%{opacity:1;transform:none}99%{opacity:0;transform:none}100%{opacity:0;transform:translate3d(-300vw,0,0)}}
+.pro.is-end .pro__credits,.pro.is-end .pro__verse,.pro.is-end .pro__stem,.pro.is-end .pro__wick{opacity:0;transition:opacity .45s ease}
+
+/* узкие экраны и увеличение 200 %: ничто не выходит за край */
+@media (max-width:360px){.btn{padding:.55em .85em}.privacy a{overflow-wrap:anywhere}.acct__iban{display:flex;flex-wrap:wrap;column-gap:.32em;white-space:normal}.acct__iban span{margin-right:0}.acct__actions .btn{white-space:normal;flex:0 1 auto}.head__now{display:none}.person{grid-template-columns:minmax(0,1fr)}.person__ph{grid-row:auto;max-width:160px;margin:0 0 .8rem}.day{grid-template-columns:minmax(0,1fr)}.day__time{grid-column:1;grid-row:auto;margin:.3rem 0 .1rem}.index__name,.day__when,.day__what,.toc__list a,.sec-title,.min__head h3{overflow-wrap:anywhere}}
+
+/* подписи — настоящая капитель Literata (smcp/c2sc); правило стоит после всех `font:`, которые её сбрасывают */
+.kicker,.toc__title,.hero__nexttitle,.acct dt,.info dt,.facts h4,.route__title{font-variant-caps:all-small-caps;font-variant-numeric:lining-nums}
+
+/* =====================================================================
+   «Меньше движения»: ничего не движется, ничего не прячется; стезя светится вся.
+   ===================================================================== */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+  .head__glow{display:none}
+  .pro,.pro-skip,.embers,.touchlight,.sky,.spine__flame,.spine__lit{display:none!important}
+  .gilt::after,.tw__glint{display:none}
+}
+
+/* =====================================================================
+   ПЕЧАТЬ: один-два листа — расписание, пожертвование (IBAN и QR), контакты, адрес.
+   ===================================================================== */
+@media print{
+  @page{margin:14mm 14mm 16mm}
+  html,body{background:#fff!important}
+  body{padding:0!important;font-size:10.5pt;line-height:1.4;color:#000}
+  body::before,.pro,.pro-skip,.sky,.spine,.spine__lit,.spine__flame,.touchlight,.toc,.skip,.lb,.hero__light,.strip,.gallery,.lead-photo,.split__aside,.ph,.mins,.ministries,.church,.partner,.privacy,.hero,
+  .head__toc,.head__nav,.head__now,.head__give,.actions,.route,.acct__actions,.donate__cta,.person__ph,.min__back,.foot__logo,.qr__hint,.people__title,.day__badge,.foot__grid>p:last-child,template{display:none!important}
+  .head{position:static!important;height:auto;border:0;padding:0 0 5mm}
+  .head__mark{height:15mm!important}
+  .gilt,.gilt-t{color:#3e2b08!important;-webkit-text-fill-color:#3e2b08!important;background:none!important}
+  .gilt::after{display:none}
+  .wrap{padding:0!important;max-width:none}
+  .schedule,.donate,.contacts{padding:0 0 5mm!important;border:0!important;break-inside:avoid}
+  .sec-title{font-size:17pt;margin:0 0 3mm;opacity:1!important;transform:none!important}
+  .days{grid-template-columns:repeat(4,1fr)!important;border-top:1.5pt solid #000}
+  .day{padding:2mm 3mm 2mm 0!important;border:0!important;display:block!important;margin:0!important}
+  .day__time{font-size:17pt!important;margin:1mm 0!important}
+  .day__what{font-size:11pt}
+  .donate__grid{grid-template-columns:1fr 38mm!important;gap:6mm}
+  .donate__lead{font-size:11pt}
+  .qr img{max-width:38mm!important;border:0;padding:0}
+  .people{grid-template-columns:repeat(2,1fr)!important;gap:2mm 8mm}
+  .person{display:block}
+  .person__name{font-size:12pt}
+  .info{grid-template-columns:repeat(2,1fr)!important;margin-bottom:4mm}
+  a{color:#000;text-decoration:none}
+  .foot{background:none;border-top:1px solid #999;padding:3mm 0 0}
+  .foot__grid{display:block}
+}
