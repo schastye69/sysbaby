@@ -1,0 +1,412 @@
+/* =====================================================================
+   ЖИВОЙ ИЗРАИЛЬ — Living Israel Tallinn, сайт церкви
+   Система «СВЕТИЛЬНИК»: «Слово Твое — светильник ноге моей» (Пс 118:105),
+   «…не ставят ее под сосудом, но на подсвечнике» (Мф 5:15).
+
+   Светлая бумага, чернила, одна вертикаль-свеча (тёмно-красная) и
+   маленькое золотое пламя. Свеча стоит у каждого места Писания, в
+   оглавлении пламя показывает, где вы сейчас. Никаких тёмных фото на
+   весь экран, никакого параллакса, никаких вкладок.
+
+   Голоса: Forum — надписи (римская капитель с кириллицей);
+           Literata — книжный текст (Синодальный перевод читается как книга).
+   Шрифты — файлами в fonts/, лицензия fonts/OFL.txt.
+   ===================================================================== */
+@font-face{font-family:"Literata";src:url("fonts/Literata-Roman.woff2") format("woff2");font-weight:400 650;font-style:normal;font-display:swap}
+@font-face{font-family:"Literata";src:url("fonts/Literata-Italic.woff2") format("woff2");font-weight:400 500;font-style:italic;font-display:swap}
+@font-face{font-family:"Forum";src:url("fonts/Forum-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+
+:root{
+  --paper:#f7f2e8;
+  --paper-2:#efe6d6;
+  --paper-3:#e6dac5;
+  --ink:#1d1a22;
+  --ink-2:#4f4855;
+  --red:#8e2f25;
+  --red-2:#74241b;
+  --gold:#a8771f;
+  --gold-text:#7f5a12;
+  --line:#d8ccb7;
+  --line-2:#c4b49a;
+  --f-text:"Literata",Georgia,"Times New Roman",serif;
+  --f-cap:"Forum","Literata",Georgia,serif;
+  --gut:clamp(16px,4vw,48px);
+  --rail:0px;
+  --head:64px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-padding-top:calc(var(--head) + 12px)}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 1.1875rem/1.62 var(--f-text);font-optical-sizing:auto;
+  font-variant-numeric:lining-nums proportional-nums;hyphens:manual;overflow-wrap:break-word}
+@media (min-width:900px){body{font-size:1.25rem}}
+img{max-width:100%;height:auto;display:block}
+a{color:var(--red);text-decoration-thickness:1px;text-underline-offset:.18em}
+a:hover{color:var(--red-2);text-decoration-thickness:2px}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px;border-radius:2px;box-shadow:0 0 0 6px var(--paper)}
+h1,h2,h3,h4{font-weight:400;margin:0}
+p{margin:0 0 1em}
+.vh{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip{position:absolute;left:12px;top:-60px;z-index:100;background:var(--ink);color:var(--paper);padding:.6em 1em;border-radius:4px}
+.skip:focus{top:12px;color:var(--paper)}
+main:focus{outline:none}
+.wrap{max-width:74rem;margin:0 auto;padding:0 var(--gut)}
+.kicker{font:400 .95rem/1.3 var(--f-cap);letter-spacing:.16em;text-transform:uppercase;color:var(--red);margin:0 0 1rem}
+.sec-title{font:400 clamp(2.1rem,6.4vw,3.6rem)/1.05 var(--f-cap);letter-spacing:.02em;margin:0 0 2rem}
+
+/* ── шапка ── */
+.head{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;height:var(--head);padding:0 var(--gut);
+  background:var(--paper);border-bottom:1px solid var(--line)}
+.head__logo{flex:none;display:block;line-height:0;padding:6px 0}
+.head__logo img,.head__mark{display:block;height:46px;width:auto}
+.head__now{flex:1;min-width:0;margin:0;font:400 .95rem/1.2 var(--f-text);color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.head__nowlabel{color:var(--gold-text);font-family:var(--f-cap);letter-spacing:.08em}
+.no-js .head__now,.head__now:empty{visibility:hidden}
+@media (max-width:520px){.head{gap:8px}.head__logo img,.head__mark{height:38px}.head__toc{padding:0 .7em;gap:.45em;font-size:.95rem}.head__nowlabel{display:none}.head__now{font-size:.8rem;line-height:1.15;white-space:normal;overflow-wrap:normal;word-break:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}}
+.head__nav{display:none}
+.head__toc{flex:none;display:inline-flex;align-items:center;gap:.55em;min-height:44px;padding:0 .9em;border:1px solid var(--ink);border-radius:999px;
+  background:transparent;color:var(--ink);font:400 1rem/1 var(--f-cap);letter-spacing:.06em;cursor:pointer}
+.head__toc:hover{background:var(--paper-2)}
+.burner{display:inline-block;width:2px;height:16px;background:var(--red);position:relative;margin-top:5px}
+.burner::before{content:"";position:absolute;left:-3px;top:-10px;width:8px;height:8px;background:var(--gold);border-radius:50% 0 50% 50%;transform:rotate(-45deg)}
+.no-js .head__toc{display:none}
+@media (min-width:900px){
+  .head__now{display:none}
+  .head__nav{display:flex;flex:1;justify-content:flex-end;gap:1.4rem;font:400 1.05rem/1 var(--f-cap);letter-spacing:.05em}
+  .head__nav a{color:var(--ink);text-decoration:none;padding:.6em 0}
+  .head__nav a:hover{color:var(--red);text-decoration:underline}
+}
+
+/* ── оглавление: на телефоне — лист, на широком экране — свеча слева ── */
+.toc{background:var(--paper)}
+.toc__inner{padding:1.2rem var(--gut) 2rem}
+.toc__title{font:400 1rem/1 var(--f-cap);letter-spacing:.16em;text-transform:uppercase;color:var(--red);margin:0 0 1.2rem}
+.toc__list{list-style:none;margin:0;padding:0 0 0 22px;position:relative}
+.toc__list::before{content:"";position:absolute;left:7px;top:.4em;bottom:.4em;width:2px;background:var(--line-2)}
+.toc__list li{position:relative}
+.toc__list a{display:flex;gap:.6em;align-items:baseline;padding:.42em 0;color:var(--ink);text-decoration:none;font:400 1.15rem/1.25 var(--f-cap);letter-spacing:.03em}
+.toc__list a:hover{color:var(--red);text-decoration:underline}
+.toc__list a::before{content:"";position:absolute;left:-19px;top:.95em;width:6px;height:6px;border-radius:50%;background:var(--paper);border:1.5px solid var(--line-2)}
+.toc__list .sub a{padding-left:.4em;font-size:1.02rem}
+.toc__num{font-size:.8em;color:var(--gold-text);min-width:2.2em;letter-spacing:.04em}
+.toc__list a[aria-current="true"]{color:var(--red)}
+.toc__list a[aria-current="true"]::before{left:-21px;top:.55em;width:10px;height:10px;border:0;background:var(--gold);border-radius:50% 0 50% 50%;transform:rotate(-45deg)}
+.toc__list .ext{margin-top:.8rem}
+.toc__list .ext a::before{display:none}
+.toc__close{display:none}
+.js .toc{display:none}
+.js .toc.is-open{display:block;position:fixed;inset:0;z-index:60;overflow-y:auto;overscroll-behavior:contain}
+.js .toc.is-open .toc__close{display:inline-flex;align-items:center;margin-top:1.6rem;min-height:44px;padding:0 1.2em;border:1px solid var(--ink);border-radius:999px;background:transparent;color:var(--ink);font:400 1rem/1 var(--f-cap);letter-spacing:.06em;cursor:pointer}
+html.toc-open{overflow:hidden}
+.no-js .toc{border-bottom:1px solid var(--line)}
+@media (min-width:1180px){
+  :root{--rail:252px}
+  body{padding-left:var(--rail)}
+  .head__toc,.head__nav{display:none}
+  .head{justify-content:flex-start}
+  .js .toc,.no-js .toc,.toc{display:block;position:fixed;left:0;top:0;bottom:0;width:var(--rail);z-index:45;overflow-y:auto;border-right:1px solid var(--line);border-bottom:0;background:var(--paper)}
+  .toc__inner{padding:1.6rem 1.2rem 2rem 1.6rem}
+  .toc__list a{font-size:1.02rem;padding:.32em 0}
+  .toc__list .sub a{font-size:.95rem}
+  .js .toc.is-open{position:fixed;inset:0 auto 0 0}
+  .js .toc.is-open .toc__close{display:none}
+  html.toc-open{overflow:auto}
+}
+
+/* ── первый экран ── */
+.hero{position:relative;isolation:isolate;overflow:hidden;padding:clamp(2rem,6vw,5rem) 0 0;display:grid;grid-template-columns:minmax(0,1fr);gap:1.6rem}
+.hero__text,.hero__next{padding:0 var(--gut)}
+.hero__love{font:400 clamp(4.6rem,22vw,11rem)/.86 var(--f-cap);letter-spacing:-.01em;margin:0 0 1.2rem;color:var(--ink)}
+.hero__words{font:400 clamp(1.05rem,3.3vw,1.45rem)/1.6 var(--f-cap);letter-spacing:.08em;color:var(--red);max-width:30em;margin:0 0 2.2rem}
+.hero .verse{margin:0;max-width:30em}
+.hero__next{align-self:start}
+.hero__next>*{max-width:28rem}
+.hero__nexttitle{font:400 .95rem/1.3 var(--f-cap);letter-spacing:.16em;text-transform:uppercase;color:var(--red);margin:0 0 .6rem;padding-top:1.1rem;border-top:2px solid var(--ink)}
+.hero__nextbody{font-size:1.25rem;line-height:1.45;margin:0 0 .5rem}
+.hero__nextbody strong{font-weight:600}
+.hero__addr{font-size:1rem;color:var(--ink-2)}
+.hero__addr a{color:var(--ink-2)}
+.strip{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:.4rem var(--gut) 1.4rem;scrollbar-width:thin}
+.strip .ph{flex:none;scroll-snap-align:start;height:min(62vw,300px)}
+.strip img{height:100%;width:auto;max-width:none}
+@media (min-width:900px){
+  .hero{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:end}
+  .hero__next{padding-left:0;padding-bottom:.5rem}
+  .strip{grid-column:1 / -1}
+}
+
+/* ── фото ── */
+.ph{position:relative;display:block;background:var(--paper-3);overflow:hidden;border-radius:2px}
+.ph::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 42%,rgba(60,35,10,0) 58%,rgba(60,35,10,.2) 100%)}
+.ph img{transition:opacity .2s}
+.ph:hover img{opacity:.92}
+.gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:2.4rem 0 0}
+.gallery .ph{aspect-ratio:4/3}
+.gallery img{width:100%;height:100%;object-fit:cover;object-position:50% 30%}
+@media (min-width:720px){.gallery--many,.gallery--3{grid-template-columns:repeat(3,minmax(0,1fr))}.gallery--4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (min-width:1180px){.gallery--many{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.lead-photo{margin:0 0 2.2rem;max-width:46rem}
+.lead-photo .ph img{width:100%}
+
+/* ── церковь ── */
+.band{background:var(--paper-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.church{padding:clamp(3rem,8vw,6.5rem) 0;margin-top:2rem}
+.church__title{font:400 clamp(1.6rem,4.6vw,2.7rem)/1.22 var(--f-cap);letter-spacing:.01em;max-width:30em;margin:0 0 2.4rem}
+.prose{max-width:36em}
+.prose--lead p:first-child::first-letter{font-family:var(--f-cap);float:left;font-size:3.6em;line-height:.82;padding:.06em .1em 0 0;color:var(--red)}
+@media (min-width:980px){.church .prose{columns:2;column-gap:3rem;max-width:none}.church .prose p{break-inside:avoid}}
+
+/* ── расписание ── */
+.schedule{padding:clamp(3rem,8vw,6rem) 0}
+.days{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:0;border-top:2px solid var(--ink)}
+.day{padding:1.2rem 0 1.3rem;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:1rem;align-items:baseline}
+.day p{margin:0}
+.day__when{font:400 1.05rem/1.3 var(--f-cap);letter-spacing:.06em;color:var(--red);grid-column:1}
+.day__time{grid-column:2;grid-row:1 / span 3;font:400 clamp(2.4rem,9vw,3.4rem)/1 var(--f-cap);color:var(--ink);font-variant-numeric:lining-nums tabular-nums}
+.day__what{grid-column:1;font-size:1.3rem;line-height:1.3;margin-top:.25rem}
+.day__where{grid-column:1;color:var(--ink-2);font-size:1rem}
+.day__badge{display:inline-block;margin-left:.5em;padding:.1em .55em;border-radius:999px;background:var(--red);color:#fffaf2;font:400 .8rem/1.4 var(--f-cap);letter-spacing:.08em;vertical-align:.1em}
+@media (min-width:900px){
+  .days{grid-template-columns:repeat(4,minmax(0,1fr));border-top:0}
+  .day{display:block;border:0;border-top:2px solid var(--ink);padding:1.1rem 1.4rem 1.4rem 0;margin-right:1.4rem}
+  .day__time{margin:.6rem 0 .5rem}
+  .day:not(:has(.day__time)) .day__what{margin-top:.6rem}
+}
+
+/* ── девять служений: указатель ── */
+.ministries{padding:clamp(3rem,7vw,5rem) 0 clamp(2rem,5vw,3rem);border-top:1px solid var(--line)}
+.index{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);border-top:1px solid var(--line)}
+.index li{border-bottom:1px solid var(--line)}
+.index a{display:flex;align-items:baseline;gap:1rem;padding:.9rem 0;text-decoration:none;color:var(--ink);min-height:48px}
+.index a:hover .index__name{color:var(--red);text-decoration:underline;text-decoration-thickness:1px}
+.index__num{font:400 1rem/1 var(--f-cap);color:var(--gold-text);min-width:2.6em;letter-spacing:.06em}
+.index__name{font:400 clamp(1.45rem,4.6vw,1.9rem)/1.15 var(--f-cap)}
+@media (min-width:720px){.index{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:2.4rem}}
+@media (min-width:1100px){.index{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* ── служение ── */
+.min{padding:clamp(3.2rem,8vw,6.5rem) var(--gut);max-width:calc(74rem + 2 * var(--gut));margin:0 auto;border-top:1px solid var(--line)}
+.min:first-child{border-top:0}
+.min__head{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:baseline;column-gap:1rem;margin:0 0 2.2rem}
+.min__num{font:400 clamp(1.1rem,3vw,1.4rem)/1 var(--f-cap);color:var(--gold-text);letter-spacing:.06em;margin:0;min-width:2.4em}
+.min__head h3{font:400 clamp(2.2rem,7vw,4.2rem)/1.02 var(--f-cap);letter-spacing:.01em}
+.min__back{margin:2.6rem 0 0;font:400 1rem/1 var(--f-cap);letter-spacing:.08em}
+.min__back a{display:inline-block;padding:.7em 0}
+.min__back a::before{content:"↑ "}
+@media (min-width:900px){.min__body{padding-left:calc(2.4em + 1rem)}}
+.prose--cols{max-width:none}
+@media (min-width:1000px){.prose--cols{columns:2;column-gap:3rem}.prose--cols p{break-inside:avoid}}
+.split{display:grid;gap:2rem}
+.split__aside .ph{max-width:26rem}
+@media (min-width:900px){.split{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);align-items:start}.split__aside{position:sticky;top:calc(var(--head) + 1.5rem)}}
+
+/* ── Писание: свеча и пламя ── */
+.verse{position:relative;margin:2.4rem 0;padding:.1rem 0 0 1.5rem;max-width:36em}
+.verse::after{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--red);transform-origin:50% 0}
+.verse::before{content:"";position:absolute;left:-7px;top:-19px;width:12px;height:12px;background:var(--gold);border-radius:50% 0 50% 50%;transform:rotate(-45deg)}
+.verse blockquote{margin:0}
+.verse blockquote p{margin:0 0 .7rem;font-style:italic;font-weight:400;font-size:1.12em;line-height:1.55}
+.verse--big blockquote p{font-size:clamp(1.34rem,3.4vw,1.85rem);line-height:1.42}
+.verse .ln{display:block}
+.verse figcaption{margin:0}
+.verse cite{font:400 1rem/1 var(--f-cap);font-style:normal;letter-spacing:.1em;color:var(--red)}
+.verses{list-style:none;margin:0;padding:0}
+.verses li{break-inside:avoid;display:inline-block;width:100%;padding:1.6rem 0 .2rem}
+.verses .verse{margin:0 0 1.2rem}
+.verses .lamp .verse{padding:1.2rem 1.2rem 1rem 1.5rem;background:var(--paper-2)}
+@media (min-width:900px){.verses{columns:2;column-gap:3.5rem}}
+
+/* ── стихотворение ── */
+.poem{margin:2.6rem 0 0;font-style:italic;font-size:1.1em;line-height:1.6;display:grid;gap:0 3rem}
+.poem p{margin:0 0 1.4em}
+@media (min-width:720px){.poem{grid-template-columns:repeat(2,max-content)}}
+
+/* ── реабилитация: факты ── */
+.facts{margin:2.8rem 0 0;padding:1.6rem 0 0;border-top:2px solid var(--ink)}
+.facts h4{font:400 1rem/1.2 var(--f-cap);letter-spacing:.16em;text-transform:uppercase;color:var(--red);margin:0 0 1rem}
+.facts dl{margin:0 0 2rem}
+.facts dl>div{display:grid;grid-template-columns:minmax(0,1fr);gap:.2rem 2rem;padding:.9rem 0;border-bottom:1px solid var(--line)}
+.facts dt{font:400 1.05rem/1.3 var(--f-cap);letter-spacing:.05em;color:var(--ink-2)}
+.facts dd{margin:0;max-width:36em}
+@media (min-width:720px){.facts dl>div{grid-template-columns:13rem minmax(0,1fr)}}
+
+/* ── партнёрство и пожертвования ── */
+.partner{padding:clamp(3rem,8vw,6rem) 0}
+.benefits{list-style:none;margin:0 0 1.2em;padding:0}
+.benefits li{position:relative;padding-left:1.6em;margin:0 0 .9em}
+.benefits li::before{content:"";position:absolute;left:.25em;top:.62em;width:8px;height:8px;background:var(--gold);border-radius:50% 0 50% 50%;transform:rotate(-45deg)}
+.donate{padding:clamp(3rem,8vw,6rem) 0}
+.donate__grid{display:grid;gap:2.4rem}
+.donate__cta{margin:0 0 1.6rem}
+.donate__lead{font-size:1.3rem;line-height:1.45;max-width:30em}
+.acct{margin:1.8rem 0 1rem;border-top:2px solid var(--ink)}
+.acct>div{padding:.9rem 0;border-bottom:1px solid var(--line)}
+.acct dt{font:400 .95rem/1.2 var(--f-cap);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);margin:0 0 .35rem}
+.acct dd{margin:0}
+.acct__payee{font-size:1.2rem;font-weight:500;letter-spacing:.02em}
+.acct__iban{font-size:clamp(1.3rem,5.4vw,1.7rem);font-weight:500;font-variant-numeric:tabular-nums lining-nums;letter-spacing:.03em;white-space:nowrap}
+.acct__iban span{margin-right:.32em}
+.acct__iban span:last-child{margin-right:0}
+.acct__actions{display:flex;flex-wrap:wrap;align-items:center;gap:.8rem}
+.acct__status{color:var(--ink-2);font-size:1rem}
+.acct__status.ok{color:#2d5a2a}
+.donate__note{color:var(--ink-2);font-size:1.02rem;max-width:32em}
+.qr{margin:0;max-width:22rem}
+.qr figcaption{font-size:1.05rem;margin:0 0 .7rem}
+.qr img{width:100%;max-width:260px;image-rendering:pixelated;border:1px solid var(--line);background:#fff}
+.qr__hint{font-size:.95rem;color:var(--ink-2);margin:.6rem 0 0}
+@media (min-width:900px){.donate__grid{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:start}.qr{justify-self:end}.qr img{max-width:300px}}
+
+/* ── кнопки ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:.55em 1.25em;border-radius:999px;font:400 1.05rem/1.2 var(--f-cap);letter-spacing:.05em;text-decoration:none;cursor:pointer;text-align:center}
+.btn--flame{background:var(--red);color:#fffaf2;border:1px solid var(--red)}
+.btn--flame:hover{background:var(--red-2);color:#fffaf2}
+.btn--line{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+.btn--line:hover{background:var(--paper-2);color:var(--ink)}
+
+/* ── контакты и люди ── */
+.contacts{padding:clamp(3rem,8vw,6rem) 0;border-top:1px solid var(--line)}
+.actions{display:flex;flex-wrap:wrap;gap:.7rem;margin:0 0 2.6rem}
+.info{display:grid;grid-template-columns:minmax(0,1fr);margin:0 0 3.4rem;border-top:2px solid var(--ink)}
+.info>div{padding:.9rem 0;border-bottom:1px solid var(--line)}
+.info dt{font:400 .95rem/1.2 var(--f-cap);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);margin:0 0 .3rem}
+.info dd{margin:0;font-size:1.15rem}
+@media (min-width:900px){.info{grid-template-columns:repeat(4,minmax(0,1fr));column-gap:1.6rem}}
+.people__title{font:400 clamp(1.8rem,5vw,2.6rem)/1.1 var(--f-cap);margin:0 0 1.6rem}
+.people{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:2rem}
+.person{display:grid;grid-template-columns:120px minmax(0,1fr);column-gap:1.1rem;align-items:start}
+.person__ph{grid-row:1 / span 3;background:var(--paper-3);border-radius:2px;overflow:hidden}
+.person__name{font:400 1.45rem/1.15 var(--f-cap);margin:0 0 .4rem}
+.person__name span{display:block;font:400 .9rem/1.3 var(--f-text);color:var(--ink-2);margin-top:.25rem;letter-spacing:.02em}
+.person__roles{margin:0 0 .5rem;font-size:1rem;color:var(--red)}
+.person__roles span{display:block}
+.person__links{margin:0;display:flex;flex-direction:column;gap:.1rem;font-size:1rem}
+.person__links a{padding:.35em 0;word-break:break-all}
+@media (min-width:640px){.people{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (min-width:1100px){.people{grid-template-columns:repeat(4,minmax(0,1fr))}.person{display:block}.person__ph{margin:0 0 1rem}}
+
+/* ── конфиденциальность ── */
+.privacy{padding:clamp(2.6rem,6vw,4.5rem) 0;border-top:1px solid var(--line)}
+.sec-title--small{font-size:clamp(1.7rem,4.6vw,2.4rem);margin-bottom:1.2rem}
+.privacy .prose{font-size:1.02rem;color:var(--ink-2)}
+.privacy .prose p{margin:0 0 .7em}
+
+/* ── подвал ── */
+.foot{background:var(--paper-2);border-top:1px solid var(--line);padding:3rem 0 3.4rem;font-size:1rem;color:var(--ink-2)}
+.foot__grid{display:grid;gap:1.4rem;align-items:end}
+.foot__logo{width:170px;height:auto}
+.foot p{margin:0}
+@media (min-width:900px){.foot__grid{grid-template-columns:auto 1fr auto;column-gap:3rem}}
+
+/* ── просмотр фото ── */
+.lb{border:0;padding:0;background:transparent;max-width:96vw;max-height:94vh;overflow:visible}
+.lb::backdrop{background:rgba(23,20,27,.88)}
+.lb img{max-width:94vw;max-height:84vh;width:auto;height:auto;margin:0 auto}
+.lb__close{display:block;margin:.8rem auto 0;min-height:44px;padding:0 1.2em;border:1px solid #f7f2e8;border-radius:999px;background:transparent;color:#f7f2e8;font:400 1rem/1 var(--f-cap);letter-spacing:.06em;cursor:pointer}
+.lb__close:focus-visible{outline-color:#f7f2e8;box-shadow:none}
+
+
+/* =====================================================================
+   ВОЛШЕБСТВО — восемь тихих эффектов «Светильника».
+   Все движения — только transform и opacity; без backdrop-filter и больших
+   размытий. Класс .fx ставит app.js, и только если не просили «меньше
+   движения»; без JS и при reduced-motion всё неподвижно и видно сразу.
+   Приёмы — как у vlana (появление по IntersectionObserver, «expo-out»,
+   ступенчатые задержки через --i, линия, которая рисуется scale), облик — свой.
+   ===================================================================== */
+:root{--e-out:cubic-bezier(.16,1,.3,1);--e-draw:cubic-bezier(.65,0,.35,1)}
+
+/* 1. Живое пламя: знак в шапке зажигается за 0,8 с и тихо колышется */
+.head__mark .lf,.head__mark .lf-fire,.head__mark .lf-halo{transform-box:fill-box;transform-origin:50% 100%}
+.head__mark .lf-halo{transform-origin:50% 50%}
+.fx .head__mark .lf{animation:li-ignite .8s var(--e-out) .2s both}
+/* пламя знака колышется, пока виден первый экран: SVG анимируется в основном потоке, на прокрутке ему лучше отдыхать */
+.fx.fx-top .head__mark .lf-fire{animation:li-flick 3.9s ease-in-out 1.1s infinite}
+.fx.fx-top .head__mark .lf-halo{animation:li-halo 5.2s ease-in-out 1.1s infinite}
+@keyframes li-ignite{0%{opacity:0;transform:scale(.15,.05)}60%{opacity:1}100%{opacity:1;transform:scale(1,1)}}
+@keyframes li-flick{0%,100%{transform:scale(1,1) skewX(0deg)}18%{transform:scale(.96,1.05) skewX(-2deg)}41%{transform:scale(1.03,.97) skewX(1.4deg)}63%{transform:scale(.98,1.04) skewX(-.8deg)}82%{transform:scale(1.01,.99) skewX(.6deg)}}
+@keyframes li-halo{0%,100%{opacity:.78;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+/* пламя у мест Писания и в оглавлении — своё дыхание, разные сроки */
+@keyframes li-flick-r{0%,100%{transform:rotate(-45deg) scale(1,1)}24%{transform:rotate(-45deg) scale(.9,1.08)}52%{transform:rotate(-45deg) scale(1.06,.95)}77%{transform:rotate(-45deg) scale(.96,1.04)}}
+.fx .verse.fx-vis::before,.fx .toc__flame::before{animation:li-flick-r 3.6s ease-in-out infinite}
+.fx .verses li:nth-child(3n+1) .verse.fx-vis::before{animation-duration:4.3s;animation-delay:-1.1s}
+.fx .verses li:nth-child(3n+2) .verse.fx-vis::before{animation-duration:3.2s;animation-delay:-2.3s}
+.fx .min:nth-child(2n) .verse.fx-vis::before{animation-duration:4.7s}
+
+/* 2. «Свет сверху»: мягкие лучи, медленно дрейфуют (80 и 110 с); рассвет теплеет при прокрутке */
+.hero__light{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.hero__rays{position:absolute;left:-40%;right:-40%;top:-30%;height:150%;transform-origin:50% 0;
+  background:repeating-conic-gradient(from 168deg at 50% 0%,rgba(236,196,118,0) 0deg,rgba(236,196,118,.13) 2.2deg,rgba(236,196,118,0) 5deg,rgba(236,196,118,0) 9.5deg);
+  -webkit-mask-image:radial-gradient(ellipse 60% 75% at 50% 0%,#000 0%,rgba(0,0,0,.55) 45%,transparent 78%);mask-image:radial-gradient(ellipse 60% 75% at 50% 0%,#000 0%,rgba(0,0,0,.55) 45%,transparent 78%)}
+.hero__rays--2{opacity:.7;background:repeating-conic-gradient(from 174deg at 46% 0%,rgba(246,214,150,0) 0deg,rgba(246,214,150,.11) 3deg,rgba(246,214,150,0) 7deg,rgba(246,214,150,0) 13deg)}
+.hero__dawn{position:absolute;inset:0;opacity:0;will-change:opacity;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(246,206,130,.34),rgba(246,206,130,0) 70%)}
+.no-js .hero__dawn{opacity:.5}
+.fx .hero__rays{animation:li-rays 80s ease-in-out infinite alternate}
+.fx .hero__rays--2{animation:li-rays-2 110s ease-in-out infinite alternate}
+@keyframes li-rays{0%{transform:rotate(-4deg)}100%{transform:rotate(4deg)}}
+@keyframes li-rays-2{0%{transform:rotate(3deg) scale(1.05)}100%{transform:rotate(-3deg) scale(1)}}
+
+/* 5. Пылинки в луче: 14 тёплых точек, только в первом экране */
+.motes{position:absolute;inset:0;display:none}
+.fx .motes{display:block}
+.motes i{position:absolute;top:0;left:0;width:4px;height:4px;border-radius:50%;opacity:0;background:radial-gradient(circle,rgba(214,166,72,.95) 0,rgba(214,166,72,.4) 45%,rgba(214,166,72,0) 72%);
+  animation:li-mote 26s linear infinite}
+@keyframes li-mote{0%{opacity:0;transform:translate3d(0,0,0)}14%{opacity:.7}80%{opacity:.45}100%{opacity:0;transform:translate3d(34px,-150px,0)}}
+.motes i:nth-child(1){left:12%;top:52%;animation-duration:24s;animation-delay:-3s}
+.motes i:nth-child(2){left:22%;top:34%;width:3px;height:3px;animation-duration:31s;animation-delay:-11s}
+.motes i:nth-child(3){left:31%;top:63%;animation-duration:27s;animation-delay:-19s}
+.motes i:nth-child(4){left:39%;top:28%;width:5px;height:5px;animation-duration:36s;animation-delay:-7s}
+.motes i:nth-child(5){left:46%;top:48%;width:3px;height:3px;animation-duration:22s;animation-delay:-15s}
+.motes i:nth-child(6){left:53%;top:22%;animation-duration:29s;animation-delay:-2s}
+.motes i:nth-child(7){left:58%;top:58%;width:5px;height:5px;animation-duration:33s;animation-delay:-24s}
+.motes i:nth-child(8){left:64%;top:38%;width:3px;height:3px;animation-duration:25s;animation-delay:-9s}
+.motes i:nth-child(9){left:70%;top:66%;animation-duration:30s;animation-delay:-17s}
+.motes i:nth-child(10){left:76%;top:30%;width:4px;height:4px;animation-duration:38s;animation-delay:-28s}
+.motes i:nth-child(11){left:83%;top:50%;width:3px;height:3px;animation-duration:23s;animation-delay:-5s}
+.motes i:nth-child(12){left:88%;top:24%;animation-duration:34s;animation-delay:-21s}
+.motes i:nth-child(13){left:17%;top:20%;width:3px;height:3px;animation-duration:28s;animation-delay:-13s}
+.motes i:nth-child(14){left:61%;top:12%;width:4px;height:4px;animation-duration:32s;animation-delay:-26s}
+.hero.fx-off .hero__rays,.hero.fx-off .motes i{animation-play-state:paused}
+
+/* 3. Золото заголовков: позолота внутри букв (все точки градиента ≥ 3:1 к бумаге,
+      крупный текст), блик проходит один раз при первом появлении */
+.gilt{padding-bottom:.12em;overflow:hidden;background:linear-gradient(100deg,#3e2b08 0%,#6b4a0e 30%,#94701f 48%,#7f5a12 62%,#4a3309 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;position:relative}
+.gilt::after{content:attr(data-gilt);position:absolute;left:0;top:0;right:0;pointer-events:none;opacity:0;padding-bottom:inherit;
+  background:linear-gradient(100deg,#5a3d0b 0%,#8a6418 34%,#a87b22 50%,#8a6418 66%,#5a3d0b 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.fx .gilt.fx-in::after{animation:li-sheen 2.6s ease-in-out .3s 1 both}
+@keyframes li-sheen{0%{opacity:0}45%{opacity:1}100%{opacity:0}}
+@media (forced-colors:active){.gilt{color:CanvasText;-webkit-text-fill-color:CanvasText;background:none}}
+
+/* 4. Свеча Писания рисуется сверху вниз, затем вспыхивает пламя, затем проступает текст */
+.fx .verse::after{transition:transform 1.15s var(--e-draw)}
+.fx .verse::before{transition:opacity .5s ease .95s,transform .7s var(--e-out) .95s}
+.fx .verse blockquote p,.fx .verse .ln,.fx .verse figcaption{transition:opacity .9s ease,transform 1.1s var(--e-out);transition-delay:calc(.55s + var(--i,0) * 110ms)}
+.fx .verse.fx-wait::after{transform:scaleY(0)}
+.fx .verse.fx-wait::before{opacity:0;transform:rotate(-45deg) scale(.2)}
+.fx .verse.fx-wait blockquote p:not(:has(.ln)),.fx .verse.fx-wait .ln,.fx .verse.fx-wait figcaption{opacity:0;transform:translate3d(0,12px,0)}
+.fx .verse .ln{transform:translate3d(0,0,0)}
+.fx .verse figcaption{transition-delay:calc(.9s + var(--n,0) * 110ms)}
+
+/* 7. Фото: мягкое проявление 1.04 → 1; тёплая виньетка (выше, у .ph::after); просмотр — плавно */
+.fx .ph img{transition:opacity 1s ease,transform 1.5s var(--e-out)}
+.fx .ph.fx-wait img{opacity:0;transform:scale(1.04)}
+.lb{opacity:0;transform:scale(.985);transition:opacity .35s ease,transform .45s var(--e-out)}
+.lb.is-shown{opacity:1;transform:none}
+.no-js .lb,.lb:not(.fx-lb){opacity:1;transform:none}
+
+/* 6. Пергамент: едва заметное зерно бумаги (свой файл img/grain.svg, неподвижно) */
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.26;background:url("img/grain.svg") repeat;background-size:220px 220px}
+html{background:var(--paper)}
+body{background:transparent}
+.band{background:rgba(239,230,214,.86)}
+
+/* 8. Пламя оглавления скользит от пункта к пункту */
+.toc__track{position:relative}
+.toc__flame{display:none;position:absolute;left:2px;top:0;width:10px;height:10px;transform:translate3d(0,-40px,0);opacity:0;z-index:1;pointer-events:none}
+.toc__flame::before{content:"";position:absolute;inset:0;background:var(--gold);border-radius:50% 0 50% 50%;transform:rotate(-45deg)}
+.fx .toc__flame{display:block;transition:transform .75s var(--e-draw),opacity .4s ease}
+.fx .toc__flame.is-on{opacity:1}
+.fx .toc__list a[aria-current="true"]::before{left:-19px;top:.95em;width:6px;height:6px;border:1.5px solid var(--red);border-radius:50%;background:var(--paper);transform:none}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}.motes{display:none!important}.hero__rays{transform:none!important}.gilt::after{display:none}}
+@media print{.head,.toc,.strip,.gallery,.lb{display:none!important}body{padding:0}}

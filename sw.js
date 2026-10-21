@@ -83,8 +83,10 @@ function fromShelf(bare) {
    хранилище системы. Пути гостей работник не обслуживает и не кладёт на
    полку — их берёт из сети сам браузер. Список повторяет GUESTS из
    tools/deploy.mjs без тестовой копии; согласие списков стережёт
-   tools/guest-list-check.mjs, поведение — tools/client-site-check.mjs. */
-var GUESTS = ["kahjuabi24", "vlana"];
+   tools/guest-list-check.mjs, поведение — tools/client-site-check.mjs.
+   livingisrael — второй гость, основатель 20.10.2026, дословно: «Сначала
+   здесь sys.baby/livingisrael Потом переедет.» (D-580). */
+var GUESTS = ["kahjuabi24", "vlana", "livingisrael"];
 
 /* Корень сайта для работника: дома он лежит в /os/ (корень — уровнем выше),
    в вебе — в корне или в /test/. Гость — первая часть пути после корня. */

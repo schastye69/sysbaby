@@ -41,6 +41,8 @@
   Cache-Control: no-cache
 /vlana/*
   Cache-Control: no-cache
+/livingisrael/*
+  Cache-Control: no-cache
 
 # Части несут номер сборки в адресе — их можно держать вечно.
 /*.js
