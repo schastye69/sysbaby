@@ -1,0 +1,88 @@
+/* sam.vin — members.css (WP5). MEMBERS «КЛАН» and WORKSHOP «МАСТЕРСКАЯ». Construction-drawing grammar only:
+   hairlines, survey crosses, type on scrims. No boxes, no borders, no blur, no glow (SPEC §2.3, §2.8). */
+
+/* ─── the readout (SPEC §6.2) — anchored at the end of a 120 px leader from the capital ──────────────────────── */
+.mb-ro-anchor{width:0;height:0;pointer-events:none}
+.mb-ro-anchor .mb-ro{position:absolute;left:0;top:-16px;width:max-content;max-width:min(400px,36vw);pointer-events:auto}
+.mb-ro-anchor.is-left .mb-ro{left:auto;right:0}
+.mb-ro{isolation:isolate;white-space:normal}
+.mb-ro::before{content:"";position:absolute;z-index:-1;pointer-events:none;inset:-36px -48px;
+  background:radial-gradient(closest-side,rgba(var(--deep-rgb),.62) 60%,rgba(var(--deep-rgb),0));
+  animation:scrim var(--breath) ease-in-out infinite}
+.mb-rows{display:grid;grid-template-columns:auto 1fr;column-gap:20px;row-gap:6px;align-items:baseline}
+.mb-row{display:contents}
+.mb-row .mb-k{color:rgba(var(--silver-rgb),.72);white-space:nowrap}
+.mb-v{color:var(--silver)}
+.mb-row--name .mb-v{color:var(--white);white-space:nowrap}
+.mb-status{display:inline-flex;align-items:center;gap:8px}
+.mb-num{font-variant-numeric:tabular-nums}
+.mb-relics{display:flex;gap:0;margin:-10px 0 -10px -10px}
+.mb-relic{width:var(--hit);height:var(--hit);display:inline-grid;place-items:center;color:var(--silver);transition:color var(--d-120)}
+.mb-relic svg path{fill:none;stroke:currentColor;stroke-width:1px;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.mb-relic:hover,.mb-relic:focus-visible{color:var(--white)}
+.mb-relic:focus-visible{box-shadow:0 1px 0 var(--ember)}
+.mb-trait{margin-top:14px;max-width:var(--measure);color:var(--silver)}
+.mb-joke{margin-top:12px;max-width:var(--measure)}
+.mb-joke .t-label{color:rgba(var(--silver-rgb),.72);margin-bottom:2px}
+.mb-op{margin-top:12px;max-width:var(--measure)}
+.mb-op .verb{margin-left:-2px}
+.mb-row--sbor{display:flex;align-items:center;gap:16px;margin-top:4px}
+.mb-row--sbor .mb-v{color:var(--silver)}
+.mb-row--sbor .t-micro{color:rgba(var(--silver-rgb),.72)}
+/* the row write: rows wait (opacity 0), then appear 60 ms apart; each LABEL a one-shot wdth 75 → 100 */
+.mb-pend{opacity:0}
+.mb-row>*,.mb-trait,.mb-joke,.mb-op,.mb-row--sbor{transition:opacity var(--d-120)}
+.mb-row.mb-pend>*{opacity:0}
+@keyframes mb-wd{0%{font-variation-settings:"wght" 500,"wdth" 75;font-stretch:75%}
+  60%{font-variation-settings:"wght" 500,"wdth" 100;font-stretch:100%}
+  100%{font-variation-settings:"wght" 500,"wdth" 87.5;font-stretch:87.5%}}
+.mb-wd{animation:mb-wd var(--d-240) var(--ease-reveal) both}
+
+/* phone: the sheet carries the readout (peek: name, STATUS, РОЛЬ — never LEVEL, O43) */
+.mb-peek{display:grid;grid-template-columns:auto 1fr;column-gap:16px;row-gap:2px;align-items:baseline;padding:0 0 8px}
+.mb-peek .mb-row .mb-k{color:rgba(var(--silver-rgb),.72)}
+#sheet .mb-ro{padding-top:4px}
+#sheet .mb-ro .mb-rows{column-gap:16px}
+
+/* ─── the screen-space layer: deck labels, ЗДЕСЬ, the hold ring, ghosts ─────────────────────────────────────── */
+.mb-layer{position:absolute;inset:0;pointer-events:none;transition:opacity var(--d-120)}
+.mb-label{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;gap:1px;
+  transform:translate3d(-999px,-999px,0);will-change:transform;white-space:nowrap;visibility:hidden;margin-left:-60px;width:120px;
+  text-shadow:0 0 6px rgba(var(--void-rgb),.95),0 0 2px rgba(var(--void-rgb),.95)}
+.mb-label-name{color:var(--silver);max-width:none}
+.mb-label-call{color:rgba(var(--silver-rgb),.72)}
+.mb-label-here{color:var(--white)}
+.mb-here-cross{position:absolute;left:0;top:0;color:var(--white);will-change:transform}
+.mb-rings{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
+.mb-rings circle{fill:none;visibility:hidden;vector-effect:non-scaling-stroke}
+.mb-hold{stroke:var(--ember);stroke-width:2px}
+.mb-ghost{stroke:var(--silver);stroke-width:2px}
+.mb-ghost-dot{position:absolute;left:0;top:0;width:6px;height:6px;border-radius:50%;background:var(--c-ghost);will-change:transform}
+
+/* the motto, beam-written on the datum (S04) */
+.mb-motto{position:absolute;left:var(--margin);top:calc(var(--datum-y) + 44px);max-width:var(--measure);color:var(--silver);
+  transition:opacity var(--d-480)}
+.mb-motto.is-out{opacity:0}
+.mb-empty{position:absolute;left:var(--margin);top:calc(var(--datum-y) + 48px);max-width:var(--measure)}
+@media (max-width:600px),(pointer:coarse) and (max-height:600px){
+  .mb-motto{top:calc(var(--datum-y) + 16px);right:var(--margin)}
+  .mb-empty{top:calc(var(--datum-y) + 24px);right:var(--margin)}
+}
+@media (prefers-reduced-motion:reduce){.mb-ro::before{animation:none}.mb-wd{animation:none}}
+
+/* ─── WORKSHOP «МАСТЕРСКАЯ» (SPEC §6.2.1) ─────────────────────────────────────────────────────────────────────── */
+.ws-ui{position:absolute;inset:0;pointer-events:none;transition:opacity var(--d-120)}
+.ws-body{position:absolute;left:var(--margin);top:calc(var(--datum-y) + 48px);max-width:min(var(--measure),calc(var(--ws-grid-left,70vw) - var(--margin) - 32px))}
+.ws-grid{position:absolute;left:0;top:0;pointer-events:auto;touch-action:none;cursor:crosshair;will-change:transform}
+.ws-node{position:absolute;left:0;top:0;width:var(--hit);height:var(--hit);font-size:0;color:transparent}
+.ws-node:focus-visible::before,.ws-node:focus-visible::after{content:"";position:absolute;background:var(--ember);left:calc(50% - 3.5px);top:50%;width:var(--cross);height:1px}
+.ws-node:focus-visible::after{left:50%;top:calc(50% - 3.5px);width:1px;height:var(--cross)}
+.ws-verbs{position:absolute;left:var(--ws-grid-left,50vw);top:calc(var(--ws-grid-bottom,70vh) + 12px);display:flex;gap:28px;pointer-events:auto}
+.ws-need{position:absolute;left:var(--ws-grid-left,50vw);top:calc(var(--ws-grid-bottom,70vh) + 64px);color:var(--silver)}
+.ws-ui:not(.is-live) .ws-grid,.ws-ui:not(.is-live) .ws-verbs,.ws-ui.is-saving .ws-grid{visibility:hidden}
+.ws-ui.is-saving .ws-verbs{opacity:.35;pointer-events:none}
+@media (max-width:600px),(pointer:coarse) and (max-height:600px){
+  .ws-body{left:var(--margin);right:var(--margin);top:calc(var(--datum-y) + 14px);max-width:none}
+  .ws-verbs{left:var(--margin);right:var(--margin);justify-content:space-between;gap:8px}
+  .ws-need{left:var(--margin);right:var(--margin)}
+}

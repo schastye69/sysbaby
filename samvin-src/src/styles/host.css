@@ -1,0 +1,127 @@
+/* sam.vin — host.css (WP13). ГОСТИ / ПРЕДЛОЖЕНИЕ sheets (incl. the `В ИГРЕ` / `В ЖИЗНИ` chips), the ПОКАЗ host strip and
+   its dark scene, the СБОР readout, ПОТЕРЯШКА / ДОГОВОРИЛИСЬ proxy + hold ring + the `ДОГОВОРИЛИСЬ` MICRO, the КОДЕКС
+   leader blocks, the ПОКАЗ ФИНАЛ `clan.about` line. Construction-drawing grammar only: hairlines, LABEL / BODY text,
+   radial scrims; no border boxes, no radius ≥ 6 px with a border, no blur, no glow (SPEC §2, §2.8).
+   DOM contract (host/*.js, deeds/*.js):
+   #sheets > section.sheet.sheet--modal.host-sheet#sheet-guests[data-qa=guests-sheet] > .sheet-body > p.host-sheet__k ·
+             h2.host-sheet__h · .guest-chips > button.guest-chip[data-qa=guest-chip][aria-pressed] (> .guest-chip__name,
+             .guest-chip__cs | .guest-chip__x) · .guest-add > button.verb[data-qa=guest-add] + input.guest-input ·
+             .host-sheet__verbs > button.verb[data-qa=guests-done|show-start]
+           > section.host-sheet#sheet-proposal[data-qa=proposal-sheet] > … input.host-input · .where-chips > button.where-chip
+           > section.sheet--codex#sheet-codex(-cut) (phone КОДЕКС list)
+   #hoststrip[data-qa=hoststrip].is-in > .hs-row > p.hs-label · p.hs-scene · button.verb.hs-next(.is-pulse) · .hs-back ·
+             .hs-again · .hs-exit ; p.hs-codex (scene 5 MICRO)
+   #overlay > .anchor.sbor-readout(.is-in) · .anchor.codex-block(--in|--out) · .anchor.lost-ring(.is-on) > svg > circle ·
+             button.proxy.lost-proxy[data-qa=lost][data-kind] · .anchor.pair-micro(.is-out) > p.pair-micro__t
+   #frame > p.show-about(.is-in) ; #fx > i.beam-head.codex-head · i.lost-land
+   body.show-on (a ПОКАЗ is live) · body.show-dark (scene 0 / asleep) */
+
+/* ─── Sheets ─────────────────────────────────────────────────────────────────────────────────────────────────── */
+.host-sheet .sheet-body{padding-top:4px}
+.host-sheet__k{color:var(--pewter)}
+.host-sheet__h{margin-top:6px}
+.guest-chips{display:flex;flex-wrap:wrap;gap:0 22px;margin:18px 0 4px}
+.guest-chip{position:relative;display:inline-flex;align-items:baseline;gap:8px;min-height:var(--hit);min-width:var(--hit);
+  padding:12px 2px 0;color:rgba(var(--silver-rgb),.7);transition:color var(--d-120)}
+.guest-chip__name{color:inherit;max-width:none;white-space:nowrap}
+.guest-chip__cs,.guest-chip__x{color:var(--pewter)}
+.guest-chip::after{content:"";position:absolute;left:2px;right:2px;bottom:6px;height:1px;background:var(--silver);
+  transform:scaleX(0);transform-origin:0 0;transition:transform var(--d-120) var(--ease-reveal)}
+.guest-chip[aria-pressed="true"]{color:var(--white)}
+.guest-chip[aria-pressed="true"]::after{transform:none}
+.guest-chip:focus-visible{color:var(--white)}
+.guest-chip:focus-visible .guest-chip__cs{color:var(--ember)}
+.guest-chips--typed:empty{display:none}
+.guest-add{display:flex;align-items:center;gap:16px;min-height:var(--hit);margin-top:6px}
+.guest-input,.host-input{display:block;height:var(--hit);padding:10px 0 8px;font-size:16px;line-height:24px;color:var(--white);
+  background:transparent;border:0;border-bottom:1px solid rgba(var(--slate-rgb),.8);border-radius:0;outline:none;
+  caret-color:var(--ember);-webkit-user-select:text;user-select:text;-webkit-appearance:none;appearance:none}
+.guest-input{width:15ch}
+.host-input{width:100%;margin-top:10px}
+.guest-input:focus,.host-input:focus{border-bottom-color:var(--silver)}
+.guest-input::placeholder,.host-input::placeholder{color:var(--pewter);opacity:1}
+.where-chips{margin-top:14px}
+.where-chip{padding-top:0;align-items:center;font:500 11px/14px var(--font-mono);font-stretch:87.5%;letter-spacing:.08em}
+.host-sheet__verbs{display:flex;align-items:center;gap:36px;margin-top:18px}
+.verb--white{color:var(--white)}
+.host-sheet .verb[aria-disabled="true"]{color:var(--pewter);cursor:default}
+.host-sheet .verb[aria-disabled="true"]::after{transform:scaleX(0)}
+/* Desktop: a 420 px block centred on a scrim (the veil), the solid --deep plate with its 1 px top hairline only. */
+@media not all and (pointer:coarse){
+  .sheet.host-sheet,.sheet.host-sheet[data-state="full"]{left:50%;right:auto;top:50%;bottom:auto;width:420px;
+    max-height:min(84vh,680px);padding:22px 32px 26px;transform:translate(-50%,-50%);transition:none!important}
+  .host-sheet .sheet-handle{display:none}
+}
+@media (pointer:coarse){
+  .sheet.host-sheet{padding-bottom:calc(20px + var(--safe-b))}
+  .host-sheet .guest-chips{gap:0 18px}
+}
+/* the КОДЕКС phone list: a non-modal sheet sized to its blocks */
+.sheet--codex{max-height:44vh}
+.sheet--codex .sheet-body{padding-bottom:8px}
+.codex-list{display:flex;flex-direction:column;gap:14px}
+
+/* ─── КОДЕКС blocks ─────────────────────────────────────────────────────────────────────────────────────────── */
+.codex-block{display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-align:right;white-space:nowrap}
+.codex-block__k{color:var(--pewter)}
+.codex-block__law{font-size:17px;line-height:25px;max-width:none}
+.codex-block--list{align-items:flex-start;text-align:left;white-space:normal}
+.codex-head{z-index:1}
+
+/* ─── СБОР readout ──────────────────────────────────────────────────────────────────────────────────────────── */
+.sbor-readout{display:flex;flex-direction:column;gap:4px}
+.sbor-readout__lead{white-space:nowrap}
+.sbor-readout__n{color:var(--white)}
+.sbor-readout--free{position:absolute;left:50%;top:28%;transform:translateX(-50%);text-align:center}
+
+/* ─── ПОТЕРЯШКА / ДОГОВОРИЛИСЬ ──────────────────────────────────────────────────────────────────────────────── */
+.anchor.lost-ring{width:0;height:0}
+.lost-ring svg{position:absolute;left:0;top:0;transform:translate(-50%,-50%);overflow:visible}
+.lost-ring circle{fill:none;stroke:var(--ember);stroke-width:2;stroke-dasharray:1 1;stroke-dashoffset:1;opacity:0;
+  transition:opacity var(--d-120) linear}
+.lost-ring.is-on circle{opacity:1}
+.anchor.pair-micro{width:0;height:0;transition:opacity var(--d-240) linear}
+.pair-micro__t{position:absolute;left:0;bottom:30px;transform:translateX(-50%);white-space:nowrap;color:var(--silver)}
+.pair-micro.is-out{opacity:0}
+#fx .lost-land{width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;box-shadow:inset 0 0 0 1px var(--white);
+  animation:lost-land .6s linear forwards}
+@keyframes lost-land{to{opacity:0}}
+
+/* ─── ПОКАЗ: the host strip ─────────────────────────────────────────────────────────────────────────────────── */
+/* desktop: the strip is the bottom chrome row, centred between the BL / BR corners — the line under the status line, so
+   the band above the status line stays the horizon's (his name and the friends' names burn there) */
+.hs-row{position:absolute;left:50%;bottom:calc(var(--chrome-b) - 15px);transform:translateX(-50%);display:flex;
+  align-items:center;gap:30px;white-space:nowrap}
+body.show-on #status{bottom:calc(var(--status-bottom) + 12px)}
+.hs-label{color:var(--silver)}
+.hs-scene{color:var(--white)}
+.hs-scene:empty{display:none}
+.hs-exit{color:var(--pewter)}
+.hs-next.is-pulse::after{animation:hs-pulse .48s var(--ease-reveal)}
+@keyframes hs-pulse{0%{transform:scaleX(0)}50%{transform:none}100%{transform:scaleX(0);transform-origin:100% 0}}
+.hs-codex{position:absolute;left:var(--title-x);top:calc(var(--datum-y) + 52px);color:var(--silver)}
+@media (pointer:coarse) and (max-width:600px){
+  .hs-row{bottom:calc(var(--band-h) + var(--safe-b) + 12px);gap:18px}
+  body.show-on #status{bottom:calc(var(--status-bottom) + 26px + 44px)}
+  .hs-codex{top:calc(var(--title-top) + 40px)}
+}
+/* scene 0 (and asleep after the finale): the chrome fades to 0 except the strip; the navigator to 30 % */
+#chrome > .corner,#datum,#edges,#giant{transition:opacity .6s linear}
+body.show-dark #chrome > .corner,body.show-dark #datum,body.show-dark #edges,body.show-dark #giant{opacity:0!important}
+body.show-dark #keynav{opacity:.3;transition:opacity .6s linear}
+/* ФИНАЛ: `clan.about` as BODY under the founder LEAD */
+.show-about{position:absolute;left:50%;top:calc(38% + 34px);transform:translateX(-50%);width:max-content;
+  max-width:min(var(--measure),calc(100vw - 2 * var(--margin)));text-align:center}
+@media (pointer:coarse) and (max-width:600px),(pointer:coarse) and (max-height:600px){.show-about{top:calc(34% + 30px)}}
+
+@media (prefers-reduced-motion:reduce){
+  .pair-micro{transition-duration:.16s!important}
+  .hs-next.is-pulse::after{animation-duration:.16s}
+}
+
+/* the TL verb ГОСТИ (chrome.setTLVerb, H20): on a phone the third TL line would sit on the hall title block (title at
+   72 px, its LABEL above it), so the verb rides on the SAM.VIN line, right of it (same 44 px hit area) */
+@media (pointer:coarse) and (max-width:600px){
+  #c-tl-verb{position:absolute;left:100%;top:-15px;margin-left:10px}
+}
+.codex-block--right{align-items:flex-start;text-align:left}
