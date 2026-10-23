@@ -19,7 +19,7 @@ export function createLabels(hctx, parent) {
   svg.setAttribute('aria-hidden', 'true');
   parent.appendChild(svg);
   const list = [];
-  let alpha = 1, avoid = null;
+  let alpha = 1, avoid = null, floor = null;
 
   function project(L) {
     L.get(_l);
@@ -33,8 +33,16 @@ export function createLabels(hctx, parent) {
   function place(L) {
     if (L.centre) { L.el.style.transform = `translate3d(${L.sx.toFixed(1)}px,${L.sy.toFixed(1)}px,0) translate(-50%,-50%)`; return; }
     const s = L.side === 'left' ? -1 : 1, r = L.rise;
-    const ex = L.sx + s * Math.abs(r), ey = L.sy + r;
-    const lx = ex + s * L.len;
+    const ex = L.sx + s * Math.abs(r);
+    if (L.bw == null) { L.bw = L.el.offsetWidth || 0; L.bh = L.el.offsetHeight || 0; }
+    // the floor (phone: the sheet peek's top) — the block's lower edge stays above it
+    const fl = floor ? floor() : null;
+    const ey = fl != null ? Math.min(L.sy + r, fl - L.bh / 2) : L.sy + r;
+    let lx = ex + s * L.len;
+    // keep the block on screen (phone: a left-side block can run past x = 0); size cached on show
+    const W = hctx.layout.w, m = 12;
+    if (s < 0 && lx - 8 - L.bw < m) lx = Math.min(m + L.bw + 8, W - m);
+    else if (s > 0 && lx + 8 + L.bw > W - m) lx = Math.max(W - m - L.bw - 8, m);
     L.path.setAttribute('d', `M${L.sx.toFixed(1)} ${L.sy.toFixed(1)}L${ex.toFixed(1)} ${ey.toFixed(1)}L${lx.toFixed(1)} ${ey.toFixed(1)}`);
     L.cross.setAttribute('transform', `translate(${L.sx.toFixed(1)} ${L.sy.toFixed(1)})`);
     const bx = lx + s * 8;
@@ -46,6 +54,7 @@ export function createLabels(hctx, parent) {
   function setOn(L, on) {
     if (L.on === on) return;
     L.on = on;
+    L.bw = null;
     L.el.classList.toggle('is-off', !on);
     L.path.classList.toggle('is-off', !on || !L.leader);
     L.cross.classList.toggle('is-off', !on || !L.crossOn);
@@ -95,6 +104,8 @@ export function createLabels(hctx, parent) {
     },
     /** (x, y) → true where no label may stand (readable columns). */
     setAvoid(fn) { avoid = typeof fn === 'function' ? fn : null; },
+    /** () → y (CSS px) a block's lower edge may not pass, or null. */
+    setFloor(fn) { floor = typeof fn === 'function' ? fn : null; },
     setAlpha(a) { alpha = a; svg.style.opacity = String(a); for (const L of list) L.el.style.opacity = String(a); },
     dispose() {
       for (const L of list.slice()) for (const n of [L.el, L.path, L.cross]) if (n.parentNode) n.parentNode.removeChild(n);

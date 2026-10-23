@@ -198,6 +198,8 @@ export function createInsigniaHall(hctx) {
       labels = createLabels(hctx, hctx.section);
       // desktop: no 3D label inside the readable column (title, relic index, capsule line)
       labels.setAvoid((x, y) => !phone() && x < 470 && y > hctx.layout.h * 0.62 - 150);
+      // phone: blocks stay above the sheet peek (120 px over the 88 px Key band)
+      labels.setFloor(() => (phone() ? hctx.layout.h - 88 - 120 - 12 : null));
       dome = createDome(hctx, stat);
       relics = createRelics(hctx, ring, labels);
       hasEarned = relics.list.some((r) => r.earned);

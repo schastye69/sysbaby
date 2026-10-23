@@ -8,6 +8,8 @@
 .core-today__label{margin:0 0 6px;color:var(--silver)}
 .core-today__body{margin:0;max-width:36ch;text-wrap:pretty}
 .core-today--phone{position:absolute;left:var(--margin,16px);right:var(--margin,16px);top:calc(var(--safe-t,0px) + 140px)}
+/* phone portrait: the Key fills the column from the title to the band — no free strip, so the block stands down */
+@media (pointer:coarse) and (max-width:600px) and (orientation:portrait){.core-today--phone{display:none}}
 
 /* ─── PULL counter (SPEC §3.8): a giant vertical dimension line at the right third, DATA beside it, MICRO under ─── */
 .core-counter{position:absolute;left:66.667%;top:20%;height:60%;width:40px;margin-left:-20px;opacity:0;
