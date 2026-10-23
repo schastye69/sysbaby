@@ -17,6 +17,9 @@ export const DEED_NAME = { wait: 'КАПСУЛА', finish: 'ЗОНД', call: 'С
 export const STRATUM_SIGN = ['S', 'A', 'M', '•', 'V', 'I', 'N'];
 export { codeCapHeightM } from '../world/structure.js';
 
+/** The alternative MICRO deed names a law may carry (A3.3: • is earned by ГОСТИ or by ПОКАЗ). */
+const ALT_NAME = { host: ['ГОСТИ', 'ПОКАЗ'] };
+
 /** Band height (m) of every deed band kind (A3.5: his bands never outrank his father's 3.0 m legends). */
 export const DEED_BAND_HEIGHT = 1.0;
 /** Room → the hall word of the `дело` band BRIEF (A3.5). */
@@ -37,7 +40,10 @@ export function lawOf(i) {
   const at = data().code && typeof data().code[sign] === 'string' ? data().code[sign] : null;
   if (!at || !text) return null;
   const deedId = deedOfStratum(i);
-  return { text, at, deedId, deedName: deedId ? DEED_NAME[deedId] : '' };
+  // the • law names the deed that earned it: «ГОСТИ» or «ПОКАЗ» (A3.3 table; WP13 records codeNames[sign] at the earning)
+  const cn = data().codeNames && typeof data().codeNames[sign] === 'string' ? data().codeNames[sign] : null;
+  const name = cn && ALT_NAME[deedId] && ALT_NAME[deedId].includes(cn) ? cn : (deedId ? DEED_NAME[deedId] : '');
+  return { text, at, deedId, deedName: name };
 }
 
 /** → number[] ascending: strata with an earned, non-empty law */

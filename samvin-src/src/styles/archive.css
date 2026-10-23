@@ -1,1 +1,64 @@
-/* owned by WP7 — seed */
+/* sam.vin — archive.css (WP7). ARCHIVE «ЛЕТОПИСЬ»: the reading block, the date column, marginalia, «ДО НАЧАЛА»
+   (SPEC §6.4, §2.7, §6.0; ARCH §6.8). Construction-drawing grammar only: no boxes, no borders, no blur. Figures that
+   sit on the wall's hairlines are knocked out of them with a feathered --void field (as a drawing stops its hatching
+   around a figure), never a panel. JS writes transform only.
+   DOM: #overlay > div.ar-read.anchor.scrim[data-qa=archive-reading] (desktop) · #sheet .ar-sheet-peek[data-qa]/.ar-sheet-body
+        section.hall[data-room=ARCHIVE] > div.ar-layer > div.ar-date[data-id](.is-on .is-centre .is-hover) > div.ar-date-in
+        > span.t-data.ar-dm + span.t-micro.ar-yr + span.t-micro.ar-short · p.ar-marg[data-qa=marginalia][data-id](.is-on)
+        · div.ar-before[data-qa=before](.is-on) */
+
+/* ── The reading block (desktop, on the right of the wall) ── */
+#overlay>.ar-read{white-space:normal;width:min(360px,calc(100vw - 640px));max-width:var(--measure)}
+.ar-read{font-size:16px}
+.ar-read-head>*+*,.ar-read-rest>*+*{margin-top:8px}
+.ar-read-rest{margin-top:10px}
+.ar-read .t-heading{text-wrap:balance}
+.ar-read .t-brief{max-width:var(--measure)}
+.ar-kind{color:var(--silver)}
+.ar-rarity{color:var(--silver)}
+.ar-who{display:flex;align-items:center;flex-wrap:wrap;gap:0 14px}
+.ar-who-k{color:var(--pewter)}
+.ar-chips{display:inline-flex;flex-wrap:wrap;gap:0 12px}
+.ar-chips .chip{min-height:var(--hit)}
+.ar-verb{margin-left:-2px}
+.ar-read.is-before{visibility:hidden}
+
+/* ── Phone sheet ── */
+.ar-sheet-peek{padding-top:2px}
+.ar-sheet-peek .t-heading{margin-top:6px;white-space:normal}
+.ar-sheet-body>*+*{margin-top:10px}
+.ar-sheet-body .ar-read-rest{margin-top:0}
+
+/* ── Date column, marginalia, «ДО НАЧАЛА» (positioned by JS: translate3d only) ── */
+.ar-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden;contain:layout style}
+.ar-date,.ar-marg,.ar-before{position:absolute;left:0;top:0;will-change:transform;opacity:0;visibility:hidden;
+  transition:opacity var(--d-240) var(--ease-reveal),visibility 0s var(--d-240)}
+.ar-date.is-on,.ar-marg.is-on,.ar-before.is-on{opacity:1;visibility:visible;transition:opacity var(--d-240) var(--ease-reveal)}
+.ar-date-in{display:flex;flex-direction:column;align-items:flex-start;transform:translate3d(0,-50%,0);
+  transition:transform var(--d-120) var(--ease-reveal)}
+.ar-date.is-hover .ar-date-in{transform:translate3d(12px,-50%,0)}
+.ar-dm,.ar-yr{display:none}
+.ar-date.is-centre .ar-dm{display:block;letter-spacing:-.02em}
+.ar-date.is-centre .ar-yr{display:block;margin-top:6px;color:var(--pewter)}
+.ar-date.is-centre .ar-short{display:none}
+.ar-short{color:var(--pewter)}
+.ar-date .t-data,.ar-date .t-micro,.ar-marg,.ar-before>*{
+  background:radial-gradient(ellipse 60% 70% at 50% 50%,rgba(var(--void-rgb),.9) 55%,rgba(var(--void-rgb),0));
+  padding:2px 10px;margin:-2px -10px}
+.ar-date .t-data{padding:0 14px;margin:0 -14px}
+.ar-date.is-centre .ar-yr{margin:6px -10px 0}
+.ar-marg{color:rgba(var(--silver-rgb),.8);max-width:var(--measure);white-space:normal;
+  background:linear-gradient(90deg,rgba(var(--void-rgb),0),rgba(var(--void-rgb),.92) 12px,rgba(var(--void-rgb),.92) calc(100% - 12px),rgba(var(--void-rgb),0));
+  padding:4px 14px;margin:0 -14px}
+.ar-before{text-align:center;width:max-content;max-width:min(var(--measure),calc(100vw - 32px))}
+.ar-before .t-body{max-width:none;white-space:normal;text-wrap:balance}
+.ar-before .t-label{margin-top:8px;display:inline-block;color:var(--silver)}
+
+@media (pointer:coarse) and (max-width:600px){
+  .ar-marg{max-width:calc(100vw - 32px)}
+}
+@media (prefers-reduced-motion:reduce){
+  .ar-date,.ar-marg,.ar-before,.ar-date.is-on,.ar-marg.is-on,.ar-before.is-on{transition-duration:.16s}
+  .ar-date-in{transition:none}
+  #overlay>.ar-read{transition:opacity .16s}
+}

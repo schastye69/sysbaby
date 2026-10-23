@@ -1,1 +1,132 @@
-/* owned by WP9 — seed */
+/* sam.vin — insignia.css (WP9). INSIGNIA «ХРАНИЛИЩЕ», NADIR «ИСТОК», ZENITH «НАД ВСЕМ».
+   Construction-drawing labels only: survey crosses, 0.5 px hairline leaders, text on the radial --deep scrim — never a
+   box, a border or a blur. Type comes from the .t-* classes. Phone: the hall's readable copy lives in the sheet. */
+
+/* ─── shared: projected labels (halls/insignia/labels.js) ─── */
+/* our readable blocks sit on their own (transparent) compositing layer: greyscale text antialiasing, no coloured LCD
+   fringes on the white copy (they would read as off-palette hues at DSF 2) */
+.ins-left,.ins-block,.nd-story,.nd-facts,.zn-block{will-change:transform}
+.wp9-leaders{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.wp9-leader{fill:none;stroke:var(--c-leader);stroke-width:.5px}
+.wp9-cross{fill:none;stroke:rgba(var(--silver-rgb),.85);stroke-width:1px;shape-rendering:crispEdges}
+.wp9-leader.is-off,.wp9-cross.is-off{display:none}
+.wp9-lbl{position:absolute;left:0;top:0;will-change:transform;isolation:isolate;margin:0}
+.wp9-lbl::before{content:"";position:absolute;z-index:-1;pointer-events:none;inset:-18px -26px;
+  background:radial-gradient(closest-side,rgba(var(--deep-rgb),.62) 58%,transparent)}
+.wp9-lbl.is-off{visibility:hidden}
+.wp9-lbl p{margin:0}
+
+/* ─── INSIGNIA: relic labels ─── */
+.ins-lbl{display:flex;flex-direction:column;gap:2px;max-width:30ch;pointer-events:none}
+.ins-lbl-title{white-space:nowrap}
+.ins-lbl-date{color:rgba(var(--silver-rgb),.7);margin-top:2px!important}
+.ins-lbl-who{margin-top:4px!important}
+.ins-lbl-nf{color:var(--pewter)}
+.ins-lbl-name{font-weight:560;font-variation-settings:"wght" 560,"SHRP" var(--shrp),"CRSV" 0,"slnt" 0;color:var(--silver)}
+.ins-lbl-cond{max-width:26ch}
+.ins-lbl-more{display:none;flex-direction:column;gap:2px;margin-top:4px}
+.ins-lbl.is-hover .ins-lbl-more{display:flex}
+.ins-lbl.is-hover .ins-lbl-name{color:var(--white)}
+
+/* shards (НАХОДКИ): name + date; tap → the one-line memory */
+.ins-shard{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:4px 6px;margin:0;background:none;border:0;
+  color:var(--silver);text-align:left;cursor:pointer;pointer-events:auto;min-height:var(--hit)}
+.ins-shard-name{transition:color var(--d-120)}
+.ins-shard.is-flash .ins-shard-name,.ins-shard:hover .ins-shard-name,.ins-shard.is-open .ins-shard-name{color:var(--white)}
+.ins-shard-line{color:var(--white);width:max-content;max-width:26ch;margin-top:6px}
+.ins-shard:focus-visible{box-shadow:none}
+.ins-shard:focus-visible .ins-shard-name{box-shadow:0 1px 0 var(--ember)}
+
+/* the capsule */
+.ins-capsule{display:flex;flex-direction:column;gap:3px;pointer-events:none}
+.ins-cap-line{white-space:nowrap}
+.ins-cap-line.ins-cap-text{white-space:normal;width:30ch}
+
+/* the muted rest pulse at the sphere centre (Web Animations drives it) */
+.ins-pulse{position:absolute;left:50%;top:50%;width:60px;height:60px;overflow:visible;opacity:0;transform:translate(-50%,-50%);pointer-events:none}
+.ins-pulse circle{fill:none;stroke:rgba(var(--silver-rgb),.8);stroke-width:1px;vector-effect:non-scaling-stroke}
+
+/* the vault in plan: the relic index (left column under the datum) */
+.ins-left{position:absolute;left:var(--margin);top:calc(var(--datum-y) + 44px);display:flex;flex-direction:column;gap:10px;
+  max-width:calc(8 * var(--hit))}
+.ins-index{display:flex;flex-wrap:wrap;margin-left:-11px}
+.ins-idx{position:relative;display:flex;align-items:center;justify-content:center;width:var(--hit);height:var(--hit);padding:0;
+  margin:0;background:none;border:0;cursor:pointer;color:rgba(var(--silver-rgb),.75)}
+.ins-idx svg{display:block;overflow:visible}
+.ins-idx path{fill:none;stroke:currentColor;stroke-width:1px;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.ins-idx[data-legendary="true"]{color:rgba(var(--white-rgb),.9)}
+.ins-idx[data-earned="false"]{color:var(--pewter)}
+.ins-idx[data-earned="false"] path{stroke-dasharray:2.5 2}
+.ins-idx:hover,.ins-idx.is-hover,.ins-idx:focus-visible{color:var(--white)}
+.ins-idx:focus-visible{box-shadow:none}
+.ins-idx-tick{position:absolute;left:14px;right:14px;bottom:6px;height:1px;background:var(--ember);transform:scaleX(0);
+  transition:transform var(--d-240) cubic-bezier(.16,1,.3,1)}
+.ins-idx.is-front .ins-idx-tick,.ins-idx:focus-visible .ins-idx-tick{transform:none}
+.ins-empty{margin:0}
+.ins-cap-col{display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin:2px 0 0;padding:0;min-height:var(--hit);
+  background:none;border:0;text-align:left;cursor:pointer;color:inherit}
+.ins-cap-col:hover .t-label,.ins-cap-col:focus-visible .t-label{color:var(--white)}
+.ins-cap-col:focus-visible{box-shadow:none}
+.ins-cap-col:focus-visible .t-label{box-shadow:0 1px 0 var(--ember)}
+body.ins-held #datum{visibility:hidden}
+
+/* the held relic's block — right column, vertically centred (desktop) */
+.ins-block{position:absolute;right:calc(var(--chrome-r) + 120px);top:50%;transform:translateY(-50%);width:34ch;max-width:var(--measure);
+  display:flex;flex-direction:column;gap:12px;isolation:isolate}
+.ins-block::before{content:"";position:absolute;z-index:-1;pointer-events:none;inset:-48px -56px;
+  background:radial-gradient(closest-side,rgba(var(--deep-rgb),.62) 62%,transparent)}
+.ins-block p,.ins-block h2{margin:0}
+.ins-b-meta{display:flex;gap:12px;align-items:baseline}
+.ins-b-meta .t-micro{color:rgba(var(--silver-rgb),.7)}
+.ins-b-row{display:flex;flex-direction:column;gap:4px}
+.ins-b-chips{display:flex;flex-wrap:wrap;gap:0 14px;margin-left:-2px}
+.ins-b-back{align-self:flex-start;margin-top:4px}
+
+/* phone: the index in the sheet peek, the block in the full sheet */
+@media (pointer:coarse) and (max-width:600px), (pointer:coarse) and (max-height:600px){
+  .ins-left{position:static;max-width:none;gap:4px}
+  .ins-index{margin-left:-6px;justify-content:flex-start}
+  .ins-block{position:static;transform:none;width:auto;max-width:none;gap:10px}
+  .ins-block::before{display:none}
+  .ins-lbl{max-width:22ch}
+  .ins-lbl-title{white-space:normal;font-size:22px;line-height:27px}
+  .ins-cap-line.ins-cap-text{width:22ch}
+}
+
+/* ─── NADIR «ИСТОК»: the story above the title, the facts and the КОДЕКС under the datum ─── */
+.nd-block{position:absolute;inset:0;pointer-events:none}
+.nd-block p,.nd-block h3,.nd-block ol{margin:0}
+.nd-story{position:absolute;left:var(--margin);bottom:calc(100% - var(--datum-y) + 150px);width:40ch;
+  display:flex;flex-direction:column;gap:12px;isolation:isolate}
+.nd-story::before,.nd-facts::before{content:"";position:absolute;z-index:-1;pointer-events:none;inset:-40px -56px;
+  background:radial-gradient(closest-side,rgba(var(--deep-rgb),.6) 62%,transparent)}
+.nd-lore{max-width:40ch}
+.nd-origin{max-width:var(--measure)}
+.nd-facts{position:absolute;left:var(--margin);top:calc(var(--datum-y) + 44px);display:flex;flex-direction:column;gap:6px;
+  max-width:var(--measure);isolation:isolate}
+.nd-mission{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.nd-verb{pointer-events:auto}
+.nd-codex{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.nd-codex-title{font-size:22px;line-height:28px}
+.nd-laws{list-style:none;padding:0;display:flex;flex-direction:column;gap:6px}
+.nd-law{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.nd-law-text{color:var(--white)}
+@media (max-height:940px) and (min-width:601px){.nd-story{gap:10px}.nd-story .t-lead{font-size:20px;line-height:27px}
+  .nd-story .t-brief{font-size:17px;line-height:24px}.nd-story .t-body{font-size:16px;line-height:23px}}
+@media (pointer:coarse) and (max-width:600px), (pointer:coarse) and (max-height:600px){
+  .nd-block{position:static;display:flex;flex-direction:column;gap:18px}
+  .nd-story,.nd-facts{position:static;width:auto;max-width:none}
+  .nd-story::before,.nd-facts::before{display:none}
+}
+
+/* ─── ZENITH «НАД ВСЕМ»: the MICRO line under the datum; constellation proxies (the drawing itself is in the sky) ─── */
+.zn-block{position:absolute;left:var(--margin);top:calc(var(--datum-y) + 44px);display:flex;flex-direction:column;gap:6px;
+}
+.zn-block p{margin:0}
+.zn-micro,.zn-codex{color:rgba(var(--silver-rgb),.8)}
+.zn-con{width:var(--hit);height:var(--hit);padding:0;margin:0;background:none;border:0;cursor:pointer;pointer-events:auto}
+.zn-con::before{display:none}
+.zn-con:focus-visible{box-shadow:none;outline:1px solid var(--ember);outline-offset:-14px}
+@media (pointer:coarse) and (max-width:600px), (pointer:coarse) and (max-height:600px){
+  .zn-block{position:static}
+}

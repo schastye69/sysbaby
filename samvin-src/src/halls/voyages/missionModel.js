@@ -1,6 +1,7 @@
-// halls/voyages/missionModel.js — SEED (owner WP6) written by WP0: the shared mission model (ARCH §3.19, §3.11.4, §4.3.4,
-// SPEC §6.3). Functionally correct: WP11 (T0), the V data ring and worldCounts() consume it before WP6 lands. WP6 may
-// rewrite it but must keep the results identical for the same inputs.
+// halls/voyages/missionModel.js — WP6: the shared mission model (ARCH §3.19, §3.11.4, §4.3.4, SPEC §6.3; seeded by WP0
+// and kept result-identical for WP11 (T0), the V data ring, worldCounts() and WP2's boot). WP6 additions: the session
+// record of probes that came back (so the hall can let their dots descend on arrival even when WP2 collected them at
+// boot), and markLogRead (H28e, A3.3 `finish`).
 import { state, saveSoon } from '../../core/state.js';
 import { daysBetween } from '../../core/time.js';
 import { plural } from '../../core/ru.js';
@@ -80,13 +81,22 @@ export function markLogRead(code) {
   return true;
 }
 
+/** Codes whose probe came back during this session and whose return the hall has not yet shown (dot into the hatch). */
+const fresh = new Set();
+/** → the codes returned this session not yet shown, and forgets them (VOYAGES calls it on arrival). */
+export function takeFreshReturns() {
+  const out = Array.from(fresh);
+  fresh.clear();
+  return out;
+}
+
 /** Probes sent before today and not back → back = true. → codes (caller shows status/visuals, emits 'probe:back'). */
 export function collectReturnedProbes() {
   const out = [];
   const probes = (state.data && state.data.probes) || {};
   for (const code of Object.keys(probes)) {
     const pr = probes[code];
-    if (pr && !pr.back && typeof pr.sent === 'string' && daysBetween(pr.sent, state.today) > 0) { pr.back = true; out.push(code); }
+    if (pr && !pr.back && typeof pr.sent === 'string' && daysBetween(pr.sent, state.today) > 0) { pr.back = true; out.push(code); fresh.add(code); }
   }
   if (out.length) saveSoon();
   return out;

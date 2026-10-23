@@ -1,5 +1,7 @@
-// halls/core/resonanceModel.js — WP4 SEED, functionally correct (ARCH §3.19, §6.1.5; SPEC §3.7). Pure apart from
-// nextSubject() advancing + persisting state.data.resonanceNext. WP4 may rewrite it but must keep identical results.
+// halls/core/resonanceModel.js — WP4. The РЕЗОНАНС model (ARCH §3.19; SPEC §3.7; SPEC-ADDENDUM A4.1 Payoff B): the six
+// Chladni modes, the plate field, nodal / text / glyph target sampling and the mode-7 subject cycle. Pure apart from
+// nextSubject() advancing + persisting state.data.resonanceNext (never while guests are active). WP11's T0 nodal-line
+// drawing imports it too, so its results are the contract (the WP0 seed's results, kept identical).
 import { WORLD, operatorMember } from '../../data/world.js';
 import { state } from '../../core/state.js';
 import { mulberry32, hashStr } from '../../core/rng.js';

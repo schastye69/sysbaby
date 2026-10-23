@@ -1,8 +1,11 @@
-// halls/signal/stroke.js — WP8 SEED, functionally correct (ARCH §3.19, §6.1.5; SPEC §6.5 sky pad).
+// halls/signal/stroke.js — WP8: the sky-pad stroke pipeline (ARCH §3.19; SPEC §6.5 «НЕБО»). Shared with T0 (WP11).
 //   processStroke: 8 px resample → Chaikin ×2 → RDP ε 1.5 → auto-close (ends ≤ 12 px apart) → ≤ 256 points.
 //   normalizeStroke: ≤ 64 points in [−1, 1], aspect kept (centred on the bounding box, scaled by the larger half-extent).
-//   playStroke: the 'skyVoice' live voice, x → 220–880 Hz (log), y → pan, over `ms`; → { stop() }.
-//   saveDrawing: the last 7 in state.drawings; 'drawing:saved' {index, count}; status 'drawing.saved'.
+//   playStroke: the 'skyVoice' live voice, x → 220–880 Hz (log), y → pan, over `ms`; → { stop() }. The optional
+//     opts.onFrame(x, y, u) receives the same interpolated point every frame (the beam dot, the voice's visual twin),
+//     so picture and sound read one parameter and the twin runs even when audio is off or locked.
+//   saveDrawing: the last 7 in state.drawings; 'drawing:saved' {index, count}; status 'drawing.saved' (opts.status
+//     false: the caller says its own status, e.g. 'reply.saved' for ОТВЕТ РИСУНКОМ).
 import { state } from '../../core/state.js';
 import { bus } from '../../core/bus.js';
 import { audio } from '../../audio/engine.js';
@@ -87,28 +90,30 @@ export function normalizeStroke(points) {
   return p.map((q) => [r((q.x - cx) / h), r((q.y - cy) / h)]);
 }
 
-/** → { stop() } — plays the drawing on 'skyVoice': x → 220–880 Hz (log), y → pan, over ms. */
-export function playStroke(norm, ms = 1200) {
+/** → { stop(), done: Promise } — plays the drawing on 'skyVoice': x → 220–880 Hz (log), y → pan, over ms. */
+export function playStroke(norm, ms = 1200, opts = {}) {
   const pts = Array.isArray(norm) ? norm : [];
-  const voice = audio.start('skyVoice', { freq: 220, pan: 0 });
-  const params = { freq: 220, pan: 0 };
-  if (!pts.length) { voice.stop(); return { stop() {} }; }
+  const onFrame = typeof opts.onFrame === 'function' ? opts.onFrame : null;
+  if (!pts.length) return { stop() {}, done: Promise.resolve() };
+  const voice = audio.start('skyVoice', { hz: 220 * Math.pow(4, (pts[0][0] + 1) / 2), pan: Math.max(-1, Math.min(1, -pts[0][1])) });
+  const params = { hz: 220, pan: 0 };
   const tw = tween(Math.max(1, ms), (u) => {
     const f = u * (pts.length - 1), i = Math.floor(f), t = f - i;
     const a = pts[i], b = pts[Math.min(pts.length - 1, i + 1)];
     const x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t;
-    params.freq = 220 * Math.pow(4, (x + 1) / 2);
+    params.hz = 220 * Math.pow(4, (x + 1) / 2);
     params.pan = Math.max(-1, Math.min(1, -y));
     voice.set(params);
+    if (onFrame) onFrame(x, y, u);
   });
   let stopped = false;
   const stop = () => { if (stopped) return; stopped = true; tw.cancel(); voice.stop(); };
-  tw.done.then(stop);
-  return { stop };
+  const done = tw.done.then(stop);
+  return { stop, done };
 }
 
 /** Keeps the last 7 drawings; 'drawing:saved' {index, count}; status 'drawing.saved'. */
-export function saveDrawing(norm) {
+export function saveDrawing(norm, opts = {}) {
   const d = (Array.isArray(norm) ? norm : []).slice(0, 64).map((q) => [q[0], q[1]]);
   if (d.length < 2) return;
   state.patch((data) => {
@@ -119,5 +124,5 @@ export function saveDrawing(norm) {
   });
   const count = state.data.drawings.length;
   bus.emit('drawing:saved', { index: count - 1, count });
-  status.say('drawing.saved');
+  if (opts.status !== false) status.say('drawing.saved');
 }
