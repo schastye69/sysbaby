@@ -474,6 +474,7 @@ ol,ul{list-style:none}
 .call__num:hover{color:var(--brass-2)}
 .call__acts{display:flex;align-items:center;gap:28px;flex-wrap:wrap}
 .call__hours{display:grid;gap:8px;color:var(--ash);margin-top:6px}
+.hours__note{margin-top:14px;max-width:34ch;color:var(--ash);font-size:.92em;line-height:1.5;font-style:italic}
 .call__hours li{display:flex;justify-content:space-between;gap:24px;min-width:min(320px,100%)}
 .book__head{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:0 24px;margin-top:clamp(40px,8vh,90px)}
 .book__head h2{grid-column:1/8;font-size:var(--t-xl);font-weight:100;line-height:.9;letter-spacing:-.03em}
@@ -689,7 +690,7 @@ ol,ul{list-style:none}
 </header>
 
 <nav class="rail" aria-label="Разделы">
-  <a href="#room" data-go="1" data-cursor="nav"><span class="rail__t">01 Комната</span><span class="rail__l"></span></a>
+  <a href="#room" data-go="1" data-cursor="nav"><span class="rail__t">01 Кабинет</span><span class="rail__l"></span></a>
   <a href="#craft" data-go="2" data-cursor="nav"><span class="rail__t">02 Ремесло</span><span class="rail__l"></span></a>
   <a href="#looks" data-go="3" data-cursor="nav"><span class="rail__t">03 Образы</span><span class="rail__l"></span></a>
   <a href="#book" data-go="4" data-cursor="nav"><span class="rail__t">04 Запись</span><span class="rail__l"></span></a>
@@ -709,7 +710,7 @@ ol,ul{list-style:none}
   <div class="index__top mono"><span>Оглавление</span><span>Йыхви <b data-clock>--:--:--</b></span></div>
   <i class="index__axis" aria-hidden="true"></i>
   <div class="index__list">
-    <a href="#room" data-go="1" style="--i:0"><span class="index__n mono">01</span><span class="index__t"><span>Комната</span></span><span class="index__a mono">→</span></a>
+    <a href="#room" data-go="1" style="--i:0"><span class="index__n mono">01</span><span class="index__t"><span>Кабинет</span></span><span class="index__a mono">→</span></a>
     <a href="#craft" data-go="2" style="--i:1"><span class="index__n mono">02</span><span class="index__t"><span>Ремесло</span></span><span class="index__a mono">→</span></a>
     <a href="#looks" data-go="3" style="--i:2"><span class="index__n mono">03</span><span class="index__t"><span>Образы</span></span><span class="index__a mono">→</span></a>
     <a href="#book" data-go="4" style="--i:3"><span class="index__n mono">04</span><span class="index__t"><span>Запись</span></span><span class="index__a mono">→</span></a>
@@ -743,7 +744,7 @@ ol,ul{list-style:none}
   </section>
 
   <!-- =========================== 01 · КОМНАТА =========================== -->
-  <section class="room" id="room" data-section="1" data-name="Комната" aria-label="Комната">
+  <section class="room" id="room" data-section="1" data-name="Кабинет" aria-label="Кабинет">
     <div class="room__pin">
       <canvas class="room__cv" aria-hidden="true"></canvas>
       <div class="room__txt" aria-hidden="true">
@@ -751,7 +752,7 @@ ol,ul{list-style:none}
         <p class="rt rt--2"><span class="ln"><span>Пока вы здесь,</span></span><span class="ln"><span class="serif">других гостей нет.</span></span></p>
       </div>
       <p class="sr">Одно кресло, зеркало и дневной свет. Без ресепшена и зала ожидания. Пока вы здесь, других гостей нет.</p>
-      <p class="room__hint mono" data-room-hint>Листайте — линия рисует комнату</p>
+      <p class="room__hint mono" data-room-hint>Листайте — линия рисует кабинет</p>
     </div>
   </section>
 
@@ -786,7 +787,7 @@ ol,ul{list-style:none}
         <li class="st" data-reveal>
           <span class="st__n" aria-hidden="true">III</span>
           <h3 class="st__w"><span class="ln"><span>Тишина</span></span></h3>
-          <p class="st__p">В комнате только вы. Никакой музыки, которую вы не выбирали, и никого за спиной. Сеанс заканчивается, когда работа готова, а не когда пришёл следующий клиент.</p>
+          <p class="st__p">В кабинете только вы. Никакой музыки, которую вы не выбирали, и никого за спиной. Сеанс заканчивается, когда работа готова, а не когда пришёл следующий клиент.</p>
         </li>
       </ol>
     </div>
@@ -840,6 +841,7 @@ ol,ul{list-style:none}
           <button class="copy" type="button" data-copy="phone" data-cursor="link"><span class="mono">Копировать</span></button>
         </div>
         <ul class="call__hours mono" data-cfg="hours"></ul>
+        <p class="hours__note">Часы — ориентир, а не граница: если вам удобнее другое время, мастер с радостью пойдёт навстречу. Просто позвоните.</p>
       </div>
     </div>
   </section>
@@ -848,7 +850,7 @@ ol,ul{list-style:none}
 <!-- =========================== ПОДВАЛ =========================== -->
 <footer class="foot">
   <div class="wrap">
-    <p class="foot__close" data-reveal><span class="ln"><span style="--i:0">В комнате тихо,</span></span><span class="ln"><span style="--i:1" class="serif">пока вы не придёте.</span></span></p>
+    <p class="foot__close" data-reveal><span class="ln"><span style="--i:0">В кабинете тихо,</span></span><span class="ln"><span style="--i:1" class="serif">пока вы не придёте.</span></span></p>
     <div class="foot__grid" data-reveal="fade">
       <div>
         <h3 class="mono">Адрес</h3>
@@ -857,6 +859,7 @@ ol,ul{list-style:none}
       <div>
         <h3 class="mono">Часы работы</h3>
         <ul class="mono" data-cfg="hours"></ul>
+        <p class="hours__note">Время можно подобрать под вас — мастер идёт навстречу.</p>
       </div>
       <div>
         <h3 class="mono">Контакты</h3>
