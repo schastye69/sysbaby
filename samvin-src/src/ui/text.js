@@ -13,19 +13,30 @@ import { TIMING } from '../core/tokens.js';
 
 let active = 0;
 
-/** Replaces el's content with one span per letter (textContent only). → HTMLSpanElement[] */
-export function splitLetters(el, text) {
-  const t = text == null ? el.textContent : String(text);
+/** Replaces el's content with one span per letter of `cls` (textContent only), laid out once with word wrapping: the
+ *  letters of a word sit in a no-wrap .text-word, so a line only ever breaks at a space. → HTMLSpanElement[] */
+function letterSpans(el, text, cls) {
   el.textContent = '';
   const out = [];
-  for (const ch of t) {
-    const s = document.createElement('span');
-    s.className = 'lock-letter';
-    s.textContent = ch;
-    el.appendChild(s);
-    out.push(s);
+  for (const part of String(text).split(/(\s+)/)) {
+    if (!part) continue;
+    const ws = /^\s/.test(part);
+    const box = ws ? el : el.appendChild(document.createElement('span'));
+    if (!ws) box.className = 'text-word';
+    for (const ch of part) {
+      const sp = document.createElement('span');
+      sp.className = cls;
+      sp.textContent = ch;
+      box.appendChild(sp);
+      out.push(sp);
+    }
   }
   return out;
+}
+
+/** Replaces el's content with one span per letter (textContent only). → HTMLSpanElement[] */
+export function splitLetters(el, text) {
+  return letterSpans(el, text == null ? el.textContent : String(text), 'lock-letter');
 }
 
 function fade(el, ms) {
@@ -79,15 +90,7 @@ export function beamWrite(el, text, opts = {}) {
   if (!el) return Promise.resolve();
   const cps = opts.cps || TIMING.beamCps;
   if (ENV.reducedMotion) { el.textContent = String(text); return fade(el, TIMING.lockInReduced); }
-  el.textContent = '';
-  const letters = [];
-  for (const ch of String(text)) {
-    const s = document.createElement('span');
-    s.className = 'beam-letter';
-    s.textContent = ch;
-    el.appendChild(s);
-    letters.push(s);
-  }
+  const letters = letterSpans(el, text, 'beam-letter');
   const fx = document.getElementById('fx');
   const head = document.createElement('i');
   head.className = 'beam-head';

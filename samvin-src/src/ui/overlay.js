@@ -109,7 +109,10 @@ function frame(dt) {
     if (a.el) {
       const ex = a.path && (a.leader || a.focused) ? a.endX : a.sx, ey = a.path && (a.leader || a.focused) ? a.endY : a.sy;
       const left = a.leader && a.leader.side === 'left';
-      a.el.style.transform = `translate3d(${ex.toFixed(1)}px,${ey.toFixed(1)}px,0) translate(${left ? '-100%' : '0'},-50%)`;
+      // readable blocks sit on whole pixels: crisp glyphs, and a block whose anchor drifts by a fraction of a pixel per
+      // frame (a column's breath) stays put instead of re-rasterising every frame
+      const bx = Math.round(ex), by = Math.round(ey);
+      if (bx !== a.bx || by !== a.by || left !== a.bl) { a.bx = bx; a.by = by; a.bl = left; a.el.style.transform = `translate3d(${bx}px,${by}px,0) translate(${left ? '-100%' : '0'},-50%)`; }
     }
   }
 }

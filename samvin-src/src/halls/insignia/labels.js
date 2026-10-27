@@ -6,7 +6,7 @@
 // hides anchors behind the camera or off screen. Used by INSIGNIA (relics, shards, capsule), NADIR and ZENITH.
 //   createLabels(hctx, parent) → { add({ el, get(out:Vector3 hall-local), side, len, rise, cross }) → Label, update(dt),
 //                                  setAlpha(a), dispose() }
-//   Label: { el, show(b), visible, screen:{x,y,on}, setSide(side, rise), remove() }
+//   Label: { el, show(b), visible, screen:{x,y,on}, setSide(side, rise), remeasure(), remove() }
 import { Vector3 } from 'three';
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -77,6 +77,8 @@ export function createLabels(hctx, parent) {
         get visible() { return L.on; },
         show(b) { L.want = !!b; if (!b) setOn(L, false); },
         setSide(side, rise) { L.side = side; if (rise != null) L.rise = rise; },
+        /** The block's text changed: its size is measured again on the next placement (the on-screen clamp uses it). */
+        remeasure() { L.bw = null; },
         remove() {
           const k = list.indexOf(L);
           if (k >= 0) list.splice(k, 1);

@@ -69,7 +69,7 @@ export function createTags(hctx, opts) {
   const _c = new Vector3(), _r = new Vector3(), _w = new Vector3();
   const pc = { x: 0, y: 0, depth: 0, visible: false }, pr = { x: 0, y: 0, depth: 0, visible: false };
   const ctr = { x: 0, y: 0, depth: 0, visible: false };
-  let n = 0, alpha = 0, dirty = true, measured = false, phone = !!opts.isPhone, sel = 0;
+  let n = 0, alpha = 0, dirty = true, measured = false, phone = !!opts.isPhone, sel = 0, hot = -1;
   let lastKey = '';
   const zones = [];                  // forbidden rects [x0, y0, x1, y1] (desktop)
 
@@ -147,6 +147,7 @@ export function createTags(hctx, opts) {
 
   /** Greedy placement (desktop), from projected anchors. */
   function place(W, H) {
+    const cramped = hctx.layout.kind === 'phone-land';
     const dY = hctx.datum && hctx.datum.yPx ? hctx.datum.yPx() : H * 0.62;
     zones.length = 0;
     zones.push([0, dY - 150, 660, dY + 30], [0, dY + 30, 380, dY + 104], [0, 0, 300, 76], [W - 260, 0, W, 76],
@@ -177,6 +178,9 @@ export function createTags(hctx, opts) {
           if (best && best.cost < 50) break;
         }
         t.x = best.x; t.y = best.y; t.side = best.side; t.dy = best.dy; t.ax = best.ax; t.ay = best.ay;
+        // a landscape phone has no room for every tag: one that can only sit on the title, the chrome or another tag
+        // stays hidden (the hovered / tapped hatch always shows its own)
+        if (cramped && k !== hot && best.cost >= 0.02 * t.w * t.h) continue;
       } else {
         // pinned on the sheet border, along the ray from the field centre toward the hatch
         const dx = t.cx - ctr.x, dy = t.cy - ctr.y;
@@ -191,6 +195,7 @@ export function createTags(hctx, opts) {
           else y = Math.min(B - t.h, Math.max(Tp, y + (tries % 2 ? -1 : 1) * (tries + 1) * (t.h + 6)));
         }
         t.x = x; t.y = y; t.ax = bx; t.ay = by;
+        if (cramped && k !== hot && overlaps(x, y, x + t.w, y + t.h, k) >= 0.02 * t.w * t.h) continue;
       }
       t.ok = true;
     }
@@ -233,6 +238,8 @@ export function createTags(hctx, opts) {
       root.style.visibility = a > 0.01 ? 'visible' : 'hidden';
       for (const t of T) t.b.tabIndex = a >= 0.7 ? 0 : -1;
     },
+    /** The hovered hatch (−1: none): on a landscape phone its tag shows even where the others have no room. */
+    setHot(k) { if (hot !== k) { hot = k; dirty = true; } },
     /** Hatch hit test in CSS px (canvas hover / tap): → k or −1 */
     hit(x, y) {
       let best = -1, bd = 1.25;

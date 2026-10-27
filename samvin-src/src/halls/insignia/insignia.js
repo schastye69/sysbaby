@@ -41,6 +41,9 @@ const _v = new Vector3(), _c = new Vector3();
 export function createInsigniaHall(hctx) {
   const meta = hctx.meta;
   const phone = () => hctx.layout.kind === 'phone';
+  // the readable column lives in the sheet on every phone: the portrait bottom sheet, the landscape right panel (the CSS
+  // lays .ins-left / .ins-block out for the sheet whenever the pointer is coarse and the short side ≤ 600 px)
+  const inSheet = () => hctx.layout.kind !== 'desktop';
   let mat = null, ringGroup = null, ring = null, stat = null, labels = null;
   let dome = null, relics = null, vault = null, capsule = null, dom = null, elevator = null;
   let built = false, current = false, domeP = 0, domeT = -1, enterU = 0, exitU = 0;
@@ -102,7 +105,7 @@ export function createInsigniaHall(hctx) {
   }
   function placeDom() {
     if (!dom) return;
-    if (phone()) {
+    if (inSheet()) {
       if (dom.left.parentNode === hctx.section) dom.left.remove();
       if (dom.block.parentNode === hctx.section) dom.block.remove();
       if (current) {
@@ -137,7 +140,7 @@ export function createInsigniaHall(hctx) {
       relics.hold(-1, null, rm);
       dom.showBlock(null);
     }
-    if (current && phone()) placeDom();
+    if (current && inSheet()) placeDom();
     if (hctx.lamp) {
       if (k >= 0) { hctx.toCanonical(holdPoint, _c); hctx.lamp.setFocus(_c, 0.9); }
       else lampOverview();
@@ -197,7 +200,7 @@ export function createInsigniaHall(hctx) {
       ringGroup.add(ring.solids.mesh, ring.silver.lines.mesh, ring.white.lines.mesh, ring.pewter.lines.mesh, electrum.lines.mesh);
       labels = createLabels(hctx, hctx.section);
       // desktop: no 3D label inside the readable column (title, relic index, capsule line)
-      labels.setAvoid((x, y) => !phone() && x < 470 && y > hctx.layout.h * 0.62 - 150);
+      labels.setAvoid((x, y) => !phone() && x < 470 && y > (hctx.datum && hctx.datum.yPx ? hctx.datum.yPx() : hctx.layout.h * 0.62) - 150);
       // phone: blocks stay above the sheet peek (120 px over the 88 px Key band)
       labels.setFloor(() => (phone() ? hctx.layout.h - 88 - 120 - 12 : null));
       dome = createDome(hctx, stat);
@@ -294,7 +297,7 @@ export function createInsigniaHall(hctx) {
       look.target = 0;
       if (lookHoldTimer) { cancelAfter(lookHoldTimer); lookHoldTimer = 0; }
       if (elevator) elevator.reset();
-      if (phone()) sheetSet(null);
+      if (inSheet()) sheetSet(null);
     },
     setSub(s, o = {}) {
       if (!built) return 0;
@@ -448,7 +451,7 @@ export function createInsigniaHall(hctx) {
       if (stat) stat.electrumBatch.dispose();
       if (mat) mat.dispose();
       if (dom) { dom.left.remove(); dom.block.remove(); }
-      if (current && phone()) sheetSet(null);
+      if (current && inSheet()) sheetSet(null);
       if (current) heldClass(false);
       pillarAside(false);
       if (hctx.shell) hctx.shell.setDeckVisible(true);

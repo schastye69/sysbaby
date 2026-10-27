@@ -168,8 +168,10 @@ export function createCeremony(ctx) {
   const domView = createDomView();
   const view = () => S.view || keyView || domView;
 
+  // A discovery's own payoff (the shard flight, the ИСТОК unseal of the 5th) goes first: a deferred law waits for it.
+  const landing = () => !!(ctx.secrets && typeof ctx.secrets.landing === 'function' && ctx.secrets.landing());
   const idleCore = () => app.room === 'CORE' && app.phase === 'idle' && !app.booting && !(app.show && app.show.active)
-    && !(ctx.director && ctx.director.busy());
+    && !(ctx.director && ctx.director.busy()) && !landing();
 
   function markShown(i) {
     const sign = STRATUM_SIGN[i];
@@ -252,6 +254,7 @@ export function createCeremony(ctx) {
   function request() {
     if (S.waiting || S.running || !pendingCeremonies().length) return;
     if (idleCore()) start();
+    else if (landing()) soon(600);
   }
 
   bus.on('code:earned', () => request());

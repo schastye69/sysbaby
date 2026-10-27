@@ -22,7 +22,7 @@
 .host-sheet__h{margin-top:6px}
 .guest-chips{display:flex;flex-wrap:wrap;gap:0 22px;margin:18px 0 4px}
 .guest-chip{position:relative;display:inline-flex;align-items:baseline;gap:8px;min-height:var(--hit);min-width:var(--hit);
-  padding:12px 2px 0;color:rgba(var(--silver-rgb),.7);transition:color var(--d-120)}
+  padding:12px 2px 0;color:rgba(var(--silver-rgb),.82);transition:color var(--d-120)}   /* dimmed, yet ≥ 7:1 on --deep (BODY floor) */
 .guest-chip__name{color:inherit;max-width:none;white-space:nowrap}
 .guest-chip__cs,.guest-chip__x{color:var(--pewter);font-size:13px;line-height:16px}
 .guest-chip[aria-pressed="true"] .guest-chip__cs{color:var(--ember)}
@@ -113,6 +113,9 @@ body.show-on #status{bottom:calc(var(--status-bottom) + 12px)}
 @media (pointer:coarse) and (max-width:600px){
   .hs-row{bottom:calc(var(--band-h) + var(--safe-b) + 12px);gap:18px}
   body.show-on #status{bottom:calc(var(--status-bottom) + 26px + 44px)}
+  /* a hall's sheet rises above the strip while ПОКАЗ runs, so ДАЛЬШЕ → stays in reach (portrait) */
+  body.show-on #sheet{bottom:calc(var(--band-h) + var(--safe-b) + 68px)}
+  body.show-on #sheets{clip-path:inset(0 0 calc(var(--band-h) + var(--safe-b) + 68px) 0)}
   .hs-codex{top:calc(var(--title-top) + 40px)}
 }
 /* scene 0 (and asleep after the finale): the chrome fades to 0 except the strip; the navigator to 30 % */
@@ -129,10 +132,10 @@ body.show-dark #keynav{opacity:.3;transition:opacity .6s linear}
   .hs-next.is-pulse::after{animation-duration:.16s}
 }
 
-/* the TL verb ГОСТИ (chrome.setTLVerb, H20): on a phone the third TL line would sit on the hall title block (title at
-   72 px, its LABEL above it), so the verb rides on the SAM.VIN line, in a fixed slot right of it (same 44 px hit area)
-   — never after the variable-width coordinate, so it does not jump from hall to hall */
-@media (pointer:coarse) and (max-width:600px){
+/* the TL verb ГОСТИ (chrome.setTLVerb, H20): on a phone (portrait or landscape) the third TL line would sit on the hall
+   title block (title at 72 px, its LABEL above it), so the verb rides on the SAM.VIN line, in a fixed slot right of it
+   (same 44 px hit area) — never after the variable-width coordinate, so it does not jump from hall to hall */
+@media (pointer:coarse) and (max-width:600px),(pointer:coarse) and (max-height:499.98px){
   #c-tl-verb{position:absolute;left:78px;top:-15px}
 }
 .codex-block--right{align-items:flex-start;text-align:left}

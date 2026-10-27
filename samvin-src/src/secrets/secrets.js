@@ -29,7 +29,14 @@ function screenOf(anchor) {
 
 function say(key, vars) { const s = ctx && ctx.status; if (has(s, 'say')) s.say(key, vars || {}); }
 
+// Landings in progress (the shard's flight, then — for the 5th — the ИСТОК unseal): deferred ceremonies (КОДЕКС) hold
+// back while a discovery's own payoff is still playing (secrets.landing()).
+let landing = 0;
 async function land(id, from) {
+  landing++;
+  try { await landNow(id, from); } finally { landing--; }
+}
+async function landNow(id, from) {
   const d = state.data;
   const kn = ctx && ctx.keyNav;
   const sealedSlot = d.shards < 5 && !d.nadirOpen;
@@ -84,6 +91,8 @@ export const secrets = {
     land(id, anchor);
     return true;
   },
+  /** true while a shard flies or the ИСТОК unseal it triggered plays */
+  landing() { return landing > 0; },
   isFound(id) { return !!(state.data && state.data.found && state.data.found[id]); },
   /** → SecretId[] in S01…S14 order */
   found() { return SECRETS.filter((s) => secrets.isFound(s.id)).map((s) => s.id); },

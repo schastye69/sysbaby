@@ -8,9 +8,11 @@ import { TIMING } from '../core/tokens.js';
 
 let root = null, textEl = null, microEl = null, timer = 0, gen = 0, done = null;
 
+// body.lead-on while a LEAD is up: a hall's readable block that shares the centre band holds back (insignia.css)
 function finish() {
   timer = 0;
   if (root) root.classList.remove('is-in');
+  document.body.classList.remove('lead-on');
   const d = done; done = null;
   if (d) after(240, d);
 }
@@ -48,6 +50,7 @@ export const lead = {
     microEl.textContent = opts.micro ? String(opts.micro) : '';
     microEl.hidden = !opts.micro;
     root.classList.add('is-in');
+    document.body.classList.add('lead-on');
     const p = new Promise((res) => { done = res; });
     if (opts.beam) {
       beamWrite(textEl, String(text), { cps: opts.cps }).then(() => { if (my === gen) timer = after(ms, finish); });

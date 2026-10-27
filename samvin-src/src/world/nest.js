@@ -8,9 +8,15 @@
 //   j =  2  parent VIN ×10⁶: only while fade(2) > 0 (DIVE, PULL, ZENITH far view).
 // Level glow rule (SPEC §3.8): a level's nucleus glow draws only when the camera is farther than 1.5 × that level's
 // height (2.4·1000^j·1.5 canonical m). Each level group is canonical-space, scale 1000^j, child of scaleEngine.root.
+// Hall LOD of level 0 (PERF-11): the Key's parts are drawn with frustumCulled = false (their vertices move in the
+// shader), so seen from a hall it cost ~11 main-pass + 3 emissive-pass calls while it lay outside the view or deep in the
+// fog. Each frame, after the camera is posed, the Key group is hidden while a sphere round everything it can draw (the
+// unfolded strata, the ember axis extensions, the haze) is outside the view frustum or lies where the fog leaves less
+// than 1/800 of it (exp²: density · distance > 2.6). Purely geometric, so it holds in every room and phase (a travel
+// toward CORE brings the Key back the frame it can be seen).
 // shift(kind) (called only by scaleEngine.rebase/unrebase) moves the level fades one level up ('grow') or down
 // ('shrink') and remembers what fell off the end, so shift('grow') then shift('shrink') is an exact identity.
-import { Group, Vector3 } from 'three';
+import { Group, Vector3, Frustum, Matrix4, Sphere } from 'three';
 import { scaleEngine } from '../render/scale.js';
 import { rig } from '../render/cameraRig.js';
 import { buildStructure } from './structure.js';
@@ -22,6 +28,7 @@ import { loop, ORDER } from '../core/loop.js';
 import { quality, TIER_PARAMS } from '../core/quality.js';
 import { state } from '../core/state.js';
 import { NUCLEUS, LEVEL_GLOW_FACTOR, PROFILE, DESCENT } from '../core/tokens.js';
+import { U } from '../render/uniforms.js';
 
 const LEVELS = [-1, 0, 1, 2];
 const groups = new Map();
@@ -34,6 +41,10 @@ const dropped = { grow: [], shrink: [] };   // values pushed off either end by s
 const _c = new Vector3();
 let ctxRef = null;
 let lodStratum = -1;
+const KEY_REACH = 6;        // Key metres: axis tips 1.2 + extension 3.2; haze 3.8 tall, 1.6 behind; unfold ring 3.1
+const FOG_GONE = 2.6;       // exp(−2.6²) < 1/800
+const _frustum = new Frustum(), _pv = new Matrix4(), _sphere = new Sphere(), _cw = new Vector3();
+let keyCulled = false;
 
 function applyFade(j) {
   const a = fades.get(j);
@@ -41,7 +52,29 @@ function applyFade(j) {
   if (s) s.setFade(j === -1 && miniNear ? 1 : a);     // the mini Key shows whenever the camera is inside the nucleus
   const g = groups.get(j);
   if (g && j !== 0) g.visible = a > 0 || (j === -1 && miniNear);
-  if (j === 0 && ctxRef && ctxRef.key && ctxRef.key.group) ctxRef.key.group.visible = a > 0;
+  if (j === 0 && ctxRef && ctxRef.key && ctxRef.key.group) ctxRef.key.group.visible = a > 0 && !keyCulled;
+}
+
+/** ORDER.RENDER − 1 (after the camera rig): the level-0 hall LOD (see the header). */
+function keyLod() {
+  const g = ctxRef && ctxRef.key && ctxRef.key.group, cam = rig.camera;
+  if (!g || !cam) return;
+  let cull = false;
+  if (fades.get(0) > 0) {
+    g.updateWorldMatrix(true, false);
+    const e = g.matrixWorld.elements;
+    _sphere.center.set(e[12], e[13], e[14]);
+    _sphere.radius = KEY_REACH * Math.hypot(e[0], e[1], e[2]);
+    const gap = _sphere.center.distanceTo(_cw.setFromMatrixPosition(cam.matrixWorld)) - _sphere.radius;
+    if (gap > 0) {
+      if (U.uFogDensity.value * gap > FOG_GONE) cull = true;
+      else {
+        _pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        cull = !_frustum.setFromProjectionMatrix(_pv).intersectsSphere(_sphere);
+      }
+    }
+  }
+  if (cull !== keyCulled) { keyCulled = cull; applyFade(0); }
 }
 let miniNear = false;
 
@@ -80,6 +113,7 @@ export const nest = {
     }
     for (const j of LEVELS) applyFade(j);
     loop.add(nest.update, ORDER.WORLD);
+    loop.add(keyLod, ORDER.RENDER - 1);
     bus.on('room:arrive', ({ room }) => {
       const far = (ROOMS[room] || ROOMS.CORE).far;
       for (const j of [1, 2]) structures.get(j).setFar(far);
@@ -96,6 +130,8 @@ export const nest = {
   level(j) { return groups.get(j) || null; },
   /** → Structure (−1 | 1 | 2) */
   structure(j) { return structures.get(j) || null; },
+  /** PERF-11: true while the hall LOD hides the Key (outside the view or lost in the fog). */
+  keyCulled() { return keyCulled; },
   /** WP0 addition: the lit-node set of level 1 | 2. */
   litNodes(j) { return lit.get(j) || null; },
 

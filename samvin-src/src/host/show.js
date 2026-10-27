@@ -199,7 +199,12 @@ export function createShow(ctx) {
     hullStop();
     if (S.about) { S.about.remove(); S.about = null; }
     setScene(i);
-    if (S.asleep && i >= 2 && !S.waking) await reignite();
+    if (S.asleep && i >= 2) {
+      // a wake still waiting for him (the phone start screen) ends here: its layer goes, the chrome and band return
+      if (S.waking) { if (ctx.wake && ctx.wake.end) ctx.wake.end(); await S.waking; }
+      if (g !== S.gen) return;
+      if (S.asleep) await reignite();
+    }
     if (g !== S.gen) return;
     try { await SCENES[i](g); } catch (e) { /* a scene's failure leaves the show navigable */ }
   }

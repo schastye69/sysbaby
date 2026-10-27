@@ -3,14 +3,13 @@
 // Builds halls on demand (HallCtx = Object.create(ctx) + the hall's own fields), keeps at most three resident (source,
 // destination, and a source still inside its 300 ms release delay), and routes EVERY call into a hall through call(),
 // the error guard: a throwing hall is logged once (console.warn 'hall:<RoomId>'), disposed, and the visitor is RECALLed to
-// CORE; a throwing CORE is rebuilt as the seed placeholder so the app never blanks. Each hall owns one
+// CORE; a throwing CORE is rebuilt as the bare hall (its shell, the rest pose, the Key) so the app never blanks. Each hall owns one
 // <section class="hall" data-room> in #halls, hidden unless the hall is current or arriving (u ≥ 0.7).
 // In T0 (A17) no WebGL factory is ever called: ensure() returns an inert stub and WP11's sections are the halls.
 import { Group, Vector3 } from 'three';
 import { ROOMS } from '../world/rooms.js';
 import { createHallShell } from '../world/vin.js';
 import { HALL_FACTORIES } from './registry.js';
-import { createPlaceholderHall } from './placeholder.js';
 import { logOnce } from '../core/env.js';
 import { loop, ORDER } from '../core/loop.js';
 import { app } from '../core/store.js';
@@ -40,10 +39,13 @@ function extCall(r, method, a) {
     }
   }
 }
-/** The T0 stub (A17): every method inert; pose() a fixed pose; setSub() accepts any sub. */
+/** The inert hall: every method a no-op; pose() the CORE rest pose; setSub() accepts any sub. It is the T0 stub (A17)
+ *  and, in the WebGL path, the bare CORE a throwing CORE is rebuilt as (shell + Key, never blank). */
 function stubHall(id) {
-  const pose = { pos: new Vector3().fromArray(CAMERA.core.pos), target: new Vector3().fromArray(CAMERA.core.target), fov: CAMERA.fov, offsetY: 0, roll: 0 };
-  return { id, build: NOOP, pose: () => pose, enter: NOOP, exit: NOOP, arrive: NOOP, depart: NOOP, setSub: () => 0,
+  const c = CAMERA.core;
+  const pose = { pos: new Vector3().fromArray(c.pos), target: new Vector3().fromArray(c.target), fov: c.fov, offsetY: 0, roll: 0 };
+  return { id, build: NOOP, enter: NOOP, exit: NOOP, arrive: NOOP, depart: NOOP, setSub: () => 0,
+    pose: () => { const k = ctxRef && ctxRef.layout ? ctxRef.layout.kind : 'desktop'; pose.fov = coreFov(k); pose.offsetY = coreOffY(k); return pose; },
     update: NOOP, onGesture: () => false, onKey: () => false, resize: NOOP, dispose: NOOP, stub: true };
 }
 
@@ -120,8 +122,8 @@ function fail(id, err) {
   if (r) destroy(r);
   const dir = ctxRef && ctxRef.director;
   if (id === 'CORE') {
-    // Never blank: rebuild CORE as the seed placeholder and carry on.
-    createResident('CORE', (h) => createPlaceholderHall(h, { props: 'grid' }));
+    // Never blank: rebuild CORE as the bare hall and carry on.
+    createResident('CORE', () => stubHall('CORE'));
     const nr = residents.get('CORE');
     if (nr && app.room === 'CORE') { hallHost.show('CORE', true); if (nr.hall) safe(nr, 'enter', 1); }
     return;
@@ -171,7 +173,7 @@ export const hallHost = {
   /** → Hall (built or building). Creates the HallCtx, section, shell, calls the factory + build(). */
   ensure(id) {
     if (!ROOMS[id]) id = 'CORE';
-    const r = residents.get(id) || createResident(id, HALL_FACTORIES[id] || ((h) => createPlaceholderHall(h, { props: 'grid' })));
+    const r = residents.get(id) || createResident(id, HALL_FACTORIES[id] || (() => stubHall(id)));
     return r && r.hall ? r.hall : null;
   },
   get(id) { const r = residents.get(id); return r && !r.dead ? r.hall : null; },

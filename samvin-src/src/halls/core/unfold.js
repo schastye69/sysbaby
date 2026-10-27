@@ -68,6 +68,9 @@ export function createUnfold(hctx) {
   guests.addEventListener('click', () => { try { if (ctx.host && ctx.host.guests) ctx.host.guests.open('unfold'); } catch (e) { /* WP13 */ } });
   block.append(together, about, guests);
   hctx.section.appendChild(block);
+  // Folded, the plate is invisible (opacity 0): out of the tab order and the accessibility tree until it opens.
+  block.inert = true;
+  const offInert = hctx.bus.on('unfold:change', (e) => { block.inert = !(e && e.open); });
   const aboutText = () => (WORLD.clan && typeof WORLD.clan.about === 'string' ? WORLD.clan.about.trim() : '');
 
   // hover label «→ {room}» at the ring's back
@@ -322,6 +325,7 @@ export function createUnfold(hctx) {
     },
     resize() {},
     dispose() {
+      offInert();
       if (st.open || st.dir !== 0 || st.departing >= 0) { st.departing = -1; finishClose(); }
       if (hoverAnchor) { hoverAnchor.remove(); hoverAnchor = null; }
       rings.dispose();

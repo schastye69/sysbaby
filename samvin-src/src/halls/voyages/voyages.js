@@ -127,6 +127,7 @@ export function createVoyagesHall(hctx) {
     if (k === hovered) return;
     if (hovered >= 0) field.hover(hovered, false);
     hovered = k;
+    if (tags) tags.setHot(k);
     if (k >= 0) { field.hover(k, true); hctx.audio.play('hoverTick', { x: tags.screenX(k) }); }
     if (phone() && sel >= 0) field.hover(sel, true);
   }

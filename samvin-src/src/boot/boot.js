@@ -28,7 +28,7 @@ import { cueLatch, LATCH_PANS, ASSEMBLY_PANS } from './signature.js';
 import { runReturning } from './returning.js';
 import { runReduced } from './reduced.js';
 import { runPhone } from './phone.js';
-import { runWake as wakeImpl, runRelaunch as relaunchImpl } from './wake.js';
+import { runWake as wakeImpl, runRelaunch as relaunchImpl, endWake } from './wake.js';
 
 const perf = () => performance.now();
 const T0_ORIGIN = new Vector3(0, 0, 0);
@@ -298,6 +298,7 @@ export function bootNews(ctx) {
 export function runBoot(ctx, initialRoute) {
   void initialRoute;
   ctx.wake = (o) => runWake(ctx, o);
+  ctx.wake.end = endWake;
   marks.t0 = perf(); marks.nLockAt = null; marks.ignitionAt = null; marks.idleAt = null; marks.nameAt = null;
   if (!relaunchHooked) { relaunchHooked = true; ctx.bus.on('relaunch', () => runRelaunch(ctx)); }
   app.booting = true;

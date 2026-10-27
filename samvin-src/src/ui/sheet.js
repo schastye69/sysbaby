@@ -2,7 +2,7 @@
 // Solid --deep, a 1 px --slate top hairline, a 24 px handle, max 62 % of the height, a 120 px peek, above the 88 px Key
 // band; landscape phones: a right-side panel 44 % wide. Never frosted. Desktop: never shown (CSS).
 // Drag the sheet vertically: release with ≥ 40 px or ≥ 0.3 px/ms steps one state (down: full → peek → closed; up:
-// peek → full); the CSS transition (480 ms, EASE.reveal) is the spring that snaps it.
+// peek → full); a tap on the handle or the peek text opens it; the CSS transition (480 ms, EASE.reveal) is the spring.
 // DOM contract (sheet.css): #sheets > section#sheet.sheet[data-state] > div.sheet-handle, div.sheet-peek, div.sheet-body.
 import { layout } from '../core/layout.js';
 import { GESTURE } from '../core/input.js';
@@ -11,11 +11,22 @@ const listeners = new Set();
 let root = null, handle = null, peekEl = null, body = null;
 const drag = { id: -1, y0: 0, t0: 0, y: 0, t: 0, h: 0, base: 0, moved: false };
 
+/** What cannot be seen cannot be focused: a closed sheet, and the body of a portrait peek (below the fold), are inert.
+ *  Landscape shows the whole panel at peek. */
+function syncInert() {
+  if (!root) return;
+  // landscape: an open side panel takes the right 44 %; the status line centres on what is left of the view
+  try { document.body.classList.toggle('sheet-side', sheet.state !== 'closed' && layout.kind === 'phone-land'); } catch (e) { /* no DOM */ }
+  root.inert = sheet.state === 'closed';
+  body.inert = sheet.state === 'closed' || (sheet.state === 'peek' && layout.kind !== 'phone-land');
+}
+
 function setState(s) {
   if (sheet.state === s) return;
   sheet.state = s;
   if (root) root.dataset.state = s;
   try { document.body.dataset.sheet = s; } catch (e) { /* no DOM */ }   // fx.css lifts the scale bar above a shown sheet
+  syncInert();
   for (const fn of listeners) { try { fn(s); } catch (e) { /* listener errors never break the sheet */ } }
 }
 
@@ -44,7 +55,12 @@ function onMove(e) {
 function onUp(e) {
   if (e.pointerId !== drag.id) return;
   drag.id = -1;
-  if (!drag.moved) return;
+  if (!drag.moved) {
+    // a tap on the handle or on the peek's own text (not one of its controls) opens the sheet
+    const t = e.target;
+    if (sheet.state === 'peek' && t && t.closest && !t.closest('button, a, input, [data-interactive]') && !(body && body.contains(t))) setState('full');
+    return;
+  }
   root.classList.remove('is-dragging');
   root.style.transform = '';
   const dy = drag.y - drag.y0;
@@ -60,7 +76,6 @@ export const sheet = {
   state: 'closed',
 
   init(ctx) {
-    void ctx;
     const host = document.getElementById('sheets');
     if (!host) return sheet;
     root = document.createElement('section');
@@ -76,6 +91,8 @@ export const sheet = {
     root.addEventListener('pointermove', onMove);
     root.addEventListener('pointerup', onUp);
     root.addEventListener('pointercancel', onUp);
+    syncInert();
+    if (ctx && ctx.bus) ctx.bus.on('layout:change', syncInert);
     return sheet;
   },
 
@@ -94,6 +111,7 @@ export const sheet = {
     body.scrollTop = 0;
     if (opts.peek) peekEl.appendChild(opts.peek);
     if (content) body.appendChild(content);
+    root.classList.toggle('has-body', !!content);     // landscape shows the body, so the peek summary steps aside
     if (!content && !opts.peek) { setState('closed'); return; }
     setState(opts.state === 'full' ? 'full' : opts.state === 'closed' ? 'closed' : 'peek');
   },

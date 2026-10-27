@@ -130,3 +130,5 @@ body.ins-held #datum{visibility:hidden}
 @media (pointer:coarse) and (max-width:600px), (pointer:coarse) and (max-height:600px){
   .zn-block{position:static}
 }
+/* the capsule's LEAD writes across the centre: the relic reading block (desktop, right of centre) holds back meanwhile */
+@media not all and (pointer:coarse){body.lead-on .ins-block{opacity:0!important;pointer-events:none}}

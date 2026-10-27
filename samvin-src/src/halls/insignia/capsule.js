@@ -63,6 +63,7 @@ export function createCapsule(hctx, stat, labels) {
   }
 
   function writeLine() {
+    label.remeasure();
     const info = capsuleInfo();
     if (info.opened || opened) {
       // the 3D label only names it; the parent's words are read once, in the column (and the LEAD that wrote them)

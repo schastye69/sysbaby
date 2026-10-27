@@ -22,7 +22,7 @@ import { fontsReady } from './core/fonts.js';
 import { quality } from './core/quality.js';
 import { input } from './core/input.js';
 import * as world from './data/world.js';
-import { WORLD } from './data/world.js';
+import { WORLD, whenWorldReady } from './data/world.js';
 import { audio } from './audio/engine.js';
 import * as router from './nav/router.js';
 import { Group, Vector3 } from 'three';
@@ -65,7 +65,7 @@ import { hint } from './nav/hint.js';
 import { installKeyboard, keyboard } from './nav/keyboard.js';
 import * as registry from './audio/registry.js';
 import { runBoot } from './boot/boot.js';
-import { mountT0 } from './t0/t0.js';
+import { loadT0 } from './t0/load.js';
 import { installTestHook } from './core/testhook.js';
 import { secrets } from './secrets/secrets.js';
 import { initSecrets } from './secrets/index.js';
@@ -96,11 +96,21 @@ const ctx = {
   fx: null, host: null, deeds: null, wake: null,   // H16 (X§2.1)
 };
 
+let bootHash = '';                      // location.hash as the page loaded (finishBoot canonicalises an unknown one)
+
 function step(name, fn) {
   try { fn(); return true; } catch (e) { logOnce(`main:${name}`, `boot step "${name}" failed`, e); return false; }
 }
 
-function boot() {
+/** Fetches and mounts the T0 bundle (t0/load.js); a failure leaves ctx.t0 null (logged). */
+async function startT0() {
+  try { const mount = await loadT0(); if (!ctx.t0) ctx.t0 = mount(ctx); } catch (e) { logOnce('main:t0', 'T0 failed to start', e); }
+}
+
+async function boot() {
+  // 0. Data: a broken / missing world.js fetches the default lists first (data/world.js); a sound one is ready at once.
+  await whenWorldReady();
+
   // 1. Environment.
   step('env', () => { void ENV.reducedMotion; measureLayout(); });
 
@@ -130,7 +140,7 @@ function boot() {
   if (app.tier !== 'T0') {
     if (!step('webgl', () => { ctx.composite = initWebGL(gl); })) fallbackT0();
   }
-  if (app.tier === 'T0' && !ctx.t0) step('t0', () => { ctx.t0 = mountT0(ctx); app.tier = 'T0'; });
+  if (app.tier === 'T0' && !ctx.t0) { await startT0(); app.tier = 'T0'; }
   // 6b+ (H16): in T0 the rim is WP11's DOM rim with the Rim API.
   if (app.tier === 'T0') ctx.rim = ctx.t0 && ctx.t0.rim ? ctx.t0.rim : ctx.rim;
 
@@ -164,7 +174,8 @@ function boot() {
   //     travelled to yet; CORE is built and made current with pose(null).
   let initialRoute = router.parseHash('#/core');
   const navOk = step('navigation', () => {
-    initialRoute = router.parseHash(location.hash);
+    bootHash = location.hash;
+    initialRoute = router.parseHash(bootHash);
     hallHost.init(ctx);
     director.init(ctx);
   });
@@ -179,7 +190,8 @@ function boot() {
   // Steps 6–11 failed in the WebGL path → T0 instead of a blank screen.
   if (app.tier !== 'T0' && !(domOk && audioOk && inputOk && navOk && secOk)) {
     fallbackT0();
-    step('t0', () => { ctx.t0 = mountT0(ctx); if (ctx.chrome) chrome.setT0Marker(true); });
+    await startT0();
+    if (ctx.t0 && ctx.chrome) step('t0', () => chrome.setT0Marker(true));
     if (ctx.t0 && ctx.t0.rim) ctx.rim = ctx.t0.rim;
     step('fx:t0', () => { ctx.fx = createFxT0(ctx); });
   }
@@ -267,8 +279,12 @@ function initWebGL(gl) {
   loop.add((dt) => lamp.update(dt), ORDER.LAMP);
   loop.add((dt) => rig.apply(dt), ORDER.CAMERA);
   // Context loss: the T0 CORE is drawn over the canvas until the context is restored (mounted lazily).
-  bus.on('gl:lost', () => { try { if (!ctx.t0) ctx.t0 = mountT0(ctx); ctx.t0.showLost(); } catch (e) { logOnce('main:t0', e); } });
-  bus.on('gl:restored', () => { if (ctx.t0 && ctx.t0.hideLost) ctx.t0.hideLost(); });
+  let glLost = false;
+  bus.on('gl:lost', () => {
+    glLost = true;
+    loadT0().then((mount) => { if (!ctx.t0) ctx.t0 = mount(ctx); if (glLost) ctx.t0.showLost(); }).catch((e) => logOnce('main:t0', e));
+  });
+  bus.on('gl:restored', () => { glLost = false; if (ctx.t0 && ctx.t0.hideLost) ctx.t0.hideLost(); });
   return createComposite(renderer);
 }
 
@@ -292,6 +308,13 @@ function finishBoot(initialRoute) {
   if (ctx.director) {
     ctx.director.settle();
     if (initialRoute && (initialRoute.room !== 'CORE' || initialRoute.sub)) ctx.director.go(initialRoute.hash, { source: 'deeplink' });
+    // An unknown deep link (#/bogus → CORE) leaves the address bar canonical too — unless he has gone somewhere since.
+    else if (initialRoute) {
+      let here = '';
+      try { here = location.hash; } catch (e) { here = ''; }
+      // go() of the current route only rewrites the history entry (director.writeHistory, which also tracks lastHash)
+      if (bootHash && here === bootHash && bootHash !== initialRoute.hash) ctx.director.go(initialRoute.hash, { source: 'deeplink' });
+    }
   }
 }
 

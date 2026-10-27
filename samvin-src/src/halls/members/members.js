@@ -255,6 +255,32 @@ export function createMembersHall(hctx) {
     });
   }
 
+  // ─── the readout's safe area (desktop) ──────────────────────────────────────────────────────────────────────
+  // The block hangs from its leader's end and grows downward; a long one (his focus: trait, joke, МАСТЕРСКАЯ →, the
+  // СБОР row) would run under the status line and off the screen at 1440 × 900 and 1366 × 768. Each frame it is kept
+  // inside the chrome: its width stops a gutter short of the navigator column (or the left margin), and it slides up
+  // so its bottom stays above the status band (never above the corner chrome). Layout is read only when the readout
+  // or its width changes.
+  const roFit = { ro: null, maxW: -1, h: 0, dy: 0 };
+  function fitReadout() {
+    if (!ro || phone() || !roAnchor || !roAnchor.screen.visible || !ro.el.isConnected) return;
+    const L = hctx.layout, sc = roAnchor.screen;
+    const endX = sc.x + roSide * (RISE + 120 + 6), top = sc.y + RISE - 16;
+    const maxW = Math.max(240, Math.min(400, Math.round(roSide > 0 ? L.w - 104 - endX : endX - 48)));
+    if (roFit.ro !== ro || roFit.maxW !== maxW) {
+      roFit.ro = ro; roFit.maxW = maxW;
+      ro.el.style.maxWidth = `${maxW}px`;
+      roFit.h = ro.el.offsetHeight;
+      roFit.dy = NaN;
+    }
+    const bottom = L.h - 72, ceil = 88;
+    let dy = 0;
+    if (top + roFit.h > bottom) dy = bottom - (top + roFit.h);
+    if (top + dy < ceil) dy = ceil - top;
+    dy = Math.round(dy);
+    if (dy !== roFit.dy) { roFit.dy = dy; ro.el.style.transform = dy ? `translateY(${dy}px)` : ''; }
+  }
+
   // ─── СБОР hold (A3.2) ───────────────────────────────────────────────────────────────────────────────────────
   function canHold() { return !!(columns && columns.op && current && (!phone() || centreK === opK)); }
   function startHold(src) {
@@ -627,6 +653,7 @@ export function createMembersHall(hctx) {
       fxr.update();
       refreshScreen();
       refreshRest();
+      fitReadout();
       // strum bands + deck labels + marks + the hold ring
       const w = hctx.layout.w;
       for (let i = 0; i < n; i++) {

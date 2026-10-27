@@ -86,15 +86,15 @@ export function createWorkshopHall(hctx) {
     gridEl.addEventListener('pointerup', onUp);
     gridEl.addEventListener('pointercancel', onCancel);
     const verbs = mk('div', 'ws-verbs');
-    const clear = mk('button', 'verb', 'ОЧИСТИТЬ');
+    const clear = mk('button', 'verb t-label', 'ОЧИСТИТЬ');
     clear.type = 'button'; clear.dataset.qa = 'ws-clear';
     clear.addEventListener('click', () => { if (saving) return; editor.clear(); editor.lift(); refresh(); });
-    saveBtn = mk('button', 'verb ws-save', 'ВЫРЕЗАТЬ ЗНАК');
+    saveBtn = mk('button', 'verb t-label ws-save', 'ВЫРЕЗАТЬ ЗНАК');
     saveBtn.type = 'button'; saveBtn.dataset.qa = 'ws-save';
     saveBtn.addEventListener('click', onSave);
     saveBtn.addEventListener('pointerenter', () => { if (!editor.canSave()) needEl.hidden = false; });
     saveBtn.addEventListener('pointerleave', () => { needEl.hidden = true; });
-    const back = mk('button', 'verb', 'НАЗАД');
+    const back = mk('button', 'verb t-label', 'НАЗАД');
     back.type = 'button'; back.dataset.qa = 'ws-back';
     back.addEventListener('click', goBack);
     verbs.append(clear, saveBtn, back);

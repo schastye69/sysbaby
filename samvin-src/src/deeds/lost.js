@@ -53,7 +53,7 @@ export function createLost(ctx, deps) {
   }
   const phone = () => layout.isPhone;
   const T = {
-    view: null, ext: null, t0view: null,
+    view: null, ext: null, t0view: null, t0: null,
     screen: { x: -1, y: -1 }, a: { x: -1, y: -1 }, b: { x: -1, y: -1 },
     saidHere: false,
   };
@@ -422,15 +422,143 @@ export function createLost(ctx, deps) {
     });
   }
 
-  // ─── T0: WP11's view, or a DOM proxy alone (same rules, same data) ─────────────────────────────────────────────
+  // ─── T0: WP11's view (the same rules, data, sounds, statuses and deeds; driven here) ─────────────────────────────
+  // T0 has no camera: the mini-Key(s) stand still where the view drew them, so the screen points are fixed. A real
+  // <button data-qa="lost"> over them carries the press / hold (≥ 4 clicks in 1,000 ms → it hides; a rushing pointer
+  // within 160 px → it hides; it peeks back after 2,000 ms of calm); the view shows the hold ring, the threads (pair)
+  // and the agreement; the flight home is the same DOM mote.
   function t0Arrive(hctx) {
     void hctx;
-    if (T.t0view && T.t0view.spawn) {
+    const v = T.t0view;
+    if (v && v.spawn && !T.t0 && !lo().rescued) {
       const rnd = mulberry32(info.dayIndex + 17);
-      T.t0view.spawn(info.kind, { x: 0.3 + 0.4 * rnd(), y: 0.35 + 0.3 * rnd() });
+      v.spawn(info.kind, { x: 0.3 + 0.4 * rnd(), y: 0.35 + 0.3 * rnd() });
+      t0Controls(v);
+      if (!(app.show && app.show.active)) {
+        after(1200, () => {
+          if (!T.t0 || app.room !== info.room || T.t0.done) return;
+          const night = !!app.night, t0 = performance.now();
+          const pts = info.kind === 'pair' ? [T.a, T.b] : [T.screen];
+          pts.forEach((p, i) => { const pn = panOf(p.x); ctx.fx.cue.at(t0 + 180 * i, { id: 'lostChirp', audio: (Tc) => ctx.audio.play('lostChirp', { when: Tc, pan: pn, night }) }); });
+        });
+      }
     }
     if (!T.saidHere && ctx.status) { T.saidHere = true; ctx.status.say(info.kind === 'pair' ? 'pair.here' : 'lost.here'); }
   }
+  function t0Controls(v) {
+    const pair = info.kind === 'pair';
+    const kp = v.keyPoints ? v.keyPoints() : [];
+    if (!kp.length) return;
+    if (pair) { T.a.x = kp[0].x; T.a.y = kp[0].y; T.b.x = kp[1].x; T.b.y = kp[1].y; T.screen.x = (kp[0].x + kp[1].x) / 2; T.screen.y = (kp[0].y + kp[1].y) / 2; }
+    else { T.screen.x = kp[0].x; T.screen.y = kp[0].y; }
+    const size = phone() ? 56 : 44, H = pair ? 2400 : 1500;
+    const b = el('button', 'proxy lost-proxy', null, document.getElementById('overlay'), { qa: 'lost', 'data-kind': pair ? 'pair' : 'one', type: 'button', 'aria-label': pair ? 'два маленьких ключа' : 'маленький ключ' });
+    if (size > 44) { b.style.width = b.style.height = `${size}px`; b.style.margin = `${-size / 2}px 0 0 ${-size / 2}px`; }
+    b.style.transform = `translate3d(${T.screen.x.toFixed(1)}px,${T.screen.y.toFixed(1)}px,0)`;
+    const R = { done: false, holding: false, holdStart: 0, hidden: false, clicks: [], voice: null, tick: 0, peek: 0, el: b };
+    T.t0 = R;
+    const stopVoice = () => { if (R.voice) { try { R.voice.stop(60); } catch (e) { /* gone */ } R.voice = null; } };
+    const hideIt = () => {
+      if (R.done || R.hidden) return;
+      R.hidden = true; release(true);
+      v.pose('hid', 240);
+      const x = T.screen.x;
+      ctx.fx.cue.at(performance.now(), { id: 'lostHide', audio: (Tc) => ctx.audio.play('lostHide', { when: Tc, pan: panOf(x) }) });
+      if (!lo().hid) state.patch((d) => { d.lost.hid = true; });
+      after(2000, function peek() { if (R.done || !R.hidden) return; R.hidden = false; v.pose('idle', 400); });
+    };
+    const frame = () => {
+      R.tick = 0;
+      if (R.done || !R.holding) return;
+      const p = (performance.now() - R.holdStart) / H;
+      v.hold(p);
+      if (p >= 1) { finish(); return; }
+      R.tick = requestAnimationFrame(frame);
+    };
+    const press = () => {
+      if (R.done || R.hidden || R.holding) return;
+      const t = performance.now();
+      R.clicks.push(t);
+      while (R.clicks.length && t - R.clicks[0] > 1000) R.clicks.shift();
+      if (R.clicks.length >= 4) { R.clicks.length = 0; hideIt(); return; }
+      R.holding = true; R.holdStart = t;
+      v.pose('calm', 240);
+      if (!R.voice) R.voice = ctx.audio.start('probeHold', {});
+      if (!R.tick) R.tick = requestAnimationFrame(frame);
+    };
+    function release(early) {
+      if (!R.holding) return;
+      // a hold that reached its time between two (slow) frames still completes on release
+      if (early && !R.done && !R.hidden && performance.now() - R.holdStart >= H && app.room === info.room) { finish(); return; }
+      R.holding = false;
+      stopVoice();
+      if (R.tick) { cancelAnimationFrame(R.tick); R.tick = 0; }
+      const from = Math.min(1, (performance.now() - R.holdStart) / H);
+      tween(240, (x) => { if (!R.holding && !R.done) v.hold(from * (1 - x)); });
+    }
+    function finish() {
+      if (R.done) return;
+      R.done = true; R.holding = false;
+      stopVoice();
+      if (R.tick) { cancelAnimationFrame(R.tick); R.tick = 0; }
+      v.hold(0);
+      b.disabled = true;
+      ctx.fx.stage.run('lost', () => t0Complete(v));
+    }
+    b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); press(); });
+    const up = () => release(true);
+    b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
+    b.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { e.preventDefault(); press(); } });
+    b.addEventListener('keyup', (e) => { if (e.key === 'Enter' || e.key === ' ') release(true); });
+    // rushing past it (any pointer within 160 px faster than 900 px/s; touch 80 px / 1,200 px/s) → it hides
+    const prev = { x: NaN, y: NaN, t: 0 };
+    R.offInput = input.observe((sm) => {
+      const now = performance.now(), px = prev.x, py = prev.y, pt = prev.t;
+      prev.x = sm.x; prev.y = sm.y; prev.t = now;
+      if (R.done || R.hidden || R.holding || app.room !== info.room || app.phase !== 'idle' || !Number.isFinite(px)) return;
+      const touch = sm.type === 'touch';
+      const dx = sm.x - px, dy = sm.y - py, L2 = dx * dx + dy * dy;
+      const u = L2 > 0 ? Math.max(0, Math.min(1, ((T.screen.x - px) * dx + (T.screen.y - py) * dy) / L2)) : 1;
+      const d = Math.hypot(px + dx * u - T.screen.x, py + dy * u - T.screen.y);
+      const sp = Math.max(sm.speed || 0, Math.sqrt(L2) / Math.max(1, now - pt) * 1000);
+      if (d < (touch ? 80 : 160) && sp > (touch ? 1200 : 900)) hideIt();
+    });
+  }
+  async function t0Complete(v) {
+    const pair = info.kind === 'pair', neverHid = !lo().hid;
+    ctx.fx.cue.at(performance.now(), { id: 'rescue', audio: (Tc) => ctx.audio.play('rescue', pair ? { pair: true, when: Tc } : { when: Tc }) });
+    if (pair) await v.agree();
+    const to = ctx.keyNav ? ctx.keyNav.letterPoint('•') : { x: layout.w / 2, y: layout.h / 2 };
+    const pts = v.homePoints ? v.homePoints() : [{ x: T.screen.x, y: T.screen.y }];
+    if (reduced()) await wait(600);
+    else await Promise.all([Promise.all(pts.map((p, i) => flyMote(p, { x: to.x + (pts.length === 2 ? (i ? 3 : -3) : 0), y: to.y }, { colour: 'white', ms: 900, sizePx: 3 }))), wait(900)]);
+    t0Despawn();
+    if (ctx.keyNav) ctx.keyNav.flashLetter('•', 'white', 50);
+    vibrate([8, 40, 8]);
+    record(pair ? 'pair' : 'one');
+    if (pair) {
+      if (ctx.status) ctx.status.say('pair.done');
+      if (deps.deeds) deps.deeds.done('word');
+      bus.emit('pair:agreed', { pairs: lo().pairs | 0 });
+      after(4000, () => { if (ctx.status) ctx.status.say('pair.fact'); });
+    } else {
+      if (ctx.status) ctx.status.say('lost.saved');
+      if (deps.deeds) deps.deeds.done('notice');
+      if (neverHid && deps.deeds) deps.deeds.done('gentle');
+      bus.emit('lost:rescued', { saved: lo().saved | 0, gentle: neverHid });
+      if (neverHid) after(4000, () => { if (ctx.status) ctx.status.say('lost.gentle'); });
+    }
+  }
+  function t0Despawn() {
+    const R = T.t0;
+    if (!R) return;
+    T.t0 = null;
+    if (R.offInput) R.offInput();
+    if (R.voice) { try { R.voice.stop(40); } catch (e) { /* gone */ } }
+    if (R.el && R.el.parentNode) R.el.parentNode.removeChild(R.el);
+    if (T.t0view && T.t0view.dispose) T.t0view.dispose();
+  }
+  bus.on('room:depart', (e) => { if (T.t0 && e && e.room === info.room && !T.t0.done) t0Despawn(); });
 
   hallHost.addExtension({
     name: 'lost',

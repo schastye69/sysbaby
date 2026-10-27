@@ -1,5 +1,8 @@
 // data/world.js — the world data loader (ARCH §4.4). Reads window.SAMVIN_WORLD (the hand-edited samvin/world.js),
 // validates it against DEFAULT_WORLD (§4.2 types, §4.3 schema), deep-freezes it and exports WORLD.
+// The default LISTS are not in the bundle (data/defaults.js): when world.js is missing or a list of it is broken, the
+// lists are left empty at module load and whenWorldReady() — awaited by main.js before the boot — fetches
+// a/world-default.<hash>.js (the seed's copy), validates again with them and fills WORLD in place before freezing it.
 // No DOM access and no state access at module load. validateWorld is pure and never throws.
 // Every other module reads world data only through WORLD and the lookup helpers below.
 import { DEFAULT_WORLD } from './defaults.js';
@@ -397,10 +400,11 @@ function vSingles(w, raw, iss) {
 
 // ─── validateWorld (§4.4) ─────────────────────────────────────────────────────────────────────────────────────
 /** PURE: → { world, issues }. Never throws, never freezes. */
-export function validateWorld(raw) {
+export function validateWorld(raw, defs) {
   const issues = [];
   const iss = (s) => { issues.push(s); };
-  const D = DEFAULT_WORLD;
+  const D = defs || listDefaults || DEFAULT_WORLD;
+  let listDefault = false;          // a list took its default (fetched on demand: whenWorldReady)
   let src = raw;
   if (!isObj(src)) { src = {}; }
   const w = {};
@@ -416,7 +420,8 @@ export function validateWorld(raw) {
     const wantList = k in LIST_KEYS;
     const ok = wantList ? Array.isArray(v) : isObj(v);
     if (!ok && v !== undefined) iss(`${k}: default used`);
-    box[k] = ok ? v : clone(D[k]);
+    if (!ok && wantList) listDefault = true;
+    box[k] = ok ? v : clone(D[k] || (wantList ? [] : {}));
   }
 
   // 2. Lists, own fields (each key guarded: a crash → that key's default).
@@ -425,7 +430,8 @@ export function validateWorld(raw) {
   for (const [k, fn] of listFns) {
     try { w[k] = fn(box[k], iss); } catch (e) {
       iss(`${k}: crashed, default used`);
-      try { w[k] = fn(clone(D[k]), () => {}); } catch (e2) { w[k] = []; }
+      listDefault = true;
+      try { w[k] = fn(clone(D[k] || []), () => {}); } catch (e2) { w[k] = []; }
     }
   }
 
@@ -472,7 +478,7 @@ export function validateWorld(raw) {
   // 6. Exact output shape and key order (§4.3).
   const world = {};
   for (const k of KEYS) world[k] = w[k];
-  return { world, issues };
+  return { world, issues, listDefault };
 }
 
 function deepFreeze(o) {
@@ -484,23 +490,59 @@ function deepFreeze(o) {
 }
 
 // ─── Module load (§4.4) ───────────────────────────────────────────────────────────────────────────────────────
+let listDefaults = null;            // DEFAULT_WORLD + the seed's lists, once fetched
 let rawWorld;
 let source = 'file';
 try { rawWorld = typeof window !== 'undefined' ? window.SAMVIN_WORLD : undefined; } catch (e) { rawWorld = undefined; }
 if (!isObj(rawWorld)) {
   source = 'default';
-  rawWorld = DEFAULT_WORLD;
+  rawWorld = {};                    // every key takes its default (silently: a missing key is no issue)
   logOnce('world', 'world.js missing or broken — using built-in defaults');
 }
 const validated = validateWorld(rawWorld);
-if (validated.issues.length) logOnce('world-issues', `world.js: ${validated.issues.length} issue(s)`, validated.issues);
+const issueList = validated.issues.slice();
 
 /** 'file' | 'default' */
 export const WORLD_SOURCE = source;
-/** every repair made (empty for the shipped file) */
-export const WORLD_ISSUES = Object.freeze(validated.issues.slice());
-/** validated, defaults filled, deep-frozen */
-export const WORLD = deepFreeze(validated.world);
+/** every repair made (empty for the shipped file); frozen once the world is ready */
+export const WORLD_ISSUES = issueList;
+/** validated, defaults filled, deep-frozen (once ready: at once for a sound world.js) */
+export const WORLD = validated.world;
+
+function settle() {
+  if (issueList.length) logOnce('world-issues', `world.js: ${issueList.length} issue(s)`, issueList.slice());
+  Object.freeze(issueList);
+  deepFreeze(WORLD);
+}
+/** The default lists, fetched (a/world-default.<hash>.js) only when a list fell back. → Promise<void>, never rejects. */
+function fetchDefaults() {
+  return new Promise((resolve) => {
+    if (typeof document === 'undefined') { resolve(null); return; }
+    const s = document.createElement('script');
+    s.src = __WORLD_DEFAULT_JS__;
+    s.onload = () => { let d = null; try { d = window.SAMVIN_WORLD_DEFAULT; delete window.SAMVIN_WORLD_DEFAULT; } catch (e) { d = null; } resolve(d); };
+    s.onerror = () => resolve(null);
+    document.head.appendChild(s);
+  });
+}
+let ready = null;
+/** Resolves when WORLD is final (main.js awaits it before the boot). */
+export function whenWorldReady() {
+  if (ready) return ready;
+  if (!validated.listDefault) { settle(); ready = Promise.resolve(); return ready; }
+  ready = fetchDefaults().then((d) => {
+    if (isObj(d)) {
+      listDefaults = { ...DEFAULT_WORLD };
+      for (const k of Object.keys(LIST_KEYS)) listDefaults[k] = Array.isArray(d[k]) ? d[k] : [];
+      const again = validateWorld(rawWorld, listDefaults);
+      for (const k of KEYS) WORLD[k] = again.world[k];
+      issueList.length = 0;
+      issueList.push(...again.issues);
+    } else logOnce('world-default', 'built-in default lists unavailable — lists stay empty');
+    settle();
+  });
+  return ready;
+}
 
 // ─── Lookups ──────────────────────────────────────────────────────────────────────────────────────────────────
 export function memberById(id) { return WORLD.members.find((m) => m.id === id) || null; }

@@ -15,7 +15,7 @@ import { buildTitle } from './desktop.js';
 import { runPhone } from './phone.js';
 import { layer } from './layer.js';
 
-let asleep = false, waking = null, sleepOffs = [];
+let asleep = false, waking = null, sleepOffs = [], session = null;
 
 function waitCore(ctx, ms) {
   return new Promise((res) => {
@@ -69,20 +69,21 @@ function startWake(ctx, opts, createSession, marks, phone) {
 
 function wakeSession(ctx, opts, createSession, marks, phone) {
   const k = ctx.key, fx = ctx.fx;
+  const track = (B) => { session = B; B.done.then(() => { if (session === B) session = null; }); return B; };
   try { if (fx && fx.pieces && fx.pieces.wakeReset) fx.pieces.wakeReset(); } catch (e) { /* fx */ }
   layer.mount();
   if (!k) {                                            // T0: the SVG Key's own boot does the picture
-    const B = createSession(ctx, 'wake');
+    const B = track(createSession(ctx, 'wake'));
     const p = ctx.t0 && ctx.t0.boot ? ctx.t0.boot({ phone: layout.isPhone, returning: true, sameDay: false, reduced: false }) : Promise.resolve();
     p.then(() => { B.ignite(); if (ctx.rim) ctx.rim.burn({ dir: 'ltr', msPerLetter: 70 }); B.finish(); }, () => B.finish());
     return B.done;
   }
   if (phone) {
-    const B = createSession(ctx, 'phoneWake', { ears: false });
+    const B = track(createSession(ctx, 'phoneWake', { ears: false }));
     runPhone(ctx, B, marks);
     return B.done;
   }
-  const B = createSession(ctx, 'wake', { ears: true });
+  const B = track(createSession(ctx, 'wake', { ears: true }));
   app.booting = true;
   // the ears snap blocked on the waking input (pop with THE LINE)
   B.sound.onUnlock(0, false);
@@ -92,6 +93,13 @@ function wakeSession(ctx, opts, createSession, marks, phone) {
   marks.t0 = tl.t0Perf;
   B.watchdog(5400);
   return B.done;
+}
+
+/** Ends a wake still waiting for its input (the phone start screen) or still playing, at once: the CORE assembles
+ *  (chrome, navigator, band, datum; the start-screen texts and hint leave). ПОКАЗ calls it when he leaves scene 0/1. */
+export function endWake() {
+  if (session && !session.finished) session.finish({ instant: true });
+  return waking || Promise.resolve();
 }
 
 /** H28d: ctx.wake / runWake — also ПОКАЗ scene 1 ({show:true}). → Promise<void> */

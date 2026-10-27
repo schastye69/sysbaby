@@ -2,8 +2,11 @@
 //   LABEL  СЕГОДНЯ · {dd.mm}[ · В ИГРЕ | · В ЖИЗНИ]      (whereLabel(); no suffix when the moment has no mark)
 //   BODY   WORLD.moments[dayIndex mod moments.length].text   (dayIndex = days since 2025-01-01: one per calendar day)
 // Desktop: leader-anchored (overlay, 45° elbow + run, on a scrim) to the Key's lower-left silhouette.
-// Phone: a block at the top, under the title (CSS in core.css). Hidden when `moments` is empty, and whenever the CORE is
-// not at rest (unfold, РЕЗОНАНС, PULL, travel): nothing readable competes with a set-piece.
+// Phone: a block at the top, under the title (CSS in core.css). Portrait phone: the МОНОЛИТ Key fills the column from
+// the title to the band, so the block folds to its LABEL in the free corner under the title (left of the spire); a tap
+// (or Enter) unfolds the BODY on its scrim, a second tap or leaving the rest view folds it again. Hidden when `moments`
+// is empty, and whenever the CORE is not at rest (unfold, РЕЗОНАНС, PULL, travel): nothing readable competes with a
+// set-piece.
 import { Vector3 } from 'three';
 import { WORLD, whereLabel } from '../../data/world.js';
 import { dayIndex, now } from '../../core/time.js';
@@ -25,8 +28,17 @@ export function todayMoment(t = now()) {
 
 export function createToday(hctx) {
   const phone = () => hctx.layout.kind !== 'desktop';
-  let el = null, anchor = null, shown = false, dayKeyShown = '', checkedAt = 0;
-  const P = new Vector3(-0.44, -0.42, 0.18);           // Key-local: the lower-left silhouette (V/I strata, left flank)
+  const folded = () => hctx.layout.kind === 'phone';            // portrait phone
+  let el = null, lab = null, anchor = null, shown = false, dayKeyShown = '', checkedAt = 0;
+  function setOpen(b) {
+    if (!el) return;
+    el.classList.toggle('is-open', b);
+    if (lab && folded()) lab.setAttribute('aria-expanded', String(b));
+    if (b) { const body = el.querySelector('.core-today__body'); if (body) revealBody(body); }
+  }
+  const toggle = (e) => { if (!el || !folded()) return; if (e) e.stopPropagation(); setOpen(!el.classList.contains('is-open')); };
+  const P = new Vector3(-0.44, -0.42, 0.18);
+  const _t = new Vector3();           // Key-local: the lower-left silhouette (V/I strata, left flank)
 
   function build() {
     const m = todayMoment();
@@ -34,9 +46,11 @@ export function createToday(hctx) {
     el = document.createElement('div');
     el.className = 'core-today';
     el.dataset.qa = 'today';
-    const lab = document.createElement('p');
+    lab = document.createElement('p');
     lab.className = 't-label core-today__label';
     lab.textContent = m.label;
+    lab.addEventListener('click', toggle);
+    lab.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(e); } });
     const body = document.createElement('p');
     body.className = 't-body core-today__body';
     body.textContent = m.body;
@@ -48,6 +62,11 @@ export function createToday(hctx) {
     if (!el) return;
     if (anchor) { anchor.remove(); anchor = null; }
     if (el.parentNode) el.parentNode.removeChild(el);
+    const fold = folded();
+    el.classList.toggle('core-today--fold', fold);
+    el.classList.remove('is-open');
+    if (fold) { lab.tabIndex = 0; lab.setAttribute('role', 'button'); lab.setAttribute('aria-expanded', 'false'); lab.dataset.interactive = ''; }
+    else { lab.removeAttribute('tabindex'); lab.removeAttribute('role'); lab.removeAttribute('aria-expanded'); delete lab.dataset.interactive; }
     if (phone()) {
       el.classList.add('core-today--phone', 'scrim');
       hctx.section.appendChild(el);
@@ -58,7 +77,14 @@ export function createToday(hctx) {
       anchor = hctx.overlay.add({
         owner: 'core-today', el, scrim: true, cross: true, priority: 3, lowpass: 120,
         leader: { side: 'left', len: 72, rise: 104 },
-        get: (out) => { out.copy(P); if (key) out.applyMatrix4(key.group.matrixWorld); },
+        get: (out) => {
+          out.copy(P);
+          if (!key) return;
+          // ИЗНАНКА (S08) turns the Key over: the block keeps the screen's lower-left of it (below the datum, clear of
+          // the title and of the blueprint notes) instead of following the Key-local corner up to the title
+          if (hctx.app.inverted) { const e = key.group.matrixWorld.elements; out.multiplyScalar(Math.hypot(e[0], e[1], e[2])).add(_t.set(e[12], e[13], e[14])); }
+          else out.applyMatrix4(key.group.matrixWorld);
+        },
       });
     }
     setShown(shown, true);
@@ -69,7 +95,8 @@ export function createToday(hctx) {
     shown = b;
     el.classList.toggle('is-in', b);
     if (anchor) anchor.setVisible(b);
-    if (b && !was) { const body = el.querySelector('.core-today__body'); if (body) revealBody(body); }
+    if (!b) setOpen(false);
+    if (b && !was && !folded()) { const body = el.querySelector('.core-today__body'); if (body) revealBody(body); }
   }
 
   return {
@@ -92,7 +119,7 @@ export function createToday(hctx) {
     dispose() {
       if (anchor) { anchor.remove(); anchor = null; }
       if (el && el.parentNode) el.parentNode.removeChild(el);
-      el = null;
+      el = null; lab = null;
     },
   };
 }
