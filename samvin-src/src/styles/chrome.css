@@ -17,6 +17,11 @@
 
 .corner{position:fixed;margin:0;white-space:nowrap;transition:opacity var(--d-480) var(--ease-reveal)}
 .corner--dim{opacity:.3}
+/* desktop: the corner MICRO read at arm's length — 11 px on a silver floor (the phone keeps its 10 px column) */
+@media not all and (pointer:coarse){
+  .corner.t-micro,.corner .t-micro{font-size:11px;line-height:14px;color:rgba(var(--silver-rgb),.78)}
+  #c-tl-verb{font-size:12px;line-height:15px;color:var(--white)}
+}
 #c-tl,#c-br{display:flex;flex-direction:column;gap:2px}
 #c-tl{top:var(--chrome-t);left:var(--chrome-l);align-items:flex-start}
 #c-tr{top:var(--chrome-t);right:var(--chrome-r)}
@@ -159,6 +164,7 @@ body.in-travel #veil::after{opacity:0;transition-duration:var(--d-240)}
   #veil{background:
     linear-gradient(to bottom,var(--vz) 0,rgba(var(--void-rgb),.7) calc(var(--datum-y) - 40px),var(--v0) calc(var(--datum-y) + 34px)),
     linear-gradient(to top,var(--vz) 0,rgba(var(--void-rgb),.7) calc(var(--band-h) + var(--safe-b)),var(--v0) calc(var(--band-h) + var(--safe-b) + 92px));
+}
 }
 @media (pointer:coarse) and (max-width:600px){
   /* at the CORE rest view (body.axis-slot: idle, not zoomed in) the top band protects the corner columns, not the centre

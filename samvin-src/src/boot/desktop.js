@@ -72,16 +72,21 @@ export function buildTitle(ctx, B, marks, o) {
 
   // ── DEPTH (600–1,800) ──
   if (!wake) {
+    // a structure must read in the DEPTH beat (not a loading screen): the rim lattice reaches its 6 % in the first half
+    // and the axis beads come up to 80 % while the rack focus pulls them sharp — the hall's spine stands in the void
     tl.span(600, 1800, (u) => {
       const e = EASE.camera(u);
       B.cam.at(16 + (9.5 - 16) * e);
-      B.world.rim(0.5 * EASE.reveal(u));
-      B.world.beads(0.3 * u);
+      B.world.rim(0.85 * EASE.reveal(clamp01(u * 1.8)));
+      B.world.beads(0.8 * EASE.reveal(clamp01(u * 1.4)));
     });
   }
   // ── DETECTION (1,800–2,600) ──
   tl.at(1800, () => { if (!wake) { B.reveal.points(0); B.reveal.set(1, 0, 1, 0, null); } });
-  tl.span(1800, 2600, (u) => { if (B.reveal.points(Math.min(1, u * 1.08)) > 0) B.sound.tick(); });
+  tl.span(1800, 2600, (u) => {
+    if (!wake) B.world.rim(0.85 - 0.35 * EASE.camera(u));     // the hall steps back to its 6 % as the Key is found
+    if (B.reveal.points(Math.min(1, u * 1.08)) > 0) B.sound.tick();
+  });
   // ── THE LINE (2,600–3,400) ──
   tl.cue(2600, 'bootSwell', (T) => audio.play('bootSwell', { when: T }), null);
   B.sound.cuePop(tl, 2600, 800);
@@ -130,7 +135,7 @@ export function buildTitle(ctx, B, marks, o) {
   tl.span(5600, 6200, (u) => {
     B.world.ribbon(u >= 1 ? 1200 : 260 * EASE.phosphor(u), 1);
     B.world.flashRibbon(u >= 1 ? 0 : 0.6 * (1 - u));
-    B.world.beads(0.3 + 0.7 * u);
+    B.world.beads(wake ? 0.3 + 0.7 * u : 0.8 + 0.2 * u);
   });
   const burnName = (now) => {
     B.world.rim(1);

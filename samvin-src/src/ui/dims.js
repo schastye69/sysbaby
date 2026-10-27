@@ -9,6 +9,7 @@ import { after } from '../core/clock.js';
 import { LAYOUT, TIMING } from '../core/tokens.js';
 import { keepout } from './keepout.js';
 import { fontsReady } from '../core/fonts.js';
+import { layout } from '../core/layout.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const items = [];
@@ -62,8 +63,10 @@ function geometry(d) {
     + `M${f1(bx - (dx * 0.866 - dy * 0.5) * A)} ${f1(by - (dy * 0.866 + dx * 0.5) * A)}L${f1(bx)} ${f1(by)}`
     + `L${f1(bx - (dx * 0.866 + dy * 0.5) * A)} ${f1(by - (dy * 0.866 - dx * 0.5) * A)}`;
   if (p !== d.lastD) { d.lastD = p; d.path.setAttribute('d', p); }
-  d.label.style.transform = `translate3d(${f1(mx)}px,${f1(my)}px,0) translate(-50%,-50%)`;
-  keepout.set(d.kid, mx - d.lw * 0.5, my - d.lh * 0.5, mx + d.lw * 0.5, my + d.lh * 0.5);
+  // the value (with its knock-out) never leaves the 16 px gutter: near an edge it slides along the screen, beside its line
+  const vw = layout.w || 0, lx = vw > 0 ? Math.max(16 + d.lw * 0.5, Math.min(vw - 16 - d.lw * 0.5, mx)) : mx;
+  d.label.style.transform = `translate3d(${f1(lx)}px,${f1(my)}px,0) translate(-50%,-50%)`;
+  keepout.set(d.kid, lx - d.lw * 0.5, my - d.lh * 0.5, lx + d.lw * 0.5, my + d.lh * 0.5);
   return true;
 }
 

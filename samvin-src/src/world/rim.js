@@ -30,7 +30,7 @@ import { WORLD, operatorMember } from '../data/world.js';
 import { state } from '../core/state.js';
 import { layout } from '../core/layout.js';
 import { bus } from '../core/bus.js';
-import { CANVAS_FONT, HALL, LIT_NODES, CAMERA, TIMING, LAYOUT } from '../core/tokens.js';
+import { CANVAS_FONT, HALL, LIT_NODES, CAMERA, TIMING, LAYOUT, coreFov, coreOffY } from '../core/tokens.js';
 import { keepout } from '../ui/keepout.js';
 import { app } from '../core/store.js';
 
@@ -42,13 +42,17 @@ const LETTER_M = 12.5;
  *  so the stack keeps its air; desktop and landscape keep SPEC's ≈ 60 px. */
 const letterM = () => (layout.kind === 'desktop' || (layout.w || 0) > (layout.h || 1) ? LETTER_M : LETTER_M * 0.86);
 const ROLE_FRAC = 0.22;               // A3.1
+/** Legibility floors on screen (CSS px of cap height): his name never drops below a hero size on a portrait phone, the
+ *  subline never below a readable caption, guests (who wrap onto more rows rather than shrink) never below MIN_GUEST. */
+const MIN_CAP_PX = 30, MIN_ROLE_PX = 9, MIN_GUEST_PX = 20, MIN_MICRO_PX = 7;
 const ROLE_GAP = 0.2;                 // cap bottom → subline cap top (× h): name + subline read as one caption
 const NODE_ROW = 12;                  // lit nodes per row of his ledger (on the subline)
 /** px under the Key's lower tip down to the bottom of its `Ø 1.24 М` value (the line + half the 12 px MICRO box) */
 const DIM_CLEAR = LAYOUT.dims.keyBelowPx + 6;
-/** The caption hangs from the Ø value: its cap line sits CAP_AIR × cap height below it (min 12 px), so the Key, its
- *  dimension and his name read as one drawing, and the space left over opens up above the status line. */
-const CAP_AIR = 0.2;
+/** The caption hangs from the Ø value: its cap line sits capAir() × cap height below it (min 12 px), so the Key, its
+ *  dimension and his name read as one drawing. Desktop keeps the A12 centred Key (every geometry probe reads it), so its
+ *  name keeps SPEC's ≈ 60 px cap with 0.2 of air; a portrait phone (wider lens, Key higher) gives the caption 0.35. */
+const capAir = () => (layout.kind === 'desktop' ? 0.2 : 0.35);
 const MICRO_FRAC = 0.16;              // `ГОСТИ · {n}` (MICRO-sized rim text)
 const GAP_FRAC = 0.3;                 // A4.1 gap between names in a row (× h_g)
 const ROW_FRAC = 1.25;                // A4.1 row pitch (× h_g)
@@ -114,7 +118,7 @@ const _cam = new PerspectiveCamera(CAMERA.core.fov, 1, 0.1, 4000);
 const _p = new Vector3();
 function restCam() {
   const asp = Math.max(0.2, (layout.w || 1440) / Math.max(1, layout.h || 900));
-  _cam.aspect = asp; _cam.fov = CAMERA.core.fov;
+  _cam.aspect = asp; _cam.fov = coreFov(layout.kind);
   _cam.position.set(...CAMERA.core.pos);
   _cam.lookAt(0, 0, 0);
   _cam.updateProjectionMatrix(); _cam.updateMatrixWorld(true);
@@ -123,7 +127,7 @@ function restCam() {
 function screenY(y, z) {
   const h = layout.h || 900;
   _p.set(0, y, z).project(_cam);
-  return (1 - _p.y) * 0.5 * h + (layout.kind === 'desktop' ? 0 : CAMERA.core.phoneOffsetY * h);
+  return (1 - _p.y) * 0.5 * h + coreOffY(layout.kind) * h;
 }
 function worldYForScreen(sy) {          // on the rim face (bisection; monotonic)
   let lo = -400, hi = 400;
@@ -144,8 +148,12 @@ function statusTop(h) {
 function visibleWidth() {
   const d = Math.hypot(CAMERA.core.pos[1], CAMERA.core.pos[2] - zFace);
   const asp = Math.max(0.2, (layout.w || 1440) / Math.max(1, layout.h || 900));
-  return 2 * d * Math.tan((CAMERA.core.fov * Math.PI) / 360) * asp;
+  return 2 * d * Math.tan((coreFov(layout.kind) * Math.PI) / 360) * asp;
 }
+
+/** CSS px per canonical metre of cap height on the rim face, from the rest pose (call after restCam()). */
+function capPxPerM() { return Math.max(1e-3, screenY(0, zFace) - screenY(1, zFace)); }
+const minM = (px) => (layout.kind === 'phone' ? px : 0) / capPxPerM();
 
 export function createRim(ctx) {
   void ctx;
@@ -231,7 +239,7 @@ export function createRim(ctx) {
       items.push({ text: guests[gi], kind: 'guest', h: hGuest, x: side > 0 ? right + gap + w / 2 : left - gap - w / 2, y: 0, w, row: 0, slot: 0 });
       left = nl; right = nr; side = -side; gi++;
     }
-    const roleH = ROLE_FRAC * hName;
+    const roleH = Math.max(ROLE_FRAC * hName, MIN_ROLE_PX / capPxPerM());
     const roleY = -(hName / 2 + ROLE_GAP * hName + roleH / 2);
     items.push({ text: roleText, kind: 'role', h: roleH, x: 0, y: roleY, w: roleText ? textWidthM(roleText, roleH, 'role') : 0, row: 0, slot: 1 });
     // further rows: centred, alternating right / left of the row centre
@@ -254,8 +262,8 @@ export function createRim(ctx) {
       rowY -= ROW_FRAC * hGuest; row++;
     }
     if (guests.length) {
-      const mh = MICRO_FRAC * hGuest, t = `ГОСТИ · ${guests.length}`;
-      items.push({ text: t, kind: 'micro', h: mh, x: 0, y: lastY - 0.6 * hGuest - mh / 2, w: textWidthM(t, mh, 'micro'), row, slot: 0 });
+      const mh = Math.max(MICRO_FRAC * hGuest, MIN_MICRO_PX / capPxPerM()), t = `ГОСТИ · ${guests.length}`;
+      items.push({ text: t, kind: 'micro', h: mh, x: 0, y: lastY - 0.45 * hGuest - mh / 2, w: textWidthM(t, mh, 'micro'), row, slot: 0 });
     }
     // bounding box (m), with a margin for glyph overhang
     let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
@@ -272,17 +280,20 @@ export function createRim(ctx) {
     const keyBottom = screenY(-1.2, 0);
     // above the status line: its real box (desktop ≈ h − 62; phone: band 88 + safe + 12 + 26 + the line), 10 px air
     const limit = statusTop(h) - 10;
-    // under the Key's `Ø 1.24 М` value (WP1, A14), the cap line CAP_AIR × cap height lower (≥ 12 px); the caption is
+    // under the Key's `Ø 1.24 М` value (WP1, A14), the cap line capAir() × cap height lower (≥ 12 px); the caption is
     // hung from there, not centred, so the air collects above the status line (grouping: Key + Ø · name + subline ·
     // status). Cap-accurate extents: the name's cap top is +h/2 above its row; the lowest line's baseline is −h/2.
     let cTop = -Infinity, cBot = Infinity;
     for (const it of items) { if (it.kind === 'role' && !roleText) continue; cTop = Math.max(cTop, it.y + it.h / 2); cBot = Math.min(cBot, it.y - it.h / 2); }
     const capPx = Math.max(1, screenY(0, zFace) - screenY(hName, zFace));
-    const topY = worldYForScreen(keyBottom + DIM_CLEAR + Math.max(10, CAP_AIR * capPx)), bottomY = worldYForScreen(limit);
-    lastAvail = topY - bottomY;
+    const topY = worldYForScreen(keyBottom + DIM_CLEAR + Math.max(10, capAir() * capPx)), bottomY = worldYForScreen(limit);
+    // Guest rows that cannot fit under the Ø value may rise into its band (the Ø dimension yields to the caption,
+    // key/hover.js), never into the Key's tip.
+    const ceilY = worldYForScreen(keyBottom + 8);
+    lastAvail = (guests.length ? ceilY : topY) - bottomY;
     lastBlockH = cTop - cBot;
     nameY = topY - cTop;
-    if (nameY + cBot < bottomY) nameY += bottomY - (nameY + cBot);   // never under the status line
+    if (nameY + cBot < bottomY) nameY = Math.min(ceilY - cTop, nameY + bottomY - (nameY + cBot));   // never under the status line
     plane.scale.set(pw, ph, 1);
     plane.position.set((x0 + x1) / 2, nameY + (y0 + y1) / 2, zFace);
     // draw (block → canvas: x about the box centre, y flipped)
@@ -321,7 +332,8 @@ export function createRim(ctx) {
     // his name alone must also fit between the Ø line and the status line (a portrait phone): one smaller height
     if (!guests.length && !fitting && lastBlockH > lastAvail * 1.02 && lastAvail > 1) {
       fitting = true;
-      for (let it = 0; it < 3 && lastBlockH > lastAvail * 1.02; it++) { hName = hGuest = hName * Math.max(0.5, lastAvail / lastBlockH) * 0.98; relayout(); }
+      const floor = minM(MIN_CAP_PX);
+      for (let it = 0; it < 3 && lastBlockH > lastAvail * 1.02 && hName > floor * 1.001; it++) { hName = hGuest = Math.max(floor, hName * Math.max(0.5, lastAvail / lastBlockH) * 0.98); relayout(); }
       fitting = false;
     }
   }
@@ -487,8 +499,10 @@ export function createRim(ctx) {
       if (h < hName) hName = h;
       relayout();
       // the rows also have to fit between the Key's lower tip and the status line: one equal height for every name
-      for (let it = 0; it < 3 && lastBlockH > lastAvail && lastAvail > 1; it++) {
-        h *= Math.max(0.3, lastAvail / lastBlockH) * 0.98;
+      restCam();
+      const floor = minM(MIN_GUEST_PX);
+      for (let it = 0; it < 3 && lastBlockH > lastAvail && lastAvail > 1 && h > floor * 1.001; it++) {
+        h = Math.max(floor, h * Math.max(0.3, lastAvail / lastBlockH) * 0.98);
         hGuest = h; hName = h;
         relayout();
       }

@@ -157,6 +157,7 @@ export function createHover(K, ctx) {
 
   // ── A14 dimension lines ──
   const dims = [];
+  let oCover = false;
   let dimRx = 0, vOffIdle = 0, vOff = 0, oOff = 0, oAt = 0.5, vAt = 0.5;
   const P = (x, y) => (out) => out.set(x, y, 0).applyMatrix4(K.group.parent ? K.group.parent.matrixWorld : K.group.matrixWorld);
   function makeDims(si) {
@@ -184,7 +185,7 @@ export function createHover(K, ctx) {
     if (on === dimsOn) return;
     dimsOn = on;
     if (on) dimsSnap = true;
-    for (const d of dims) { d.setVisible(on); if (on) d.drawIn(TIMING.dimsDraw); }
+    for (const d of dims) { d.setVisible(on && !(d === dims[1] && oCover)); if (on) d.drawIn(TIMING.dimsDraw); }
   }
 
   /** dt s · t loop ms · si Key screen info · interactiveRest: interactive, CORE, idle phase, not travelling ·
@@ -237,6 +238,11 @@ export function createHover(K, ctx) {
         if (Math.abs(at - oAt) < 0.002) oAt = at;
         dims[1].setLabelAt(oAt);
         dims[1].setBreak(bt, bh);
+        // the rim caption (guest rows on a portrait phone, a long guest row on desktop) may take the Ø band: the
+        // dimension yields to the names rather than run through them
+        const rb = keepout.get('rim');
+        const cover = !!rb && rb.y0 < lineY + 8 && rb.x0 < si.x + si.rx && rb.x1 > si.x - si.rx;
+        if (cover !== oCover) { oCover = cover; dims[1].setVisible(dimsOn && !cover); }
       }
     }
     const p = input.pointer;
@@ -313,7 +319,7 @@ export function createHover(K, ctx) {
         // dropping to a block below the name would cut through its letters — the block then stays on the near side.
         const rise = tgt - sy[i];
         if (Math.abs(rise) > 1 && (sy[i] < b.y0 - 10 || sy[i] > b.y1 + 10)
-          && segHits(sxs[i], sy[i], sxs[i] + Math.abs(rise), tgt, b.x0 - 8, b.y0 - 8, b.x1 + 8, b.y1 + 8)) {
+          && segHits(sxs[i], sy[i], sxs[i] + Math.abs(rise), tgt, b.x0 - 28, b.y0 - 12, b.x1 + 28, b.y1 + 12)) {   // a clear berth, not a graze
           tgt = rise > 0 ? Math.max(sy[i], b.y0 - 10) : Math.min(sy[i], b.y1 + 10);
           if (rise > 0) capHi[i] = Math.min(capHi[i], tgt); else capLo[i] = Math.max(capLo[i], tgt);
         }

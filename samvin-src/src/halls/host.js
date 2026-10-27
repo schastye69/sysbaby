@@ -14,7 +14,7 @@ import { createPlaceholderHall } from './placeholder.js';
 import { logOnce } from '../core/env.js';
 import { loop, ORDER } from '../core/loop.js';
 import { app } from '../core/store.js';
-import { CAMERA } from '../core/tokens.js';
+import { CAMERA, coreFov, coreOffY } from '../core/tokens.js';
 
 /** @typedef {{ id:string, hall:Object, hctx:Object, section:HTMLElement, shell:Object|null, group:Group|null,
  *              shown:boolean, dead:boolean, throwArmed:boolean }} Resident */
@@ -66,6 +66,9 @@ function makeHctx(id, section, shell, group) {
   hctx.section = section;
   hctx.shell = shell;
   hctx.toCanonical = (local, out) => out.copy(local).add(meta.anchor);
+  // the hall's own handle on the shared phone sheet: its clears and closes only touch content it put up
+  const sh = ctxRef.sheet;
+  if (sh) hctx.sheet = Object.assign(Object.create(sh), { set: (c, o) => sh.set(c, o, id), close: () => sh.close(id) });
   return hctx;
 }
 
@@ -212,8 +215,8 @@ export const hallHost = {
       out.target.copy(p.target).add(meta.anchor);
       out.fov = p.fov || CAMERA.fov; out.offsetY = p.offsetY || 0; out.roll = p.roll || 0;
     } else if (meta.id === 'CORE') {
-      out.pos.fromArray(CAMERA.core.pos); out.target.fromArray(CAMERA.core.target); out.fov = CAMERA.core.fov;
-      out.offsetY = ctxRef && ctxRef.layout && ctxRef.layout.kind !== 'desktop' ? CAMERA.core.phoneOffsetY : 0; out.roll = 0;
+      out.pos.fromArray(CAMERA.core.pos); out.target.fromArray(CAMERA.core.target); const k = ctxRef && ctxRef.layout ? ctxRef.layout.kind : 'desktop';
+      out.fov = coreFov(k); out.offsetY = coreOffY(k); out.roll = 0;
     } else {
       out.pos.set(0, meta.alt + 10, 48); out.target.set(0, meta.alt + 12.5, 0); out.fov = CAMERA.fov; out.offsetY = 0; out.roll = 0;
     }

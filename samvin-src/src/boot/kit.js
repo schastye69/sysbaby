@@ -10,7 +10,7 @@
 import { Vector3 } from 'three';
 import { STRATA_GEOM } from '../world/structure.js';
 import { layout } from '../core/layout.js';
-import { CAMERA, HALL } from '../core/tokens.js';
+import { CAMERA, HALL, coreFov, coreOffY } from '../core/tokens.js';
 import { EASE, clamp01 } from '../core/ease.js';
 
 const TAU = Math.PI * 2;
@@ -47,7 +47,7 @@ export function createReveal(k) {
       if (m > shown) for (let i = shown; i < m; i++) arr[order[i]] = 1;
       else for (let i = m; i < shown; i++) arr[order[i]] = 0;
       shown = m;
-      if (m === n && saved) { arr.set(saved, n); saved = null; }      // every ring vertex is in: the extras come back
+      // the extras (the N slot dots) wait for the ignition (B.ignite → restorePoints): no orphan dash under the tip in ПАУЗА
       aAl.needsUpdate = true;
       return Math.max(0, m - was);
     },
@@ -201,8 +201,8 @@ export const stratumMid = (i) => STRATA_GEOM[i].mid;
 // ─── camera ─────────────────────────────────────────────────────────────────────────────────────────────────
 const C = CAMERA.core, B = CAMERA.boot;
 export function corePose(out) {
-  out.pos.set(C.pos[0], C.pos[1], C.pos[2]); out.target.set(0, 0, 0); out.fov = C.fov;
-  out.offsetY = layout.kind === 'desktop' ? 0 : C.phoneOffsetY; out.roll = 0;
+  out.pos.set(C.pos[0], C.pos[1], C.pos[2]); out.target.set(0, 0, 0); out.fov = coreFov(layout.kind);
+  out.offsetY = coreOffY(layout.kind); out.roll = 0;
   return out;
 }
 export function createCamera(ctx) {
@@ -224,8 +224,8 @@ export function createCamera(ctx) {
       a.set(0, (yAt16 * d0) / 16, d0); b.set(C.pos[0], C.pos[1], C.pos[2]);
       const la = a.length(), lb = b.length(), d = la + (lb - la) * u;
       const ta = Math.atan2(a.y, a.z), tb = Math.atan2(b.y, b.z), th = ta + (tb - ta) * up;
-      pose.pos.set(a.x + (b.x - a.x) * u, d * Math.sin(th), d * Math.cos(th)); pose.target.set(0, 0, 0); pose.fov = C.fov;
-      const offR = layout.kind === 'desktop' ? 0 : C.phoneOffsetY;
+      pose.pos.set(a.x + (b.x - a.x) * u, d * Math.sin(th), d * Math.cos(th)); pose.target.set(0, 0, 0); pose.fov = C.fov + (coreFov(layout.kind) - C.fov) * u;
+      const offR = coreOffY(layout.kind);
       pose.offsetY = off0 + (offR - off0) * u; pose.roll = 0;
       if (rig) rig.setPose(pose);
     },

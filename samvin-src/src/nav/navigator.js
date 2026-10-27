@@ -462,11 +462,12 @@ export const keyNav = {
     twinEl.classList.add('is-on');
     const [a, b] = twinPaths;
     tween(TIMING.navTwin, (u) => {
-      const amp = 5 * (1 - u), fa = 3, fb = 3 + 2 * (1 - u);
+      // two clean 1 px sines (long wavelengths, sampled every px), tapering to the needle at the right end
+      const amp = 4 * (1 - u), fa = 1.5, fb = 1.5 + (1 - u);
       let da = 'M0 6', db = 'M0 6';
-      for (let x = 2; x <= 40; x += 2) {
-        da += `L${x} ${(6 + amp * Math.sin((x / 40) * fa * 6.283)).toFixed(2)}`;
-        db += `L${x} ${(6 + amp * Math.sin((x / 40) * fb * 6.283 + 1)).toFixed(2)}`;
+      for (let x = 1; x <= 40; x += 1) {
+        da += `L${x} ${(6 + amp * (1 - x / 44) * Math.sin((x / 40) * fa * 6.283)).toFixed(2)}`;
+        db += `L${x} ${(6 + amp * (1 - x / 44) * Math.sin((x / 40) * fb * 6.283 + 1)).toFixed(2)}`;
       }
       a.setAttribute('d', da); b.setAttribute('d', db);
     }).done.then(() => after(120, () => twinEl.classList.remove('is-on')));

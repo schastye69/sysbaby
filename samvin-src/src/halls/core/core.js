@@ -10,7 +10,7 @@ import { Vector3 } from 'three';
 import { roomByStratum } from '../../world/rooms.js';
 import { app } from '../../core/store.js';
 import { registerHookField } from '../../core/testhook.js';
-import { CAMERA } from '../../core/tokens.js';
+import { CAMERA, coreFov, coreOffY } from '../../core/tokens.js';
 import { createToday } from './today.js';
 import { createPull } from './pull.js';
 import { createUnfold } from './unfold.js';
@@ -28,8 +28,8 @@ export function createCoreHall(hctx) {
   /** Allocation-free (pose() is on the G9 hot-path list). sub 'open' → the unfolded pose. */
   function restPose(sub) {
     if (sub === 'open' && unfold) return unfold.pose(poseOut);
-    poseOut.pos.copy(restPos); poseOut.target.copy(restTarget); poseOut.fov = C.fov;
-    poseOut.offsetY = hctx.layout.kind === 'desktop' ? 0 : C.phoneOffsetY; poseOut.roll = 0;
+    poseOut.pos.copy(restPos); poseOut.target.copy(restTarget); poseOut.fov = coreFov(hctx.layout.kind);
+    poseOut.offsetY = coreOffY(hctx.layout.kind); poseOut.roll = 0;
     return poseOut;
   }
 

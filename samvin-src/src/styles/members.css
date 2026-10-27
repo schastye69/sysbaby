@@ -30,9 +30,8 @@
 .mb-row--sbor .mb-v{color:var(--silver)}
 .mb-row--sbor .t-micro{color:rgba(var(--silver-rgb),.72)}
 /* the row write: rows wait (opacity 0), then appear 60 ms apart; each LABEL a one-shot wdth 75 → 100 */
-.mb-pend{opacity:0}
+.mb-pend,.mb-row.mb-pend>*{opacity:0}   /* a row is display:contents: its label and value wait (and land) together */
 .mb-row>*,.mb-trait,.mb-joke,.mb-op,.mb-row--sbor{transition:opacity var(--d-120)}
-.mb-row.mb-pend>*{opacity:0}
 @keyframes mb-wd{0%{font-variation-settings:"wght" 500,"wdth" 75;font-stretch:75%}
   60%{font-variation-settings:"wght" 500,"wdth" 100;font-stretch:100%}
   100%{font-variation-settings:"wght" 500,"wdth" 87.5;font-stretch:87.5%}}

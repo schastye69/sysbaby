@@ -35,10 +35,10 @@
 .vy-tick-mark{display:block;width:1px;height:10px;background:rgba(var(--silver-rgb),.55)}
 .vy-tick[data-state="done"] .vy-tick-mark{height:12px;background:var(--silver)}
 .vy-tick[data-state="locked"] .vy-tick-mark{background:var(--pewter);height:7px}
-.vy-tick[data-state="sealed"] .vy-tick-mark{background:var(--steel);height:7px;outline:1px solid rgba(var(--slate-rgb),.9)}
+.vy-tick[data-state="sealed"] .vy-tick-mark{width:6px;height:6px;margin-top:2px;background:none;border:1px solid rgba(var(--silver-rgb),.6);transform:rotate(45deg)}   /* the sealed 000: a small diamond (the Key's own seal), not a near-invisible box */
 .vy-tick[data-state="proposal"] .vy-tick-mark{background:repeating-linear-gradient(var(--silver) 0 2px,transparent 2px 4px)}
 .vy-tick[data-selected] .vy-tick-mark{width:2px;height:16px;background:var(--ember)}
-.vy-tick-code{position:absolute;left:calc(50% + 6px);top:2px;visibility:hidden;white-space:nowrap}
+.vy-tick-code{position:absolute;z-index:1;left:calc(50% + 5px);top:1px;padding:0 5px 0 2px;visibility:hidden;white-space:nowrap;background:var(--deep)}   /* knocked out of the next ticks */
 .vy-tick[data-selected] .vy-tick-code{visibility:visible;color:var(--silver)}
 .vy-peek .vy-left,.vy-peek .vy-verbs{position:static}
 

@@ -11,7 +11,7 @@ import { LAYER } from '../render/uniforms.js';
 import { createElevator } from '../nav/elevator.js';
 import { mulberry32 } from '../core/rng.js';
 import { clamp01 } from '../core/ease.js';
-import { CAMERA } from '../core/tokens.js';
+import { CAMERA, coreFov, coreOffY } from '../core/tokens.js';
 
 const DEG = Math.PI / 180;
 const TAU = Math.PI * 2;
@@ -48,7 +48,7 @@ function restPose(id, kind, alt, out) {
     case 'NADIR': return P(out, xyz(0, 20, 40), 0, 0, 0);
     case 'ZENITH': return pitched(out, xyz(0, 50, 30), phone ? CAMERA.zenith.phonePitchDeg : CAMERA.zenith.pitchDeg, -110);
     case 'WORKSHOP': return P(out, xyz(0, 0, 3.2), 0, 0, 0);
-    default: t = CAMERA.core.target; return P(out, CAMERA.core.pos, t[0], t[1], t[2], CAMERA.core.fov, kind === 'desktop' ? 0 : CAMERA.core.phoneOffsetY);
+    default: t = CAMERA.core.target; return P(out, CAMERA.core.pos, t[0], t[1], t[2], coreFov(kind), coreOffY(kind));
   }
 }
 

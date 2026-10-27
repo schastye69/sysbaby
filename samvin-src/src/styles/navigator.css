@@ -53,7 +53,7 @@
 #keynav-needle,.kn-twin{position:absolute;right:var(--nav-w);top:0;pointer-events:none;will-change:transform}
 #keynav-needle{width:var(--nav-needle);height:1px;background:var(--ember)}
 .kn-twin{width:var(--nav-twin);height:12px;margin-top:-6px;opacity:0}
-.kn-twin path{stroke:var(--ember)}
+.kn-twin path{fill:none;stroke:var(--ember);stroke-width:1;stroke-linejoin:round}
 #keynav-slots{position:absolute;right:0;width:var(--nav-w);display:flex;justify-content:center;gap:4px;pointer-events:none}
 .slot{width:var(--nav-slot);height:var(--nav-slot);border-radius:50%;background:var(--slate);transition:background var(--d-240)}
 .slot.filled{background:var(--silver)}
@@ -81,7 +81,13 @@
   .kn-text,.kn-tick,.kn-twin{display:none}
   #keynav-needle{right:auto;left:0;top:12px;width:1px;height:calc(var(--band-h) - 24px)}
   #keynav-slots{right:auto;left:calc(16px + (100% - 32px) * 6 / 7);width:calc((100% - 32px) / 7);top:calc(var(--band-h) / 2 + 12px)}
-  #keynav-zenith{right:auto;left:8px;top:calc(var(--band-h) / 2)}
+  /* the ZENITH point sits on the band's axis carried past the S tip: a 1 px extension joins it, so it reads as part of
+     the drawing, never as a stray pixel at the screen edge */
+  #keynav-zenith{right:auto;left:7px;top:calc(var(--band-h) / 2 - 1px)}
+  #keynav-zenith::after{content:"";position:absolute;left:3px;top:.5px;width:7px;height:1px;background:rgba(var(--silver-rgb),.45)}
+  /* every band letter is knocked out of the lines under it (the N cell's crack after NADIR opens runs behind its N) */
+  .kn-letter{text-shadow:0 0 2px var(--void),0 0 3px var(--void),0 0 6px var(--void),0 0 10px var(--void)}
+  .kn-crack.is-cool{stroke:rgba(var(--silver-rgb),.5)}
   #keynav-ring{right:auto;left:calc(50% - 22px);top:calc(var(--band-h) / 2)}
   #keynav-ring .t-label{right:auto;left:0;top:-16px}
   #keynav-name{display:block;position:absolute;left:0;right:0;bottom:calc(100% + 4px);text-align:center;max-width:none;pointer-events:none}

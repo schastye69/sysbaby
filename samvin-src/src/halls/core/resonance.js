@@ -28,7 +28,7 @@ import { rig } from '../../render/cameraRig.js';
 import { U } from '../../render/uniforms.js';
 import { vibrate, VIBE } from '../../ui/tactile.js';
 import { WORLD } from '../../data/world.js';
-import { CAMERA } from '../../core/tokens.js';
+import { CAMERA, coreFov, coreOffY } from '../../core/tokens.js';
 import { MODES, sampleNodal, sampleTextTargets, sampleGlyphTargets, nextSubject } from './resonanceModel.js';
 
 const STEPS = [600, 1500, 2400, 3300, 4200, 5100];
@@ -387,7 +387,7 @@ export function createResonance(hctx, onClick) {
 
   // ── camera: the plate fills 70 % of the height (desktop) / 88 % of the width (phone) ──
   function plateDist() {
-    const t = Math.tan((C.fov * Math.PI) / 360);
+    const t = Math.tan((coreFov(hctx.layout.kind) * Math.PI) / 360);
     if (hctx.layout.kind === 'desktop') return SIZE / (0.70 * 2 * t);
     const aspect = Math.max(0.2, hctx.layout.w / Math.max(1, hctx.layout.h));
     return SIZE / (0.88 * 2 * t * aspect);
@@ -406,9 +406,9 @@ export function createResonance(hctx, onClick) {
       _v.copy(plateC).addScaledVector(dir, plateDist());
       out.pos.copy(restPos).lerp(_v, w);
       out.target.set(0, 0, 0).lerp(plateC, w);
-      out.fov = C.fov;
+      out.fov = coreFov(hctx.layout.kind);
       // the plate sits a little above centre, so its caption clears the status line (desktop) / the Key band (phone)
-      out.offsetY = lerp(hctx.layout.kind === 'desktop' ? 0 : C.phoneOffsetY, hctx.layout.kind === 'desktop' ? -0.075 : C.phoneOffsetY, w);
+      out.offsetY = lerp(coreOffY(hctx.layout.kind), hctx.layout.kind === 'desktop' ? -0.075 : coreOffY(hctx.layout.kind), w);
       out.roll = 0;
       return true;
     },

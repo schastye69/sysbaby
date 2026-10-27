@@ -194,6 +194,7 @@ export function createZenithHall(hctx) {
     },
     depart() {
       current = false;
+      if (hctx.lead) hctx.lead.hide();      // the summit's message stays at the summit (never beams on over the next hall)
       if (pad) { pad.stop(); pad = null; }
       if (stroke) { stroke.stop(); stroke = null; }
       if (elevator) elevator.reset();

@@ -18,6 +18,15 @@
 .sheet-peek{flex:none}
 .sheet-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding-top:8px}
 .sheet[data-state="peek"] .sheet-body{overflow:hidden}
+/* the peek never ends on a glyph's x-height: its last 28 px fade into the plate, so a cut line reads as "more below" */
+@media (min-height:500px){
+  #sheet::after{content:"";position:absolute;left:0;right:0;top:calc(var(--sheet-peek) - 28px);height:28px;pointer-events:none;
+    background:linear-gradient(rgba(var(--deep-rgb),0),var(--deep) 85%);opacity:0;transition:opacity var(--d-240) linear}
+  #sheet[data-state="peek"]::after{opacity:1}
+}
+/* a travel (DIVE / RECALL / LIFT) owns the screen: the hall sheet steps down behind the band and rises on arrival, so
+   the scale bar and the strut dimension never ride over its text (desktop never shows it at all) */
+body.in-travel #sheet[data-state]{transform:translateY(100%);visibility:hidden;transition:transform var(--d-240) var(--ease-reveal),visibility 0s var(--d-240)}
 .sheet--modal{z-index:4}
 .sheet-veil{position:fixed;inset:0;z-index:3;background:rgba(var(--void-rgb),.4);opacity:0;visibility:hidden;
   transition:opacity var(--d-240),visibility 0s var(--d-240)}

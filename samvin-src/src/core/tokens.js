@@ -337,7 +337,7 @@ export const HALL = Object.freeze({
 /** Rest camera poses from SPEC (hall-local metres; owners build CameraPose from these). pitch in degrees when no target is given. */
 export const CAMERA = Object.freeze({
   fov: 35, fovWide: 40,
-  core:     Object.freeze({ pos: CORE_POS, target: [0, 0, 0], fov: 35, phoneOffsetY: -0.06 }),   // МОНОЛИТ (A12): low, looking up at it; phone: Key centred at 44 %
+  core:     Object.freeze({ pos: CORE_POS, target: [0, 0, 0], fov: 35, deskOffsetY: 0, phoneOffsetY: -0.06, portraitFov: 37, portraitOffsetY: -0.088 }),   // МОНОЛИТ (A12): low, looking up at it. Desktop: the Key centred (the A12 geometry every desktop probe reads); landscape phone 44 %; portrait phone: a 6 % wider lens, the Key at 41 %, so Key tip → Ø → his name (SPEC ≈ 60 px cap desktop, ≥ 30 px phone) → subline → status stack with real air
   boot:     Object.freeze({ start: [0, 0.4, 16], dolly: 9.5, rest: CORE_REST_D, driftM: 0.08, driftHz: [0.13, 0.11], tiltDeg: 3 }),
   phoneStart: Object.freeze({ dist: 5.2, keyFrac: 0.78, centreFrac: 0.47 }),
   members:  Object.freeze({ pos: [0, 10, 48], target: [0, 12.5, 0], fov: 35, phonePos: [0, 11, 40] }),
@@ -349,6 +349,10 @@ export const CAMERA = Object.freeze({
   zenith:   Object.freeze({ aboveApex: 60, pitchDeg: -62, phonePitchDeg: -70 }),
   workshop: Object.freeze({ chamber: 4.4, grid: 2.4, nodeStep: 0.4 }),
 });
+
+/** CORE's rest lens and vertical frame offset for a layout kind (portrait phone: a wider lens, the Key a little higher). */
+export const coreFov = (kind) => (kind === 'phone' ? CAMERA.core.portraitFov : CAMERA.core.fov);
+export const coreOffY = (kind) => (kind === 'desktop' ? CAMERA.core.deskOffsetY : kind === 'phone' ? CAMERA.core.portraitOffsetY : CAMERA.core.phoneOffsetY);
 
 // ═══ 7. LAYOUT & CHROME (SPEC §2.3, §5.2, §6.0, §10.2) — same values as tokens.css ════════════════════════
 export const LAYOUT = Object.freeze({

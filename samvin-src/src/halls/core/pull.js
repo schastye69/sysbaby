@@ -29,7 +29,7 @@ import { vibrate, VIBE } from '../../ui/tactile.js';
 import { codeCapHeightM, STRATA_GEOM } from '../../world/structure.js';
 import { createEmitter } from '../../render/glow.js';
 import { earnedStrata } from '../../deeds/deedsModel.js';
-import { CAMERA, ZOOM, PULL, DESCENT, CORE_REST_D, STRUT_TICKS_PER_S, NUCLEUS } from '../../core/tokens.js';
+import { CAMERA, coreFov, coreOffY, ZOOM, PULL, DESCENT, CORE_REST_D, STRUT_TICKS_PER_S, NUCLEUS } from '../../core/tokens.js';
 
 const DEG = Math.PI / 180;
 const K = PULL.k;
@@ -511,7 +511,7 @@ export function createPull(hctx, api) {
       const ce = Math.cos(st.e);
       out.pos.set(Math.sin(st.yaw) * ce * d, Math.sin(st.e) * d, Math.cos(st.yaw) * ce * d);
       out.target.set(0, 0, 0);
-      out.fov = C.fov; out.offsetY = hctx.layout.kind === 'desktop' ? 0 : C.phoneOffsetY; out.roll = 0;
+      out.fov = coreFov(hctx.layout.kind); out.offsetY = coreOffY(hctx.layout.kind); out.roll = 0;
       return true;
     },
     update,

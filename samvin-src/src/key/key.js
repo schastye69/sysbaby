@@ -299,6 +299,10 @@ export function createKey(ctx) {
     U.uGap.value = gap;
     if (lawPending && !inPause()) { lawPending = false; for (let j = 0; j < 7; j++) if (lawDirty[j]) { lawDirty[j] = 0; signs.paintLaw(j, lawText[j]); } }
 
+    // The hover explode opens the lower half at a third of the rate: the nucleus and everything above it explode as
+    // drawn (the strata under the pointer stay where they are read), while the N tip drops only one gap-step and stays
+    // clear of the Ø value and his name hung under it.
+    const hoverLift = morphG.gap >= 0 ? 0 : (2 / 3) * H.amt * Math.max(0, H.gap - GAP.rest) * (1 - (overG ? overW : 0));
     const sk = strk.t0 >= 0 ? t - strk.t0 : -1;
     if (sk > 1600) strk.t0 = -1;
     let flashMax = 0;
@@ -306,7 +310,7 @@ export function createKey(ctx) {
       const m = morph[i], o = over[i], w = o ? overW : 0;
       let shv = 0;
       if (sk >= 0) shv = strk.amp * Math.exp(-0.18 * 18 * sk / 1000) * Math.sin(17.7 * sk / 1000 - i * 0.35) * (i % 2 ? -1 : 1);
-      const dy = (3 - i) * (gap - GAP.rest) + H.push[i] + m.dy + (o && o.dy ? o.dy * w : 0) + shv * 0.5;
+      const dy = (3 - i) * (gap - GAP.rest) + (i > 3 ? (i - 3) * hoverLift : 0) + H.push[i] + m.dy + (o && o.dy ? o.dy * w : 0) + shv * 0.5;
       dyArr[i] = dy;
       let y = shownYaw(i) + iw * (idleI.sway[i] + idleI.lagYaw[i]) + H.turn[i] + m.yaw + (o && o.yaw ? o.yaw * w : 0);
       if (wob.t0 >= 0) {
@@ -443,7 +447,8 @@ export function createKey(ctx) {
       revealA = r.alpha != null ? clamp01(r.alpha) : 1;
       // МОНОЛИТ: the forged surface carries its own creases (worn bevels), so the R3 hairlines and the 2 px vertex points
       // recede as the solid fills (DETECTION, fill 0, still shows them at full strength).
-      structure.setParts({ vertices: (r.points != null ? clamp01(r.points) : 1) * (1 - 0.9 * revealFill), solid: revealFill,
+      // DETECTION reads as a found shape, not a grey speckle: the bare points stand at twice their resting 40 % (→ 80 %).
+      structure.setParts({ vertices: (r.points != null ? clamp01(r.points) : 1) * (1 - 0.9 * revealFill) * (2 - revealFill), solid: revealFill,
         edges: 1 - 0.9 * revealFill, lattice: revealFill });
       structure.setFade(revealA);
       for (let q = 0; q < structure.edges.length; q++) structure.edges[q].uniforms.uFlash.value = r.scanY != null ? 0.35 : 0;

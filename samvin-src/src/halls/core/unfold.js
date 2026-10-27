@@ -22,12 +22,16 @@ import { audio } from '../../audio/engine.js';
 import { rig } from '../../render/cameraRig.js';
 import { anticipation } from '../../nav/paths.js';
 import { WORLD } from '../../data/world.js';
-import { STRATA_GEOM, CAMERA, KEY, GAP, TIMING, CORE_REST_D } from '../../core/tokens.js';
+import { STRATA_GEOM, CAMERA, KEY, GAP, TIMING, CORE_REST_D, coreFov, coreOffY } from '../../core/tokens.js';
 import { createRings, togetherLine } from './rings.js';
 
 const DEG = Math.PI / 180;
 const UNF = KEY.unfold;
 const FOV_OPEN = 56;
+/** portrait phone: a wider lens inside the rings (with their smaller letters, rings.js) so each ring line reads as whole
+ *  phrases across the narrow frame instead of fragments cut at both edges */
+const fovOpen = (kind) => (kind === 'phone' ? 68 : FOV_OPEN);
+const MOTTO_CPS = 44;
 const W1 = { A: [120, 600], B: [600, 1300], C: [1300, 1600], D: 1600 };
 const WF = { A: [120, 900], B: [900, 1900], C: [1900, 2200], D: 2200 };
 const crit = (x, w) => { const t = clamp01(x) * w; return 1 - (1 + t) * Math.exp(-t); };   // heavy spring, critically damped
@@ -120,7 +124,7 @@ export function createUnfold(hctx) {
     st.yaw = 0; st.vYaw = 0;
     // the dolly starts where the camera is (the normal zoom may have it nearer or farther than the rest pose)
     st.fromPos.copy(rig.pose && rig.camera ? rig.pose.pos : restPos);
-    st.fromFov = rig.pose && rig.camera ? rig.pose.fov : C.fov;
+    st.fromFov = rig.pose && rig.camera ? rig.pose.fov : coreFov(hctx.layout.kind);
     rings.refresh(aboutText());
     together.textContent = togetherLine();
     const ab = aboutText();
@@ -210,9 +214,10 @@ export function createUnfold(hctx) {
         block.classList.add('is-in');
         const motto = String(WORLD.clan.motto || '');
         if (ctx.lead) {
-          ctx.lead.show(motto, { beam: true, ms: 1e9 });
+          // the motto is the line the open Key exists to say: it writes at twice the BEAM rate, whole within ~0.8 s
+          ctx.lead.show(motto, { beam: true, ms: 1e9, cps: MOTTO_CPS });
           // the LABEL under it with the LEAD; the description fades in 240 ms after the beam has written the line
-          const beamMs = ENV.reducedMotion ? 160 : Math.min(2400, (motto.length / TIMING.beamCps) * 1000 + 120);
+          const beamMs = ENV.reducedMotion ? 160 : Math.min(2400, (motto.length / MOTTO_CPS) * 1000 + 120);
           after(beamMs + 240, () => { if (st.open && st.dir > 0) { block.classList.add('is-about'); st.beamDone = true; } });
         }
       }
@@ -233,7 +238,7 @@ export function createUnfold(hctx) {
   }
 
   function pose(out) {
-    out.pos.copy(openPos); out.target.copy(openTgt); out.fov = FOV_OPEN; out.offsetY = 0; out.roll = 0;
+    out.pos.copy(openPos); out.target.copy(openTgt); out.fov = fovOpen(hctx.layout.kind); out.offsetY = 0; out.roll = 0;
     return out;
   }
 
@@ -258,8 +263,8 @@ export function createUnfold(hctx) {
       }
       if (st.yaw) { const cy = Math.cos(st.yaw), sy = Math.sin(st.yaw), x = out.pos.x, z = out.pos.z; out.pos.x = x * cy + z * sy; out.pos.z = -x * sy + z * cy; }
       out.target.copy(restTgt).lerp(openTgt, b);
-      out.fov = lerp(st.dir >= 0 ? st.fromFov : C.fov, FOV_OPEN, b);
-      out.offsetY = lerp(hctx.layout.kind === 'desktop' ? 0 : C.phoneOffsetY, 0, b);
+      out.fov = lerp(st.dir >= 0 ? st.fromFov : coreFov(hctx.layout.kind), fovOpen(hctx.layout.kind), b);
+      out.offsetY = lerp(coreOffY(hctx.layout.kind), 0, b);
       out.roll = 0;
       return true;
     },

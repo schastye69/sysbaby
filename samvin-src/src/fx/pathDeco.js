@@ -131,7 +131,7 @@ export function createPathDeco(F) {
   const SEG = KEY.lattice.segmentsPerGenerator, NPT = 2 * (SEG + 1) + 2, IA = NPT - 2, IB = NPT - 1;
   // OFF: the dimension line stands well clear of the struts' crossing (long extension lines carry the eye from the two
   // lit struts to it, as a drawing dimensions a small feature at a readable distance); OUTER: the outside arrows' tails.
-  const TAU = Math.PI * 2, ARROW = 6, EXT = 4, OFF = 52, OUTER = 22;
+  const TAU = Math.PI * 2, ARROW = 6, EXT = 4, OFF = 52, OUTER = 22, CLIP = 6;
   const SVG = 'http://www.w3.org/2000/svg';
   const _m = new Matrix4(), _pp = { x: 0, y: 0, depth: 0, visible: false };
   const ringPt = (n, r, y, s, out) => {
@@ -158,16 +158,20 @@ export function createPathDeco(F) {
     const sc = n % 2 ? sBack - 1.5 * D : sBack;                    // odd n: the back is a crease — take the pair beside it
     const g = Math.round((sc - 0.5 * D - generatorParam(st, 1, 0, th, k)) / D);
     const L = [];
+    const sp = (2 * n * rb * Math.sin(Math.PI / n)) / k;
+    // The lit struts are a DETAIL, not the whole generators: each is drawn only ±CLIP strut spacings along its generator
+    // around the measured height, fading to nothing at both ends — so on the swap frame (×1 000) they stay two short
+    // members under their dimension instead of full-frame diagonals slashing across the hall.
+    const w = Math.min(0.5, (CLIP * sp) / Math.max(1e-3, Math.abs(st.top - st.bot)));
     for (const gi of [g, g + 1]) for (let m = 0; m <= SEG; m++) {
-      const t = m / SEG, y = st.top + (st.bot - st.top) * t;
+      const t = Math.max(0, Math.min(1, th + w * ((2 * m) / SEG - 1))), y = st.top + (st.bot - st.top) * t;
       L.push(ringPt(n, radiusAt(y), y, wrapS(generatorParam(st, 1, gi, t, k), n), new Vector3()));
     }
-    const mi = Math.min(SEG - 1, Math.floor(th * SEG)), fi = th * SEG - mi;
-    L.push(new Vector3().lerpVectors(L[mi], L[mi + 1], fi), new Vector3().lerpVectors(L[SEG + 1 + mi], L[SEG + 2 + mi], fi));
-    const sp = (2 * n * rb * Math.sin(Math.PI / n)) / k;
+    const mi = SEG >> 1;                                           // the window is centred on the measured height
+    L.push(L[mi].clone(), L[SEG + 1 + mi].clone());
     // the lit struts (render space, rewritten each frame until the swap)
     const segs = new Float32Array(2 * SEG * 6), al = new Float32Array(2 * SEG);
-    for (let q = 0; q < 2; q++) for (let m = 0; m < SEG; m++) al[q * SEG + m] = Math.max(0.12, 1 - Math.abs((m + 0.5) / SEG - th) / 0.5);
+    for (let q = 0; q < 2; q++) for (let m = 0; m < SEG; m++) { const e = 1 - Math.abs((2 * (m + 0.5)) / SEG - 1); al[q * SEG + m] = e * e * (3 - 2 * e); }
     // the two measured struts are singled out of the lattice: --white at twice the lattice's hairline weight
     const lines = createLines({ segments: segs, alpha: al, color: 'white', width: 2, glint: 0, far: 1e12, fog: false, depthTest: false, renderOrder: 9 });
     lines.mesh.name = 'strutLit';

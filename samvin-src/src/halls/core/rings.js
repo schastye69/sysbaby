@@ -178,7 +178,7 @@ export function createRings(hctx) {
       g.textBaseline = 'alphabetic';
       g.save(); g.translate(0, H * i + H * 0.5 + capPx / 2); g.scale(W / w, 1); g.fillText(text, 0, 0); g.restore();
       // ring geometry: the strip's height carries the cap height (0.06 m; 0.12 m on •)
-      const capM = i === 3 ? KEY.unfold.coreRingCap : KEY.unfold.ringCap;
+      const capM = (i === 3 ? KEY.unfold.coreRingCap : KEY.unfold.ringCap) * (hctx.layout && hctx.layout.kind === 'phone' ? 0.6 : 1);
       ru.uH.value[i] = (capM * H) / capPx;
       const lenM = ((W / H) * ru.uH.value[i]);                 // metres of one row at that height (× the stretch)
       ru.uRep.value[i] = Math.max(1, Math.round((ARC * ringRadius(i)) / lenM));

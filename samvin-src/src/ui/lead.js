@@ -50,7 +50,7 @@ export const lead = {
     root.classList.add('is-in');
     const p = new Promise((res) => { done = res; });
     if (opts.beam) {
-      beamWrite(textEl, String(text), {}).then(() => { if (my === gen) timer = after(ms, finish); });
+      beamWrite(textEl, String(text), { cps: opts.cps }).then(() => { if (my === gen) timer = after(ms, finish); });
     } else {
       textEl.textContent = String(text);
       revealBody(textEl);

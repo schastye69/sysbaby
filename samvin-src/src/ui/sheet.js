@@ -15,6 +15,7 @@ function setState(s) {
   if (sheet.state === s) return;
   sheet.state = s;
   if (root) root.dataset.state = s;
+  try { document.body.dataset.sheet = s; } catch (e) { /* no DOM */ }   // fx.css lifts the scale bar above a shown sheet
   for (const fn of listeners) { try { fn(s); } catch (e) { /* listener errors never break the sheet */ } }
 }
 
@@ -78,9 +79,16 @@ export const sheet = {
     return sheet;
   },
 
-  /** Hall-owned nodes; replaces the previous content. content null = empty + closed. */
-  set(content, opts = {}) {
+  /** The hall whose content is up (owner of the last non-empty set), or null. */
+  owner: null,
+  /** Hall-owned nodes; replaces the previous content. content null = empty + closed. owner (the per-hall handle in
+   *  halls/host.js passes it): a hall that has handed the sheet on (it departed, its exit tail runs on) can no longer
+   *  clear the next hall's content. */
+  set(content, opts = {}, owner = null) {
     if (!root) return;
+    const empty = !content && !opts.peek;
+    if (empty && owner != null && sheet.owner != null && owner !== sheet.owner) return;
+    sheet.owner = empty ? null : owner;
     peekEl.textContent = '';
     body.textContent = '';
     body.scrollTop = 0;
@@ -90,10 +98,18 @@ export const sheet = {
     setState(opts.state === 'full' ? 'full' : opts.state === 'closed' ? 'closed' : 'peek');
   },
   open(level = 'peek') { if (root && (peekEl.firstChild || body.firstChild)) setState(level === 'full' ? 'full' : 'peek'); },
-  close() { setState('closed'); },
+  close(owner = null) { if (owner != null && sheet.owner != null && owner !== sheet.owner) return; setState('closed'); },
   /** → off() */
   onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
 };
+
+/** body.modal-on while a modal sheet is up: the world's own DOM text under it steps back (CSS), so the plate is the
+ *  one readable thing on screen instead of a box dropped on top of other copy. */
+const openModals = new Set();
+function modalOn(el, on) {
+  if (on) openModals.add(el); else openModals.delete(el);
+  try { document.body.classList.toggle('modal-on', openModals.size > 0); } catch (e) { /* no DOM */ }
+}
 
 /** Extra modal sheets (e.g. WP10's «Кто ты?»): → { el, body, open(), close(), destroy() } */
 export function createSheet(opts = {}) {
@@ -110,9 +126,9 @@ export function createSheet(opts = {}) {
   if (host) { if (veil) host.appendChild(veil); host.appendChild(el); }
   const api = {
     el, body: b,
-    open() { el.dataset.state = 'full'; if (veil) veil.classList.add('is-on'); },
-    close() { el.dataset.state = 'closed'; if (veil) veil.classList.remove('is-on'); },
-    destroy() { for (const n of [el, veil]) if (n && n.parentNode) n.parentNode.removeChild(n); },
+    open() { el.dataset.state = 'full'; if (veil) veil.classList.add('is-on'); modalOn(el, true); },
+    close() { el.dataset.state = 'closed'; if (veil) veil.classList.remove('is-on'); modalOn(el, false); },
+    destroy() { modalOn(el, false); for (const n of [el, veil]) if (n && n.parentNode) n.parentNode.removeChild(n); },
   };
   if (veil) veil.addEventListener('click', () => api.close());
   return api;

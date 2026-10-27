@@ -144,6 +144,7 @@ export function createSession(ctx, kind, opts = {}) {
 
   /** The nucleus ignition of any boot / start / wake (1 frame --white, then ember; night electrum 55 %). */
   B.ignite = (o = {}) => {
+    if (B.reveal) B.reveal.restorePoints();       // the N slot dots come in with the light (no Key on T0)
     if (B.ignited) return;
     B.ignited = true;
     // the hit's perf time (the planned / advanced hit of the ПАУЗА, or the frame's presentation time of the beat)

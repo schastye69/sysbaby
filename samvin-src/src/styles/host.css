@@ -24,7 +24,8 @@
 .guest-chip{position:relative;display:inline-flex;align-items:baseline;gap:8px;min-height:var(--hit);min-width:var(--hit);
   padding:12px 2px 0;color:rgba(var(--silver-rgb),.7);transition:color var(--d-120)}
 .guest-chip__name{color:inherit;max-width:none;white-space:nowrap}
-.guest-chip__cs,.guest-chip__x{color:var(--pewter)}
+.guest-chip__cs,.guest-chip__x{color:var(--pewter);font-size:13px;line-height:16px}
+.guest-chip[aria-pressed="true"] .guest-chip__cs{color:var(--ember)}
 .guest-chip::after{content:"";position:absolute;left:2px;right:2px;bottom:6px;height:1px;background:var(--silver);
   transform:scaleX(0);transform-origin:0 0;transition:transform var(--d-120) var(--ease-reveal)}
 .guest-chip[aria-pressed="true"]{color:var(--white)}
@@ -46,11 +47,20 @@
 .verb--white{color:var(--white)}
 .host-sheet .verb[aria-disabled="true"]{color:var(--pewter);cursor:default}
 .host-sheet .verb[aria-disabled="true"]::after{transform:scaleX(0)}
-/* Desktop: a 420 px block centred on a scrim (the veil), the solid --deep plate with its 1 px top hairline only. */
+/* ГОТОВО closes the choice: the white verb with its line drawn, an arrow that says "back to the Key" */
+.host-sheet [data-qa="guests-done"]{color:var(--white)}
+.host-sheet [data-qa="guests-done"]::after{transform:none}
+.host-sheet [data-qa="guests-done"]::before{content:"→";order:2;color:var(--ember)}
+/* while a modal plate is up, the copy of the world under it steps back (body.modal-on, ui/sheet.js) */
+body.modal-on .core-open,body.modal-on #lead{opacity:0}
+/* Desktop: a 480 px plate centred on a deep scrim (the veil), the solid --deep plate with its 1 px top hairline only —
+   ember, the Key's own accent, so the plate reads as part of the drawing rather than a default dialog. */
 @media not all and (pointer:coarse){
-  .sheet.host-sheet,.sheet.host-sheet[data-state="full"]{left:50%;right:auto;top:50%;bottom:auto;width:420px;
-    max-height:min(84vh,680px);padding:22px 32px 26px;transform:translate(-50%,-50%);transition:none!important}
+  .sheet.host-sheet,.sheet.host-sheet[data-state="full"]{left:50%;right:auto;top:50%;bottom:auto;width:480px;
+    max-height:min(84vh,680px);padding:28px 40px 30px;transform:translate(-50%,-50%);transition:none!important;
+    border-top-color:rgba(var(--ember-rgb),.7)}
   .host-sheet .sheet-handle{display:none}
+  .host-sheet ~ .sheet-veil.is-on,.sheet-veil.is-on{background:rgba(var(--void-rgb),.66)}
 }
 @media (pointer:coarse){
   .sheet.host-sheet{padding-bottom:calc(20px + var(--safe-b))}
@@ -120,8 +130,9 @@ body.show-dark #keynav{opacity:.3;transition:opacity .6s linear}
 }
 
 /* the TL verb ГОСТИ (chrome.setTLVerb, H20): on a phone the third TL line would sit on the hall title block (title at
-   72 px, its LABEL above it), so the verb rides on the SAM.VIN line, right of it (same 44 px hit area) */
+   72 px, its LABEL above it), so the verb rides on the SAM.VIN line, in a fixed slot right of it (same 44 px hit area)
+   — never after the variable-width coordinate, so it does not jump from hall to hall */
 @media (pointer:coarse) and (max-width:600px){
-  #c-tl-verb{position:absolute;left:100%;top:-15px;margin-left:10px}
+  #c-tl-verb{position:absolute;left:78px;top:-15px}
 }
 .codex-block--right{align-items:flex-start;text-align:left}

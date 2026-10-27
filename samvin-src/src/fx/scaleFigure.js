@@ -38,7 +38,9 @@ export function createScaleFigure(F) {
   const op = (WORLD && WORLD.operator) || {};
   const hTy = +op.heightM > 0 ? +op.heightM : 1.30;
   const hPa = +op.papaHeightM > 0 ? +op.papaHeightM : 0;
-  const figs = hPa ? [{ id: 'ty', name: 'ТЫ', h: hTy, x: -1.15 }, { id: 'papa', name: 'ПАПА', h: hPa, x: -1.75 }] : [{ id: 'ty', name: 'ТЫ', h: hTy, x: -1.25 }];
+  // close in at the Key's narrowing lower half (still left of it, A2.3): the figure, its ↕ value and its LABEL stand
+  // clear of the room title's last letter instead of against it
+  const figs = hPa ? [{ id: 'ty', name: 'ТЫ', h: hTy, x: -0.92 }, { id: 'papa', name: 'ПАПА', h: hPa, x: -1.40 }] : [{ id: 'ty', name: 'ТЫ', h: hTy, x: -0.98 }];
   for (const f of figs) f.kid = `fig:${f.id}`;
   const seg = new Float32Array(figs.length * 51 * 6);
   let n = 0;

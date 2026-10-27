@@ -45,7 +45,7 @@ import * as rooms from './world/rooms.js';
 import { ROOMS } from './world/rooms.js';
 import { createKey } from './key/key.js';
 import { createRim } from './world/rim.js';
-import { CAMERA } from './core/tokens.js';
+import { CAMERA, coreFov, coreOffY } from './core/tokens.js';
 import { setPhase } from './core/store.js';
 import { hallHost } from './halls/host.js';
 import { director } from './nav/director.js';
@@ -227,7 +227,7 @@ function boot() {
 /** The CORE rest pose (SPEC §6.1 / A12 МОНОЛИТ: CAMERA.core, (0, −0.74, 6.05) → origin, fov 35); phone the same with offsetY −0.06. */
 function corePose() {
   const c = CAMERA.core;
-  return { pos: new Vector3(...c.pos), target: new Vector3(...c.target), fov: c.fov, offsetY: layout.kind === 'desktop' ? 0 : c.phoneOffsetY, roll: 0 };
+  return { pos: new Vector3(...c.pos), target: new Vector3(...c.target), fov: coreFov(layout.kind), offsetY: coreOffY(layout.kind), roll: 0 };
 }
 
 /** Step 6a: renderer, palette/U/fog, scale engine, nest, Key, rim, lamp, rig, composite. → composite */

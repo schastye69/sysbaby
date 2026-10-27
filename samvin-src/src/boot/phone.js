@@ -28,6 +28,10 @@ const START_D = 5.2, Y16 = (CAMERA.core.pos[1] * 16) / CAMERA.core.pos[2], OFF =
 // SPEC §4.2 states both «78 % of the height» and «camera at 5.2 m»; at the CORE's 35° lens 5.2 m gives 72.5 %. The
 // distance is kept: at 78 % the standard start stroke of every QA pre-roll (ARCH §6.0.4, y 230 → 650) crosses only
 // 4 strata and never activates.
+// The sleeping Key: each stratum turned off true by 22–29°, alternating — clearly out of register (the stroke has
+// something to align), yet every letter of SAM•VIN still faces him, so the first thing a child sees is his Key, not a
+// letterless capsule (golden-angle scrambles turned most letters to the back).
+const SLEEP = [0.42, -0.47, 0.39, -0.5, 0.45, -0.4, 0.5];
 const _v = new Vector3();
 const _p = { x: 0, y: 0, depth: 0, visible: false };
 const _si = { x: 0, y: 0, r: 0, rx: 0, ry: 0 };
@@ -55,7 +59,7 @@ export function runPhone(ctx, B, marks) {
 
   // ── the scene ──
   B.cam.at(START_D, Y16, OFF);
-  B.strata.scramble('golden');
+  B.strata.scramble(SLEEP);
   k.douse(); k.shootAxis(0, 0); k.setInteractive(false); k.setIdle(false); k.setBreathingRing(false);
   if (ctx.rim) { if (ctx.rim.hideName) ctx.rim.hideName(); ctx.rim.setLitNodes(0); }
   layer.start(true);
@@ -79,7 +83,7 @@ export function runPhone(ctx, B, marks) {
     const fa = wake ? 0 : rm && firstAct ? 200 : 100, fb = rm && firstAct ? 600 : 300;
     tl.span(fa, fb, (u) => B.reveal.set(1, u, 1, wake ? 0.4 + 0.6 * u : u, null));
   }
-  const hintAt = firstAct ? 2200 : wake ? 600 : 4000;
+  const hintAt = firstAct ? 1500 : wake ? 600 : 4000;   // first visit: the ghost stroke runs as soon as the reveal scan has passed
 
   // ── ghost + hint ──
   let partials = 0, hintShown = false, ghostFrom = hintAt, touching = false, active = true, lastTouchV = 0;   // returning: 4,000 ms without a touch

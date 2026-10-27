@@ -630,6 +630,9 @@ export const director = {
         return retarget(r, o);
       }
       const now = director.current;
+      // A FOCUS still running (e.g. #/core/open's unfold, deep-linked or set by the hash) has not made its route current
+      // yet: a route back to the current one is a new sub for the same room — apply it (the hall refolds), never drop it.
+      if (r.hash === now.hash && focusResolve) return focus(r, o);
       if (r.hash === now.hash) {
         cancelFocus();
         if (location.hash && location.hash !== r.hash) writeHistory(r, 'history', true);

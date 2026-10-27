@@ -19,9 +19,16 @@
 .boot-top{position:absolute;left:0;right:0;top:calc(var(--safe-t) + 26px);text-align:center;opacity:0;
   transition:opacity var(--d-480) linear;color:var(--pewter)}
 .boot-top.is-in{opacity:1}
-.boot-hint{position:absolute;left:16px;right:16px;bottom:calc(var(--safe-b,0px) + 48px);margin:0 auto;text-align:center;
-  max-width:none;opacity:0;transition:opacity var(--d-480) linear;color:var(--silver)}
+.boot-hint{position:absolute;left:16px;right:16px;bottom:calc(var(--safe-b,0px) + 40px);margin:0 auto;text-align:center;
+  max-width:none;opacity:0;transition:opacity var(--d-480) linear;color:var(--white);font-size:19px;line-height:26px;
+  font-weight:520;font-variation-settings:"wght" 520,"SHRP" var(--shrp),"CRSV" 0,"slnt" 0}
 .boot-hint.is-in{opacity:1}
+/* the call to action carries its own gesture: a 1 px ember stroke under it that draws downward, over and over */
+.boot-hint::after{content:"";display:block;width:1px;height:22px;margin:10px auto 0;background:linear-gradient(rgba(var(--ember-rgb),0),var(--ember));
+  transform-origin:50% 0;animation:boot-cta 1.6s var(--ease-reveal) infinite}
+@keyframes boot-cta{0%{transform:scaleY(0);opacity:1}60%{transform:none;opacity:1}100%{transform:none;opacity:0}}
+.boot-top.t-micro{font-size:11px;line-height:14px;color:var(--silver)}
+body.boot-start #c-tl.corner--dim{opacity:.75}
 /* the ghost: the SPEC 4 px dot on a 2 px --void knock-out ring (it parts the Key's silver edges and dust instead of
    drowning in them), drawing its ghost stroke — a 3 px silver stroke (heavier than every 1 px edge it crosses) fading out 170 px behind
    it (scaleY from 100); it lingers 600 ms on N after the dot lands */
@@ -38,5 +45,5 @@ body.boot-assembled #c-tl-micro{transition:opacity var(--d-480) linear}
 body.boot-start #c-tl-micro,body.boot-start #c-tr,body.boot-start #c-br,body.boot-start #c-bl{opacity:0}
 body.boot-start #c-tr,body.boot-start #c-br{pointer-events:none}
 
-@media (prefers-reduced-motion:reduce){.boot-top,.boot-hint{transition-duration:160ms}}
+@media (prefers-reduced-motion:reduce){.boot-top,.boot-hint{transition-duration:160ms}.boot-hint::after{animation:none}}
 
