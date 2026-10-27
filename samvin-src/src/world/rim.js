@@ -153,7 +153,9 @@ function visibleWidth() {
 
 /** CSS px per canonical metre of cap height on the rim face, from the rest pose (call after restCam()). */
 function capPxPerM() { return Math.max(1e-3, screenY(0, zFace) - screenY(1, zFace)); }
-const minM = (px) => (layout.kind === 'phone' ? px : 0) / capPxPerM();
+/** A legibility floor in canonical m — on every phone, portrait AND landscape ('phone-land': NEW-1, where the fit loop
+ *  had no floor and halved his name to ≈ 5 px under its own ОСНОВАТЕЛЬ). Desktop has room and keeps SPEC's sizes. */
+const minM = (px) => (layout.isPhone ? px : 0) / capPxPerM();
 
 export function createRim(ctx) {
   void ctx;
@@ -289,7 +291,7 @@ export function createRim(ctx) {
     const topY = worldYForScreen(keyBottom + DIM_CLEAR + Math.max(10, capAir() * capPx)), bottomY = worldYForScreen(limit);
     // Guest rows that cannot fit under the Ø value may rise into its band (the Ø dimension yields to the caption,
     // key/hover.js), never into the Key's tip.
-    const ceilY = worldYForScreen(keyBottom + 8);
+    const ceilY = worldYForScreen(keyBottom + 18);   // ART-11: the rows keep a clear gap under the N tip
     lastAvail = (guests.length ? ceilY : topY) - bottomY;
     lastBlockH = cTop - cBot;
     nameY = topY - cTop;

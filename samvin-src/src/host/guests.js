@@ -142,6 +142,7 @@ export function createGuests(ctx) {
     open(source) {
       void source;
       if (app.show && app.show.active && source !== 'show') return;
+      if (ctx.host && ctx.host.show && ctx.host.show.preload) ctx.host.show.preload();   // НАЧАТЬ ПОКАЗ is in this sheet
       sheet.open(new Set(chosen.filter((g) => !g.typed).map((g) => g.id)));
     },
     close() { sheet.close(); },

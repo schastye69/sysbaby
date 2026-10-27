@@ -86,6 +86,9 @@ body.ins-held #datum{visibility:hidden}
 @media (pointer:coarse) and (max-width:600px), (pointer:coarse) and (max-height:600px){
   .ins-left{position:static;max-width:none;gap:4px}
   .ins-index{margin-left:-6px;justify-content:flex-start}
+  /* ART-2: the peek shows whole rows only — the index's first row; the rest wait for the full sheet (no half-cut badges
+     under the fade) */
+  .sheet[data-state="peek"] .ins-index{max-height:var(--hit);overflow:hidden}
   .ins-block{position:static;transform:none;width:auto;max-width:none;gap:10px}
   .ins-block::before{display:none}
   .ins-lbl{max-width:22ch}

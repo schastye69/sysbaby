@@ -79,19 +79,22 @@ void main() {
 const PLATE_VERT = /* glsl */ `
 attribute vec3 aP;                          // plate index, corner x, corner y (−0.5..0.5)
 uniform float uAng; uniform float uN; uniform float uR; uniform float uS; uniform float uOp; uniform float uTilt;
-varying vec2 vUv; varying float vIdx; varying float vEdge;
+varying vec2 vUv; varying float vIdx; varying float vEdge; varying float vNear;
 void main() {
   float th = uAng + 6.2831853 * aP.x / max(1.0, uN);
   vec3 c = vec3(sin(th) * uR, 0.0, cos(th) * uR);
   c = vec3(c.x, c.z * sin(uTilt), c.z * cos(uTilt));          // the orbit plane tips toward the camera: an ellipse, not a row
+  // ART-9: the far half of the orbit recedes (smaller, fainter), so two plates passing at the ellipse's ends read as one
+  // in front of the other, not as two tiles stacked on each other
+  vNear = 0.5 + 0.5 * cos(th);
   vec4 mv = modelViewMatrix * vec4(c, 1.0);
-  mv.xy += vec2(aP.y, aP.z) * uS;           // a billboard: always square to the camera
+  mv.xy += vec2(aP.y, aP.z) * uS * mix(0.78, 1.0, vNear);   // a billboard: always square to the camera
   vUv = vec2(aP.y, aP.z) + 0.5; vIdx = aP.x; vEdge = step(abs(aP.x - uOp), 0.1);
   gl_Position = projectionMatrix * mv;
 }`;
 const PLATE_FRAG = /* glsl */ `
 uniform sampler2D uTex; uniform float uCells; uniform float uA; uniform vec3 cDeep; uniform vec3 cSilver; uniform vec3 cEmber;
-varying vec2 vUv; varying float vIdx; varying float vEdge;
+varying vec2 vUv; varying float vIdx; varying float vEdge; varying float vNear;
 void main() {
   vec4 g = texture2D(uTex, vec2((vIdx + vUv.x) / uCells, vUv.y));
   float m = min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y));
@@ -101,7 +104,7 @@ void main() {
   vec3 col = mix(cDeep, cSilver, g.r);
   col = mix(col, cSilver, eAll);
   col = mix(col, cEmber, eOp);
-  float a = uA * mix(0.5, 1.0, max(g.r, max(eOp, eAll)));
+  float a = uA * mix(0.5, 1.0, max(g.r, max(eOp, eAll))) * mix(0.3, 1.0, smoothstep(0.15, 0.6, vNear));
   gl_FragColor = vec4(col, a);
 }`;
 

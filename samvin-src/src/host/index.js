@@ -13,7 +13,7 @@ import { state } from '../core/state.js';
 import { app } from '../core/store.js';
 import { logOnce } from '../core/env.js';
 import { createGuests } from './guests.js';
-import { createShow } from './show.js';
+import { createShowLazy } from './showLazy.js';
 import { installDevAdapter } from './devAdapter.js';
 
 export function initHost(ctx) {
@@ -24,7 +24,7 @@ export function initHost(ctx) {
   const sbor = step('sbor', () => createSbor(ctx, { deeds: ctx.deeds, guests }), null);
   const lost = step('lost', () => createLost(ctx, { deeds: ctx.deeds }), null);
   ctx.host = { guests, show: null, sbor, lost, proposals };
-  ctx.host.show = step('show', () => createShow(ctx), null);
+  ctx.host.show = step('show', () => createShowLazy(ctx), null);   // the show itself is a chunk (showLazy.js)
   try { ctx.deeds.derive(); } catch (e) { logOnce('host:derive', e); /* a broken profile never blocks the boot */ }
   if (proposals) step('promote', () => proposals.promoteFromWorld());
   step('laws', () => ctx.deeds.restoreLaws());

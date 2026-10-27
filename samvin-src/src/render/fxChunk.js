@@ -55,7 +55,7 @@ float fxHeptagon(vec2 pc) {                             // 7-blade aperture SDF,
  *      horizontal angle (θh0) and, faster, with elevation (φ0); 30 % of the light fills the rest of the hall;
  *    • near field (≤ 0.1·R0, the Key itself) takes the full flash. */
 export const FX_LIGHT_GLSL = /* glsl */ `
-#define PV_FLOOR 0.45
+#define PV_FLOOR 0.25
 uniform vec3 uImpactSrc; uniform vec4 uImpactShape;
 float fxImpactLight(vec3 p) {
   vec3 v = p - uImpactSrc;

@@ -104,7 +104,9 @@ void main(){
   }
   float coc = fxCoc(-v.z);
   float s0 = 1.0 + sw;
-  float a = min(0.30, 0.30 * b) * pow(s0 / (s0 + coc), 2.0) + uAmb * step(0.88, fract(sw * 37.13));   // the boot's 3 % air: one mote in eight
+  // the boot's 3 % air (A2.1.1 DEPTH, ART-6): one mote in four takes it; the far ones are the 3 % heptagonal bokeh discs,
+  // the near ones (sharp, coc → 0) catch the same light as points four times as bright, so the parallax out of nothing reads
+  float a = min(0.30, 0.30 * b) * pow(s0 / (s0 + coc), 2.0) + uAmb * step(0.75, fract(sw * 37.13)) * mix(4.0, 1.0, clamp(coc / 3.0, 0.0, 1.0));
   float fv = exp(-pow(uFogDensity * length(v.xyz), 2.0));
   a *= fade * (1.0 - uImpact) * fv;
   vW = wh;

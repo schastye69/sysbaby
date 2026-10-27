@@ -9,7 +9,8 @@
 import { Group, Vector3 } from 'three';
 import { ROOMS } from '../world/rooms.js';
 import { createHallShell } from '../world/vin.js';
-import { HALL_FACTORIES } from './registry.js';
+import { HALL_FACTORIES, prefetchLazyHalls } from './registry.js';
+import { hallCss } from './hallCss.js';
 import { logOnce } from '../core/env.js';
 import { loop, ORDER } from '../core/loop.js';
 import { app } from '../core/store.js';
@@ -75,6 +76,7 @@ function makeHctx(id, section, shell, group) {
 }
 
 function createResident(id, factory) {
+  const css = hallCss(id);                       // the hall's stylesheet starts loading with the hall (hallCss.js)
   const section = makeSection(id);
   let group = null, shell = null;
   if (app.tier !== 'T0' && hallHost.root) {
@@ -88,7 +90,7 @@ function createResident(id, factory) {
   }
   const hctx = makeHctx(id, section, shell, group);
   /** @type {Resident} */
-  const r = { id, hall: null, hctx, section, shell, group, shown: false, dead: false, throwArmed: throwRoom === id };
+  const r = { id, hall: null, hctx, section, shell, group, shown: false, dead: false, throwArmed: throwRoom === id, css };
   residents.set(id, r);
   list.push(r);
   try {
@@ -166,6 +168,7 @@ export const hallHost = {
       try { const q = new URLSearchParams(location.search).get('throw'); throwRoom = q && ROOMS[q] ? q : null; } catch (e) { throwRoom = null; }
     }
     loop.add(frame, ORDER.WORLD);
+    if (app.tier !== 'T0') prefetchLazyHalls();
     ctx.bus.on('layout:change', () => { for (let k = 0; k < list.length; k++) safe(list[k], 'resize'); });
     return hallHost;
   },
@@ -228,7 +231,11 @@ export const hallHost = {
   show(id, only = false) {
     for (let k = 0; k < list.length; k++) {
       const r = list[k];
-      if (r.id === id) { r.shown = true; r.section.hidden = false; } else if (only) { r.shown = false; r.section.hidden = true; }
+      if (r.id === id) {
+        r.shown = true;
+        if (r.css.done) r.section.hidden = false;
+        else r.css.promise.then(() => { if (r.shown && !r.dead) r.section.hidden = false; });   // never unstyled
+      } else if (only) { r.shown = false; r.section.hidden = true; }
     }
   },
   hide(id) { const r = residents.get(id); if (r) { r.shown = false; r.section.hidden = true; } },

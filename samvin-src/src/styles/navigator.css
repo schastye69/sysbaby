@@ -25,7 +25,7 @@
 .kn-stratum{transition:stroke var(--d-240)}
 .kn-stratum.is-current,#map svg .is-current{stroke:var(--silver)}
 .kn-crack{stroke:var(--electrum);transition:stroke .6s}
-.kn-crack.is-cool{stroke:var(--silver)}
+.kn-crack.is-cool{stroke:rgba(var(--silver-rgb),.6)}
 
 .kn-row{position:absolute;right:0;width:100%;height:var(--hit);margin-top:calc(var(--hit) / -2);cursor:pointer}
 .kn-letter{position:absolute;right:0;top:50%;width:var(--nav-w);margin-top:-7px;text-align:center;color:var(--pewter);
@@ -84,10 +84,10 @@
   /* the ZENITH point sits on the band's axis carried past the S tip: a 1 px extension joins it, so it reads as part of
      the drawing, never as a stray pixel at the screen edge */
   #keynav-zenith{right:auto;left:7px;top:calc(var(--band-h) / 2 - 1px)}
-  #keynav-zenith::after{content:"";position:absolute;left:3px;top:.5px;width:7px;height:1px;background:rgba(var(--silver-rgb),.45)}
+  #keynav-zenith::after{content:"";position:absolute;left:3px;top:.5px;width:7px;height:1px;background:rgba(var(--slate-rgb),.8)}
   /* every band letter is knocked out of the lines under it (the N cell's crack after NADIR opens runs behind its N) */
   .kn-letter{text-shadow:0 0 2px var(--void),0 0 3px var(--void),0 0 6px var(--void),0 0 10px var(--void)}
-  .kn-crack.is-cool{stroke:rgba(var(--silver-rgb),.5)}
+  .kn-crack.is-cool{stroke:rgba(var(--silver-rgb),.4)}
   #keynav-ring{right:auto;left:calc(50% - 22px);top:calc(var(--band-h) / 2)}
   #keynav-ring .t-label{right:auto;left:0;top:-16px}
   #keynav-name{display:block;position:absolute;left:0;right:0;bottom:calc(100% + 4px);text-align:center;max-width:none;pointer-events:none}

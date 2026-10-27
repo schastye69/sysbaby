@@ -105,6 +105,9 @@
   :root{
     --band-h:0px;
     --status-bottom:calc(16px + var(--safe-b));
+    /* FN-6: the hall LABEL keeps clear of the TL coordinate line above it (both sit in the top 60 px on a 390 px screen) */
+    --title-top:calc(82px + var(--safe-t));
+    --datum-y:calc(128px + var(--safe-t));
   }
 }
 

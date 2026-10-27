@@ -66,8 +66,11 @@ export function createImpact(F) {
     else if (ctx.key && ctx.key.nucleusWorld) src.copy(ctx.key.nucleusWorld);
     else src.set(0, 0, 0);
     // dive: −35 % per octave, so the struts round the lens take the flash and each wall farther back steps down into haze
-    if (kind === 'dive') U.uImpactShape.value.set(1.0, 0.35, 3.2, 3.2);
-    else if (!origin && app.room === 'CORE') U.uImpactShape.value.set(300, 0.65, 0.45, 0.12);
+    // ART-4: the light is a SHEET in both — out of the gap planes, so it falls off with elevation (φ0) as well; the struts
+    // and walls off the sheet recede below their idle weight (PV_FLOOR 0.25: the eye adapts to the flash), and the lit
+    // band behind the Key narrows (θh0 0.32), so the peak frame is one luminous band on a dark frame, not a lit fence
+    if (kind === 'dive') U.uImpactShape.value.set(1.0, 0.35, 3.2, 0.55);
+    else if (!origin && app.room === 'CORE') U.uImpactShape.value.set(300, 0.65, 0.32, 0.12);
     else U.uImpactShape.value.set(1e7, 0, 3.2, 3.2);              // any other hall (S05 away from CORE, NADIR): the even SPEC flash
   }
 

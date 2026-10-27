@@ -20,7 +20,9 @@ background:linear-gradient(var(--silver),var(--silver)) 0 0/1px 4px no-repeat,li
 /* portrait phone: a hall sheet that has risen on arrival owns the strip above the band — the scale bar finishing its
    count stands above the sheet's top, never on its text (during the travel the sheet is down, sheet.css) */
 @media (pointer:coarse) and (max-width:600px) and (min-height:500px){
-  body:not(.in-travel)[data-sheet="peek"] #fx .fx-sb{bottom:calc(var(--band-h) + var(--safe-b) + var(--sheet-peek) + 12px)}
+  /* ART-3: above the sheet is where a hall's floor captions stand (MEMBERS: Кира / ЛИСА) — the bar finishing its count
+     moves up under the datum's level mark instead, the one place no hall writes into on arrival */
+  body:not(.in-travel)[data-sheet="peek"] #fx .fx-sb{bottom:auto;top:calc(var(--datum-y) + 34px)}
   body:not(.in-travel)[data-sheet="full"] #fx .fx-sb{opacity:0!important}
 }
 /* Knock-out (ПРОСВЕТ, A2.0.3): a line the world draws behind chrome text stops short of the letters, as a construction

@@ -167,11 +167,11 @@ export function createSbor(ctx, T, M, H) {
     readoutRow(ro) {
       const s = host();
       const info = s && s.info ? s.info() : { count: 0, last: null, hint: true };
+      // one СБОР: the verb itself is the row's label (NEW-2: a label СБОР over a verb СБОР read twice)
       const r = el('div', 't0-row', null, ro, { data: { row: 'sbor' } });
-      el('p', 't-label', 'СБОР', r);
+      const v = el('button', 'verb t-label t0-sborverb', 'СБОР', r, { qa: 'sbor-verb', attrs: { type: 'button' } });
       if (info.hint || !info.last) el('p', 't-body', 'удержи колонну — клан услышит', r);
       else el('p', 't-micro', `ПОСЛЕДНИЙ ${fmtDate(info.last, 'dd.mm')}`, r);
-      const v = el('button', 'verb t-label t0-sborverb', 'СБОР', ro, { qa: 'sbor-verb', attrs: { type: 'button' } });
       keyHold(v);
       v.addEventListener('click', (e) => e.preventDefault());
     },

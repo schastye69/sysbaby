@@ -215,8 +215,18 @@ export function createMembers(ctx, T) {
   function placeReadout(c) {
     if (layout.isPhone) return;
     const left = c.i < list.length / 2;
-    const x = left ? c.x + 3.4 * M.k + 30 : c.x - 3.4 * M.k - 30 - 360;
-    ro.style.transform = `translate(${fmt(Math.max(24, x))}px,${fmt(Math.max(96, M.base + c.cy - 40))}px)`;
+    const x = Math.max(24, left ? c.x + 3.4 * M.k + 30 : c.x - 3.4 * M.k - 30 - 360);
+    ro.style.transform = `translate(${fmt(x)}px,${fmt(Math.max(96, M.base + c.cy - 40))}px)`;
+    under(x, x + 360, c.i);
+  }
+  /** NEW-2: the columns (and their deck names) the readout lies over step out while it is up, so its rows never read
+   *  through another member's column or caption. */
+  function under(x0, x1, keep) {
+    const half = M.w / 2 + 12;
+    for (const c of M.cols) {
+      const on = x0 < x1 && c.i !== keep && c.x + half > x0 && c.x - half < x1;
+      c.col.classList.toggle('is-under', on); c.nm.classList.toggle('is-under', on); c.btn.hidden = on;
+    }
   }
   function setHover(i, keyboard) {
     if (M.hover === i) return;
@@ -229,7 +239,7 @@ export function createMembers(ctx, T) {
       // the leader / readout starts at 120 ms (SPEC §6.2), only if the column is still the hovered one
       if (!layout.isPhone) after(120, () => { if (M.hover === i && M.focus < 0) fillReadout(c, false); });
       if (ctx.audio && !keyboard) ctx.audio.play('hoverTick', { x: c.x });
-    } else if (M.focus < 0 && !layout.isPhone) { ro.classList.remove('is-in'); ro.hidden = true; }
+    } else if (M.focus < 0 && !layout.isPhone) { ro.classList.remove('is-in'); ro.hidden = true; under(0, 0, -1); }
     place(480);
   }
   function telescope(c) {

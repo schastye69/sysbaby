@@ -71,13 +71,20 @@ export function createCore(ctx, T) {
   function layoutRings() {
     clear(ringsBox); clear(srRings);
     const texts = ringTexts();
+    // NEW-3: a ring line never runs under the navigator column (right chrome + nav + 24 px air): it breaks between its
+    // ` · ` facts (never inside one) and takes a second line instead
+    const right = (layout.w || 1440) - 24 - 56 - 24 - 24;
     texts.forEach((t, i) => {
       const b = K.band(i);
       const row = block(ringsBox, 't0-ring');
-      el('p', 't-label', t, row, { data: { stratum: String(i) } });
+      el('p', 't-label', t.split(' · ').map((f) => f.replace(/ /g, '\u00a0')).join(' · '), row, { data: { stratum: String(i) } });
       const room = roomByStratum(i);
       if (room) el('p', 't-micro t0-ring__to', `→ ${room.name}`, row);
-      if (b && !layout.isPhone) row.style.transform = `translate(${fmt(b.cx + b.w / 2 + 28)}px,${fmt(b.cy - 9)}px)`;
+      if (b && !layout.isPhone) {
+        const x = b.cx + b.w / 2 + 28;
+        row.style.transform = `translate(${fmt(x)}px,${fmt(b.cy - 9)}px)`;
+        row.style.maxWidth = `${fmt(Math.max(160, right - x))}px`;
+      }
       el('li', null, t, srRings);
     });
     if (WORLD.clan.about) el('li', null, WORLD.clan.about, srRings);
@@ -294,6 +301,9 @@ export function createCore(ctx, T) {
   fillToday();
   // a DIVE into #/core/open arrives with phase 'transition': the unfolded phase is set on arrival
   ctx.bus.on('route:change', (e) => { if (C.open && app.tier === 'T0' && e && e.route && e.route.room === 'CORE' && e.route.sub === 'open' && app.phase === 'idle') setPhase('unfolded'); });
+  // …and whatever settles the phase to idle afterwards (the travel's end, a boot that lands on #/core/open) while the
+  // Key stays open re-asserts it (NEW-3: S().phase read 'idle' at #/core/open in T0)
+  ctx.bus.on('phase:change', (e) => { if (C.open && app.tier === 'T0' && e && e.phase === 'idle' && app.room === 'CORE') setPhase('unfolded'); });
   void ROOMS;
   return hall;
 }

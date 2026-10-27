@@ -87,15 +87,17 @@ function stratumPath(s) {
 }
 
 function crackD() {
+  // ART-13: five CRACKS, not a fan: each line zig-zags (alternate kinks of ±0.12 of the width round its lane) and stops
+  // short of the tip, so the opened N reads as split stone instead of rays converging on the point
   const s = STRATA_GEOM[6], rnd = mulberry32(7);
   const tmp = [];
   for (let k = 0; k < 5; k++) {
     const f = 0.1 + 0.2 * k;
     let seg = '';
     for (let j = 0; j <= 4; j++) {
-      const y = s.top + (s.bot - s.top) * (j / 4);
+      const y = s.top + (s.bot - s.top) * (0.04 + 0.78 * (j / 4));
       const r = radiusAt(y);
-      const across = (f - 0.5 + (rnd() - 0.5) * 0.15) * 2 * r;
+      const across = (f - 0.5) * 2 * r + (j % 2 ? 1 : -1) * (0.06 + 0.12 * rnd()) * r;
       let x, yy;
       if (mode === 'desktop') { yy = H / 2 - y * (H / 2.4); x = W / 2 + across * (H / 2.4) * LAYOUT.nav.widthScale; }
       else if (mode === 'phone') { const cell = W / 7; x = 6 * cell + cell * (j / 4); yy = H / 2 + (across / 0.62) * H * 0.36; }

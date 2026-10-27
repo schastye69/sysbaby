@@ -130,7 +130,7 @@
 /* CORE: СЕГОДНЯ, UNFOLD, КОДЕКС */
 .t0-today{left:var(--margin);top:calc(var(--datum-y) + 44px)}
 .t0-unfold{position:absolute;inset:0;opacity:0;transition:opacity .24s linear}.t0-unfold.is-in{opacity:1}
-.t0-ring{white-space:nowrap}
+.t0-ring{white-space:normal;width:max-content}
 .t0-ring__to{opacity:.7}
 .t0-motto{left:var(--margin);top:max(96px,12vh)}
 .t0-motto .t-label{margin:10px 0 0}
@@ -173,6 +173,7 @@
 .t0-cap__here{stroke:var(--white);opacity:0}.is-here .t0-cap__here{opacity:1}
 .t0-colname{position:absolute;left:0;top:0;text-align:center;white-space:nowrap;transition:opacity .24s}
 .t0-colname.is-off,.t0-colname__here{opacity:0}.t0-colname__here.is-on{opacity:1}
+.t0-col.is-under,.t0-colname.is-under{opacity:0;pointer-events:none}
 .t0-colproxy{position:absolute}
 .t0-colproxy:focus-visible::after{content:"";position:absolute;left:50%;bottom:30px;width:7px;height:7px;margin-left:-3px;
   background:linear-gradient(var(--ember),var(--ember)) 3px 0/1px 7px no-repeat,linear-gradient(var(--ember),var(--ember)) 0 3px/7px 1px no-repeat}

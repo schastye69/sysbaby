@@ -58,6 +58,9 @@
 #datum.is-drawn #datum-line{transform:none;transition:transform var(--d-240) var(--ease-reveal)}
 #datum-title,#datum-label,#datum-level{position:absolute;left:var(--title-x);white-space:nowrap;margin:0}
 #datum-title{bottom:6px}
+/* ART-19: the hall name is knocked out of the drawing behind it (a drafting knock-out, as the navigator letters): column
+   strands, struts and leaders stop short of its letters instead of running through them */
+#datum-title{text-shadow:0 0 3px var(--void),0 0 8px var(--void),0 0 16px rgba(var(--void-rgb),.9)}
 #datum-label{bottom:calc(14px + clamp(56px,8.4vw,148px) * .9)}
 #datum-level{top:6px}
 #datum.is-out,#datum .is-out{opacity:0;transition:opacity var(--depart)}
