@@ -153,6 +153,13 @@ const THREE_STUBS = [
   //   only the chunk WebGLProgram splices into every ShaderMaterial stays addressable
   [/^const ShaderChunk = \{\n[\s\S]*?^\};$/m, 'const ShaderChunk = { colorspace_pars_fragment: colorspace_pars_fragment };'],
   [/\bShaderChunk\.[a-z_]+\b/g, "''"],
+  // · compressed formats in WebGLUtils.convert (S3TC … RGTC): reached only by a compressed texture upload, stubbed above
+  [/^\t\t\/\/ S3TC\n[\s\S]*?(?=^\t\tif \( p === UnsignedInt248Type \) return gl\.UNSIGNED_INT_24_8;$)/m, ''],
+  // · the built-in materials' uniform and shader tables: read only for a material with a shaderID (MeshBasicMaterial & co.),
+  //   whose GLSL is emptied above anyway; a ShaderMaterial never touches them, and a built-in one now fails loudly (G3)
+  [/^const UniformsLib = \{\n[\s\S]*?^\};$/m, 'const UniformsLib = {};'],
+  [/^const ShaderLib = \{\n[\s\S]*?^\};$/m, 'const ShaderLib = {};'],
+  [/^ShaderLib\.physical = \{\n[\s\S]*?^\};$/m, ''],
   // · developer messages (PERF-5): the long texts become 'three:<n>'; the warn / error call itself stays, so G3 still
   //   sees every real error
   [/\b(warn|error|warnOnce|log)\( '(THREE\.)?[A-Z](?:[^'\\\n]|\\.){30,}'/g, threeMsg],
@@ -163,6 +170,8 @@ const THREE_STUBS = [
 const THREE_CORE_STUBS = [
   [/^(KeyframeTrack|NumberKeyframeTrack|BooleanKeyframeTrack|ColorKeyframeTrack|QuaternionKeyframeTrack|StringKeyframeTrack|VectorKeyframeTrack|PropertyBinding)\.(prototype\.)?\w+ = [\s\S]*?;$/gm, ''],
   [/^const _colorKeywords = \{[\s\S]*?\};$/m, 'const _colorKeywords = {};'],
+  // the loaders: the app loads no file through three; only this static keeps Loader (and the default LoadingManager) alive
+  [/^Loader\.DEFAULT_MATERIAL_NAME = '__DEFAULT';$/m, ''],
   [/\b(warn|error|warnOnce|log)\( '(THREE\.)?[A-Z](?:[^'\\\n]|\\.){30,}'/g, threeMsg],
   // serialization (PERF-3): the site never serializes a three object (its JSON.stringify calls are on plain data)
   [/^\t(?:static )?(?:toJSON|fromJSON|computeTangents)\( [^\n]*\) \{\n[\s\S]*?\n\t\}\n/gm, ''],
