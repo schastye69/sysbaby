@@ -1609,7 +1609,21 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       ]).then(function (k) { bits.fill(0); return { gcm: k[0], slot: k[1] }; }, function (e) { bits.fill(0); throw e; });
     });
   }
+  /* ── «КЛЮЧ ПОВОРАЧИВАЕТСЯ» (D-581) ─────────────────────────────────────
+     Весть о том, что идёт растяжка, — и ничего больше: ни слова, ни исхода.
+     Её слушает сцена двери (core/doors/doors.js) и на это время замирает:
+     её кадры не должны отнимать у растяжки время и делать цену попытки
+     зависящей от того, что нарисовано за дверью. */
+  var turning = 0;
+  function keyTurn(d) {
+    turning = Math.max(0, turning + d);
+    if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:turning", { on: turning > 0 });
+  }
   function deriveKEK(password, saltB64, it1, it2, fsec, a2, asBits) {
+    keyTurn(1);
+    return deriveKEKTurn(password, saltB64, it1, it2, fsec, a2, asBits).then(function (v) { keyTurn(-1); return v; }, function (e) { keyTurn(-1); throw e; });
+  }
+  function deriveKEKTurn(password, saltB64, it1, it2, fsec, a2, asBits) {
     var n1 = it1 || KDF1_ITER, n2 = it2 || KDF2_ITER;
     var enc = new TextEncoder();
     var salt = unb64(saltB64);

@@ -1,0 +1,84 @@
+/* sys.baby — СЦЕНЫ ДВЕРИ ЗАМКА · решение D-581.
+   Собор и Порог стоят за дверью (#sbVaultGate .vg-scene) и закрывают экран
+   целиком; управляющие детали двери — над ними. Краска сцен своя: это
+   картина ночи за дверью, тёмная в обеих темах, и словарём среды она не
+   говорит. Время и кривые переходов — словами системы (duration-scale,
+   easing-scale); дыхание фона (зерно) — своим темпом. */
+
+.ds { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.ds img, .ds canvas { user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+
+/* ── Собор ─────────────────────────────────────────────────────────────── */
+.ds-sobor { /* своя краска: ночь нефа, тёмная в обеих темах */ background: #07040d; }
+.ds-sobor [data-d="stage"] { position: absolute; left: 0; top: 0; overflow: hidden; /* своя краска: ночь нефа */ background: #07040d; }
+.ds-sobor [data-d="world"], .ds-sobor [data-d="zoom"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-origin: 0 0; }
+.ds-sobor [data-d="art"] {
+  position: absolute; display: block; max-width: none; will-change: transform;
+  transition: filter var(--t-rise) var(--ease-enter);
+}
+.ds-sobor [data-d="glow"] { position: absolute; display: block; max-width: none; opacity: 0; will-change: opacity, transform; }
+.ds-sobor [data-d="gl"] { position: absolute; left: 0; top: 0; display: none; }
+.ds-sobor.gl [data-d="art"], .ds-sobor.gl [data-d="artF"], .ds-sobor.gl [data-d="near"], .ds-sobor.gl [data-d="glow"] { visibility: hidden; }
+.ds-sobor [data-d="sky"] {
+  position: absolute; overflow: hidden; mix-blend-mode: screen; will-change: transform;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: 0 0; mask-position: 0 0;
+}
+.ds-sobor [data-d="skyRot"] { position: absolute; will-change: transform; }
+.ds-sobor [data-d="stars"], .ds-sobor [data-d="stars2"] { position: absolute; left: 0; top: 0; transition: opacity var(--t-rise) var(--ease-move); }
+.ds-sobor [data-d="stars2"] { opacity: 0; }
+.ds-sobor [data-d="artF"], .ds-sobor [data-d="near"] {
+  position: absolute; display: block; max-width: none; will-change: transform;
+  transition: filter var(--t-rise) var(--ease-enter);
+}
+.ds-sobor [data-d="near"] { mix-blend-mode: screen; }
+.ds-sobor [data-d="artF"] { -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
+.ds-sobor .cld { position: absolute; left: 0; top: 0; background-repeat: repeat-x; will-change: transform; opacity: 0; }
+.ds-sobor [data-d="moon"] { position: absolute; left: 0; top: 0; opacity: 0; will-change: opacity; }
+.ds-sobor [data-d="fx"] { position: absolute; left: 0; top: 0; }
+.ds-sobor .fog { position: absolute; left: 0; top: 0; background-repeat: repeat-x; will-change: transform; }
+.ds-sobor [data-d="cold"] {
+  position: absolute; inset: 0; mix-blend-mode: color; opacity: 0;
+  /* своя краска: холод неверного слова в нефе */ background: #4a72b4;
+  transition: opacity var(--t-rise) var(--ease-enter);
+}
+.ds-sobor [data-d="flood"] {
+  position: absolute; inset: 0; opacity: 0;
+  /* своя краска: свет за дверью, в который входят */ background: radial-gradient(ellipse at 50% 55%, #fffdf8 0%, #f6f0fb 40%, #e2d7ef 100%);
+}
+/* Неверное слово: свет гаснет за шестую долю секунды и возвращается медленно. */
+.ds-sobor [data-d="stage"].isCold [data-d="glow"] { opacity: 0 !important; }
+.ds-sobor [data-d="stage"].isCold [data-d="cold"] { opacity: .66; transition-duration: var(--t-touch); }
+.ds-sobor [data-d="stage"].isCold [data-d="art"],
+.ds-sobor [data-d="stage"].isCold [data-d="artF"],
+.ds-sobor [data-d="stage"].isCold [data-d="near"] { filter: brightness(.6) saturate(.55); transition-duration: var(--t-touch); }
+
+/* ── Порог ─────────────────────────────────────────────────────────────── */
+.ds-porog { /* своя краска: темнота перед дверью, тёмная в обеих темах */ background: #000; }
+.ds-porog [data-d="stage"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; /* своя краска: темнота перед дверью */ background: #000; }
+.ds-porog [data-d="cam"] { position: absolute; inset: 0; }
+.ds-porog [data-d="cv"] { position: absolute; left: 0; top: 0; display: block; }
+.ds-porog [data-d="vig"] {
+  position: absolute; inset: 0;
+  /* своя краска: виньетка темноты */ background: radial-gradient(ellipse 78% 70% at 50% 62%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, .42) 82%, rgba(0, 0, 0, .78) 100%);
+  transition: opacity var(--t-rise) var(--ease-enter);
+}
+.ds-porog [data-d="stage"].won [data-d="vig"] { opacity: 0; }
+.ds-porog [data-d="grain"] {
+  position: absolute; left: -256px; top: -256px; right: -256px; bottom: -256px;
+  opacity: .4; mix-blend-mode: overlay; background-repeat: repeat; will-change: transform;
+  animation: dsGrain .54s steps(1) infinite;
+}
+@keyframes dsGrain {
+  0% { transform: translate(0, 0); } 16% { transform: translate(-71px, 38px); } 33% { transform: translate(53px, -97px); }
+  50% { transform: translate(-118px, -23px); } 66% { transform: translate(87px, 111px); } 83% { transform: translate(-29px, -142px); }
+}
+
+/* ── Снятое движение: сцена стоит. И по слову браузера, и по слову системы. */
+.ds.rm .fog { display: none; }
+.ds.rm [data-d="grain"] { animation: none; }
+.ds.rm *, .ds.rm { transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .ds .fog { display: none; }
+  .ds [data-d="grain"] { animation: none; }
+  .ds *, .ds { transition: none !important; }
+}
