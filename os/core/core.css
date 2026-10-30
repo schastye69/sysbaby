@@ -347,6 +347,8 @@
   --ease-pull: cubic-bezier(.34, 1.4, .64, 1);
   --font: system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  /* Голос сцен двери (D-582): подпись, кнопка и заявление у двери замка. */
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", "Times New Roman", Georgia, serif;
   /* Цвет бренда. Неподвижен: им красится знак, и только он. Шов (--accent)
      живёт вместе с комнатой — это разные вещи, и у них разные имена.
      (обе темы: имя бренда не зависит ни от обоев, ни от света — D-141.) */
@@ -1033,7 +1035,52 @@ html.sb-incognito {
   background: rgba(6, 7, 10, .92);
   backdrop-filter: blur(calc(var(--glass-blur) * 1.2));
   -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.2));
+  --vg-pearl-rgb: 246, 240, 255; /* своя краска: жемчуг слова — свет сцены двери, тёмной в обеих темах (D-581) */
 }
+/* ── СЦЕНА ЗА ДВЕРЬЮ (D-581) ──────────────────────────────────────────────
+   Собор или Порог во весь экран, ПОД всеми деталями двери: они лежат в
+   потоке, сцена — под ним. Поле носителя идёт следом в разметке и потому
+   ложится поверх сцены. Своих стилей у сцен — os/core/doors/doors.css. */
+#sbVaultGate .vg-scene { position: absolute; inset: 0; z-index: var(--z-under); overflow: hidden; pointer-events: none; }
+#sbVaultGate.vg-open .vg-box { opacity: 0; transition: opacity var(--t-scene) var(--ease-enter); }
+/* ── ДВЕРЬ СО СЦЕНОЙ — ОДНА КАРТИНА (D-582) ───────────────────────────────
+   Детали собраны на линии слова, которую называет сцена (shell.js,
+   placeCluster): над линией — только малая подпись, под ней — «Открыть»,
+   «Забыли слово?», заявление одной строкой и мелкие строки цены и носителя.
+   Языки — справа вверху, выбор двери — слева внизу, поле носителя — тонкой
+   полосой у нижнего края. Где на экране лежит блок — решает пол сцены
+   (D-583, shell.js placeCluster). Охраняется tools/door-compose-check.mjs и
+   tools/door-floor-check.mjs. */
+#sbVaultGate.vg-has-scene { display: block; padding: 0; }
+#sbVaultGate.vg-has-scene .vg-box {
+  position: absolute; left: 0; right: 0; top: 64vh; margin: 0 auto;
+  width: min(340px, calc(100% - 32px)); gap: 8px;
+}
+/* Со сценой дверь — сама сцена: круга старой двери в небе нет (основатель
+   29.10.2026, D-583). Без сцены диафрагма прежняя (vault-door-check). */
+#sbVaultGate.vg-has-scene .vg-iris { display: none; }
+#sbVaultGate.vg-has-scene .vg-langs { position: fixed; top: 12px; right: 12px; gap: 4px; }
+#sbVaultGate.vg-has-scene .vg-doors { position: fixed; left: 12px; bottom: 36px; margin: 0; }
+#sbVaultGate.vg-has-scene.vg-doors-up .vg-doors { bottom: auto; top: 12px; }
+#sbVaultGate.vg-has-scene .vg-title {
+  font-family: var(--serif); font-size: var(--f-meta); font-weight: var(--w-text);
+  letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ink-2);
+}
+#sbVaultGate.vg-has-scene #sbVaultOpen {
+  font-family: var(--serif); font-size: var(--f-ui); letter-spacing: var(--track-caps); text-transform: uppercase;
+  background: rgba(var(--film-rgb), .05); border: 1px solid rgba(var(--vg-pearl-rgb), .26); border-radius: var(--r-pill);
+  color: var(--ink); backdrop-filter: blur(calc(var(--glass-blur) * .5)); -webkit-backdrop-filter: blur(calc(var(--glass-blur) * .5));
+}
+#sbVaultGate.vg-has-scene #sbVaultOpen:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#sbVaultGate.vg-has-scene .vg-forgot { font-family: var(--serif); letter-spacing: var(--track-air); }
+#sbVaultGate.vg-has-scene .vg-claim {
+  font-family: var(--serif); font-style: italic; font-size: var(--f-meta); letter-spacing: 0;
+  white-space: nowrap; margin: 2px 0 0; color: var(--ink-3);
+}
+#sbVaultGate.vg-has-scene .vg-claim br { display: none; }
+#sbVaultGate.vg-has-scene .vg-cost, #sbVaultGate.vg-has-scene .vg-sealed { font-size: var(--f-micro); color: var(--ink-3); margin: 0 auto; }
+#sbVaultGate.vg-has-scene .vg-field { top: auto; bottom: 0; height: 28px; opacity: .5; filter: none; }
+#sbVaultGate.vg-has-scene.vg-work .vg-field { opacity: .8; }
 .vg-box {
   width: min(360px, 100%); display: flex; flex-direction: column; gap: 12px;
   text-align: center;
@@ -1155,12 +1202,33 @@ html.sb-incognito {
 html[data-motion="reduced"] #sbVaultGate.vg-work .vgi-seams { animation: none; }
 .vg-title { font-size: var(--f-title); font-weight: var(--w-strong); letter-spacing: var(--track-tight); margin: 0; }
 .vg-sub { font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2); margin: 0; }
+/* ── СЛОВО — ЖЕМЧУГОМ (D-581) ─────────────────────────────────────────────
+   Поле остаётся настоящим полем пароля; его знаки прозрачны, а на линии
+   поля по жемчужине на знак (рисует shell.js, pearls). Подсказка видна,
+   пока поле пусто. Охраняется tools/pearl-word-check.mjs. */
 #sbVaultPass {
   width: 100%; height: 44px; padding: 0 14px;
-  border-radius: var(--r-ctrl); border: 1px solid var(--line);
-  background: var(--glass); color: var(--ink); font: inherit; font-size: var(--f-lead);
+  border-radius: var(--r-ctrl); border: 0;
+  box-shadow: inset 0 -1px 0 rgba(var(--vg-pearl-rgb), .38);
+  background-color: transparent; background-repeat: no-repeat;
+  color: transparent; -webkit-text-fill-color: transparent; caret-color: transparent;
+  font: inherit; font-size: var(--f-lead); text-align: center; letter-spacing: var(--track-air);
 }
+#sbVaultPass::placeholder { color: var(--ink-3); -webkit-text-fill-color: var(--ink-3); }
+#sbVaultPass::selection { background: transparent; }
 #sbVaultPass:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Выбор двери — тихая строка внизу, как ряд языков вверху. */
+.vg-doors { display: flex; justify-content: center; align-items: center; gap: 2px; margin-top: 4px; }
+.vg-door {
+  min-height: 32px; padding: 0 10px; border-radius: var(--r-pill); border: 1px solid transparent; background: transparent;
+  font: inherit; font-size: var(--f-meta); letter-spacing: var(--track-air); color: var(--ink-3);
+}
+.vg-door.on { color: var(--ink-2); border-color: var(--line); }
+.vg-door:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.vg-door-dot { color: var(--ink-3); font-size: var(--f-meta); }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .vg-door:hover { color: var(--ink); }
+}
 .vg-err { font-size: var(--f-ui); color: var(--bad-ink); margin: 0; }
 
 #sbMoodTint {

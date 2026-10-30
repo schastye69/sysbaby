@@ -4525,6 +4525,17 @@
         return '<button type="button" class="vg-lang' + (l.code === cur ? " on" : "") + '" data-gate-lang="' + escapeHtml(l.code) + '" lang="' + escapeHtml(l.code === "ee" ? "et" : l.code) + '" aria-pressed="' + (l.code === cur ? "true" : "false") + '" title="' + escapeHtml(l.label) + '">' + escapeHtml(l.show) + "</button>";
       }).join("") + "</div>";
   }
+  /* Выбор двери у двери (D-581): Собор и Порог, если обе сцены пришли.
+     Кнопки подписаны словами двери и меняют только сцену. */
+  function gateDoorRow() {
+    var D = window.sbScenes;
+    if (!D || !D.has || !D.has("sobor") || !D.has("porog")) return "";
+    return '<div class="vg-doors" role="group" aria-label="' + escapeHtml(gateText("lock.door")) + '" data-gk-aria="lock.door">' +
+      '<button type="button" class="vg-door" data-gate-door="sobor" data-gk="lock.door.sobor" aria-pressed="false">' + escapeHtml(gateText("lock.door.sobor")) + "</button>" +
+      '<span class="vg-door-dot" aria-hidden="true">·</span>' +
+      '<button type="button" class="vg-door" data-gate-door="porog" data-gk="lock.door.porog" aria-pressed="false">' + escapeHtml(gateText("lock.door.porog")) + "</button>" +
+      "</div>";
+  }
   function gateResay(gate) {
     $$("[data-gk]", gate).forEach(function (el) {
       var v = gateText(el.getAttribute("data-gk"));
@@ -4577,6 +4588,10 @@
     gate.setAttribute("role", "dialog");
     gate.setAttribute("aria-modal", "true");
     gate.classList.add("vg-shut");
+    /* Дверь со сценой — одна картина (D-582): детали собраны на линии слова,
+       которую называет сцена. Класс ставится до первой отрисовки поля
+       носителя: оно сразу ложится тонкой полосой у нижнего края. */
+    if (window.sbScenes && window.sbScenes.has && (window.sbScenes.has("sobor") || window.sbScenes.has("porog"))) gate.classList.add("vg-has-scene");
     /* ── ЗА ДИАФРАГМОЙ — НАСТОЯЩЕЕ ПОЛЕ КОНВЕРТОВ (D-216) ──────────────────
        До пароля система не знает о своих записях НИЧЕГО, кроме того, что они
        лежат и сколько их. Ровно это и рисуется: каждая плитка — настоящий
@@ -4608,6 +4623,10 @@
     } catch (e) { fieldHtml = ""; sealCount = 0; }
 
     gate.innerHTML =
+      /* ── СЦЕНА ЗА ДВЕРЬЮ (D-581) ──────────────────────────────────────
+         Собор или Порог — за всеми деталями двери, во весь экран. Сцена
+         молчит для чтеца экрана: она убранство, а не дверь. */
+      '<div class="vg-scene" id="sbVaultScene" aria-hidden="true"></div>' +
       fieldHtml +
       '<div class="vg-box">' +
         /* ── ДВЕРЬ — ЭТО ДИАФРАГМА (D-182) ────────────────────────────────
@@ -4631,7 +4650,6 @@
            действительно не уходит ничего.
            Строка НЕ ПЕРЕВОДИТСЯ, как и «only you and your system, baby» на
            входе: это один голос системы, а не подпись к кнопке. */
-        '<p class="vg-claim">only you and your encrypted system, baby.<br>nothing can leave us.</p>' +
         '<input type="password" id="sbVaultPass" autocomplete="current-password" data-gk-ph="lock.ask" data-gk-aria="lock.ask" ' +
           'aria-label="' + escapeHtml(gateText("lock.ask")) + '" placeholder="' + escapeHtml(gateText("lock.ask")) + '">' +
         /* ── ВТОРОЙ КЛЮЧ СПРАШИВАЕТСЯ ТАМ ЖЕ, ГДЕ СЛОВО (D-215) ────────────
@@ -4667,19 +4685,29 @@
           '<button type="button" class="btn primary" id="sbVaultRecover" data-gk="lock.codeOpen">' + escapeHtml(gateText("lock.codeOpen")) + "</button>" +
         "</div>" +
         '<p class="vg-err" id="sbVaultErr" role="alert" hidden></p>' +
+        /* Заявление стоит под деталями двери (D-582): над линией слова — сцена. */
+        '<p class="vg-claim">only you and your encrypted system, baby.<br> nothing can leave us.</p>' +
         /* Цена попытки — не лозунг: число проходов берётся из записи замка,
            а миллисекунды замеряются на этой попытке. Появляется ПОСЛЕ, а не
            до: обещать цену заранее значило бы обещать. */
         '<p class="vg-cost" id="sbVaultCost" hidden></p>' +
         (sealCount ? sealedLine(sealCount) : "") +
+        gateDoorRow() +
       "</div>";
     doc.body.appendChild(gate);
     gate.setAttribute("lang", gateLang() === "ee" ? "et" : gateLang());
     gate.addEventListener("click", function (ev) {
+      var d = ev.target && ev.target.closest ? ev.target.closest("[data-gate-door]") : null;
+      if (d) {
+        if (window.sbScenes) window.sbScenes.choose(d.getAttribute("data-gate-door"));
+        mountDoor();
+        return;
+      }
       var b = ev.target && ev.target.closest ? ev.target.closest("[data-gate-lang]") : null;
       if (!b) return;
       gatePick = b.getAttribute("data-gate-lang");
       gateResay(gate);
+      placeCluster();
     });
     /* Поле оживает СРАЗУ и живёт, пока стоит дверь: это не заставка, а
        диск, который лежит за ней прямо сейчас. */
@@ -4702,7 +4730,8 @@
         if (!n) return;
         var cv = doc.createElement("canvas");
         cv.className = "vg-field"; cv.id = "sbVaultField"; cv.setAttribute("aria-hidden", "true");
-        gate.insertBefore(cv, gate.firstChild);
+        var sc0 = gate.querySelector("#sbVaultScene");
+        gate.insertBefore(cv, sc0 ? sc0.nextSibling : gate.firstChild);
         var box = gate.querySelector(".vg-box");
         var err = gate.querySelector("#sbVaultErr");
         if (box) {
@@ -4719,6 +4748,132 @@
     var field = gate.querySelector("#sbVaultPass");
     var errEl = gate.querySelector("#sbVaultErr");
     var busy = false;
+    /* ── СЦЕНА ЗНАЕТ ТОЛЬКО ЧИСЛО, И НИЧЕГО НЕ РЕШАЕТ (D-581) ─────────────
+       Поле слова читает оболочка двери; сцене уходит одно число — сколько
+       знаков набрано. «Неверно» и «открыть» сцене говорит ответ замка, и
+       только он. Слово рисуется жемчугом на самом поле: поле остаётся
+       настоящим полем пароля (его находит менеджер паролей и чтец экрана),
+       а знаки его прозрачны. Охраняется tools/pearl-word-check.mjs и
+       tools/door-truth-check.mjs. */
+    var door = null;
+    function wordLen() { return Array.from(field.value).length; }
+    function pearls(n) {
+      if (!n) { field.style.backgroundImage = ""; return; }
+      var w = field.clientWidth || 300, h = field.clientHeight || 44;
+      var gap = Math.min(16, (w * 0.8) / n), r = 3, y = (h / 2).toFixed(1), x0 = w / 2 - ((n - 1) * gap) / 2, out = [];
+      for (var i = 0; i < n; i++) {
+        out.push("radial-gradient(circle at " + (x0 + i * gap).toFixed(1) + "px " + y + "px, rgba(var(--vg-pearl-rgb), 1) 0 " + r + "px, rgba(var(--vg-pearl-rgb), .3) " + (r + 1.4) + "px, rgba(var(--vg-pearl-rgb), 0) " + (r * 3.4) + "px)");
+      }
+      field.style.backgroundImage = out.join(", ");
+    }
+    function markDoors() {
+      var name = door ? door.name : "";
+      $$("[data-gate-door]", gate).forEach(function (b) {
+        var on = b.getAttribute("data-gate-door") === name;
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    }
+    /* ── ДЕТАЛИ НА ПОЛУ СЦЕНЫ (D-583; было — на линии слова, D-582) ────────
+       Основатель 29.10.2026: «Поля для входа и все надписи должны быть на
+       полу, как можно выше, но чтобы они не заходили за пределы пола, не
+       выступали на колонны или на дверь». Дверь меряет весь блок деталей
+       (с «Заперто» наверху и строками, что вылезают за рамку) и называет
+       сцене нужное место; сцена ставит под него картину и отвечает, где верх
+       блока и в каком масштабе. Выбор двери, если он стоит под блоком,
+       уходит в левый верхний угол. Когда клавиатура телефона укорачивает
+       экран (visualViewport), поле поднимается над ней — это мгновение
+       набора, а не вид двери. Охраняется tools/door-floor-check.mjs и
+       tools/door-compose-check.mjs. */
+    var openBtn = gate.querySelector("#sbVaultOpen");
+    var lastNeed = "";
+    function blockSize(box) {
+      var r = box.getBoundingClientRect(), k = parseFloat(box.getAttribute("data-k")) || 1;
+      var u = { l: r.left, t: r.top, rr: r.right, b: r.bottom };
+      var pinned = function (el) { for (var e = el; e && e !== box; e = e.parentElement) if (getComputedStyle(e).position === "fixed") return true; return false; };
+      var add = function (e) { if (!e.width || !e.height) return; u.l = Math.min(u.l, e.left); u.t = Math.min(u.t, e.top); u.rr = Math.max(u.rr, e.right); u.b = Math.max(u.b, e.bottom); };
+      $$("*", box).forEach(function (el) {
+        var cs = getComputedStyle(el);
+        if (cs.display === "none" || cs.visibility === "hidden" || pinned(el)) return;
+        add(el.getBoundingClientRect());
+        for (var i = 0; i < el.childNodes.length; i++) if (el.childNodes[i].nodeType === 3 && el.childNodes[i].textContent.trim()) { var rg = doc.createRange(); rg.selectNodeContents(el); add(rg.getBoundingClientRect()); break; }
+      });
+      var cx = (r.left + r.right) / 2;
+      /* ширина — симметрично от середины блока: сцена ставит блок по середине экрана */
+      return { w: 2 * Math.max(cx - u.l, u.rr - cx) / k, h: (u.b - u.t) / k, dy: (r.top - u.t) / k };
+    }
+    function placeCluster() {
+      var box = gate.querySelector(".vg-box");
+      if (!box || !gate.classList.contains("vg-has-scene")) { if (box) { box.style.top = ""; box.style.transform = ""; box.removeAttribute("data-k"); } return; }
+      var vh = window.innerHeight || 1, vw = window.innerWidth || 1;
+      var bs = blockSize(box);
+      var row = gate.querySelector(".vg-doors");
+      var bottom = vh - 8;
+      var need = { w: Math.ceil(bs.w), h: Math.ceil(bs.h), bottom: bottom };
+      var key = need.w + "x" + need.h + "@" + need.bottom + "/" + vw;
+      if (door && door.need && key !== lastNeed) { lastNeed = key; door.need(need); }
+      var pl = door && door.place ? door.place() : null;
+      var vv = window.visualViewport, kb = false;
+      if (pl) {
+        box.style.transformOrigin = "50% 0";
+        box.style.transform = pl.k !== 1 ? "scale(" + pl.k + ")" : "";
+        box.setAttribute("data-k", String(pl.k));
+        var top = pl.y + bs.dy * pl.k;
+        if (vv && doc.activeElement === field && vv.height < vh - 60) {
+          var fb = field.getBoundingClientRect(), fbot = fb.bottom - box.getBoundingClientRect().top;
+          var lim = vv.offsetTop + vv.height - 12;
+          if (top + fbot > lim) { kb = true; top = lim - fbot; }
+        }
+        box.style.top = Math.round(top) + "px";
+      } else {
+        /* сцена не назвала пол — прежняя линия слова */
+        var line = door && typeof door.line === "function" ? door.line() : null;
+        if (typeof line !== "number" || !isFinite(line)) line = vh * (vh > vw * 1.05 ? 0.70 : 0.64);
+        if (vv && doc.activeElement === field && vv.height < vh - 60) { kb = true; line = Math.min(line, vv.offsetTop + vv.height - field.offsetHeight / 2 - 12); }
+        box.style.transform = ""; box.removeAttribute("data-k");
+        box.style.top = Math.round(line - field.offsetTop - field.offsetHeight / 2) + "px";
+      }
+      gate.classList.toggle("vg-kb", kb);
+      /* Выбор двери уходит в левый верхний угол, если блок лёг на его место. */
+      if (row) {
+        gate.classList.remove("vg-doors-up");
+        var rr = row.getBoundingClientRect(), br = box.getBoundingClientRect();
+        if (br.left < rr.right + 8 && br.right > rr.left - 8 && br.bottom > rr.top - 8 && br.top < rr.bottom + 8) gate.classList.add("vg-doors-up");
+      }
+    }
+    function mountDoor() {
+      if (door) { door.destroy(); door = null; }
+      lastNeed = ""; // новой сцене место называется заново
+      var host = gate.querySelector("#sbVaultScene");
+      if (host && window.sbScenes && window.sbScenes.mount) {
+        try { door = window.sbScenes.mount(host, { reduced: systemReduced() || reduced(), onLine: placeCluster }); }
+        catch (e) { door = null; if (window.console) console.error("[doors] " + (e && e.message)); }
+      }
+      gate.classList.toggle("vg-has-scene", !!door);
+      /* Языки и выбор двери со сценой прибиты к углам экрана. Они уходят из
+         блока деталей на уровень двери (перед блоком — порядок клавиатуры тот
+         же): блок может быть уменьшен (transform), а уменьшенный блок держал
+         бы их при себе, а не в углах (D-583, экран 568×320). */
+      if (door) {
+        var boxAt = gate.querySelector(".vg-box");
+        [".vg-langs", ".vg-doors"].forEach(function (sel) { var el = gate.querySelector(sel); if (el && boxAt && el.parentNode !== gate) gate.insertBefore(el, boxAt); });
+      }
+      /* Со сценой «Открыть» — тихое стекло голосом сцен, без заливки. */
+      if (openBtn) openBtn.classList.toggle("primary", !door);
+      if (door) { door.typing(wordLen()); door.focus(doc.activeElement === field); }
+      markDoors();
+      placeCluster();
+    }
+    function doorWrong() { if (door) door.wrong(); pearls(0); }
+    field.addEventListener("input", function () { var n = wordLen(); pearls(n); if (door) door.typing(n); });
+    field.addEventListener("focus", function () { if (door) door.focus(true); placeCluster(); });
+    field.addEventListener("blur", function () { if (door) door.focus(false); placeCluster(); });
+    window.addEventListener("resize", placeCluster);
+    /* Блок меняет рост сам (строка цены после неверного слова, правда о
+       носителе) — пол спрашивается заново. */
+    if (window.ResizeObserver) { var boxEl = gate.querySelector(".vg-box"); if (boxEl) new ResizeObserver(function () { placeCluster(); }).observe(boxEl); }
+    if (window.visualViewport) { window.visualViewport.addEventListener("resize", placeCluster); window.visualViewport.addEventListener("scroll", placeCluster); }
+    mountDoor();
     function tryOpen() {
       if (busy) return;
       busy = true;
@@ -4738,6 +4893,7 @@
         busy = false;
         gate.classList.remove("vg-work");
         gate.classList.add("vg-wrong");
+        if (door) door.wrong();
         errEl.textContent = gateText("lock.hwNo");
         errEl.hidden = false;
         return;
@@ -4756,6 +4912,7 @@
           /* Стук: время, и только время, запечатанное (D-341). */
           if (window.sbKnock) window.sbKnock.note();
           gate.classList.add("vg-wrong");
+          doorWrong();
           errEl.textContent = gateText("lock.wrong");
           errEl.hidden = false;
           field.value = "";
@@ -4766,18 +4923,12 @@
         /* Верный пароль: диафрагма расходится, и сквозь неё проступает свет
            комнаты. Дверь снимается ПОСЛЕ того, как она открылась, — иначе
            открылась бы не дверь, а пустота на её месте. */
-        gate.classList.add("vg-open");
-        var go = function () { if (gate.parentNode) gate.remove(); onDone(); };
-        var done = false;
-        var once = function () { if (done) return; done = true; go(); };
-        setTimeout(once, 980);
-        gate.addEventListener("transitionend", function (ev) {
-          if (ev.propertyName === "transform") once();
-        });
+        openedGate();
       }, function () {
         busy = false;
         gate.classList.remove("vg-work");
         gate.classList.add("vg-wrong");
+        doorWrong();
         errEl.textContent = gateText("lock.wrong");
         errEl.hidden = false;
       });
@@ -4807,6 +4958,7 @@
       } catch (e) { return ""; }
     }
     function showCost(ms) {
+      setTimeout(placeCluster, 0);
       var el = gate.querySelector("#sbVaultCost");
       var rounds = roundsOfLock();
       if (!el || !rounds) return;
@@ -4830,12 +4982,24 @@
       spareBox.hidden = !spareBox.hidden;
       if (!spareBox.hidden) { try { gate.querySelector("#sbVaultCode").focus(); } catch (e) { /* ignore */ } }
     });
+    /* Дверь снимается, когда разошлась диафрагма И сцена доиграла открытие
+       (D-581): иначе человек увидел бы, как открытие обрывается на полпути.
+       Сцена своё «доиграла» говорит сама; потолок держит doors.js. */
     function openedGate() {
       gate.classList.add("vg-open");
-      var done = false;
-      var once = function () { if (done) return; done = true; if (gate.parentNode) gate.remove(); onDone(); };
-      setTimeout(once, 980);
-      gate.addEventListener("transitionend", function (ev) { if (ev.propertyName === "transform") once(); });
+      var iris = false, scene = !door, left = false;
+      var go = function () {
+        if (left || !iris || !scene) return;
+        left = true;
+        window.removeEventListener("resize", placeCluster);
+        if (window.visualViewport) { window.visualViewport.removeEventListener("resize", placeCluster); window.visualViewport.removeEventListener("scroll", placeCluster); }
+        if (door) { door.destroy(); door = null; }
+        if (gate.parentNode) gate.remove();
+        onDone();
+      };
+      setTimeout(function () { iris = true; go(); }, 980);
+      gate.addEventListener("transitionend", function (ev) { if (ev.propertyName === "transform") { iris = true; go(); } });
+      if (door) door.open(function () { scene = true; go(); });
     }
     var recBtn = gate.querySelector("#sbVaultRecover");
     if (recBtn && window.sbVault.recover) recBtn.addEventListener("click", function () {
@@ -4854,6 +5018,7 @@
         if (!okp) {
           if (window.sbKnock) window.sbKnock.note();
           gate.classList.add("vg-wrong");
+          if (door) door.wrong();
           errEl.textContent = gateText("lock.codeWrong");
           errEl.hidden = false;
           return;
@@ -4870,6 +5035,7 @@
         /* Без Web Locks код не проверялся и ничего не записано (A1). */
         if (e && e.message === "nolocks") { errEl.textContent = gateText("lock.noLocks"); errEl.hidden = false; return; }
         gate.classList.add("vg-wrong");
+        if (door) door.wrong();
         errEl.textContent = gateText("lock.codeWrong");
         errEl.hidden = false;
       });
