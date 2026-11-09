@@ -276,7 +276,10 @@
        разрядка    --track-tight −.01em (заголовок, крупное число) ·
                    --track-air .03em (код, цифры, моно) ·
                    --track-caps .08em (служебная подпись заглавными —
-                   разрядка подписей и есть подпись системы);
+                   разрядка подписей и есть подпись системы) ·
+                   --track-gate .32em (широкие заглавные ворот: «ЗАПЕРТО»
+                   над дверью — утверждённый вид D-603; решение основателя
+                   05.11: отдельное слово, а не допуск);
        интерлиньяж --lh-one 1 (число, знак) · --lh-ui 1.25 (строка
                    интерфейса) · --lh-read 1.55 (то, что читают глазами).
      Ноль — не слово, а его отсутствие, и остаётся числом.
@@ -289,6 +292,7 @@
   --track-tight: -.01em;
   --track-air: .03em;
   --track-caps: .08em;
+  --track-gate: .32em;
   --lh-one: 1;
   --lh-ui: 1.25;
   --lh-read: 1.55;
@@ -1152,6 +1156,59 @@ html.sb-incognito {
   font: inherit; font-size: var(--f-meta); color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px;
 }
 .vg-forgot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* ── МЕНЮ ДВЕРИ (D-588) — одно у всех; тихие строки, как «Забыли слово». ── */
+.vg-menu { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0 2px; max-width: 34em; }
+.vg-menu button {
+  background: none; border: 0; padding: 6px 6px; cursor: pointer;
+  font: inherit; font-size: var(--f-meta); color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px;
+}
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .vg-menu button:hover { color: var(--ink-2); }
+}
+.vg-menu button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.vg-menu-br { width: 3px; height: 3px; border-radius: var(--r-round); background: var(--ink-3); opacity: .5; }
+#sbVaultGate.vg-has-scene .vg-menu button { font-family: var(--serif); letter-spacing: var(--track-air); }
+/* Строка-весть у двери (переезд, «первое слово уже сказано») — не ошибка. */
+.vg-err.vg-note { color: var(--ink-2); }
+/* ── ЛИСТЫ ДВЕРИ (D-588): поверх деталей, сцена живёт за ними. ── */
+.vg-sheet {
+  position: fixed; inset: 0; z-index: var(--z-guide);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  /* своя краска: лист лежит на сцене двери, тёмной в обеих темах */ background: rgba(0, 0, 0, .46);
+}
+/* Окно двери — окно системы (основатель 02.11.2026): та же плита, полоса,
+   ключи и имя, что у окон стола; переносится за полосу. */
+.vg-win {
+  position: relative; display: flex; flex-direction: column; overflow: hidden;
+  width: min(460px, 100%); max-height: calc(100dvh - 32px);
+  border-radius: var(--r-window); border: 1px solid var(--line); box-shadow: var(--shadow);
+  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6); backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  color: var(--ink); text-align: left; will-change: transform;
+}
+.vg-win::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: var(--glint); pointer-events: none; }
+.vg-win .titlebar { cursor: grab; touch-action: none; }
+.vg-win.dragging .titlebar { cursor: grabbing; }
+.vg-win .lights { border-color: var(--line-2); background: rgba(var(--film-rgb), .07); }
+.vg-win .light { color: var(--ink-2); border: 0; cursor: pointer; }
+.vg-win .tb-right { width: 74px; flex: none; }
+.vg-win-body { overflow: auto; padding: 18px 20px 18px; }
+.vg-win.maximized { width: 100%; height: calc(100dvh - 32px); max-height: none; }
+.vg-win-body h2 { margin: 0 28px 10px 0; font-family: var(--serif); font-weight: var(--w-strong); font-size: var(--f-title); letter-spacing: var(--track-air); }
+.vg-win-body p { margin: 0 0 10px; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2); }
+.vg-win-body input { display: block; width: 100%; box-sizing: border-box; margin: 4px 0 6px; padding: 11px 12px; border-radius: var(--r-ctrl); border: 1px solid var(--line); background: var(--glass); color: var(--ink); font: inherit; font-size: var(--f-lead); }
+.vg-sheet-meta { font-size: var(--f-meta) !important; color: var(--ink-3) !important; min-height: 1.2em; }
+.vg-sheet-h { margin-top: 12px !important; color: var(--ink) !important; }
+.vg-sheet-list { margin: 0 0 12px; padding-left: 18px; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2); }
+.vg-sheet-list li { margin: 0 0 6px; }
+.vg-sheet-toggle { background: none; border: 0; padding: 4px 0; cursor: pointer; font: inherit; font-size: var(--f-meta); color: var(--ink-3); }
+.vg-sheet-toggle::before { content: "○ "; }
+.vg-sheet-toggle[aria-pressed="true"] { color: var(--ink-2); }
+.vg-sheet-toggle[aria-pressed="true"]::before { content: "● "; }
+.vg-sheet-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.vg-sheet-acts button { padding: 10px 14px; border-radius: var(--r-ctrl); border: 1px solid var(--line); background: var(--glass); color: var(--ink); font: inherit; font-size: var(--f-ui); cursor: pointer; }
+.vg-sheet-acts button.main { background: var(--accent); border-color: transparent; color: var(--on-accent); }
+.vg-sheet-acts button:focus-visible, .vg-sheet-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* ── ЯЗЫК ДВЕРИ НА ЭТОТ ВХОД (D-288) ─────────────────────────────────────
    Ряд кодов над диафрагмой: каждый язык подписан собой, нажатый — светлее.
    Выбор живёт только в памяти страницы (см. gateLang в shell.js).
@@ -1219,6 +1276,16 @@ html[data-motion="reduced"] #sbVaultGate.vg-work .vgi-seams { animation: none; }
 #sbVaultPass:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Выбор двери — тихая строка внизу, как ряд языков вверху. */
 .vg-doors { display: flex; justify-content: center; align-items: center; gap: 2px; margin-top: 4px; }
+/* «Какая дверь ваша?» (D-607): ряд закрыт, пока его не раскрыли тихой ссылкой; под ним — одна строка. */
+.vg-doors[hidden] { display: none !important; }
+.vg-doors { flex-wrap: wrap; max-width: min(26em, calc(100vw - 180px)); }   /* не заходит под языки в правом углу (их ширина до ~150 px) */
+.vg-doors-note { flex-basis: 100%; margin: 2px 0 0; padding: 0 10px; font-size: var(--f-micro); line-height: var(--lh-read); color: var(--ink-3); }
+#sbVaultGate.vg-has-scene .vg-doors { justify-content: flex-start; z-index: var(--z-lift); }
+/* Низкий экран (телефон лёжа): меню двери — одной строкой, мельче. */
+@media (max-height: 460px) {
+  .vg-menu { flex-wrap: nowrap; white-space: nowrap; }
+  .vg-menu button { font-size: var(--f-micro); padding: 3px 4px; }
+}
 .vg-door {
   min-height: 32px; padding: 0 10px; border-radius: var(--r-pill); border: 1px solid transparent; background: transparent;
   font: inherit; font-size: var(--f-meta); letter-spacing: var(--track-air); color: var(--ink-3);
@@ -1391,7 +1458,6 @@ html.sb-has-session #sbLogin { display: none; }
 }
 .login-input-wrap:focus-within { border-color: var(--accent-ring); }
 .login-input-wrap input { flex: 1; min-width: 0; padding: 11px 0; background: none; border: 0; outline: none; font-size: var(--f-lead); }
-.login-suffix { color: var(--ink-3); font-family: var(--mono); font-size: var(--f-read); }
 .login-eye { color: var(--ink-3); padding: 6px; }
 .login-err { min-height: 18px; margin: 4px 0 10px; color: var(--bad-ink); font-size: var(--f-ui); }
 .login-foot { margin: 14px 0 6px; color: var(--ink-3); font-size: var(--f-ui); line-height: var(--lh-read); }
@@ -1986,14 +2052,18 @@ html.rv-widgets #sbWidgetLayer { opacity: 1; }
    буквы на пиксель в каждую сторону, непрозрачных: над тёмным полем её не
    видно, как не было видно и тени, а над световым пятном она держит буквы.
    Обводка шрифта (-webkit-text-stroke) была первой попыткой и снята: её
-   острые углы давали шипы под «t» и «w» — прибор нашёл их как плёнку. */
+   острые углы давали шипы под «t» и «w» — прибор нашёл их как плёнку.
+   Девятая копия, вторая вверх (05.11.2026, утверждено основателем): над
+   точкой «i» верхнюю кайму режет край строки (overflow), и одной копии не
+   хватало до непрозрачного — на столе 1440 оставалось 3 пикс. плёнки. */
 .icon-label {
   font-size: var(--f-meta); color: var(--tile-label); text-align: center;
   line-height: var(--lh-ui);
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   text-shadow:
     1px 0 0 var(--tile-halo), -1px 0 0 var(--tile-halo), 0 1px 0 var(--tile-halo), 0 -1px 0 var(--tile-halo),
-    1px 1px 0 var(--tile-halo), -1px 1px 0 var(--tile-halo), 1px -1px 0 var(--tile-halo), -1px -1px 0 var(--tile-halo);
+    1px 1px 0 var(--tile-halo), -1px 1px 0 var(--tile-halo), 1px -1px 0 var(--tile-halo), -1px -1px 0 var(--tile-halo),
+    0 -1px 0 var(--tile-halo);
 }
 .desk-icon.active-app .icon-label { color: var(--tile-label-on); }
 .icon-spark {
@@ -2447,8 +2517,9 @@ html.sb-fullscreen-window #topbar {
 }
 .window.drop-target { outline: 2px solid var(--accent); }
 html.dragging .window { backdrop-filter: blur(6px); }
+/* Полоса окна 48 px (D-610): кнопки окна под палец — на всех устройствах одинаково (D-272). */
 .titlebar {
-  display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 12px; flex: none;
+  display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 12px; flex: none;
   border-bottom: 1px solid var(--line); user-select: none; cursor: default;
 }
  /* Window controls. Three coloured dots are somebody else's operating system;
@@ -2462,12 +2533,17 @@ html.dragging .window { backdrop-filter: blur(6px); }
   background: rgba(var(--film-rgb), .045);
   border: 1px solid var(--line);
 }
+/* КНОПКИ ОКНА ПОД ПАЛЕЦ (D-610, основатель 03.11.2026: «Увеличить. На планшете и на телефоне, тем более»;
+   утверждено 04.11): кнопка 36×30, значок 15 px, вокруг — невидимая зона касания 44×44. Одинаково на всех
+   устройствах (D-272: размеры по ширине вправе, вещество — нет). Стережёт tools/desk-items-check.mjs. */
 .light {
-  width: 22px; height: 18px; border-radius: var(--r-tag); display: grid; place-items: center;
+  position: relative;
+  width: 36px; height: 30px; border-radius: var(--r-ctrl); display: grid; place-items: center;
   background: transparent; color: var(--ink-3);
   transition: background var(--t-touch) var(--ease-move), color var(--t-touch) var(--ease-move);
 }
-.light svg { width: 11px; height: 11px; }
+.light svg { width: 15px; height: 15px; }
+.light::before { content: ""; position: absolute; left: -4px; right: -4px; top: -7px; bottom: -7px; }
 .light:focus-visible { background: var(--glass-2); color: var(--ink); }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -3943,4 +4019,44 @@ body.sb-alarm-flash::after {
   .sb-paper-code { margin: 0 0 10mm; font-size: var(--f-hero); font-weight: var(--w-strong); letter-spacing: var(--track-caps); word-spacing: .4em; overflow-wrap: anywhere; }
   .sb-paper-what, .sb-paper-keep { margin: 0 0 5mm; }
   .sb-paper-line { margin: 14mm 0 0; }
+}
+
+/* ЦВЕТ ДВЕРИ (D-596, основатель 02.11.2026: «подстройте цвет кнопок всего
+   остального, где есть хоть какой-то цвет, под цвет заставки, окружающего
+   мира, ворот»). У двери шов — не оранжевый стола, а свет её мира: Шифр —
+   холодная сталь его печатей, Собор — лиловый свет нефа, Свет — оранжевое
+   золото между лучом и знаком. Всё, что у двери окрашено (главная кнопка окна, кольцо фокуса, поле
+   слова, швы радужки), берёт цвет отсюда. Стол после двери — снова цвет,
+   который выбрал человек. Цвета сняты с самих сцен (снимки 834×1194).
+   Стережёт tools/door-colour-check.mjs. */
+#sbVaultGate:has(.vg-scene[data-door="shifr"]) {
+  --accent: #93a9e0; --accent-2: #b3c4ee; --accent-rgb: 147, 169, 224;
+  --accent-soft: rgba(147, 169, 224, .18); --accent-ring: rgba(147, 169, 224, .55); --on-accent: #0c1120;
+  --accent-ink: #b9c8ef;
+}
+#sbVaultGate:has(.vg-scene[data-door="sobor"]) {
+  --accent: #b9a6dc; --accent-2: #d2c5ea; --accent-rgb: 185, 166, 220;
+  --accent-soft: rgba(185, 166, 220, .18); --accent-ring: rgba(185, 166, 220, .55); --on-accent: #161021;
+  --accent-ink: #d0c3e8;
+}
+#sbVaultGate:has(.vg-scene[data-door="porog"]) {
+  /* основатель 02.11: «более оранжевыми — нечто среднее между цветом ворот и
+     логотипом, даже ближе к логотипу чуть-чуть»: 58% знака (224,102,60) +
+     42% золота луча (240,191,116) */
+  --accent: #e68c55; --accent-2: #eea77a; --accent-rgb: 230, 140, 85;
+  --accent-soft: rgba(230, 140, 85, .18); --accent-ring: rgba(230, 140, 85, .55); --on-accent: #1e1008;
+  --accent-ink: #f0b48e;
+}
+
+/* ЗНАКИ СЛОВА (основатель 02.11.2026): холст поверх поля — Собор: лунный жемчуг,
+   Свет: живой луч, Шифр: печати; свой курсор за последним знаком. Поле под ним —
+   настоящее поле пароля (D-581); холст касаний не ловит. */
+.vg-signs { position: absolute; pointer-events: none; z-index: 1; }
+
+/* «Переименовать» значок (D-613): поле прямо на подписи; долгое касание — только меню (D-612), без выноски браузера. */
+.desk-icon { -webkit-touch-callout: none; }
+.desk-icon input.icon-rename {
+  width: calc(100% + 16px); margin: 0 -8px; font: inherit; font-size: var(--f-meta); text-align: center; color: var(--ink);
+  background: rgba(var(--well-rgb), .45); border: 0; border-radius: var(--r-tag); padding: 3px 6px; outline: 1.5px solid var(--accent);
+  -webkit-user-select: text; user-select: text;
 }

@@ -1850,22 +1850,59 @@
       var def = ((window.SysBaby && window.SysBaby.apps) || {})[id] || {};
       items = [
         { label: tr("menu.open", { app: appLabelOf(id) }), run: function () { if (window.toggleApp) window.toggleApp(id); } },
+        /* D-613: своё имя значка — только подпись значка */
+        { label: tr("menu.rename"), run: function () { renameIcon(target, id); } }
+      ].concat(window.sbIconName && window.sbIconName(id) ? [
+        { label: tr("menu.renameBack", { name: window.sbAppBaseLabel(id) }), run: function () { window.sbSetIconName(id, ""); } }
+      ] : []).concat([
         { label: tr("menu.removeIcon"), run: function () { if (window.sbSetIconHidden) window.sbSetIconHidden(id, true); } },
         "-",
         { label: tr("menu.manageDesktop"), run: function () { if (window.sbPanels && window.sbPanels.sbWidgetsOverlay) window.sbPanels.sbWidgetsOverlay.open(); } }
-      ];
+      ]);
     } else {
       items = desktopMenuItems(x, y);
     }
     buildMenu(items, x, y);
   }
 
+  /* Долгое касание значка (D-612) открывает то же меню, что правая кнопка. */
+  window.sbOpenIconMenu = function (node, x, y) { openMenu({ clientX: x, clientY: y, preventDefault: function () {}, stopPropagation: function () {} }, "icon", node); };
+  /* «Переименовать» (D-613): поле прямо на подписи значка; Enter или уход — сохранить, Escape — отменить. */
+  function renameIcon(node, id) {
+    var lbl = node && node.querySelector(".icon-label");
+    if (!lbl || node.querySelector("input.icon-rename")) return;
+    var inp = document.createElement("input");
+    inp.className = "icon-rename"; inp.type = "text"; inp.maxLength = 48; inp.autocomplete = "off"; inp.spellcheck = false;
+    inp.value = (window.sbAppLabel && window.sbAppLabel(id)) || "";
+    inp.setAttribute("aria-label", tr("menu.renameField", { name: window.sbAppBaseLabel ? window.sbAppBaseLabel(id) : id }));
+    lbl.hidden = true; lbl.after(inp); inp.focus(); inp.select();
+    var done = false;
+    function finish(keep) {
+      if (done) return; done = true;
+      var v = inp.value; inp.remove(); lbl.hidden = false;
+      if (keep && window.sbSetIconName) window.sbSetIconName(id, v);
+    }
+    ["pointerdown", "pointerup", "click", "contextmenu"].forEach(function (k) { inp.addEventListener(k, function (e) { e.stopPropagation(); }); });
+    inp.addEventListener("keydown", function (e) {
+      e.stopPropagation();
+      if (e.key === "Enter") { e.preventDefault(); finish(true); node.focus && node.focus({ preventScroll: true }); }
+      else if (e.key === "Escape") { e.preventDefault(); finish(false); node.focus && node.focus({ preventScroll: true }); }
+    });
+    inp.addEventListener("blur", function () { finish(true); });
+  }
+  window.sbRenameIcon = renameIcon;
+
   function wireContextMenus() {
     var scene = $("#desktop");
     if (scene) {
       scene.addEventListener("contextmenu", function (ev) {
         var t = ev.target;
-        if (t && t.closest && t.closest(".desk-icon")) { openMenu(ev, "icon", t.closest(".desk-icon")); return; }
+        if (t && t.closest && t.closest(".desk-icon")) {
+          var ic = t.closest(".desk-icon");
+          /* D-612: меню уже открыто долгим касанием — второй раз его не открывать */
+          if (ic.__sbLongPress && (window.performance || Date).now() - ic.__sbLongPress < 2000) { ev.preventDefault(); return; }
+          openMenu(ev, "icon", ic); return;
+        }
         if (t && t.closest && t.closest(".sb-widget")) return;    /* header handles its own */
         if (t && t.closest && t.closest(window.sbEmptyDesktopSkipSelector || ".window")) return;
         openMenu(ev, "desktop", null);

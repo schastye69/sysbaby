@@ -6,6 +6,7 @@ window.sbScenes.register('porog', function (root, kit) {
 /* the door's own clock, listeners and address: everything a scene asks for goes through the kit, so destroy() takes it all away */
 const { setTimeout, setInterval, requestAnimationFrame, location } = kit;
 const addEventListener = (t, f, o) => kit.on(window, t, f, o);
+const POLON = () => true && true; // D-603: «one height» floor
 let held = false; // while the lock turns a key, the scene holds still: its frames must not cost the key anything
 root.innerHTML = '<div data-d="stage"><div data-d="cam"><canvas data-d="cv"></canvas></div><div data-d="vig"></div><div data-d="grain"></div></div>';
 /* ПОРОГ — the calm entrance. Light under a closed door.
@@ -107,7 +108,7 @@ function geom() {
   if (NEED && NEED.h > 0) {
     const bottom = Math.min(vh, NEED.bottom || vh) - 10, y0 = y, dw0 = dw;
     for (const kb of [1, 0.92, 0.85, 0.78]) {
-      const yy = Math.min(y0, Math.floor(bottom - NEED.h * kb - FGAP)), fmin = Math.min(FMIN, Math.round(vh * 0.2));
+      const yy = NEED.y > 0 ? Math.round(NEED.y - (NEED.off || 0) * kb - FGAP) : Math.min(y0, Math.floor(bottom - NEED.h * kb - FGAP)), fmin = Math.min(FMIN, Math.round(vh * 0.2));
       if (yy - FTOP < fmin) continue;
       const hMax = yy - FTOP, fD0 = dw0 / (2 * HALF);
       y = yy; dw = fD0 * HC > hMax ? Math.round((hMax / HC) * 2 * HALF) : dw0;
@@ -126,7 +127,7 @@ function geom() {
 }
 function layout() {
   const iw = innerWidth, ih = innerHeight;
-  if (!(wordEl.focused && iw === lastW && ih < baseH)) baseH = ih;
+  if (!((wordEl.focused || true) && iw === lastW && ih < baseH)) baseH = ih;
   lastW = iw; vw = iw; vh = baseH;
   dpr = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr); cv.style.width = vw + 'px'; cv.style.height = vh + 'px';
@@ -138,9 +139,116 @@ function layout() {
   L.fs = clamp(w * 0.055, 15, 26); L.ls = clamp(L.fs * 0.5, 10, 12.5);
   Object.assign(wordEl.style, { left: L.x0 + 'px', top: L.y - 40 + 'px', width: w + 'px', height: 40 + L.ls * 2.8 + 'px' });
   msg.style.top = Math.min(L.y + L.ls * 2.5 + 10, vh - 40) + 'px';
+  if (true && true) { const pg = (POL.g = (POL.g || 0) + 1); setTimeout(() => { if (pg === POL.g) { POL.layout(); kick(); } }, 30); } // D-603: its own task
   tLayout = now(); startJob(); fitKeyboard(); kick();
   if (RM || !running) setTimeout(kick, 260);
 }
+// ---------- DEMO «one height»: the floor below the threshold ----------
+// Realistic, not decorative: the strip's light spills onto honed stone with an inverse-square-like falloff (no edge — it
+// eases to nothing); the stone's grain shows only where the light grazes it; where the stone meets the wall beside the
+// door it darkens (contact shadow); the strip is mirrored in the stone and the reflection blurs and fades with distance
+// from the strip (computed per row, once per size); slow dust drifts in the light. The pool breathes (16 s), the
+// reflection wavers like warm air (9 s), motes drift (14–20 s). Reduced motion: still.
+// The light from under the door is painted INTO the scene's own frame (three prerendered blits, before the feet's
+// shadows), so the shoes that block the gap darken the pool, the reflection and the rays exactly where they stand:
+// a fan from the gap with inverse-square-like falloff, the threshold's grazing grain and the worn polish of the middle,
+// soft volumetric rays in the dusty air just above the floor.
+const POL = (function () {
+  const api = { on: false };
+  let wrap = null, pool = null, refl = null, rays = null, motes = null, y0p = 0, rwp = 0, rhp = 0, fhp = 0;
+  function seeded(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function build() {
+    wrap = document.createElement('div');
+    wrap.className = 'pol pol-porog' + (RM ? ' pol-still' : '');
+    wrap.innerHTML = '<div class="pol-motes"></div>';
+    stage.insertBefore(wrap, $('vig'));
+    pool = mkCanvas(1, 1); refl = mkCanvas(1, 1); rays = mkCanvas(1, 1); motes = wrap.querySelector('.pol-motes');
+  }
+  function size(c, w, h, d) { c.width = Math.max(1, Math.round(w * d)); c.height = Math.max(1, Math.round(h * d)); const g = c.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); return g; }
+  api.layout = function () {
+    if (!wrap) build();
+    api.on = true;
+    const y0 = Math.round(G.ly + 1), fh = Math.max(1, vh - y0), cx = G.cx, dw = G.dw, d = Math.min(1.5, dpr), r = seeded(51 + vw * 7 + vh);
+    // ── the pool: a line source at the strip; irradiance ~ 1 / (1 + (ρ/ρ0)²), eased to zero at the far rim (no edge)
+    y0p = y0; fhp = fh;
+    const g = size(pool, vw, fh, d);
+    const rxp = Math.max(dw * 1.2, vw * 0.6), ryp = fh * 0.95, rho0 = 0.16;
+    const I = (u, v) => { const q = Math.sqrt(u * u + v * v); if (q >= 1) return 0; const e = 1 - q * q; return (1 / (1 + (q / rho0) * (q / rho0))) * e * e; };
+    g.save(); g.translate(cx, 0); g.scale(rxp / ryp, 1);
+    let gr = g.createRadialGradient(0, 0, 0, 0, 0, ryp);
+    for (let i = 0; i <= 24; i++) { const q = i / 24, v = I(q, 0); gr.addColorStop(q, 'rgba(255,' + Math.round(150 + 30 * v) + ',' + Math.round(90 + 20 * v) + ',' + (0.30 * v).toFixed(4) + ')'); }
+    g.fillStyle = gr; g.fillRect(-ryp, 0, ryp * 2, ryp);
+    g.restore();
+    // contact shadow where the stone meets the wall on either side of the door (the pool keeps the middle lit)
+    for (const side of [-1, 1]) {
+      const xe = cx + side * dw * 0.5, x1 = side < 0 ? 0 : xe, x2 = side < 0 ? xe : vw;
+      gr = g.createLinearGradient(0, 0, 0, 22); gr.addColorStop(0, 'rgba(0,0,0,.55)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.fillRect(x1, 0, x2 - x1, 22);
+    }
+    // the worn polish of the middle: where feet have passed for years the stone is smoother and gives a soft sheen
+    g.save(); g.translate(cx, 0); g.scale(dw * 0.42 / (ryp * 0.5), 1);
+    gr = g.createRadialGradient(0, 0, 0, 0, 0, ryp * 0.5); gr.addColorStop(0, 'rgba(255,214,176,.06)'); gr.addColorStop(0.6, 'rgba(255,200,160,.025)'); gr.addColorStop(1, 'rgba(255,200,160,0)');
+    g.fillStyle = gr; g.fillRect(-ryp * 0.5, 0, ryp, ryp * 0.5); g.restore();
+    const worn = (u, v) => Math.exp(-Math.pow(u * rxp / (dw * 0.38), 2)) * Math.exp(-v / 0.35);
+    // grain only in grazing light: a lit upper edge over its own small shadow, density and contrast follow the light
+    for (let i = 0; i < 3200; i++) {
+      const u = r() * 2 - 1, v = Math.pow(r(), 1.5), k = I(u, v);
+      if (k < 0.01 || r() > Math.min(1, k * 2.2) * (1 - 0.7 * worn(u, v))) continue;
+      const x = cx + u * rxp, y = v * ryp, len = 2 + r() * 9 * (1.2 - v), a = (0.035 + r() * 0.06) * Math.min(1, k * 1.6);
+      g.fillStyle = 'rgba(255,214,172,' + a.toFixed(3) + ')'; g.fillRect(x, y, len, 0.6);
+      g.fillStyle = 'rgba(0,0,0,' + (a * 2).toFixed(3) + ')'; g.fillRect(x, y + 0.7, len, 0.7);
+    }
+    // ── the strip mirrored in the stone: blur grows and intensity falls with distance from the strip (per row)
+    const rw = Math.round(dw * 1.1), rh = Math.round(Math.min(fh * 0.62, 460)), W2 = Math.round(rw * d), H2 = Math.round(rh * d);
+    rwp = rw; rhp = rh;
+    size(refl, rw, rh, d);
+    const base = new Float32Array(W2); let nz = r();
+    for (let x = 0; x < W2; x++) { nz += (r() - nz) * 0.12; const xr = x / W2, e = Math.min(1, Math.min(xr, 1 - xr) / 0.06); base[x] = (0.55 + 0.45 * nz) * e * e * (3 - 2 * e); }
+    const pre = new Float32Array(W2 + 1); for (let x = 0; x < W2; x++) pre[x + 1] = pre[x] + base[x];
+    const img = refl.getContext('2d').createImageData(W2, H2), px = img.data;
+    for (let y = 0; y < H2; y++) {
+      const t = y / H2, rad = Math.max(0, Math.round(1 + t * 26 * d)), fall = Math.pow(1 - t, 2.2) / (1 + 6 * t), a0 = 0.42 * fall;
+      for (let x = 0; x < W2; x++) {
+        const lo = Math.max(0, x - rad), hi = Math.min(W2, x + rad + 1), v = (pre[hi] - pre[lo]) / (hi - lo), a = a0 * v, p = (y * W2 + x) * 4;
+        px[p] = 255; px[p + 1] = 196 - 30 * t; px[p + 2] = 136 - 30 * t; px[p + 3] = Math.max(0, Math.min(255, a * 255));
+      }
+    }
+    refl.getContext('2d').putImageData(img, 0, 0);
+    // soft volumetric rays in the dusty air just above the floor: a fan from the gap, uneven, fading with distance
+    const q2 = size(rays, vw, fh, d), NR = 30;
+    for (let i = 0; i < NR; i++) {
+      const u0 = (i / NR) * 2 - 1, u1 = ((i + 1) / NR) * 2 - 1, xa = cx + u0 * dw * 0.5, xb = cx + u1 * dw * 0.5, spread = 1.9 + 0.4 * r(), len = fh * (0.35 + 0.25 * r());
+      const a = (0.025 + 0.035 * r()) * Math.pow(1 - Math.abs((u0 + u1) / 2), 0.6);
+      gr = q2.createLinearGradient(0, 0, 0, len); gr.addColorStop(0, 'rgba(255,200,150,' + a.toFixed(3) + ')'); gr.addColorStop(0.3, 'rgba(255,190,140,' + (a * 0.45).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(255,180,130,0)');
+      q2.fillStyle = gr; q2.beginPath(); q2.moveTo(xa, 0); q2.lineTo(xb, 0); q2.lineTo(cx + (xb - cx) * spread, len); q2.lineTo(cx + (xa - cx) * spread, len); q2.closePath(); q2.fill();
+    }
+    // ── slow dust in the light
+    motes.innerHTML = '';
+    for (let i = 0; i < 11; i++) {
+      const m = document.createElement('i'), sz = 1.4 + r() * 1.8;
+      m.style.left = (cx + (r() * 2 - 1) * dw * 0.5).toFixed(1) + 'px';
+      m.style.top = (G.ly - 30 - r() * Math.min(240, G.ly * 0.5) + r() * fh * 0.3).toFixed(1) + 'px';
+      m.style.width = m.style.height = sz.toFixed(1) + 'px';
+      m.style.setProperty('--dx', ((r() * 2 - 1) * 40).toFixed(1) + 'px'); m.style.setProperty('--dy', (-24 - r() * 60).toFixed(1) + 'px');
+      m.style.animationDuration = (14 + r() * 6).toFixed(1) + 's'; m.style.animationDelay = (-r() * 20).toFixed(1) + 's';
+      motes.appendChild(m);
+    }
+  };
+  // painted into the scene's frame, before the feet's shadows: the shoes then darken this light where they block the gap
+  api.paint = function (a, t) {
+    if (!api.on || a <= 0.003) return;
+    const breath = RM ? 1 : 0.92 + 0.08 * Math.sin(6.283 * t / 16), waver = RM ? 0 : 0.006 * Math.sin(6.283 * t / 9) + 0.003 * Math.sin(6.283 * t / 3.7);
+    const gco = ctx.globalCompositeOperation, ga = ctx.globalAlpha;
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = Math.min(1, a * breath); ctx.drawImage(pool, 0, y0p, vw, fhp);
+    ctx.globalAlpha = Math.min(1, a * (0.85 + 0.15 * breath)); ctx.drawImage(rays, 0, y0p, vw, fhp);
+    ctx.save(); ctx.translate(G.cx, y0p); ctx.transform(1, 0, waver, 1 + waver * 0.5, 0, 0);
+    ctx.globalAlpha = Math.min(1, a * 0.9); ctx.drawImage(refl, -rwp / 2, 0, rwp, rhp); ctx.restore();
+    ctx.globalCompositeOperation = gco; ctx.globalAlpha = ga;
+  };
+  return api;
+})();
+
 function fitKeyboard() { stage.style.transform = ''; } // the word line lives in the door's own field now
 
 // ---------- small things that make it real ----------
@@ -251,7 +359,7 @@ function* prepare() {
       }
       // ----- the floor -----
       let d, X, surf; // 0 top, 1 arris, 2 chamfer, 3 face, 4 lower floor
-      if (py < g.yA - 0.5 / rs) { const s = (py - g.yh) / (g.fD * HC); d = DD * (1 - 1 / s); X = (px - g.cx) / (g.fD * s); surf = 0; }
+      if (POLON() || py < g.yA - 0.5 / rs) { const s = (py - g.yh) / (g.fD * HC); d = DD * (1 - 1 / s); X = (px - g.cx) / (g.fD * s); surf = 0; } // D-603: one continuous floor
       else if (py < g.yA + 0.7) { d = DT; X = ((px - g.cx) * (DD - DT)) / (g.fD * DD); surf = 1; }
       else if (py < yC) { d = DT; X = ((px - g.cx) * (DD - DT)) / (g.fD * DD); surf = 2; }
       else if (py < yF) { d = DT + CZ; X = ((px - g.cx) * (DD - DT)) / (g.fD * DD); surf = 3; }
@@ -356,7 +464,7 @@ function pump() {
   if (job) setTimeout(pump, 0); else { kick(); kit.ready(); }
 }
 function drawCheap(a) { // a warm wash on the stone falling off from the slit — no texture, two gradients
-  ctx.save(); ctx.beginPath(); ctx.rect(0, G.y, vw, G.yA - G.y); ctx.clip();
+  ctx.save(); ctx.beginPath(); ctx.rect(0, G.y, vw, (POLON() ? vh : G.yA) - G.y); ctx.clip();
   ctx.translate(G.cx, G.y); ctx.scale(1, 0.34); dot(0, 0, G.dw * 0.95, '150,82,34', 0.55 * a); dot(0, 0, G.dw * 0.6, '200,120,56', 0.35 * a);
   ctx.restore();
 }
@@ -453,7 +561,7 @@ wordEl.addEventListener('input', () => {
 function wrong() {
   const t = now(), n = [...wordEl.value].length;
   for (let j = 0; j < n; j++) ghosts.push({ x: beadX(j, n), t0: t + j * 0.04, cold: 1 });
-  wordEl.value = ''; prev = ''; births.length = 0; tCold = t; wGoneWrong(t);
+  wordEl.value = ''; prev = ''; births.length = 0; tCold = t; wGoneWrong(STEPFIX() && WTK !== null ? WTK : t);
   msg.textContent = 'Это слово не открывает'; msg.classList.add('on');
   clearTimeout(msgTimer); msgTimer = setTimeout(() => { msg.classList.remove('on'); kick(); }, 8000);
   wordEl.focus(); kick(); if (RM) setTimeout(kick, 1700);
@@ -510,7 +618,7 @@ function wPlace(x, z, cross) { // stand still at (x, z), feet side by side
 }
 function wGo(tx, tz, cross) { W.tx = tx; W.tz = tz; W.cross = cross; }
 function startPass(t) { // someone crossing the room, not coming to the door
-  const d = prnd() < 0.5 ? -1 : 1, z = 0.75 + prnd() * 0.4;
+  const d = prnd() < 0.5 ? -1 : 1, z = POLON() ? 0.4 + prnd() * 0.25 : 0.75 + prnd() * 0.4;
   W.on = true; W.mode = 'pass'; W.vis = 1; W.dirx = d; wPlace(-d * 1.35, z, 1); wGo(d * 1.45, z + (prnd() - 0.5) * 0.1, 1); W.next = t;
 }
 function wStep(t) { // plan the next footstep toward the target
@@ -523,6 +631,7 @@ function wStep(t) { // plan the next footstep toward the target
   const pa = (a.x - cx) * ux + (a.z - cz) * uz, pb = (b.x - cx) * ux + (b.z - cz) * uz, s = dist < 0.035 ? (pa < pb ? 0 : 1) : (pa < pb ? 0 : 1), st = W.feet[1 - s], f = W.feet[s];
   const back = !W.cross && uz > 0.3; // stepping back from the door: shorter, slower
   let len = Math.min(dist, W.cross ? 0.5 : back ? 0.3 : 0.46), dur = 0.64 * (1 + (prnd() - 0.5) * 0.24);
+  if (POLON() && W.cross) { len = Math.min(dist, 0.72 * (1 + (prnd() - 0.5) * 0.06)); dur = (1 / 1.8) * (1 + (prnd() - 0.5) * 0.07); } // D-603: a real cadence and speed
   const hurry = W.cross ? 0 : sstep(0.3, 0.9, dist) * sstep(0.25, 0.6, (W.lag || 0)); // behind the letters: quicker, shorter steps
   const near = !W.cross && dist < 0.75 && hurry < 0.3; if (near) { len = Math.min(dist, 0.27); dur += 0.16; } // the last steps: short, slower
   if (hurry > 0) { len = Math.min(dist, mix(len, 0.34, hurry)); dur = mix(dur, 0.36, hurry); }
@@ -539,9 +648,9 @@ function wStep(t) { // plan the next footstep toward the target
   const print = newPrint(W.cross ? (s === 0 ? -1 : 1) : (s === 0 ? -1 : 1));
   if (!W.final) { lx += print.dx * 0.5; lz += print.dz * 0.5; } // where a foot lands is never exactly planned
   if (W.final) dur = 0.36; // the last step to the door: quick and short
-  W.pause = !W.final && hurry < 0.2 && prnd() < 0.12 ? 0.3 + prnd() * 0.35 : 0; // a breath between steps, sometimes
+  W.pause = POLON() && W.cross ? (prnd() < 0.07 ? 0.1 + prnd() * 0.12 : 0) : !W.final && hurry < 0.2 && prnd() < 0.12 ? 0.3 + prnd() * 0.35 : 0; // a breath between steps, sometimes
   W.toP = print;
-  W.sw = s; W.t0 = t; W.dur = dur; W.swing = hurry > 0.3 || W.final ? 0.55 : PST.swing; W.from = { x: f.x, z: f.z }; W.to = { x: lx, z: lz };
+  W.sw = s; W.t0 = t; W.dur = dur; W.swing = POLON() && W.cross ? 0.8 : hurry > 0.3 || W.final ? 0.55 : PST.swing; W.from = { x: f.x, z: f.z }; W.to = { x: lx, z: lz };
   return true;
 }
 function wUpdate(t, n) {
@@ -557,11 +666,11 @@ function wUpdate(t, n) {
     }
     if (W.mode === 'pass' && W.sw < 0 && Math.abs(wCenter()[0]) > 1.38) W.on = false;
     if (W.mode === 'leave' && Math.abs(wCenter()[0]) > 1.38) W.on = false;
-    if (!W.on && t > passNext && n === 0) { startPass(t); passNext = t + 40 + prnd() * 50; }
+    if (!W.on && t > passNext && n === 0 && !(RM && POLON())) { startPass(t); passNext = t + (POLON() ? 45 + prnd() * 45 : 40 + prnd() * 50); }
   }
   { const [lx, lz] = wCenter(); W.lag = Math.hypot(W.tx - lx, W.tz - lz) / 0.75; }
   if (W.plan.length && W.sw < 0 && Math.hypot(W.tx - wCenter()[0], W.tz - wCenter()[1]) < 0.06) { const p = W.plan.shift(); wGo(p[0], p[1], p[2]); }
-  if (RM && !W.on && state === 'idle') { W.on = true; W.mode = 'still'; } // reduced motion: someone stands a little way in, quietly
+  if (RM && !POLON() && !W.on && state === 'idle') { W.on = true; W.mode = 'still'; } // reduced motion: someone stands a little way in, quietly
   if (!W.on) return;
   if (RM) { // reduced motion: states only — the feet are where they would stand
     const z = W.mode === 'come' ? zFor(n) : 0.8; wPlace(0.17, z, 0); W.vis = 1; return;
@@ -569,15 +678,97 @@ function wUpdate(t, n) {
   W.vis = Math.min(1, W.vis + 0.02);
   if (W.sw >= 0) {
     const sd = W.dur * (W.swing || PST.swing), u = clamp((t - W.t0) / sd, 0, 1), e = u * u * (3 - 2 * u), f = W.feet[W.sw];
-    f.x = mix(W.from.x, W.to.x, e); f.z = mix(W.from.z, W.to.z, e); f.h = 0.07 * Math.pow(Math.sin(Math.PI * u), 0.8);
+    f.x = mix(W.from.x, W.to.x, e); f.z = mix(W.from.z, W.to.z, e); f.h = POLON() && W.cross ? 0.03 * Math.pow(Math.sin(Math.PI * u), 1.2) : 0.07 * Math.pow(Math.sin(Math.PI * u), 0.8);
     if (u >= 1 && f.tL < W.t0) { f.h = 0; f.tL = t; if (W.toP) { f.p = W.toP; W.toP = null; } }
     if (t - W.t0 >= W.dur) W.sw = -1;
-  } else if (t >= W.next) { if (wStep(t)) W.next = t + W.dur + (W.pause || 0); }
+  } else if (t >= W.next) { const ts = POLON() && W.cross && W.next > 0 && t - W.next < 0.6 ? W.next : t; if (wStep(ts)) W.next = ts + W.dur + (W.pause || 0); }
 }
 function wGoneWrong(t) { // the word didn't open: a step back, a turn, and the steps recede into the room
   if (!W.on || W.mode !== 'come') return;
   const [cx, cz] = wCenter(), d = cx < 0.1 ? -1 : 1;
   W.mode = 'leave'; W.plan = [[d * 1.5, Math.max(cz + 0.9, 1.6), 1]]; wGo(cx, cz + 0.32, 0); W.next = t + 0.35;
+}
+// ---------- DEMO «one height»: the feet's shadows, without a single jump ----------
+// Founder: «Тень от шагов в свете не должна дёргаться или глючить». What made them jump in the scene's own code:
+// · one frame with no step planned (the swing has ended, the next starts a frame later): the swing foot's shadow was
+//   off until then and came back at full depth in one frame — and the planted foot's roll snapped back;
+// · on-off switches: the heel strike (toe × 0.3 for 90 ms), the landing (+30 % depth at once), the idle sway and the
+//   weight shift (± 3 mm and ± 5 % appearing and vanishing as a step starts), a new shoe print taken at the landing;
+// · the streak on the stone: its width was the union of the parts deeper than 0.01 — when the heel rose it narrowed by a
+//   heel's length in one frame; its noise was seeded by its x, so it reshuffled as the foot moved;
+// · the flame's fast flicker (6 Hz) breathed straight into the penumbra;
+// · real time: a 200 ms stall moved a swinging foot 20 cm in one frame.
+// Now: the walker runs on its own clock (a frame advances it by at most 50 ms, a stall pauses the walk); heel and toe
+// are continuous functions of the gait (toe-off → flight → heel strike → foot flat → heel rises as the weight rolls
+// forward → toe-off), eased per foot (τ 60 ms); landing, sway and visibility are eased; the next print is taken in
+// mid-swing, when that foot casts nothing; the streak is two fixed layers (the shoe at the shallower part's depth, the deeper part's excess), seeded per shoe; the penumbra
+// sees only the flame's slow average. No randomness per frame. ?stepfix=0 — the scene's own walker (for comparison).
+const STEPFIX = () => POLON() && !/[?&]stepfix=0(&|$)/.test(String(window.__sbEntry || ''));
+let WTK = null, VISe = 0, IDLEe = 1, FLKs = 0.97, CROSSe = 1, FEET0 = null;
+function walkClock(t, dt) {
+  const d = WTK === null ? 0 : Math.min(0.05, Math.max(0, dt));
+  WTK = WTK === null ? t : WTK + d;
+  const a = (tau) => 1 - Math.exp(-d / tau);
+  if (!W.on || FEET0 !== W.feet[0]) { VISe = 0; CROSSe = W.cross ? 1 : 0; FEET0 = W.feet[0]; }   // gone, or placed anew: fade in from nothing
+  if (W.on) VISe += (W.vis - VISe) * (1 - Math.exp(-Math.max(d, 1 / 60) / 0.3));
+  IDLEe += ((W.sw < 0 ? 1 : 0) - IDLEe) * a(0.3);
+  CROSSe += ((W.cross ? 1 : 0) - CROSSe) * a(0.25);
+  FLKs += (FLK - FLKs) * a(0.5);
+  return WTK;
+}
+function stepEase(f, key, v, t, tau) {
+  const s = f.es || (f.es = {}), o = s[key];
+  if (!o) { s[key] = { v, t }; return v; }
+  const d = Math.min(0.05, Math.max(0, t - o.t)); o.t = t;
+  o.v += (v - o.v) * (1 - Math.exp(-d / tau)); return o.v;
+}
+function footShadowDemo(f, t, k) {
+  if (!W.on || !f.p) return [];
+  const sw = W.dur * (W.swing || PST.swing), o = W.feet[1 - k];
+  const own = W.sw === k ? clamp((t - W.t0) / sw, 0, 1) : 1, oth = W.sw === 1 - k ? clamp((t - W.t0) / sw, 0, 1) : 1;
+  const swinging = W.sw === k && own < 1;
+  if (swinging && own >= 0.5 && W.toP) { f.p = W.toP; W.toP = null; }            // the next print, while this foot casts nothing
+  const p = f.p, sinceL = t - f.tL;
+  let heel, toe;
+  if (swinging) { const to = Math.max(0.32, 0.14 / Math.max(0.05, sw)); toe = 1 - sstep(0, to, own); heel = sstep(0.75, 1, own); }   // toe-off over ≥ 140 ms, even in a quick short step      // toe-off · flight · heel strike
+  else {
+    toe = sinceL >= 0 ? sstep(0, 0.16, sinceL) : 1;                                  // heel first, then the foot comes flat
+    if (W.sw === 1 - k && oth < 1) heel = 1 - sstep(0.35, 0.95, oth);              // the weight rolls forward: the heel rises
+    else if (o.tL > f.tL) heel = W.next > t ? 0 : sstep(0.05, 0.45, t - W.next);    // trailing: up until it goes; down if they stop
+    else heel = 1;
+  }
+  const hE = stepEase(f, 'h', heel, t, 0.06), tE = stepEase(f, 't', toe, t, 0.06);
+  const lift = f.h, land = !swinging && sinceL >= 0 ? Math.exp(-sinceL / 0.16) * sstep(0, 0.04, sinceL) : 0;
+  const shift = IDLEe * Math.sin(t * 1.7 + W.shift + (k ? Math.PI : 0));
+  const sx = !p.scuff ? 0 : swinging ? p.scuff * (1 - sstep(0, 0.3, own)) : sinceL >= 0 ? p.scuff * (1 - Math.exp(-sinceL / 0.05)) : p.scuff;
+  const x = f.x + sx + IDLEe * 0.003 * Math.sin(t * 0.9 + W.shift);
+  const zc = Math.max(0.04, f.z);
+  const dep = (z) => 1.1 * Math.exp(-(z - 0.05) / 1.8) * Math.exp(-lift / 0.028) * (1 + 0.3 * land) * (1 + 0.05 * shift) * VISe;
+  const sg = (z) => (0.004 + 0.036 * z + 0.5 * lift) * (1 - 0.3 * land) * (1 - 0.04 * shift) * (1 + 1.4 * (0.97 - FLKs));  // wider with distance from the gap and with the lift
+  // lengthwise along the gap (crossing the room): heel part and fore part
+  const dir = W.dirx || 1, Lf = 0.25 + 0.04 * p.round, sgv = sg(zc), dp = Math.min(0.95, dep(zc));
+  const xr = x - dir * Lf / 2, xm = x - dir * Lf * 0.1, xf = x + dir * Lf / 2;
+  const cH = [Math.min(xr, xm), Math.max(xr, xm), sgv, sgv, dp * hE * p.heel, zc], cT = [Math.min(xm, xf), Math.max(xm, xf), sgv * 0.9, sgv * 0.9, dp * tE * p.toe, zc];
+  if (CROSSe > 0.999) return [cH, cT];
+  // toward the door: toe-out, the forefoot outward, the heel inward
+  const side = p.side, sa = Math.sin(p.ang), ca = Math.cos(p.ang), zt = Math.max(0.03, zc - 0.25 * p.L * ca), zh = zc + 0.3 * p.L * ca;
+  const xt = x + side * sa * p.L * 0.22, wt = p.w * (0.85 + 0.15 * p.round), xh = x - side * (sa * p.L * 0.25 + 0.17 * p.w + p.arch), wh = 0.62 * p.w;
+  const st = sg(zt), sh = sg(zh), out = 0.7, inn = 1.35;
+  const nT = [xt - wt / 2, xt + wt / 2, side < 0 ? st * out : st * inn, side < 0 ? st * inn : st * out, Math.min(0.95, dep(zt) * p.toe) * tE, zt];
+  const nH = [xh - wh / 2, xh + wh / 2, sh, sh, Math.min(0.97, dep(zh) * p.heel) * hE, zh];
+  if (CROSSe < 0.001) return [nH, nT];
+  const m2 = (a, b) => a.map((v, i) => mix(v, b[i], CROSSe));                        // a turn of the walker: the shape eases over
+  return [m2(nH, cH), m2(nT, cT)];
+}
+function unionDemo(bs, seed) { // the foot's streak on the stone in two layers that never move: the whole shoe at the shallower
+  // part's depth, and the deeper part's excess over its own extent — multiplied, exactly the two parts; a fading heel
+  // fades its share, the streak does not shrink or slide
+  bs = bs.filter((b) => b && b[1] > b[0]); if (!bs.length) return [];
+  if (bs.length === 1) return [bs[0].concat([seed])];
+  const lo = bs[0][4] <= bs[1][4] ? bs[0] : bs[1], hi = lo === bs[0] ? bs[1] : bs[0], L = bs[0][0] <= bs[1][0] ? bs[0] : bs[1], Rr = bs[0][1] >= bs[1][1] ? bs[0] : bs[1];
+  const zA = (lo[5] + hi[5]) / 2;
+  const A = [L[0], Rr[1], L[2], Rr[3], lo[4], zA, seed], dB = 1 - (1 - hi[4]) / Math.max(1e-4, 1 - lo[4]);
+  return [A, [hi[0], hi[1], hi[2], hi[3], Math.max(0, dB), hi[5], seed]];
 }
 // one foot's shadow on the gap: a few blurred blocks [x0, x1, softness left, softness right, depth, z]
 function footShadow(f, t, k) {
@@ -596,6 +787,18 @@ function footShadow(f, t, k) {
   const dep = (z) => 1.1 * Math.exp(-(z - 0.05) / 1.8) * Math.exp(-lift / 0.028) * (1 + 0.3 * land) * (1 + 0.05 * shift) * W.vis;
   const sg = (z) => (0.004 + 0.036 * z + 0.5 * lift) * (1 - 0.3 * land) * (1 - 0.04 * shift) * (1 + 1.4 * (0.97 - FLK)); // the flame's flicker breathes in the penumbra
   const x = f.x + sx + (W.sw < 0 ? 0.003 * Math.sin(t * 0.9 + W.shift) : 0);
+  if (W.cross && POLON()) { // D-603: heel strike → foot flat → heel off → toe off, the shoe lengthwise along the gap
+    const dir = W.dirx || 1, Lf = 0.25 + 0.04 * p.round, sgv = sg(zc), dp = Math.min(0.95, dep(zc)), o = W.feet[1 - k];
+    let hO = 1, tO = 1;
+    if (W.sw === k) { const u = clamp((t - W.t0) / (W.dur * (W.swing || PST.swing)), 0, 1); hO = 0; tO = 1 - sstep(0, 0.14, u); }
+    else {
+      tO = sinceL >= 0 ? sstep(0, 0.1, sinceL) : 1;
+      if (W.sw >= 0) { const uo = clamp((t - W.t0) / (W.dur * (W.swing || PST.swing)), 0, 1); hO = 1 - sstep(0.55, 1, uo); }
+      else hO = (f.x - o.x) * dir < 0 ? 0 : 1;
+    }
+    const xr = x - dir * Lf / 2, xm = x - dir * Lf * 0.1, xf = x + dir * Lf / 2;
+    return [[Math.min(xr, xm), Math.max(xr, xm), sgv, sgv, dp * hO * p.heel, zc], [Math.min(xm, xf), Math.max(xm, xf), sgv * 0.9, sgv * 0.9, dp * tO * p.toe, zc]];
+  }
   if (W.cross) { const w = 0.22 + 0.06 * p.round; const sgv = sg(zc); return [[x - w / 2, x + w / 2, sgv * 1.1, sgv * 0.9, Math.min(0.95, dep(zc)) * (0.6 + 0.4 * tOn), zc]]; }
   // toe-out: the forefoot projects outward, the heel inward; the outer edge is the near, sharper one
   const xt = x + side * sa * p.L * 0.22, wt = p.w * (0.85 + 0.15 * p.round), xh = x - side * (sa * p.L * 0.25 + 0.17 * p.w + p.arch), wh = 0.62 * p.w;
@@ -625,16 +828,16 @@ function leakDim() { if (!W.on) return 1; const cz = wCenter()[1]; return 1 - 0.
 function torsoOverKeyhole() { if (!W.on) return 0; const [cx, cz] = wCenter(); return sstep(0.32, 0.12, Math.abs(KH.X - cx)) * sstep(1.3, 0.4, cz) * W.vis; }
 function drawStreaks(lvl) { // each foot's shadow runs out across the lit stone — soft, uneven, never a clean wedge
   if (!W.on) return;
-  ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.beginPath(); ctx.rect(0, G.y - G.gapPx, vw, G.yA - G.y + G.gapPx); ctx.clip();
-  const N = 22, dEnd = 0.22, K = 11;
+  ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.beginPath(); ctx.rect(0, G.y - G.gapPx, vw, (POLON() ? vh : G.yA) - G.y + G.gapPx); ctx.clip();
+  const N = POLON() ? 30 : 22, dEnd = POLON() ? 0.7 : 0.22, K = 11;
   for (const h of SF) {
     if (h[4] < 0.03) continue;
-    const xc = (h[0] + h[1]) / 2, hw = (h[1] - h[0]) / 2, seed = xc * 37 + h[5] * 11;
+    const xc = (h[0] + h[1]) / 2, hw = (h[1] - h[0]) / 2, seed = h[6] !== undefined ? h[6] : xc * 37 + h[5] * 11;
     const f1 = 0.45 + 0.25 * vn(seed, 1.9), f2 = 0.12 + 0.2 * vn(seed + 4, 2.7); // it fades unevenly
     for (let i = 0; i < N; i++) {
       const d0 = (i / N) * dEnd, d1 = ((i + 1) / N) * dEnd, d = (d0 + d1) / 2, q = d / dEnd;
       // fade: steep near the gap, then an uneven tail
-      const fade = q < 0.1 ? 1 : q < 0.38 ? mix(1, f1 * 0.45, sstep(0.1, 0.38, q)) : f1 * 0.45 * (1 - sstep(0.38, 1, q)); // dense under the gap, gone by a third of the way, a thin uneven tail
+      const fade = POLON() ? Math.pow(1 - q, 1.7) : q < 0.1 ? 1 : q < 0.38 ? mix(1, f1 * 0.45, sstep(0.1, 0.38, q)) : f1 * 0.45 * (1 - sstep(0.38, 1, q)); // dense under the gap, gone by a third of the way, a thin uneven tail
       const al = 0.82 * h[4] * lvl * fade * (0.9 + 0.2 * vn(seed + d * 40, 5.3)); if (al < 0.004) continue;
       const spread = 1 + d * (0.7 + 0.5 * vn(seed + d * 9, 3.3)); // an area light: the penumbra grows, unevenly
       const rough = (u) => 0.007 * (vn(u * 90 + seed, d * 60 + 1) - 0.5) + 0.004 * (vn(u * 330, d * 330 + 7) - 0.5); // the stone's relief breaks the edge
@@ -658,7 +861,7 @@ function stopQs() { // where the strip gradients sample: evenly, and densely thr
   const qs = []; for (let i = 0; i <= 26; i++) qs.push(i / 26);
   for (const h of SH) {
     if (h[4] < 0.02) continue;
-    const a = h[0] - 2.5 * h[2], b = h[1] + 2.5 * h[3], n = Math.min(40, Math.ceil((b - a) / 0.006));
+    const a = h[0] - 2.5 * h[2], b = h[1] + 2.5 * h[3], n = STEPFIX() ? Math.min(90, Math.ceil((b - a) / 0.0028)) : Math.min(40, Math.ceil((b - a) / 0.006));
     for (let i = 0; i <= n; i++) { const q = (mix(a, b, i / n) / (HALF * 0.999) + 1) / 2; if (q > 0 && q < 1) qs.push(q); }
   }
   qs.sort((u, v) => u - v); const out = [qs[0]]; for (const q of qs) if (q - out[out.length - 1] > 0.0015) out.push(q);
@@ -844,7 +1047,8 @@ function draw() {
   // the warmth drifts along the gap, as if the lamp's light moved across the room (two slow, unrelated drifts)
   const fl = live ? flicker(t) : 0.97, bal = live ? 0.07 * n1(t * 0.31, 6) + 0.06 * n1(t * 0.067 + 3.7, 13) : 0; FLK = fl;
   const k = clamp(lvlK + 0.22 * pulse, 0, 1);
-  wUpdate(t, n); { const f0 = footShadow(W.feet[0], t, 0), f1 = footShadow(W.feet[1], t, 1); SH = f0.concat(f1); SF = [unionB(f0), unionB(f1)].filter(Boolean); QS = stopQs(); }
+  if (STEPFIX()) { const tw = walkClock(t, dt); wUpdate(tw, n); const f0 = footShadowDemo(W.feet[0], tw, 0), f1 = footShadowDemo(W.feet[1], tw, 1); SH = f0.concat(f1); SF = unionDemo(f0, 11.3 + (W.feet[0].p ? W.feet[0].p.n : 0)).concat(unionDemo(f1, 57.9 + (W.feet[1].p ? W.feet[1].p.n : 0))); QS = stopQs(); }
+  else { wUpdate(t, n); { const f0 = footShadow(W.feet[0], t, 0), f1 = footShadow(W.feet[1], t, 1); SH = f0.concat(f1); SF = [unionB(f0), unionB(f1)].filter(Boolean); QS = stopQs(); } }
   mtime += dt * (1 + 0.8 * lvlK + 0.6 * pulse);
   if (live) stepMotes(dt, 1 + 0.9 * lvlK);
 
@@ -945,6 +1149,7 @@ function draw() {
     if (settled) ctx.restore();
   }
   if (live && state === 'idle' && !settled && settleAt && t > settleAt && coldE < 0.01) { settled = 0.8; settle(); }
+  if (POL.on && rise < 0.02) POL.paint(fin * (1 - coldE) * fl * leakDim(), t);
   if (rise < 0.02) drawStreaks(fin * (1 - coldE));
   if (rise < 0.004) drawKeyhole(fin * lvl * (1 - coldE) * shadeAt(KH.X) * (1 - 0.9 * torsoOverKeyhole()), G.cx + KH.X * G.fD, G.y - KH.h * G.fD, G.fD);
   else { // the keyhole rides away on the leaf; its beam dies as the room's light takes over
@@ -986,11 +1191,11 @@ function stop() { running = false; cancelAnimationFrame(raf); }
 function kick() { if (!running && state !== 'open') draw(); }
 kit.on(document, 'visibilitychange', () => { if (document.hidden) stop(); else start(); });
 kit.on(mq, 'change', () => { RM = kit.reduced || mq.matches; if (RM) { stop(); kick(); } else start(); });
-addEventListener('resize', layout);
+addEventListener('resize', () => { if (true && innerWidth === lastW && innerHeight <= baseH) return; layout(); }); // D-603: «one height»
 
 // film grain: one small noise tile, moved by the compositor (no per-frame cost)
 (function grain() {
-  const s = 192, c = mkCanvas(s, s), x = c.getContext('2d'), im = x.createImageData(s, s), r = mulberry(99);
+  const s = 192, c = mkCanvas(s, s), x = c.getContext('2d', { willReadFrequently: true }), im = x.createImageData(s, s), r = mulberry(99);
   for (let i = 0; i < s * s; i++) { const v = 128 + (r() + r() + r() - 1.5) * 46; im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255; }
   x.putImageData(im, 0, 0);
   try { $('grain').style.backgroundImage = `url(${kit.blobURL(c)})`; } catch (e) { /* no grain, no harm */ }
@@ -1003,14 +1208,14 @@ addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') { par.tx
 function onTilt(e) { if (e.gamma == null) return; if (!tilt0) tilt0 = { g: e.gamma, b: e.beta }; par.tx = clamp((e.gamma - tilt0.g) / 18, -1, 1); par.ty = clamp((e.beta - tilt0.b) / 24, -1, 1) * 0.6; }
 addEventListener('deviceorientation', onTilt);
 settleAt = now() + 13 + prnd() * 9;
-passNext = now() + 16 + prnd() * 14;
+passNext = now() + (POLON() ? 45 + prnd() * 45 : 16 + prnd() * 14);
 return {
   typing(n) { if (state !== 'idle') return; wordEl.value = '•'.repeat(n); wordEl.dispatchEvent(new Event('input')); },
   focus(on) { wordEl.focused = on; wordEl.dispatchEvent(new Event(on ? 'focus' : 'blur')); },
   wrong() { if (state !== 'idle') return; wrong(); },
   open(done) { openDone = done; if (state !== 'idle') { showOpen(); return; } win(); },
   hold(on) { held = on; if (on) stop(); else start(); },
-  need(n) { NEED = n && { w: +n.w, h: +n.h, bottom: +n.bottom }; layout(); },
+  need(n) { NEED = n && { w: +n.w, h: +n.h, bottom: +n.bottom, y: +n.y || 0, off: +n.off || 0 }; layout(); },
   destroy() { stop(); state = 'open'; openDone = null; },
 };
 });

@@ -175,11 +175,6 @@
   outline: none;
 }
 
-/* «.sys.baby» рядом с именем — не украшение, а часть адреса человека.
-   Стояло на собственных .42 мимо шкалы чернил и на светлой карточке давало
-   контраст 3.37. Отдано вторым чернилам системы (D-233).
-   Охраняется tools/legible-check.mjs. */
-.st-suffix { font-size: var(--f-ui); color: var(--ink-2); }
 
 .st-saved {
   font-size: var(--f-micro);
@@ -382,3 +377,8 @@
 .st-survival .st-sv[data-sv="warn"]::before { background: var(--warn); }
 .st-survival .st-sv[data-sv="no"]::before { background: var(--danger); }
 .st-survival .st-sv-bottom { font-weight: var(--w-strong); }
+
+/* Дверь (D-607): пометка двери по умолчанию — тише подписи; вопрос о цене — под строкой. */
+.app-settings .st-door-def { opacity: .78; }   /* ≥ 4,5:1 в обеих темах (light-contrast-check) — тише подписи, но читается */
+.app-settings .st-door-warn[hidden] { display: none; }
+.app-settings .st-door-warn p { margin: 0 0 10px; }

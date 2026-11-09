@@ -173,6 +173,11 @@
       keeps: OWN_KEYS.concat([CLOSED_KEY]),
       reads: [FILES_KEY],
       visit: [CLOSED_KEY],
+      /* D-615 (основатель 03.11.2026): build — не значок на столе и не в доке; вход — «Настройки» → «О системе»
+         и поиск по слову «build». */
+      hidden: true,
+      offDesk: "отложено решением",
+      why: "why.build",
       title: "build",
       label: "build",
       i18n: {
@@ -230,9 +235,11 @@
     } catch (e) { /* хранилище закрыто — считаем, что своего дела ещё нет */ }
     return false;
   }
-  window.sbBuildAutoOpenStillOn = function () { return !personHasOwnWork(); };
+  /* D-615 (основатель 03.11.2026): build НИКОГДА не открывается сам в начале — ни при первом входе, ни после двери.
+     Прежнее автооткрытие (пока у человека нет своего дела) снято; personHasOwnWork остаётся для витрины. */
+  window.sbBuildAutoOpenStillOn = function () { return false; };
 
-  document.addEventListener("sysbaby:desktop-ready", function () {
+  if (window.sbBuildAutoOpenStillOn()) document.addEventListener("sysbaby:desktop-ready", function () {
     if (!window.sbBuildAutoOpenStillOn()) return;
     /* Пришедший по ссылке «Передать» пришёл за переданным, а не за нашей
        витриной: окно build вставало ПОВЕРХ присланного, и человек за дверью
@@ -242,10 +249,29 @@
        первым, сказало бы только это, и встало бы поверх Ковчега, который
        спрашивает слово от вещей человека. */
     if (window.SB_ARK) return;
-    try {
-      if (box().get(CLOSED_KEY) === "1") return;
-    } catch (e) { /* сессия закрыта — открываем */ }
-    if (window.sbOpenApp) window.sbOpenApp("build");
+    var open = function () {
+      try {
+        if (box().get(CLOSED_KEY) === "1") return;
+      } catch (e) { /* сессия закрыта — открываем */ }
+      if (!window.sbBuildAutoOpenStillOn()) return;
+      if (window.sbOpenApp) window.sbOpenApp("build");
+    };
+    /* ── ТИШИНА У ДВЕРИ (D-584) ───────────────────────────────────────────
+       Пока стоит дверь, окно не встаёт и не забирает фокус у поля слова:
+       заперто и не открыто — ждём открытия мира; свежая дверь (D-588) или
+       дверь на экране — ждём её ухода. Охраняется tools/door-silence-check.mjs. */
+    var V = window.sbVault;
+    if (V && V.isLocked && V.isLocked() && V.isOpen && !V.isOpen()) {
+      var waited = false;
+      var wait = function (e) { if (waited || !e || !e.open) return; waited = true; open(); };
+      if (window.sbBus && window.sbBus.on) window.sbBus.on("vault:change", wait);
+      return;
+    }
+    if (window.__sbOpenDoor === true || document.getElementById("sbVaultGate")) {
+      document.addEventListener("sysbaby:door-gone", open, { once: true });
+      return;
+    }
+    open();
   }, { once: true });
 
   /* Просьба витрины свернуть окно. Проверяется ПРОИСХОЖДЕНИЕ сообщения: окно

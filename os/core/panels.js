@@ -1110,7 +1110,12 @@
       if (Date.now() - Math.max(last, heard) >= m * 60000) shut();
     }
     setInterval(check, 15000);
+    /* Срок проверяется в миг возвращения (D-592): скрытой вкладке браузер
+       душит таймеры, и опрос мог не прийти. Возврат из «заморозки» и из
+       кеша страницы — тоже возвращение. Стережёт tools/idle-lock-check.mjs. */
     doc.addEventListener("visibilitychange", function () { if (doc.visibilityState === "visible") check(); });
+    doc.addEventListener("resume", check);
+    window.addEventListener("pageshow", check);
     window.sbIdleLock = {
       minutes: minutes,
       set: function (m) {

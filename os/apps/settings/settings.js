@@ -153,7 +153,7 @@
       rowMarkup(esc(t("set.general.identity")),
         esc(t("set.general.identitySub", { mail: appName("mail"), messenger: appName("messenger") })),
         '<span class="st-username"><input type="text" id="stUsername" maxlength="18" spellcheck="false" autocomplete="off" value="' + esc(name) + '">' +
-          '<span class="st-suffix">.sys.baby</span><span class="st-saved" id="stUsernameSaved">' + esc(t("set.general.saved")) + "</span></span>") +
+          '<span class="st-saved" id="stUsernameSaved">' + esc(t("set.general.saved")) + "</span></span>") +
       rowMarkup(esc(t("set.general.language")), esc(t("set.general.languageSub")),
         /* Имена языков — каждое на своём языке, по всеобщему обычаю: человек,
            не читающий по-русски, ищет слово «English», а не «Английский».
@@ -402,6 +402,45 @@
         '<button type="button" class="st-btn" id="stCopiesOpen">' + esc(t("set.privacy.copiesOpen")) + "</button>") + "</div>";
   }
 
+  /* ── ДВЕРЬ НАСОВСЕМ (D-607) ───────────────────────────────────────────
+     Основатель 04.11.2026: у ворот смотреть можно любую дверь, насовсем она
+     меняется здесь. У двери по умолчанию — пометка «по умолчанию». Выбор
+     другой двери один раз честно говорит цену: ворота будут встречать ею, и
+     внимательный посторонний догадается, что за ней кто-то живёт. Запись
+     одна — sysbaby.door, открытая (VAULT_NEVER); пишет её оболочка
+     (событие sysbaby:door-choice — имени про двери на window нет,
+     two-doors-check). У гостя выбора нет: его пространство не своё.
+     Стережёт tools/door-switch-check.mjs. */
+  function doorAsk(set) {
+    var d = { set: set || "" };
+    try { document.dispatchEvent(new CustomEvent("sysbaby:door-choice", { detail: d })); } catch (e) { /* нет событий — нет и выбора */ }
+    if (!d.answered) return null;
+    return { def: d.def, now: d.now, ok: d.ok === true, doors: function () { return d.doors; }, get: function () { return d.now; } };
+  }
+  function doorRowMarkup() {
+    var D = doorAsk();
+    if (!D) return "";
+    var now = D.get();
+    if (window.sbIncognitoActive) {
+      return rowMarkup(esc(t("set.privacy.door")), esc(t("set.privacy.doorSub")),
+        '<span class="st-muted" id="stDoorRow">' + esc(t("lock.door." + now)) + "</span>");
+    }
+    var seg = [D.def].concat(D.doors().filter(function (n) { return n !== D.def; })).map(function (n) {
+      var on = n === now;
+      return '<button type="button" class="st-seg' + (on ? " active" : "") + '" data-door-pick="' + esc(n) + '" aria-pressed="' + (on ? "true" : "false") + '">' +
+        esc(t("lock.door." + n)) + (n === D.def ? ' <span class="st-door-def">· ' + esc(t("set.door.default")) + "</span>" : "") + "</button>";
+    }).join("");
+    return rowMarkup(esc(t("set.privacy.door")), esc(t("set.privacy.doorSub")),
+      '<span class="st-segment" id="stDoorRow" role="group" aria-label="' + esc(t("set.privacy.door")) + '">' + seg + "</span>") +
+      '<div class="st-card st-door-warn" id="stDoorWarn" role="alertdialog" aria-labelledby="stDoorWarnText" hidden>' +
+        '<p id="stDoorWarnText">' + esc(t("set.door.warn")) + "</p>" +
+        '<div class="st-actions">' +
+          '<button type="button" class="st-btn" id="stDoorAnyway">' + esc(t("set.door.anyway")) + "</button>" +
+          '<button type="button" class="st-btn primary" id="stDoorKeep">' + esc(t("set.door.keep")) + "</button>" +
+        "</div>" +
+      "</div>";
+  }
+
   function privacyMarkup() {
     var api = profilesApi();
     var currentProfileId = "local";
@@ -416,7 +455,7 @@
        который удалял чужой. Основатель: «посторонний даже не мог подозревать
        существует ли вообще аккаунт». Теперь строка говорит правду о том, как
        открыть другую систему: выйти к двери и назвать её имя и пароль. */
-    var signedIn = currentProfileId !== "local" && window.sbGetUsername ? window.sbGetUsername() + ".sys.baby" : t("set.privacy.guest");
+    var signedIn = currentProfileId !== "local" && window.sbGetUsername ? window.sbGetUsername() : t("set.privacy.guest");
 
     /* Почта аккаунта — данные посетителя: data-sb-userdata говорит закону
        покрытия, что эту строку переводить нечем и не нужно. */
@@ -424,6 +463,7 @@
       rowMarkup(esc(t("set.privacy.signedIn")), '<span data-sb-userdata>' + esc(signedIn) + "</span>",
         '<button type="button" class="st-btn danger" id="stSignOut">' + esc(t("set.privacy.signOut")) + "</button>") +
       reachMarkup() +
+      doorRowMarkup() +
       rowMarkup(esc(t("set.privacy.profiles")),
         esc(t("set.privacy.profilesSub")),
         '<button type="button" class="st-btn" id="stToDoor">' + esc(t("set.privacy.toDoor")) + "</button>") +
@@ -558,6 +598,8 @@
            данные»). Теперь называет то, что есть, и имя комнаты спрашивает у
            системы. Охраняется tools/retired-words-check.mjs (D-278). */
         "<p>" + esc(t("set.about.whoBody", { build: appName("build") })) + "</p>" +
+        /* D-615: здесь — один из двух входов в build (второй — поиск по слову «build») */
+        '<div class="st-actions"><button type="button" class="st-btn" id="stOpenBuild">' + esc(t("set.about.openBuild")) + "</button></div>" +
       "</div>" +
       '<div class="st-card" id="stDoor">' +
         "<h3>" + esc(t("set.about.doorTitle")) + "</h3>" +
@@ -668,6 +710,8 @@
       });
     });
 
+    var openBuild = host.querySelector("#stOpenBuild");
+    if (openBuild) openBuild.addEventListener("click", function () { if (window.toggleApp) window.toggleApp("build"); });
     wireGeneral(win, host);
     wireAppearance(win, host);
     wireSound(win, host);
@@ -885,6 +929,20 @@
   /* -------------------------------------------------------------- privacy */
 
   function wirePrivacy(win, host) {
+    /* Дверь (D-607): своя дверь по умолчанию — сразу; другая — после одного честного вопроса. */
+    var doorWarn = host.querySelector("#stDoorWarn"), doorWant = "";
+    host.querySelectorAll("[data-door-pick]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var D = doorAsk(), n = btn.getAttribute("data-door-pick");
+        if (!D || n === D.get()) return;
+        if (n === D.def || D.get() !== D.def) { doorAsk(n); render(win); return; }
+        doorWant = n;
+        if (doorWarn) { doorWarn.hidden = false; var k = doorWarn.querySelector("#stDoorKeep"); if (k) k.focus(); }
+      });
+    });
+    var doorAnyway = host.querySelector("#stDoorAnyway"), doorKeep = host.querySelector("#stDoorKeep");
+    if (doorAnyway) doorAnyway.addEventListener("click", function () { if (doorWant) doorAsk(doorWant); doorWant = ""; render(win); });
+    if (doorKeep) doorKeep.addEventListener("click", function () { doorWant = ""; if (doorWarn) doorWarn.hidden = true; render(win); });
     /* Замок и копии (D-305): строка ведёт к настоящему управлению. */
     var lockOpen = host.querySelector("#stLockOpen");
     if (lockOpen) lockOpen.addEventListener("click", function () {

@@ -20,10 +20,15 @@
  * Внутри Собора своё отступление — с WebGL на картину (самопроверка кадра,
  * ?nogl, медленное устройство); его ведёт сам Собор.
  *
- * ВЫБОР ДВЕРИ живёт в памяти страницы, как выбор языка у двери (D-288).
- * Основатель задумал, что выбор помнится одним ключом; такой ключ упирается
- * в действующие законы о том, что лежит на диске открытым, — спор вынесен
- * основателю (см. tools/door-one-check.mjs). Сторожат эти правила
+ * ТРИ ДВЕРИ И ПАМЯТЬ ВЫБОРА (D-587, основатель 28–30.10.2026). Третья
+ * дверь — Шифр (холст 2D), и она стоит у всех по умолчанию. Выбор Собора или
+ * Порога живёт в памяти страницы, а на диск ложится ТОЛЬКО после «Запомнить»
+ * у двери, с предупреждением: одна открытая запись sysbaby.door (замок
+ * называет её среди незапираемых, store.js VAULT_NEVER). Пишет, читает и
+ * стирает её сама дверь (shell.js) — у хозяина сцен, как и у сцен, хранилища
+ * нет (door-truth-check); дверь лишь говорит ему prefer(имя). Нажатый Шифр
+ * стирает запись сам, без вопроса. Стережёт tools/shifr-door-check.mjs.
+ * Сторожат эти правила
  * tools/door-scene-check.mjs, tools/pearl-word-check.mjs,
  * tools/door-truth-check.mjs, tools/door-fallback-check.mjs и
  * tools/door-one-check.mjs.
@@ -31,7 +36,8 @@
 (function () {
   "use strict";
   var FACT = {};
-  var ORDER = ["sobor", "porog"];
+  var ORDER = ["shifr", "sobor", "porog"];
+  var preferred = null;
   var choice = null;
   var current = null;
   var alive = 0;
@@ -60,6 +66,9 @@
   /* Из адреса сцене достаётся только то, что меняет её отступление. Адрес
      входа страница убирает из строки сразу (window.__sbEntry, index.html). */
   var hooks = String(window.__sbEntry || window.location.search || "").split(/[?&]/).filter(function (t) { return /^(nogl|glfail|glslow|glsoft)$/.test(t); });
+  /* D-603: ворота «Одна высота» — Собор картиной (так утверждено: поднятый кадр выводит к зрителю пол, который зеркало 3D
+     не отражает); путь 3D остаётся по ?glsoft. */
+  if (hooks.indexOf("glsoft") < 0 && hooks.indexOf("nogl") < 0) hooks.push("nogl");
 
   function kit(root, host) {
     var listeners = [], timers = [], urls = [], dead = false;
@@ -156,7 +165,7 @@
     root.className = "ds ds-" + name + (opts.reduced ? " rm" : "");
     host.appendChild(root);
     host.setAttribute("data-door", name);
-    host.setAttribute("data-mode", name === "porog" ? "canvas" : "paint");
+    host.setAttribute("data-mode", name === "sobor" ? "paint" : "canvas");
     host.removeAttribute("data-ready");
     var k = kit(root, host);
     k.reduced = !!opts.reduced;
@@ -197,6 +206,7 @@
         if (!gone && got.api.typing) got.api.typing(typed);
       },
       focus: function (on) { if (!gone && got.api.focus) got.api.focus(!!on); },
+      press: function () { if (!gone && got.api.press) got.api.press(); },
       hold: function (on) { if (gone) return; host.setAttribute("data-held", on ? "1" : "0"); if (got.api.hold) got.api.hold(!!on); },
       line: function () { return gone ? null : got.kit.lineY; },
       need: function (n) { if (gone) return; got.kit.need = n; if (got.api.need) got.api.need(n); },
@@ -249,7 +259,14 @@
     return h;
   }
 
-  function pick() { return choice && FACT[choice] ? choice : (FACT.sobor ? "sobor" : (FACT.porog ? "porog" : "sobor")); }
+  /* Запомненную дверь называет дверь (prefer) — только Собор или Порог:
+     Шифр не помнится, он и есть дверь без памяти. */
+  function pick() {
+    var want = choice || preferred;
+    if (want && FACT[want]) return want;
+    for (var i = 0; i < ORDER.length; i++) if (FACT[ORDER[i]]) return ORDER[i];
+    return ORDER[0];
+  }
 
   /* Имя — «сцены», не «двери»: дверью в системе называется ячейка мира
      (тревожный пароль, v98), и two-doors-check не пускает это слово на
@@ -259,7 +276,12 @@
     register: function (name, factory) { if (ORDER.indexOf(name) !== -1 && typeof factory === "function") FACT[name] = factory; },
     has: function (name) { return !!FACT[name]; },
     pick: pick,
-    choose: function (name) { if (ORDER.indexOf(name) !== -1) choice = name; },
+    choose: function (name) {
+      if (ORDER.indexOf(name) === -1) return;
+      choice = name;
+      if (name === "shifr") preferred = null;
+    },
+    prefer: function (name) { preferred = name === "sobor" || name === "porog" ? name : null; },
     mount: mount,
     current: function () { return current ? current.state() : null; },
     live: function () { return alive; }

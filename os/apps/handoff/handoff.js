@@ -379,7 +379,7 @@
 
       if (act === "hf-copytext") {
         var gt = host.querySelector(".hf-got-text");
-        if (gt) copyOut(gt.textContent, gt, host.querySelector(".hf-got-say"), t);
+        if (gt) copyOut(gt.__sbRaw != null ? gt.__sbRaw : gt.textContent, gt, host.querySelector(".hf-got-say"), t);
         return;
       }
 
@@ -443,7 +443,12 @@
       '<button type="button" class="hf-act" data-act="hf-copytext">' + esc(t.copyText) + '</button>' +
       '<p class="hf-say hf-got-say" role="status"></p></div>';
     if (got.name) box.querySelector(".hf-got-name").textContent = got.name;
-    box.querySelector(".hf-got-text").textContent = got.text;
+    /* ЖИВЫЕ СМАЙЛИКИ (D-590): переданный текст несёт простые эмодзи — у
+       получателя они оживают; копируется по-прежнему сам текст. */
+    var gotEl = box.querySelector(".hf-got-text");
+    gotEl.__sbRaw = got.text;
+    if (window.sbSmiles && window.sbSmiles.has(got.text)) gotEl.innerHTML = window.sbSmiles.render(got.text);
+    else gotEl.textContent = got.text;
   }
   function paintBad(box, t, keepAsk) {
     var ask = keepAsk ? box.querySelector(".hf-ask") : null;

@@ -801,6 +801,11 @@
     var hy = P.hy, hBand = P.hBand, hA = P.hA;
     seed = seed | 0;
     var idx = 0;
+    /* ЦЕЛОГО КОЛЬЦА НЕТ (D-611, основатель 04.11.2026: «чтобы никогда не появлялось полное кольцо»): у круговой волны
+       и у яркого фронта касания — мягкое угловое окно, медленно поворачивающееся (~5,5 мин на оборот): дуга сильна с
+       одной стороны и передаёт силу прямой волне той же скорости с другой (нормировано — яркость поля та же).
+       Стережёт tools/desk-items-check.mjs. */
+    var CA = s(t * 0.019 + 1.5708), SA = s(t * 0.019);
     for (var y = 0; y < ph; y++) {
       /* головка зависит только от строки — считается один раз на строку */
       var hd = y - hy, hAbs = hd < 0 ? -hd : hd, hw = 0;
@@ -835,23 +840,24 @@
             var sh = s(front * 0.62);
             bend += sh * wa[wj] * fall;
             /* compressing the front raises brightness — a lens does this */
-            comp += (1 - Math.abs(front) / 4.6) * fall * (1 - wT / 2.4);
+            var ap0 = .5 + .5 * (ddy * CA - ddx * SA) / ((ddx < 0 ? -ddx : ddx) + (ddy < 0 ? -ddy : ddy) + 1), ap = ap0 * ap0 * (3 - 2 * ap0);
+            comp += (1 - Math.abs(front) / 4.6) * fall * (1 - wT / 2.4) * ap;
           }
         }
         var wx = x + s(y * 0.031 + t * 0.13) * 7.5 + bend;
         var wy = y + s(x * 0.028 - t * 0.11) * 7.5 + bend * 0.6;
-        var dx = wx - cxp, dy = wy - cyp;
+        var dx = wx - cxp, dy = wy - cyp, pr = (dx * CA + dy * SA) / ((dx < 0 ? -dx : dx) + (dy < 0 ? -dy : dy) + 1), am0 = .5 + .5 * pr, am = am0 * am0 * (3 - 2 * am0), bm = 1 - am, an = 1 / Math.sqrt(am * am + bm * bm);
         var v = s(wx * 0.0295 + t * 0.207)
           + s(wy * 0.0231 - t * 0.163)
           + s((wx + wy) * 0.0182 + t * 0.121)
-          + s((dx * dx + dy * dy) * 0.00055 - t * 0.281);
+          + (am * s((dx * dx + dy * dy) * 0.00055 - t * 0.281) + bm * s((dx * 0.0262 - dy * 0.0201) - t * 0.281)) * an;
         /* the same pattern, shifted in time and space by 1.988 */
         var ex = wx + DR, ey = wy + DR, tt = t - DR;
         var edx = ex - cxp, edy = ey - cyp;
         var v2 = s(ex * 0.0295 + tt * 0.207)
           + s(ey * 0.0231 - tt * 0.163)
           + s((ex + ey) * 0.0182 + tt * 0.121)
-          + s((edx * edx + edy * edy) * 0.00055 - tt * 0.281);
+          + (am * s((edx * edx + edy * edy) * 0.00055 - tt * 0.281) + bm * s((edx * 0.0262 - edy * 0.0201) - tt * 0.281)) * an;
         var n = ((v * 0.70 + v2 * 0.30) + 4) * 0.125;
         n = n * n; n = n * n; n = n * n * n;      /* ^12 — narrow ribbons on dark */
         if (comp > 0) n += comp * comp * 0.10;

@@ -54,6 +54,14 @@
 .fv-crumb-sep { color: var(--ink-3); font-size: var(--f-ui); }
 
 .fv-tools { display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto; min-width: 0; }
+/* Узкий экран: ряд крошек и ряд инструментов — по центру окна, как и всё
+   содержимое комнаты (решение основателя 05.11). Охраняется
+   tools/room-center-check.mjs. */
+@media (max-width: 560px) {
+  .fv-bar { justify-content: center; }
+  .fv-crumbs { justify-content: safe center; flex-basis: 100%; }
+  .fv-tools { justify-content: center; }
+}
 
 .fv-tool {
   display: inline-flex;

@@ -1,0 +1,169 @@
+/* sys.baby — ВОРОТА: стили, утверждённые основателем 04.11.2026 (D-603 вид двери и поля, D-606 вход). */
+/* ── D-603: «Ввод как в ИТОГ»: блок слова — как в утверждённых демо Шифра (data-b="1" «Воздух», data-s="7» «тень и поле»; «Заперто» и строка — как в shifr-arhiv-H3a). Только вид: поле, кнопки и меню — настоящие. ── */
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-box{box-sizing:border-box;width:min(340px,calc(100% - 32px));padding:0 20px;gap:14px}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-title{font:500 11px/1.2 -apple-system,system-ui,sans-serif;letter-spacing:var(--track-gate);text-transform:uppercase;/* своя краска: вход и дверь тёмные в обеих темах */ color:rgba(236,234,245,.62);margin:0}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultPass{box-sizing:border-box;height:46px;padding:0 12px;/* своя краска: вход и дверь тёмные в обеих темах */ border:1px solid rgba(246,240,255,.12);border-radius:var(--r-ctrl);/* своя краска: вход и дверь тёмные в обеих темах */ background-color:rgba(5,6,8,.62);box-shadow:none;outline:none;font:400 17px Arial,"Helvetica Neue",Roboto,sans-serif;letter-spacing:0;color:transparent;-webkit-text-fill-color:transparent;caret-color:transparent}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultPass:focus,html.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultPass:focus-visible{outline:none;box-shadow:none;/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(246,240,255,.12)}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultPass::placeholder{letter-spacing:var(--track-air);/* своя краска: вход и дверь тёмные в обеих темах */ color:rgba(236,234,245,.4);/* своя краска: вход и дверь тёмные в обеих темах */ -webkit-text-fill-color:rgba(236,234,245,.4)}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultOpen{box-sizing:border-box;align-self:center;width:62%;height:42px;margin:2px auto 0;padding:1px 6px;background:none;/* своя краска: вход и дверь тёмные в обеих темах */ border:1px solid rgba(246,240,255,.3);border-radius:var(--r-pill);/* своя краска: вход и дверь тёмные в обеих темах */ color:#eceaf5;font:400 13.3333px Arial,"Helvetica Neue",Roboto,sans-serif;letter-spacing:0;text-transform:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-err{margin:-4px 0 0;font-size:var(--f-read);/* своя краска: вход и дверь тёмные в обеих темах */ color:#a9bde0}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu{gap:2px 4px;margin-top:2px;max-width:none}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu button{background:none;border:0;margin:0;height:auto;width:auto;padding:4px 6px;/* своя краска: вход и дверь тёмные в обеих темах */ color:rgba(236,234,245,.56);font:400 13.3333px Arial,"Helvetica Neue",Roboto,sans-serif;letter-spacing:0;text-decoration:none}
+@media (hover: hover) {
+  html.sb-vvod-itog:where(:not([data-input="touch"])) #sbVaultGate.vg-has-scene .vg-menu button:hover{/* своя краска: вход и дверь тёмные в обеих темах */ color:#eceaf5}
+}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu-br{width:auto;height:auto;border-radius:0;background:none;opacity:1;font:400 12px/1.4 -apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;/* своя краска: вход и дверь тёмные в обеих темах */ color:rgba(236,234,245,.3)}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu-br::before{content:"·"}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu-br:nth-of-type(2){flex-basis:100%;height:0;overflow:hidden}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu-br:nth-of-type(2)::before{content:none}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-claim{font:italic 400 12.5px/1.4 Georgia,serif;/* своя краска: вход и дверь тёмные в обеих темах */ color:rgba(236,234,245,.5);margin:2px 0 0;white-space:normal;letter-spacing:0}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-claim br{display:inline}
+/* ── D-603: поле слова по двери (основатель: «Поле для ввода сделать менее тёмным… в Соборе сильно бросается в глаза»).
+   Шифр и Свет: светлее, чуть светящееся стекло с ободком в цвете двери; Собор: спокойнее, ближе к сиреневому камню нефа,
+   мягкий край, без тёмной плиты. Измерено (verify-pole.js): край поля к фону 3–5:1, заливка не темнее сцены вокруг,
+   подсказка ≥ 4,5:1 — у всех трёх дверей в одной полосе. ── */
+html.sb-vvod-itog[data-sb-door="shifr"] #sbVaultGate.vg-has-scene #sbVaultPass{/* своя краска: вход и дверь тёмные в обеих темах */ background-color:rgba(46,36,31,.74);/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(255,198,160,.34);/* своя краска: вход и дверь тёмные в обеих темах */ box-shadow:0 0 18px rgba(255,170,120,.10),inset 0 1px 0 rgba(255,214,182,.10)}
+html.sb-vvod-itog[data-sb-door="shifr"] #sbVaultGate.vg-has-scene #sbVaultPass:focus{/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(255,206,170,.5)}
+html.sb-vvod-itog[data-sb-door="shifr"] #sbVaultGate.vg-has-scene #sbVaultPass::placeholder{/* своя краска: вход и дверь тёмные в обеих темах */ color:rgba(255,230,212,.62);/* своя краска: вход и дверь тёмные в обеих темах */ -webkit-text-fill-color:rgba(255,230,212,.62)}
+html.sb-vvod-itog[data-sb-door="shifr"] #sbVaultGate.vg-has-scene #sbVaultOpen{/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(255,198,160,.42);/* своя краска: вход и дверь тёмные в обеих темах */ background:rgba(46,36,31,.38)}
+html.sb-vvod-itog[data-sb-door="porog"] #sbVaultGate.vg-has-scene #sbVaultPass{/* своя краска: вход и дверь тёмные в обеих темах */ background-color:rgba(164,138,104,.46);/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(255,234,200,.62);/* своя краска: вход и дверь тёмные в обеих темах */ box-shadow:0 0 18px rgba(255,200,130,.12),inset 0 1px 0 rgba(255,240,210,.14)}
+html.sb-vvod-itog[data-sb-door="porog"] #sbVaultGate.vg-has-scene #sbVaultPass:focus{/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(255,238,206,.78)}
+html.sb-vvod-itog[data-sb-door="porog"] #sbVaultGate.vg-has-scene #sbVaultPass::placeholder{/* своя краска: вход и дверь тёмные в обеих темах */ color:rgba(255,246,232,.88);/* своя краска: вход и дверь тёмные в обеих темах */ -webkit-text-fill-color:rgba(255,246,232,.88)}
+html.sb-vvod-itog[data-sb-door="porog"] #sbVaultGate.vg-has-scene #sbVaultOpen{/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(255,232,196,.62);/* своя краска: вход и дверь тёмные в обеих темах */ background:rgba(150,124,92,.22)}
+html.sb-vvod-itog[data-sb-door="sobor"] #sbVaultGate.vg-has-scene #sbVaultPass{/* своя краска: вход и дверь тёмные в обеих темах */ background-color:rgba(132,120,166,.2);/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(236,228,255,.36);box-shadow:none;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+html.sb-vvod-itog[data-sb-door="sobor"] #sbVaultGate.vg-has-scene #sbVaultPass:focus{/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(240,234,255,.52)}
+html.sb-vvod-itog[data-sb-door="sobor"] #sbVaultGate.vg-has-scene #sbVaultPass::placeholder{/* своя краска: вход и дверь тёмные в обеих темах */ color:rgba(244,240,252,.74);/* своя краска: вход и дверь тёмные в обеих темах */ -webkit-text-fill-color:rgba(244,240,252,.74)}
+html.sb-vvod-itog[data-sb-door="sobor"] #sbVaultGate.vg-has-scene #sbVaultOpen{/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(236,228,255,.34);/* своя краска: вход и дверь тёмные в обеих темах */ background:rgba(132,120,166,.12)}
+/* ── «Одна высота»: пол у каждой двери. Слои рисует сама сцена (один раз на размер); здесь — только их
+   место и медленная жизнь: прозрачность и сдвиги, циклы 9–20 с, без линий и резких краёв, без света «ради света».
+   «Уменьшить движение» — неподвижно. ── */
+.pol { position: absolute; left: 0; right: 0; pointer-events: none; overflow: hidden; }
+.pol canvas, .pol i { position: absolute; display: block; pointer-events: none; }
+/* Шифр — обсидиан */
+.pol-shifr canvas { left: 0; top: 0; }
+.pol-shifr .pol-g { opacity: .9; }
+.pol-shifr .pol-gb { opacity: 0; }
+.pol-shifr .pol-refl { filter: blur(.6px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 10px, rgba(0,0,0,.42) 38%, transparent 88%);
+  mask-image: linear-gradient(to bottom, transparent, #000 10px, rgba(0,0,0,.42) 38%, transparent 88%); }
+.pol-shifr:not(.pol-still) .pol-refl { animation: polBreath 10.4s ease-in-out infinite alternate; }
+.pol-shifr:not(.pol-still) .pol-ga { animation: polFadeA 10.4s ease-in-out infinite alternate; }
+.pol-shifr:not(.pol-still) .pol-gb { animation: polFadeB 10.4s ease-in-out infinite alternate; }
+@keyframes polBreath { from { opacity: .8; } to { opacity: 1; } }
+@keyframes polFadeA { from { opacity: .9; } to { opacity: .25; } }
+@keyframes polFadeB { from { opacity: 0; } to { opacity: .75; } }
+/* Шифр — свет из-под знака: поле света пересчитывается сценой и сменяется плавно; дымка дышит раз в 37 с */
+.pol-bl { position: absolute; pointer-events: none; mix-blend-mode: screen; }
+.pol-bl .bl-haze, .pol-bl canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.pol-bl .bl-l { filter: blur(1.3px); }
+.pol-bl .bl-bloom { opacity: .85; }
+.pol-bl:not(.pol-still) .bl-haze { animation: blHaze 37s ease-in-out infinite alternate; }
+@keyframes blHaze { from { opacity: .86; } to { opacity: 1; } }
+.pol-shifr .pol-blref { position: absolute; border-radius: var(--r-round); mix-blend-mode: screen; filter: blur(6px);
+  /* своя краска: вход и дверь тёмные в обеих темах */ background: radial-gradient(closest-side, rgba(255,176,124,.10), rgba(255,170,120,.04) 55%, transparent); }
+/* Свет — камень под полосой */
+.pol-porog { top: 0; height: 100%; }
+.pol-porog .pol-motes i { border-radius: var(--r-round); opacity: 0; /* своя краска: вход и дверь тёмные в обеих темах */ background: radial-gradient(circle, rgba(255,228,190,.85), rgba(255,200,150,0) 70%); }
+.pol-porog:not(.pol-still) .pol-motes i { animation-name: polMote; animation-timing-function: var(--ease-move); animation-iteration-count: infinite; }
+.pol-porog.pol-still .pol-motes i { opacity: .3; }
+@keyframes polMote { 0% { transform: translate(0, 0); opacity: 0; } 20% { opacity: .5; } 80% { opacity: .35; } 100% { transform: translate(var(--dx), var(--dy)); opacity: 0; } }
+/* Собор — зеркало нефа */
+.pol-sobor { right: auto; }
+.pol-sobor .pol-mir { position: absolute; inset: 0;
+  -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-composite: source-in, source-in; mask-composite: intersect; }
+.pol-sobor .pol-mir img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform: scale(1, -1); mix-blend-mode: screen; }
+.pol-sobor .pol-mirA img { opacity: .24; filter: blur(.7px) brightness(.95); }
+.pol-sobor .pol-mirB img { opacity: .2; filter: blur(3.2px) brightness(.8); }
+.ds-sobor.gl .pol-sobor .pol-mir { display: none; }
+/* Собор — туман у пола: шумовые полотна, сдвиги 26–40 с, свет в тумане, расступается у опор, отражается в зеркале */
+.pol-sobor .pol-fog { position: absolute; left: 0; width: 100%; overflow: hidden; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+.pol-sobor .pol-fogL { position: absolute; left: 0; top: 0; width: 300%; height: 100%; background-repeat: repeat; background-size: 33.3334% 100%; mix-blend-mode: screen; will-change: transform; }
+.pol-sobor .pol-fogL1 { opacity: .34; }
+.pol-sobor .pol-fogL2 { opacity: .26; top: 8%; height: 92%; }
+.pol-sobor .pol-fogL3 { opacity: .2; background-size: 16.6667% 62%; top: 18%; height: 82%; }
+.pol-sobor .pol-beam { position: absolute; mix-blend-mode: screen; opacity: .8; filter: blur(7px);
+  /* своя краска: вход и дверь тёмные в обеих темах */ background: linear-gradient(to bottom, rgba(212,220,255,0), rgba(212,220,255,.10) 30%, rgba(212,220,255,.08) 75%, rgba(212,220,255,0));
+  -webkit-mask-size: 512px 128px, 100% 100%; mask-size: 512px 128px, 100% 100%; -webkit-mask-repeat: repeat, no-repeat; mask-repeat: repeat, no-repeat; -webkit-mask-composite: source-in; mask-composite: intersect; }
+.pol-sobor .pol-doorlit { position: absolute; mix-blend-mode: screen; filter: blur(4px); /* своя краска: вход и дверь тёмные в обеих темах */ background: radial-gradient(closest-side, rgba(232,228,255,.17), rgba(222,222,255,.07) 55%, transparent); }
+.pol-sobor .pol-swirl { position: absolute; border-radius: var(--r-round); opacity: .22; mix-blend-mode: screen; background-size: 120% 120%; background-position: center;
+  -webkit-mask-image: radial-gradient(closest-side, #000, transparent); mask-image: radial-gradient(closest-side, #000, transparent); transform: scaleY(.42); }
+.pol-sobor .pol-fogR { position: absolute; inset: 0; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-composite: source-in; mask-composite: intersect; }
+.pol-sobor .pol-fogR .pol-fogL { opacity: .14; filter: blur(2px); transform: scaleY(-1); }
+.pol-sobor:not(.pol-still) .pol-fogL1 { animation: fogA 70s linear infinite, fogBreath 23s ease-in-out infinite alternate; }
+.pol-sobor:not(.pol-still) .pol-fogL2 { animation: fogB 56s linear infinite, fogBreath 29s ease-in-out -7s infinite alternate; }
+.pol-sobor:not(.pol-still) .pol-fogL3 { animation: fogA 84s linear -13s infinite; }
+.pol-sobor:not(.pol-still) .pol-fogR .pol-fogL { animation: fogR 70s linear infinite; }
+.pol-sobor:not(.pol-still) .pol-beam1 { animation: fogBeam 27s ease-in-out infinite alternate; }
+.pol-sobor:not(.pol-still) .pol-beam2 { animation: fogBeam 31s ease-in-out -9s infinite alternate; }
+.pol-sobor:not(.pol-still) .pol-doorlit { animation: fogBreath 22s ease-in-out infinite alternate; }
+.pol-sobor:not(.pol-still) .pol-swirl1 { animation: fogSwirl 40s linear infinite; }
+.pol-sobor:not(.pol-still) .pol-swirl2 { animation: fogSwirl 36s linear infinite reverse; }
+@keyframes fogA { 0% { transform: translate(0, 0); } 50% { transform: translate(-16.6667%, 2.5%); } 100% { transform: translate(-33.3334%, 0); } }
+@keyframes fogB { 0% { transform: translate(-33.3334%, 0); } 50% { transform: translate(-16.6667%, -3%); } 100% { transform: translate(0, 0); } }
+@keyframes fogR { 0% { transform: translate(0, 0) scaleY(-1); } 100% { transform: translate(-33.3334%, 0) scaleY(-1); } }
+@keyframes fogBreath { from { opacity: .22; } to { opacity: .38; } }
+@keyframes fogBeam { from { opacity: .55; } to { opacity: .95; } }
+@keyframes fogSwirl { from { transform: scaleY(.42) rotate(0deg); } to { transform: scaleY(.42) rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .pol *, .pol { animation: none !important; } }
+.pol-shifr .pol-latref { opacity: .17; filter: blur(.7px); }
+/* Собор, живой слой («Одна высота»): чёткие слои картины, туман без зеркала в «чистом» */
+.ds-sobor .zv-l { position: absolute; display: block; max-width: none; pointer-events: none; will-change: transform; transition: filter var(--t-rise) var(--ease-enter); }
+.ds-sobor .zv-near { mix-blend-mode: screen; }
+.ds-sobor.gl .zv-l { visibility: hidden !important; }
+.ds-sobor [data-d="stage"].isCold .zv-l { filter: brightness(.6) saturate(.55); transition-duration: var(--t-touch); }
+.pol-sobor.pol-nomir .pol-mir, .pol-sobor.pol-nomir .pol-fogR { display: none; }
+.pol-sobor.pol-nomir .pol-beam, .pol-sobor.pol-nomir .pol-fogL3 { display: none; }   /* «чистый»: the shafts are the scene's own; two fog layers, no CSS blur */
+.pol-sobor.pol-nomir .pol-doorlit { filter: none; }
+/* ── «Инверсия · Перетекание»: поле и кнопка — линия на холсте .vg-inv под ними (pol/inversiya.js); настоящие
+   поле и кнопка остаются (ввод, фокус, Enter, нажатие) — без своей заливки и рамки. Цвета — свои у каждой двери. ── */
+html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-box{isolation:isolate}
+html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-inv{position:absolute;z-index:-1;pointer-events:none;display:block}
+html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultPass,
+html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultPass:focus,
+html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultPass:focus-visible{background:transparent!important;border-color:transparent!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;outline:none;min-height:46px}
+html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultPass::placeholder{letter-spacing:var(--track-air);color:rgba(var(--inv-t),.84)!important;-webkit-text-fill-color:rgba(var(--inv-t),.84)!important;text-shadow:0 0 4px rgba(var(--inv-sh),.55)}
+html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene.vg-inv-fv #sbVaultPass::placeholder{color:rgba(var(--inv-t),.66)!important;-webkit-text-fill-color:rgba(var(--inv-t),.66)!important}
+html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultOpen{background:none!important;border-color:transparent!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;height:44px;min-height:44px;min-width:44px;color:rgb(var(--inv-t));letter-spacing:var(--track-caps);text-shadow:0 0 4px rgba(var(--inv-sh),.6);-webkit-tap-highlight-color:transparent;outline:none;position:relative}
+html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultOpen:focus{outline:none}
+html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultOpen:focus-visible::after{content:"";position:absolute;left:-3px;right:-3px;top:-1px;bottom:-1px;border-radius:var(--r-pill);border:1.5px solid rgba(var(--inv-t),.9);pointer-events:none}
+/* keyboard focus on the field: the line already lifts into its ends; a quiet underline-glow makes it unmistakable */
+html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultPass:focus-visible{box-shadow:0 6px 10px -8px rgba(var(--inv-t),.75)!important}
+html.sb-inv{--inv-t:226,232,246;--inv-sh:4,4,8}
+html.sb-inv[data-sb-door="sobor"]{--inv-t:244,240,252;--inv-sh:18,12,32}
+html.sb-inv[data-sb-door="porog"]{--inv-t:250,236,222;--inv-sh:10,6,2}
+/* the quiet local backing behind the form (as in the approved pre-final): Собор strong, Свет light, Шифр none */
+html.sb-inv[data-sb-door="sobor"].sb-vvod-itog #sbVaultGate.vg-has-scene .vg-inv{/* своя краска: вход и дверь тёмные в обеих темах */ background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(22,16,38,.62),rgba(22,16,38,0) 100%)}
+html.sb-inv[data-sb-door="porog"].sb-vvod-itog #sbVaultGate.vg-has-scene .vg-inv{/* своя краска: вход и дверь тёмные в обеих темах */ background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(12,8,4,.30),rgba(12,8,4,0) 100%)}
+#sbVaultGate .vg-scene{transition:filter var(--t-move) var(--ease-move)}
+#sbVaultGate.vg-one-kb .vg-scene{filter:brightness(.6)}
+
+/* Выбор двери на сенсорном экране: цель касания ≥ 48 px по высоте без изменения вида; ряд над «Запомнить дверь» */
+#sbVaultGate .vg-doors { touch-action: manipulation; z-index: 6; }
+#sbVaultGate .vg-door { position: relative; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#sbVaultGate .vg-door::after { content: ""; position: absolute; left: -5px; right: -5px; top: -9px; bottom: -9px; }
+/* Сборка сцены по шагам: старая сцена стоит замершей, недостроенная скрыта — их анимации не гоняют кадры */
+#sbVaultScene > .ds[data-old], #sbVaultScene > .ds[data-old] *, #sbVaultScene > .ds[data-building], #sbVaultScene > .ds[data-building] * { animation-play-state: paused !important; }
+/* Сцена закрывает весь экран непрозрачно — размытие фона под дверью (backdrop-filter 31 px на весь экран) за ней не видно,
+   а программный рендер (SwiftShader) пересчитывал его на каждом кадре: снято, пока у двери есть сцена. Пиксели те же. */
+#sbVaultGate.vg-has-scene { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+/* …и каждая в своём слое: шаги сборки не заставляют перерисовывать (растрировать) замершую старую сцену */
+#sbVaultScene > .ds[data-old], #sbVaultScene > .ds[data-building] { contain: strict; will-change: transform; }
+
+/* sys.baby — ВХОД: три варианта появления зала «Шифр» за знаком. Свет — из-за знака. */
+html.vh-pre, html.vh-pre body { /* своя краска: вход и дверь тёмные в обеих темах */ background: #000 !important; }
+#vhOv { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: var(--z-above); pointer-events: none; /* своя краска: вход и дверь тёмные в обеих темах */ background: #000; overflow: hidden; }
+#vhOv.vh-live { background: transparent; }
+#vhOv.vh-off { display: none; }
+#vhOv canvas { position: absolute; left: 0; top: 0; pointer-events: none; }
+/* while the entry runs: the gate sign's own pixels are cut out of the gate's canvas; the entry shows them (see vh.js holeOn) */
+html.vh-hole #sbVaultScene canvas[data-d="blk"] { clip-path: var(--vh-hole); }
+
+html:not(.vh-playing) #vhOv { display: none; }
+/* D-588: где замок возможен, старая карточка входа не рисуется ни на кадр (класс ставит os/index.html до первого кадра) */
+html.sb-door-first #sbLogin { display: none !important; }
+/* Кольцо фокуса поля слова с клавиатуры — цвет мира двери (D-596); у Шифра — оранжевый его поля (D-603). Касание его не зажигает. */
+html.sb-inv{--inv-ring:236,138,95}
+html.sb-inv[data-sb-door="sobor"]{--inv-ring:185,166,220}
+html.sb-inv[data-sb-door="porog"]{--inv-ring:230,140,85}
+html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultPass:focus-visible{outline:2px solid rgb(var(--inv-ring))!important;outline-offset:3px}

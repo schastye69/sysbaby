@@ -192,7 +192,11 @@
       var build = window.sbBuild ? window.sbBuild.stamp() : "sys.baby core";
       var reg = (window.SysBaby && window.SysBaby.order) ? window.SysBaby.order.length : 0;
       var launch = window.sbLaunchableApps ? window.sbLaunchableApps().length : 0;
-      write(build + " · " + reg + " windows registered, " + launch + " launchable.", "term-dim");
+      /* Печать сборки и счёт окон — двумя строками: с именем «personal OS»
+         (D-614) одна строка на 84 знака переносилась в окне по умолчанию
+         (line-measure-check). Слова те же. */
+      write(build, "term-dim");
+      write(reg + " windows registered, " + launch + " launchable.", "term-dim");
       /* Подаренное приветствие — по имени и со счётом дней (D-255). */
       var hello = "";
       try { hello = window.sbChest && window.sbChest.word ? window.sbChest.word("greeting") : ""; } catch (e) { hello = ""; }
@@ -532,7 +536,7 @@
           history.slice(0, 12).forEach(function (h, i) { write(pad(String(i + 1), 4) + h, "term-dim"); });
           return;
         case "whoami":
-          write((window.sbGetUsername ? window.sbGetUsername() : "guest") + ".sys.baby");
+          write(window.sbGetUsername ? window.sbGetUsername() : "guest");   /* без «.sys.baby» (D-594) */
           return;
         case "clear":
           out.innerHTML = "";

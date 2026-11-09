@@ -186,9 +186,9 @@ window.SB_OUTWARD = {
       "byHand": true,
       "host": "formsubmit.co",
       "what": {
-        "ru": "Весь текст письма, имя и обратный адрес, которые вы вписали, и метка «Letters · sys.baby private OS».",
-        "en": "The full text of the letter, the name and reply address you entered, and the tag “Letters · sys.baby private OS”.",
-        "ee": "Kirja kogu tekst, sinu sisestatud nimi ja vastusaadress ning silt „Letters · sys.baby private OS“."
+        "ru": "Весь текст письма, имя и обратный адрес, которые вы вписали, и метка «Letters · sys.baby personal OS».",
+        "en": "The full text of the letter, the name and reply address you entered, and the tag “Letters · sys.baby personal OS”.",
+        "ee": "Kirja kogu tekst, sinu sisestatud nimi ja vastusaadress ning silt „Letters · sys.baby personal OS“."
       },
       "who": {
         "ru": "Служба formsubmit.co и её владельцы — письмо проходит через их машину открытым, это не наш сервер. И почтовый ящик sys.baby, куда оно придёт.",

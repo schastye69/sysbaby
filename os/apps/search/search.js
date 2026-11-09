@@ -43,7 +43,7 @@
     order.forEach(function (id) {
       var def = apps[id];
       if (!def || def.hidden) return;
-      out.push({ id: id, title: window.sbAppTitle ? window.sbAppTitle(id) : (def.title || id), color: def.color || TYPE_FALLBACK_COLOR.app, icon: def.icon || ICON });
+      out.push({ id: id, title: window.sbAppTitle ? window.sbAppTitle(id) : (def.title || id), label: window.sbAppLabel ? window.sbAppLabel(id) : "", color: def.color || TYPE_FALLBACK_COLOR.app, icon: def.icon || ICON });
     });
     return out;
   }
@@ -123,8 +123,12 @@
     var needle = String(query || "").trim().toLowerCase();
     var rows = [];
 
+    /* build (D-615): на столе и в доке его нет — находится только по слову «build» */
+    { var bd = ((window.SysBaby || {}).apps || {}).build;
+      if (needle === "build" && bd) rows.push(appRow({ id: "build", title: window.sbAppTitle ? window.sbAppTitle("build") : "build", label: "", color: bd.color || TYPE_FALLBACK_COLOR.app, icon: bd.icon || ICON })); }
     registry().forEach(function (app) {
-      var haystack = (app.title + " " + t("menu.open", { app: app.title })).toLowerCase();
+      /* D-613: приложение находится и по настоящему имени, и по своему имени значка */
+      var haystack = (app.title + " " + (app.label || "") + " " + t("menu.open", { app: app.title })).toLowerCase();
       if (haystack.indexOf(needle) !== -1) rows.push(appRow(app));
     });
 

@@ -320,6 +320,9 @@
          предлагать того, чего не будет. Охраняется tools/hand-check.mjs. */
       /* ОБЩАЯ КНОПКА ПЕРЕДАЧИ (D-241). Разметка приходит из ядра: одна на
          все комнаты, иначе «один способ» становится тремя похожими. */
+      (window.sbSmiles ? '<button type="button" class="notes-smile" id="notesSmile" title="' + esc(t("nt.smileHint")) + '" aria-label="' + esc(t("nt.smile")) + '" aria-expanded="false">' + window.sbSmiles.svg("happy", "small") + "</button>" +
+        '<div class="notes-smiles" id="notesSmiles" role="group" aria-label="' + esc(t("nt.smile")) + '" hidden>' +
+        window.sbSmiles.list().map(function (x) { return '<button type="button" data-sm="' + x.ch + '" aria-label="' + x.ch + '">' + window.sbSmiles.svg(x.e, "big") + "</button>"; }).join("") + "</div>" : "") +
       (window.sbHand ? window.sbHand.menuHtml("запись", "notes") : "") +
       "</div>" +
       /* Копия говорит, откуда она и не устарела ли (D-267). */
@@ -328,7 +331,14 @@
       /* The leading newline compensates for the one HTML parsing eats right
        * after <textarea>. Without it a note written as "Title\n\nbody" would
        * silently lose its blank line the next time it was edited. */
-      '<textarea class="notes-body" id="noteBodyInput" autocomplete="off" placeholder="' + esc(t("nt.ph.body")) + '">\n' + esc(body) + "</textarea>";
+      /* ЖИВЫЕ СМАЙЛИКИ (D-590). Запись остаётся текстом с эмодзи; пока человек
+         не пишет, поверх поля лежит живой вид (.notes-live), где эмодзи —
+         живые смайлики; касание — снова поле. Кнопка-смайлик открывает
+         палитру: коротко — маленький в строку, долго — большой отдельной
+         строкой. Стережёт tools/smiles-check.mjs. */
+      '<div class="notes-bodywrap">' +
+      '<textarea class="notes-body" id="noteBodyInput" autocomplete="off" placeholder="' + esc(t("nt.ph.body")) + '">\n' + esc(body) + "</textarea>" +
+      '<div class="notes-live" aria-hidden="true"></div></div>';
   }
 
   /* Запись как вещь: первая строка — имя, остальное — текст. Одна мерка и
@@ -475,6 +485,72 @@
     }
     if (titleEl) titleEl.addEventListener("input", onEdit);
     if (bodyEl) bodyEl.addEventListener("input", onEdit);
+    if (bodyEl) wireSmiles(host, bodyEl);
+  }
+
+  /* ── ЖИВЫЕ СМАЙЛИКИ В ЗАПИСИ (D-590) ──────────────────────────────────── */
+  var LONG_MS = 450;
+  function wireSmiles(host, bodyEl) {
+    var S = window.sbSmiles;
+    var wrap = host.querySelector(".notes-bodywrap"), live = host.querySelector(".notes-live");
+    var btn = host.querySelector("#notesSmile"), pal = host.querySelector("#notesSmiles");
+    if (!S || !wrap || !live) return;
+    function paint() {
+      var on = S.has(bodyEl.value) && document.activeElement !== bodyEl;
+      wrap.classList.toggle("has-sm", on);
+      if (on) live.innerHTML = S.render(bodyEl.value);
+      else live.innerHTML = "";
+    }
+    bodyEl.addEventListener("focus", function () { wrap.classList.add("editing"); paint(); });
+    bodyEl.addEventListener("blur", function () { wrap.classList.remove("editing"); paint(); });
+    bodyEl.addEventListener("input", function () { if (document.activeElement !== bodyEl) paint(); });
+    live.addEventListener("click", function () { try { bodyEl.focus(); } catch (e) { /* ignore */ } });
+    paint();
+    if (!btn || !pal) return;
+    var caret = null;
+    function keepCaret() { if (document.activeElement === bodyEl) caret = [bodyEl.selectionStart, bodyEl.selectionEnd]; }
+    bodyEl.addEventListener("keyup", keepCaret); bodyEl.addEventListener("click", keepCaret); bodyEl.addEventListener("blur", keepCaret);
+    btn.addEventListener("pointerdown", keepCaret);
+    btn.addEventListener("click", function () {
+      pal.hidden = !pal.hidden;
+      btn.setAttribute("aria-expanded", pal.hidden ? "false" : "true");
+    });
+    function put(ch, big) {
+      var v = bodyEl.value, a = caret ? caret[0] : v.length, b = caret ? caret[1] : v.length;
+      var ins = ch;
+      if (big) {
+        var before = v.slice(0, a), after = v.slice(b);
+        ins = (before && !/\n$/.test(before) ? "\n" : "") + ch + (after && !/^\n/.test(after) ? "\n" : "");
+      }
+      bodyEl.value = v.slice(0, a) + ins + v.slice(b);
+      var at = a + ins.length;
+      caret = [at, at];
+      bodyEl.dispatchEvent(new Event("input"));
+      try { bodyEl.focus(); bodyEl.setSelectionRange(at, at); } catch (e) { /* ignore */ }
+      pal.hidden = true;
+      btn.setAttribute("aria-expanded", "false");
+    }
+    pal.addEventListener("pointerdown", function (ev) {
+      var b = ev.target.closest && ev.target.closest("[data-sm]");
+      if (!b) return;
+      ev.preventDefault();
+      var long = false;
+      var tm = setTimeout(function () { long = true; b.classList.add("go"); put(b.getAttribute("data-sm"), true); }, LONG_MS);
+      var up = function () {
+        clearTimeout(tm);
+        b.removeEventListener("pointerup", up); b.removeEventListener("pointerleave", cancel);
+        if (!long) put(b.getAttribute("data-sm"), false);
+      };
+      var cancel = function () { clearTimeout(tm); b.removeEventListener("pointerup", up); b.removeEventListener("pointerleave", cancel); };
+      b.addEventListener("pointerup", up); b.addEventListener("pointerleave", cancel);
+    });
+    /* С клавиатуры: Enter — в строку, Shift+Enter — большой отдельной строкой. */
+    pal.addEventListener("keydown", function (ev) {
+      var b = ev.target.closest && ev.target.closest("[data-sm]");
+      if (!b || ev.key !== "Enter") return;
+      ev.preventDefault();
+      put(b.getAttribute("data-sm"), ev.shiftKey);
+    });
   }
 
   function createNote(win) {
