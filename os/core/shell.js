@@ -112,12 +112,28 @@
   function isTouch() {
     try { return window.matchMedia("(pointer: coarse)").matches; } catch (e) { return "ontouchstart" in window; }
   }
+  var PHONE_MAX = 720;
+  /* Полка внизу — только у телефона (D-636): на планшете и столе окна
+     живут в верхней панели. */
+  function dockShown() {
+    if (!root.classList.contains("is-compact")) return false;
+    return Object.keys(window.openWindows || {}).length > 0;
+  }
+  window.sbDockShown = function () { return !root.classList.contains("dock-empty"); };
   function applyFlags() {
     root.classList.toggle("is-touch", isTouch());
-    root.classList.toggle("is-compact", window.innerWidth <= 860);
+    /* ── ТЕЛЕФОН — ДО 720 px · решение D-636 (основатель 09.11.2026) ────────
+       Планшет вертикально (≈720×1050) открывал окна листом во весь экран —
+       «Сундук, Фонарь — во всю высоту/ширину». Лист и полка внизу — только
+       у телефона; планшет 720 px шириной и больше — обычные плавающие окна,
+       которые двигаются, а открытые окна — в верхней панели, без дока.
+       Охраняется tools/planshet-check.mjs. */
+    root.classList.toggle("is-compact", window.innerWidth < PHONE_MAX);
+    if (window.sbBuildDock && applyFlags.ready) root.classList.toggle("dock-empty", !dockShown());
     root.classList.toggle("is-narrow", window.innerWidth <= 620);
   }
   applyFlags();
+  applyFlags.ready = true;
   function compact() { return root.classList.contains("is-compact"); }
 
   /* ── ЧЕМ КОСНУЛИСЬ ПОСЛЕДНИМ (D-272) ─────────────────────────────────────
@@ -590,14 +606,16 @@
      hue  — середина пояса;  span — ширина пояса;  cycle — за сколько кольцо;
      room — сколько света в комнате (от … до);  sat — насыщенность краски. */
   var MOODS = [
-    { id: "studio", name: "Studio", hue: 22, span: 16, cycle: 40 * 60000, room: [0.30, 0.46], sat: 68 },
-    { id: "ocean", name: "Ocean", hue: 196, span: 30, cycle: 34 * 60000, room: [0.26, 0.44], sat: 70 },
-    { id: "aurora", name: "Aurora", hue: 152, span: 74, cycle: 26 * 60000, room: [0.24, 0.46], sat: 72 },
-    { id: "sunset", name: "Sunset", hue: 12, span: 46, cycle: 30 * 60000, room: [0.28, 0.50], sat: 76 },
-    { id: "mono", name: "Mono", hue: 218, span: 8, cycle: 48 * 60000, room: [0.20, 0.36], sat: 14 },
-    { id: "daylight", name: "Daylight", drift: true, day: true, cycle: 24 * 3600000, room: null, sat: 73 },
-    { id: "therapy", name: "Light therapy", drift: true, session: true, span: 360,
-      cycle: 14 * 60000, room: [0.62, 1.0], sat: 78 },
+    /* ── ВОСЕМЬ ТЕМ, ЧЕТЫРЕ В ПУЛЬТЕ · решение D-630 (основатель 09.11.2026) ──
+       «Закат» снят из системы полностью: «почти то же, что Студия». У кого он
+       был выбран, тот тихо переходит на «Тепло» (бывшая «Студия»: ключ
+       хранения прежний, меняется только имя). Четыре темы с pult: true стоят
+       остановками в пульте (Тепло, Океан, Аврора, Праздник), остальные
+       четыре — в Настройках → Оформление. Порядок списка — порядок показа.
+       Охраняется tools/svetovod-check.mjs и tools/temy-check.mjs. */
+    { id: "studio", name: "Warmth", pult: true, hue: 22, span: 16, cycle: 40 * 60000, room: [0.30, 0.46], sat: 68 },
+    { id: "ocean", name: "Ocean", pult: true, hue: 196, span: 30, cycle: 34 * 60000, room: [0.26, 0.44], sat: 70 },
+    { id: "aurora", name: "Aurora", pult: true, hue: 152, span: 74, cycle: 26 * 60000, room: [0.24, 0.46], sat: 72 },
     /* ── ПРАЗДНИК: ГОД СВЕТА ЗА ДВЕ МИНУТЫ, НАЧИНАЯ С СЕГОДНЯ (D-150) ─────
        ПОВОД, дословно от основателя 26.08.2026: «нужно ещё придумать третью
        экстра тему, например, праздник (только более гениально) и тогда
@@ -617,8 +635,12 @@
        ЦЕНА НАЗВАНА ВСЛУХ. Шов ступает раз в четыре градуса; круг за две
        минуты — это ступенька каждые 1.3 с, всемеро чаще светотерапии.
        Праздник — комната на минуты, а не на день. */
-    { id: "feast", name: "Feast", drift: true, session: true, feast: true, span: 360,
+    { id: "feast", name: "Feast", pult: true, drift: true, session: true, feast: true, span: 360,
       cycle: 4 * 60000, room: [0.58, 1.0], sat: 94 },
+    { id: "mono", name: "Dusk", hue: 218, span: 8, cycle: 48 * 60000, room: [0.20, 0.36], sat: 14 },
+    { id: "daylight", name: "Daylight", drift: true, day: true, cycle: 24 * 3600000, room: null, sat: 73 },
+    { id: "therapy", name: "Light therapy", drift: true, session: true, span: 360,
+      cycle: 14 * 60000, room: [0.62, 1.0], sat: 78 },
     /* ── УГЛИ · решение D-187 ─────────────────────────────────────────────
        Это подарок, и он сделан не по заявке, а по обстоятельствам.
 
@@ -1228,15 +1250,39 @@
      перезагрузку: boot восстанавливал всё, кроме него, по строке, оставшейся
      с тех пор, когда Ocean был значением по умолчанию. Чинится не строка, а
      раздвоение. */
+  /* ── УГЛИ: ЧЁРНОЕ И ОДНО ТЛЕЮЩЕЕ ПЯТНЫШКО · решение D-631 ─────────────
+     Основатель 09.11.2026: «Угли» — «самые чёрные», но не мёртвые: одно
+     тлеющее пятнышко; при каждом входе — новое место в средней зоне экрана
+     (не у края), медленно тлеет; при «меньше движения» — неподвижно.
+     Место выбирается один раз за вход и не пишется на диск. */
+  var smoulderAt = null;
+  function paintSmoulder(valid) {
+    var layer = $(".wp-layer");
+    if (!layer) return;
+    var el = $("#sbSmoulder");
+    if (valid !== "ember") { if (el) el.hidden = true; return; }
+    if (!el) {
+      el = doc.createElement("div");
+      el.id = "sbSmoulder";
+      el.setAttribute("aria-hidden", "true");
+      layer.appendChild(el);
+    }
+    if (!smoulderAt) smoulderAt = { x: 30 + Math.random() * 40, y: 34 + Math.random() * 32 };
+    el.style.left = smoulderAt.x.toFixed(2) + "%";
+    el.style.top = smoulderAt.y.toFixed(2) + "%";
+    el.hidden = false;
+  }
+  window.sbSmoulderAt = function () { return smoulderAt ? { x: smoulderAt.x, y: smoulderAt.y } : null; };
   function applyMood(valid) {
     if (valid === "studio") root.removeAttribute("data-wp-mood");
     else root.setAttribute("data-wp-mood", valid);
+    paintSmoulder(valid);
     /* Живы ВСЕ комнаты, а не одна: ход идёт при любом настроении. */
     wpStart(valid);
   }
 
   window.sbWallpaperMoods = MOODS.map(function (m) {
-    return { id: m.id, name: m.name, drift: !!m.drift, session: !!m.session };
+    return { id: m.id, name: m.name, drift: !!m.drift, session: !!m.session, pult: !!m.pult };
   });
   /* ── КОМНАТА, ПОДАРЕННАЯ СУНДУКОМ (D-255) ──────────────────────────────
      Список комнат не константа: Сундук дарит новые, и они входят в тот же
@@ -1249,8 +1295,15 @@
     window.sbWallpaperMoods.push({ id: def.id, name: def.name, drift: !!def.drift, session: !!def.session });
     return true;
   };
+  /* Снятые темы (D-630): у кого сохранён «Закат», тот тихо переходит на
+     «Тепло» — без извещения, одной записью при первом чтении. */
+  var RETIRED_MOODS = { sunset: "studio" };
   window.sbGetWallpaperMood = function () {
     var v = (window.sbDB && window.sbDB.get(MOOD_KEY)) || "studio";
+    if (Object.prototype.hasOwnProperty.call(RETIRED_MOODS, v)) {
+      v = RETIRED_MOODS[v];
+      try { if (window.sbDB) window.sbDB.set(MOOD_KEY, v); } catch (e) { /* закрыто — переведём при следующем чтении */ }
+    }
     return MOODS.some(function (m) { return m.id === v; }) ? v : "studio";
   };
   window.sbSetWallpaperMood = function (id) {
@@ -1889,8 +1942,29 @@
       w.el.setAttribute("aria-label", appTitle(id));
     });
   };
+  /* ── ПОДПИСЬ ЗНАЧКА НА СТОЛЕ — СО СТРОЧНОЙ · решение D-621 ──────────────
+     Основатель 09.11.2026 (реестр 2.14, «подписи строчными», 30.10; как в
+     «Синтезе»: хранилище, записи, разговор…): подписи значков на рабочем
+     столе по умолчанию строчные, на всех языках. Своё имя — данное через
+     «Переименовать» (D-613) или подаренное Сундуком (D-257) — стоит ровно
+     как его написали: регистр не трогается. Поэтому строчная делается
+     строкой, а не text-transform стиля. Окно, поиск, «Эхо» — с настоящим
+     именем. Охраняется tools/desk-label-case-check.mjs. */
+  function deskDefault(id) {
+    var l = window.sbLang ? window.sbLang() : "en";
+    var loc = l === "ee" ? "et" : l;
+    var base = baseLabel(id);
+    try { return base.toLocaleLowerCase(loc); } catch (e) { return base.toLowerCase(); }
+  }
+  function deskLabel(id) {
+    if (!apps[id]) return id;
+    var mine = iconName(id) || ownName(id);
+    if (mine) return mine;
+    return deskDefault(id);
+  }
   window.sbAppTitle = appTitle;
   window.sbAppLabel = appLabel;
+  window.sbDeskLabel = deskLabel;
 
   function launchable() { return order.filter(function (id) { return apps[id] && !apps[id].hidden; }); }
   window.sbLaunchableApps = launchable;
@@ -1963,10 +2037,17 @@
      location.search: the URL is not a state store. */
   function entrySearch() { return window.__sbEntry || ""; }
 
+  var WIN_GROW = 1.12, WIN_MAX = 0.85;
   function sizeFor(def) {
     var w = num(def.size && def.size.w, 680), h = num(def.size && def.size.h, 520);
-    w = Math.min(w, window.innerWidth - 28);
-    h = Math.min(h, window.innerHeight - 140);
+    /* Окно крупнее (D-634, «Синтез»): всякое окно на восьмую больше, чем
+       просит комната; потолок — по-прежнему стекло экрана. */
+    w = Math.round(w * WIN_GROW); h = Math.round(h * WIN_GROW);
+    /* Окно «крупнее», но не «на весь экран» (D-636): не шире и не выше
+       85 % стекла — вокруг всегда виден стол, окно можно взять и подвинуть;
+       во весь экран — только кнопкой «развернуть». */
+    w = Math.min(w, window.innerWidth - 28, Math.round(window.innerWidth * WIN_MAX));
+    h = Math.min(h, window.innerHeight - 140, Math.round(window.innerHeight * WIN_MAX));
     return { w: Math.max(340, w), h: Math.max(280, h) };
   }
 
@@ -2027,7 +2108,13 @@
       '<div class="tb-right">' + (sc ? '<kbd class="win-kbd">' + escapeHtml(sc.label) + "</kbd>" : "") + "</div>" +
       "</header>" +
       '<div class="window-body"></div>' +
-      '<div class="resize-handle" aria-hidden="true"></div>';
+      '<div class="resize-edge resize-edge-r" data-axis="x" aria-hidden="true"></div>' +
+      '<div class="resize-edge resize-edge-b" data-axis="y" aria-hidden="true"></div>' +
+      '<div class="resize-handle rh-br" data-corner="br" aria-hidden="true"></div>' +
+      '<div class="resize-handle rh-bl" data-corner="bl" aria-hidden="true"></div>' +
+      '<div class="resize-handle rh-tr" data-corner="tr" aria-hidden="true"></div>' +
+      '<div class="resize-handle rh-tl" data-corner="tl" aria-hidden="true"></div>' +
+      '<div class="win-grip" aria-hidden="true"></div>';
 
     var body = el.querySelector(".window-body");
     body.style.padding = "0";
@@ -2494,6 +2581,8 @@
        полка сдвинута переносом, но место занимает то же), а не угадывается
        вторым числом рядом с правилами §4.1 и §14. Развёрнутое окно место
        под полку оставляет не рамкой, а телом — см. maximizedRect. */
+    /* Полки нет на планшете и столе (D-636): место под неё не держится. */
+    if (!compact()) return 14;
     var d = $("#dock");
     var h = d ? d.offsetHeight : 0;
     /* ОТКАТ: полки нет в разметке или она ещё не разложена — берём высоту
@@ -2772,23 +2861,42 @@
     tb.addEventListener("pointercancel", endDrag);
 
     /* resize */
-    var handle = el.querySelector(".resize-handle"), rs = null;
-    handle.addEventListener("pointerdown", function (ev) {
-      if (win.maximized) return;
-      ev.preventDefault();
-      rs = { sx: ev.clientX, sy: ev.clientY, w: win.w, h: win.h };
-      try { handle.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
-      root.classList.add("dragging");
+    /* ── РАЗМЕР — УГЛОМ И КРАЕМ, МЫШЬЮ И ПАЛЬЦЕМ · решение D-638 ────────────
+       Основатель 09.11.2026 (планшет): «окно не уменьшается — изменить размер
+       пальцем нельзя, а должно». Угол — под палец (зона ≥ 32×32 на касании),
+       правый и нижний край — мышью; захват указателя, touch-action: none на
+       зонах. Наименьшее окно — 360×300, на телефоне 220×240.
+       Охраняется tools/planshet-check.mjs. */
+    /* Угол — любой, кроме того, где стоят кнопки окна (D-640): кнопки слева —
+       оба нижних и правый верхний; справа — оба нижних и левый верхний.
+       Свет собирается только в правом нижнем (.win-grip); при захвате —
+       тёплый (.grip-hot), после отпускания гаснет. */
+    var rs = null;
+    el.querySelectorAll(".resize-handle, .resize-edge").forEach(function (handle) {
+      var corner = handle.getAttribute("data-corner") || (handle.getAttribute("data-axis") === "x" ? "r" : "b");
+      handle.addEventListener("pointerdown", function (ev) {
+        if (win.maximized || win.el.classList.contains("fullscreen")) return;
+        ev.preventDefault(); ev.stopPropagation();
+        rs = { sx: ev.clientX, sy: ev.clientY, x: win.x, y: win.y, w: win.w, h: win.h, c: corner, el: handle };
+        try { handle.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
+        root.classList.add("dragging");
+        win.el.classList.add("grip-hot");
+      });
+      handle.addEventListener("pointermove", function (ev) {
+        if (!rs || rs.el !== handle) return;
+        var minW = Math.min(compact() ? 220 : 360, window.innerWidth - 32), minH = compact() ? 240 : 300;
+        var dx = ev.clientX - rs.sx, dy = ev.clientY - rs.sy, c = rs.c;
+        var x = rs.x, y = rs.y, w = rs.w, h = rs.h;
+        if (c === "br" || c === "tr" || c === "r") w = clamp(rs.w + dx, minW, Math.max(minW, window.innerWidth - rs.x));
+        if (c === "bl" || c === "tl") { w = clamp(rs.w - dx, minW, Math.max(minW, rs.x + rs.w)); x = rs.x + rs.w - w; }
+        if (c === "br" || c === "bl" || c === "b") h = clamp(rs.h + dy, minH, Math.max(minH, window.innerHeight - rs.y));
+        if (c === "tr" || c === "tl") { h = clamp(rs.h - dy, minH, Math.max(minH, rs.y + rs.h - topbarBox())); y = rs.y + rs.h - h; }
+        applyRect(win, { x: x, y: y, w: w, h: h }, false);
+      });
+      handle.addEventListener("pointerup", endResize);
+      handle.addEventListener("pointercancel", endResize);
     });
-    handle.addEventListener("pointermove", function (ev) {
-      if (!rs) return;
-      var w = clamp(rs.w + (ev.clientX - rs.sx), 360, window.innerWidth - 32);
-      var h = clamp(rs.h + (ev.clientY - rs.sy), 300, window.innerHeight - 80);
-      applyRect(win, { x: win.x, y: win.y, w: w, h: h }, false);
-    });
-    function endResize() { if (!rs) return; rs = null; root.classList.remove("dragging"); }
-    handle.addEventListener("pointerup", endResize);
-    handle.addEventListener("pointercancel", endResize);
+    function endResize() { if (!rs) return; rs = null; root.classList.remove("dragging"); win.el.classList.remove("grip-hot"); }
   }
 
   /* Публичный вход для приложений, которым нужно открыть окно самим.
@@ -3078,7 +3186,7 @@
        телефоне служит сам стол. Класс вешается всегда, прячет его только
        узкий @media: на широком экране пустой док остаётся приглашением
        с подписью и подсказкой. */
-    root.classList.toggle("dock-empty", !anyRunning);
+    root.classList.toggle("dock-empty", !anyRunning || !compact());
     measureDock();
   }
   window.sbBuildDock = buildDock;
@@ -3343,7 +3451,9 @@
   window.sbSetIconName = function (id, name) {
     var o = {}, cur = getIconNames(), v = cleanIconName(name);
     Object.keys(cur).forEach(function (k) { o[k] = cur[k]; });
-    if (v && v !== baseLabel(id)) o[id] = v; else { delete o[id]; v = ""; }
+    /* своё имя — как введено (D-621): «Хранилище» с прописной — уже своё,
+       отличное от строчной подписи по умолчанию */
+    if (v && v !== deskDefault(id)) o[id] = v; else { delete o[id]; v = ""; }
     iconNames = o;
     writeJSON("sysbaby.icons.names", o);
     if (window.sbRefreshNames) window.sbRefreshNames();
@@ -3502,7 +3612,7 @@
         node.setAttribute("role", "button");
         node.setAttribute("aria-label", tr("win.openApp", { app: appTitle(id) }));
         node.innerHTML = '<span class="icon-tile">' + appIconMarkup(id) + "</span>" +
-          '<span class="icon-label">' + escapeHtml(appLabel(id)) + "</span>" +
+          '<span class="icon-label">' + escapeHtml(deskLabel(id)) + "</span>" +
           '<button class="icon-spark" type="button" tabindex="-1" aria-label="' + escapeHtml(tr("win.quickAction", { app: appTitle(id) })) + '">' + ICONS.spark + "</button>";
         wireIcon(node, id);
         host.appendChild(node);
@@ -3511,7 +3621,7 @@
       /* the name is re-read every build: a node that already exists still has
          to follow the language */
       var lbl = node.querySelector(".icon-label");
-      if (lbl) { lbl.textContent = appLabel(id); lbl.toggleAttribute("data-sb-userdata", !!(ownName(id) || iconName(id))); }
+      if (lbl) { lbl.textContent = deskLabel(id); lbl.toggleAttribute("data-sb-userdata", !!(ownName(id) || iconName(id))); }
       node.setAttribute("aria-label", tr("win.openApp", { app: appTitle(id) }));
       var spark = node.querySelector(".icon-spark");
       if (spark) spark.setAttribute("aria-label", tr("win.quickAction", { app: appTitle(id) }));
@@ -4364,12 +4474,15 @@
         var n = 0;
         try { for (var i = 0; i < localStorage.length; i++) if (String(localStorage.key(i)).indexOf("sysbaby.") === 0) n++; } catch (e) { n = -1; }
         if (n < 0) throw new Error(tr("boot.storageShut"));
-        return backend + "  ·  " + tr("boot.records", { n: n });
+        void backend;
+        /* Шифр 09.11.2026 (основатель): число записей человеку не показывается — только «на месте» */
+        return tr("boot.storageOk");
       } },
     { id: "session", label: "session", run: function () {
         var name = "";
         try { name = (window.sbDB && window.sbDB.get("sysbaby.user.name")) || ""; } catch (e) { name = ""; }
-        return name ? name : "guest";   /* без «.sys.baby»: аккаунтов с адресом нет (D-594) */
+        /* Шифр 09.11.2026: открытый мир без имени — не «guest»; «гость» — только у входа без слова */
+        return name ? name : (window.sbIncognitoActive ? tr("boot.guest") : tr("boot.world"));   /* без «.sys.baby»: аккаунтов с адресом нет (D-594) */
       } },
     { id: "appearance", label: "appearance", run: function () {
         var th = root.getAttribute("data-theme") || "—";
@@ -4397,7 +4510,7 @@
   /* Наружу — чтобы приборы читали ТО ЖЕ, что видел человек. */
   window.sbBoot = { steps: [], ok: null, ms: 0, startedAt: 0 };
   var GLYPHS = "0123456789abcdef/<>{}[]()=+-_:.|";
-  var CELLS = 35;
+  var CELLS = 41;   /* по длине фразы занавеса: ни одна буква не срезана (было 35) */
   /* ── ЗАНАВЕС ГОВОРИТ ГОЛОСОМ СИСТЕМЫ, НЕ ВИТРИНЫ (v47.1) ────────────────
      Основатель: «слоган built around your business должен быть только в
      приложении build». До этого занавес загрузки собирал из шума две фразы
@@ -4410,7 +4523,9 @@
      You». Водяной знак на столе снят вовсе, не переписан: столу не нужна
      подпись, стол и есть система. */
   var SENTENCE_1 = "only you and your system, baby";
-  var SENTENCE_2 = "only you and your system, baby";
+  /* Шифр 09.11.2026, решение основателя: слоган на занавесе — слово в слово тот, что в воротах (.vg-claim), на всех
+     языках одинаковый (не переводится, как и там). Строка входа и прощание (sbLoginLine) — прежние. */
+  var CURTAIN_LINE = "only you and your encrypted system, baby.";
   /* ── СТРОКА ВХОДА И ПРОЩАНИЕ СПРАШИВАЮТСЯ У СУНДУКА (D-255) ─────────────
      Подаренное слово кончается именем человека, а не «baby». Пока не
      подарено — фраза прежняя, слово в слово. Занавес (ячейки выше) фразу не
@@ -4499,7 +4614,7 @@
       var st = BOOT_STEPS[i++];
       var s0 = now();
       try { record(st.id, true, st.run(), now() - s0); }
-      catch (err) { record(st.id, false, (err && err.message) || "не удалось", now() - s0); }
+      catch (err) { record(st.id, false, (err && err.message) || tr("boot.failed"), now() - s0); }
       requestAnimationFrame(next);
     }
 
@@ -4507,7 +4622,7 @@
       /* Рабочий стол — последний шаг, и он ЖДЁТ настоящего события, а не
          таймера: прежний индикатор доходил до ста и вызывал показ сам. */
       doc.addEventListener("sysbaby:desktop-ready", function () {
-        record("desktop", true, "готов", now() - t0);
+        record("desktop", true, tr("boot.ready"), now() - t0);
         window.sbBoot.ms = Math.round(now() - t0);
         window.sbBoot.ok = window.sbBoot.steps.every(function (x) { return x.ok; });
         if (status) status.textContent = window.sbBoot.ok ? "готово · " + window.sbBoot.ms + " мс" : "готово, но не всё";
@@ -4765,6 +4880,9 @@
            входе: это один голос системы, а не подпись к кнопке. */
         '<input type="password" id="sbVaultPass" autocomplete="current-password" data-gk-ph="lock.ask" data-gk-aria="lock.ask" ' +
           'aria-label="' + escapeHtml(gateText("lock.ask")) + '" placeholder="' + escapeHtml(gateText("lock.ask")) + '">' +
+        /* Шифр 09.11.2026, решение основателя (после демо 3): ответ ворот («это слово не открывает») — сразу под полем, над
+           «открыть»: экранная клавиатура его не прячет (было — под меню, внизу блока). */
+        '<p class="vg-err" id="sbVaultErr" role="alert" hidden></p>' +
         /* ── ВТОРОЙ КЛЮЧ СПРАШИВАЕТСЯ ТАМ ЖЕ, ГДЕ СЛОВО (D-215) ────────────
            Поле появляется только у замка, который его требует. Что такой
            замок есть, видно на диске — и это сказано вслух в окне «Замок»:
@@ -4789,8 +4907,9 @@
            о нём. Что код сделает с тревожным словом и вторым ключом, сказано
            ДО нажатия, а не после. */
         /* ── МЕНЮ ДВЕРИ (D-588) — одно у всех: с миром и без. «Сказать первое
-           слово» на запертом устройстве отвечает «первое слово уже сказано» —
-           дверь не говорит, есть ли мир, пока её не спросили. */
+           слово» отвечает одинаково на любом устройстве: о мире не говорит
+           ни одна строка (основатель 09.11.2026 — прежнее «первое слово уже
+           сказано» выдавало, что мир есть). */
         '<nav class="vg-menu" id="sbVaultMenu" aria-label="' + escapeHtml(gateText("lock.menu")) + '" data-gk-aria="lock.menu">' +
           '<button type="button" id="sbVaultFirst" data-gk="lock.menu.first">' + escapeHtml(gateText("lock.menu.first")) + "</button>" +
           '<i class="vg-menu-br" aria-hidden="true"></i>' +
@@ -4808,15 +4927,12 @@
             'data-gk-ph="lock.code" data-gk-aria="lock.code" aria-label="' + escapeHtml(gateText("lock.code")) + '" placeholder="' + escapeHtml(gateText("lock.code")) + '">' +
           '<input type="password" id="sbVaultNew" autocomplete="new-password" data-gk-ph="lock.codeNew" data-gk-aria="lock.codeNew" aria-label="' + escapeHtml(gateText("lock.codeNew")) + '" placeholder="' + escapeHtml(gateText("lock.codeNew")) + '">' +
           '<input type="password" id="sbVaultNew2" autocomplete="new-password" data-gk-ph="lock.codeAgain" data-gk-aria="lock.codeAgain" aria-label="' + escapeHtml(gateText("lock.codeAgain")) + '" placeholder="' + escapeHtml(gateText("lock.codeAgain")) + '">' +
+          '<p class="vg-err" id="sbVaultRecErr" role="alert" hidden></p>' +
           '<button type="button" class="btn primary" id="sbVaultRecover" data-gk="lock.codeOpen">' + escapeHtml(gateText("lock.codeOpen")) + "</button>" +
         "</div>" +
-        '<p class="vg-err" id="sbVaultErr" role="alert" hidden></p>' +
         /* Заявление стоит под деталями двери (D-582): над линией слова — сцена. */
         '<p class="vg-claim">only you and your encrypted system, baby.</p>' +
-        /* Цена попытки — не лозунг: число проходов берётся из записи замка,
-           а миллисекунды замеряются на этой попытке. Появляется ПОСЛЕ, а не
-           до: обещать цену заранее значило бы обещать. */
-        '<p class="vg-cost" id="sbVaultCost" hidden></p>' +
+        /* Строки цены попытки под воротами нет (Шифр 09.11.2026, решение основателя: ворота не отличаются с миром и без). */
         (sealCount ? sealedLine(sealCount) : "") +
         gateDoorRow() +
       "</div>";
@@ -4838,9 +4954,24 @@
       }
       var b = ev.target && ev.target.closest ? ev.target.closest("[data-gate-lang]") : null;
       if (!b) return;
+      if (b.getAttribute("data-gate-lang") === gateLang() && b.classList.contains("on")) return;   /* уже сменён касанием */
       gatePick = b.getAttribute("data-gate-lang");
       gateResay(gate);
-      placeCluster();
+      placeCluster.textOnly = true; placeCluster();
+    });
+    /* Шифр 09.11.2026 (основатель: «языки переключаются медленно»): язык меняется с
+       касания, а не с отпускания пальца — click приходит после pointerup, а на занятом
+       сценой планшете ещё и после её кадра. Меняется только текст: сцена и холсты не
+       трогаются (placeCluster не зовёт сцену, пока размер блока прежний). */
+    gate.addEventListener("pointerdown", function (ev) {
+      if (ev.button > 0 || !ev.isPrimary) return;
+      var b = ev.target && ev.target.closest ? ev.target.closest("[data-gate-lang]") : null;
+      if (!b) return;
+      var l = b.getAttribute("data-gate-lang");
+      if (l === gateLang() && b.classList.contains("on")) return;
+      gatePick = l;
+      gateResay(gate);
+      placeCluster.textOnly = true; placeCluster();
     });
     /* Поле оживает СРАЗУ и живёт, пока стоит дверь: это не заставка, а
        диск, который лежит за ней прямо сейчас. */
@@ -4882,6 +5013,11 @@
       if (window.getComputedStyle(field.parentNode).position === "static") field.parentNode.style.position = "relative";
       field.parentNode.insertBefore(cv, field.nextSibling);
       var g = cv.getContext("2d"), raf = 0, n = 0, focused = false, t0 = (window.performance || Date).now();
+      /* Шифр 09.11.2026, решение основателя (кадры Backspace в демо 4): стирание — зеркало набора. Убирается знак, поставленный
+         последним, он гаснет на своём месте за 0,12 с (ghosts); пока человек стирает и ещё 0,65 с после, курсор не
+         показывается — он не прыгает со стороны на сторону; линия сжимается с той же скоростью, что росла (gate.js). При «уменьшить движение»
+         — без угасания и без пряток: курсор сразу встаёт у последнего знака, как при наборе (снимок поля — функция числа знаков). */
+      var ghosts = [], lastErase = -1e9, GHOST_MS = 120, ERASE_HIDE = 650;
       var still = function () { return systemReduced() || reduced(); };
       function rgba(c, a) { return "rgba(" + (c[0] | 0) + "," + (c[1] | 0) + "," + (c[2] | 0) + "," + Math.max(0, Math.min(1, a)).toFixed(3) + ")"; }
       function glow(x, y, r, c, a) { if (r <= 0 || a <= 0) return; var gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, rgba(c, a)); gr.addColorStop(1, rgba(c, 0)); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
@@ -4900,7 +5036,8 @@
         g.setTransform(m.dpr, 0, 0, m.dpr, 0, 0);
         g.clearRect(0, 0, w, h);
         var kind = door ? door.name : "sobor";
-        if (!n && !focused) return;
+        ghosts = ghosts.filter(function (q) { return now - q.t0 < GHOST_MS && q.j >= n; });
+        if (!n && !focused && !ghosts.length) return;
         /* шаг: от 16 точек вниз до 7; не влезает — видны последние, старые уходят влево */
         var pad = 18, room = Math.max(40, w - pad * 2 - 10);
         var ITOG = true; /* «Ввод как в ИТОГ» */
@@ -4910,10 +5047,22 @@
         var x0 = w / 2 - ((shown - 1) * gap) / 2, cy = h / 2;
         if (n > shown) x0 = w / 2 - room / 2;
         if (true) { var cap = Math.floor(room / gap) + 1; x0 = w / 2 - ((cap - 1) * gap) / 2; } // D-603: the row starts where a full row would start — placed marks never move
-        if (window.__sbMarkLog) { var fr0 = cv.getBoundingClientRect(); window.__sbMarkLog.push([performance.now(), n, shown, fr0.left + x0, fr0.top + cy, gap]); }
-        for (var j = 0; j < shown; j++) {
-          var i = n - shown + j, x = x0 + j * gap;
-          var fade = n > shown ? Math.min(1, (j + 1) / 3) : 1;
+        /* Шифр 09.11.2026, решение основателя: «поле при вводе должно увеличиваться однозначно» — линия поля растёт от
+           середины к краям с каждым знаком (gate.js), и знаки встают в неподвижные клетки ОТ СЕРЕДИНЫ: первый — в
+           середину, дальше поочерёдно справа и слева, шаг тот же (19). Знак зависит только от номера и времени (D-598),
+           поэтому порядок клеток ничего не говорит о буквах. Клетка не сдвигается никогда (D-604): ряд полон — новые
+           знаки больше не встают, ряд стоит. Якорь ряда (лог закона) — средняя клетка. */
+        var MID = ITOG && kind === "shifr", half = Math.floor(room / 2 / gap), capM = 2 * half + 1;
+        var slotM = function (i) { return i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2) * gap; };
+        if (MID) { shown = Math.min(n, capM); x0 = w / 2; }
+        var LOGE = null; if (window.__sbMarkLog) { var fr0 = cv.getBoundingClientRect(); window.__sbMarkLog.push(LOGE = [performance.now(), n, shown, fr0.left + x0, fr0.top + cy, gap, MID ? Array.from({ length: shown }, function (_, q) { return fr0.left + x0 + slotM(q); }) : null]); }
+        var items = []; for (var jj = 0; jj < shown; jj++) items.push([jj, 1]);
+        if (MID) ghosts.forEach(function (q) { if (q.j < capM) items.push([q.j, Math.max(0, 1 - (now - q.t0) / GHOST_MS)]); });
+        var gMax = 0; items.forEach(function (it) { if (it[1] < 1) gMax = Math.max(gMax, it[1]); });
+        for (var qi = 0; qi < items.length; qi++) {
+          var j = items[qi][0];
+          var i = MID ? j : n - shown + j, x = MID ? x0 + slotM(j) : x0 + j * gap;
+          var fade = (!MID && n > shown ? Math.min(1, (j + 1) / 3) : 1) * items[qi][1];
           if (kind === "porog") {
             /* Свет: тонкий живой луч — каждый мерцает сам, по своей фазе */
             var ph = (hash(i) % 1000) / 1000 * 6.283, fl = still() ? 0.85 : 0.72 + 0.28 * Math.sin(t * (2.1 + (hash(i) % 7) * 0.23) + ph) * Math.sin(t * 0.7 + ph * 1.7);
@@ -4954,16 +5103,19 @@
           }
         }
         /* свой курсор — сразу за последним знаком, мигает раз в секунду */
-        if (focused) {
+        var caretX = null;
+        if (focused && !(MID && !still() && now - lastErase < ERASE_HIDE)) {
           var cx = n ? x0 + (shown - 1) * gap + Math.max(6, gap * 0.6) : (true ? x0 - gap + Math.max(6, gap * 0.6) : w / 2);
+          if (MID) { var lq = shown - 1, ls = n ? slotM(lq) : 0; cx = n ? x0 + ls + (lq % 2 || lq === 0 ? 1 : -1) * Math.max(6, gap * 0.6) : x0 - 0.75; }   /* Шифр: курсор — снаружи от последнего знака; пустое поле — в средней клетке */
           var on = still() || Math.floor((now - t0) / 530) % 2 === 0;
-          if (on) { g.fillStyle = true && kind === "shifr" ? "rgba(242,161,111,.95)" : ITOG ? "rgba(255,150,92,.9)" : "rgba(246,240,255,.9)"; g.fillRect(Math.round(cx), cy - h * 0.24, 1.5, h * 0.48); }
+          if (on) { g.fillStyle = true && kind === "shifr" ? "rgba(242,161,111,.95)" : ITOG ? "rgba(255,150,92,.9)" : "rgba(246,240,255,.9)"; g.fillRect(Math.round(cx), cy - h * 0.24, 1.5, h * 0.48); caretX = cx - x0; }
         }
+        if (LOGE) { LOGE[7] = caretX; LOGE[8] = gMax; }
       }
-      var tmr = 0; function loop(now) { raf = 0; draw(now); if ((n || focused) && !still() && gate.parentNode) { if (!n && true) { clearTimeout(tmr); tmr = setTimeout(function () { tmr = 0; if (!raf) raf = requestAnimationFrame(loop); }, 531 - ((now - t0) % 530)); } else raf = requestAnimationFrame(loop); } } // D-603: only the caret changes — draw at its blink
+      var tmr = 0; function loop(now) { raf = 0; draw(now); if ((n || focused || ghosts.length) && !still() && gate.parentNode) { if (!n && !ghosts.length && !(now - lastErase < ERASE_HIDE + 40)) { clearTimeout(tmr); tmr = setTimeout(function () { tmr = 0; if (!raf) raf = requestAnimationFrame(loop); }, 531 - ((now - t0) % 530)); } else raf = requestAnimationFrame(loop); } } // D-603: only the caret changes — draw at its blink
       function kick() { if (!raf) raf = requestAnimationFrame(loop); if (still()) draw((window.performance || Date).now()); }
       return {
-        count: function (k) { n = k; kick(); },
+        count: function (k) { var tn = (window.performance || Date).now(); if (k < n) { lastErase = tn; if (!still()) for (var q = k; q < n; q++) ghosts.push({ j: q, t0: tn }); } else if (k > n) ghosts = ghosts.filter(function (q) { return q.j >= k; }); n = k; kick(); },
         focus: function (on) { focused = on; t0 = (window.performance || Date).now() - (still() ? 0 : 0); kick(); },
         redraw: kick,
         stop: function () { if (raf) cancelAnimationFrame(raf); raf = 0; clearTimeout(tmr); tmr = 0; }
@@ -5008,6 +5160,11 @@
       /* ширина — симметрично от середины блока: сцена ставит блок по середине экрана */
       return { w: 2 * Math.max(cx - u.l, u.rr - cx) / k, h: (u.b - u.t) / k, dy: (r.top - u.t) / k };
     }
+    /* обратные к shifr.js geom(): по высоте знака — верх блока («Одна высота») или низ пола (телефон) */
+    function ancBY1(at, vw) { var s1 = Math.min(vw * 0.4, 208, (at - 34 - 18) / 1.52); if (s1 < 76) s1 = 0; var R = s1 * 0.76; return s1 ? at - 34 - R : at; }
+    function ancAt(y, vw) { var lo = 0, hi = 6000; for (var i = 0; i < 60; i++) { var m = (lo + hi) / 2; if (ancBY1(m, vw) < y) lo = m; else hi = m; } return (lo + hi) / 2; }
+    function ancBY2(nb, vw, nh) { var s = Math.min(vw * 0.4, 208, (nb - 18 - nh - 34 - 18) / 1.62); if (s < 76) s = 0; var R = s * 0.76, comp = (s ? 2 * R + 34 : 0) + nh; return Math.max(18, (nb - comp) * 0.44) + R; }
+    function ancBottom(y, vw, nh) { var lo = nh, hi = 6000; for (var i = 0; i < 60; i++) { var m = (lo + hi) / 2; if (ancBY2(m, vw, nh) < y) lo = m; else hi = m; } return (lo + hi) / 2; }
     function placeCluster() {
       var box = gate.querySelector(".vg-box");
       if (!box || !gate.classList.contains("vg-has-scene")) { if (box) { box.style.top = ""; box.style.transform = ""; box.removeAttribute("data-k"); } return; }
@@ -5017,14 +5174,37 @@
          по короткой стороне (планшеты, компьютеры). На телефоне меню двери ложится в несколько строк, и одна высота
          поставила бы детали на саму дверь: там детали ложатся на пол сцены, как прежде (D-583; door-floor-check).
          Сцены отвечают на высоту, только если она названа (need.y). */
-      var ONE = Math.min(vw, vh) >= 600, oneBase = placeCluster.oneBase || (placeCluster.oneBase = { w: 0, h: 0 });
+      var oneBase = placeCluster.oneBase || (placeCluster.oneBase = { w: 0, h: 0 });
+      /* Шифр 09.11.2026: клавиатура, укоротившая экран ниже 600 точек, не выводит планшет из «Одной высоты» —
+         иначе сцена перестраивалась бы под клавиатуру и знак пропадал */
+      var kbHeld = !!doc.activeElement && doc.activeElement === field && vw === oneBase.w && vh < oneBase.h && Math.min(vw, oneBase.h) >= 600;
+      var ONE = Math.min(vw, kbHeld ? oneBase.h : vh) >= 600;
+      /* Шифр 09.11.2026, решение основателя (видео демо 5): знак входа после первого кадра не двигается — он опорная точка
+         (gate.js earlyMark → window.__sbMarkAnchor). Сцене называется такое место, чтобы её знак встал ровно под ним: та же
+         формула, что у сцены (shifr.js geom), решённая обратно; вид раскладки — по высоте первого кадра. Полосы браузера
+         и пересчёт высоты знак не двигают. */
+      var anc = window.__sbMarkAnchor; if (!(anc && anc.vw === vw && door && door.name === "shifr")) anc = null;
+      if (anc) ONE = Math.min(vw, anc.vh) >= 600;
       /* клавиатура бывает только у поля в фокусе: без фокуса в поле низкий экран той же ширины — просто другой экран */
       var typing = !!doc.activeElement && /^(INPUT|TEXTAREA)$/.test(doc.activeElement.tagName);
-      if (ONE) { if (typing && vw === oneBase.w && vh < oneBase.h) vh = oneBase.h; else { oneBase.w = vw; oneBase.h = vh; } }
+      if (typing && vw === oneBase.w && vh < oneBase.h) vh = oneBase.h; else { oneBase.w = vw; oneBase.h = vh; }   /* 09.11: и на телефоне — клавиатура не перестраивает сцену */
       var bs = blockSize(box, !ONE);   /* без «Одной высоты» (телефон) — без полей свечения «Инверсии»; на планшете — как утверждено */
+      /* Шифр 09.11.2026, решение основателя (после демо 3): строка ответа под полем («это слово не открывает») не меняет
+         названную сцене высоту. Раньше она удлиняла блок, сцена перестраивалась, и свет знака (лучи) гас и через ~3 с
+         вспыхивал заново — после неверного слова это выглядело как вспышка открытия. Блок просто становится ниже. */
+      var errDy = 0;
+      if (errEl && !errEl.hidden && errEl.parentNode === box) {
+        var ecs = getComputedStyle(errEl);
+        if (ecs.display !== "none") errDy = errEl.offsetHeight + (parseFloat(ecs.marginTop) || 0) + (parseFloat(ecs.marginBottom) || 0) + (parseFloat(getComputedStyle(box).rowGap) || 0);
+      }
+      bs.h -= errDy;
       var row = gate.querySelector(".vg-doors");
       var bottom = vh - 8;
       var need = { w: Math.ceil(bs.w), h: Math.ceil(bs.h), bottom: bottom };
+      /* Шифр 09.11.2026, решение основателя (видео демо 5): знак входа после первого кадра не двигается — он опорная точка
+         (gate.js earlyMark → window.__sbMarkAnchor). Сцене называется такое место, чтобы её знак встал ровно под ним: та же
+         формула, что у сцены (shifr.js geom), решённая обратно. Полосы браузера и пересчёт высоты знак не двигают. */
+
       /* «Одна высота»: верх поля — одна высота у всех дверей */
       var oneY = 0, oneOff = 0, onePortrait = vh > vw * 1.05;
       if (ONE) {
@@ -5032,18 +5212,28 @@
         oneOff = (fR.top - bR.top) / kNow;
         if (onePortrait) {
           var menuEl = box.querySelector(".vg-menu"), lowEl = menuEl && menuEl.getBoundingClientRect().height ? menuEl : (openBtn || field);
-          var below = (lowEl.getBoundingClientRect().bottom - fR.top) / kNow;
+          var below = (lowEl.getBoundingClientRect().bottom - fR.top) / kNow - errDy;
           oneY = Math.round(vh * 0.65 - 16 - below);
         } else oneY = Math.round(vh * 0.6);
         /* блок целиком в экране: если под полем не хватает места (низкий экран лёжа), одна высота поднимается — та же у всех дверей */
-        oneY = Math.min(oneY, Math.round(vh - 8 - (bs.h - bs.dy - oneOff)));
+        /* Шифр 09.11.2026: «Забыли слово?» раскрывает поля кода — блок не поднимается на знак (знак не пропадает), дверь
+           прокручивается, как в утверждённой демо (final/stol-vorota-final.html) */
+        var spareEl = box.querySelector("#sbVaultSpare"), spareOpen = !!(spareEl && !spareEl.hidden);
+        var oneYc = placeCluster.oneYc, vKey = vw + "x" + vh;
+        if (spareOpen && oneYc && oneYc.v === vKey) oneY = oneYc.y;
+        else { oneY = Math.min(oneY, Math.round(vh - 8 - (bs.h - bs.dy - oneOff))); if (!spareOpen) placeCluster.oneYc = { v: vKey, y: oneY }; }
         /* пока клавиатура укорачивает экран, высота и место сцены не пересчитываются (меню на низком экране само ложится в строку) */
         var oneShrunk = (window.innerHeight || vh) < vh;
         if (oneShrunk && placeCluster.oneY) oneY = placeCluster.oneY; else placeCluster.oneY = oneY;
         need.y = oneY; need.off = Math.round((oneOff + bs.dy) * 100) / 100;
-      }
+        if (anc) { need.y = Math.round((ancAt(anc.y, vw) + need.off) * 1000) / 1000; oneY = need.y; placeCluster.oneY = oneY; }
+      } else if (anc) { need.bottom = Math.round(ancBottom(anc.y, vw, need.h) * 1000) / 1000; need.fix = 1; }
       var key = need.w + "x" + need.h + "@" + need.bottom + "/" + vw + (ONE ? "|" + need.y + ":" + need.off : "");
       if (ONE && oneShrunk && lastNeed) key = lastNeed;
+      /* Шифр 09.11.2026: смена языка меняет только текст — если у блока изменилась лишь ширина
+         строк (высота, низ и одна высота те же), сцена не перестраивается. */
+      var textOnly = placeCluster.textOnly; placeCluster.textOnly = false;
+      if (textOnly && lastNeed && window.__sbLastNeed && key !== lastNeed && need.h === window.__sbLastNeed.h && need.bottom === window.__sbLastNeed.bottom && (need.y || 0) === (window.__sbLastNeed.y || 0) && (need.off || 0) === (window.__sbLastNeed.off || 0) && lastNeed.split("/")[1] === key.split("/")[1]) lastNeed = key;
       if (door && door.need && key !== lastNeed) { lastNeed = key; door.need(need); window.__sbLastNeed = need; }
       var pl = door && door.place ? door.place() : null;
       var vv = window.visualViewport, kb = false;
@@ -5068,6 +5258,10 @@
           var lim = vv.offsetTop + vv.height - 12;
           if (top + fbot > lim) { kb = true; top = lim - fbot; }
         }
+        /* Шифр 09.11.2026 (после демо 3): строка ответа удлинила блок, а сцена не перестраивалась — если низ блока ушёл
+           за край экрана (низкий экран лёжа, «Одна высота»), поднимается только блок, не больше чем на рост строки; на телефоне
+           блок стоит там, где назвала сцена (door-compose-check) */
+        if (errDy && !kb && ONE) { var overB = top + box.offsetHeight * pl.k - ((window.innerHeight || vh) - 4); if (overB > 0) top -= Math.min(overB, errDy * pl.k); }
         box.style.top = Math.round(top) + "px";
       } else {
         /* сцена не назвала пол — прежняя линия слова */
@@ -5077,6 +5271,7 @@
         box.style.transform = ""; box.removeAttribute("data-k");
         box.style.top = Math.round(line - field.offsetTop - field.offsetHeight / 2) + "px";
       }
+      if (pl && kbSign()) kb = true;
       gate.classList.toggle("vg-kb", kb);
       /* Выбор двери уходит в левый верхний угол, если блок лёг на его место. */
       if (row) {
@@ -5084,6 +5279,67 @@
         var rr = row.getBoundingClientRect(), br = box.getBoundingClientRect();
         if (br.left < rr.right + 8 && br.right > rr.left - 8 && br.bottom > rr.top - 8 && br.top < rr.bottom + 8) gate.classList.add("vg-doors-up");
       }
+    }
+    /* ── КЛАВИАТУРА У ЗНАКА (Шифр 09.11.2026, основатель с планшета) ─────────
+       Открытая экранная клавиатура оставляла над собой узкую полосу: поле и
+       «Открыть», а знак — за краем или под полем. Теперь, пока поле в фокусе
+       и видимая часть экрана (visualViewport) ниже экрана: «Открыть» встаёт
+       над клавиатурой, а знак сцены — тот же холст, без перестройки — плавно
+       уменьшается и встаёт целиком в оставшуюся полосу над «Заперто». Сцена
+       не пересчитывается: двигается и уменьшается только готовый холст знака
+       (transform). Где всё и так видно (планшет стоя), ничего не двигается.
+       Сцена называет знак сама (data-mark, data-wheel) — у сцен без этого
+       прежнее поведение. Стережёт tools/shifr-door-check.mjs (клавиатура). */
+    function kbSign() {
+      var host = gate.querySelector("#sbVaultScene"), m = host && host.querySelector("[data-mark][data-wheel]");
+      var blk = host && host.querySelector('canvas[data-d="blk"]');
+      var box = gate.querySelector(".vg-box"), vv = window.visualViewport;
+      var ih = window.innerHeight || 1, iw = window.innerWidth || 1, F = kbSign.full || (kbSign.full = { w: 0, h: 0 });
+      var typing = doc.activeElement === field;
+      if (!typing || iw !== F.w || ih > F.h) { F.w = iw; F.h = Math.max(ih, typing ? 0 : ih); }
+      if (!typing && iw === F.w) F.h = ih;
+      var visT = vv ? Math.max(0, vv.offsetTop) : 0, visB = Math.min(ih, vv ? vv.offsetTop + vv.height : ih);
+      var on = !!(m && blk && box && typing && visB - visT < F.h - 60);
+      var layers = function () { return [blk].concat([].slice.call(host.querySelectorAll(".pol-bl"))); };
+      function off() { if (blk && blk.__kb) { blk.__kb = false; layers().forEach(function (el) { el.style.transform = ""; }); } gate.classList.remove("vg-kb-sign", "vg-kb-tight"); return false; }
+      if (!on) return off();
+      var a = String(m.getAttribute("data-mark")).split(",").map(Number), R = +m.getAttribute("data-wheel") || 0;
+      if (!(R > 0) || a.length !== 3) return off();
+      /* Шифр 09.11.2026 (основатель, видео с планшета лёжа: «через раз» вокруг уменьшенного знака пустота): браузер сам
+         прокручивает дверь к полю, когда клавиатура открывается снова при поле, не терявшем фокус, — уже после её resize.
+         Прокрутка сдвигала всё на её величину, а мерки ниже брались со сдвигом. Сначала прокрутка в ноль, потом мерки. */
+      if (gate.scrollTop) gate.scrollTop = 0;
+      var bR = box.getBoundingClientRect(), top0 = parseFloat(box.style.top) || bR.top;
+      var tEl = box.querySelector(".vg-title") || field, oEl = openBtn || field;
+      var ob = oEl.getBoundingClientRect().bottom - bR.top, tt = tEl.getBoundingClientRect().top - bR.top;
+      var hScene = host.getBoundingClientRect(), BX = a[0] + hScene.left, BY = a[1] + hScene.top;
+      /* всё видно и без нас — ничего не трогать (портрет планшета: поле заранее над клавиатурой) */
+      var curK = blk.__kb ? blk.__kbK : 1;
+      if (!blk.__kb && top0 + ob <= visB - 6 && BY - R >= visT && BY + R <= top0 + tt + 4) return off();
+      var top = Math.round(visB - 10 - ob);
+      top = Math.max(top, Math.round(visT + 4 - tt));
+      box.style.top = top + "px";
+      var sTop = visT + 6, sBot = top + tt - 8, A = sBot - sTop;
+      /* совсем низкая полоса (планшет лёжа: над клавиатурой ~160 точек) — подпись «Заперто» уступает место знаку */
+      var ftop = field.getBoundingClientRect().top - bR.top, tight = A < 72;
+      gate.classList.toggle("vg-kb-tight", tight);
+      if (tight) { sBot = top + ftop - 6; A = sBot - sTop; }
+      var k = Math.max(0.18, Math.min(1, A / (2 * R)));
+      var cy = sTop + Math.max(A, 2 * R * k) / 2;
+      var tx = BX * (1 - k), ty = cy - k * BY;
+      /* знак и его свет (холст знака и подсветка за ним) — одним движением, от начала сцены */
+      var hs = host.getBoundingClientRect(), mx = "translate(" + (tx - hs.left * (1 - k)).toFixed(1) + "px," + (ty - hs.top * (1 - k)).toFixed(1) + "px) scale(" + k.toFixed(4) + ")";
+      layers().forEach(function (el) {
+        var er = el.getBoundingClientRect(), ox = el === blk ? 0 : el.offsetLeft, oy = el === blk ? 0 : el.offsetTop;
+        void er;
+        el.style.transformOrigin = (-ox) + "px " + (-oy) + "px";
+        el.style.transition = "transform var(--t-move) var(--ease-move)";
+        el.style.transform = mx;
+      });
+      blk.__kb = true; blk.__kbK = k; void curK;
+      gate.classList.add("vg-kb-sign");
+      if (gate.scrollTop) gate.scrollTop = 0;
+      return true;
     }
     function mountDoor() {
       if (door) { door.destroy(); door = null; }
@@ -5115,6 +5371,15 @@
     field.addEventListener("focus", function () { if (door) door.focus(true); signs.focus(true); placeCluster(); });
     field.addEventListener("blur", function () { if (door) door.focus(false); signs.focus(false); placeCluster(); });
     window.addEventListener("resize", placeCluster);
+    /* Шифр 09.11.2026: та же прокрутка браузера к полю после открытия клавиатуры (поле в фокусе, событий resize больше нет) —
+       дверь возвращается в ноль и раскладка считается заново, одинаково при каждом открытии. Без клавиатуры прокрутка двери
+       (низкий экран) не трогается. */
+    gate.addEventListener("scroll", function () {
+      if (!gate.scrollTop || doc.activeElement !== field || !gate.classList.contains("vg-has-scene")) return;
+      var vv0 = window.visualViewport, full = (kbSign.full && kbSign.full.h) || window.innerHeight;
+      if (!(gate.classList.contains("vg-kb") || gate.classList.contains("vg-kb-sign") || (vv0 && vv0.height < full - 60) || window.innerHeight < full - 60)) return;
+      gate.scrollTop = 0; placeCluster();
+    });
     window.addEventListener("sb-gate-inv", placeCluster);   /* холст «Инверсии» встал или сменил место (gate.js) */
     /* Блок меняет рост сам (строка цены после неверного слова, правда о
        носителе) — пол спрашивается заново. */
@@ -5134,11 +5399,14 @@
          поворачиваются ЛЕПЕСТКИ: человек видит, как поворачивается ключ. */
       gate.classList.remove("vg-wrong");
       gate.classList.add("vg-work");
-      if (!window.sbVault.isLocked()) { freshTry(); return; }
+      /* Шифр 09.11.2026, решение основателя: «открыть» смыкается целиком и от короткого нажатия — замок спрашивается,
+         когда смыкание проиграно (gate.js sbInvClosed, ≈ 0,23 с, одинаково у всех путей). Ключ устройства — сразу, в жесте. */
+      var invClosed = function () { return window.sbInvClosed ? window.sbInvClosed() : Promise.resolve(); };
+      if (!window.sbVault.isLocked()) { invClosed().then(freshTry); return; }
       /* Устройство спрашивается ПЕРВЫМ, в том же нажатии: браузеры отдают
          ключ устройства только в ответ на жест человека. */
       var hwOn = !!(window.sbVault.hwState && window.sbVault.hwState().on);
-      (hwOn ? window.sbVault.hwAsk() : Promise.resolve(true)).then(function (hwOk) {
+      (hwOn ? window.sbVault.hwAsk() : invClosed().then(function () { return true; })).then(function (hwOk) {
       if (!hwOk) {
         busy = false;
         gate.classList.remove("vg-work");
@@ -5149,9 +5417,8 @@
         return;
       }
       keyBytes().then(function (bytes) {
-      var t0 = (window.performance || Date).now();
       window.sbVault.unlock(field.value, bytes).then(function (okp) {
-        showCost((window.performance || Date).now() - t0);
+        setTimeout(placeCluster, 0);
         busy = false;
         gate.classList.remove("vg-work");
         if (!okp) {
@@ -5185,38 +5452,8 @@
       });
       });
     }
-    /* Число проходов СПРАШИВАЕТСЯ у замка, а не помнится: у старого замка
-       оно другое, и написать здесь сегодняшнее значило бы соврать о нём. */
-    function roundsOfLock() {
-      try {
-        var rec = window.sbVault.cipher() || {};
-        var sum = 0;
-        (rec.kdf || []).forEach(function (line) {
-          var n = parseInt(String(line).split(":")[1], 10);
-          if (n > 0) sum += n;
-        });
-        return sum;
-      } catch (e) { return 0; }
-    }
-    function groups(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "\u2009"); }
-    /* Проход памятью (D-275) — тоже цена попытки, и её называют вслух. */
-    function memOfLock() {
-      try {
-        var line = ((window.sbVault.cipher() || {}).kdf || []).filter(function (x) { return /^ARGON2ID:/.test(String(x)); })[0];
-        var m = line ? parseInt(String(line).split("m=")[1], 10) : 0;
-        return m > 0 ? " " + gateText("lock.costMem").replace("{mb}", String(Math.round(m / 1024))) : "";
-      } catch (e) { return ""; }
-    }
-    function showCost(ms) {
-      setTimeout(placeCluster, 0);
-      var el = gate.querySelector("#sbVaultCost");
-      var rounds = roundsOfLock();
-      if (!el || !rounds) return;
-      el.textContent = gateText("lock.cost").replace("{n}", groups(rounds)).replace("{ms}", String(Math.round(ms))) + memOfLock();
-      el.setAttribute("data-rounds", String(rounds));
-      el.setAttribute("data-ms", String(Math.round(ms)));
-      el.hidden = false;
-    }
+    /* Шифр 09.11.2026, решение основателя: ворота не отличаются с миром и без. Строки цены попытки («N проходов · M мс…»)
+       под воротами больше нет: она появлялась только у устройства с миром — сама была сведением о нём (аудит п.5). */
     /* Файл читается ДО замера: чтение с диска не должно попадать в цену
        попытки, иначе время ответа начало бы рассказывать про файл. */
     function keyBytes() {
@@ -5228,9 +5465,21 @@
     gate.querySelector("#sbVaultOpen").addEventListener("click", tryOpen);
     var forgot = gate.querySelector("#sbVaultForgot");
     var spareBox = gate.querySelector("#sbVaultSpare");
+    /* Шифр 09.11.2026, решение основателя: «Забыли слово?» — не блок под воротами, а окно системы, как остальные
+       листы двери (D-595): код, новое слово ×2 и кнопка переносятся в тело окна (те же поля, те же имена); окно
+       закрылось — поля пустеют и уходят обратно, спрятанные. Ответ кода — в самом окне. */
+    var spareHome = spareBox && spareBox.parentNode, spareNext = spareBox && spareBox.nextSibling;
     if (forgot && spareBox) forgot.addEventListener("click", function () {
-      spareBox.hidden = !spareBox.hidden;
-      if (!spareBox.hidden) { try { gate.querySelector("#sbVaultCode").focus(); } catch (e) { /* ignore */ } }
+      errEl.hidden = true;
+      var s = sheet(gateText("lock.forgot"), "", { onClose: function () {
+        ["#sbVaultCode", "#sbVaultNew", "#sbVaultNew2"].forEach(function (q) { var x = spareBox.querySelector(q); if (x) x.value = ""; });
+        var re = spareBox.querySelector("#sbVaultRecErr"); if (re) re.hidden = true;
+        spareBox.hidden = true;
+        if (spareHome && spareHome.isConnected) spareHome.insertBefore(spareBox, spareNext && spareNext.parentNode === spareHome ? spareNext : null);
+      } });
+      s.querySelector(".vg-win-body").appendChild(spareBox);
+      spareBox.hidden = false;
+      try { spareBox.querySelector("#sbVaultCode").focus(); } catch (e) { /* ignore */ }
     });
     /* ── СТАРЫЙ ПАРОЛЬ В ПОЛЕ «СЛОВО» (D-588) ───────────────────────────
        На устройстве без мира «Открыть» спрашивает профили с прежним
@@ -5307,7 +5556,7 @@
       var win = sh.querySelector(".vg-win"), bar = sh.querySelector(".vg-win-bar");
       /* Escape закрывает окно, где бы ни был фокус (после переноса пальцем фокус мог уйти с окна) */
       var onEsc = function (ev) { if (ev.key === "Escape" && !opts.locked && sh.parentNode) { ev.stopPropagation(); close(); } };
-      var close = function () { doc.removeEventListener("keydown", onEsc, true); if (sh.parentNode) sh.remove(); try { field.focus(); } catch (e) { /* ignore */ } };
+      var close = function () { doc.removeEventListener("keydown", onEsc, true); if (opts.onClose) { try { opts.onClose(); } catch (e) { /* ignore */ } opts.onClose = null; } if (sh.parentNode) sh.remove(); try { field.focus(); } catch (e) { /* ignore */ } };
       doc.addEventListener("keydown", onEsc, true);
       sh.addEventListener("click", function (ev) { if (!opts.locked && (ev.target === sh || (ev.target.closest && ev.target.closest("[data-sheet-x]")))) close(); });
       sh.querySelector(".light.max").addEventListener("click", function () { win.classList.toggle("maximized"); dx = dy = 0; win.style.transform = ""; });
@@ -5350,7 +5599,9 @@
     }
     gate.querySelector("#sbVaultFirst").addEventListener("click", function () {
       errEl.hidden = true;
-      if (window.sbVault.isLocked()) { errEl.textContent = gateText("lock.first.taken"); errEl.classList.add("vg-note"); errEl.hidden = false; return; }
+      /* Шифр 09.11.2026 (основатель): «Сказать первое слово» открывает одно и то же
+         окно на любом устройстве — ни до, ни после нажатия ни одной строки о том,
+         есть ли здесь мир. */
       var s = sheet(gateText("lock.first.title"),
         "<p>" + escapeHtml(gateText("lock.first.body")) + "</p>" +
         '<input type="password" id="sbFirstWord" autocomplete="new-password" placeholder="' + escapeHtml(gateText("lock.first.word")) + '" aria-label="' + escapeHtml(gateText("lock.first.word")) + '">' +
@@ -5375,9 +5626,17 @@
         var w = w1.value;
         if (String(w).length < 4) { say("lock.first.short"); return; }
         if (w !== w2.value) { say("lock.mismatch"); return; }
-        if (window.sbVault.isLocked()) { say("lock.first.taken"); return; }
         going = true;
         gate.classList.add("vg-work");
+        /* Мир здесь уже есть: второго мира ячейки носителя не держат (D-351), и
+           окно отвечает тем же, чем отвечает любая неудача запирания, и не раньше,
+           чем отвечает запирание пустого устройства (две растяжки слова).
+           Ни слова о том, что мир есть: см. «Шифр 09.11» в STATUS. */
+        if (window.sbVault.isLocked()) {
+          var V0 = window.sbVault, burn = function () { return V0.todayKdf ? V0.todayKdf(w).catch(function () { return null; }) : Promise.resolve(null); };
+          burn().then(burn).then(function () { going = false; gate.classList.remove("vg-work"); say("lock.first.fail"); });
+          return;
+        }
         /* Замок закрывает сеанс — мир тут же открывается тем же словом. */
         window.sbVault.lock(w).then(function () { return window.sbVault.unlock(w); }).then(function (okp) {
           gate.classList.remove("vg-work");
@@ -5386,7 +5645,7 @@
           adoptDoorLangIfNone();
           s.close();
           worldGuard(function () { openedGate(); });
-        }, function () { going = false; gate.classList.remove("vg-work"); say(window.sbVault.isLocked() ? "lock.first.taken" : "lock.first.fail"); });
+        }, function () { going = false; gate.classList.remove("vg-work"); say("lock.first.fail"); });
       }
       s.querySelector("#sbFirstGo").addEventListener("click", go);
       [w1, w2].forEach(function (x) { x.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); go(); } }); });
@@ -5460,6 +5719,18 @@
        (D-581): иначе человек увидел бы, как открытие обрывается на полпути.
        Сцена своё «доиграла» говорит сама; потолок держит doors.js. */
     function openedGate() {
+      /* Шифр 09.11.2026, решение основателя: знак занавеса первого входа встаёт ровно туда, где в миг открытия стоял знак
+         ворот (с клавиатурой — уменьшенный знак, как он виден): ворота → занавес → стол — один непрерывный знак */
+      try {
+        var mh = gate.querySelector("#sbVaultScene"), mm = mh && mh.querySelector("[data-mark]"), mb = mh && mh.querySelector('canvas[data-d="blk"]');
+        if (mm && mb && (door && door.name) === "shifr") {
+          var ma = String(mm.getAttribute("data-mark")).split(",").map(Number), mt = getComputedStyle(mb).transform, MM = new DOMMatrix(mt === "none" ? undefined : mt), mr = mh.getBoundingClientRect();
+          var mp = MM.transformPoint(new DOMPoint(ma[0], ma[1]));
+          if (ma.length === 3 && ma[2] > 0) runCurtain.mark = { x: mr.left + mp.x, y: mr.top + mp.y, s: ma[2] * MM.a };
+        }
+        /* знак занавеса встаёт на место сразу, ещё под уходящими воротами: между воротами и занавесом другого знака нет */
+        if (runCurtain.mark && !(window.sbDB && window.sbDB.get && window.sbDB.get("sysbaby.boot.seen") === "1")) curtainMark(runCurtain.mark, false);
+      } catch (e) { runCurtain.mark = null; }
       gate.classList.add("vg-open");
       var iris = false, scene = !door, left = false;
       var go = function () {
@@ -5478,9 +5749,10 @@
       gate.addEventListener("transitionend", function (ev) { if (ev.propertyName === "transform") { iris = true; go(); } });
       if (door) door.open(function () { scene = true; go(); });
     }
-    var recBtn = gate.querySelector("#sbVaultRecover");
+    var recBtn = gate.querySelector("#sbVaultRecover"), errEl0 = errEl;
     if (recBtn && window.sbVault.recover) recBtn.addEventListener("click", function () {
       if (busy) return;
+      var errEl = gate.querySelector("#sbVaultRecErr") || errEl0;   /* Шифр 09.11: ответ кода — в окне «забыли слово?» */
       var code = gate.querySelector("#sbVaultCode").value;
       var n1 = gate.querySelector("#sbVaultNew").value, n2 = gate.querySelector("#sbVaultNew2").value;
       errEl.hidden = true;
@@ -5551,6 +5823,32 @@
   };
 
   /* ---- cinematic curtain ---- */
+  /* Шифр 09.11.2026, решение основателя (видео демо 5): знак занавеса первого входа — тот же знак, что у ворот, на том же
+     месте и того же размера через весь путь. Он выходит из «сцены» занавеса в сам занавес (фраза и журнал его не двигают),
+     встаёт на место знака ворот ещё в миг их открытия (openedGate) и виден без «влёта»; до этого знака у занавеса нет
+     вовсе — под уходящими воротами не мелькает второй знак ниже. Фраза и журнал раскладываются вокруг (сдвиг сцены).
+     Без знака ворот (другая дверь) — знак занавеса как прежде над фразой. Стережёт tools/shifr-door-check.mjs (раздел 9). */
+  function curtainMark(gm, withStage) {
+    var curtain = $("#sbCurtain"); if (!curtain) return;
+    var stage = curtain.querySelector(".cur-stage"), mk = curtain.querySelector(".cur-mark"), sv = mk && mk.querySelector("svg"), logEl = $("#sbCurtainLog");
+    if (gm && mk && sv && stage) {
+      var svgS = gm.s / 0.7988, box = svgS + 8;   /* знак в svg занимает 10,06…89,94 из 100 */
+      if (mk.parentNode !== curtain) { mk.style.zIndex = getComputedStyle(stage).zIndex; curtain.appendChild(mk); }
+      mk.style.width = mk.style.height = box.toFixed(2) + "px"; sv.style.width = sv.style.height = svgS.toFixed(2) + "px";
+      mk.style.animation = "none"; mk.style.opacity = "1"; mk.style.bottom = "auto";
+      mk.style.left = gm.x.toFixed(2) + "px"; mk.style.top = gm.y.toFixed(2) + "px"; mk.style.transform = "translate(-50%,-50%)";
+      curtain.setAttribute("data-mark-at", gm.x.toFixed(2) + "," + gm.y.toFixed(2) + "," + gm.s.toFixed(3));
+      curtainMark.at = gm;
+    }
+    var at = curtainMark.at;
+    if (withStage && at && stage && mk && mk.parentNode === curtain) {
+      stage.style.transform = ""; if (logEl) logEl.style.transform = "";
+      var sr = stage.getBoundingClientRect(), dx = at.x - (sr.left + sr.width / 2), dy = at.y - (sr.top - 26 - mk.offsetHeight / 2);
+      stage.style.transform = "translate(" + dx.toFixed(2) + "px," + dy.toFixed(2) + "px)";
+      if (logEl) logEl.style.transform = "translate(calc(-50% + " + dx.toFixed(2) + "px)," + dy.toFixed(2) + "px)";
+    }
+    curtain.classList.add("cur-placed");
+  }
   function runCurtain(onDone) {
     var gated = runCurtain._gated;
     if (!gated) {
@@ -5574,7 +5872,7 @@
       }
     }
     var locked = new Array(CELLS).fill(false);
-    var target = padCenter(SENTENCE_1);
+    var target = padCenter(CURTAIN_LINE);
     var timers = [];
     var noiseRaf = 0;
     var finished = false;
@@ -5583,6 +5881,17 @@
     var isReduced = systemReduced() || reduced();
     var deepLink = /[?&]open=/.test(entrySearch()) && rawGet("sysbaby.authed");
     var returning = window.sbDB && window.sbDB.get("sysbaby.boot.seen") === "1";
+    /* ── ЗАНАВЕС — ТОЛЬКО ПРИ ПЕРВОМ ВХОДЕ В МИР (Шифр 09.11.2026, решение основателя) ──
+       Знак, слоган и журнал загрузки показываются один раз — при самом первом входе в этот мир на этом устройстве;
+       дальше после ворот сразу стол. Отметка «первый вход был» (sysbaby.boot.seen) лежит в самом мире: у запертого
+       мира она уезжает в его ячейку вместе с остальными записями (store.js, граница замка) и до верного слова
+       не читается. Занавес при этом — тёмная крышка без знака, слов и журнала, пока стол не проявится
+       (как и прежде — не по таймеру). Стережёт tools/os-boot-truth.mjs. */
+    var quiet = !!returning;
+    if (quiet) curtain.classList.add("cur-quiet");
+    /* Шифр 09.11.2026, решение основателя: знак занавеса — на месте и в размере знака ворот в миг открытия (openedGate);
+       фраза и журнал сдвигаются вместе с ним и раскладываются вокруг. Стережёт tools/shifr-door-check.mjs (раздел 9). */
+    if (!quiet) { var gm0 = runCurtain.mark; runCurtain.mark = null; curtainMark(gm0, true); }
     /* On a phone the full 5.9 s sequence reads as a hung page rather than as an
        opening: the screen is dark, there is no progress and no page chrome to
        reassure. Measured on a throttled handset, the desktop arrived at 8.3 s.
@@ -5657,7 +5966,7 @@
        hairline at 1.25x is a hairline, and it costs four fifths less. */
     function runNetwork() {
       var net = $("#sbCurtainNet");
-      if (!net || isReduced || !net.getContext) return function () { };
+      if (!net || isReduced || quiet || !net.getContext) return function () { };
       var g = net.getContext("2d");
       if (!g) return function () { };
       var P = null, dpr = 1, alive = true;
@@ -5719,7 +6028,10 @@
       function line(step) {
         var d = doc.createElement("div");
         d.className = "cur-log-line" + (step.ok ? "" : " failed");
-        var pad = (step.id + "            ").slice(0, 12);
+        /* Шифр 09.11.2026: ярлык строки — на языке системы, как и её подробность (не «desktop готов») */
+        var LAB = { storage: "boot.l.storage", session: "boot.l.session", appearance: "boot.l.appearance", apps: "boot.l.apps", data: "boot.l.data", desktop: "boot.l.desktop" };
+        var lab = LAB[step.id] ? tr(LAB[step.id]) : step.id; if (!lab || lab === LAB[step.id]) lab = step.id;
+        var pad = (lab + "            ").slice(0, 12);
         d.textContent = pad + step.detail + (step.ok ? "" : "   ✗");
         d.setAttribute("data-step", step.id);
         logHost.appendChild(d);
@@ -5734,6 +6046,8 @@
       finished = true;
       timers.forEach(clearTimeout);
       if (noiseRaf) clearTimeout(noiseRaf);
+      /* уходит только чистая фраза: ни одной клетки шума в последнем кадре (Шифр 09.11.2026) */
+      if (!quiet) { target = padCenter(CURTAIN_LINE); for (var j = 0; j < CELLS; j++) { locked[j] = true; if (cells[j]) { cells[j].textContent = target[j]; cells[j].classList.add("locked"); cells[j].classList.remove("broken"); } } }
       if (window.sbDB) window.sbDB.set("sysbaby.boot.seen", "1");
       curtain.classList.add("lifting");
       stopNetwork();                 /* stop drawing before the canvas detaches */
@@ -5798,7 +6112,7 @@
       if (!skipArmed || finished) return;
       timers.forEach(clearTimeout);
       if (noiseRaf) clearTimeout(noiseRaf);
-      target = padCenter(SENTENCE_2);
+      target = padCenter(CURTAIN_LINE);
       for (var j = 0; j < CELLS; j++) { locked[j] = true; if (cells[j]) { cells[j].textContent = target[j]; cells[j].classList.add("locked"); } }
       endSequence();
     }
@@ -5806,19 +6120,20 @@
 
     function begin() {
       skipArmed = true;
+      if (quiet) { endSequence(); return; }
       paintLog();
       if (isReduced) {
-        target = padCenter(SENTENCE_2);
+        target = padCenter(CURTAIN_LINE);
         for (var j = 0; j < CELLS; j++) { locked[j] = true; if (cells[j]) { cells[j].textContent = target[j]; cells[j].classList.add("locked"); } }
         timers.push(setTimeout(endSequence, 300));
         return;
       }
       noise();
-      if (shortPath) { lockSentence(SENTENCE_2, 140, 640, null); timers.push(setTimeout(endSequence, 900)); return; }
+      if (shortPath) { lockSentence(CURTAIN_LINE, 140, 640, null); timers.push(setTimeout(endSequence, 900)); return; }
       /* Фраза теперь одна — собирать её из шума дважды значило бы держать
          человека лишние две секунды ради повтора. Полный путь: шум, сборка,
          пауза на прочтение, подъём. */
-      lockSentence(SENTENCE_1, 1150, 1750, null);
+      lockSentence(CURTAIN_LINE, 1150, 1750, null);
       timers.push(setTimeout(endSequence, returning ? 1400 : 3200));
     }
 

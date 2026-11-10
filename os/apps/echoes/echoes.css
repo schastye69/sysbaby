@@ -20,6 +20,10 @@
 }
 
 .ec-head.second { margin-top: 16px; border-top: 1px solid rgba(var(--film-rgb), .08); padding-top: 14px; }
+/* Первый раздел окна — без черты и без полосы сверху (D-642, основатель
+   09.11.2026: «линия, которая вообще ничего не делает»): черта разделяет
+   только второй и следующие разделы. */
+.app-echoes > .ec-head.second:first-child { margin-top: 0; border-top: 0; padding-top: 4px; }
 
 .ec-row {
   display: flex;

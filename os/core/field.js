@@ -173,7 +173,11 @@
 
   function suppressed() {
     var root = doc.documentElement;
-    return root.getAttribute("data-theme") === "light" || root.classList.contains("sb-incognito");
+    /* «Угли» — чистый чёрный (D-631, основатель 09.11.2026): поле в них не
+       рисует ни плазмы, ни светлых пятен по углам; светит одно тлеющее
+       пятнышко (#sbSmoulder, os/core/shell.js). */
+    return root.getAttribute("data-theme") === "light" || root.classList.contains("sb-incognito") ||
+      root.getAttribute("data-wp-mood") === "ember";
   }
 
   /* Windows are frosted glass: backdrop-filter: blur(58px). A blurred backdrop
@@ -207,7 +211,6 @@
     studio: [[54, 48, 46], [30, 28, 30], [198, 92, 56]],
     ocean:  [[58, 92, 226], [40, 66, 190], [86, 112, 238]],
     aurora: [[46, 214, 170], [64, 128, 236], [128, 92, 255]],
-    sunset: [[255, 138, 78], [214, 68, 122], [255, 96, 140]],
     mono:   [[176, 182, 198], [124, 130, 146], [208, 214, 226]]
   };
 
@@ -471,6 +474,10 @@
     },
 
     applyMood: function (mood) {
+      /* Комната могла сменить, живо ли поле вообще (Угли гасят его, D-631). */
+      var sup = suppressed();
+      if (this.cv && this.wasSup !== undefined && sup !== this.wasSup) this.setLevel(this.level);
+      this.wasSup = sup;
       /* ── ЖИВЫЕ КОМНАТЫ КРАСЯТ ФОН СВОИМ СВЕТОМ (D-159) ─────────────────
          Таблица ниже знает пять неподвижных комнат. Живые (суточная,
          светотерапия, праздник) в ней не значатся, и неизвестное имя молча

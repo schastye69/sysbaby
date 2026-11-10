@@ -1873,7 +1873,9 @@
     if (!lbl || node.querySelector("input.icon-rename")) return;
     var inp = document.createElement("input");
     inp.className = "icon-rename"; inp.type = "text"; inp.maxLength = 48; inp.autocomplete = "off"; inp.spellcheck = false;
-    inp.value = (window.sbAppLabel && window.sbAppLabel(id)) || "";
+    /* в поле — ровно то, что стоит на подписи (D-621: строчная по умолчанию),
+       чтобы «Enter» без правки не превращал подпись в своё имя с прописной */
+    inp.value = (window.sbDeskLabel ? window.sbDeskLabel(id) : (window.sbAppLabel && window.sbAppLabel(id))) || "";
     inp.setAttribute("aria-label", tr("menu.renameField", { name: window.sbAppBaseLabel ? window.sbAppBaseLabel(id) : id }));
     lbl.hidden = true; lbl.after(inp); inp.focus(); inp.select();
     var done = false;

@@ -135,8 +135,8 @@
   /* ── the real gate ── */
   var gate = null, box = null, field = null, btn = null, cv = null, ctx = null, host = null;
   var keys = [], FS = { fire: null }, lastFire = 0;
-  var st = { focus: new Tw(0), press: new Tw(0), nS: new Tw(0), tErr: -1e9, tSucc: -1e9 }, n = 0, fvis = false, focusedV = false, pressing = false;
-  var activeUntil = 0, raf = 0, geoKey = "", mo = null;
+  var st = { focus: new Tw(0), press: new Tw(0), nS: new Tw(0), tErr: -1e9, tSucc: -1e9, relAt: 0, hwF: 0 }, n = 0, fvis = false, focusedV = false, pressing = false;
+  var activeUntil = 0, raf = 0, geoKey = "", mo = null, eraseAt = -1e9;
   var now = function () { return performance.now(); };
   function on() { return root.classList.contains("sb-vvod-itog") && gate && gate.classList.contains("vg-has-scene"); }
   function door() { var d = root.getAttribute("data-sb-door"); return GATES[d] ? d : "shifr"; }
@@ -155,6 +155,8 @@
     field.addEventListener("focus", function () { focusedV = true; updFocus(now()); });
     field.addEventListener("blur", function () { focusedV = false; updFocus(now()); });
     field.addEventListener("input", function () { onValue(now()); });
+    /* Шифр 09.11.2026: экранная клавиатура Android может набирать составлением (composition) — шаг линии на каждом обновлении */
+    ["compositionupdate", "compositionend", "keyup"].forEach(function (ty) { field.addEventListener(ty, function () { onValue(now()); }); });
     btn.addEventListener("pointerdown", function (ev) { if (ev.button > 0) return; pressDown(now()); });
     ["pointerup", "pointercancel", "pointerleave"].forEach(function (ty) { btn.addEventListener(ty, function () { pressUp(now()); }); });
     btn.addEventListener("keydown", function (ev) { if ((ev.key === " " || ev.key === "Enter") && !ev.repeat) pressDown(now()); });
@@ -187,17 +189,45 @@
   }
   function onValue(t) {
     var k = Array.from(field.value || "").length;
-    if (k !== n) { if (k > n) for (var i = n; i < k; i++) keys.push({ t: t, n: i + 1 }); keys = keys.filter(function (q) { return t - q.t < 1600 && q.n <= k; }); n = k; st.nS.to(n, 180, eio, t); updFocus(t); act(t, 400); }
+    /* Шифр 09.11.2026, решение основателя: стирание — зеркало набора. Свет стёртого знака гаснет сам (не обрывается),
+       линия сжимается с той же скоростью, что росла (180 мс), огонь не перебегает со стороны на сторону (eraseAt) */
+    if (k !== n) { if (k > n) for (var i = n; i < k; i++) keys.push({ t: t, n: i + 1 }); else eraseAt = t; keys = keys.filter(function (q) { return t - q.t < 1600; }); var er = k < n; n = k; st.nS.to(n, 180, eio, t); updFocus(t); act(t, er ? 900 : 400); }
   }
   function pressDown(t) { if (st.tSucc > -1e8) return; pressing = true; st.press.to(1, 210, eio, t); act(t, 400); }
-  function pressUp(t) { if (!pressing) return; pressing = false; if (st.tSucc > -1e8) return; st.press.to(0, 440, eio, t); act(t, 600); }
+  /* Шифр 09.11.2026, решение основателя: кнопка смыкается и от КОРОТКОГО касания/клика/Enter — смыкание проигрывается
+     целиком (та же «Перетекание», 210 мс, не обрывается), кнопка держится сомкнутой, пока ворота думают (vg-work), и
+     только потом расходится (неверное слово); верное — ворота открываются из сомкнутой. Удержание — как было. */
+  function pressUp(t) {
+    if (!pressing) return; pressing = false; if (st.tSucc > -1e8) return;
+    var left = st.press.b === 1 ? Math.max(0, st.press.d - (t - st.press.t0)) : 0;
+    st.relAt = t + left + 140; act(t, left + 260);
+    setTimeout(function () { act(now(), 50); }, left + 160);   /* the release is looked at again then, and when vg-work leaves (observer) — no frame per frame while the gate thinks */
+  }
+  /* Ворота спрашивают замок только после того, как кнопка сомкнулась (оболочка, tryOpen): растяжка слова занимает
+     поток, и смыкание, начатое тем же нажатием, иначе не успело бы проиграться. Enter в поле — как короткое касание. */
+  window.sbInvClosed = function () {
+    return new Promise(function (res) {
+      var t = now();
+      if (!attach() || !on() || rmNow() || st.tSucc > -1e8) { res(); return; }
+      if (st.press.b !== 1) { pressDown(t); pressUp(t); }
+      var left = Math.max(0, st.press.d - (t - st.press.t0));
+      setTimeout(function () { requestAnimationFrame(function () { res(); }); }, left + 20);
+    });
+  };
+  function release(t) {
+    if (!st.relAt || pressing || st.tSucc > -1e8) { if (st.tSucc > -1e8) st.relAt = 0; return; }
+    if (t < st.relAt || (gate && gate.classList.contains("vg-work"))) return;
+    st.relAt = 0; st.press.to(0, 440, eio, t); act(t, 600);
+  }
 
   function frame() {
     raf = 0;
-    if (!attach()) { setTimeout(function () { act(now(), 50); }, 300); return; }
+    /* 09.11: ворот нет (стол) или вкладка скрыта — ни кадров, ни опроса; ворота появятся — их увидит наблюдатель ниже */
+    if (!attach() || doc.hidden) return;
     var t = now();
     RM = rmNow();
     if (field.value.length !== n) onValue(t);
+    release(t);
     if (!on()) { if (cv.style.display !== "none") { cv.style.display = "none"; geoKey = ""; moved(); } return; }
     cv.style.display = "";
     var fireOn = door() === "shifr" && !window.__sbInvBlank;
@@ -284,7 +314,7 @@
   function fireStep(P, E, cfg) {
     var F = P.fire || (P.fire = newFire(cfg));
     var t = E.t, dts = RM ? 0 : cl((t - (F.last == null ? t : F.last)) / 1000, 0, 0.05); F.last = t; F.T += dts;
-    var R = F.R, U = cfg.U, span = cfg.hi - cfg.lo;
+    var R = F.R, U = E.U || cfg.U, span = cfg.hi - cfg.lo;
     var newTarget = function (sp) { var x;
       if (cfg.far > 0) { var side = R() < 0.9 ? (sp.x < 24 ? 1 : -1) : (R() < 0.5 ? 1 : -1), half = (cfg.hi - cfg.lo) / 2; x = 24 + side * (4 + (half - 4) * Math.sqrt(R())); }
       else x = cfg.lo + R() * span;
@@ -332,7 +362,7 @@
     var IA = A.a * (0.42 + 0.3 * eA) * cool * (1 - 0.5 * c), tailC = sA - F.dir * 0.95 * sgA, tailS = 1.3 * sgA, tailA = 0.42 * cfg.tail;
     var hotF = function (s) { return cfg.hotA * IA * gF(s - sA, sgA * cfg.hot); };
     var warmF = function (s) { var u = IA * cfg.warmA * gF(s - sA, sgA) + IA * tailA * gF(s - tailC, tailS); marks.forEach(function (m) { u += m[1] * gF(s - m[0], 10); }); return u * cool * (1 - 0.4 * c) + (ok ? 0.3 * k : 0); };
-    var oF = Q.FO(ry), LF = lens(oF);
+    var oF = Q.FO(ry, Q.hwF), LF = lens(oF);
     drawLineF(ctx, trace(Q.cxF, Q.yF, 1, oF, LF.L2, oF, LF.L2), {
       w: function (s) { return 1.2 + 0.45 * hotF(s) / (cfg.hotA / 0.5) + 0.2 * k; }, a: Math.max(0.62, lerp((0.74 + 0.24 * f) * (1 - 0.15 * e), 1, k)), col: mix(act2(f), E.C, e),
       lights: [{ l: warmF, c: mix(PEACH, E.C, e) }, { l: hotF, c: mix(mix(GOLD, HOT, 0.2 * eA), E.C, e) }] });
@@ -348,6 +378,18 @@
     if (c > 0.02) glowF(ctx, Q.cxB, Q.yB + 18, 100, 22, mix(COPPER, GOLD, 0.35), 0.07 * c * cool);
     var lk = E.keys.length ? E.keys[E.keys.length - 1] : null;
     sparksF(ctx, F, [[Q.cxF + sA, Q.yF - 1, (0.15 + 0.6 * gE) * (E.fvis ? 0.5 : 1)], [Q.cxB + sB, Q.yB - 1, 0.4 * IB], [Q.cxB, Q.yB - 1, 1.6 * c * (ok ? 1 - k : 1)]].concat(lk ? [[Q.cxF + E.markS(lk.n - 1), Q.yF - 1, 5 * pulse(t - lk.t, 60, 300)]] : []), E);
+  }
+  /* Шифр 09.11.2026: полуширина пустого поля — подсказка («слово») и по 16 px до концов линии, не меньше 30 */
+  var phKey = "", phHalf = 30;
+  function compactHalf() {
+    var ph = field.getAttribute("placeholder") || "", cs = getComputedStyle(field), k = ph + "|" + cs.font + "|" + cs.letterSpacing + "|" + cs.textTransform;
+    if (k !== phKey) {
+      phKey = k; var c = compactHalf.c || (compactHalf.c = doc.createElement("canvas").getContext("2d")); c.font = cs.font;
+      var txt = cs.textTransform === "lowercase" ? ph.toLowerCase() : cs.textTransform === "uppercase" ? ph.toUpperCase() : ph;
+      var ls = parseFloat(cs.letterSpacing) || 0, wpx = c.measureText(txt).width + ls * Array.from(txt).length;
+      phHalf = Math.max(30, Math.ceil(wpx / 2) + 16);
+    }
+    return phHalf;
   }
   /* the canvas covers the field and the button with room for the line's ends; positions are layout px in the box */
   var MX = 72, MY = 56;
@@ -369,14 +411,28 @@
     if (window.__sbInvBlank) return;                                   // test hook: the backing only (contrast capture)
     ctx.setTransform(dpr, 0, 0, dpr, -x0 * dpr, -y0 * dpr); ctx.globalCompositeOperation = "lighter";
     /* the approved geometry, measured on the real field (300 × 46) and button (≈186 × 44) */
-    var FO = function (ry) { return { hw: fw / 2 - 1, rx: 11, ry: ry, D: fh }; };
+    var FO = function (ry, hw) { return { hw: hw || fw / 2 - 1, rx: 11, ry: ry, D: fh }; };
     var FL2 = lens(FO(7)).L2, hwb = bw / 2 - 1;
     var bO = function (c) { var m = eio(cl(c * 1.35)); return { hw: lerp(hwb, hwb - 2, m), rx: lerp(11, 18, m), ry: lerp(10, 18, m), D: 36 }; };
     var f = st.focus.val(t), pr = st.press.val(t), nS = st.nS.val(t), e = errE(t - st.tErr), sT = st.tSucc > -1e8 ? t - st.tSucc : -1;
     if (d === "shifr") {                                                 // «Живой огонь», variation 1 «Дальше» (inversiya/ogon-var-src.html)
-      var gp = 19, room = fw - 46, cap = Math.floor(room / gp) + 1, first = -(cap - 1) * gp / 2;   // the shell's fixed mark slots (marks never move)
-      fireRender(ctx, { t: t, P: FS, f: f, pr: pr, nS: nS, e: e, sT: sT, fvis: fvis, keys: keys, caretS: first + (nS - 1) * gp + Math.max(6, gp * 0.6), markS: function (i) { return first + i * gp; }, A: OG.A, Aa: OG.Aa, C: OG.C },
-        { cxF: fx + fw / 2, yF: fy + fh - 1, FO: FO, cxB: bx + bw / 2, yB: by + (bh - 36) / 2, bO: bO });
+      /* Шифр 09.11.2026, решение основателя: «поле при вводе должно увеличиваться однозначно». Линия поля растёт от
+         середины к краям с каждым знаком: пустое поле — компактное (по подсказке), каждый знак прибавляет по полклетки
+         с каждой стороны (180 мс), до полной ширины поля. Знаки — в неподвижных клетках оболочки от середины
+         (shell.js signs: первый в середине, дальше поочерёдно справа и слева, шаг 19) — линия их обнимает. */
+      var gp = 19, room = fw - 46, half = Math.floor(room / 2 / gp), capM = 2 * half + 1;
+      var slotS = function (i) { i = Math.min(i, capM - 1); return i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2) * gp; };
+      var hwFull = fw / 2 - 1, hw0 = compactHalf(), hwF = Math.min(hwFull, hw0 + nS * gp / 2);
+      var lq = Math.min(n, capM) - 1, caretS = n ? slotS(lq) + (lq % 2 || lq === 0 ? 1 : -1) * Math.max(6, gp * 0.6) : 0;
+      /* пока стирают (и 0,65 с после): огонь держится у своего края и сжимается вместе с линией, без перескока */
+      if (t - eraseAt < 650) { var hold0 = st.caretHold || 0; caretS = (hold0 < 0 ? -1 : 1) * Math.min(Math.abs(hold0), Math.max(0, hwF - 6)); } else st.caretHold = caretS;
+      st.cs = caretS;
+      st.hwF = hwF;
+      var kb = false; try { kb = doc.activeElement === field && field.matches(":focus-visible"); } catch (x) { kb = false; }
+      st.kbGlow = kb ? hwF : 0;
+      if (kb && !window.__sbInvBlank) { ctx.globalCompositeOperation = "lighter"; glowF(ctx, fx + fw / 2, fy + fh + 4, hwF, 6, [226, 232, 246], 0.32); }   /* свечение фокуса с клавиатуры — ровно под линией */
+      fireRender(ctx, { t: t, P: FS, f: f, pr: pr, nS: nS, e: e, sT: sT, fvis: fvis, keys: keys, caretS: caretS, markS: slotS, U: CFG.U * (hwF / hwFull), A: OG.A, Aa: OG.Aa, C: OG.C },
+        { cxF: fx + fw / 2, yF: fy + fh - 1, FO: FO, hwF: hwF, cxB: bx + bw / 2, yB: by + (bh - 36) / 2, bO: bO });
       gate.classList.toggle("vg-inv-fv", fvis); return;
     }
     /* VARIANTS[4] «Перетекание» */
@@ -396,9 +452,122 @@
   if (window.visualViewport) window.visualViewport.addEventListener("resize", function () { act(now(), 300); });
   if (RMQ.addEventListener) RMQ.addEventListener("change", function () { act(now(), 50); });
   /* the gate may be rebuilt (language, door): look again now and then, cheaply */
-  setInterval(function () { if (!gate || !gate.isConnected || !cv || !cv.isConnected) act(now(), 50); else if (on()) { var k = [field.offsetLeft, field.offsetTop, field.offsetWidth, btn.offsetTop, btn.offsetWidth].join("|"); if (k !== (frame.k || "")) { frame.k = k; act(now(), 50); } } }, 400);
+  /* ворота встали (или встали заново) — один раз будим «Инверсию»; без ворот ничего не крутится (sun-check: циклы на столе) */
+  new MutationObserver(function () { var g0 = doc.getElementById("sbVaultGate"); if (g0 && g0 !== gate) act(now(), 50); }).observe(doc.body || root, { childList: true });
+  doc.addEventListener("visibilitychange", function () { if (!doc.hidden && gate && gate.isConnected) act(now(), 50); });
+  setInterval(function () { if (!gate || !gate.isConnected || doc.hidden) return; if (!cv || !cv.isConnected) act(now(), 50); else if (on()) { var k = [field.offsetLeft, field.offsetTop, field.offsetWidth, btn.offsetTop, btn.offsetWidth].join("|"); if (k !== (frame.k || "")) { frame.k = k; act(now(), 50); } } }, 400);
   act(now(), 50);
-  window.__sbInv = { state: function () { return { n: n, f: st.focus.val(now()), pr: st.press.val(now()), e: errE(now() - st.tErr), ok: st.tSucc > -1e8, door: door(), on: on() }; } };
+  window.__sbInv = { state: function () { return { n: n, f: st.focus.val(now()), pr: st.press.val(now()), e: errE(now() - st.tErr), ok: st.tSucc > -1e8, door: door(), on: on(), half: st.hwF || 0, kbGlow: st.kbGlow || 0, cs: st.cs || 0, full: field ? field.offsetWidth / 2 - 1 : 0 }; } };
+})();
+/* ── Шифр 09.11.2026, решения основателя после демо 3: ПОЛЯ И КНОПКИ ОКОН ВОРОТ ──────────────────────────────────────
+   Приём ворот Шифра (в систему не переносится). Поля слова в окнах («новое слово», «ещё раз», «слово» и «то же слово ещё
+   раз» в «сказать новое слово») — как главное поле: светящаяся нижняя линия растёт от середины с каждым знаком (пустое
+   поле — по подсказке и по 16 px до концов, каждый знак — по полклетки с каждой стороны, до полной ширины), знаки —
+   печати 4×4 в неподвижных клетках от середины (первый в середину, дальше поочерёдно справа и слева, шаг 19), свой
+   курсор за последним знаком. Знак зависит только от номера и времени: о слове поле знает одно число. Поле
+   «код восстановления» — обычные читаемые знаки (только CSS). Кнопки окон — нажатие зажигает короткую вспышку дуги
+   (класс vg-arc-hit на 0,2 с, дуга гаснет за 0,32 с); полное смыкание — только у главной «открыть». Стережёт
+   tools/shifr-door-check.mjs (раздел 8). «Уменьшить движение» — знаки неподвижны, курсор не мигает. */
+(function () {
+  "use strict";
+  var doc = document, root = doc.documentElement;
+  var RMQ = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
+  var GP = 19;
+  function shifr() { return root.getAttribute("data-sb-door") === "shifr"; }
+  function still() { return !!(RMQ.matches || root.getAttribute("data-motion") === "reduced" || doc.querySelector("#sbVaultScene > .ds.rm")); }
+  function hash(i) { var h = (i + 1) * 2654435761 >>> 0; h ^= h >>> 15; h = Math.imul(h, 2246822519) >>> 0; h ^= h >>> 13; return h >>> 0; }
+  function rgba(c, a) { return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + Math.max(0, Math.min(1, a)).toFixed(3) + ")"; }
+  var measure = null;
+  function wordField(inp) {
+    if (inp.__wf) { inp.__wf.sync(); return; }
+    var host = inp.parentNode;
+    if (getComputedStyle(host).position === "static") host.style.position = "relative";
+    var cv = doc.createElement("canvas");
+    cv.className = "vg-wf-signs"; cv.setAttribute("aria-hidden", "true"); cv.setAttribute("data-for", inp.id || "");
+    host.insertBefore(cv, inp.nextSibling);
+    inp.classList.add("vg-wf");
+    var g = cv.getContext("2d"), n = 0, raf = 0, tmr = 0, t0 = performance.now(), phKey = "", phHalf = 30;
+    function count() { return Array.from(inp.value || "").length; }
+    function compactHalf() {
+      var ph = inp.getAttribute("placeholder") || "", cs = getComputedStyle(inp), k = ph + "|" + cs.font + "|" + cs.letterSpacing;
+      if (k !== phKey) {
+        phKey = k; var c = measure || (measure = doc.createElement("canvas").getContext("2d")); c.font = cs.font;
+        var txt = ph.toLowerCase(), ls = parseFloat(cs.letterSpacing) || 0;
+        phHalf = Math.max(30, Math.ceil((c.measureText(txt).width + ls * Array.from(txt).length) / 2) + 16);
+      }
+      return phHalf;
+    }
+    function line() {
+      var full = inp.offsetWidth / 2 - 1; if (full <= 0) return;
+      var hw = Math.min(full, compactHalf() + n * GP / 2);
+      inp.style.setProperty("--wl", (2 * hw).toFixed(1) + "px");
+    }
+    function draw(now) {
+      var r = inp.getBoundingClientRect(), pr = host.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      if (!r.width) return;
+      cv.style.left = (r.left - pr.left) + "px"; cv.style.top = (r.top - pr.top) + "px"; cv.style.width = r.width + "px"; cv.style.height = r.height + "px";
+      var Wd = Math.round(r.width * dpr), Hd = Math.round(r.height * dpr);
+      if (cv.width !== Wd || cv.height !== Hd) { cv.width = Wd; cv.height = Hd; }
+      var w = r.width, h = r.height, t = still() ? 0 : (now - t0) / 1000, focused = doc.activeElement === inp;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+      if (!n && !focused) return;
+      var room = Math.max(40, w - 46), half = Math.floor(room / 2 / GP), cap = 2 * half + 1, shown = Math.min(n, cap), x0 = w / 2, cy = h / 2;
+      var slot = function (i) { return i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2) * GP; };
+      var z = 13, cell = z / 4;
+      for (var j = 0; j < shown; j++) {
+        var x = x0 + slot(j), s0 = x - z / 2, y0 = cy - z / 2;
+        var per = 7 + (hash(j * 7 + 3) % 400) / 100, ph = (hash(j * 13 + 5) % 1000) / 1000 * per;
+        var ep = still() ? 0 : Math.floor((t + ph) / per), mix = still() ? 1 : Math.max(0, Math.min(1, ((t + ph) - ep * per) / 1.8));
+        var wave = still() ? 0.5 : 0.5 + 0.5 * Math.sin(t * 0.9 - j * 0.55);
+        var hue = (200 + j * 23 + t * 14 + wave * 30) % 360, li = 60 + 18 * wave, sa = 62 + 16 * wave;
+        var cur = hash(j * 131 + ep * 7919) | 0x0660, prv = hash(j * 131 + (ep - 1) * 7919) | 0x0660;
+        var bits = function (bb, a) { if (a <= 0.01) return; g.fillStyle = "hsla(" + hue.toFixed(1) + "," + sa.toFixed(0) + "%," + li.toFixed(0) + "%," + a.toFixed(3) + ")"; for (var b = 0; b < 16; b++) if ((bb >>> b) & 1) g.fillRect(s0 + (b & 3) * cell, y0 + (b >> 2) * cell, cell * 0.82, cell * 0.82); };
+        if (mix < 1) bits(prv & ~cur, 0.95 * (1 - mix));
+        bits(cur & ~prv, 0.95 * mix); bits(cur & prv, 0.95);
+        var gr = g.createRadialGradient(x, cy, 0, x, cy, 6 + 3 * wave); gr.addColorStop(0, rgba([255, 205, 140], 0.06 + 0.1 * wave)); gr.addColorStop(1, rgba([255, 205, 140], 0));
+        g.fillStyle = gr; g.beginPath(); g.arc(x, cy, 6 + 3 * wave, 0, 7); g.fill();
+      }
+      if (focused && (still() || Math.floor((now - t0) / 530) % 2 === 0)) {
+        var lq = shown - 1, cx = n ? x0 + slot(lq) + (lq % 2 || lq === 0 ? 1 : -1) * Math.max(6, GP * 0.6) : x0 - 0.75;
+        g.fillStyle = "rgba(242,161,111,.95)"; g.fillRect(Math.round(cx), cy - h * 0.24, 1.5, h * 0.48);
+      }
+    }
+    function loop(now) {
+      raf = 0; draw(now);
+      if (!inp.isConnected || still()) return;
+      var focused = doc.activeElement === inp;
+      if (n) raf = requestAnimationFrame(loop);
+      else if (focused) { clearTimeout(tmr); tmr = setTimeout(function () { tmr = 0; if (!raf) raf = requestAnimationFrame(loop); }, 531 - ((now - t0) % 530)); }
+    }
+    function kick() { if (!raf) raf = requestAnimationFrame(loop); if (still()) draw(performance.now()); }
+    function sync() { n = count(); line(); kick(); }
+    ["input", "keyup", "compositionend", "change"].forEach(function (ty) { inp.addEventListener(ty, sync); });
+    inp.addEventListener("focus", function () { t0 = performance.now(); sync(); });
+    inp.addEventListener("blur", sync);
+    window.addEventListener("resize", function () { if (inp.isConnected) sync(); });
+    inp.__wf = { sync: sync };
+    sync();
+  }
+  function onSheet(sh) {
+    if (!shifr()) return;
+    [].forEach.call(sh.querySelectorAll('.vg-win-body input[type="password"]'), wordField);
+  }
+  function watchGate(gate) {
+    if (gate.__wfMo) return;
+    gate.__wfMo = new MutationObserver(function () { var sh = gate.querySelector(":scope > .vg-sheet"); if (sh) onSheet(sh); });
+    gate.__wfMo.observe(gate, { childList: true });
+  }
+  function find() { var gt = doc.getElementById("sbVaultGate"); if (gt) watchGate(gt); }
+  new MutationObserver(find).observe(doc.body || root, { childList: true });
+  find();
+  /* кнопки окон: короткая вспышка дуги */
+  var ARC = "#sbVaultGate .vg-sheet-acts button, #sbVaultGate .vg-win #sbVaultRecover";
+  function flash(b) {
+    b.classList.remove("vg-arc-hit"); void b.offsetWidth; b.classList.add("vg-arc-hit");
+    clearTimeout(b.__arc); b.__arc = setTimeout(function () { b.classList.remove("vg-arc-hit"); }, 200);
+  }
+  doc.addEventListener("pointerdown", function (ev) { if (ev.button > 0 || !shifr()) return; var b = ev.target && ev.target.closest ? ev.target.closest(ARC) : null; if (b) flash(b); }, true);
+  doc.addEventListener("keydown", function (ev) { if ((ev.key !== "Enter" && ev.key !== " ") || ev.repeat || !shifr()) return; var b = ev.target && ev.target.closest ? ev.target.closest(ARC) : null; if (b) flash(b); }, true);
 })();
 /* ── D-606: вход ── */
 /* sys.baby — ВХОД. Три варианта того, как после знака появляется зал «Шифр». Источник света — ЗА знаком
@@ -423,7 +592,7 @@ var VARS = [
   { n: "Лучи", d: "Из-за знака в пыльный воздух веером расходятся лучи — сквозь печати колеса, с тенями от них, — и ложатся на пол, бегут по его сетке.", dur: 3900 },
   { n: "Выдержка", d: "Медленный рассвет, как на плёнке: свет из-за знака поднимает экспозицию зала волной, печати загораются одна за другой, как окна города в сумерках, отражения в полу — последними.", dur: 4000 },
   // the hybrids (founder: «совместите первый с третьим и добавьте свет и лучи из второго»)
-  { n: "Затмение и рассвет", d: "Сначала затмение: искра в угловой выемке, ободок обегает край, корона — из короны вырываются лучи в пыльный воздух, сквозь печати колеса, а волна рассвета зажигает печати решётки одну за другой; пол и отражения — последними.", dur: 4220 },
+  { n: "Затмение и рассвет", d: "Сначала затмение: искра в угловой выемке, ободок обегает край, корона — из короны вырываются лучи в пыльный воздух, сквозь печати колеса, а волна рассвета зажигает печати решётки одну за другой; пол и отражения — последними.", dur: 4700 },
   { n: "Рассвет в лучах", d: "Сначала рассвет: экспозиция зала поднимается волной, печати загораются, как окна в сумерках, в нём медленно растут лучи и ложатся на пол; в конце свет стягивается к знаку — искра в выемке и ободок, как последний контакт затмения.", dur: 4370 },
   { n: "Восход", d: "Лучи и рассвет — с первого мгновения, вокруг знака мягкий ровный ореол: печати решётки, на которые падает луч, загораются первыми, те, что в тени печатей колеса, — позже; свет ложится на пол.", dur: 4170 }
 ];
@@ -557,6 +726,7 @@ function prepCommon(g) {
   MS = Math.ceil(g.s * 7.5); MW = Math.round(MS * DPR);
   MLx = Math.round(g.x - MS / 2); MLy = Math.round(g.y - MS / 2);   // whole CSS pixels: a half-pixel layer is snapped by the compositor
   MOX = g.x - g.s / 2 - MLx; MOY = g.y - g.s / 2 - MLy;
+  mk.style.transition = "";
   mk.width = mk.height = MW; mk.style.width = mk.style.height = (MW / DPR) + "px"; mk.style.left = MLx + "px"; mk.style.top = MLy + "px";
   // the clean mark, rendered once into its own bitmap (the one layer of the hand-over)
   // the clean mark, rendered once into its own bitmap, with its own anti-aliased edge (the sign under it is cut out of
@@ -771,7 +941,7 @@ function P4(e, g) {          // А «Затмение и рассвет»: coron
   return { E: 1.8 * sm(1150, 3000, e) + 0.7 * sm(2200, 3400, e), r0: g.R * 2.8, front: FRA(e - 450, g), fw: 160, near: 4 * sm(800, 1700, e),
     G: 0.15 * sm(650, 1500, e) * (1 - sm(2800, 3450, e)), rg: s * 2.2, col: [255, 182, 130],
     EF: 5.5 * sm(2500, 3400, e), ff: 1.75 * sm(2500, 3500, e), GP: 0.08 * sm(1900, 2700, e) * (1 - sm(3000, 3500, e)),
-    settle: Math.pow(sm(2900, 3550, e), 1.3), bl: sm(2200, 3500, e), hand: sm(TH[4], TH[4] + 650, e), ui: sm(3300, 4000, e),
+    settle: Math.pow(sm(2900, 3550, e), 1.3), bl: sm(2200, 3500, e), hand: sm(TH[4], TH[4] + 1100, e), ui: sm(3300, 4000, e),   /* решение основателя 09.11: чистый знак перетекает в знак сцены на месте за 1,1 с (было 0,65) */
     rA: sm(1000, 1700, e) * (1 - sm(2900, 3500, e)), rFr: s * 0.8 + (g.Dmax + 60) * Math.pow(sm(1000, 2600, e), 1.2) };
 }
 function P5(e, g) {          // Б «Рассвет в лучах»: the dawn leads; the rays grow slowly inside it; the corona tightens last
@@ -795,7 +965,7 @@ var WARP = [null, [[0, 0], [120, 350], [300, 700], [600, 1500], [850, 2600], [10
   [[0, 0], [120, 350], [400, 1000], [700, 2000], [900, 2900], [1100, 3900]],
   [[0, 0], [120, 350], [450, 1300], [800, 2600], [1000, 3300], [1150, 4000]],
   // short hybrids: the light condensed into 0.5 s, then the same hand-over at 0.5 s
-  [[0, 0], [100, 350], [250, 1000], [420, 2200], [600, 3550], [1100, 4200]],
+  [[0, 0], [100, 350], [250, 1000], [420, 2200], [600, 3550], [1550, 4700]],   // 09.11: the hand-over ≈ 0.95 s, not a cut
   [[0, 0], [100, 350], [280, 1500], [450, 2700], [600, 3700], [1100, 4350]],
   [[0, 0], [100, 350], [260, 1200], [430, 2300], [600, 3500], [1100, 4150]]];
 function warp(v, e) { var w = WARP[v]; if (e <= 0) return e; for (var i = 1; i < w.length; i++) if (e <= w[i][0]) return w[i - 1][1] + (e - w[i - 1][0]) / (w[i][0] - w[i - 1][0]) * (w[i][1] - w[i - 1][1]); return w[w.length - 1][1] + (e - w[w.length - 1][0]); }
@@ -831,7 +1001,18 @@ function paintField(p, g) {
 function drawSpr(c, a) { if (a <= 0.003) return; while (a > 1) { mg.globalAlpha = 1; mg.drawImage(c, 0, 0); a -= 1; } mg.globalAlpha = a; mg.drawImage(c, 0, 0); }
 function bead(x, y, rad, a, col) { if (a <= 0.003) return; var gr = mg.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, "rgba(" + col + "," + Math.min(1, a).toFixed(3) + ")"); gr.addColorStop(0.25, "rgba(" + col + "," + (0.45 * Math.min(1, a)).toFixed(3) + ")"); gr.addColorStop(1, "rgba(" + col + ",0)"); mg.globalAlpha = 1; mg.fillStyle = gr; mg.fillRect(x - rad, y - rad, rad * 2, rad * 2); }
 // the mark and the light just around it
-function paintMark(v, e, p, g) {
+/* Шифр 09.11.2026, решение основателя: «белая вспышка» знака на переходе (ободок и тесный свет за силуэтом — знак
+   читался белым залитым контуром) — либо короткая настоящая вспышка, либо без неё; выбирает основатель в демо:
+   ?vspyshka=1 (по умолчанию) — вспышка ≈160 мс (подъём 40, спад 120) в миг, когда свет выходит из-за знака;
+   ?vspyshka=0 — вспышки нет: ни ободка, ни бусин в выемках, ни тесного света; корона, лучи и рассвет — прежние. */
+var VSP = (function () { try { var m = /[?&]vspyshka=([01])\b/.exec(W.__sbEntry || W.location.search || "");   /* the page clears the address before this runs (index.html keeps it in __sbEntry) */ return m ? +m[1] : 1; } catch (e) { return 1; } })();
+var FLASH_AT = 380, FLASH_UP = 40, FLASH_DN = 120;
+function unwarp(v, ef) { if (MODE !== "short") return ef; var w = WARP[v]; for (var i = 1; i < w.length; i++) if (ef <= w[i][1]) return w[i - 1][0] + (ef - w[i - 1][1]) / (w[i][1] - w[i - 1][1]) * (w[i][0] - w[i - 1][0]); return w[w.length - 1][0] + (ef - w[w.length - 1][1]); }
+function flashAt(v, eReal) { if (!VSP) return 0; var u = eReal - unwarp(v, FLASH_AT); return u <= 0 ? 0 : sm(0, FLASH_UP, u) * (1 - sm(FLASH_UP, FLASH_UP + FLASH_DN, u)); }
+function paintMark(v, e, p, g, eReal) {
+  if (eReal === undefined) eReal = e;
+  /* the rim, the beads and the tight light behind the mark: only as the flash (their own timings are not used) */
+  var FLs = flashAt(v, eReal), FLR = function () { return 1.8 * FLs; }, FLI = function () { return 0.7 * FLs; }, beadF = function (x, y, r, a, c) { bead(x, y, r, a > 0.003 ? Math.min(1, 0.9 * FLs) * (r < s * 0.3 * DPR ? 1 : 0.35) : 0, c); };
   var s = g.s, cx = (MOX + s / 2) * DPR, cy = (MOY + s / 2) * DPR, k = s / 100 * DPR;
   mg.setTransform(1, 0, 0, 1, 0, 0); mg.globalCompositeOperation = "source-over"; mg.globalAlpha = 1; mg.clearRect(0, 0, MW, MW);
   mg.globalCompositeOperation = "lighter";
@@ -848,41 +1029,41 @@ function paintMark(v, e, p, g) {
       for (var q = 0; q <= 64; q++) { var th = q / 64 * 2 * Math.PI, d1 = Math.abs(Math.atan2(Math.sin(th - A1), Math.cos(th - A1))), d2 = Math.abs(Math.atan2(Math.sin(th - A2), Math.cos(th - A2))), sp2 = sp * sm(460, 1050, e) / Math.max(0.001, sm(380, 1050, e));
         var al = Math.max(sm(sp + 0.25, sp - 0.05, d1), sm(sp2 + 0.25, sp2 - 0.05, d2)); cg.addColorStop(q / 64, "rgba(0,0,0," + al.toFixed(3) + ")"); }
       rc.fillStyle = cg; rc.fillRect(0, 0, MW, MW); rc.globalCompositeOperation = "source-over";
-      drawSpr(rimC, 2.2 * sm(380, 560, e));
-    } else drawSpr(SPR.rim, (2.2 - 0.9 * p.settle) * sm(380, 560, e) * fade + 0.0);
+      drawSpr(rimC, FLR(2.2 * sm(380, 560, e)));
+    } else drawSpr(SPR.rim, FLR((2.2 - 0.9 * p.settle) * sm(380, 560, e) * fade + 0.0));
     // the diamond: a point of light in the top-right notch, then the bottom-left one; they give way to the rim
-    bead(n1x, n1y, s * 0.2 * DPR, 1.25 * sm(360, 450, e) * (1 - sm(800, 1300, e)), "255,248,238");
-    bead(n1x, n1y, s * 0.9 * DPR, 0.32 * sm(360, 520, e) * (1 - sm(900, 1600, e)), "255,210,165");
-    bead(n2x, n2y, s * 0.16 * DPR, 0.95 * sm(470, 560, e) * (1 - sm(860, 1350, e)), "255,248,238");
-    bead(n2x, n2y, s * 0.7 * DPR, 0.22 * sm(470, 600, e) * (1 - sm(900, 1500, e)), "255,210,165");
-    drawSpr(SPR.inner, 1.6 * sm(550, 1150, e) * off);
+    beadF(n1x, n1y, s * 0.2 * DPR, 1.25 * sm(360, 450, e) * (1 - sm(800, 1300, e)), "255,248,238");
+    beadF(n1x, n1y, s * 0.9 * DPR, 0.32 * sm(360, 520, e) * (1 - sm(900, 1600, e)), "255,210,165");
+    beadF(n2x, n2y, s * 0.16 * DPR, 0.95 * sm(470, 560, e) * (1 - sm(860, 1350, e)), "255,248,238");
+    beadF(n2x, n2y, s * 0.7 * DPR, 0.22 * sm(470, 600, e) * (1 - sm(900, 1500, e)), "255,210,165");
+    drawSpr(SPR.inner, FLI(1.6 * sm(550, 1150, e) * off));
     drawSpr(SPR.mid, 1.5 * sm(700, 1500, e) * off);
     drawSpr(SPR.outer, 1.35 * sm(850, 1900, e) * (1 - p.settle));
   } else if (v === 5) {      // the dawn's warm halo; at the end the light draws in to the mark: the notch sparks, the rim tightens
     var tg = sm(2650, 3150, e);
-    drawSpr(SPR.rim, (0.9 * sm(380, 1200, e) + 1.5 * tg) * fade);
-    drawSpr(SPR.inner, (0.6 * sm(420, 1500, e) + 0.9 * sm(2700, 3250, e)) * off);
+    drawSpr(SPR.rim, FLR((0.9 * sm(380, 1200, e) + 1.5 * tg) * fade));
+    drawSpr(SPR.inner, FLI((0.6 * sm(420, 1500, e) + 0.9 * sm(2700, 3250, e)) * off));
     drawSpr(SPR.mid, 0.55 * sm(500, 1900, e) * (1 - sm(2600, 3300, e)));
     drawSpr(SPR.outer, 0.45 * sm(700, 2300, e) * (1 - sm(2400, 3100, e)));
-    bead(n1x, n1y, s * 0.2 * DPR, 1.15 * sm(2780, 2880, e) * (1 - sm(3150, 3600, e)), "255,248,238");
-    bead(n1x, n1y, s * 0.9 * DPR, 0.3 * sm(2780, 2930, e) * (1 - sm(3200, 3700, e)), "255,210,165");
-    bead(n2x, n2y, s * 0.16 * DPR, 0.85 * sm(2860, 2960, e) * (1 - sm(3200, 3600, e)), "255,248,238");
+    beadF(n1x, n1y, s * 0.2 * DPR, 1.15 * sm(2780, 2880, e) * (1 - sm(3150, 3600, e)), "255,248,238");
+    beadF(n1x, n1y, s * 0.9 * DPR, 0.3 * sm(2780, 2930, e) * (1 - sm(3200, 3700, e)), "255,210,165");
+    beadF(n2x, n2y, s * 0.16 * DPR, 0.85 * sm(2860, 2960, e) * (1 - sm(3200, 3600, e)), "255,248,238");
   } else if (v === 6) {      // a soft, steady halo: the light is in the air, not on the edge
-    drawSpr(SPR.rim, 0.8 * sm(380, 1000, e) * fade);
-    drawSpr(SPR.inner, 0.75 * sm(400, 1100, e) * off);
+    drawSpr(SPR.rim, FLR(0.8 * sm(380, 1000, e) * fade));
+    drawSpr(SPR.inner, FLI(0.75 * sm(400, 1100, e) * off));
     drawSpr(SPR.mid, 0.6 * sm(450, 1300, e) * (1 - p.settle));
     drawSpr(SPR.outer, 0.3 * sm(500, 1600, e) * (1 - p.settle));
-    bead(n1x, n1y, s * 0.9 * DPR, 0.22 * sm(380, 900, e) * (1 - p.settle), "255,226,190");
-    bead(n2x, n2y, s * 0.9 * DPR, 0.22 * sm(420, 950, e) * (1 - p.settle), "255,226,190");
+    beadF(n1x, n1y, s * 0.9 * DPR, 0.22 * sm(380, 900, e) * (1 - p.settle), "255,226,190");
+    beadF(n2x, n2y, s * 0.9 * DPR, 0.22 * sm(420, 950, e) * (1 - p.settle), "255,226,190");
   } else if (v === 2) {
-    drawSpr(SPR.rim, 1.3 * sm(380, 800, e) * fade);
-    drawSpr(SPR.inner, 0.9 * sm(420, 1000, e) * off);
+    drawSpr(SPR.rim, FLR(1.3 * sm(380, 800, e) * fade));
+    drawSpr(SPR.inner, FLI(0.9 * sm(420, 1000, e) * off));
     drawSpr(SPR.mid, 0.55 * sm(500, 1300, e) * (1 - p.settle));
-    bead(n1x, n1y, s * 0.9 * DPR, 0.3 * sm(380, 900, e) * (1 - p.settle), "255,226,190");
-    bead(n2x, n2y, s * 0.9 * DPR, 0.3 * sm(420, 950, e) * (1 - p.settle), "255,226,190");
+    beadF(n1x, n1y, s * 0.9 * DPR, 0.3 * sm(380, 900, e) * (1 - p.settle), "255,226,190");
+    beadF(n2x, n2y, s * 0.9 * DPR, 0.3 * sm(420, 950, e) * (1 - p.settle), "255,226,190");
   } else {
-    drawSpr(SPR.rim, 0.95 * sm(380, 1200, e) * fade);
-    drawSpr(SPR.inner, 0.75 * sm(420, 1500, e) * off);
+    drawSpr(SPR.rim, FLR(0.95 * sm(380, 1200, e) * fade));
+    drawSpr(SPR.inner, FLI(0.75 * sm(420, 1500, e) * off));
     drawSpr(SPR.mid, 0.6 * sm(500, 1900, e) * (1 - p.settle));
     drawSpr(SPR.outer, 0.45 * sm(700, 2300, e) * (1 - p.settle));
   }
@@ -1004,7 +1185,7 @@ function render(e) {
   paintField(p, g);
   if (V === 3 || V >= 4) paintGlyphs(ef, p, g);
   if (p.rA > 0.003) paintRays(ef, p, g, e);
-  paintMark(V, ef, p, g);
+  paintMark(V, ef, p, g, e);
   g.bl.style.opacity = p.bl >= 1 ? "" : p.bl.toFixed(3);
   setUI(p.ui);
   return e >= durOf(V, MODE);
@@ -1018,6 +1199,7 @@ function loop() {
   if (st === "hold") {
     // the clean mark on black, while the hall finishes building; it starts when frames are calm
     if (!gateReady()) {
+      earlyMark(t);
       // another door is up (the entry belongs to Шифр), or the gate never says where its mark is: never stay dark
       var sc0 = scene(); if (!waitAt) waitAt = t;
       var noGate = !D.getElementById("sbVaultGate") && D.readyState === "complete" && t - waitAt > 1200;
@@ -1036,6 +1218,46 @@ function loop() {
   if (endNow) { finish(); return; }
   raf = requestAnimationFrame(loop);
 }
+/* ── Решение основателя 09.11.2026 (после демо 4): ЗНАК СРАЗУ НА ЧЁРНОМ ──────────────────────────────────────────────────
+   Пока зал Шифра строится (до его «готова» — у планшета ~1–3 с), вход стоял пустым чёрным. Теперь чистый знак стоит на
+   чёрном с первого кадра и больше не двигается: место считается по той же формуле, что у сцены (shifr.js geom), от
+   высоты первого кадра, и ворота ставят сцену под него (shell.js placeCluster, window.__sbMarkAnchor). Дальше вход
+   D-606 как был: зал готов — корона, лучи, рассвет разгораются вокруг знака; знак перетекает в знак сцены на месте. У другой
+   двери, выбранной в «Настройках», знака Шифра нет. Стережёт tools/entry-check.mjs (раздел 0). */
+var EARLY = null;
+function guessMark() {
+  var vw = W.innerWidth || 1, vh = W.innerHeight || 1, s = (vw < 520 ? 9 : 10) * 0.95 / 0.7 * (252 / 62), by;
+  if (Math.min(vw, vh) >= 600) {
+    var y = vh > vw * 1.05 ? Math.round(vh * 0.65 - 16 - 199) : Math.min(Math.round(vh * 0.6), Math.round(vh - 241)), at = y - 56.19;
+    var s1 = Math.min(vw * 0.4, 208, (at - 52) / 1.52); if (s1 < 76) s1 = 0;
+    by = s1 ? at - 34 - 0.76 * s1 : at - 40;
+  } else {
+    var nh = vw > vh ? 207 : 261, nb = vh - 8, sw = Math.min(vw * 0.4, 208, (nb - 18 - nh - 52) / 1.62); if (sw < 76) sw = 0;
+    var R0 = 0.76 * sw; by = Math.max(18, (nb - (sw ? 2 * R0 + 34 : 0) - nh) * 0.44) + R0;
+  }
+  return { x: vw / 2, y: by, s: s };
+}
+function earlyMark(t) {
+  if (G || holdAt) return;
+  var sc = scene(), door0 = sc && sc.getAttribute("data-door");
+  var other = door0 ? door0 !== "shifr" : (function () { try { var d = W.localStorage && localStorage.getItem("sysbaby.door"); return d === "sobor" || d === "porog"; } catch (e) { return false; } })();
+  if (other) { if (EARLY) { mg.setTransform(1, 0, 0, 1, 0, 0); mg.clearRect(0, 0, mk.width, mk.height); EARLY = null; W.__sbMarkAnchor = null; } return; }
+  /* 09.11 (видео демо 5, второе): знак после первого кадра не двигается вовсе — ни переходом, ни скачком. Он — опорная
+     точка: место считается один раз, от высоты первого кадра, и отдаётся воротам (window.__sbMarkAnchor); ворота ставят
+     сцену так, чтобы её знак встал ровно под ним (shell.js placeCluster), и полосы браузера (перевод, адресная строка)
+     его не двигают. Новое место — только если сменилась ширина (поворот). */
+  if (EARLY && EARLY.vw === (W.innerWidth || 1)) return;
+  var g = guessMark();
+  var dpr = Math.min(2, W.devicePixelRatio || 1), ms = Math.ceil(g.s * 7.5), mw = Math.round(ms * dpr), lx = Math.round(g.x - ms / 2), ly = Math.round(g.y - ms / 2);
+  mk.style.transition = "";
+  if (mk.width !== mw) { mk.width = mk.height = mw; mk.style.width = mk.style.height = (mw / dpr) + "px"; }
+  mk.style.left = lx + "px"; mk.style.top = ly + "px";
+  mg.setTransform(1, 0, 0, 1, 0, 0); mg.globalAlpha = 1; mg.globalCompositeOperation = "source-over"; mg.clearRect(0, 0, mw, mw);
+  mg.setTransform(dpr, 0, 0, dpr, 0, 0); drawClean(mg, g.x - g.s / 2 - lx, g.y - g.s / 2 - ly, g.s); mg.setTransform(1, 0, 0, 1, 0, 0);
+  EARLY = { exact: false, at: t, x: g.x - g.s / 2, y: g.y - g.s / 2, w: g.s, vw: W.innerWidth || 1 };
+  W.__sbMarkAnchor = { x: g.x, y: g.y, s: g.s, vw: W.innerWidth || 1, vh: W.innerHeight || 1 };
+  try { W.dispatchEvent(new Event("sb-gate-inv")); } catch (e) { /* старый браузер */ }
+}
 function drawHold() {
   setUI(0); G.bl.style.opacity = "0";
   dg.globalCompositeOperation = "copy"; dg.globalAlpha = 1; dg.fillStyle = "#000"; dg.fillRect(0, 0, G.vw, G.vh);
@@ -1050,7 +1272,7 @@ function play(v) {
   var sc = scene();
   if (st === "done" && !D.getElementById("sbVaultGate")) { location.reload(); return; }
   /* D-606: the entry never changes the door: at another door the dark simply fades into it */
-  st = "hold"; holdAt = 0; G = null; frames = []; lastF = 0; waitAt = 0;
+  st = "hold"; holdAt = 0; G = null; frames = []; lastF = 0; waitAt = 0; EARLY = null;
   H.classList.add("vh-playing"); ov.classList.remove("vh-off", "vh-live", "vh-mark-on");
   if (MARK() && gateReady()) { prepare(V); holdAt = now(); drawHold(); }
   else { dg.globalCompositeOperation = "copy"; dg.fillStyle = "#000"; dg.fillRect(0, 0, dk.width, dk.height); mg.clearRect(0, 0, mk.width, mk.height); setUI(0); }
@@ -1135,7 +1357,9 @@ W.__vhod = {
     }
     return out;
   },
+  flash: { get on() { return VSP; }, span: function (m) { var keep = MODE; if (m) MODE = m; var a = -1, b = -1; for (var t = 0; t <= 4500; t += 2) if (flashAt(V, t) > 0.02) { if (a < 0) a = t; b = t; } MODE = keep; return a < 0 ? 0 : b - a; } },
   markRect: function () { return G ? { x: MLx + MOX, y: MLy + MOY, w: G.s, h: G.s } : null; },
+  early: function () { return EARLY ? { at: EARLY.at, exact: EARLY.exact, x: EARLY.x, y: EARLY.y, w: EARLY.w } : null; },
   gateRect: function () { var sc = scene(), r = sc.getBoundingClientRect(), m = MARK(); return m ? { x: r.left + m.x - m.side / 2, y: r.top + m.y - m.side / 2, w: m.side, h: m.side } : null; }
 };
 markTabs();

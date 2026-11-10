@@ -25,6 +25,11 @@
     { id: "appearance", labelKey: "set.tab.appearance", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="7.8"/><path d="M12 4.2v15.6"/></svg>' },
     { id: "sound", labelKey: "set.tab.sound", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 9.5h3l4-3.2v11.4l-4-3.2h-3Z"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6"/></svg>' },
     { id: "desktop", labelKey: "set.tab.desktop", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.4" y="5" width="17.2" height="11.4" rx="2"/><path d="M8 19.6h8"/></svg>' },
+    /* «Ключи и замок» (D-637): всё, что было под ключницей в окне «Аккаунт»
+       и не относится к самим ключам, — имя в системе, замок целиком с
+       самозапиранием, копии, уход и стирание. Узлы и разводку строит ядро
+       (sbAccountDetails), раздел — только место. */
+    { id: "account", labelKey: "set.tab.account", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="12" r="3.6"/><path d="M12.1 12H20M17 12v3M20 12v2.4"/></svg>' },
     { id: "privacy", labelKey: "set.tab.privacy", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.8 5.4 6.4v5c0 4.2 2.8 7.6 6.6 8.8 3.8-1.2 6.6-4.6 6.6-8.8v-5L12 3.8Z"/></svg>' },
     { id: "advanced", labelKey: "set.tab.advanced", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 7.5h14M5 12h14M5 16.5h14"/><circle cx="9" cy="7.5" r="1.6"/><circle cx="15" cy="16.5" r="1.6"/></svg>' },
     { id: "about", labelKey: "set.tab.about", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="7.8"/><path d="M12 11v5.2M12 8.1v.1"/></svg>' }
@@ -230,17 +235,10 @@
          дуга, обошедшая круг. Человек, однажды узнавший этот знак на шве,
          узнаёт его и здесь — и не читает второго пояснения. И оно светится
          цветом ТЕКУЩЕГО часа: среди пяти ровных чипов один живой. */
+      /* Плашки тем — нейтральные, как сегменты «Синтеза» (D-634, основатель
+         09.11.2026: разноцветные «выглядят несерьёзно»): свет своего часа
+         живая тема на плашке больше не несёт, знак суточной остаётся. */
       var live = "";
-      var read = m.session ? window.sbTherapyForTime : window.sbWallpaperForTime;
-      if (m.drift && typeof read === "function") {
-        try {
-          var w = read();
-          /* Надпись по свету часа — цветом поля (D-324), чип — веществом этой
-             комнаты: углями или глиной (sbMoodChipLight, D-325). */
-          var pv = window.sbMoodChipLight ? window.sbMoodChipLight(w) : { a1: w.c1, a2: w.c2 };
-          live = ' style="background:linear-gradient(135deg,' + esc(pv.a1) + ',' + esc(pv.a2) + ');border-color:transparent;color:var(--on-accent)"';
-        } catch (err) { console.error("[settings] mood preview failed", err); }
-      }
       var mk = m.session ? " is-session" : (m.drift ? " is-drift" : "");
       return '<button type="button" class="st-chip' + (m.id === mood ? " active" : "") + mk + '" data-mood="' + esc(m.id) + '"' + live + ">" + esc(moodName) + "</button>";
     }).join("");
@@ -629,6 +627,7 @@
   var RENDERERS = {
     general: generalMarkup,
     appearance: appearanceMarkup,
+    account: function () { return '<h2 class="st-title">' + esc(t("set.tab.account")) + '</h2><div class="st-account" id="stAccountHost"></div>'; },
     sound: soundMarkup,
     desktop: desktopMarkup,
     privacy: privacyMarkup,
@@ -681,6 +680,8 @@
         '<section class="st-pane">' + RENDERERS[section]() + "</section>" +
       "</div>";
 
+    groupRows(host);
+    if (section === "account" && typeof window.sbAccountDetails === "function") window.sbAccountDetails(host.querySelector("#stAccountHost"));
     if (_sbKeep) _sbKeep();
 
     nameRowControls(host);
@@ -690,6 +691,20 @@
     if (window.sbPaintAllRanges) window.sbPaintAllRanges(host);
     if (section === "privacy") measureStorage(win, "#stStorage");
     if (section === "about") measureStorage(win, "#stAboutStorage");
+  }
+
+  /* Строки раздела — одной карточкой (D-634): соседние .st-row собираются
+     в .st-group, между ними — волосок. */
+  function groupRows(host) {
+    var pane = host.querySelector(".st-pane");
+    if (!pane) return;
+    var kids = Array.prototype.slice.call(pane.children), group = null;
+    kids.forEach(function (el) {
+      if (el.classList.contains("st-row")) {
+        if (!group) { group = document.createElement("div"); group.className = "st-group"; pane.insertBefore(group, el); }
+        group.appendChild(el);
+      } else group = null;
+    });
   }
 
   /* --------------------------------------------------------------- wiring */
@@ -731,6 +746,7 @@
   var SECTION_KINDS = {
     general: { lang: 1 },
     appearance: { mood: 1, brightness: 1, toggle: 1, side: 1, fullscreen: 1 },
+    account: {},
     sound: { toggle: 1, volume: 1 },
     desktop: { toggle: 1 },
     privacy: { toggle: 1 },
@@ -1372,7 +1388,9 @@
       /* МЕСТО ДЛЯ ЭСТАФЕТЫ (D-290): открытый раздел. */
       where: function () {
         var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("settings") : null;
-        return win && win._settingsSection && win._settingsSection !== "general" ? { section: win._settingsSection } : null;
+        /* «Ключи и замок» (D-637) эстафетой не переносится: поля слов и
+           ухода не встают сами при следующем входе. */
+        return win && win._settingsSection && win._settingsSection !== "general" && win._settingsSection !== "account" ? { section: win._settingsSection } : null;
       },
       resume: function (win, place) {
         if (!win || !place || !RENDERERS[place.section]) return false;
@@ -1400,7 +1418,7 @@
       label: "Pulse",
       color: "linear-gradient(160deg,#a6aab3 0%,#70737d 48%,#3a3c44 100%)",
       icon: ICON,
-      size: { w: 620, h: 520 },
+      size: { w: 786, h: 572 },
       deskPos: { x: 240, y: 40 },
       /* Окно перерисовывается при смене языка. Единственное поле ввода —
          имя пользователя — читается из хранилища, так что перерисовка

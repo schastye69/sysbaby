@@ -8,23 +8,32 @@
   color: var(--ink);
 }
 
+/* ── ОКНО «СИНТЕЗА» · решение D-634 (основатель 09.11.2026) ─────────────────
+   Прозрачный сайдбар 208 px, у выбранного раздела — оранжевая полоска;
+   строки раздела — одной карточкой с разделителями; переключатели —
+   сегментами; плашки тем — нейтральные, как сегменты (без разноцветной
+   заливки). Охраняется tools/okna-sintez-check.mjs. */
 .st-side {
-  width: 168px;
-  flex: 0 0 168px;
+  width: 208px;
+  flex: 0 0 208px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 10px 8px;
-  border-right: 1px solid var(--hairline, rgba(var(--film-rgb), .09));
-  background: rgba(var(--film-rgb), .02);
+  gap: 0;
+  padding: 12px;
+  border-right: 0;
+  box-shadow: inset -1px 0 0 var(--line);
+  background: transparent;
   overflow: auto;
 }
 
 .st-side-item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 9px;
+  gap: 12px;
+  min-height: 32px;
+  padding: 0 12px;
+  white-space: nowrap;
   border-radius: var(--r-ctrl);
   border: 1px solid transparent;
   background: transparent;
@@ -47,12 +56,19 @@
    (D-273): на телефоне полоса разделов прокручивается и не переносит
    подписи, и жирная подпись шире обычной — полоса вздрагивала на 6 px при
    каждом касании (no-teleport-check). Один вид на всех ширинах. */
-.st-side-item.active { background: rgba(var(--film-rgb), .1); border-color: rgba(var(--film-rgb), .12); color: var(--ink); }
-.st-side-icon { display: grid; place-items: center; }
-.st-side-icon svg { width: 15px; height: 15px; }
+.st-side-item.active { background: var(--side-on); border-color: transparent; color: var(--ink); }
+.st-side-item.active::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; border-radius: var(--r-pill); background: var(--accent); }
+.st-side-icon { display: grid; place-items: center; color: var(--ink-3); }
+.st-side-item.active .st-side-icon { color: var(--accent); }
+.st-side-icon svg { width: 16px; height: 16px; }
 
-.st-pane { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 14px 16px 20px; }
-.st-title { margin: 0 0 12px; font-size: var(--f-lead); font-weight: var(--w-strong); }
+.st-pane { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 24px 40px 40px; }
+.st-title { margin: 0 0 20px; font-size: var(--f-figure); line-height: var(--lh-ui); font-weight: var(--w-strong); letter-spacing: var(--track-tight); }
+/* Строки раздела — одной карточкой: render() собирает соседние .st-row в
+   .st-group; между строками — волосок, а не зазор. */
+.st-group { border-radius: var(--r-card); background: rgba(var(--film-rgb), .03); box-shadow: inset 0 0 0 1px var(--line); margin: 0 0 24px; }
+.st-group > .st-row { margin: 0; border: 0; border-radius: 0; background: transparent; min-height: 48px; padding: 10px 16px; }
+.st-group > .st-row + .st-row { box-shadow: inset 0 1px 0 var(--line); }
 
 /* ── У ОПИСАНИЯ ЕСТЬ ПОЛ, А У СТРОКИ — МЕРА (D-231) ───────────────────────
    Здесь ячейка описания стояла на min-width: 0 и отдавала всё место
@@ -185,7 +201,7 @@
 
 .st-saved.show { opacity: 1; }
 
-.st-segment { display: inline-flex; border-radius: var(--r-pill); border: 1px solid rgba(var(--film-rgb), .13); overflow: hidden; }
+.st-segment { display: inline-flex; padding: 2px; gap: 0; border-radius: var(--r-ctrl); border: 0; background: rgba(var(--film-rgb), .06); overflow: hidden; }
 
 .st-seg {
   border: 0;
@@ -195,25 +211,28 @@
   /* Сегмент — орган управления, а не подпись: буква строки интерфейса,
      без разрядки подписи (аудит мелкого текста, 28.09.2026). */
   font-size: var(--f-ui);
-  padding: 5px 13px;
+  min-height: 24px;
+  padding: 0 12px;
+  border-radius: var(--r-tag);
   cursor: pointer;
 }
 
-.st-seg.active { background: rgba(var(--film-rgb), .16); color: inherit; font-weight: var(--w-strong); }
+.st-seg.active { background: var(--seg-on); color: var(--ink); font-weight: var(--w-strong); box-shadow: 0 1px 2px rgba(var(--shade-rgb), .35), inset 0 1px 0 rgba(var(--film-rgb), .08); }
 
 /* Ряд красок (.st-swatch, .st-color) снят вместе с выбором краски (D-141):
    ни одна разметка его больше не рисует, а мёртвый стиль лжёт, что он бывает. */
 
-.st-chips { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+.st-chips { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 
 .st-chip {
-  padding: 5px 10px;
-  border-radius: var(--r-pill);
-  border: 1px solid rgba(var(--film-rgb), .13);
-  background: rgba(var(--film-rgb), .05);
-  color: inherit;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: var(--r-tag);
+  border: 0;
+  background: rgba(var(--film-rgb), .06);
+  color: var(--ink-2);
   font: inherit;
-  font-size: var(--f-meta);
+  font-size: var(--f-ui);
   cursor: pointer;
 }
 
@@ -225,7 +244,7 @@
 @media (hover: hover) {
   :where(html:not([data-input="touch"])) .st-chip:hover { background: rgba(var(--film-rgb), .12); }
 }
-.st-chip.active { background: var(--accent); border-color: transparent; color: var(--on-accent); font-weight: var(--w-strong); }
+.st-chip.active { background: var(--seg-on); color: var(--ink); font-weight: var(--w-strong); box-shadow: 0 1px 2px rgba(var(--shade-rgb), .35), inset 0 1px 0 rgba(var(--film-rgb), .08); }
 
 .st-card {
   padding: 13px;
@@ -286,7 +305,9 @@
 
 @media (max-width: 620px) {
   .app-settings { flex-direction: column; }
-  .st-side { width: auto; flex: 0 0 auto; flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid rgba(var(--film-rgb), .09); }
+  .st-side { width: auto; flex: 0 0 auto; flex-direction: row; overflow-x: auto; border-right: 0; box-shadow: inset 0 -1px 0 var(--line); }
+  .st-pane { padding: 16px 16px 24px; }
+  .st-title { font-size: var(--f-title); }
   /* Вкладка — одна строка: полоса прокручивается вбок, а подпись не
      ломается в столбик «Звук / и / фокус» (найдено обходом комнат, D-273). */
   .st-side-item { flex: 0 0 auto; white-space: nowrap; }

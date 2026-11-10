@@ -68,7 +68,8 @@ function geom() {
     BX = vw / 2; BY = top1 + R; tapeY = top1 + 2 * R + 17; boxTop = at;
     return;
   }
-  const nh = NEED && NEED.h > 0 ? NEED.h : 250, nb = NEED && NEED.bottom ? Math.min(vh, NEED.bottom) : vh;
+  /* 09.11: низ, названный от опорного знака входа (fix), — как назван: полосы браузера, укоротившие экран, знак не двигают */
+  const nh = NEED && NEED.h > 0 ? NEED.h : 250, nb = NEED && NEED.bottom ? (NEED.fix ? NEED.bottom : Math.min(vh, NEED.bottom)) : vh;
   const room = nb - 18 - nh - 34 - 18;
   let s = Math.min(vw * 0.4, 208, room / 1.62);
   if (s < 76) s = 0;
@@ -350,7 +351,7 @@ const POL = (function () {
     refl.style.left = rX0 + 'px'; refl.style.top = BAND + 'px';
     yield* blLayoutG();
     yield;
-    root.setAttribute('data-mark', BX.toFixed(3) + ',' + BY.toFixed(3) + ',' + ((fs * 0.95 / 0.7) * (252 / 62)).toFixed(4));   // D-606: the entry's clean mark starts exactly here
+    root.setAttribute('data-mark', BX.toFixed(3) + ',' + BY.toFixed(3) + ',' + ((fs * 0.95 / 0.7) * (252 / 62)).toFixed(4)); root.setAttribute('data-wheel', (S ? R * 1.06 : 0).toFixed(2));   // D-606: the entry's clean mark starts exactly here; 09.11: data-wheel — the dial's outer radius, so the shell can fit the sign above the keyboard
     const ym = 2 * H - BY - top, sr = R * 0.9;                           // the backlight seen in the slab, under the mirrored sign
     Object.assign(flSpot.style, { left: (BX - sr) + 'px', top: (ym - sr * 0.35) + 'px', width: (sr * 2) + 'px', height: (sr * 0.7) + 'px' });
     rough = document.createElement('canvas'); rough.width = refl.width; rough.height = refl.height;
@@ -781,7 +782,7 @@ const EMB = {
     if (P.ticks === 'clock') { const rt = R * 1.06 * (1 + ease(apart) * 1.4); for (let m = 0; m < 60; m++) { const a = -Math.PI / 2 + (m / 60) * 6.283; if (m % 5) { bx.fillStyle = rgba(PEARL, 0.22); bx.beginPath(); bx.arc(BX + Math.cos(a) * rt, BY + Math.sin(a) * rt, 0.9, 0, 6.283); bx.fill(); } else { bx.strokeStyle = rgba(PEARL, m ? 0.38 : 0); bx.lineWidth = 1.4; bx.beginPath(); bx.moveTo(BX + Math.cos(a) * (rt - 4), BY + Math.sin(a) * (rt - 4)); bx.lineTo(BX + Math.cos(a) * (rt + 4), BY + Math.sin(a) * (rt + 4)); bx.stroke(); } } }
     if (P.ticks === true || P.ticks === 'outer' || P.ticks === 'all') { const rt = R * (P.ticks === true ? 0.99 : 1.09) * (1 + ease(apart) * 1.4); for (let m = 0; m < 100; m++) { const a = -Math.PI / 2 + (m / 100) * 6.283, L = m % 10 === 0 ? 7 : m % 5 === 0 ? 4.5 : 2.5; bx.strokeStyle = rgba(PEARL, m % 10 === 0 ? 0.32 : 0.14); bx.lineWidth = m % 10 === 0 ? 1.2 : 0.8; bx.beginPath(); bx.moveTo(BX + Math.cos(a) * rt, BY + Math.sin(a) * rt); bx.lineTo(BX + Math.cos(a) * (rt - L), BY + Math.sin(a) * (rt - L)); bx.stroke(); } }
     if (P.notch) { const ry = BY - R * 1.04; bx.fillStyle = rgba(mixc(EMBER, GOLD, gate), 0.55 + 0.45 * gate); bx.beginPath(); bx.moveTo(BX - 4, ry - 6); bx.lineTo(BX + 4, ry - 6); bx.lineTo(BX, ry); bx.closePath(); bx.fill(); }
-    if (gate > 0) { const gl = bx.createLinearGradient(BX, BY - R, BX, BY); gl.addColorStop(0, rgba(GOLD, 0)); gl.addColorStop(0.5, rgba(GOLD, 0.8 * gate)); gl.addColorStop(1, rgba(GOLD, 0.2 * gate)); bx.fillStyle = gl; bx.fillRect(BX - 1.5, BY - R * 1.02, 3, R * 1.02); }
+    /* Шифр 09.11.2026, решение основателя: вертикальной светлой линии из середины знака при открытии нет (прочие эффекты открытия — прежние). */
     if (P.logo) drawMark(R * 0.62, SL[0]); else at(bx, BX, BY, S * 0.3, ST[0], sealColor(SH[0], SL[0], 0.85, opening ? 2 : 0));
     bx.globalAlpha = 1;
   },
@@ -1076,7 +1077,10 @@ return {
     for (let k = 0; k < 16; k++) { ST[k] = rbits(); SL[k] = 0.5; }
     const drain = () => { if (tape.length) { tape.pop(); loop(); setTimeout(drain, 28); } };
     drain();
-    if (!RM) ripples.push({ t0: t, r0: R, v: Math.max(vw, vh) * 1.2, w: 0.6, tint: 1, flip: true, done: -1 });
+    /* Шифр 09.11.2026, решение основателя (после демо 3): после неверного слова вспышка тише и без лучей — не похожа на
+       открытие (у его волн сила 0,8): волна по решётке вдвое слабее прежней (было 0,6); свет знака при этом не
+       перестраивается (строка ответа не меняет названную сцене высоту — shell.js placeCluster) */
+    if (!RM) ripples.push({ t0: t, r0: R, v: Math.max(vw, vh) * 1.2, w: 0.28, tint: 1, flip: true, done: -1 });
     loop();
   },
   open(done) {

@@ -16,6 +16,9 @@ html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu-br{width:auto;height:auto;b
 html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu-br::before{content:"·"}
 html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu-br:nth-of-type(2){flex-basis:100%;height:0;overflow:hidden}
 html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu-br:nth-of-type(2)::before{content:none}
+/* Шифр 09.11.2026: «какая дверь ваша?» — своей строкой, без точки-разделителя в конце строки над ней (как в утверждённой демо — строки без висячей точки) */
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu-br:nth-of-type(4){flex-basis:100%;height:0;overflow:hidden}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu-br:nth-of-type(4)::before{content:none}
 html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-claim{font:italic 400 12.5px/1.4 Georgia,serif;/* своя краска: вход и дверь тёмные в обеих темах */ color:rgba(236,234,245,.5);margin:2px 0 0;white-space:normal;letter-spacing:0}
 html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-claim br{display:inline}
 /* ── D-603: поле слова по двери (основатель: «Поле для ввода сделать менее тёмным… в Соборе сильно бросается в глаза»).
@@ -26,6 +29,7 @@ html.sb-vvod-itog[data-sb-door="shifr"] #sbVaultGate.vg-has-scene #sbVaultPass{/
 html.sb-vvod-itog[data-sb-door="shifr"] #sbVaultGate.vg-has-scene #sbVaultPass:focus{/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(255,206,170,.5)}
 html.sb-vvod-itog[data-sb-door="shifr"] #sbVaultGate.vg-has-scene #sbVaultPass::placeholder{/* своя краска: вход и дверь тёмные в обеих темах */ color:rgba(255,230,212,.62);/* своя краска: вход и дверь тёмные в обеих темах */ -webkit-text-fill-color:rgba(255,230,212,.62)}
 html.sb-vvod-itog[data-sb-door="shifr"] #sbVaultGate.vg-has-scene #sbVaultOpen{/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(255,198,160,.42);/* своя краска: вход и дверь тёмные в обеих темах */ background:rgba(46,36,31,.38)}
+html.sb-vvod-itog[data-sb-door="shifr"] #sbVaultGate.vg-has-scene .vg-err{/* своя краска: вход и дверь тёмные в обеих темах; Шифр 09.11.2026 — подсказка не голубая, тёплый текст ворот */ color:rgba(255,230,212,.78)}
 html.sb-vvod-itog[data-sb-door="porog"] #sbVaultGate.vg-has-scene #sbVaultPass{/* своя краска: вход и дверь тёмные в обеих темах */ background-color:rgba(164,138,104,.46);/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(255,234,200,.62);/* своя краска: вход и дверь тёмные в обеих темах */ box-shadow:0 0 18px rgba(255,200,130,.12),inset 0 1px 0 rgba(255,240,210,.14)}
 html.sb-vvod-itog[data-sb-door="porog"] #sbVaultGate.vg-has-scene #sbVaultPass:focus{/* своя краска: вход и дверь тёмные в обеих темах */ border-color:rgba(255,238,206,.78)}
 html.sb-vvod-itog[data-sb-door="porog"] #sbVaultGate.vg-has-scene #sbVaultPass::placeholder{/* своя краска: вход и дверь тёмные в обеих темах */ color:rgba(255,246,232,.88);/* своя краска: вход и дверь тёмные в обеих темах */ -webkit-text-fill-color:rgba(255,246,232,.88)}
@@ -129,6 +133,9 @@ html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultOpen:focus{outline:no
 html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultOpen:focus-visible::after{content:"";position:absolute;left:-3px;right:-3px;top:-1px;bottom:-1px;border-radius:var(--r-pill);border:1.5px solid rgba(var(--inv-t),.9);pointer-events:none}
 /* keyboard focus on the field: the line already lifts into its ends; a quiet underline-glow makes it unmistakable */
 html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultPass:focus-visible{box-shadow:0 6px 10px -8px rgba(var(--inv-t),.75)!important}
+/* Шифр 09.11.2026, решение основателя (поле растёт с каждым знаком): свечение фокуса — не во всю ширину поля, а под самой
+   линией её длины; его рисует холст линии (gate.js, kbGlow) */
+html.sb-inv.sb-vvod-itog[data-sb-door="shifr"] #sbVaultGate.vg-has-scene #sbVaultPass:focus-visible{box-shadow:none!important}
 html.sb-inv{--inv-t:226,232,246;--inv-sh:4,4,8}
 html.sb-inv[data-sb-door="sobor"]{--inv-t:244,240,252;--inv-sh:18,12,32}
 html.sb-inv[data-sb-door="porog"]{--inv-t:250,236,222;--inv-sh:10,6,2}
@@ -162,8 +169,90 @@ html.vh-hole #sbVaultScene canvas[data-d="blk"] { clip-path: var(--vh-hole); }
 html:not(.vh-playing) #vhOv { display: none; }
 /* D-588: где замок возможен, старая карточка входа не рисуется ни на кадр (класс ставит os/index.html до первого кадра) */
 html.sb-door-first #sbLogin { display: none !important; }
-/* Кольцо фокуса поля слова с клавиатуры — цвет мира двери (D-596); у Шифра — оранжевый его поля (D-603). Касание его не зажигает. */
-html.sb-inv{--inv-ring:236,138,95}
-html.sb-inv[data-sb-door="sobor"]{--inv-ring:185,166,220}
-html.sb-inv[data-sb-door="porog"]{--inv-ring:230,140,85}
-html.sb-inv.sb-vvod-itog #sbVaultGate.vg-has-scene #sbVaultPass:focus-visible{outline:2px solid rgb(var(--inv-ring))!important;outline-offset:3px}
+/* Шифр 09.11.2026 (решение основателя): у поля слова нет рамки фокуса — ни от касания, ни с клавиатуры (у текстовых полей
+   :focus-visible зажигается и касанием). Как в утверждённой демо: только линия; клавиатуре — мягкое свечение под линией (выше). */
+
+/* Шифр 09.11.2026: клавиатура оставила совсем низкую полосу — «Заперто» уступает место знаку (shell.js kbSign) */
+#sbVaultGate.vg-kb-tight .vg-box .vg-title{visibility:hidden}
+
+/* ── Шифр 09.11.2026, решение основателя: все надписи ворот — со строчной буквы, на всех языках ворот ──
+   Подписи (меню, «заперто», кнопки, переключатель дверей, заголовки и кнопки окон ворот, подсказки полей) — строчными
+   целиком; фразы (подсказки и ответы ворот, строка «посмотреть можно любую…», заголовки внутри окон) — только первая буква,
+   чтобы имена (PIN, Argon2id, WebAuthn) остались как есть. Слоган уже строчный; коды языков ET/EN/RU — как есть.
+   Только вид (CSS): словарь и голос экранного диктора — прежние. */
+html #sbVaultGate .vg-title,
+html #sbVaultGate #sbVaultOpen,
+html #sbVaultGate .vg-menu button,
+html #sbVaultGate .vg-door,
+html #sbVaultGate #sbVaultRecover,
+html #sbVaultGate .vg-key span,
+html #sbVaultGate .vg-sheet .win-name,
+html #sbVaultGate .vg-sheet-acts button,
+html #sbVaultGate .vg-sheet-toggle{text-transform:lowercase!important}
+html #sbVaultGate input::placeholder{text-transform:lowercase!important}
+html #sbVaultGate .vg-err::first-letter,
+html #sbVaultGate .vg-keynote::first-letter,
+html #sbVaultGate .vg-sealed::first-letter,
+html #sbVaultGate .vg-doors-note::first-letter,
+html #sbVaultGate .vg-sheet-meta::first-letter,
+html #sbVaultGate .vg-sheet-h::first-letter,
+html #sbVaultGate .vg-win-body h2::first-letter{text-transform:lowercase}
+
+/* ── Шифр 09.11.2026, решения основателя после демо 3: ОКНА ВОРОТ ──────────────────────────────────────────────────────
+   Окна ворот — как окна «Синтеза»: скругление 12, без рамки — внутренняя светлая линия и глубокая тень; заголовок 13/600
+   без линии под ним; кнопки окна без капсулы; крестик: отступ слева = отступу сверху (полоса 44, кнопка 24, знак 12 —
+   19,5 и 19,5). Подписи ворот под окном не просвечивают: пока окно открыто, детали двери за ним гаснут.
+   У Шифра (приём ворот, в систему не переносится): кнопки окон — без заливки, «нижняя дуга со светом» цвета поля «слово»
+   и «открыть» (#EC8A5F, OG.A в gate.js), по центру; нажатие — короткая вспышка дуги (gate.js); поля — светящаяся нижняя
+   линия; «новое слово» и «ещё раз» — как главное поле (знаки в клетках от середины, линия растёт — gate.js);
+   «код восстановления» — обычные читаемые знаки, без рамки фокуса. Стережёт tools/shifr-door-check.mjs (раздел 8). */
+#sbVaultGate .vg-win{border:0;border-radius:var(--r-card);/* своя краска: окно лежит на сцене двери, тёмной в обеих темах */ box-shadow:inset 0 0 0 1px rgba(243,241,238,.1),0 1px 2px rgba(0,0,0,.4),0 24px 64px -16px rgba(0,0,0,.8)}
+#sbVaultGate .vg-win::before{display:none}
+#sbVaultGate .vg-win .titlebar{height:44px;padding:0 12px 0 10px;border-bottom:0;box-shadow:none;background:transparent}
+#sbVaultGate .vg-win .lights{gap:4px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+#sbVaultGate .vg-win .light{width:24px;height:24px;border-radius:var(--r-tag);background:transparent;/* своя краска: окно двери тёмное в обеих темах */ color:rgba(243,241,238,.5)}
+#sbVaultGate .vg-win .light svg{width:12px;height:12px}
+#sbVaultGate .vg-win .light::before{left:-2px;right:-2px;top:-10px;bottom:-10px}
+#sbVaultGate .vg-win .light:focus-visible{/* своя краска: окно двери тёмное в обеих темах */ background:rgba(243,241,238,.08);/* своя краска: окно двери тёмное в обеих темах */ color:#f3f1ee}
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) #sbVaultGate .vg-win .light:hover{/* своя краска: окно двери тёмное в обеих темах */ background:rgba(243,241,238,.08);/* своя краска: окно двери тёмное в обеих темах */ color:#f3f1ee}
+}
+#sbVaultGate .vg-win .tb-right{width:78px}
+#sbVaultGate .vg-win .win-name{font-size:var(--f-read);line-height:var(--lh-read);font-weight:var(--w-strong);letter-spacing:var(--track-tight);/* своя краска: окно двери тёмное в обеих темах */ color:#f3f1ee}
+#sbVaultGate .vg-win-body{padding:6px 20px 20px}
+#sbVaultGate .vg-sheet{transition:background-color var(--t-touch) var(--ease-move)}
+#sbVaultGate .vg-box,#sbVaultGate .vg-langs,#sbVaultGate .vg-doors{transition:opacity var(--t-touch) var(--ease-move)}
+#sbVaultGate:has(> .vg-sheet) .vg-box,#sbVaultGate:has(> .vg-sheet) .vg-langs,#sbVaultGate:has(> .vg-sheet) .vg-doors{opacity:.08}
+
+/* Шифр: кнопки окон — нижняя дуга со светом, по центру */
+html[data-sb-door="shifr"] #sbVaultGate .vg-sheet-acts{justify-content:center;gap:10px 18px;margin-top:16px}
+html[data-sb-door="shifr"] #sbVaultGate .vg-sheet-acts button,
+html[data-sb-door="shifr"] #sbVaultGate .vg-win #sbVaultRecover{box-sizing:border-box;min-height:44px;min-width:120px;padding:10px 22px 11px;margin:0;border:0;/* своя краска: дуга — цвет поля «слово» и «открыть» (OG.A), сцена тёмная в обеих темах */ border-bottom:1.5px solid rgb(236,138,95);border-radius:0 0 var(--r-arc) var(--r-arc);
+  /* своя краска: дуга — цвет поля «слово» и «открыть» (OG.A), сцена тёмная в обеих темах */
+  background:radial-gradient(60% 60% at 50% 115%,rgba(236,138,95,.16),rgba(236,138,95,0) 70%);/* своя краска: свет дуги — цвет поля «слово» (OG.A) */ box-shadow:0 8px 16px -10px rgba(236,138,95,.6);
+  color:rgb(var(--inv-t,226,232,246));text-shadow:0 0 4px rgba(var(--inv-sh,4,4,8),.6);font-size:var(--f-ui);letter-spacing:var(--track-caps);-webkit-tap-highlight-color:transparent;outline:none;
+  transition:box-shadow var(--t-move) var(--ease-move),border-color var(--t-move) var(--ease-move),background var(--t-move) var(--ease-move)}
+html[data-sb-door="shifr"] #sbVaultGate .vg-sheet-acts button:not(.main){/* своя краска: дуга — цвет поля «слово» (OG.A) */ border-bottom-color:rgb(236,138,95);/* своя краска: свет дуги — цвет поля «слово» (OG.A) */ background:radial-gradient(60% 60% at 50% 115%,rgba(236,138,95,.07),rgba(236,138,95,0) 70%);/* своя краска: огонь и поле ворот Шифра (OG.A / GOLD в gate.js), сцена тёмная в обеих темах */ box-shadow:0 8px 14px -11px rgba(236,138,95,.4);opacity:.86}
+html[data-sb-door="shifr"] #sbVaultGate .vg-win #sbVaultRecover{display:block;align-self:center;width:auto;height:auto}
+html[data-sb-door="shifr"] #sbVaultGate .vg-sheet-acts button.vg-arc-hit,
+html[data-sb-door="shifr"] #sbVaultGate .vg-win #sbVaultRecover.vg-arc-hit{transition-duration:0s;/* своя краска: вспышка дуги — золото огня поля (GOLD в gate.js) */ border-bottom-color:rgb(255,205,140);/* своя краска: огонь и поле ворот Шифра (OG.A / GOLD в gate.js), сцена тёмная в обеих темах */ background:radial-gradient(70% 80% at 50% 112%,rgba(255,205,140,.3),rgba(236,138,95,0) 72%);/* своя краска: огонь и поле ворот Шифра (OG.A / GOLD в gate.js), сцена тёмная в обеих темах */ box-shadow:0 10px 22px -8px rgba(255,205,140,.85)}
+html[data-sb-door="shifr"] #sbVaultGate .vg-sheet-acts button:focus-visible,
+html[data-sb-door="shifr"] #sbVaultGate .vg-win #sbVaultRecover:focus-visible{outline:none;/* своя краска: огонь и поле ворот Шифра (OG.A / GOLD в gate.js), сцена тёмная в обеих темах */ box-shadow:0 8px 16px -10px rgba(236,138,95,.6),0 1px 0 0 rgba(255,214,182,.9)}
+
+/* Шифр: поля окон — светящаяся нижняя линия; длину линии (--wl) у полей слова ведёт gate.js */
+html[data-sb-door="shifr"] #sbVaultGate .vg-win-body input,
+html[data-sb-door="shifr"] #sbVaultGate .vg-win-body input:focus,
+html[data-sb-door="shifr"] #sbVaultGate .vg-win-body input:focus-visible{--wl:100%;border:0;border-radius:0;outline:none;box-shadow:none;margin:6px 0 8px;padding:11px 12px 10px;text-align:center;
+  /* своя краска: линия — цвет поля «слово» (OG.A), сцена тёмная в обеих темах */
+  background:radial-gradient(50% 100% at 50% 100%,rgba(236,138,95,.2),rgba(236,138,95,0)) 50% 100%/var(--wl) 12px no-repeat,linear-gradient(rgba(236,138,95,.88),rgba(236,138,95,.88)) 50% 100%/var(--wl) 1.5px no-repeat,transparent;
+  transition:background-size var(--t-touch) var(--ease-move)}
+html[data-sb-door="shifr"] #sbVaultGate .vg-win-body input:focus{/* своя краска: огонь и поле ворот Шифра (OG.A / GOLD в gate.js), сцена тёмная в обеих темах */ background:radial-gradient(50% 100% at 50% 100%,rgba(242,162,116,.3),rgba(242,162,116,0)) 50% 100%/var(--wl) 14px no-repeat,linear-gradient(rgb(242,162,116),rgb(242,162,116)) 50% 100%/var(--wl) 1.5px no-repeat,transparent}
+html[data-sb-door="shifr"] #sbVaultGate .vg-win-body input::placeholder{/* своя краска: огонь и поле ворот Шифра (OG.A / GOLD в gate.js), сцена тёмная в обеих темах */ color:rgba(255,230,212,.62);/* своя краска: огонь и поле ворот Шифра (OG.A / GOLD в gate.js), сцена тёмная в обеих темах */ -webkit-text-fill-color:rgba(255,230,212,.62);letter-spacing:var(--track-air)}
+html[data-sb-door="shifr"] #sbVaultGate .vg-win-body input.vg-wf{color:transparent;-webkit-text-fill-color:transparent;caret-color:transparent}
+html[data-sb-door="shifr"] #sbVaultGate .vg-win-body input.vg-wf::placeholder{/* своя краска: огонь и поле ворот Шифра (OG.A / GOLD в gate.js), сцена тёмная в обеих темах */ color:rgba(255,230,212,.62);/* своя краска: огонь и поле ворот Шифра (OG.A / GOLD в gate.js), сцена тёмная в обеих темах */ -webkit-text-fill-color:rgba(255,230,212,.62)}
+html[data-sb-door="shifr"] #sbVaultGate .vg-win-body #sbVaultCode{letter-spacing:var(--track-caps);/* своя краска: огонь и поле ворот Шифра (OG.A / GOLD в gate.js), сцена тёмная в обеих темах */ color:#f3e6da;/* своя краска: огонь и поле ворот Шифра (OG.A / GOLD в gate.js), сцена тёмная в обеих темах */ -webkit-text-fill-color:#f3e6da;/* своя краска: огонь и поле ворот Шифра (OG.A / GOLD в gate.js), сцена тёмная в обеих темах */ caret-color:rgb(242,161,111)}
+html[data-sb-door="shifr"] #sbVaultGate .vg-win-body #sbVaultCode::placeholder{text-transform:lowercase;font-family:inherit}
+.vg-wf-signs{position:absolute;pointer-events:none;z-index:1}
+/* Шифр 09.11.2026, решение основателя (видео демо 5): пока занавес не получил своего места (shell.js curtainMark), его знака,
+   фразы и журнала не видно — под уходящими воротами второй знак не мелькает */
+#sbCurtain:not(.cur-placed) .cur-stage,#sbCurtain:not(.cur-placed) .cur-mark,#sbCurtain:not(.cur-placed) .cur-log{visibility:hidden}

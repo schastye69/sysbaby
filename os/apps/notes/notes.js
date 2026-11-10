@@ -788,7 +788,7 @@
       label: "Scribble",
       color: "linear-gradient(160deg,#ffe08a 0%,#ffc24d 46%,#f59331 100%)",
       icon: ICON,
-      size: { w: 680, h: 520 },
+      size: { w: 786, h: 554 },
       deskPos: { x: 40, y: 260 },
       render: render
     });
