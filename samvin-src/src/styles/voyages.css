@@ -1,0 +1,82 @@
+/* sam.vin — voyages.css (WP6). VOYAGES «ВЫЛАЗКИ»: hatch tags (construction-drawing labels: survey cross, hairline
+   leader, block on a radial scrim — never a box), the phone spiral rail, the proposal verb, the chamber block and the
+   probe. Type comes from the .t-* classes; the hatch title is BODY at 15 px (SPEC §6.3). No backdrop-filter, no border
+   with radius. */
+.vy-field{position:absolute;inset:0;pointer-events:none}
+.vy-leaders{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.vy-leader{fill:none;stroke:rgba(var(--silver-rgb),.7);stroke-width:.5px}
+.vy-cross{fill:none;stroke:rgba(var(--silver-rgb),.85);stroke-width:1px;shape-rendering:crispEdges}
+.vy-field .vy-tag{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;margin:0;
+  padding:0 4px 2px;background:none;border:0;color:var(--silver);text-align:left;white-space:nowrap;pointer-events:auto;
+  will-change:transform;isolation:isolate;cursor:pointer}
+.vy-field .vy-tag::before{content:"";position:absolute;z-index:-1;pointer-events:none;inset:-14px -22px;
+  background:radial-gradient(closest-side,rgba(var(--deep-rgb),.6) 55%,transparent)}
+.vy-tag-line{color:var(--silver);transition:color var(--d-120)}
+.vy-tag-title{font-size:15px;line-height:20px;color:var(--silver);transition:color var(--d-120)}
+.vy-tag-note{font-size:15px;line-height:20px;white-space:normal;width:26ch;margin-top:4px;color:var(--white)}
+.vy-where{color:rgba(var(--silver-rgb),.7)}
+.vy-tag[data-state="locked"] .vy-tag-line,.vy-tag[data-state="sealed"] .vy-tag-line{color:var(--pewter)}
+.vy-tag:hover .vy-tag-line,.vy-tag:hover .vy-tag-title,.vy-tag:focus-visible .vy-tag-line,.vy-tag:focus-visible .vy-tag-title,
+.vy-tag[data-selected] .vy-tag-line,.vy-tag[data-selected] .vy-tag-title{color:var(--white)}
+.vy-tag:focus-visible{box-shadow:none}
+.vy-tag:focus-visible .vy-tag-line{box-shadow:0 1px 0 var(--ember)}
+@media (pointer:coarse){.vy-field .vy-tag{min-height:var(--hit);min-width:var(--hit);justify-content:center}}
+
+/* the verb + the calm line: the left column, 48 px under the datum (A3.4) */
+.vy-left{position:absolute;left:var(--margin);top:calc(var(--datum-y) + 48px);display:flex;flex-direction:column;gap:12px;
+  align-items:flex-start;max-width:var(--measure);transition:opacity var(--d-120)}
+.vy-empty{max-width:var(--measure)}
+.vy-full{margin:0}
+
+/* phone: the spiral rail in the sheet peek — one tick per hatch, in spiral order */
+.vy-peek{display:flex;flex-direction:column;gap:2px}
+.vy-rail{display:flex;justify-content:space-between;align-items:flex-start;list-style:none;margin:0;padding:0 2px;height:22px}
+.vy-tick{position:relative;flex:1 1 0;display:flex;flex-direction:column;align-items:center;min-width:0}
+.vy-tick-mark{display:block;width:1px;height:10px;background:rgba(var(--silver-rgb),.55)}
+.vy-tick[data-state="done"] .vy-tick-mark{height:12px;background:var(--silver)}
+.vy-tick[data-state="locked"] .vy-tick-mark{background:var(--pewter);height:7px}
+.vy-tick[data-state="sealed"] .vy-tick-mark{width:6px;height:6px;margin-top:2px;background:none;border:1px solid rgba(var(--silver-rgb),.6);transform:rotate(45deg)}   /* the sealed 000: a small diamond (the Key's own seal), not a near-invisible box */
+.vy-tick[data-state="proposal"] .vy-tick-mark{background:repeating-linear-gradient(var(--silver) 0 2px,transparent 2px 4px)}
+.vy-tick[data-selected] .vy-tick-mark{width:2px;height:16px;background:var(--ember)}
+.vy-tick-code{position:absolute;z-index:1;left:calc(50% + 5px);top:1px;padding:0 5px 0 2px;visibility:hidden;white-space:nowrap;background:var(--deep)}   /* knocked out of the next ticks */
+.vy-tick[data-selected] .vy-tick-code{visibility:visible;color:var(--silver)}
+.vy-peek .vy-left,.vy-peek .vy-verbs{position:static}
+
+/* the chamber block: desktop left column at 48 px on a scrim; phone: inside the sheet */
+.vy-chamber{position:absolute;left:var(--margin);top:max(104px,calc(50% - 330px));max-width:var(--measure);
+  transition:opacity var(--d-120);isolation:isolate}
+.vy-chamber::before{content:"";position:absolute;z-index:-1;pointer-events:none;inset:-36px -64px -36px -48px;
+  background:radial-gradient(closest-side,rgba(var(--deep-rgb),.62) 70%,transparent)}
+.vy-chamber.is-out{opacity:0}
+.vy-ch-title{margin-top:6px}
+.vy-row{margin-top:14px}
+.vy-row-label{margin-bottom:4px}
+.vy-conds{list-style:none;margin:0;padding:0}
+.vy-conds li{display:flex;align-items:baseline;gap:10px}
+.vy-conds .cross{color:var(--silver);top:-1px}
+.vy-chips{display:flex;flex-wrap:wrap;gap:0 18px}
+.vy-chip>span{white-space:nowrap}
+.vy-reward{display:flex;align-items:center;gap:10px}
+.vy-reward svg{width:28px;height:28px;flex:none;overflow:visible}
+.vy-reward path{fill:none;stroke:var(--pewter);stroke-width:1px;vector-effect:non-scaling-stroke}
+.vy-reward.is-earned path{stroke:var(--silver);fill:rgba(var(--silver-rgb),.10)}
+.vy-probe{display:flex;align-items:center;gap:16px;margin-top:22px}
+.vy-probe-btn{flex:none;width:64px;height:64px;margin:0;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;
+  touch-action:none;-webkit-touch-callout:none;user-select:none}
+.vy-probe-btn svg{display:block;width:64px;height:64px;overflow:visible}
+.vy-probe-rest{fill:none;stroke:rgba(var(--silver-rgb),.6);stroke-width:1px}
+.vy-probe-fill{fill:none;stroke:var(--ember);stroke-width:2px}
+.vy-probe-dot{fill:var(--silver)}
+.vy-probe-btn:hover .vy-probe-rest,.vy-probe-btn:focus-visible .vy-probe-rest{stroke:var(--white)}
+.vy-probe-btn:disabled{cursor:default}
+.vy-probe-btn:disabled .vy-probe-rest{stroke:rgba(var(--pewter-rgb),.8)}
+.vy-probe-btn:disabled .vy-probe-dot{fill:var(--pewter)}
+.vy-probe-label{white-space:nowrap}
+.vy-remove{margin-top:18px}
+.vy-remove::after{transform:scaleX(var(--hold,0));transition:none}
+.vy-ch-proposal{margin-top:14px}
+#sheet .vy-chamber{position:static;max-width:none}
+#sheet .vy-chamber::before{display:none}
+/* the datum title steps aside while a chamber's block holds the left column (GIANT `004` stays behind it) */
+body.vy-chamber #datum{visibility:hidden}
+@media (prefers-reduced-motion:reduce){.vy-chamber,.vy-left{transition-duration:.16s}}

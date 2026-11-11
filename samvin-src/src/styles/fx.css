@@ -1,0 +1,33 @@
+/* fx.css (WP12): scale bar, ×1 000, strut dimension, figure labels. */
+#fx .fx-sb{left:48px;top:auto;bottom:40px;display:flex;flex-direction:column;align-items:center;opacity:0;transition:opacity 120ms linear;will-change:auto}
+.fx-sb .t-label,.fx-rm,.fx-w{color:var(--white)}
+.fx-sb .t-label{margin-bottom:4px;white-space:nowrap}
+.fx-sb i{display:block;width:80px;height:4px;border-bottom:1px solid var(--silver);align-self:flex-start;
+background:linear-gradient(var(--silver),var(--silver)) 0 0/1px 4px no-repeat,linear-gradient(var(--silver),var(--silver)) 50% 0/1px 4px no-repeat,linear-gradient(var(--silver),var(--silver)) 100% 0/1px 4px no-repeat}
+.fx-sb.is-flash i{border-color:var(--white)}
+#fx .fx-rm{left:var(--title-x);top:calc(var(--datum-y) + 26px);opacity:0;will-change:auto}
+#fx .fx-sb.is-on,#fx .fx-rm.is-on{opacity:1}
+.fx-sd>span{display:inline-block;transform:translate(-50%,-100%);margin-top:-2px;color:var(--white);white-space:nowrap;font-size:15px;line-height:18px;
+  text-shadow:0 0 2px var(--void),0 0 5px var(--void),0 0 9px var(--void);
+  /* the value is knocked out of the lattice (no strut crosses its letters): a feathered void field, no box */
+  padding:4px 12px;background:linear-gradient(90deg,rgba(var(--void-rgb),0),rgba(var(--void-rgb),.94) 10px,rgba(var(--void-rgb),.94) calc(100% - 10px),rgba(var(--void-rgb),0));
+  -webkit-mask-image:linear-gradient(transparent,#000 4px,#000 calc(100% - 4px),transparent);mask-image:linear-gradient(transparent,#000 4px,#000 calc(100% - 4px),transparent)}
+#leaders .fx-strut .dim{stroke:rgba(var(--silver-rgb),.92);stroke-width:1}
+#leaders .fx-strut .ext{stroke:rgba(var(--silver-rgb),.6);stroke-width:1}
+.fx-fl>span{display:inline-block;transform:translate(-50%,-100%);margin-top:-8px;color:var(--silver)}
+.fx-out{opacity:0!important;transition:opacity 240ms linear}
+@media (pointer:coarse) and (max-width:600px),(pointer:coarse) and (max-height:600px){#fx .fx-sb{left:16px;bottom:calc(var(--band-h) + var(--safe-b) + 12px)}}
+/* portrait phone: a hall sheet that has risen on arrival owns the strip above the band — the scale bar finishing its
+   count stands above the sheet's top, never on its text (during the travel the sheet is down, sheet.css) */
+@media (pointer:coarse) and (max-width:600px) and (min-height:500px){
+  /* ART-3: above the sheet is where a hall's floor captions stand (MEMBERS: Кира / ЛИСА) — the bar finishing its count
+     moves up under the datum's level mark instead, the one place no hall writes into on arrival */
+  body:not(.in-travel)[data-sheet="peek"] #fx .fx-sb{bottom:auto;top:calc(var(--datum-y) + 34px)}
+  body:not(.in-travel)[data-sheet="full"] #fx .fx-sb{opacity:0!important}
+}
+/* Knock-out (ПРОСВЕТ, A2.0.3): a line the world draws behind chrome text stops short of the letters, as a construction
+   drawing breaks its hatching round a callout — a void halo on the corners, a soft void field behind the status line.
+   Invisible on the void itself; follows ИЗНАНКА through --void. */
+.corner,.boot-top{text-shadow:0 0 2px var(--void),0 0 4px var(--void),0 0 8px var(--void)}
+#status::before{content:'';position:absolute;inset:-8px -32px;z-index:-1;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(var(--void-rgb),.94) 60%,rgba(var(--void-rgb),0))}
