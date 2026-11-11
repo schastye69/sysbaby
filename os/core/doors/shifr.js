@@ -254,9 +254,13 @@ const POL = (function () {
     const half = (m) => { const P = (u, v) => (m > 0 ? [x0 + u * q, y0 + v * q] : [x0 + (100 - u) * q, y0 + (100 - v) * q]), p = new Path2D();
       const mv = (u, v) => { const a = P(u, v); p.moveTo(a[0], a[1]); }, ln = (u, v) => { const a = P(u, v); p.lineTo(a[0], a[1]); }, at = (u1, v1, u2, v2, r) => { const a = P(u1, v1), c = P(u2, v2); p.arcTo(a[0], a[1], c[0], c[1], r * q); };
       mv(Ro, 0); ln(100 - b, 0); ln(100 - b, b); ln(b + 2 * ri, b); at(b, b, b, b + 2 * ri, ri); ln(b, 100 - b); ln(0, 100 - b); ln(0, Ro); at(0, 0, Ro, 0, Ro); p.closePath(); return p; };
-    const U = new Path2D(); U.addPath(half(1)); U.addPath(half(-1)); return U;
+    const U = new Path2D(), Hw = half(1), Ho = half(-1); U.addPath(Hw); U.addPath(Ho); U.halves = [Hw, Ho]; return U;
   }
-  api.sign = function (side) {
+  /* D-702 (основатель 10.11.2026): верное слово зажигает знак в ЕГО контуре — те же пластины и те же печати, что в покое,
+     только светлее (B: 0 покой … 1 зажжён). Прежняя ветка открытия рисовала по контуру иконки 512 и печатями 0,7 бруса —
+     печати вырастали и на углах выходили за знак. Стережёт tools/sign-seals-inside-check.mjs. */
+  api.sign = function (side, B) {
+    B = B > 0 ? Math.min(1, B) : 0;
     const I = api.I, x0 = BX - side / 2, y0 = BY - side / 2, q = side / 100, b = 25, Ro = 20, ri = 8.68;
     const U = signPath(x0, y0, side);
     const hx0 = x0 + b * q, hy0 = y0 + b * q, hx1 = x0 + (100 - b) * q, cx = (hx0 + hx1) / 2, cy = cx - x0 + y0, hr = hx1 - hx0;
@@ -264,6 +268,7 @@ const POL = (function () {
     g.addColorStop(0, 'rgba(255,214,176,' + (0.7 * I).toFixed(3) + ')'); g.addColorStop(0.5, 'rgba(255,180,128,' + (0.42 * I).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,160,110,0)');
     bx.save(); bx.beginPath(); bx.rect(hx0, hy0, hr, hr); bx.clip(); bx.fillStyle = g; bx.fillRect(hx0, hy0, hr, hr); bx.restore();   // only in the hollow
     bx.fillStyle = 'rgba(12,10,10,.94)'; bx.fill(U);                                       // the plates, backlit: dark, one fill
+    if (B > 0) { bx.fillStyle = 'hsla(36,10%,95%,' + (0.66 * B).toFixed(3) + ')'; bx.fill(U.halves[0]); bx.fillStyle = 'hsla(16,76%,58%,' + (0.72 * B).toFixed(3) + ')'; bx.fill(U.halves[1]); }   // lit by the right word, in the same outline
     bx.save(); bx.clip(U); bx.lineWidth = 0.6; bx.strokeStyle = 'rgba(255,200,160,' + (0.26 * I).toFixed(3) + ')'; bx.stroke(U); bx.restore();   // a thin rim where the light grazes — inside the outline only
     const jb = 1.1 / Math.max(1, dpr); bx.fillStyle = 'rgba(12,10,10,.94)';                // the junctions: nothing between the halves
     for (const [u, v] of [[100 - b, b], [b, 100 - b]]) bx.fillRect(x0 + u * q - jb / 2, y0 + v * q - jb / 2, jb, jb);
@@ -271,7 +276,7 @@ const POL = (function () {
     for (const [i, j, c] of cells) {
       const key = j * 4 + i, corner = (i === 0 && j === 0) || (i === 3 && j === 3), z = (corner ? 10 : 12.5) * q;
       const ccx = corner ? (i ? 100 - 14.5 : 14.5) : i * 25 + 12.5, ccy = corner ? (j ? 100 - 14.5 : 14.5) : j * 25 + 12.5;
-      bx.fillStyle = c === 1 ? 'hsla(' + mix(SH[key], 40, 0.5) + ',30%,66%,0.9)' : 'hsla(' + (12 + (SH[key] % 24)) + ',60%,56%,0.95)';
+      bx.fillStyle = c === 1 ? 'hsla(' + mix(SH[key], 40, 0.5) + ',' + mix(30, 60, B).toFixed(0) + '%,' + mix(66, 84, B).toFixed(0) + '%,0.9)' : 'hsla(' + (12 + (SH[key] % 24)) + ',' + mix(60, 85, B).toFixed(0) + '%,' + mix(56, 70, B).toFixed(0) + '%,0.95)';
       seal(bx, x0 + ccx * q - z / 2, y0 + ccy * q - z / 2, z, ST[key] ^ MB[key]);
     }
   };
@@ -846,7 +851,7 @@ function drawSolidMark(side, l) {
 }
 // The chosen sign, quiet at rest so it belongs to the night; it burns to full colour only when the word is right.
 function drawSign(l) {
-  if (true && POL.on && !opening && P.logo === 6 && POL.sign) { POL.sign((fs * 0.95 / 0.7) * (252 / 62)); return; } // D-603: pol/shifr.js api.sign
+  if (true && POL.on && P.logo === 6 && POL.sign) { POL.sign((fs * 0.95 / 0.7) * (252 / 62), opening ? ease(Math.min(1, (performance.now() / 1000 - opening.t0) / 0.7)) : 0); return; } // D-603: pol/shifr.js api.sign; D-702: lit in its own outline
   const lv = P.logo, side = (fs * 0.95 / 0.7) * (252 / 62), k = side / 252, x0 = BX - side / 2, y0 = BY - side / 2, [w, o] = markPaths(x0, y0, k), t = 62 * k;
   const B = opening ? ease(Math.min(1, (performance.now() / 1000 - opening.t0) / 0.7)) : 0; // 0 quiet … 1 lit by the right word
   const W = (a) => 'hsla(36,' + mix(6, 10, B).toFixed(0) + '%,' + mix(58, 95, B).toFixed(0) + '%,' + a + ')', O = (a) => 'hsla(16,' + mix(40, 76, B).toFixed(0) + '%,' + mix(38, 58, B).toFixed(0) + '%,' + a + ')';

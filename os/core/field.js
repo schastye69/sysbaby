@@ -206,12 +206,30 @@
      Aurora were indistinguishable and the control looked dead. These are their
      own triples, named for what they are and matching the gradients beneath. */
   var MOOD_PALETTE = {
-    /* studio — the system's own room: graphite plasma with a clay ember. The
-       environment stays achromatic; the seam is the only warmth in it. */
-    studio: [[54, 48, 46], [30, 28, 30], [198, 92, 56]],
+    /* studio (Тепло) — the system's own room: dark-orange plasma with an orange ember
+       (D-730: ember was clay-salmon [198,92,56], 15°; now the seam of Warmth, 30°).
+       D-735 (основатель 11.11.2026, демо тем v8): графит [54,48,46]/[30,28,30] снят —
+       серый c0 в лентах плазмы растягивался ×7,4 в бледный розово-серый. Теперь
+       тёмно-оранжевые [92,47,12]/[40,21,6]: тон 26°, светлота прежняя. */
+    studio: [[92, 47, 12], [40, 21, 6], [197, 117, 38]],
     ocean:  [[58, 92, 226], [40, 66, 190], [86, 112, 238]],
     aurora: [[46, 214, 170], [64, 128, 236], [128, 92, 255]],
     mono:   [[176, 182, 198], [124, 130, 146], [208, 214, 226]]
+  };
+  /* ── ОСНОВА И ГОЛОВКА ТЕПЛА — ТЁПЛЫЕ · D-738 ─────────────────────────────
+     ПОВОД — основатель 11.11.2026, снимок с планшета: «в главной теме теперь
+     примеси зелёного, некрасиво». Верх и середина стола в Тепле уходили в
+     холодный сине-зелёный. Прибор (tools/teplo-warm-check.mjs) нашёл два
+     холодных слоя ПОД тёплой плазмой: основа холста #070a14 — ночная синева
+     (тон Oklab 269°), и читающая головка [143,168,242] — синяя полоса, что
+     проходит по столу раз в 46 с. Палитра D-735 тут ни при чём: она тёплая,
+     но её ленты узкие (n^12), а между ними видна основа. Жёлтый свет комнаты
+     (#sbMoodTint, тон +28°) поверх синей основы и давал «зелень» внизу.
+     Решение: у Тепла своя основа — тёплый тёмный графит (та же светлота) — и
+     головка цвета уголька. Остальные комнаты — прежние (у Океана ночь синяя
+     по замыслу). */
+  var MOOD_GROUND = {
+    studio: { base: "#0d0907", head: [236, 160, 92] }
   };
 
   var Field = {
@@ -502,6 +520,7 @@
         try { p = window.sbRoomPalette(mood); } catch (err) { p = null; }
       }
       if (!p) p = MOOD_PALETTE.studio;
+      this.ground = MOOD_GROUND[mood] || null;      /* D-738 */
       this.publishLight(p);
       if (!this.pal || p === this.palTo) { this.palTo = p; return; }
       this.palTo = p;
@@ -760,14 +779,14 @@
       var P = { pw: pw, ph: ph, t: t, c0: c0.slice(), c2: c2.slice(), cxp: cxp, cyp: cyp, amp: amp, DR: DR,
         nw: nw, wx0: wx0, wy0: wy0, wa: wa, wt: wtArr(this.waves), warm: warm,
         nb: nb, bX: bX, bY: bY, bIR: new Float32Array(bIR), bA: bA, bCr: bCr, bCg: bCg, bCb: bCb,
-        hy: hy, hBand: hBand, hA: hA };
+        hy: hy, hBand: hBand, hA: hA, hc: this.ground ? this.ground.head : null };
       /* ── ПЛАЗМА СЧИТАЕТСЯ НЕ ЗДЕСЬ, ЕСЛИ ЕСТЬ ГДЕ (D-282) ────────────────
          Выше — лёгкое: сорок чисел кадра. Ниже — тяжёлое: сто шестьдесят
          тысяч точек. Где браузер умеет отдать холст потоку (OffscreenCanvas),
          точки считает и рисует свой поток, а главный — только посылает эти
          сорок чисел. Главный поток остаётся свободным для пальца. */
       if (this.worker) {
-        this.worker.postMessage({ type: "frame", P: P, base: this.base || "#070a14", blend: this.blend || "lighter" });
+        this.worker.postMessage({ type: "frame", P: P, base: this.base || (this.ground && this.ground.base) || "#070a14", blend: this.blend || "lighter" });
         /* Ступень качества судит по цене ТОЧЕК — её присылает поток. */
         return;
       }
@@ -777,7 +796,7 @@
       cx.globalCompositeOperation = "source-over";
       /* Основа и способ наложения — свои у отражения в Фонаре (D-281); у
          стола они всегда эти: тёмная ночь и свет, который прибавляется. */
-      cx.fillStyle = this.base || "#070a14";
+      cx.fillStyle = this.base || (this.ground && this.ground.base) || "#070a14";
       cx.fillRect(0, 0, W, H);
       cx.globalCompositeOperation = this.blend || "lighter";
       cx.drawImage(this.off, 0, 0, pw, ph, 0, 0, W, H);
@@ -805,7 +824,7 @@
     var pw = P.pw, ph = P.ph, t = P.t, c0 = P.c0, c2 = P.c2, cxp = P.cxp, cyp = P.cyp, amp = P.amp, DR = P.DR;
     var nw = P.nw, wx0 = P.wx0, wy0 = P.wy0, wa = P.wa, wt = P.wt, warm = P.warm;
     var nb = P.nb, bX = P.bX, bY = P.bY, bIR = P.bIR, bA = P.bA, bCr = P.bCr, bCg = P.bCg, bCb = P.bCb;
-    var hy = P.hy, hBand = P.hBand, hA = P.hA;
+    var hy = P.hy, hBand = P.hBand, hA = P.hA, hc = P.hc || [143, 168, 242];   /* головка: прежняя синяя; у Тепла своя (MOOD_GROUND, D-738) */
     seed = seed | 0;
     var idx = 0;
     /* ЦЕЛОГО КОЛЬЦА НЕТ (D-611, основатель 04.11.2026: «чтобы никогда не появлялось полное кольцо»): у круговой волны
@@ -817,7 +836,7 @@
       /* головка зависит только от строки — считается один раз на строку */
       var hd = y - hy, hAbs = hd < 0 ? -hd : hd, hw = 0;
       if (hAbs < hBand) hw = hA * (1 - hAbs / hBand);
-      var hR = 143 * hw, hG = 168 * hw, hB = 242 * hw;
+      var hR = hc[0] * hw, hG = hc[1] * hw, hB = hc[2] * hw;
 
       /* Вертикальная часть q² — одна на строку, а не на каждый пиксель.
          Пятну, не дотянувшемуся до строки, кладётся заведомо большое q²:
@@ -873,6 +892,28 @@
         var r = (c0[0] * (1 - w2) + c2[0] * w2) * qq + 190 * n * warm * amp * 0.7;
         var g = (c0[1] * (1 - w2) + c2[1] * w2) * qq + 140 * n * warm * amp * 0.5;
         var b = (c0[2] * (1 - w2) + c2[2] * w2) * qq + 95 * n * warm * amp * 0.3;
+
+        /* СКЛАДКА НАЛОЖЕНИЯ · D-734 (основатель 11.11.2026, демо тем v8). Белый пучок давали не тела
+           света (их вклад ≤ 10 уровней из 255), а сама плазма: четыре волны суммы v иногда сходятся в
+           одном месте, сумма → 1, n^12 × 7,4 выходит в 5–7 раз выше 255 и обрезается в белое.
+           Сумма ограничивается ТОЛЬКО на пикселе, где ярчайший канал выше колена 120 (зелёный ×1,25:
+           на глаз он светлее); ниже — поле байт в байт как раньше. Выше колена ядро наложения гаснет
+           к 75, а кромка остаётся полукольцом (пик 240) с одной стороны — в том же медленно
+           поворачивающемся окне CA/SA (целого кольца нет, D-611); сторону даёт наклон плазмы
+           (производные тех же волн), он считается только выше колена. Цвет масштабируется целиком:
+           тон и насыщенность те же. Стережёт tools/field-beam-check.mjs (вырезает блок по меткам). */
+        var fg = g * 1.25, fm = r > fg ? (r > b ? r : b) : (fg > b ? fg : b);
+        if (fm > 120) {
+          var fR = s((dx * dx + dy * dy) * 0.00055 - t * 0.281 + 1.5708) * am * 0.0011, fL = s((dx * 0.0262 - dy * 0.0201) - t * 0.281 + 1.5708) * bm,
+              fc3 = 0.0182 * s((wx + wy) * 0.0182 + t * 0.121 + 1.5708),
+              fgx = 0.0295 * s(wx * 0.0295 + t * 0.207 + 1.5708) + fc3 + (fR * dx + 0.0262 * fL) * an,
+              fgy = 0.0231 * s(wy * 0.0231 - t * 0.163 + 1.5708) + fc3 + (fR * dy - 0.0201 * fL) * an,
+              fo = .5 - .5 * (fgx * CA + fgy * SA) / (Math.sqrt(fgx * fgx + fgy * fgy) + 1e-6), fw = fo * fo * (3 - 2 * fo),
+              fz = (fm - 120) / 326.194,
+              fk = (120 + 120 * fw * fz * Math.exp(1 - fz) - 45 * (1 - Math.exp(-fz * fz * 3))) / fm;
+          r *= fk; g *= fk; b *= fk;
+        }
+        /* /СКЛАДКА */
 
         /* тела света — тот же аддитивный вклад, что давал lighter-градиент.
            Ни одного деления: вертикальная часть q² пришла из строки,

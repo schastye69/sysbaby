@@ -722,6 +722,10 @@
          Охраняется tools/line-measure-check.mjs. */
       size: { w: 660, h: 420 },
       deskPos: { x: 200, y: 320 },
+      /* СКРЫТ ФЛАГОМ, ДАННЫЕ ЦЕЛЫ · D-723 (основатель 03–04.11, PLAN этап 0). */
+      hidden: true,
+      why: "why.terminal",
+      offDesk: "отложено решением",
       render: function (win) {
         var body = win.el.querySelector(".window-body");
         if (!body) return;

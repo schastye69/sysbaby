@@ -30,7 +30,7 @@
       "cc.shortcuts": "Keyboard Shortcuts", "cc.layouts": "Workspace Layouts",
       "cc.health": "Health", "cc.incognito": "Incognito Desktop",
       "cc.exit": "Exit Incognito", "cc.signout": "Sign out, softly",
-      "cc.export": "Take your home with you", "cc.import": "Bring your home here…", "cc.importMerge": "Add to mine, don't replace",
+      "cc.tapHint": "tap — turn on or off", "cc.charge": "charge", "cc.export": "Take your home with you", "cc.import": "Bring your home here…", "cc.importMerge": "Add to mine, don't replace",
       "panel.shortcuts": "Keyboard shortcuts", "panel.notifications": "Notifications",
       "panel.windows": "Windows", "panel.clipboard": "Clipboard history",
       "panel.health": "System health", "panel.layouts": "Workspace layouts",
@@ -163,7 +163,6 @@
       "lock.hwRemoved": "Unbound. The lock opens with the word again.",
       "lock.hwNoPrf": "This browser or device cannot answer the question the lock needs (WebAuthn PRF). Nothing was changed.",
       "lock.hwFailed": "The device did not confirm — nothing was changed.",
-      "lock.hwNeed": "This lock also asks your device: after the word, confirm with fingerprint, face or PIN.",
       /* Буфер с паролем «Ключей» не удалось очистить при закрытии сеанса или по сроку (D-360). */
       "keys.clipKeptTitle": "The clipboard was not cleared",
       "keys.clipKept": "A password copied from Keys may still be in the clipboard: the browser refused to clear it. Copy something else over it now.",
@@ -175,7 +174,7 @@
          дыра в ru/ee видна глазом в этом же файле. */
       "set.tab.general": "General", "set.tab.appearance": "Appearance",
       "set.tab.sound": "Sound & Focus", "set.tab.desktop": "Dock & Desktop",
-      "set.tab.account": "Keys and lock", "set.tab.privacy": "Privacy", "set.tab.advanced": "Advanced", "set.tab.about": "About",
+      "set.tab.account": "Keys and lock", "set.tab.privacy": "Privacy", "set.tab.advanced": "Advanced", "set.tab.about": "About", "set.tab.outward": "Outward",
       "set.general.identity": "Your identity",
       "set.general.identitySub": "This is the name the whole system addresses you by — the topbar, {mail}, {messenger}, everywhere.",
       "set.general.saved": "Saved",
@@ -191,7 +190,7 @@
       "set.appearance.moodNone": "No moods available",
       "set.appearance.brightness": "Brightness",
       "set.appearance.brightnessSub": "Dims the whole desktop — the same slider as the Control Center",
-      "set.appearance.fullscreenOn": "Take the whole screen", "set.appearance.fullscreenOff": "Give the screen back", "set.appearance.fullscreen": "Full screen", "set.appearance.fullscreenSub": "The system takes the whole screen \u2014 the same switch as in the quick panel", "set.appearance.controls": "Window controls", "set.appearance.controlsSub": "Which side the close, minimise and maximise keys sit on \u2014 in every window and on every note", "set.appearance.turbo": "Turbo",
+      "set.appearance.fullscreenOn": "Take the whole screen", "set.appearance.fullscreenOff": "Give the screen back", "set.appearance.fullscreen": "Full screen", "set.appearance.fullscreenSub": "The system takes the whole screen \u2014 the same switch as in the quick panel", "set.appearance.pult": "Control panel", "set.appearance.pultSub": "How the panel under the glowing line looks: large numbers or the Light guide with its vein", "set.appearance.pult.krupno": "Large numbers", "set.appearance.pult.svetovod": "Light guide", "set.appearance.controls": "Window controls", "set.appearance.controlsSub": "Which side the close, minimise and maximise keys sit on \u2014 in every window and on every note", "set.appearance.turbo": "Turbo",
       "set.appearance.turboSub": "Skips the long animations — everything happens instantly",
       "set.appearance.transparency": "Reduce transparency",
       "set.appearance.transparencySub": "Solid panels instead of glass",
@@ -464,10 +463,12 @@
       "alive.noProbe": "the system has no instrument for this need, and it will not guess",
       "alive.probeFailed": "the instrument did not run: {err}",
       "why.build": "Not on the desk by decision D-615: build opens only from Settings → About and by searching for the word “build”; it never opens by itself.", "why.browser": "A page inside a page: most sites refuse to be shown this way, and the rest need the network — the very thing the system is built to live without.",
-      "why.experimental": "A bench, not a tool: it is where we check whether a thing is possible. It gives a person nothing at this stage.",
       "why.mail": "Without a server, letters have nowhere to go and nowhere to come from: the app shows how it WOULD be, not the work itself. The postman's address is in the outward register; a server that would receive letters for you does not exist.",
       "why.messenger": "Messages travel by your own hand: sealed with a shared word, carried any way you like. Whether a live person is on the other end, nothing here can measure.",
       "why.player": "A player without its own music is a picture of a player: it has nothing to show until you hand it a folder. Taken off the desk for now (D-199); opens by name.",
+      "why.terminal": "Put aside by decision D-723: the terminal is hidden for now; its data is kept, and it comes back with a single line.",
+      "why.chest": "Put aside by decision D-723: the chest is hidden for now; everything it gave and keeps stays in place.",
+      "why.outward": "Not an app by decision D-723: what leaves the home now lives in Settings, in the Outward section.",
       "why.project": "Put aside by decision D-354: the works are withdrawn from build for now. The live system opened from a work, not from an icon; opened by the terminal word, the window only says so and leads to build.",
       "why.viewer": "The viewer opens from a thing, not from an icon: without a thing it has nothing to show, and an icon would promise what the desk cannot deliver.", "why.ark": "Put aside by decision D-330: at this stage its risk outweighs its use. A copy receives no fixes, a file from someone else cannot be verified until builds are signed, and in Chrome a copy without a lock is open to every other file opened from disk. The code stays; it returns with signed builds.",
       "hand.done": "Handed over", "hand.src.from": "Copied from «{room}» on {d}.", "hand.src.same": "It matches the source.", "hand.src.changed": "The source has changed since.", "hand.src.gone": "The source is gone — this is the last copy.", "hand.src.update": "Take the newer version",
@@ -518,7 +519,7 @@
       "cc.shortcuts": "Горячие клавиши", "cc.layouts": "Раскладки окон",
       "cc.health": "Диагностика", "cc.incognito": "Скрытый рабочий стол",
       "cc.exit": "Выйти из инкогнито", "cc.signout": "Выйти, тихо",
-      "cc.export": "Унести дом с собой", "cc.import": "Принести дом сюда…", "cc.importMerge": "Добавить к своему, не заменяя",
+      "cc.tapHint": "касание — включить или выключить", "cc.charge": "заряд", "cc.export": "Унести дом с собой", "cc.import": "Принести дом сюда…", "cc.importMerge": "Добавить к своему, не заменяя",
       "panel.shortcuts": "Горячие клавиши", "panel.notifications": "Уведомления",
       "panel.windows": "Окна", "panel.clipboard": "История копирования",
       "panel.health": "Состояние системы", "panel.layouts": "Раскладки окон",
@@ -643,7 +644,6 @@
       "lock.hwRemoved": "Отвязано. Замок снова открывается словом.",
       "lock.hwNoPrf": "Этот браузер или устройство не умеет отвечать на вопрос, нужный замку (WebAuthn PRF). Ничего не изменено.",
       "lock.hwFailed": "Устройство не подтвердило — ничего не изменено.",
-      "lock.hwNeed": "Этот замок спрашивает и устройство: после слова подтвердите отпечатком, лицом или PIN.",
       "keys.clipKeptTitle": "Буфер обмена не очищен",
       "keys.clipKept": "В буфере обмена может оставаться пароль, скопированный в «Ключах»: браузер не дал его стереть. Скопируйте поверх него что-нибудь другое — сейчас.",
       "lock.hwNo": "Ключ устройства не ответил — замок остаётся закрытым. Без устройства его откроет только код восстановления.",
@@ -651,7 +651,7 @@
       /* ============================================================ Настройки */
       "set.tab.general": "Общее", "set.tab.appearance": "Оформление",
       "set.tab.sound": "Звук и фокус", "set.tab.desktop": "Док и рабочий стол",
-      "set.tab.account": "Ключи и замок", "set.tab.privacy": "Приватность", "set.tab.advanced": "Дополнительно", "set.tab.about": "О системе",
+      "set.tab.account": "Ключи и замок", "set.tab.privacy": "Приватность", "set.tab.advanced": "Дополнительно", "set.tab.about": "О системе", "set.tab.outward": "Наружу",
       "set.general.identity": "Ваше имя",
       "set.general.identitySub": "Этим именем к вам обращается вся система — верхняя панель, {mail}, {messenger}, везде.",
       "set.general.saved": "Сохранено",
@@ -667,7 +667,7 @@
       "set.appearance.moodNone": "Настроений нет",
       "set.appearance.brightness": "Яркость",
       "set.appearance.brightnessSub": "Приглушает весь рабочий стол — тот же ползунок, что в Центре управления",
-      "set.appearance.fullscreenOn": "\u0417\u0430\u043d\u044f\u0442\u044c \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d", "set.appearance.fullscreenOff": "\u0412\u0435\u0440\u043d\u0443\u0442\u044c \u044d\u043a\u0440\u0430\u043d", "set.appearance.fullscreen": "\u0412\u043e \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d", "set.appearance.fullscreenSub": "\u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u0437\u0430\u043d\u0438\u043c\u0430\u0435\u0442 \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d \u2014 \u0442\u043e\u0442 \u0436\u0435 \u043f\u0435\u0440\u0435\u043a\u043b\u044e\u0447\u0430\u0442\u0435\u043b\u044c, \u0447\u0442\u043e \u0438 \u0432 \u0431\u044b\u0441\u0442\u0440\u043e\u0439 \u043f\u0430\u043d\u0435\u043b\u0438", "set.appearance.controls": "\u041a\u043d\u043e\u043f\u043a\u0438 \u043e\u043a\u043e\u043d", "set.appearance.controlsSub": "\u0421 \u043a\u0430\u043a\u043e\u0439 \u0441\u0442\u043e\u0440\u043e\u043d\u044b \u0441\u0442\u043e\u044f\u0442 \u0437\u0430\u043a\u0440\u044b\u0442\u044c, \u0441\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u0438 \u0440\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u2014 \u0432 \u043a\u0430\u0436\u0434\u043e\u043c \u043e\u043a\u043d\u0435 \u0438 \u043d\u0430 \u043a\u0430\u0436\u0434\u043e\u0439 \u0437\u0430\u043c\u0435\u0442\u043a\u0435", "set.appearance.turbo": "Турбо",
+      "set.appearance.fullscreenOn": "\u0417\u0430\u043d\u044f\u0442\u044c \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d", "set.appearance.fullscreenOff": "\u0412\u0435\u0440\u043d\u0443\u0442\u044c \u044d\u043a\u0440\u0430\u043d", "set.appearance.fullscreen": "\u0412\u043e \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d", "set.appearance.fullscreenSub": "\u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u0437\u0430\u043d\u0438\u043c\u0430\u0435\u0442 \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d \u2014 \u0442\u043e\u0442 \u0436\u0435 \u043f\u0435\u0440\u0435\u043a\u043b\u044e\u0447\u0430\u0442\u0435\u043b\u044c, \u0447\u0442\u043e \u0438 \u0432 \u0431\u044b\u0441\u0442\u0440\u043e\u0439 \u043f\u0430\u043d\u0435\u043b\u0438", "set.appearance.pult": "Пульт", "set.appearance.pultSub": "Каким открывается пульт под тлеющей чертой: крупные числа или Световод с жилой", "set.appearance.pult.krupno": "Крупные числа", "set.appearance.pult.svetovod": "Световод", "set.appearance.controls": "\u041a\u043d\u043e\u043f\u043a\u0438 \u043e\u043a\u043e\u043d", "set.appearance.controlsSub": "\u0421 \u043a\u0430\u043a\u043e\u0439 \u0441\u0442\u043e\u0440\u043e\u043d\u044b \u0441\u0442\u043e\u044f\u0442 \u0437\u0430\u043a\u0440\u044b\u0442\u044c, \u0441\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u0438 \u0440\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u2014 \u0432 \u043a\u0430\u0436\u0434\u043e\u043c \u043e\u043a\u043d\u0435 \u0438 \u043d\u0430 \u043a\u0430\u0436\u0434\u043e\u0439 \u0437\u0430\u043c\u0435\u0442\u043a\u0435", "set.appearance.turbo": "Турбо",
       "set.appearance.turboSub": "Пропускает долгие анимации — всё происходит мгновенно",
       "set.appearance.transparency": "Меньше прозрачности",
       "set.appearance.transparencySub": "Плотные панели вместо стекла",
@@ -926,10 +926,12 @@
       "alive.noProbe": "такой нужде в системе не заведено прибора, и догадываться она не станет",
       "alive.probeFailed": "прибор не отработал: {err}",
       "why.build": "Не на столе по решению D-615: build открывается только из «Настроек» → «О системе» и поиском по слову «build»; сам он не открывается никогда.", "why.browser": "Страница внутри страницы: большинство сайтов запрещают себя показывать так, а остальным нужна сеть — то самое, без чего система нарочно умеет жить.",
-      "why.experimental": "Стенд, а не инструмент: там проверяют, возможна ли вещь. Человеку на этом этапе он не даёт ничего.",
       "why.mail": "Письма без сервера некуда отправить и неоткуда получить: приложение показывает, КАК БЫЛО БЫ, а не делает работу. Адрес почтальона в описи выходов есть; сервера, который принимал бы письма к вам, — нет.",
       "why.messenger": "Сообщения носит ваша рука: запечатанное общим словом сообщение вы сами передаёте любым путём. Есть ли на том конце живой человек, отсюда не измерить ничем.",
       "why.player": "Проигрыватель без своей музыки — картинка проигрывателя: показать ему нечего, пока вы не дали папку. Снят со стола временно (D-199); открывается по имени.",
+      "why.terminal": "Отложен решением D-723: терминал пока скрыт; его данные целы, вернуть его можно одной строкой.",
+      "why.chest": "Отложен решением D-723: сундук пока скрыт; всё, что он подарил и хранит, на месте.",
+      "why.outward": "Не приложение по решению D-723: что выходит из дома, теперь живёт в Настройках, в разделе «Наружу».",
       "why.project": "Отложена решением D-354: работы временно сняты с витрины. Живая система открывалась работой, а не значком; открытое словом терминала, окно только говорит об этом и ведёт в build.",
       "why.viewer": "Просмотр открывается вещью, а не значком: без вещи ему нечего показать, и значок обещал бы то, чего стол не выполнит.", "why.ark": "Отложен решением D-330: на этом этапе риск больше пользы. Копия не получает исправлений, чужой файл нечем проверить, пока сборки не подписаны, а в Chrome копия без замка открыта любому другому файлу, открытому с диска. Код на месте; вернётся вместе с подписанными сборками.",
       "hand.done": "Передано", "hand.src.from": "Скопировано из «{room}» {d}.", "hand.src.same": "Совпадает с источником.", "hand.src.changed": "С тех пор источник изменился.", "hand.src.gone": "Источника больше нет — это последняя копия.", "hand.src.update": "Взять новую версию",
@@ -945,7 +947,7 @@
       "ec.silenceTitle": "Удалить навсегда — это не отменить", "ec.silenceAria": "Удалить навсегда",
       "ec.appRemoved": "Убрано с рабочего стола — не удалено",
       "ec.empty.title": "Здесь пока тихо",
-      "ec.empty.sub": "Всё, что ты уберёшь со стола, сначала осядет здесь. Ничего не исчезает, пока ты сам не скажешь. Перетащи что угодно на {echoes} — и оно окажется тут.",
+      "ec.empty.sub": "Всё, что вы уберёте со стола, сначала осядет здесь. Ничего не исчезает, пока вы сами не скажете. Перетащите что угодно на {echoes} — и оно окажется тут.",
       "ec.count.one": "Эхо: {n}", "ec.count.many": "Эхо: {n}",
       "ec.apps.one": "Скрытых приложений: {n}", "ec.apps.many": "Скрытых приложений: {n}",
       "ec.silenceAll": "Заглушить всё",
@@ -977,7 +979,7 @@
       "cc.shortcuts": "Klaviatuuri otseteed", "cc.layouts": "Akende paigutused",
       "cc.health": "Seisund", "cc.incognito": "Peidetud töölaud",
       "cc.exit": "Välju inkognitost", "cc.signout": "Logi välja, vaikselt",
-      "cc.export": "Võta kodu kaasa", "cc.import": "Too kodu siia…", "cc.importMerge": "Lisa minu omale, ära asenda",
+      "cc.tapHint": "puudutus — sisse või välja", "cc.charge": "laeng", "cc.export": "Võta kodu kaasa", "cc.import": "Too kodu siia…", "cc.importMerge": "Lisa minu omale, ära asenda",
       "panel.shortcuts": "Klaviatuuri otseteed", "panel.notifications": "Teated",
       "panel.windows": "Aknad", "panel.clipboard": "Kopeerimisajalugu",
       "panel.health": "Süsteemi seisund", "panel.layouts": "Akende paigutused",
@@ -1036,8 +1038,8 @@
       "toast.layoutRestored": "Paigutus taastatud", "toast.layoutRestoredBody": "Vidinad on seal, kuhu sa nad jätsid.",
       "toast.captured": "Kirjas", "toast.capturedBody": "Otse rakendusse {app}.",
       "toast.toEchoes": "Liigutatud rakendusse {app}",
-      "toast.toEchoesNote": "Miski ei kao enne, kui sa nii ütled.",
-      "toast.toEchoesIcon": "See ootab seal — saad igal ajal tagasi tuua.",
+      "toast.toEchoesNote": "Miski ei kao enne, kui te nii ütlete.",
+      "toast.toEchoesIcon": "See ootab seal — saate selle igal ajal tagasi tuua.",
       "toast.restored": "Taastatud", "toast.restoredBody": "Märge on tagasi seal, kus ta oli.",
       "toast.closed": "{app} suletud", "toast.closedBody": "Vajuta „Võta tagasi“, et see endisel kujul tagasi tuua.",
       "toast.undo": "Võta tagasi",
@@ -1102,7 +1104,6 @@
       "lock.hwRemoved": "Eemaldatud. Lukk avaneb jälle sõnaga.",
       "lock.hwNoPrf": "See brauser või seade ei oska vastata küsimusele, mida lukk vajab (WebAuthn PRF). Midagi ei muudetud.",
       "lock.hwFailed": "Seade ei kinnitanud — midagi ei muudetud.",
-      "lock.hwNeed": "See lukk küsib ka seadet: pärast sõna kinnita sõrmejälje, näo või PIN-iga.",
       "keys.clipKeptTitle": "Lõikelauda ei tühjendatud",
       "keys.clipKept": "Lõikelauale võib olla jäänud „Võtmetest“ kopeeritud parool: brauser ei lubanud seda kustutada. Kopeeri kohe midagi muud selle peale.",
       "lock.hwNo": "Seadme võti ei vastanud — lukk jääb suletuks. Ilma seadmeta avab selle ainult taastekood.",
@@ -1111,7 +1112,7 @@
          Обращение к посетителю — teie (мн. вежливое), как на лендинге. */
       "set.tab.general": "Üldine", "set.tab.appearance": "Välimus",
       "set.tab.sound": "Heli ja fookus", "set.tab.desktop": "Dokk ja töölaud",
-      "set.tab.account": "Võtmed ja lukk", "set.tab.privacy": "Privaatsus", "set.tab.advanced": "Lisavalikud", "set.tab.about": "Teave",
+      "set.tab.account": "Võtmed ja lukk", "set.tab.privacy": "Privaatsus", "set.tab.advanced": "Lisavalikud", "set.tab.about": "Teave", "set.tab.outward": "Välja",
       "set.general.identity": "Teie nimi",
       "set.general.identitySub": "Selle nimega pöördub teie poole kogu süsteem — ülariba, {mail}, {messenger}, kõikjal.",
       "set.general.saved": "Salvestatud",
@@ -1127,7 +1128,7 @@
       "set.appearance.moodNone": "Meeleolusid pole saadaval",
       "set.appearance.brightness": "Heledus",
       "set.appearance.brightnessSub": "Tumendab kogu töölauda — sama liugur mis juhtimiskeskuses",
-      "set.appearance.fullscreenOn": "V\u00f5ta kogu ekraan", "set.appearance.fullscreenOff": "Anna ekraan tagasi", "set.appearance.fullscreen": "T\u00e4isekraan", "set.appearance.fullscreenSub": "S\u00fcsteem v\u00f5tab kogu ekraani \u2014 sama l\u00fcliti mis kiirpaneelis", "set.appearance.controls": "Akna nupud", "set.appearance.controlsSub": "Kummal pool on sulge, peida ja suurenda \u2014 igas aknas ja igal m\u00e4rkmel", "set.appearance.turbo": "Turbo",
+      "set.appearance.fullscreenOn": "V\u00f5ta kogu ekraan", "set.appearance.fullscreenOff": "Anna ekraan tagasi", "set.appearance.fullscreen": "T\u00e4isekraan", "set.appearance.fullscreenSub": "S\u00fcsteem v\u00f5tab kogu ekraani \u2014 sama l\u00fcliti mis kiirpaneelis", "set.appearance.pult": "Juhtpult", "set.appearance.pultSub": "Milline on pult hõõguva joone all: suured numbrid või Valgusjuht soonega", "set.appearance.pult.krupno": "Suured numbrid", "set.appearance.pult.svetovod": "Valgusjuht", "set.appearance.controls": "Akna nupud", "set.appearance.controlsSub": "Kummal pool on sulge, peida ja suurenda \u2014 igas aknas ja igal m\u00e4rkmel", "set.appearance.turbo": "Turbo",
       "set.appearance.turboSub": "Jätab pikad animatsioonid vahele — kõik juhtub kohe",
       "set.appearance.transparency": "Vähenda läbipaistvust",
       "set.appearance.transparencySub": "Klaasi asemel läbipaistmatud paneelid",
@@ -1386,10 +1387,12 @@
       "alive.noProbe": "sellele vajadusele pole süsteemis mõõteriista ja ta ei hakka arvama",
       "alive.probeFailed": "mõõteriist ei töötanud: {err}",
       "why.build": "Töölaual pole otsusega D-615: build avaneb ainult „Seadetest“ → „Süsteemist“ ja otsinguga sõnale „build“; ise ei avane see kunagi.", "why.browser": "Leht lehe sees: enamik saite keelab end nii näidata ja ülejäänud vajavad võrku — just seda, milleta süsteem on meelega ehitatud elama.",
-      "why.experimental": "Katsepink, mitte tööriist: seal kontrollitakse, kas asi on võimalik. Inimesele ei anna see praegusel etapil midagi.",
       "why.mail": "Ilma serverita pole kirjadel kuhugi minna ega kusagilt tulla: rakendus näitab, KUIDAS OLEKS, mitte tööd ennast. Postiljoni aadress on väljapääsude registris olemas; serverit, mis sinule kirju vastu võtaks, ei ole.",
       "why.messenger": "Sõnumeid kannab sinu käsi: ühise sõnaga pitseeritud sõnumi saadad sa ise mis tahes teed. Kas teises otsas on elav inimene, ei saa siit millegagi mõõta.",
       "why.player": "Mängija ilma oma muusikata on mängija pilt: tal pole midagi näidata, kuni sa talle kausta ei anna. Ajutiselt laualt maha võetud (D-199); avaneb nime järgi.",
+      "why.terminal": "Otsusega D-723 kõrvale pandud: terminal on praegu peidus; selle andmed on alles ja selle saab tagasi tuua ühe reaga.",
+      "why.chest": "Otsusega D-723 kõrvale pandud: laegas on praegu peidus; kõik, mis see kinkis ja hoiab, on alles.",
+      "why.outward": "Otsusega D-723 pole see rakendus: see, mis kodust välja läheb, elab nüüd seadetes jaotises „Välja”.",
       "why.project": "Otsusega D-354 kõrvale pandud: tööd on vitriinilt ajutiselt eemaldatud. Elav süsteem avanes tööst, mitte ikoonist; terminali sõnaga avatud aken ütleb ainult seda ja viib build'i.",
       "why.viewer": "Vaatur avaneb asjast, mitte ikoonist: ilma asjata pole tal midagi näidata, ja ikoon lubaks seda, mida laud ei täida.", "why.ark": "Otsusega D-330 kõrvale pandud: selles etapis on risk suurem kui kasu. Koopia ei saa parandusi, võõrast faili ei saa kontrollida enne, kui järgud on allkirjastatud, ja Chrome'is on lukuta koopia avatud igale teisele kettalt avatud failile. Kood jääb alles; see naaseb koos allkirjastatud järkudega.",
       "hand.done": "Antud üle", "hand.src.from": "Kopeeritud kohast «{room}» {d}.", "hand.src.same": "Ühtib allikaga.", "hand.src.changed": "Allikas on vahepeal muutunud.", "hand.src.gone": "Allikat enam pole — see on viimane koopia.", "hand.src.update": "Võta uus versioon",
@@ -1405,7 +1408,7 @@
       "ec.silenceTitle": "Kustuta jäädavalt — seda ei saa tagasi võtta", "ec.silenceAria": "Kustuta jäädavalt",
       "ec.appRemoved": "Töölaualt eemaldatud — mitte kustutatud",
       "ec.empty.title": "Siin on vaikne",
-      "ec.empty.sub": "Kõik, mille sa laualt ära koristad, settib kõigepealt siia. Miski ei kao enne, kui sa ise ütled. Lohista ükskõik mis {echoes} peale — ja see maandub siia.",
+      "ec.empty.sub": "Kõik, mille te laualt ära koristate, settib kõigepealt siia. Miski ei kao enne, kui te ise ütlete. Lohistage ükskõik mis {echoes} peale — ja see maandub siia.",
       "ec.count.one": "{n} kaja", "ec.count.many": "{n} kaja",
       "ec.apps.one": "{n} peidetud rakendus", "ec.apps.many": "{n} peidetud rakendust",
       "ec.silenceAll": "Vaigista kõik",
@@ -2165,6 +2168,10 @@
       } else {
         line.textContent = bat.charging ? window.sbT("cc.charging") : window.sbT("cc.battery");
       }
+      /* В крупных числах (D-742) внизу только «в сети · заряд»; время
+         батареи — подсказкой при наведении. */
+      var batBox = line.closest ? line.closest(".sv-bat") : null;
+      if (batBox) batBox.title = line.textContent;
     }
   }
   function initBattery() {
@@ -2607,6 +2614,7 @@
     if (!cc) return;
     if (window.sbCloseAllPanels) window.sbCloseAllPanels();
     ccOpen = true;
+    applyPultView();
     cc.removeAttribute("hidden");
     cc.classList.add("open");
     setCcOther(false);
@@ -2618,16 +2626,39 @@
   function setCcOther(open) {
     var btn = $("#sbCcOtherBtn"), box = $("#sbCcOther"), cc = $("#sbControlCenter");
     if (!btn || !box) return;
-    box.hidden = !open;
+    /* В крупных числах (D-742) «унести/принести дом» видны и в свёрнутом
+       пульте, поэтому коробка не прячется целиком: свёрнутость — класс
+       kn-fold, прячущий остальное. В Световоде — как было (hidden). */
+    box.hidden = pultView() === "svetovod" ? !open : false;
+    box.classList.toggle("kn-fold", !open);
     btn.setAttribute("aria-expanded", open ? "true" : "false");
     var st = btn.querySelector(".sv-st");
     if (st) st.textContent = open ? "↑" : "↓";
     if (cc) cc.classList.toggle("sv-open", !!open);
   }
-  window.sbCcOtherOpen = function (v) { if (v != null) setCcOther(!!v); var b = $("#sbCcOther"); return !!b && !b.hidden; };
+  window.sbCcOtherOpen = function (v) { if (v != null) setCcOther(!!v); var b = $("#sbCcOtherBtn"); return !!b && b.getAttribute("aria-expanded") === "true"; };
   /* «ещё 4 темы — в Настройках →»: число — из объявления системы, форма
      слова — по правилам числа своего языка (pluralKey). */
   function moreThemesText(n) { return window.sbT("cc.moreThemes", { count: n }); }
+
+  /* ── ВИД ПУЛЬТА (D-740, D-742) ─────────────────────────────────────────
+     «Крупные числа» по умолчанию, «Световод» — по выбору в Настройках.
+     Вид — класс на пульте; узлы и их проводка одни. */
+  function pultView() { return window.sbGetPultView ? window.sbGetPultView() : "krupno"; }
+  function applyPultView() {
+    var cc = $("#sbControlCenter");
+    if (!cc) return;
+    var v = pultView();
+    cc.classList.toggle("svetovod", v === "svetovod");
+    cc.classList.toggle("krupno", v !== "svetovod");
+    cc.setAttribute("data-pult", v);
+    setCcOther(window.sbCcOtherOpen());
+  }
+  doc.addEventListener("sysbaby:setting-changed", function (ev) {
+    if (!ev.detail || ev.detail.kind !== "pult") return;
+    applyPultView();
+    if (ccOpen) paintCc();
+  });
 
   var ccVol = null, ccBright = null;
   function paintCc() {
@@ -2662,10 +2693,13 @@
     var moodHost = $("#sbCcMoods");
     /* В пульте — только темы с pult: true (D-630): Тепло, Океан, Аврора,
        Праздник. Список по-прежнему из объявления системы (D-152). */
-    var pultMoods = (window.sbWallpaperMoods || []).filter(function (m) { return m.pult; });
+    /* В крупных числах (D-741) — строка слов из тем с words: true: тепло ·
+       океан · аврора; Праздника и строки «ещё N тем» там нет. */
+    var big = pultView() !== "svetovod";
+    var pultMoods = (window.sbWallpaperMoods || []).filter(function (m) { return big ? m.words : m.pult; });
     var moreN = (window.sbWallpaperMoods || []).length - pultMoods.length;
     var moreBtn = $("#sbCcMoreThemes");
-    if (moreBtn) { moreBtn.hidden = moreN <= 0; moreBtn.textContent = moreThemesText(moreN); }
+    if (moreBtn) { moreBtn.hidden = big || moreN <= 0; moreBtn.textContent = moreThemesText(moreN); }
     if (moodHost) {
       var ids = pultMoods.map(function (m) { return m.id; }).join(",");
       if (moodHost.getAttribute("data-built") !== ids) {
@@ -2752,8 +2786,14 @@
   }
   function paintSliderVals() {
     var v = $("#sbCcVolumeVal"), br = $("#sbCcBrightnessVal");
-    if (v) v.textContent = Math.round((window.sbGetNotifVolume ? window.sbGetNotifVolume() : num(window.sbNotifVolume, 0.6)) * 100) + "%";
-    if (br) br.textContent = Math.round(window.sbGetBrightness ? window.sbGetBrightness() : 100) + "%";
+    var vn = Math.round((window.sbGetNotifVolume ? window.sbGetNotifVolume() : num(window.sbNotifVolume, 0.6)) * 100);
+    var bn = Math.round(window.sbGetBrightness ? window.sbGetBrightness() : 100);
+    if (v) v.textContent = vn + "%";
+    if (br) br.textContent = bn + "%";
+    /* Крупные числа (D-742): то же число, без знака процента. */
+    var vb = $("#sbCcVolumeBig"), bb = $("#sbCcBrightnessBig");
+    if (vb) vb.textContent = String(vn);
+    if (bb) bb.textContent = String(bn);
   }
   function paintLangRow() {
     var row = $("#sbCcLang");
@@ -2786,6 +2826,7 @@
   function wireControlCenter() {
     var trigger = $("#sbCcTrigger"), cc = $("#sbControlCenter");
     if (!trigger || !cc) return;
+    applyPultView();
     trigger.addEventListener("click", function (ev) {
       ev.stopPropagation();
       if (ccOpen) window.sbCloseControlCenter(); else openControlCenter();

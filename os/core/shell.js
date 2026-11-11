@@ -171,6 +171,26 @@
     }, { capture: true, passive: true });
   })();
   window.sbInputKind = function () { return inputKind; };
+  /* ── ПОЛЕ, ПРИШЕДШЕЕ КЛАВИШЕЙ TAB (D-746) ────────────────────────────────
+     У текстового поля браузер включает :focus-visible при любом фокусе, и
+     стили не отличат касание от Tab. Поле, в которое пришли клавишей Tab,
+     получает класс sb-kfocus (латунная оправа поверх света по кромке);
+     касание или щелчок его не дают. Пишется в само поле, не в корень.
+     Охраняется tools/field-focus-light-check.mjs. */
+  (function () {
+    var byTab = false;
+    var FIELD = "input:not([type]), input[type='text'], input[type='search'], input[type='password'], input[type='email'], input[type='url'], input[type='tel'], input[type='number'], textarea";
+    doc.addEventListener("keydown", function (ev) { if (ev.key === "Tab") byTab = true; }, true);
+    doc.addEventListener("pointerdown", function () { byTab = false; }, { capture: true, passive: true });
+    doc.addEventListener("focusin", function (ev) {
+      var t = ev.target;
+      if (byTab && t && t.matches && t.matches(FIELD)) t.classList.add("sb-kfocus");
+    }, true);
+    doc.addEventListener("focusout", function (ev) {
+      var t = ev.target;
+      if (t && t.classList && t.classList.contains("sb-kfocus")) t.classList.remove("sb-kfocus");
+    }, true);
+  })();
 
   /* =================================================================== bus */
   var busMap = Object.create(null);
@@ -613,9 +633,22 @@
        остановками в пульте (Тепло, Океан, Аврора, Праздник), остальные
        четыре — в Настройках → Оформление. Порядок списка — порядок показа.
        Охраняется tools/svetovod-check.mjs и tools/temy-check.mjs. */
-    { id: "studio", name: "Warmth", pult: true, hue: 22, span: 16, cycle: 40 * 60000, room: [0.30, 0.46], sat: 68 },
-    { id: "ocean", name: "Ocean", pult: true, hue: 196, span: 30, cycle: 34 * 60000, room: [0.26, 0.44], sat: 70 },
-    { id: "aurora", name: "Aurora", pult: true, hue: 152, span: 74, cycle: 26 * 60000, room: [0.24, 0.46], sat: 72 },
+    /* D-741 (основатель 11.11.2026, «ПУЛЬТ в H3c»): words: true — тема стоит
+       в строке слов пульта «крупные числа» (тепло · океан · аврора);
+       Праздник из этой строки убран, в Световоде остановок по-прежнему
+       четыре (pult: true). Охраняется tools/pult-krupno-check.mjs. */
+    /* D-730 (основатель 10.11.2026): Тепло дышит только оранжевым — пояс 26↔34°
+       (было 22 ± 8°: двадцать минут из сорока у красного края, 14°), и без
+       выцветших моментов — holdC держит сочность шва во всём поясе.
+       Охраняется tools/teplo-orange-check.mjs. */
+    /* D-738 (основатель 11.11.2026, «примеси зелёного»): второй свет комнаты
+       (нижнее пятно #sbMoodTint) у Тепла сдвинут на +6°, а не на общие +28°:
+       при +28° он уходил в жёлтый 54…62°, и на тёмном жёлтое пятно читалось
+       оливковым — зелёным. Тепло тёплое по всему столу; стережёт
+       tools/teplo-warm-check.mjs. */
+    { id: "studio", name: "Warmth", pult: true, words: true, hue: 30, span: 8, cycle: 40 * 60000, room: [0.30, 0.46], sat: 68, holdC: true, lift: 6 },
+    { id: "ocean", name: "Ocean", pult: true, words: true, hue: 196, span: 30, cycle: 34 * 60000, room: [0.26, 0.44], sat: 70 },
+    { id: "aurora", name: "Aurora", pult: true, words: true, hue: 152, span: 74, cycle: 26 * 60000, room: [0.24, 0.46], sat: 72 },
     /* ── ПРАЗДНИК: ГОД СВЕТА ЗА ДВЕ МИНУТЫ, НАЧИНАЯ С СЕГОДНЯ (D-150) ─────
        ПОВОД, дословно от основателя 26.08.2026: «нужно ещё придумать третью
        экстра тему, например, праздник (только более гениально) и тогда
@@ -708,7 +741,7 @@
                level: Math.round(lvl * 1000) / 1000, sat: m.sat, mood: m.id };
     }
     var phase = (t % m.cycle) / m.cycle;
-    var hue, level;
+    var hue, level, sat = m.sat;
     if (m.span >= 360) {                       /* сеанс: полный круг */
       hue = Math.round(phase * 360 * 10) / 10;
       /* Праздник начинает круг с сегодняшнего дня года (D-150). Смещение
@@ -731,14 +764,46 @@
     } else {                                   /* спокойное: дыхание в поясе */
       var w = Math.sin(phase * 2 * Math.PI);
       hue = m.hue + (m.span / 2) * w;
+      if (m.holdC) sat = holdSat(m, hue);
       /* Свет дышит со сдвигом в четверть: комната не бледнеет и не
          разгорается ровно вместе с тоном — так дышит настоящий свет. */
       var w2 = Math.sin(phase * 2 * Math.PI + Math.PI / 2);
       level = m.room[0] + (m.room[1] - m.room[0]) * (w2 + 1) / 2;
     }
     return { hue: Math.round(((hue % 360) + 360) % 360 * 10) / 10,
-             level: Math.round(level * 1000) / 1000, sat: m.sat, mood: m.id };
+             level: Math.round(level * 1000) / 1000, sat: sat, mood: m.id };
   };
+  /* ── СОЧНОСТЬ ДЕРЖИТСЯ ПО ВСЕМУ ПОЯСУ · D-730 ─────────────────────────────
+     При одной HSL-насыщенности шов темнеет к жёлтому краю пояса (кривая
+     LIGHT ведёт светлоту вниз ради контраста) и теряет сочность: у Тепла
+     Oklab C падал с 0,145 (26°) до 0,126 (34°) — «выцветший момент».
+     У комнаты с holdC насыщенность подбирается так, чтобы C шва в каждой
+     точке пояса был равен C самого сочного края пояса. Тон и светлота не
+     трогаются: меняется только насыщенность краски. */
+  function okC(hex) {
+    var c = hexToRgb(hex);
+    var L = function (v) { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    var r = L(c.r), g = L(c.g), b = L(c.b);
+    var l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b),
+        mm = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b),
+        s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    return Math.hypot(1.9779984951 * l - 2.4285922050 * mm + 0.4505937099 * s,
+                      0.0259040371 * l + 0.7827717662 * mm - 0.8086757660 * s);
+  }
+  var holdCache = {};
+  function holdSat(m, hue) {
+    var want = holdCache[m.id];
+    if (want == null) {
+      var e1 = m.hue - m.span / 2, e2 = m.hue + m.span / 2;
+      want = holdCache[m.id] = Math.max(okC(hslHex(e1, m.sat, driftLight(e1))), okC(hslHex(e2, m.sat, driftLight(e2))));
+    }
+    var lo = m.sat * 0.6, hi = 100, li = driftLight(hue);
+    for (var i = 0; i < 14; i++) {
+      var mid = (lo + hi) / 2;
+      if (okC(hslHex(hue, mid, li)) < want) lo = mid; else hi = mid;
+    }
+    return Math.round(hi * 10) / 10;
+  }
 
   /* ШОВ ИЗ СВЕТА КОМНАТЫ. Светлота берётся выверенной кривой LIGHT — той
      самой, которая держит контраст ровным по всему кругу (D-107). Поэтому
@@ -805,9 +870,13 @@
          в Очаге a2 светлее, потому что там шов горит; здесь он лежит. */
       return { a1: clayFor(hue, sat), a2: clayFor(hue + 14, sat), hue: hue, ember: ember };
     }
+    /* Вторая краска шва — тот же сдвиг, что у второго света комнаты (lift, D-738):
+       у Тепла +6°, а не +28° — при +28° выходил оливково-жёлтый #c2c812 (тон
+       Oklab ~108°) в градиентах кнопок и черте часов. */
+    var md = w && w.mood ? moodDef(w.mood) : null, h2 = hue + (md && typeof md.lift === "number" ? md.lift : 28);
     return {
       a1: ember,
-      a2: hslHex(hue + 28, sat, Math.min(92, driftLight(hue + 28) + 10)),
+      a2: hslHex(h2, sat, Math.min(92, driftLight(h2) + 10)),
       hue: hue,
       ember: ember
     };
@@ -1113,10 +1182,12 @@
     var r2 = function (v) { return Math.round(v * 1000) / 1000; };
     var lvl = w.level;
     var mix = function (p) { return r2(p[0] + (p[1] - p[0]) * lvl); };
+    /* Сдвиг второго света — свой у комнаты, где он объявлен (D-738), иначе +28°. */
+    var md = w.mood ? moodDef(w.mood) : null, h2 = w.hue + (md && typeof md.lift === "number" ? md.lift : 28);
     return {
       hue: w.hue, level: lvl, sat: w.sat,
       c1: hslHex(w.hue, w.sat, driftLight(w.hue)),
-      c2: hslHex(w.hue + 28, w.sat, Math.min(92, driftLight(w.hue + 28) + 10)),
+      c2: hslHex(h2, w.sat, Math.min(92, driftLight(h2) + 10)),
       c3: hslHex(w.hue, WP_WASH_SAT, WP_WASH_LIGHT),
       a1: mix(WP_A1), a2: mix(WP_A2), a3: mix(WP_WASH)
     };
@@ -1282,7 +1353,7 @@
   }
 
   window.sbWallpaperMoods = MOODS.map(function (m) {
-    return { id: m.id, name: m.name, drift: !!m.drift, session: !!m.session, pult: !!m.pult };
+    return { id: m.id, name: m.name, drift: !!m.drift, session: !!m.session, pult: !!m.pult, words: !!m.words };
   });
   /* ── КОМНАТА, ПОДАРЕННАЯ СУНДУКОМ (D-255) ──────────────────────────────
      Список комнат не константа: Сундук дарит новые, и они входят в тот же
@@ -1365,6 +1436,9 @@
         if (old.parentNode) old.parentNode.removeChild(old);
       });
     }
+    /* Нить порога (D-726): её длина — сколько осталось до ухода. */
+    if (ttl === Infinity) t.setAttribute("data-ttl", "inf");
+    else t.style.setProperty("--toast-ttl", num(ttl, 5800) + "ms");
     host.appendChild(t);
     /* ── ПОКОЙ — БАЗА, ДВИЖЕНИЕ — ИСКЛЮЧЕНИЕ (D-176) ──────────────────────
        Извещение уже стоит на своём месте и видимо: так объявлен сам класс
@@ -1711,6 +1785,28 @@
     return v;
   };
 
+  /* ═══════════════ ВИД ПУЛЬТА · D-740, D-742 (основатель 11.11.2026) ═════
+     «ПУЛЬТ в H3c»: по умолчанию «крупные числа» (dizain-dorogo G2-v2), в
+     Настройках → Оформление переключатель на «Световод» (жила, D-619 —
+     сохранён целиком). Вид, а не устройство: узлы пульта одни и те же,
+     меняется только класс на #sbControlCenter. Ключ пишется, только когда
+     человек выбрал не то, что стоит (как сторона кнопок, D-153).
+     Охраняется tools/pult-krupno-check.mjs. */
+  var PULT_KEY = "sysbaby.pult.view";
+  function pultOf(v) { return v === "svetovod" ? "svetovod" : "krupno"; }
+  window.sbGetPultView = function () {
+    return pultOf(window.sbDB ? window.sbDB.get(PULT_KEY) : null);
+  };
+  window.sbSetPultView = function (view) {
+    var v = pultOf(view);
+    if (window.sbDB && window.sbGetPultView() !== v) window.sbDB.set(PULT_KEY, v);
+    if (window.sbBus && window.sbBus.emit) window.sbBus.emit("setting:change", { kind: "pult", value: v });
+    try {
+      doc.dispatchEvent(new CustomEvent("sysbaby:setting-changed", { detail: { kind: "pult", value: v } }));
+    } catch (e) { /* ignore */ }
+    return v;
+  };
+
   /* ── ЗАПОЛНЕНИЕ ПОЛЗУНКА ЗНАЕТ ОДИН СЛУШАТЕЛЬ (D-156) ────────────────────
      У WebKit нет ::progress: пройденную часть рисует фон дорожки, а её длину
      приходится сообщать переменной. Слушатель стоит на ДОКУМЕНТЕ, а не на
@@ -1991,7 +2087,9 @@
   function appIconMarkup(id) {
     var def = apps[id];
     if (!def) return "";
-    return def.icon || ICONS.window;
+    /* Значок «Свет внутри» (D-724): один набор на стол, полку, палитру и окно. */
+    var lit = window.sbGlyph ? window.sbGlyph(id) : "";
+    return lit || def.icon || ICONS.window;
   }
 
   /* app-launch shortcuts (§6.1)
@@ -2205,6 +2303,7 @@
      * УСТРОЙСТВО движения — правда состояния мгновенна, в полёте не
      * размывает, после полёта чисто — и ни слова не говорил о длительности:
      * окно могло ехать две секунды, и доска была зелена. */
+    lampFrom(el, win, fromX, fromY, id);
     el.classList.add("opening");
     el.style.transform = "translate3d(" + Math.round(fromX - cx) + "px," + Math.round(fromY - cy) + "px,0) scale(.94)";
     el.style.opacity = "0";
@@ -2218,6 +2317,28 @@
         el.classList.remove("opening");
       }, 140);
     });
+  }
+
+  /* ── ЛАМПА В ОКНЕ · D-727 (основатель 10.11.2026, dizain5/okno-lampa) ──
+     Свет загорается в окне из той точки, где стоял значок, и гаснет за
+     320 мс; плитка значка вспыхивает угольком. Только прозрачность. */
+  function lampFrom(el, win, fx, fy, id) {
+    var lamp = doc.createElement("span");
+    lamp.className = "win-lamp";
+    lamp.setAttribute("aria-hidden", "true");
+    var ox = clamp(Math.round(fx - win.x), 0, win.w), oy = clamp(Math.round(fy - win.y), 0, win.h);
+    lamp.style.setProperty("--ox", ox + "px");
+    lamp.style.setProperty("--oy", oy + "px");
+    el.appendChild(lamp);
+    var icon = $('.desk-icon[data-app="' + id + '"]');
+    requestAnimationFrame(function () {
+      lamp.classList.add("on");
+      if (icon) icon.classList.add("ember");
+    });
+    setTimeout(function () {
+      if (lamp.parentNode) lamp.parentNode.removeChild(lamp);
+      if (icon) icon.classList.remove("ember");
+    }, 380);
   }
 
   function renderApp(id) {
@@ -2812,11 +2933,15 @@
       if (win.maximized) return;
       drag = { sx: ev.clientX, sy: ev.clientY, ox: win.x, oy: win.y, dx: 0, dy: 0, zone: null, raf: 0, moved: false };
       try { tb.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
-      root.classList.add("dragging");
+      root.classList.add("dragging"); el.classList.add("dragged");
     });
     tb.addEventListener("pointermove", function (ev) {
       if (!drag) return;
-      drag.dx = ev.clientX - drag.sx; drag.dy = ev.clientY - drag.sy;
+      /* Склеенные касания (D-720): браузер отдаёт одно событие на кадр, а
+         пальцев в нём несколько — берётся последнее, самое свежее. */
+      var cev = ev;
+      if (ev.getCoalescedEvents) { try { var cl = ev.getCoalescedEvents(); if (cl && cl.length) cev = cl[cl.length - 1]; } catch (e) { /* нет — значит само событие */ } }
+      drag.dx = cev.clientX - drag.sx; drag.dy = cev.clientY - drag.sy;
       if (Math.abs(drag.dx) + Math.abs(drag.dy) > 3) drag.moved = true;
       if (win.snapped && drag.moved) { win.snapped = null; el.classList.remove("snapped"); }
       var z = zoneFor(ev.clientX, ev.clientY);
@@ -2832,7 +2957,7 @@
     function endDrag(ev) {
       if (!drag) return;
       var d = drag; drag = null;
-      root.classList.remove("dragging");
+      root.classList.remove("dragging"); el.classList.remove("dragged");
       el.style.transform = "";
       hideGhost();
       if (d.raf) cancelAnimationFrame(d.raf);
@@ -4730,15 +4855,25 @@
      предупреждения. Ворота эту запись только читают; у хозяина сцен хранилища
      нет (door-truth-check) — он слышит только prefer(имя). */
   var DOOR_KEY = "sysbaby.door", DOOR_DEFAULT = "shifr";
+  /* ── СОБОР И СВЕТ ВРЕМЕННО СНЯТЫ · D-739 ─────────────────────────────────
+     Основатель 11.11.2026: «Шифр идеально, Собор сломан, Свет тормозит».
+     Их сцены страница не грузит (index.html), выбора двери нет ни у ворот
+     (ряд строится только из пришедших сцен — их одна), ни в «Настройках».
+     Сохранённый «собор»/«свет» НЕ стирается: дверь его просто не слышит и
+     встречает Шифром; когда двери вернутся, человек получит свою. Поставить
+     снятую дверь нельзя. Стережёт tools/gate-shifr-only-check.mjs. */
+  var SCENES_RETIRED = { sobor: "D-739", porog: "D-739" };
   function doorStored() {
     var v = null;
     try { v = localStorage.getItem(DOOR_KEY); } catch (e) { v = null; }
-    return v === "sobor" || v === "porog" ? v : null;
+    return (v === "sobor" || v === "porog") && !SCENES_RETIRED[v] ? v : null;
   }
   function doorSet(name) {
+    if (SCENES_RETIRED[name]) return false;
     try {
       if (name === "sobor" || name === "porog") localStorage.setItem(DOOR_KEY, name);
-      else if (name === DOOR_DEFAULT) localStorage.removeItem(DOOR_KEY);
+      /* Шифр стирает запись — но не сохранённую снятую дверь (D-739): её не трогаем. */
+      else if (name === DOOR_DEFAULT) { var was = localStorage.getItem(DOOR_KEY); if (!SCENES_RETIRED[was]) localStorage.removeItem(DOOR_KEY); }
       else return false;
     } catch (e) { return false; }
     return true;
@@ -4753,7 +4888,7 @@
     if (d.set) d.ok = doorSet(d.set);
     var h = gateDoorsHave();
     d.def = DOOR_DEFAULT;
-    d.doors = h.length ? h : GATE_DOORS.slice();
+    d.doors = (h.length ? h : GATE_DOORS.slice()).filter(function (n) { return !SCENES_RETIRED[n]; });
     d.now = doorStored() || DOOR_DEFAULT;
     d.answered = true;
   });
@@ -4894,12 +5029,10 @@
             '<input type="file" id="sbVaultKey"></label>' +
             '<p class="vg-keynote" data-gk="lock.keyNeed">' + escapeHtml(gateText("lock.keyNeed")) + '</p>'
           : '') +
-        /* ── КЛЮЧ УСТРОЙСТВА (D-276): сказано ДО нажатия, что после слова
-           устройство попросит отпечаток, лицо или PIN. Что он нужен, видно на
-           диске — строка ничего нового постороннему не говорит. */
-        (window.sbVault.hwState && window.sbVault.hwState().on
-          ? '<p class="vg-keynote" id="sbVaultHwNote" data-gk="lock.hwNeed">' + escapeHtml(gateText("lock.hwNeed")) + "</p>"
-          : "") +
+        /* ── КЛЮЧ УСТРОЙСТВА (D-276; D-703, основатель 10.11.2026): ворота НЕ говорят заранее, что после слова спросят
+           устройство — строка выдавала, что за дверью живёт мир (ворота у всех, с миром и без, одни и те же). Устройство
+           спрашивается в жесте «открыть» (tryOpen); неверное слово при своём устройстве — закрыто
+           (tools/hardware-key-check.mjs). */
         '<button type="button" class="btn primary" id="sbVaultOpen" data-gk="lock.open">' + escapeHtml(gateText("lock.open")) + "</button>" +
         /* ── ЗАБЫТОЕ СЛОВО (D-266) ────────────────────────────────────────
            Кнопка стоит всегда — у замка с кодом и без: дверь, которая
@@ -4998,10 +5131,10 @@
        tools/door-truth-check.mjs. */
     var door = null;
     function wordLen() { return Array.from(field.value).length; }
-    /* ── ЗНАКИ СЛОВА — СВОЕГО МАТЕРИАЛА У КАЖДОЙ ДВЕРИ (основатель 02.11.2026) ──
-       Собор — жемчуг, свет поднимается изнутри «лунный» (дыхание на 70% тише
-       «глубокого»); Свет — «живой» луч на знак, каждый мерцает сам; Шифр —
-       печати, цвет перетекает. Рисует холст поверх поля; знаки зависят ТОЛЬКО
+    /* ── ЗНАКИ СЛОВА — ПЕЧАТИ В ЦВЕТЕ СВОЕЙ ДВЕРИ (основатель 02.11.2026; D-704, 10.11.2026) ──
+       У всех трёх дверей — печати Шифра 4×4, узор перетекает; Шифр — цвет
+       перетекает по радуге, Собор — лунный сиреневый нефа, Свет — тёплый
+       свет из-под двери (прежде: Собор — жемчуг, Свет — живой луч). Рисует холст поверх поля; знаки зависят ТОЛЬКО
        от числа знаков и времени — не от букв (pearl-word-check). Ряд никогда не
        шире поля: новые справа, старые уходят влево. Свой курсор — сразу за
        последним знаком, пока поле в фокусе (видео основателя 02.11: «палочка в
@@ -5042,7 +5175,7 @@
         var pad = 18, room = Math.max(40, w - pad * 2 - 10);
         var ITOG = true; /* «Ввод как в ИТОГ» */
         var gap = ITOG && kind === "shifr" ? Math.max(9, Math.min(19, room / Math.max(1, n))) : Math.max(7, Math.min(16, room / Math.max(1, n)));
-        if (true) gap = ITOG && kind === "shifr" ? 19 : 16; // D-603: one pitch, whatever the count
+        if (true) gap = 19; // D-603: one pitch, whatever the count; D-704: the same pitch at every door (Шифр's)
         var shown = Math.min(n, Math.floor(room / gap) + 1);
         var x0 = w / 2 - ((shown - 1) * gap) / 2, cy = h / 2;
         if (n > shown) x0 = w / 2 - room / 2;
@@ -5052,7 +5185,9 @@
            середину, дальше поочерёдно справа и слева, шаг тот же (19). Знак зависит только от номера и времени (D-598),
            поэтому порядок клеток ничего не говорит о буквах. Клетка не сдвигается никогда (D-604): ряд полон — новые
            знаки больше не встают, ряд стоит. Якорь ряда (лог закона) — средняя клетка. */
-        var MID = ITOG && kind === "shifr", half = Math.floor(room / 2 / gap), capM = 2 * half + 1;
+        /* D-704 (основатель 10.11.2026): у Собора и Света — та же механика, что у Шифра (клетки от середины справа-слева,
+           плавное стирание), те же печати — в цвете своих ворот. */
+        var MID = ITOG, half = Math.floor(room / 2 / gap), capM = 2 * half + 1;
         var slotM = function (i) { return i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2) * gap; };
         if (MID) { shown = Math.min(n, capM); x0 = w / 2; }
         var LOGE = null; if (window.__sbMarkLog) { var fr0 = cv.getBoundingClientRect(); window.__sbMarkLog.push(LOGE = [performance.now(), n, shown, fr0.left + x0, fr0.top + cy, gap, MID ? Array.from({ length: shown }, function (_, q) { return fr0.left + x0 + slotM(q); }) : null]); }
@@ -5063,14 +5198,7 @@
           var j = items[qi][0];
           var i = MID ? j : n - shown + j, x = MID ? x0 + slotM(j) : x0 + j * gap;
           var fade = (!MID && n > shown ? Math.min(1, (j + 1) / 3) : 1) * items[qi][1];
-          if (kind === "porog") {
-            /* Свет: тонкий живой луч — каждый мерцает сам, по своей фазе */
-            var ph = (hash(i) % 1000) / 1000 * 6.283, fl = still() ? 0.85 : 0.72 + 0.28 * Math.sin(t * (2.1 + (hash(i) % 7) * 0.23) + ph) * Math.sin(t * 0.7 + ph * 1.7);
-            var bh = h * 0.62, gr = g.createLinearGradient(x, cy - bh / 2, x, cy + bh / 2);
-            gr.addColorStop(0, rgba([255, 214, 160], 0)); gr.addColorStop(0.5, rgba([255, 236, 205], 0.95 * fl * fade)); gr.addColorStop(1, rgba([255, 214, 160], 0));
-            g.fillStyle = gr; g.fillRect(x - 0.9, cy - bh / 2, 1.8, bh);
-            glow(x, cy, 7, [255, 196, 130], 0.32 * fl * fade);
-          } else if (kind === "shifr") {
+          if (kind === "shifr" || kind === "sobor" || kind === "porog") {
             /* Шифр: печать 4×4 — шестнадцать своих битов (по номеру знака и времени, не по букве), как печати
                носителя. Печати ПЕРЕЛИВАЮТСЯ и во время перелива МЕНЯЮТСЯ (основатель 03.11.2026, D-601): по ряду
                бежит волна света и цвета, и каждая печать в свой миг перебирает биты — старый узор тает, новый
@@ -5082,24 +5210,16 @@
             var mix = Math.max(0, Math.min(1, fr));
             var wave = still() ? 0.5 : 0.5 + 0.5 * Math.sin(t * 0.9 - i * 0.55);
             var hue = (200 + i * 23 + t * 14 + wave * 30) % 360, li = 60 + 18 * wave, sa = 62 + 16 * wave;
+            /* D-704: Собор — лунный сиреневый нефа, Свет — тёплый свет из-под двери; узор и его жизнь — те же */
+            if (kind === "sobor") { hue = 250 + 12 * Math.sin(i * 0.9 + t * 0.4) + 10 * wave; sa = 34 + 14 * wave; li = 76 + 10 * wave; }
+            else if (kind === "porog") { hue = 24 + 8 * Math.sin(i * 0.9 + t * 0.4) + 8 * wave; sa = 84 + 8 * wave; li = 60 + 14 * wave; }
             var cur = hash(i * 131 + ep * 7919) | 0x0660, prv = hash(i * 131 + (ep - 1) * 7919) | 0x0660;
             var drawBits = function (bb, a) { if (a <= 0.01) return; g.fillStyle = "hsla(" + hue.toFixed(1) + "," + sa.toFixed(0) + "%," + li.toFixed(0) + "%," + (a * fade).toFixed(3) + ")"; for (var b = 0; b < 16; b++) if ((bb >>> b) & 1) g.fillRect(s0 + (b & 3) * cell, y0 + (b >> 2) * cell, cell * 0.82, cell * 0.82); };
             if (mix < 1) drawBits(prv & ~cur, 0.95 * (1 - mix));
             drawBits(cur & ~prv, 0.95 * mix);
             drawBits(cur & prv, 0.95);
-            glow(x, cy, 6 + 3 * wave, [180, 200, 255], (0.08 + 0.14 * wave) * fade);
+            glow(x, cy, 6 + 3 * wave, kind === "sobor" ? [214, 202, 246] : kind === "porog" ? [255, 196, 130] : [180, 200, 255], (0.08 + 0.14 * wave) * fade);
 
-          } else {
-            /* Собор: жемчужина, свет изнутри — лунный; дыхание на 70% тише «глубокого» */
-            var br = still() ? 0.5 : 0.5 + 0.15 * Math.sin(t * 1.25 + (hash(i) % 628) / 100), k = (br - 0.35) / 0.3, r = 3;
-            glow(x, cy, r * (2.6 + 1.6 * k), [236, 232, 248], (0.1 + 0.22 * k) * fade);
-            var nq = g.createRadialGradient(x - r * 0.35, cy - r * 0.4, 0, x, cy, r * 1.25);
-            nq.addColorStop(0, rgba([255, 255, 255], fade)); nq.addColorStop(0.5, rgba([226, 232, 252], fade)); nq.addColorStop(1, rgba([214, 222, 246], 0.9 * fade));
-            g.fillStyle = nq; g.beginPath(); g.arc(x, cy, r * 1.25, 0, 7); g.fill();
-            var gco = g.globalCompositeOperation; g.globalCompositeOperation = "lighter";
-            glow(x, cy, r * 1.75, [200, 220, 255], (0.1 + 0.95 * k) * fade);
-            glow(x, cy, r * 0.75, [228, 238, 255], 0.85 * k * fade);
-            g.globalCompositeOperation = gco;
           }
         }
         /* свой курсор — сразу за последним знаком, мигает раз в секунду */
@@ -5108,7 +5228,7 @@
           var cx = n ? x0 + (shown - 1) * gap + Math.max(6, gap * 0.6) : (true ? x0 - gap + Math.max(6, gap * 0.6) : w / 2);
           if (MID) { var lq = shown - 1, ls = n ? slotM(lq) : 0; cx = n ? x0 + ls + (lq % 2 || lq === 0 ? 1 : -1) * Math.max(6, gap * 0.6) : x0 - 0.75; }   /* Шифр: курсор — снаружи от последнего знака; пустое поле — в средней клетке */
           var on = still() || Math.floor((now - t0) / 530) % 2 === 0;
-          if (on) { g.fillStyle = true && kind === "shifr" ? "rgba(242,161,111,.95)" : ITOG ? "rgba(255,150,92,.9)" : "rgba(246,240,255,.9)"; g.fillRect(Math.round(cx), cy - h * 0.24, 1.5, h * 0.48); caretX = cx - x0; }
+          if (on) { g.fillStyle = kind === "sobor" ? "rgba(214,202,246,.95)" : kind === "porog" ? "rgba(255,190,130,.95)" : "rgba(242,161,111,.95)"; g.fillRect(Math.round(cx), cy - h * 0.24, 1.5, h * 0.48); caretX = cx - x0; }
         }
         if (LOGE) { LOGE[7] = caretX; LOGE[8] = gMax; }
       }
@@ -5258,6 +5378,30 @@
           var lim = vv.offsetTop + vv.height - 12;
           if (top + fbot > lim) { kb = true; top = lim - fbot; }
         }
+        /* D-705 (основатель 10.11.2026): у Собора и Света клавиатура не прячет «открыть» и меню под полем — блок встаёт над
+           ней целиком (поле, «открыть», меню), сколько позволяет видимая полоса (поле — всегда), и встаёт плавно, а не
+           скачком на каждый шаг клавиатуры. У Шифра — как утверждено (знак уменьшается, kbSign). Стережёт
+           tools/door-keyboard-check.mjs. */
+        var kbOther = !!(door && door.name !== "shifr" && vv && doc.activeElement === field);
+        if (kbOther) {
+          var visB2 = Math.min(window.innerHeight || vh, vv.offsetTop + vv.height), visT2 = Math.max(0, vv.offsetTop);
+          if (visB2 < vh - 60) {
+            var bT = box.getBoundingClientRect().top, curTop = parseFloat(box.style.top);
+            if (!isFinite(curTop)) curTop = bT;
+            var rel = function (el) { return el && el.getBoundingClientRect().height ? el.getBoundingClientRect().bottom - bT : -1; };
+            var fTop = field.getBoundingClientRect().top - bT, lim2 = visB2 - 12, menuEl2 = box.querySelector(".vg-menu");
+            var lows = [menuEl2, openBtn, field];
+            for (var li = 0; li < lows.length; li++) {
+              var rb = rel(lows[li]); if (rb < 0) continue;
+              var want2 = lim2 - rb;
+              if (want2 + fTop >= visT2 + 4 || lows[li] === field) { if (top + rb > lim2) { top = Math.max(want2, visT2 + 4 - fTop); kb = true; } break; }
+            }
+          }
+        }
+        /* плавно — пока клавиатура приходит и уходит (на телефоне; «Одна высота» ведёт свой переход выше) */
+        var tNow = (window.performance || Date).now();
+        if (kbOther && kb) placeCluster.kbUntil = tNow + 900;
+        if (door && door.name !== "shifr" && !ONE) box.style.transition = kb || tNow < (placeCluster.kbUntil || 0) ? "top .34s cubic-bezier(.2,.8,.2,1)" : "";
         /* Шифр 09.11.2026 (после демо 3): строка ответа удлинила блок, а сцена не перестраивалась — если низ блока ушёл
            за край экрана (низкий экран лёжа, «Одна высота»), поднимается только блок, не больше чем на рост строки; на телефоне
            блок стоит там, где назвала сцена (door-compose-check) */

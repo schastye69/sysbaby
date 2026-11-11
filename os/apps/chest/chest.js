@@ -1843,6 +1843,10 @@
       color: "linear-gradient(160deg,#f2c777 0%,#d9973a 52%,#8a5a1c 100%)",
       icon: ICON,
       size: { w: 640, h: 700 },
+      /* СКРЫТ ФЛАГОМ, ДАННЫЕ ЦЕЛЫ · D-723 (основатель 03–04.11, PLAN этап 0). */
+      hidden: true,
+      why: "why.chest",
+      offDesk: "отложено решением",
       retranslate: true,
       render: render
     });

@@ -155,7 +155,7 @@ function layout() {
 // soft volumetric rays in the dusty air just above the floor.
 const POL = (function () {
   const api = { on: false };
-  let wrap = null, pool = null, refl = null, rays = null, motes = null, y0p = 0, rwp = 0, rhp = 0, fhp = 0;
+  let wrap = null, pool = null, refl = null, rays = null, lit = null, motes = null, y0p = 0, rwp = 0, rhp = 0, fhp = 0;
   function seeded(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   function build() {
     wrap = document.createElement('div');
@@ -222,6 +222,10 @@ const POL = (function () {
       gr = q2.createLinearGradient(0, 0, 0, len); gr.addColorStop(0, 'rgba(255,200,150,' + a.toFixed(3) + ')'); gr.addColorStop(0.3, 'rgba(255,190,140,' + (a * 0.45).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(255,180,130,0)');
       q2.fillStyle = gr; q2.beginPath(); q2.moveTo(xa, 0); q2.lineTo(xb, 0); q2.lineTo(cx + (xb - cx) * spread, len); q2.lineTo(cx + (xa - cx) * spread, len); q2.closePath(); q2.fill();
     }
+    // D-706: the pool and the rays, laid together once per size — one blit a frame instead of two (the floor light was most
+    // of a frame's cost); in the frame they breathe together (the rays' own ±1 % swing is below sight)
+    lit = lit || mkCanvas(1, 1); const lg = size(lit, vw, fh, d); lg.setTransform(1, 0, 0, 1, 0, 0);
+    lg.drawImage(pool, 0, 0); lg.globalCompositeOperation = 'screen'; lg.globalAlpha = 0.93; lg.drawImage(rays, 0, 0); lg.globalCompositeOperation = 'source-over'; lg.globalAlpha = 1;
     // ── slow dust in the light
     motes.innerHTML = '';
     for (let i = 0; i < 11; i++) {
@@ -240,8 +244,7 @@ const POL = (function () {
     const breath = RM ? 1 : 0.92 + 0.08 * Math.sin(6.283 * t / 16), waver = RM ? 0 : 0.006 * Math.sin(6.283 * t / 9) + 0.003 * Math.sin(6.283 * t / 3.7);
     const gco = ctx.globalCompositeOperation, ga = ctx.globalAlpha;
     ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = Math.min(1, a * breath); ctx.drawImage(pool, 0, y0p, vw, fhp);
-    ctx.globalAlpha = Math.min(1, a * (0.85 + 0.15 * breath)); ctx.drawImage(rays, 0, y0p, vw, fhp);
+    ctx.globalAlpha = Math.min(1, a * breath); ctx.drawImage(lit, 0, y0p, vw, fhp);   // D-706: pool + rays, one blit
     ctx.save(); ctx.translate(G.cx, y0p); ctx.transform(1, 0, waver, 1 + waver * 0.5, 0, 0);
     ctx.globalAlpha = Math.min(1, a * 0.9); ctx.drawImage(refl, -rwp / 2, 0, rwp, rhp); ctx.restore();
     ctx.globalCompositeOperation = gco; ctx.globalAlpha = ga;
@@ -1185,7 +1188,20 @@ function draw() {
     if (tw >= 3.5) showOpen();
   }
 }
-function loop() { draw(); if (running) raf = requestAnimationFrame(loop); }
+/* D-706 (основатель 10.11.2026: «когда освещается пол — тормозит всё»): в покое свет под дверью живёт медленно (дыхание
+   9–16 с, пылинки 14–20 с, мерцание лампы — доли герца), и полный кадр во весь экран 60 раз в секунду был лишним: в покое —
+   не чаще 30 кадров в секунду (вдвое меньше работы и батареи); набор, ответ двери, шаги за дверью и открытие — каждый кадр.
+   Стережёт tools/porog-cost-check.mjs. */
+let lastDraw = -1e9, lastInput = -1e9;
+wordEl.addEventListener('input', () => { lastInput = performance.now(); });
+['focus', 'blur'].forEach((e) => wordEl.addEventListener(e, () => { lastInput = performance.now(); }));
+function lively(ms) { return state !== 'idle' || pulse > 0.02 || ms - lastInput < 1600 || now() - tCold < 4.2 || W.on || DIST.t0 + DIST.dur > now(); }
+function loop() {
+  if (running) raf = requestAnimationFrame(loop);
+  const ms = performance.now();
+  if (!lively(ms) && ms - lastDraw < 28) return;
+  lastDraw = ms; draw();
+}
 function start() { if (running || held || RM || document.hidden || state === 'open') { if (RM) draw(); return; } running = true; lastT = now(); raf = requestAnimationFrame(loop); }
 function stop() { running = false; cancelAnimationFrame(raf); }
 function kick() { if (!running && state !== 'open') draw(); }

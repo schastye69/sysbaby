@@ -32,6 +32,10 @@
     { id: "account", labelKey: "set.tab.account", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="12" r="3.6"/><path d="M12.1 12H20M17 12v3M20 12v2.4"/></svg>' },
     { id: "privacy", labelKey: "set.tab.privacy", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.8 5.4 6.4v5c0 4.2 2.8 7.6 6.6 8.8 3.8-1.2 6.6-4.6 6.6-8.8v-5L12 3.8Z"/></svg>' },
     { id: "advanced", labelKey: "set.tab.advanced", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 7.5h14M5 12h14M5 16.5h14"/><circle cx="9" cy="7.5" r="1.6"/><circle cx="15" cy="16.5" r="1.6"/></svg>' },
+    /* «Наружу» — не приложение, а раздел Настроек (D-723, основатель
+       03–04.11, восстановлено 10.11): что и куда выходит из дома. Разметку
+       строит сама комната (sbOutwardRender), раздел — только место. */
+    { id: "outward", labelKey: "set.tab.outward", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5h6v6M19 5l-8 8"/><path d="M17 14v4.2a1.8 1.8 0 0 1-1.8 1.8H6.8A1.8 1.8 0 0 1 5 18.2V9.8A1.8 1.8 0 0 1 6.8 8H11"/></svg>' },
     { id: "about", labelKey: "set.tab.about", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="7.8"/><path d="M12 11v5.2M12 8.1v.1"/></svg>' }
   ];
 
@@ -216,6 +220,21 @@
       '<span class="st-segment" id="stThemeRow">' + seg + "</span>");
   }
 
+  /* ── ВИД ПУЛЬТА · D-742 (основатель 11.11.2026, «ПУЛЬТ в H3c») ─────────
+     «Крупные числа» — по умолчанию, «Световод» (жила, D-619) — по выбору.
+     Знание одно — sbGetPultView на ядре; здесь только дверь к нему.
+     Охраняется tools/pult-krupno-check.mjs. */
+  function pultRowMarkup() {
+    if (typeof window.sbGetPultView !== "function") return "";
+    var now = window.sbGetPultView();
+    var seg = [["krupno", t("set.appearance.pult.krupno")], ["svetovod", t("set.appearance.pult.svetovod")]].map(function (p) {
+      var id = p[0], on = id === now;
+      return '<button type="button" class="st-seg' + (on ? " active" : "") + '" data-pult-view="' + id + '" aria-pressed="' + (on ? "true" : "false") + '">' + esc(p[1]) + "</button>";
+    }).join("");
+    return rowMarkup(esc(t("set.appearance.pult")), esc(t("set.appearance.pultSub")),
+      '<span class="st-segment" id="stPultRow" role="group" aria-label="' + esc(t("set.appearance.pult")) + '">' + seg + "</span>");
+  }
+
   function appearanceMarkup() {
     /* РЯДА КРАСОК ЗДЕСЬ БОЛЬШЕ НЕТ (D-141). Шов приходит от обоев: выбор
        комнаты и есть выбор цвета. Пока выборов было два, они могли встать в
@@ -263,6 +282,7 @@
            строку карточки на планшете и даже на столе, — они переносятся под
            описание, слева направо, а не уезжают за правую кромку. */
         '<span class="st-chips st-chips-wide">' + (moodChips || '<span class="st-muted">' + esc(t("set.appearance.moodNone")) + "</span>") + "</span>") +
+      pultRowMarkup() +
       rowMarkup(esc(t("set.appearance.brightness")), esc(t("set.appearance.brightnessSub")),
         /* Ползунок собственной постройки (D-162): здесь только место под него,
            узлы строит sbSlider при разводке — родного поля в системе больше нет. */
@@ -418,6 +438,8 @@
   function doorRowMarkup() {
     var D = doorAsk();
     if (!D) return "";
+    /* Дверь одна — выбирать нечего: строки нет (D-739, Собор и Свет временно сняты). */
+    if (D.doors().length < 2) return "";
     var now = D.get();
     if (window.sbIncognitoActive) {
       return rowMarkup(esc(t("set.privacy.door")), esc(t("set.privacy.doorSub")),
@@ -632,6 +654,7 @@
     desktop: desktopMarkup,
     privacy: privacyMarkup,
     advanced: advancedMarkup,
+    outward: function () { return '<div class="st-outward" id="stOutwardHost"></div>'; },
     about: aboutMarkup
   };
 
@@ -682,6 +705,7 @@
 
     groupRows(host);
     if (section === "account" && typeof window.sbAccountDetails === "function") window.sbAccountDetails(host.querySelector("#stAccountHost"));
+    if (section === "outward" && typeof window.sbOutwardRender === "function") window.sbOutwardRender(host.querySelector("#stOutwardHost"));
     if (_sbKeep) _sbKeep();
 
     nameRowControls(host);
@@ -745,7 +769,7 @@
    * source of that very event), and repaints collapse to one per frame. */
   var SECTION_KINDS = {
     general: { lang: 1 },
-    appearance: { mood: 1, brightness: 1, toggle: 1, side: 1, fullscreen: 1 },
+    appearance: { mood: 1, brightness: 1, toggle: 1, side: 1, fullscreen: 1, pult: 1 },
     account: {},
     sound: { toggle: 1, volume: 1 },
     desktop: { toggle: 1 },
@@ -801,9 +825,14 @@
     var savedTag = host.querySelector("#stUsernameSaved");
     var timer = null;
 
-    function commit() {
+    /* ПОКА ЧЕЛОВЕК ПЕЧАТАЕТ — ПУСТОЕ ОСТАЁТСЯ ПУСТЫМ · D-722 (основатель
+       10.11.2026): стёрли имя до пусто — «guest» не возвращается, пока он
+       в поле; только когда ушёл из поля пустым (blur, Enter).
+       Охраняется tools/name-typing-check.mjs. */
+    function commit(typing) {
       if (timer) { clearTimeout(timer); timer = null; }
       if (typeof window.sbSetUsername !== "function") return;
+      if (typing === true && !String(input.value || "").toLowerCase().replace(/[^a-z0-9_.\-]/g, "")) return;
       var applied;
       try { applied = window.sbSetUsername(input.value); }
       catch (err) { console.error("[settings] username write failed", err); return; }
@@ -819,7 +848,7 @@
 
     input.addEventListener("input", function () {
       if (timer) clearTimeout(timer);
-      timer = setTimeout(commit, 500);
+      timer = setTimeout(function () { commit(true); }, 500);
     });
     input.addEventListener("keydown", function (ev) {
       if (ev.key !== "Enter") return;
@@ -827,7 +856,7 @@
       commit();
       input.blur();
     });
-    input.addEventListener("blur", commit);
+    input.addEventListener("blur", function () { commit(false); });
   }
 
   function wireAppearance(win, host) {
@@ -860,6 +889,15 @@
           if (kind === "volume") { if (window.sbSetNotifVolume) window.sbSetNotifVolume(v / 100); }
           else if (window.sbSetBrightness) window.sbSetBrightness(v);
         }
+      });
+    });
+
+    host.querySelectorAll("[data-pult-view]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (typeof window.sbSetPultView !== "function") return;
+        try { window.sbSetPultView(btn.getAttribute("data-pult-view")); }
+        catch (err) { console.error("[settings] pult view failed", err); }
+        render(win);
       });
     });
 

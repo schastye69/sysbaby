@@ -1,6 +1,6 @@
 /* sys.baby — ВОРОТА: части страницы, утверждённые основателем 04.11.2026 (финальное демо final/stol-vorota-final.html).
  * D-603 — какая дверь открыта (тон поля), касание двери (смена с первого касания), поле и кнопка «Инверсия»
- *         (Шифр — «Живой огонь · Дальше», #EC8A5F; Собор и Свет — «Перетекание»);
+ *         («Живой огонь · Дальше»: Шифр #EC8A5F; D-704 — Собор и Свет той же механикой в цвете своих ворот, было «Перетекание»);
  * D-606 — вход «Затмение и рассвет»: чистый знак ровно на месте знака Шифра; полный раз в день, иначе короткий;
  *         касание или клавиша сразу заканчивают; «уменьшить движение» — спокойная смена; ввод не ждёт.
  * Стерегут tools/gate-look-check.mjs, tools/entry-check.mjs, tools/marks-still-check.mjs. */
@@ -94,37 +94,7 @@
     var closed = hL >= lens(oL).L5 - 0.05 && hR >= lens(oR).L5 - 0.05;
     return { X: X, Y: Y, S: S, n: n, dir: dir, closed: closed, hL: hL, hR: hR };
   }
-  var NX = new Float32Array(1024), NY = new Float32Array(1024), PX = new Float32Array(1024), PY = new Float32Array(1024), W = new Float32Array(1024), AL = new Float32Array(1024);
-  function strip(ctx, n, Wd, Al, col, extra, scaleA, caps) {
-    var bk = new Map(), i;
-    function get(al) { var q = Math.min(64, Math.round(al * scaleA * 64)); if (q <= 0) return null; var p = bk.get(q); if (!p) { p = new Path2D(); bk.set(q, p); } return p; }
-    for (i = 0; i < n - 1; i++) {
-      var p = get((Al[i] + Al[i + 1]) * 0.5); if (!p) continue;
-      var w0 = (Wd[i] + extra) / 2, w1 = (Wd[i + 1] + extra) / 2;
-      p.moveTo(PX[i] + NX[i] * w0, PY[i] + NY[i] * w0); p.lineTo(PX[i + 1] + NX[i + 1] * w1, PY[i + 1] + NY[i + 1] * w1);
-      p.lineTo(PX[i + 1] - NX[i + 1] * w1, PY[i + 1] - NY[i + 1] * w1); p.lineTo(PX[i] - NX[i] * w0, PY[i] - NY[i] * w0); p.closePath();
-    }
-    if (caps && n > 1) [[0, 1], [n - 1, n - 2]].forEach(function (ik) {
-      var i2 = ik[0], k = ik[1], p2 = get(Al[i2]); if (!p2) return;
-      var tx = PX[i2] - PX[k], ty = PY[i2] - PY[k], l = Math.hypot(tx, ty) || 1; tx /= l; ty /= l;
-      var r = (Wd[i2] + extra) / 2, nx = NX[i2], ny = NY[i2];
-      p2.moveTo(PX[i2] + nx * r, PY[i2] + ny * r);
-      for (var j = 1; j < 8; j++) { var f = (j / 8) * Math.PI, c = Math.cos(f), s = Math.sin(f); p2.lineTo(PX[i2] + (nx * c + tx * s) * r, PY[i2] + (ny * c + ty * s) * r); }
-      p2.lineTo(PX[i2] - nx * r, PY[i2] - ny * r); p2.closePath();
-    });
-    bk.forEach(function (p, q) { ctx.fillStyle = "rgba(" + col + "," + q / 64 + ")"; ctx.fill(p); });
-  }
   var cs = function (c) { return Math.round(c[0]) + "," + Math.round(c[1]) + "," + Math.round(c[2]); };
-  function drawLine(ctx, L, o) {
-    var n = L.n, X = L.X, Y = L.Y, S = L.S;
-    for (var i = 0; i < n; i++) {
-      var a = i > 0 ? i - 1 : 0, b = i < n - 1 ? i + 1 : n - 1, tx = X[b] - X[a], ty = Y[b] - Y[a], l = Math.hypot(tx, ty) || 1; tx /= l; ty /= l;
-      NX[i] = L.dir * ty; NY[i] = -L.dir * tx; PX[i] = X[i]; PY[i] = Y[i];
-      W[i] = o.w; AL[i] = cl(o.a);
-    }
-    strip(ctx, n, W, AL, cs(o.col), 0, 1, !L.closed);
-  }
-
   /* each door's own colours (src.html GATES; Свет = porog) */
   var GATES = {
     shifr: { A: [147, 169, 224], T: [226, 232, 246], C: [128, 142, 166], sh: "4,4,8" },
@@ -230,7 +200,7 @@
     release(t);
     if (!on()) { if (cv.style.display !== "none") { cv.style.display = "none"; geoKey = ""; moved(); } return; }
     cv.style.display = "";
-    var fireOn = door() === "shifr" && !window.__sbInvBlank;
+    var fireOn = !window.__sbInvBlank;   /* D-704: огонь — у всех трёх дверей */
     if (!fireOn || t - lastFire >= 33 || t < activeUntil) { lastFire = t; render(t); }
     if (t < activeUntil || (fireOn && !RM)) raf = requestAnimationFrame(frame);
   }
@@ -240,6 +210,16 @@
      field's and button's here. Colours: rest #EC8A5F, active #F2A274, error #B98A7C. One canvas, additive. */
   var OG = { A: [236, 138, 95], Aa: [242, 162, 116], C: [185, 138, 124] };
   var COPPER = [224, 102, 60], GOLD = [255, 205, 140], PEACH = [236, 138, 95], HOT = [255, 236, 206];
+  /* D-704 (основатель 10.11.2026): у Собора и Света — та же механика поля и кнопки, что у Шифра («Живой огонь · Дальше»:
+     поле растёт, огонь, кнопка смыкается), в цвете своих ворот. Цвет поля = цвет мира двери (door-colour-check: Собор
+     185,166,220 — лиловый неф; Свет 230,140,85 — свет из-под двери); у Шифра — прежние числа. */
+  var FIRE = {
+    shifr: { OG: OG, COPPER: COPPER, GOLD: GOLD, PEACH: PEACH, HOT: HOT },
+    sobor: { OG: { A: [185, 166, 220], Aa: [206, 190, 238], C: [150, 154, 178] }, COPPER: [138, 108, 204], GOLD: [226, 216, 255], PEACH: [185, 166, 220], HOT: [246, 242, 255] },
+    porog: { OG: { A: [230, 140, 85], Aa: [240, 164, 114], C: [176, 150, 136] }, COPPER: [212, 108, 50], GOLD: [255, 214, 160], PEACH: [230, 140, 85], HOT: [255, 238, 212] }
+  };
+  /* ОТКАТ: дверь без своей палитры огня (новая или неизвестная) горит огнём Шифра — это прежний цвет ворот, а не чужой мир. */
+  function firePal(d) { var F0 = FIRE[d] || FIRE.shifr; COPPER = F0.COPPER; GOLD = F0.GOLD; PEACH = F0.PEACH; HOT = F0.HOT; return F0.OG; }
   var CFG = { U: 6.0, UB: 3.65, lo: 1.5, hi: 46.5, far: 0.55, hold: [0.6, 2.0], sp: [0.4, 0.7], vmax: 5.0, vheld: 10, wid: 1, hot: 0.6, hotA: 0.5, warmA: 0.75, tail: 0, glow: 1 };
   var eoF = function (k) { return 1 - Math.pow(1 - k, 3); };
   var gF = function (x, s) { return Math.exp(-(x * x) / (2 * s * s)); };
@@ -406,16 +386,16 @@
       if (cv.width !== Wc || cv.height !== Hc) { cv.width = Wc; cv.height = Hc; }
       moved();
     }
-    var G = GATES[d];
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
     if (window.__sbInvBlank) return;                                   // test hook: the backing only (contrast capture)
     ctx.setTransform(dpr, 0, 0, dpr, -x0 * dpr, -y0 * dpr); ctx.globalCompositeOperation = "lighter";
     /* the approved geometry, measured on the real field (300 × 46) and button (≈186 × 44) */
     var FO = function (ry, hw) { return { hw: hw || fw / 2 - 1, rx: 11, ry: ry, D: fh }; };
-    var FL2 = lens(FO(7)).L2, hwb = bw / 2 - 1;
+    var hwb = bw / 2 - 1;
     var bO = function (c) { var m = eio(cl(c * 1.35)); return { hw: lerp(hwb, hwb - 2, m), rx: lerp(11, 18, m), ry: lerp(10, 18, m), D: 36 }; };
     var f = st.focus.val(t), pr = st.press.val(t), nS = st.nS.val(t), e = errE(t - st.tErr), sT = st.tSucc > -1e8 ? t - st.tSucc : -1;
-    if (d === "shifr") {                                                 // «Живой огонь», variation 1 «Дальше» (inversiya/ogon-var-src.html)
+    if (GATES[d]) {                                                      // «Живой огонь», variation 1 «Дальше» (inversiya/ogon-var-src.html); D-704: у всех дверей, в своём цвете
+      var PAL = firePal(d);
       /* Шифр 09.11.2026, решение основателя: «поле при вводе должно увеличиваться однозначно». Линия поля растёт от
          середины к краям с каждым знаком: пустое поле — компактное (по подсказке), каждый знак прибавляет по полклетки
          с каждой стороны (180 мс), до полной ширины поля. Знаки — в неподвижных клетках оболочки от середины
@@ -431,22 +411,10 @@
       var kb = false; try { kb = doc.activeElement === field && field.matches(":focus-visible"); } catch (x) { kb = false; }
       st.kbGlow = kb ? hwF : 0;
       if (kb && !window.__sbInvBlank) { ctx.globalCompositeOperation = "lighter"; glowF(ctx, fx + fw / 2, fy + fh + 4, hwF, 6, [226, 232, 246], 0.32); }   /* свечение фокуса с клавиатуры — ровно под линией */
-      fireRender(ctx, { t: t, P: FS, f: f, pr: pr, nS: nS, e: e, sT: sT, fvis: fvis, keys: keys, caretS: caretS, markS: slotS, U: CFG.U * (hwF / hwFull), A: OG.A, Aa: OG.Aa, C: OG.C },
+      fireRender(ctx, { t: t, P: FS, f: f, pr: pr, nS: nS, e: e, sT: sT, fvis: fvis, keys: keys, caretS: caretS, markS: slotS, U: CFG.U * (hwF / hwFull), A: PAL.A, Aa: PAL.Aa, C: PAL.C },
         { cxF: fx + fw / 2, yF: fy + fh - 1, FO: FO, hwF: hwF, cxB: bx + bw / 2, yB: by + (bh - 36) / 2, bO: bO });
       gate.classList.toggle("vg-inv-fv", fvis); return;
     }
-    /* VARIANTS[4] «Перетекание» */
-    var ok = sT >= 0, nn = Math.min(nS, 6);
-    var extF = 6 * f - 2.4 * nn, extB = -6 * f + 2.4 * nn;
-    extF = lerp(extF, -14.4, e); extB = lerp(extB, -16, e);
-    var c = pr; if (ok) c = Math.max(c, eio(prog(sT, 420)));
-    var o = bO(c), L = lens(o), hB0 = cl(L.L2 + extB, 2, L.L5), hB = lerp(hB0, L.L5, c);
-    var total = FL2 + extF + hB0, hF = Math.max(48, total - hB);
-    var k = ok ? eo(prog(sT - 250, 500)) : 0;
-    var lineY = fy + fh - 1, byA = by + (bh - 36) / 2;
-    drawLine(ctx, trace(fx + fw / 2, lineY, 1, FO(7), hF, FO(7), hF), { w: 1.2 + 0.15 * k, a: Math.max(0.62, lerp((0.7 + 0.26 * f) * (1 - 0.2 * e) + 0.1 * c, 1, k)), col: mix(mix(G.A, G.C, e), G.T, 0.3 * k) }   /* floor 0.62: the error line keeps ≥ 3:1 (Шифр) */);
-    drawLine(ctx, trace(bx + bw / 2, byA, -1, o, hB, o, hB), { w: 1.2 + 0.15 * k, a: lerp((0.82 + 0.18 * c) * (1 - 0.15 * e), 1, k), col: mix(mix(G.A, G.C, 0.65 * e), G.T, 0.3 * k) });
-    gate.classList.toggle("vg-inv-fv", fvis);
   }
   window.addEventListener("resize", function () { act(now(), 300); });
   if (window.visualViewport) window.visualViewport.addEventListener("resize", function () { act(now(), 300); });
@@ -473,7 +441,9 @@
   var doc = document, root = doc.documentElement;
   var RMQ = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
   var GP = 19;
-  function shifr() { return root.getAttribute("data-sb-door") === "shifr"; }
+  /* D-704 (основатель 10.11.2026): та же механика у всех трёх дверей, в цвете своих ворот */
+  function shifr() { var d = root.getAttribute("data-sb-door"); return d === "shifr" || d === "sobor" || d === "porog"; }
+  function doorKind() { var d = root.getAttribute("data-sb-door"); return d === "sobor" || d === "porog" ? d : "shifr"; }
   function still() { return !!(RMQ.matches || root.getAttribute("data-motion") === "reduced" || doc.querySelector("#sbVaultScene > .ds.rm")); }
   function hash(i) { var h = (i + 1) * 2654435761 >>> 0; h ^= h >>> 15; h = Math.imul(h, 2246822519) >>> 0; h ^= h >>> 13; return h >>> 0; }
   function rgba(c, a) { return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + Math.max(0, Math.min(1, a)).toFixed(3) + ")"; }
@@ -519,17 +489,19 @@
         var per = 7 + (hash(j * 7 + 3) % 400) / 100, ph = (hash(j * 13 + 5) % 1000) / 1000 * per;
         var ep = still() ? 0 : Math.floor((t + ph) / per), mix = still() ? 1 : Math.max(0, Math.min(1, ((t + ph) - ep * per) / 1.8));
         var wave = still() ? 0.5 : 0.5 + 0.5 * Math.sin(t * 0.9 - j * 0.55);
-        var hue = (200 + j * 23 + t * 14 + wave * 30) % 360, li = 60 + 18 * wave, sa = 62 + 16 * wave;
+        var hue = (200 + j * 23 + t * 14 + wave * 30) % 360, li = 60 + 18 * wave, sa = 62 + 16 * wave, dk = doorKind();
+        if (dk === "sobor") { hue = 250 + 12 * Math.sin(j * 0.9 + t * 0.4) + 10 * wave; sa = 34 + 14 * wave; li = 76 + 10 * wave; }
+        else if (dk === "porog") { hue = 24 + 8 * Math.sin(j * 0.9 + t * 0.4) + 8 * wave; sa = 84 + 8 * wave; li = 60 + 14 * wave; }
         var cur = hash(j * 131 + ep * 7919) | 0x0660, prv = hash(j * 131 + (ep - 1) * 7919) | 0x0660;
         var bits = function (bb, a) { if (a <= 0.01) return; g.fillStyle = "hsla(" + hue.toFixed(1) + "," + sa.toFixed(0) + "%," + li.toFixed(0) + "%," + a.toFixed(3) + ")"; for (var b = 0; b < 16; b++) if ((bb >>> b) & 1) g.fillRect(s0 + (b & 3) * cell, y0 + (b >> 2) * cell, cell * 0.82, cell * 0.82); };
         if (mix < 1) bits(prv & ~cur, 0.95 * (1 - mix));
         bits(cur & ~prv, 0.95 * mix); bits(cur & prv, 0.95);
-        var gr = g.createRadialGradient(x, cy, 0, x, cy, 6 + 3 * wave); gr.addColorStop(0, rgba([255, 205, 140], 0.06 + 0.1 * wave)); gr.addColorStop(1, rgba([255, 205, 140], 0));
+        var gr = g.createRadialGradient(x, cy, 0, x, cy, 6 + 3 * wave); var gc = dk === "sobor" ? [226, 216, 255] : dk === "porog" ? [255, 214, 160] : [255, 205, 140]; gr.addColorStop(0, rgba(gc, 0.06 + 0.1 * wave)); gr.addColorStop(1, rgba(gc, 0));
         g.fillStyle = gr; g.beginPath(); g.arc(x, cy, 6 + 3 * wave, 0, 7); g.fill();
       }
       if (focused && (still() || Math.floor((now - t0) / 530) % 2 === 0)) {
         var lq = shown - 1, cx = n ? x0 + slot(lq) + (lq % 2 || lq === 0 ? 1 : -1) * Math.max(6, GP * 0.6) : x0 - 0.75;
-        g.fillStyle = "rgba(242,161,111,.95)"; g.fillRect(Math.round(cx), cy - h * 0.24, 1.5, h * 0.48);
+        var dk2 = doorKind(); g.fillStyle = dk2 === "sobor" ? "rgba(214,202,246,.95)" : dk2 === "porog" ? "rgba(255,190,130,.95)" : "rgba(242,161,111,.95)"; g.fillRect(Math.round(cx), cy - h * 0.24, 1.5, h * 0.48);
       }
     }
     function loop(now) {
@@ -1240,7 +1212,9 @@ function guessMark() {
 function earlyMark(t) {
   if (G || holdAt) return;
   var sc = scene(), door0 = sc && sc.getAttribute("data-door");
-  var other = door0 ? door0 !== "shifr" : (function () { try { var d = W.localStorage && localStorage.getItem("sysbaby.door"); return d === "sobor" || d === "porog"; } catch (e) { return false; } })();
+  /* Собор и Свет временно сняты (D-739): сохранённая снятая дверь встречает Шифром — знак ворот как у Шифра. */
+  var SCENES_RETIRED = { sobor: 1, porog: 1 };
+  var other = door0 ? door0 !== "shifr" : (function () { try { var d = W.localStorage && localStorage.getItem("sysbaby.door"); return (d === "sobor" || d === "porog") && !SCENES_RETIRED[d]; } catch (e) { return false; } })();
   if (other) { if (EARLY) { mg.setTransform(1, 0, 0, 1, 0, 0); mg.clearRect(0, 0, mk.width, mk.height); EARLY = null; W.__sbMarkAnchor = null; } return; }
   /* 09.11 (видео демо 5, второе): знак после первого кадра не двигается вовсе — ни переходом, ни скачком. Он — опорная
      точка: место считается один раз, от высоты первого кадра, и отдаётся воротам (window.__sbMarkAnchor); ворота ставят

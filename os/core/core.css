@@ -51,6 +51,22 @@
   --glass-tint: rgba(var(--accent-rgb), .07);
   --glass-2: rgba(242, 242, 240, .10);
   --glass-blur: 26px;
+  /* ── СТЕКЛО ОКНА НА ПЛАНШЕТЕ — ИЗ ЦВЕТА ПОЛЯ ТЕМЫ · D-743 ───────────────
+     Основатель 11.11.2026 (снимок с планшета): до 860 px окно было глухой
+     плитой --bg-elev, холодно-серой в любой теме. Размытие там снято нарочно
+     (D-148, D-720), поэтому стекло — без него: заливка .80 вверху и .86
+     внизу из света поля текущей темы (--wp-light-rgb пишет поле или солнце),
+     подмешанного к полу. Сквозь окно угадывается свет стола, буквы держит
+     плотность. Применяется только правилом ≤ 860 px ниже.
+     Охраняется tools/window-glass-tablet-check.mjs. */
+  --win-pane-1: color-mix(in srgb, rgb(var(--wp-light-rgb)) 18%, var(--bg-elev));
+  --win-pane-2: color-mix(in srgb, rgb(var(--wp-light-rgb)) 12%, var(--bg));
+  /* ОДНО СТЕКЛО НА ВСЕХ ШИРИНАХ · D-747. Основатель 11.11.2026 (видео с
+     планшета шире 860): окно «слишком прозрачное», а в руке становится
+     другим — тёмной плитой. Плёнка уплотнена до .86/.90 и стоит теперь и
+     шире 860 (там поверх неё остаётся размытие); покой, полёт и
+     перетаскивание носят ОДНУ заливку, без размытия разница — в десятой доле. */
+  --win-pane: linear-gradient(180deg, color-mix(in srgb, var(--win-pane-1) 86%, transparent), color-mix(in srgb, var(--win-pane-2) 90%, transparent));
   /* ── ГОЛОС СИСТЕМЫ — ПОВЕРХНОСТЬ, А НЕ СТЕКЛО (D-252) ─────────────────
      Извещение говорит от имени системы и обязано быть слышно над чем угодно.
      Замер: сквозь пустой участок извещения над белой плитой доходило 255 из
@@ -158,9 +174,12 @@
   --tint-2: rgba(var(--ink-rgb), .09);
   --stone: rgba(0, 0, 0, .55);
   --breath: #18181c;
-  /* Окно позади фокусного накрывается плёнкой цвета поля (D-251): .78 —
-     порог, при котором вторые чернила верхнего окна читаются. */
-  --behind: rgba(10, 10, 11, .78);
+  /* Свет поля на предметах стола до первой записи поля (D-738): тёплый свет
+     Тепла (MOOD_PALETTE.studio c0 / уголь), а не холодные запасные
+     91,124,255 / 143,168,242 в правилах ниже. Поле пишет свои значения в
+     корень сразу, как надело комнату. */
+  --wp-light-rgb: 92, 47, 12;
+  --wp-light-2-rgb: 197, 117, 38;
   /* Воздух верхней полосы (D-147): чернила наверху, книзу в ноль. */
   --air-rgb: 8, 9, 12;
   /* Блик по верхней кромке окна: свет падает сверху. */
@@ -189,6 +208,13 @@
   --r-pill: 999px;
   --r-round: 50%;
   --r-arc: 26px;   /* нижняя дуга кнопок окон ворот Шифра — решение основателя 09.11, D-622 */
+  /* D-733: углы утверждённого дизайна H3c — словами шкалы, вид прежний.
+     Кольца вокруг плитки — calc(слово + отступ) при inset: -отступ. */
+  --r-tile: 21px;    /* плитка значка (D-724) */
+  --r-tile-s: 18px;  /* плитка на тесном столе (D-724) */
+  --r-lamp: 14px;    /* кнопка-светильник и поднос слов (D-729, D-728) */
+  --r-light: 10px;   /* тихая кнопка шапки окна (D-728) */
+  --r-toast: 22px;   /* извещение «свет из-под двери» (D-726) */
   /* ── ПЯТЬ СКОРОСТЕЙ ОТВЕТА (v66) ────────────────────────────────────────
      Тот же аудит: 25 разных длительностей — у языка с двадцатью пятью
      временами глагола нет грамматики. Переход — это ответ на действие, и по
@@ -290,6 +316,9 @@
      Охраняется tools/type-words-check.mjs. */
   --w-text: 400;
   --w-strong: 600;
+  /* Тонкие крупные цифры пульта «крупные числа» (D-742, основатель 11.11.2026:
+     «большими тонкими цифрами») — новое слово шкалы, объявлено по разу. */
+  --w-thin: 200;
   --track-tight: -.01em;
   --track-air: .03em;
   --track-caps: .08em;
@@ -569,6 +598,11 @@ html[data-theme="light"] {
      первой светлой темы и остаётся верным). Сквозь кальку видно свет и
      пятно солнца, но не подписи стола. */
   --glass: rgba(250, 250, 247, .82);
+  /* D-747: калька окна — та же плёнка .86/.90, но свет солнца подмешан
+     к белой кальке (14 % и 11 %), а не к серому --bg-elev: при 18 % буквы окон Терминал и Фонарь
+     падали до 4.14 и 4.47 при мере 4.5 (light-contrast). */
+  --win-pane-1: color-mix(in srgb, rgb(var(--wp-light-rgb)) 14%, rgb(250, 250, 247));
+  --win-pane-2: color-mix(in srgb, rgb(var(--wp-light-rgb)) 11%, rgb(246, 246, 242));
   --glass-2: rgba(252, 252, 250, .93);
   --glass-tint: rgba(var(--sun-rgb), .26);
   --voice: rgba(250, 250, 247, .96);
@@ -610,7 +644,6 @@ html[data-theme="light"] {
   --side-on: rgba(var(--film-rgb), .07);
   --grip-rest: rgba(var(--shade-rgb), .07);
   --grip-warm-rgb: 214, 112, 66;
-  --behind: rgba(237, 238, 234, .74);
   --air-rgb: 250, 250, 247;
   /* Кромка кальки ловит солнце: белый волосок на бумаге. */
   --glint: rgba(255, 255, 255, .9);
@@ -1984,6 +2017,11 @@ html[data-motion="reduced"] .clock-glyph line { transition: none; }
 }
 .pw-glyph.offline { opacity: .5; }
 #sbFab svg.ember-cross { opacity: .92; }
+/* Цвет черты и креста — из акцента темы (D-745): атрибуты stop-color в
+   разметке остаются запасом на случай, если стиль не дошёл. */
+:is(#sbCcEmber, #sbFabH, #sbFabV) stop:nth-child(1) { stop-color: var(--ember-mark-1); }
+:is(#sbCcEmber, #sbFabH, #sbFabV) stop:nth-child(2) { stop-color: var(--ember-mark-2); }
+:is(#sbCcEmber, #sbFabH, #sbFabV) stop:nth-child(3) { stop-color: var(--ember-mark-3); }
 .tb-timer-wrap { position: relative; }
 .pop {
   position: absolute; right: 0; top: calc(100% + 8px); width: 232px; padding: 14px; z-index: var(--z-fullwin);
@@ -2082,7 +2120,9 @@ html[data-motion="reduced"] .sb-range-stick { transition: none; }
    Стекло панели — прежнее, системное: «как сейчас в системе».
    Охраняется tools/svetovod-check.mjs. */
 #sbControlCenter.svetovod {
-  --sv-hi: var(--ink); --sv-mid: var(--ink-2); --sv-dim: var(--ink-3);
+  /* Под пультом теперь светятся значки «Свет внутри» (D-724): тихие
+     подписи пульта на ступень плотнее, чтобы держать меру 4.5 над ними. */
+  --sv-hi: var(--ink); --sv-mid: var(--ink-2); --sv-dim: color-mix(in srgb, var(--ink-3) 65%, var(--ink-2));
   --sv-ember: var(--ember-ink); --sv-fire: linear-gradient(90deg, #e8643a, #ff9a52 70%, #ffcf8a);
   --sv-glow: drop-shadow(0 0 3px rgba(255, 138, 58, .75));
   width: min(380px, calc(100vw - 20px)); max-height: min(84vh, 760px);
@@ -2090,7 +2130,7 @@ html[data-motion="reduced"] .sb-range-stick { transition: none; }
 }
 /* Развёрнутый «Другим» пульт (D-633) берёт высоту экрана, а не прежний предел. */
 #sbControlCenter.svetovod.sv-open { max-height: calc(100vh - var(--topbar-box, 44px) - 16px); }
-#sbControlCenter .sv {
+#sbControlCenter.svetovod .sv {
   position: relative; padding-left: 30px; gap: 4px;
   /* ГЕОМЕТРИЯ ЖИЛЫ (D-633, основатель 09.11.2026: «узлы — точно по центру
      жилы; ветки стыкуются с линиями без выступа»). Ось жилы — 12px + 0.8px
@@ -2101,151 +2141,262 @@ html[data-motion="reduced"] .sb-range-stick { transition: none; }
   --sv-axis: 12.8px; --sv-node-x: calc(var(--sv-axis) - 30px - 2.6px);
   --sv-branch-x: calc(var(--sv-axis) - 30px - 1px); --sv-step: 44px;
 }
-#sbControlCenter .sv-spine {
+#sbControlCenter.svetovod .sv-spine {
   position: absolute; left: 12px; top: 22px; bottom: 14px; width: 1.6px; border-radius: var(--r-pill);
   background: linear-gradient(180deg, var(--ember-core), rgba(var(--ember-mid-rgb), .8) 55%, rgba(var(--coal-rgb), .08));
   box-shadow: 0 0 6px 1px rgba(var(--ember-rgb), .32); pointer-events: none;
 }
 /* источник: «В сети» и батарея */
-#sbControlCenter .sv-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin: 0 0 8px; }
-#sbControlCenter .sv-head .cc-stat { padding: 0; background: none; border: 0; border-radius: 0; gap: 1px; }
-#sbControlCenter .sv-src { position: relative; }
-#sbControlCenter .sv-ember {
+#sbControlCenter.svetovod .sv-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin: 0 0 8px; }
+#sbControlCenter.svetovod .sv-head .cc-stat { padding: 0; background: none; border: 0; border-radius: 0; gap: 1px; }
+#sbControlCenter.svetovod .sv-src { position: relative; }
+#sbControlCenter.svetovod .sv-ember {
   position: absolute; left: -24px; top: 4px; width: 12px; height: 12px; border-radius: var(--r-round);
   background: radial-gradient(circle at 45% 40%, var(--ember-src-hi), var(--ember-src-mid) 35%, var(--ember-deep) 85%, var(--ember-src-lo));
   box-shadow: 0 0 10px 3px rgba(var(--ember-rgb), .45), 0 0 22px 6px rgba(var(--coal-rgb), .18);
 }
-#sbControlCenter .sv-head .cc-v { font-size: var(--f-read); font-weight: var(--w-strong); color: var(--sv-hi); letter-spacing: 0; }
-#sbControlCenter .sv-head .cc-k, #sbControlCenter .sv-head .cc-line { font-size: var(--f-meta); color: var(--sv-dim); text-transform: none; letter-spacing: 0; }
-#sbControlCenter .sv-bat { align-items: flex-end; text-align: right; padding-right: 30px !important; position: relative; }
-#sbControlCenter .sv-bat .cc-v { font-size: var(--f-ui); }
-#sbControlCenter .sv-bat::before {
+#sbControlCenter.svetovod .sv-head .cc-v { font-size: var(--f-read); font-weight: var(--w-strong); color: var(--sv-hi); letter-spacing: 0; }
+#sbControlCenter.svetovod .sv-head .cc-k, #sbControlCenter.svetovod .sv-head .cc-line { font-size: var(--f-meta); color: var(--sv-dim); text-transform: none; letter-spacing: 0; }
+#sbControlCenter.svetovod .sv-bat { align-items: flex-end; text-align: right; padding-right: 30px !important; position: relative; }
+#sbControlCenter.svetovod .sv-bat .cc-v { font-size: var(--f-ui); }
+#sbControlCenter.svetovod .sv-bat::before {
   content: ""; position: absolute; right: 2px; top: 4px; width: 20px; height: 9px; border-radius: var(--r-pill);
   border: 1px solid rgba(var(--ash-rgb), .45);
 }
-#sbControlCenter .sv-bat::after {
+#sbControlCenter.svetovod .sv-bat::after {
   content: ""; position: absolute; left: calc(100% - 20px); top: 6px; height: 5px; border-radius: var(--r-pill);
   width: calc(16px * var(--bat, 0));
   background: var(--sv-ember); filter: var(--sv-glow);
 }
 /* строки-переключатели */
-#sbControlCenter .sv-rows { display: flex; flex-direction: column; gap: 0; grid-template-columns: none; }
-#sbControlCenter .sv-row {
+#sbControlCenter.svetovod .sv-rows { display: flex; flex-direction: column; gap: 0; grid-template-columns: none; }
+#sbControlCenter.svetovod .sv-row {
   position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px;
   width: 100%; min-height: 33px; padding: 4px 4px 4px 8px; margin: 0;
   background: none; border: 0; border-radius: var(--r-card); text-align: left;
   font-size: var(--f-read); font-weight: var(--w-text); color: var(--sv-mid);
 }
-#sbControlCenter .sv-row .sv-st { font-size: var(--f-ui); color: var(--sv-dim); flex: none; }
-#sbControlCenter .sv-row::before {
+#sbControlCenter.svetovod .sv-row .sv-st { font-size: var(--f-ui); color: var(--sv-dim); flex: none; }
+#sbControlCenter.svetovod .sv-row::before {
   content: ""; position: absolute; left: var(--sv-node-x); top: calc(50% - 2.6px); width: 5.2px; height: 5.2px; border-radius: var(--r-round);
   background: var(--ember-node); box-sizing: border-box; border: 1px solid rgba(var(--ember-glow-rgb), .55);
 }
-#sbControlCenter .sv-rows .sv-row.on {
+#sbControlCenter.svetovod .sv-rows .sv-row.on {
   color: var(--sv-hi); font-weight: var(--w-strong);
   background: linear-gradient(90deg, rgba(var(--ember-rgb), .2), rgba(var(--ember-rgb), .05) 55%, transparent);
 }
-#sbControlCenter .sv-rows .sv-row.on .sv-st { color: var(--sv-ember); font-weight: var(--w-strong); }
+#sbControlCenter.svetovod .sv-rows .sv-row.on .sv-st { color: var(--sv-ember); font-weight: var(--w-strong); }
 /* ветка жилы — изгиб в выбранное */
-#sbControlCenter .sv-rows .sv-row.on::before,
-#sbControlCenter .sv-flow::before,
-#sbControlCenter .sv-choice::before,
-#sbControlCenter .sv-stops .cc-chips.has-sel::before {
+#sbControlCenter.svetovod .sv-rows .sv-row.on::before,
+#sbControlCenter.svetovod .sv-flow::before,
+#sbControlCenter.svetovod .sv-choice::before,
+#sbControlCenter.svetovod .sv-stops .cc-chips.has-sel::before {
   content: ""; position: absolute; left: var(--sv-branch-x); top: calc(50% - 12px); width: calc(0px - var(--sv-branch-x)); height: 12px;
   background: none; border: 0; border-left: 2px solid var(--ember-mid); border-bottom: 2px solid var(--ember-mid);
   border-bottom-left-radius: 12px; border-top: 0; filter: var(--sv-glow); box-sizing: border-box;
 }
 /* ползунки: свет течёт по строке до бусины */
-#sbControlCenter .sv-flow { position: relative; gap: 0; margin-top: 6px; }
-#sbControlCenter .sv-flow::before { top: auto; bottom: calc(12px - 1px); }
-#sbControlCenter .sv-lab { display: flex; justify-content: space-between; padding-left: 8px; font-size: var(--f-read); color: var(--sv-hi); }
-#sbControlCenter .sv-val { color: var(--sv-ember); font-weight: var(--w-strong); }
-#sbControlCenter .sv-flow .sb-range { height: 24px; }
-#sbControlCenter .sv-flow .sb-range-track { height: 1px; overflow: visible; background: rgba(var(--film-rgb), .13); }
-#sbControlCenter .sv-flow .sb-range-fill {
+#sbControlCenter.svetovod .sv-flow { position: relative; gap: 0; margin-top: 6px; }
+#sbControlCenter.svetovod .sv-flow::before { top: auto; bottom: calc(12px - 1px); }
+#sbControlCenter.svetovod .sv-lab { display: flex; justify-content: space-between; padding-left: 8px; font-size: var(--f-read); color: var(--sv-hi); }
+#sbControlCenter.svetovod .sv-val { color: var(--sv-ember); font-weight: var(--w-strong); }
+#sbControlCenter.svetovod .sv-flow .sb-range { height: 24px; }
+#sbControlCenter.svetovod .sv-flow .sb-range-track { height: 1px; overflow: visible; background: rgba(var(--film-rgb), .13); }
+#sbControlCenter.svetovod .sv-flow .sb-range-fill {
   top: -0.5px; bottom: auto; height: 2px; background: var(--sv-fire); filter: var(--sv-glow);
 }
-#sbControlCenter .sv-flow .sb-range-stick {
+#sbControlCenter.svetovod .sv-flow .sb-range-stick {
   width: 7px; height: 7px; border-radius: var(--r-round); background: var(--ember-white);
   box-shadow: 0 0 8px 3px rgba(var(--ember-glow-rgb), .5); filter: none;
 }
-#sbControlCenter .sv-flow .sb-range.held .sb-range-stick,
-#sbControlCenter .sv-flow .sb-range:focus-visible .sb-range-stick { width: 9px; height: 9px; }
+#sbControlCenter.svetovod .sv-flow .sb-range.held .sb-range-stick,
+#sbControlCenter.svetovod .sv-flow .sb-range:focus-visible .sb-range-stick { width: 9px; height: 9px; }
 /* выбор словом: язык, свет, сторона кнопок */
-#sbControlCenter .sv-choice { position: relative; flex-direction: row; align-items: center; gap: 4px; min-height: 36px; padding-left: 8px; }
-#sbControlCenter .sv-choice > .cc-k, #sbControlCenter .sv-stops > .cc-k {
+#sbControlCenter.svetovod .sv-choice { position: relative; flex-direction: row; align-items: center; gap: 4px; min-height: 36px; padding-left: 8px; }
+#sbControlCenter.svetovod .sv-choice > .cc-k, #sbControlCenter.svetovod .sv-stops > .cc-k {
   flex: none; min-width: 52px; font-size: var(--f-ui); color: var(--sv-dim); text-transform: none; letter-spacing: 0;
 }
-#sbControlCenter .sv-choice .cc-chips { flex-wrap: nowrap; gap: 0 2px; }
-#sbControlCenter .sv-choice .chip {
+#sbControlCenter.svetovod .sv-choice .cc-chips { flex-wrap: nowrap; gap: 0 2px; }
+#sbControlCenter.svetovod .sv-choice .chip {
   position: relative; padding: 6px 6px 8px; white-space: nowrap; border: 0; background: none; border-radius: var(--r-ctrl);
   font-size: var(--f-ui); color: var(--sv-mid);
 }
-#sbControlCenter .sv-choice .chip.on { color: var(--sv-hi); font-weight: var(--w-strong); text-shadow: 0 0 6px rgba(var(--ember-glow-rgb), .55); }
-#sbControlCenter .sv-choice .chip.on::after {
+#sbControlCenter.svetovod .sv-choice .chip.on { color: var(--sv-hi); font-weight: var(--w-strong); text-shadow: 0 0 6px rgba(var(--ember-glow-rgb), .55); }
+#sbControlCenter.svetovod .sv-choice .chip.on::after {
   content: ""; position: absolute; left: calc(50% - 14px); bottom: 1px; width: 28px; height: 1.8px; border-radius: var(--r-pill);
   background: var(--sv-fire); filter: var(--sv-glow);
 }
 /* обои — остановки на жиле */
-#sbControlCenter .sv-stops { position: relative; gap: 2px; margin-top: 4px; padding-left: 8px; }
-#sbControlCenter .sv-stops > .cc-k { font-size: var(--f-read); color: var(--sv-hi); }
+#sbControlCenter.svetovod .sv-stops { position: relative; gap: 2px; margin-top: 4px; padding-left: 8px; }
+#sbControlCenter.svetovod .sv-stops > .cc-k { font-size: var(--f-read); color: var(--sv-hi); }
 /* Ряды по три с равным шагом (D-619, правка координатора 09.11): длинное
    имя переносится в две строки по центру своей остановки; у каждого ряда —
    свой узел на жиле, ветка заходит в ряд выбранной. */
 /* Четыре темы в одну строку (D-630): ряд по четыре, шаг ряда --sv-step;
    воздух под подписями убран, «ещё 4 темы» стоит сразу под ними. */
-#sbControlCenter .sv-stops .cc-chips { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: var(--sv-step); gap: 0; margin-left: -8px; }
-#sbControlCenter .sv-stops .cc-chips.has-sel::before { top: calc(var(--sv-row, 0) * var(--sv-step) + 9px + 1px - 12px); left: var(--sv-branch-x); }
-#sbControlCenter .sv-stop {
+#sbControlCenter.svetovod .sv-stops .cc-chips { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: var(--sv-step); gap: 0; margin-left: -8px; }
+#sbControlCenter.svetovod .sv-stops .cc-chips.has-sel::before { top: calc(var(--sv-row, 0) * var(--sv-step) + 9px + 1px - 12px); left: var(--sv-branch-x); }
+#sbControlCenter.svetovod .sv-stop {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
   height: var(--sv-step); padding: 5px 4px 0; border: 0; border-radius: var(--r-ctrl); background: none;
   font-size: var(--f-ui); color: var(--sv-dim);
 }
-#sbControlCenter .sv-stop::after {
+#sbControlCenter.svetovod .sv-stop::after {
   content: ""; position: absolute; left: 0; right: 0; top: 9px; height: 1px; background: rgba(var(--film-rgb), .13); z-index: 0;
 }
-#sbControlCenter .sv-stop.lit::after { top: 8px; height: 2px; background: var(--sv-fire); filter: var(--sv-glow); }
-#sbControlCenter .sv-stop.on::after {
+#sbControlCenter.svetovod .sv-stop.lit::after { top: 8px; height: 2px; background: var(--sv-fire); filter: var(--sv-glow); }
+#sbControlCenter.svetovod .sv-stop.on::after {
   top: 8px; height: 2px; background: linear-gradient(90deg, var(--ember-deep), var(--ember-core) 50%, rgba(var(--film-rgb), .13) 50%);
 }
-#sbControlCenter .sv-stop:nth-child(4n+1)::before {
+#sbControlCenter.svetovod .sv-stop:nth-child(4n+1)::before {
   content: ""; position: absolute; left: var(--sv-node-x); top: calc(9px - 2.6px); width: 5.2px; height: 5.2px; border-radius: var(--r-round);
   background: var(--ember-node); box-sizing: border-box; border: 1px solid rgba(var(--ember-glow-rgb), .55); outline: none; margin: 0;
 }
-#sbControlCenter .sv-dot {
+#sbControlCenter.svetovod .sv-dot {
   position: relative; z-index: 1; display: block; width: 6px; height: 6px; margin-top: 1px; border-radius: var(--r-round); box-sizing: border-box;
   background: var(--ember-node); border: 1px solid rgba(var(--ash-rgb), .38);
 }
 /* все остановки одного вида (правка координатора 09.11): знаки суточных
    обоев на жиле не рисуются */
-#sbControlCenter .sv-stop.is-drift:not(:nth-child(4n+1))::before, #sbControlCenter .sv-stop.is-session:not(:nth-child(4n+1))::before { content: none; }
-#sbControlCenter .sv-stop > span { white-space: normal; text-align: center; line-height: var(--lh-ui); max-width: 100%; overflow-wrap: anywhere; }
-#sbControlCenter .sv-stop.on .sv-dot {
+#sbControlCenter.svetovod .sv-stop.is-drift:not(:nth-child(4n+1))::before, #sbControlCenter.svetovod .sv-stop.is-session:not(:nth-child(4n+1))::before { content: none; }
+#sbControlCenter.svetovod .sv-stop > span { white-space: normal; text-align: center; line-height: var(--lh-ui); max-width: 100%; overflow-wrap: anywhere; }
+#sbControlCenter.svetovod .sv-stop.on .sv-dot {
   width: 7px; height: 7px; margin-top: .5px; background: var(--ember-white); border: 0; box-shadow: 0 0 8px 3px rgba(var(--ember-glow-rgb), .5);
 }
-#sbControlCenter .sv-stop.on { color: var(--sv-hi); font-weight: var(--w-strong); text-shadow: 0 0 6px rgba(var(--ember-glow-rgb), .5); }
+#sbControlCenter.svetovod .sv-stop.on { color: var(--sv-hi); font-weight: var(--w-strong); text-shadow: 0 0 6px rgba(var(--ember-glow-rgb), .5); }
 /* переходы: подсказка, окна, профиль */
-#sbControlCenter .sv-go { cursor: pointer; }
-#sbControlCenter .btn.sv-go::after { content: "→"; color: var(--sv-dim); margin-left: auto; }
-#sbControlCenter .sv-links { gap: 0; margin-top: 2px; }
-#sbControlCenter .sv-links .btn { font-weight: var(--w-text); }
-#sbControlCenter .sv-links .btn.danger { color: var(--bad-ink); }
-#sbControlCenter #sbTipBulb { color: var(--sv-hi); }
-#sbControlCenter .sv-merge { padding-left: 8px; min-height: 30px; color: var(--sv-dim); }
+#sbControlCenter.svetovod .sv-go { cursor: pointer; }
+#sbControlCenter.svetovod .btn.sv-go::after { content: "→"; color: var(--sv-dim); margin-left: auto; }
+#sbControlCenter.svetovod .sv-links { gap: 0; margin-top: 2px; }
+#sbControlCenter.svetovod .sv-links .btn { font-weight: var(--w-text); }
+#sbControlCenter.svetovod .sv-links .btn.danger { color: var(--bad-ink); }
+#sbControlCenter.svetovod #sbTipBulb { color: var(--sv-hi); }
+#sbControlCenter.svetovod .sv-merge { padding-left: 8px; min-height: 30px; color: var(--sv-dim); }
 /* «ещё 4 темы — в Настройках →» (D-630) — тихая строка-дверь под остановками. */
-#sbControlCenter .sv-more {
+#sbControlCenter.svetovod .sv-more {
   align-self: flex-start; margin: -2px 0 2px; padding: 2px 0; border: 0; background: none; border-radius: var(--r-tag);
   font-size: var(--f-meta); color: var(--sv-dim); text-align: left; cursor: pointer;
 }
-#sbControlCenter .sv-more[hidden] { display: none; }
-@media (hover: hover) { :where(html:not([data-input="touch"])) #sbControlCenter .sv-more:hover { color: var(--sv-mid); } }
+#sbControlCenter.svetovod .sv-more[hidden] { display: none; }
+@media (hover: hover) { :where(html:not([data-input="touch"])) #sbControlCenter.svetovod .sv-more:hover { color: var(--sv-mid); } }
 /* «Другое» (D-633): свёрнутое — одна строка; развёрнутое — строки ниже. */
-#sbControlCenter .sv-other-btn { margin-top: 2px; }
-#sbControlCenter .sv-other { display: flex; flex-direction: column; gap: 0; }
-#sbControlCenter .sv-other[hidden] { display: none; }
+#sbControlCenter.svetovod .sv-other-btn { margin-top: 2px; }
+#sbControlCenter.svetovod .sv-other { display: flex; flex-direction: column; gap: 0; }
+#sbControlCenter.svetovod .sv-other[hidden] { display: none; }
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) #sbControlCenter .sv-row:hover { background-color: rgba(var(--film-rgb), .05); }
+  :where(html:not([data-input="touch"])) #sbControlCenter.svetovod .sv-row:hover { background-color: rgba(var(--film-rgb), .05); }
 }
+#sbControlCenter.svetovod .kn-only { display: none; }
+
+/* ═══════════════ ПУЛЬТ «КРУПНЫЕ ЧИСЛА» · D-740…D-742 (основатель 11.11.2026) ═══
+   «ПУЛЬТ в H3c»: вид по умолчанию — dizain-dorogo G2-v2. Громкость и яркость
+   — крупными тонкими цифрами с подписью и тонкой полосой (полоса тянется
+   касанием и пальцем, это тот же sbSlider). Ниже — включатели словами,
+   текущее светится; темы строкой слов (тепло · океан · аврора, words: true);
+   «другое» и дом — словами внизу; в самом низу «в сети · заряд» и язык.
+   Стекло тёплое, как у меню; слова кремовые строчные — без рамок, плиток и
+   тумблеров. Тема пропитывает: свет текущего слова — цвет акцента темы.
+   Затемнения стола нет — оно только для «моментов». Узлы те же, что у
+   Световода: вид держит класс krupno (Световод — класс svetovod, выбор в
+   Настройках → Оформление → «Пульт»). Охраняется tools/pult-krupno-check.mjs. */
+#sbControlCenter.krupno {
+  --kn-glass: linear-gradient(180deg, rgba(37, 32, 30, .84), rgba(23, 20, 19, .88));
+  --kn-edge: inset 0 1px 0 rgba(255, 240, 224, .10);
+  --kn-drop: 0 40px 80px -20px rgba(0, 0, 0, .7), 0 12px 30px -10px rgba(0, 0, 0, .5);
+  --kn-hi: #fbf4ea;
+  --kn-mid: rgba(246, 236, 222, .64);
+  --kn-dim: rgba(246, 236, 222, .58);
+  --kn-lit: color-mix(in oklab, var(--accent) 26%, #fff8ee);
+  --kn-glow: 0 0 16px rgba(var(--accent-rgb), .6);
+  --kn-track: rgba(255, 250, 244, .09);
+  --kn-fill: linear-gradient(90deg, rgba(255, 250, 244, .16), color-mix(in oklab, var(--accent) 30%, rgba(255, 248, 238, .72)));
+  width: min(400px, calc(100vw - 20px)); max-height: calc(100vh - var(--topbar-box, 44px) - 16px);
+  padding: 26px 28px 22px; border: 0; border-radius: var(--r-toast);
+  background: var(--kn-glass); box-shadow: var(--kn-edge), var(--kn-drop);
+  backdrop-filter: blur(calc(var(--glass-blur) + 8px)) saturate(1.45); -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 8px)) saturate(1.45);
+  color: var(--kn-mid); text-transform: lowercase;
+}
+html[data-theme="light"] #sbControlCenter.krupno {
+  --kn-glass: linear-gradient(180deg, rgba(253, 249, 243, .92), rgba(246, 239, 230, .94));
+  --kn-edge: inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 0 0 1px rgba(60, 40, 20, .06);
+  --kn-drop: 0 30px 60px -24px rgba(60, 40, 20, .35), 0 10px 24px -12px rgba(60, 40, 20, .2);
+  --kn-hi: #2a1d14;
+  --kn-mid: rgba(42, 29, 20, .74);
+  --kn-dim: rgba(42, 29, 20, .68);
+  --kn-lit: color-mix(in oklab, var(--accent) 45%, #1e130c);
+  --kn-glow: 0 0 14px rgba(var(--accent-rgb), .35);
+  --kn-track: rgba(60, 40, 20, .10);
+  --kn-fill: linear-gradient(90deg, rgba(60, 40, 20, .18), color-mix(in oklab, var(--accent) 55%, rgba(42, 29, 20, .6)));
+}
+@media (max-width: 420px) { #sbControlCenter.krupno { width: auto; padding: 22px 22px 18px; } }
+/* чего в крупных числах нет: жилы, узлов, слов «вкл./выкл.», «ещё N тем» */
+#sbControlCenter.krupno :is(.sv-spine, .sv-ember, .sv-st, .sv-dot, .sv-val, .sv-more, .sv-stops > .cc-k, .sv-head .cc-k, .sv-bat .cc-v > [data-i18n], .sv-choice:not(#sbCcThemeBlock):not(:has(#sbCcSide)) > .cc-k) { display: none; }
+/* строка времени батареи в крупных числах — подсказкой при наведении (title) */
+#sbControlCenter.krupno .cc-line { display: none; }
+#sbControlCenter.krupno .cc-grid { display: flex; flex-flow: row wrap; align-items: baseline; gap: 0; padding: 0; }
+#sbControlCenter.krupno .cc-grid > * { flex: 0 0 100%; order: 20; min-width: 0; }
+/* слово пульта: без рамки, без подложки, без плитки */
+#sbControlCenter.krupno :is(.cc-toggle, .chip, .btn) {
+  display: inline-block; width: auto; min-height: 0; margin: 0; padding: 3px 0; border: 0; border-radius: var(--r-tag);
+  background: none; box-shadow: none; text-shadow: none; transform: none;
+  font: inherit; font-size: inherit; font-weight: var(--w-text); color: var(--kn-mid); text-align: left; text-transform: lowercase; cursor: pointer;
+}
+#sbControlCenter.krupno :is(.cc-toggle, .chip).on,
+#sbControlCenter.krupno #sbCcOtherBtn[aria-expanded="true"] { color: var(--kn-lit); text-shadow: var(--kn-glow); }
+@media (hover: hover) {
+  /* по селектору на правило: каждый сам спрашивает, чем коснулись (D-272) — список внутри :is() вопрос бы терял */
+  :where(html:not([data-input="touch"])) #sbControlCenter.krupno .cc-toggle:hover,
+  :where(html:not([data-input="touch"])) #sbControlCenter.krupno .chip:hover,
+  :where(html:not([data-input="touch"])) #sbControlCenter.krupno .btn:hover { color: var(--kn-hi); }
+}
+/* точка между словами строки — после слова, как в образце: при переносе
+   она остаётся в конце строки; тихая, не светится */
+#sbControlCenter.krupno :is(.sv-rows, #sbCcMoods, #sbCcThemes, #sbCcSide, #sbCcLang, .sv-other > .sv-links:not(.kn-home)) > :not([hidden]):has(~ :not([hidden]))::after,
+#sbControlCenter.krupno :is(#sbCcOtherBtn, #sbCcExport, #sbCcImport)::after,
+#sbControlCenter.krupno .sv-src::after {
+  content: "·" / ""; display: inline-block; padding: 0 .45em; color: var(--kn-dim); text-shadow: none; font-weight: var(--w-text);
+}
+/* громкость и яркость — крупные тонкие числа, подпись, тонкая полоса */
+#sbControlCenter.krupno .sv-flow { order: 1; flex: 1 1 0; display: flex; flex-direction: column; gap: 0; }
+#sbControlCenter.krupno .sv-flow + .sv-flow { margin-left: 24px; }
+#sbControlCenter.krupno .kn-num {
+  font-size: var(--f-hero); font-weight: var(--w-thin); line-height: var(--lh-one); letter-spacing: var(--track-tight);
+  color: var(--kn-hi); font-variant-numeric: tabular-nums;
+}
+#sbControlCenter.krupno .sv-lab { margin-top: 8px; font-size: var(--f-ui); letter-spacing: var(--track-air); color: var(--kn-dim); }
+#sbControlCenter.krupno .sv-flow .sb-range { height: 24px; margin-top: 2px; }
+#sbControlCenter.krupno .sv-flow .sb-range-track { height: 4px; background: var(--kn-track); }
+#sbControlCenter.krupno .sv-flow .sb-range-fill { background: var(--kn-fill); }
+#sbControlCenter.krupno .sv-flow .sb-range-stick { width: 2px; height: 12px; background: var(--kn-hi); filter: none; opacity: 0; transition: opacity var(--t-touch) var(--ease-move); }
+#sbControlCenter.krupno .sv-flow .sb-range:is(.held, :focus-visible) .sb-range-stick { opacity: 1; height: 14px; }
+/* включатели словами */
+#sbControlCenter.krupno .kn-hint { order: 2; margin-top: 26px; font-size: var(--f-ui); letter-spacing: var(--track-air); color: var(--kn-dim); }
+#sbControlCenter.krupno .sv-rows { order: 3; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0; margin-top: 6px; font-size: var(--f-lead); line-height: var(--lh-read); }
+/* темы строкой слов; свет; кнопки окон */
+#sbControlCenter.krupno .sv-stops { order: 4; margin-top: 12px; padding: 0; gap: 0; font-size: var(--f-lead); }
+#sbControlCenter.krupno #sbCcMoods { display: flex; flex-wrap: wrap; gap: 0; }
+#sbControlCenter.krupno .sv-choice { display: flex; flex-flow: row wrap; align-items: baseline; gap: 0; min-height: 0; padding: 0; font-size: var(--f-read); }
+#sbControlCenter.krupno #sbCcThemeBlock { order: 5; margin-top: 8px; }
+#sbControlCenter.krupno .sv-choice:has(#sbCcSide) { order: 6; margin: 2px 0 14px; }
+#sbControlCenter.krupno .sv-choice > .cc-k { margin-right: .5em; font-size: inherit; text-transform: lowercase; letter-spacing: 0; color: var(--kn-dim); }
+#sbControlCenter.krupno .sv-choice .cc-chips { display: flex; flex-wrap: wrap; gap: 0; }
+/* «другое», дом, уход — словами внизу; развёрнутое «другое» — строками ниже */
+#sbControlCenter.krupno :is(.sv-other, .kn-home, .cc-grid > .sv-links) { display: contents; }
+#sbControlCenter.krupno .sv-other.kn-fold > :not(.kn-home),
+#sbControlCenter.krupno .sv-other.kn-fold .sv-merge { display: none; }
+#sbControlCenter.krupno :is(#sbCcOtherBtn, #sbCcExport, #sbCcImport, #sbCcSignOut) { order: 7; flex: 0 0 auto; font-size: var(--f-read); }
+#sbControlCenter.krupno #sbCcSignOut { color: var(--kn-mid); }
+#sbControlCenter.krupno :is(#sbTipBulb, .sv-other > .sv-links:not(.kn-home), .sv-merge) { order: 8; flex: 0 0 100%; margin-top: 6px; font-size: var(--f-read); }
+#sbControlCenter.krupno .sv-other:not(.kn-fold) > .sv-links:not(.kn-home) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0; }
+#sbControlCenter.krupno .sv-other:not(.kn-fold) > #sbTipBulb:not(.retired) { display: block; color: var(--kn-mid); }
+#sbControlCenter.krupno .sv-other:not(.kn-fold) .sv-merge { display: flex; align-items: center; gap: 8px; color: var(--kn-dim); }
+/* низ: «в сети · заряд», язык справа */
+#sbControlCenter.krupno .cc-grid::after { content: ""; order: 9; flex: 0 0 100%; height: 0; }
+#sbControlCenter.krupno .sv-head { order: 10; flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0; margin: 22px 0 0; font-size: var(--f-read); }
+#sbControlCenter.krupno .sv-head .cc-stat { display: inline-flex; flex-direction: row; align-items: baseline; gap: 0; padding: 0; border: 0; background: none; border-radius: 0; }
+#sbControlCenter.krupno .sv-head :is(.cc-v, .cc-line) { font-size: inherit; font-weight: var(--w-text); color: var(--kn-mid); letter-spacing: 0; text-transform: lowercase; }
+#sbControlCenter.krupno .kn-charge { margin-right: .3em; color: var(--kn-mid); }
+#sbControlCenter.krupno .sv-choice:has(#sbCcLang) { order: 11; flex: 0 0 auto; margin: 22px 0 0 auto; padding-left: 12px; }
 
 /* ============================================================== desktop §4 */
 #desktop { position: fixed; inset: 0; z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) var(--ease-enter); }
@@ -2725,7 +2876,7 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
   /* Окно сделано из комнаты: сверху её свет, книзу он сходит на нет, и под
      всем этим тончайшая плёнка. Плита превращается в воздух, но край и блик
      остаются — иначе окно перестанет читаться как предмет. */
-  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--glass);
+  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--win-pane);  /* D-747: была плёнка --glass .04 */
   border: 0; box-shadow: inset 0 0 0 1px var(--win-edge), var(--win-shadow);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
@@ -2747,37 +2898,16 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
   backdrop-filter: none; -webkit-backdrop-filter: none;
   /* Свет комнаты летит вместе с окном (D-272): градиент не стоит кадров,
      и окно не «загорается» в конце полёта. */
-  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--bg-elev);
+  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--win-pane);  /* D-747: та же заливка, что в покое */
   will-change: transform, opacity;
 }
-/* ── ОКНО ПОЗАДИ ПРИГЛУШАЕТСЯ · D-251 ─────────────────────────────────────
-   Совет снял экран и увидел: поверх витрины открыто Хранилище, и сквозь его
-   стекло — тонкое по слову основателя, D-147, — просвечивает белая кнопка
-   витрины. Замер: сквозь пустой участок верхнего окна над белой плитой
-   доходит 254 из 255. Стекло НЕ уплотняется — это отменило бы слово
-   основателя. Приглушается то, что ПОЗАДИ: окно, которое не сверху,
-   накрывается плёнкой цвета поля. Так устроены и другие столы — неактивное
-   окно тише активного, — и это помогает глазу дважды: читать верхнее и
-   видеть, какое из окон сейчас слушает.
-   Плёнка лежит НАД содержимым и под рамкой: заголовок остаётся различим,
-   чтобы окно можно было найти и поднять. Число плёнки не вкус: при .72
-   белое становится ≈72 — порог, ниже которого вторые чернила верхнего окна
-   читаются с отношением 3, первые — 8.
-   Охраняется tools/window-behind-check.mjs. */
+/* ── НЕАКТИВНОЕ ОКНО НЕ ТЕМНЕЕТ · D-721 (откат D-251/D-259) ──────────────
+   Основатель 10.11.2026: «неактивные окна НЕ темнеют (сейчас темнеют, и
+   сильно)». Плёнка над телом нефокусного окна и приглушённый заголовок
+   сняты: каждое окно на столе — того же света, что и фокусное. Какое окно
+   слушает, видно по тому, что оно сверху, и по «свету по кромке».
+   Охраняется tools/window-behind-check.mjs (переведён под это решение). */
 .window .window-body { position: relative; }
-.window .window-body::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: var(--z-veil);
-  background: rgba(var(--shade-rgb), 0);
-  transition: background var(--t-touch) var(--ease-move);
-}
-/* Гаснет окно ПОЗАДИ ФОКУСНОГО; нет фокусного — не гаснет никто (D-259). */
-#windowLayer.sb-window-focused .window:not(.focused) .window-body::after { background: var(--behind); }
-/* Заголовок неактивного окна лишь чуть тише — его читают, чтобы найти окно. */
-#windowLayer.sb-window-focused .window:not(.focused) .titlebar { opacity: .72; }
-/* Пока окно летит, плёнка не участвует: полёт и так без размытия (см. выше). */
-.window.opening .window-body::after, .window.traveling .window-body::after { display: none; }
-/* В Светлице плёнка — дымка цвета стены (--behind): дальнее бледнеет, а не
-   темнеет. Тёмная плёнка на кальке читалась бы как поломка. */
 /* ── СКВОЗНАЯ КОЛОННА · решение D-639 (основатель 09.11.2026) ─────────────
    У окна с боковой панелью (Настройки, Записи, Разговор) панель — колонна
    от самого верха окна до низа: чуть светлее тон и разделительная линия
@@ -2826,7 +2956,21 @@ html.sb-fullscreen-window #topbar {
   transition: transform var(--t-move) var(--ease-move), opacity var(--t-move) var(--ease-move);
 }
 .window.drop-target { outline: 2px solid var(--accent); }
-html.dragging .window { backdrop-filter: blur(6px); }
+/* ── ПОКА ОКНО ТАЩАТ — ПЛОТНОЕ СТЕКЛО, БЕЗ РАЗМЫТИЯ · D-720 ─────────────
+   Основатель 10.11.2026: перетаскивание при 2+ окнах «как в замедленной
+   съёмке» (планшет). Причина — размытие фона у КАЖДОГО окна: под движущимся
+   окном подложка меняется каждый кадр, и пересчитываются все. Здесь стояло
+   blur(6px) — и до 860 px, где окна размытия не имеют вовсе (D-148), оно
+   ПОЯВЛЯЛОСЬ ровно на время перетаскивания. Теперь на это время размытие
+   заменяется плотным стеклом того же вида (свет комнаты сверху тот же, что у
+   летящего окна, D-272) и возвращается при отпускании.
+   Охраняется tools/window-drag-lag-check.mjs. */
+html.dragging .window {
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+  /* D-747: в руке — то же стекло, что в покое (было --bg-elev — тёмная плита). */
+  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--win-pane);
+}
+html.dragging .window.dragged { will-change: transform; }
 /* Полоса окна 48 px (D-610): кнопки окна под палец — на всех устройствах одинаково (D-272). */
 .titlebar {
   display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 var(--win-key-pad); flex: none;
@@ -3877,10 +4021,21 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
      860 было всегда: три вида одного окна). Бесплатное возвращено; снято
      только размытие — стекло 26 px стоит телефону 34.1 мс кадра против 26.0
      без него (D-148). Одно это различие названо в same-look-check. */
-  .window {
-    box-shadow: none;
+  /* ── СТЕКЛО БЕЗ РАЗМЫТИЯ, А НЕ ПЛИТА · D-743 ────────────────────────────
+     Основатель 11.11.2026: на планшете окно — «глухая плита #121214» и
+     «какие-то непонятные полосы». Плита была здесь: подложка --bg-elev
+     непрозрачна и холодна в любой теме. Теперь — тёплое стекло из цвета
+     поля (--win-pane, .80–.86), кромка как у плитки стола, тёплая.
+     ПОЛОСЫ (D-744): тень убиралась отсюда (box-shadow: none), но
+     .window.focused весомее, и у окна в фокусе возвращалась тень 64 px —
+     тёмная полоса под окном и по бокам. Теперь правило бьёт и фокус. И
+     полёт, и перетаскивание (D-720) держат то же стекло, а не плиту: окно
+     не меняется в руке. Размытия нет ни в одном из этих состояний.
+     Охраняется tools/window-glass-tablet-check.mjs. */
+  .window, .window.focused, .window.opening, .window.traveling, html.dragging .window {
+    box-shadow: inset 0 0 0 var(--tile5-edge-w) var(--tile5-edge), inset 0 1px 0 rgba(var(--edge-rgb), .10);
     backdrop-filter: none; -webkit-backdrop-filter: none;
-    background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--bg-elev);
+    background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--win-pane);
   }
 }
 /* Icon step-down (§4.2, the "681 px lesson"): the small-icon regime must extend
@@ -4464,3 +4619,295 @@ body.sb-alarm-flash::after {
   background: rgba(var(--well-rgb), .45); border: 0; border-radius: var(--r-tag); padding: 3px 6px; outline: 1.5px solid var(--accent);
   -webkit-user-select: text; user-select: text;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   УТВЕРЖДЁННЫЙ ДИЗАЙН H3c · решения D-724…D-729 (основатель 10.11.2026)
+   Образцы: znachki10/nabor-5 («Свет внутри» на «стекле прозрачнее»),
+   dizain3 E-v1/E-v2 и dizain5 CE2 (кромка/оправа), dizain5 A2-v2 («свет
+   из-под двери»), dizain5 okno-lampa («лампа в окне»), dizain3/dizain-dorogo
+   G5…G9 и dizain5 G9b (шапка, поле, плашки, кнопки).
+   Правила, общие для всего блока:
+   · затемнения стола здесь нет — оно только для «моментов» (ключница,
+     долгое нажатие); жилы здесь нет — она только в пульте;
+   · всё вещество — токены: тема меняет цвета, не разметку.
+   ═════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* Свет внутри знака: тёплое молоко → охра по краю (gen5 STD). */
+  --glyph-1: #FFF8EE; --glyph-o1: 1;
+  --glyph-2: #F4DFC8; --glyph-o2: 1;
+  --glyph-3: #9E8572; --glyph-o3: .75;
+  --glyph-4: #5a4a40; --glyph-o4: .6;
+  /* «Эхо» горит, как все, — тёплым белым (D-731; было оранжевое, D-724).
+     Знак открытого приложения — свет акцента ТЕКУЩЕЙ темы (D-732): середина
+     светлее (акцент на молоке знака), край — сам акцент и его тень. */
+  --glyph-on-1: color-mix(in oklab, var(--accent) 50%, #FFF8EE);
+  --glyph-on-2: color-mix(in oklab, var(--accent) 78%, #FFF8EE);
+  --glyph-on-3: var(--accent);
+  --glyph-on-4: color-mix(in oklab, var(--accent) 62%, #000);
+  /* Тлеющая черта пульта и тлеющий крест «+» — тоже свет акцента ТЕКУЩЕЙ
+     темы (D-745, основатель 11.11.2026): раскалённое начало — акцент на
+     молоке, середина — сам акцент, гаснущий конец — акцент в тень. В Тепле
+     акцент оранжевый — и черта оранжевая. Охраняется accent-marks-check. */
+  --ember-mark-1: color-mix(in oklab, var(--accent) 38%, #FFF8EE);
+  --ember-mark-2: var(--accent);
+  --ember-mark-3: color-mix(in oklab, var(--accent) 82%, #000);
+  /* Поле с курсором — «свет по кромке» цветом акцента темы (D-746): та же
+     раскладка, что у открытого приложения (D-725) — кольцо СНАРУЖИ кромки
+     (как у плитки: внутрь поля свет не заходит, под буквами только стекло
+     поля — light-contrast-check), яркое место сверху-слева, мягкое свечение
+     наружу. Охраняется field-focus-light-check. */
+  --field-edge-on: 0 0 0 1px rgba(var(--accent-rgb), .6), -1px -1px 0 1px rgba(var(--accent-rgb), .55), 0 0 22px 1px rgba(var(--accent-rgb), .16), 0 10px 22px -10px rgba(var(--accent-rgb), .22);
+  /* Стекло плитки — вид «средне» (D-736, основатель 11.11.2026, демо тем v8):
+     ровно середина между GLASS5 (D-724: .17/.045/.07, кромка 1px .15, тени .6/.35)
+     и «прозрачнее» — заливка, кромка, тень. Единственный вид значков, во всех
+     тёмных темах; светлая — своё стекло ниже. */
+  --tile5-bg: radial-gradient(120% 90% at 50% 7%, rgba(255,255,255,.1225), rgba(255,255,255,.0285) 59%, rgba(255,240,224,.045));
+  --tile5-edge: rgba(255,250,244,.225);
+  --tile5-edge-w: .75px;
+  --tile5-shade: inset 0 1px 0 rgba(255,255,255,.26), inset 0 -10px 18px -10px rgba(255,226,196,.08), inset 0 0 0 .5px rgba(255,255,255,.035), 0 12px 22px -12px rgba(0,0,0,.3), 0 2px 6px -2px rgba(0,0,0,.175);
+  /* Подпись значка: мягкая тень и узкий тёмный ореол (D-736) — общего потолка
+     яркости поля нет, подпись читается и над дугой складки (D-734). */
+  --tile5-label-shade: 0 1px 5px rgba(0,0,0,.625), 0 0 2px rgba(0,0,0,.5);
+  /* Свет по кромке (E-v2) и латунная оправа (E-v1). */
+  --edge-rgb: 255, 234, 206;
+  --edge-glow: 0 0 26px 2px rgba(255,226,190,.12), 0 14px 30px -10px rgba(255,220,180,.16);
+  --brass: 0 0 0 1.5px rgba(212,184,146,.92), 0 0 0 3px rgba(40,30,22,.55), 0 0 22px 3px rgba(232,196,150,.18);
+  /* Свет из-под двери (A2-v2). */
+  --door-light: radial-gradient(46% 100% at 50% 100%, rgba(255,226,190,.34), rgba(255,214,170,.12) 46%, transparent 78%);
+  --door-thread: rgba(255,240,222,.95);
+  --door-thread-glow: 0 0 12px 1px rgba(255,226,190,.6), 0 0 40px 6px rgba(255,214,170,.22);
+  --door-ink: #fbf5ec;
+  /* Поле «стекло со световой чертой» (G6) и кнопка «светильник» (G9). */
+  --field5-bg: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
+  --field5-line: linear-gradient(90deg, transparent, rgba(255,236,214,.55) 22%, rgba(255,236,214,.55) 78%, transparent);
+  --field5-line-on: linear-gradient(90deg, transparent, rgba(255,240,222,.95) 18%, rgba(255,240,222,.95) 82%, transparent);
+  --lamp5-bg: radial-gradient(70% 120% at 50% 118%, rgba(255,228,192,.30), rgba(255,220,180,.08) 55%, transparent 80%), linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01));
+  --lamp5-edge: inset 0 0 0 1px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.14);
+  --lamp5-ink: #fbf6ef;
+  --tray5-bg: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.015));
+  --tray5-edge: inset 0 0 0 1px rgba(255,255,255,.07), inset 0 1px 0 rgba(255,255,255,.08);
+  --window-lamp: rgba(255,234,206,.40);
+  --window-lamp-2: rgba(255,226,190,.10);
+}
+html[data-theme="light"] {
+  --glyph-1: #8a5a36; --glyph-2: #6e4628; --glyph-3: #9a7458; --glyph-4: #c8a888;
+  --glyph-o3: .9; --glyph-o4: .75;
+  --glyph-on-1: color-mix(in oklab, var(--accent) 80%, #000); --glyph-on-2: color-mix(in oklab, var(--accent) 88%, #000);
+  --glyph-on-3: var(--accent); --glyph-on-4: color-mix(in oklab, var(--accent) 55%, #fff);
+  /* Черта и крест в Светлице (D-745): тот же акцент, начало не уходит в
+     молоко на светлом — иначе оно пропадает на извести. */
+  --ember-mark-1: color-mix(in oklab, var(--accent) 62%, #FFF8EE);
+  --ember-mark-3: color-mix(in oklab, var(--accent) 70%, #000);
+  --tile5-bg: radial-gradient(120% 90% at 50% 8%, rgba(255,255,255,.78), rgba(255,255,255,.42) 58%, rgba(255,246,236,.5));
+  --tile5-edge: rgba(60,40,20,.12);
+  --tile5-edge-w: 1px;
+  --tile5-shade: inset 0 1.5px 0 rgba(255,255,255,.9), 0 10px 20px -12px rgba(60,40,20,.35), 0 2px 5px -2px rgba(60,40,20,.2);
+  /* Ореола подписи у светлой темы нет (D-736): тёмный ореол на светлом не
+     читается — подпись держит прежняя кайма D-285. Слово отвечено, а не забыто. */
+  --tile5-label-shade: none;
+  --edge-rgb: 196, 118, 58;
+  --edge-glow: 0 0 20px 1px rgba(196,118,58,.12), 0 10px 22px -10px rgba(196,118,58,.14);
+  --brass: 0 0 0 1.5px rgba(150,110,60,.95), 0 0 0 3px rgba(255,250,242,.8), 0 0 18px 2px rgba(160,110,60,.18);
+  --door-light: radial-gradient(46% 100% at 50% 100%, rgba(214,140,70,.20), rgba(214,140,70,.07) 46%, transparent 78%);
+  --door-thread: rgba(176,96,40,.9);
+  --door-thread-glow: 0 0 10px 1px rgba(214,140,70,.35);
+  --door-ink: #2a1d14;
+  --field5-bg: linear-gradient(180deg, rgba(255,255,255,.6), rgba(255,255,255,.4));
+  --field5-line: linear-gradient(90deg, transparent, rgba(150,90,40,.45) 22%, rgba(150,90,40,.45) 78%, transparent);
+  --field5-line-on: linear-gradient(90deg, transparent, rgba(176,96,40,.9) 18%, rgba(176,96,40,.9) 82%, transparent);
+  --lamp5-bg: radial-gradient(70% 120% at 50% 118%, rgba(214,140,70,.22), rgba(214,140,70,.06) 55%, transparent 80%), linear-gradient(180deg, rgba(255,255,255,.7), rgba(255,255,255,.45));
+  --lamp5-edge: inset 0 0 0 1px rgba(60,40,20,.12), inset 0 1px 0 rgba(255,255,255,.9);
+  --lamp5-ink: #2a1d14;
+  --tray5-bg: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.3));
+  --tray5-edge: inset 0 0 0 1px rgba(60,40,20,.08);
+  --window-lamp: rgba(214,150,90,.22);
+  --window-lamp-2: rgba(214,150,90,.06);
+}
+
+/* ── ЗНАЧОК «СВЕТ ВНУТРИ» НА «СТЕКЛЕ ПРОЗРАЧНЕЕ» · D-724 ────────────────
+   Плитка 64 (на тесном столе 54), скругление 21/18, знак 30/26 светится
+   изнутри. Стекло прозрачнее прежнего и без размытия. Охраняется
+   tools/glyphs-check.mjs и tools/tile-look-check.mjs (переведён). */
+#sbIconLayer .desk-icon { gap: 6px; padding: 4px 0 0; }
+#sbIconLayer .icon-tile {
+  position: relative; overflow: visible;
+  width: 64px; height: 64px; border-radius: var(--r-tile);
+  background: var(--tile5-bg); border: var(--tile5-edge-w) solid var(--tile5-edge); box-shadow: var(--tile5-shade);
+}
+/* D-736: в тёмных темах подпись — мягкая тень и узкий ореол вместо каймы
+   D-285; в светлой кайма прежняя (тёмный ореол на светлом не читается). */
+html:not([data-theme="light"]) #sbIconLayer .icon-label { text-shadow: var(--tile5-label-shade); }
+html.icons-small #sbIconLayer .icon-tile { width: 54px; height: 54px; border-radius: var(--r-tile-s); }
+#sbIconLayer .icon-tile .sb-glyph { width: 30px; height: 30px; overflow: visible; }
+html.icons-small #sbIconLayer .icon-tile .sb-glyph { width: 26px; height: 26px; }
+#sbIconLayer .desk-icon.active-app .icon-tile,
+#sbIconLayer .desk-icon .icon-tile { background: var(--tile5-bg); border-color: var(--tile5-edge); box-shadow: var(--tile5-shade); }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) #sbIconLayer .desk-icon:hover .icon-tile { background: var(--tile5-bg); border-color: var(--tile5-edge); box-shadow: var(--tile5-shade); filter: brightness(1.08); }
+}
+.sb-glyph { display: block; overflow: visible; }
+.dock-tile .sb-glyph, .win-chip .sb-glyph { overflow: visible; }
+
+/* ── ОТКРЫТО = СВЕТ ПО КРОМКЕ · ФОКУС КЛАВИАТУРОЙ = ЛАТУННАЯ ОПРАВА · D-725 ──
+   CE2 (раскладка основателя): открыто приложение — мягкий свет по кромке
+   плитки, яркое место сверху-слева; фокус клавиатуры — латунная оправа;
+   вместе — кромка прижата к плитке (3 px), оправа снаружи (8 px).
+   Точка «живо» под значком не нужна: её место занял свет. */
+#sbIconLayer .icon-tile::after, #sbIconLayer .icon-tile::before {
+  content: ""; position: absolute; pointer-events: none; opacity: 0;
+  transition: opacity var(--t-touch) var(--ease-move);
+}
+#sbIconLayer .icon-tile::after {
+  inset: -4px; border-radius: calc(var(--r-tile) + 4px); padding: 1.6px;
+  background: conic-gradient(from 210deg, rgba(var(--edge-rgb), .98), rgba(var(--edge-rgb), .28) 22%, rgba(var(--edge-rgb), .06) 50%, rgba(var(--edge-rgb), .32) 78%, rgba(var(--edge-rgb), .98));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  box-shadow: var(--edge-glow);
+}
+html.icons-small #sbIconLayer .icon-tile::after { inset: -4px; border-radius: calc(var(--r-tile-s) + 4px); }
+#sbIconLayer .icon-tile::before { inset: -5px; border-radius: calc(var(--r-tile) + 5px); box-shadow: var(--brass); }
+html.icons-small #sbIconLayer .icon-tile::before { inset: -5px; border-radius: calc(var(--r-tile-s) + 5px); }
+#sbIconLayer .desk-icon.running .icon-tile::after { opacity: 1; }
+#sbIconLayer .desk-icon.running.is-min .icon-tile::after { opacity: .55; }
+/* ── ОТКРЫТО = ЕЩЁ И ЗНАК ЦВЕТОМ ТЕМЫ · D-732 ─────────────────────────────
+   Второй признак рядом с кромкой: знак открытого загорается акцентом текущей
+   темы (Тепло — оранжевый, Океан, Аврора, Угли — свой). Тот же переход, что у
+   кромки; у закрытых цвета нет; фокус клавиатуры (оправа) цвета не даёт.
+   Цвет еле заметно дышит, как свет в окне: 7 с, глубина 18 %, только у
+   открытых; «уменьшить движение» — ровный. Охраняется glyphs-check. */
+.sb-glyph-on { opacity: 0; transition: opacity var(--t-touch) var(--ease-move); }
+#sbIconLayer .desk-icon.running .sb-glyph-on { opacity: 1; }
+#sbIconLayer .desk-icon.running.is-min .sb-glyph-on { opacity: .55; }
+#sbIconLayer .desk-icon.running .sb-glyph-breath { animation: sbGlyphBreath 7s ease-in-out infinite; }
+@keyframes sbGlyphBreath { 0%, 100% { opacity: 1; } 50% { opacity: .82; } }
+html[data-motion="reduced"] #sbIconLayer .desk-icon.running .sb-glyph-breath { animation: none; }
+@media (prefers-reduced-motion: reduce) { #sbIconLayer .desk-icon.running .sb-glyph-breath { animation: none; } }
+/* Свет по кромке и есть знак «открыто»: прежняя точка под значком снята. */
+#sbIconLayer .desk-icon::after { content: none; }
+#sbIconLayer .desk-icon:focus-visible { outline: 1px solid transparent; background: none; }
+#sbIconLayer .desk-icon:focus-visible .icon-tile::before { opacity: 1; }
+#sbIconLayer .desk-icon.running:focus-visible .icon-tile::after { inset: -3px; border-radius: calc(var(--r-tile) + 3px); }
+#sbIconLayer .desk-icon.running:focus-visible .icon-tile::before { inset: -8px; border-radius: calc(var(--r-tile) + 8px); }
+/* Кнопка в окне — та же раскладка (CE2-v2): включено — кромка, фокус — оправа. */
+:is(#windowLayer, #topbar, #dock, #sbControlCenter, #toastLayer) :is(button, [role="button"], a, input:not([type="text"], [type="search"], [type="password"], [type="email"], [type="url"], [type="tel"], [type="number"], :not([type])), select, [tabindex]:not(.window)):focus-visible {
+  outline: 1px solid transparent; box-shadow: var(--brass);
+}
+/* ── ПОЛЕ С КУРСОРОМ — СВЕТ ПО КРОМКЕ ЦВЕТОМ ТЕМЫ · D-746 ─────────────────
+   Основатель 11.11.2026: поле, в котором стоит курсор (поиск, «найти
+   заметку», имя в Настройках), горит тем же светом по кромке, что открытое
+   приложение, — акцентом текущей темы. У текстового поля :focus-visible
+   браузер включает при ЛЮБОМ фокусе, поэтому раньше касание давало оправу —
+   знак клавиатуры. Теперь оправа — только когда поле пришло клавишей Tab
+   (класс sb-kfocus ставит shell.js), и тогда она поверх света. */
+html :is(input[type="text"], input[type="search"], input[type="password"], input[type="email"], input[type="url"], input[type="tel"], input[type="number"], input:not([type]), textarea):not(.ow-sw):focus {
+  outline: 1px solid transparent; box-shadow: var(--field-edge-on);
+}
+html :is(input[type="text"], input[type="search"], input[type="password"], input[type="email"], input[type="url"], input[type="tel"], input[type="number"], input:not([type]), textarea):not(.ow-sw).sb-kfocus:focus {
+  box-shadow: var(--brass), var(--field-edge-on);
+}
+#windowLayer .btn[aria-pressed="true"] { box-shadow: inset 0 0 0 1.5px rgba(var(--edge-rgb), .75), var(--edge-glow); }
+#windowLayer .btn[aria-pressed="true"]:focus-visible { box-shadow: inset 0 0 0 1.5px rgba(var(--edge-rgb), .75), var(--brass); }
+
+/* ── ИЗВЕЩЕНИЕ: «СВЕТ ИЗ-ПОД ДВЕРИ» · D-726 ──────────────────────────────
+   A2-v2: без плашки — ни рамки, ни формы; свет поднимается от нижнего края,
+   порог — нить света, её длина = сколько осталось до ухода. Под словами
+   остаётся сумрак цвета речи, тающий к краям без кромки: белое под
+   извещением не просвечивает (D-252, порог тот же). */
+.toast {
+  border: 0; border-radius: var(--r-toast); position: relative; isolation: isolate; overflow: visible;
+  background: radial-gradient(78% 130% at 50% 62%, var(--voice) 64%, transparent 100%);
+  box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+  padding-bottom: 16px;
+}
+.toast::before {
+  content: ""; position: absolute; left: -8%; right: -8%; bottom: 0; height: 180%; z-index: -1; pointer-events: none;
+  background: var(--door-light);
+}
+.toast::after {
+  content: ""; position: absolute; left: 6%; right: 6%; bottom: 0; height: 2px; border-radius: var(--r-pill); pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--door-thread) 12%, var(--door-thread) 88%, transparent);
+  box-shadow: var(--door-thread-glow);
+  transform-origin: left center;
+  animation: sbDoorThread var(--toast-ttl, 5800ms) linear forwards;
+}
+.toast[data-ttl="inf"]::after { animation: none; }
+@keyframes sbDoorThread { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.toast-title { color: var(--door-ink); }
+.toast-icon { filter: drop-shadow(0 0 8px rgba(var(--edge-rgb), .55)); }
+.toast-action { background: var(--lamp5-bg); border: 0; box-shadow: var(--lamp5-edge); color: var(--lamp5-ink); }
+html[data-motion="reduced"] .toast::after { animation: none; }
+
+/* ── ЛАМПА В ОКНЕ · D-727 ────────────────────────────────────────────────
+   okno-lampa (вариант 1): при открытии в окне на миг загорается свет из
+   той точки, где стоял значок, и гаснет (320 мс); сама плитка вспыхивает
+   угольком. Только прозрачность — композитору это ничего не стоит. */
+.win-lamp {
+  position: absolute; inset: 0; border-radius: var(--r-card); pointer-events: none; z-index: 3; opacity: 0; will-change: opacity;
+  background: radial-gradient(70% 90% at var(--ox, 50%) var(--oy, 0%), var(--window-lamp), var(--window-lamp-2) 45%, transparent 75%);
+}
+.win-lamp.on { animation: sbWinLamp 320ms var(--ease-move) forwards; }
+/* Угол лампы — угол её окна словом шкалы (D-733), а не «inherit». */
+@media (max-width: 680px) { .win-lamp { border-radius: var(--r-window); } }
+:is(.window.maximized, .window.fullscreen) > .win-lamp { border-radius: 0; }
+@keyframes sbWinLamp { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+/* Уголёк на плитке — свет кромки вспыхивает прозрачностью (не фильтром:
+   фильтр перерисовывал бы светящийся знак на каждом кадре открытия). */
+#sbIconLayer .desk-icon.ember .icon-tile::after { animation: sbEmber 300ms var(--ease-move); }
+@keyframes sbEmber { 0% { opacity: 0; } 25% { opacity: 1; } 100% { opacity: 1; } }
+
+/* ── ШАПКА ОКНА G5 (ГИБРИД) · D-728 ──────────────────────────────────────
+   Из «светлой притолоки» — светящийся знак комнаты у имени (свет за
+   именем снят, D-737); из «одного слова» — имя одним спокойным словом,
+   кнопки — тихие, под пальцем загорается их подложка. Геометрия кнопок
+   (36×30, знак 15, зона 44, D-610) и их место (D-634) не тронуты. */
+.titlebar .win-title { position: relative; }
+/* Свет за именем окна снят (D-737, основатель 11.11.2026): так чище, и пятно
+   180 px выходило за свою колонку — у «Записей» заходило на соседнюю. Знак
+   комнаты и имя остаются; «лампа в окне» при открытии (D-727) — другая вещь.
+   Стережёт tools/title-glow-check.mjs. */
+.win-chip .sb-glyph { width: 16px; height: 16px; }
+.light { border-radius: var(--r-light); }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .light:hover { background: radial-gradient(70% 90% at 50% 110%, rgba(var(--edge-rgb), .16), transparent 80%), var(--glass-2); }
+}
+
+/* ── ПОЛЕ G6 «СТЕКЛО СО СВЕТОВОЙ ЧЕРТОЙ» · D-728 ─────────────────────────
+   Не серый прямоугольник с рамкой: стекло без кромки, под строкой — черта
+   света, ярче к середине; в фокусе черта разгорается. */
+#windowLayer :is(input[type="text"], input[type="search"], input[type="password"], input[type="email"], input[type="url"], input:not([type]), textarea):not(.ow-sw) {
+  background-color: transparent;
+  background-image: var(--field5-line), var(--field5-bg);
+  background-repeat: no-repeat; background-size: 100% 1px, 100% 100%; background-position: bottom center, center;
+  border-color: transparent; border-radius: var(--r-card);
+}
+#windowLayer :is(input[type="text"], input[type="search"], input[type="password"], input[type="email"], input[type="url"], input:not([type]), textarea):focus {
+  background-image: var(--field5-line-on), var(--field5-bg); background-size: 100% 1.5px, 100% 100%;
+}
+
+/* ── ПЛАШКИ G8 «СЛОВА И ПОДНОС» · D-728 ──────────────────────────────────
+   Ряд обведённых капсул стал словами на одном подносе: у слова нет своей
+   рамки, у ряда — общий тихий поднос. */
+#windowLayer :is(.fv-tools, .sk-chips) {
+  background: var(--tray5-bg); box-shadow: var(--tray5-edge); border-radius: var(--r-lamp); padding: 4px; gap: 2px;
+}
+#windowLayer :is(.fv-tools .fv-tool, .sk-chips .sk-chip) { background: transparent; border-color: transparent; box-shadow: none; }
+
+/* ── КНОПКИ G9 «СВЕТИЛЬНИК» · D-729 ──────────────────────────────────────
+   Главная кнопка — не плоская оранжевая заливка, а светильник: тёмное
+   стекло, свет поднимается снизу к словам, тонкая нить по нижней кромке
+   (у второстепенной — без нити). Одна высота и один радиус на всех. */
+#windowLayer .btn.primary, #toastLayer .btn.primary {
+  position: relative; overflow: hidden; min-height: 40px; border-radius: var(--r-lamp);
+  background: var(--lamp5-bg); border: 0; box-shadow: var(--lamp5-edge); color: var(--lamp5-ink); font-weight: var(--w-strong);
+}
+#windowLayer .btn.primary::after, #toastLayer .btn.primary::after {
+  content: ""; position: absolute; left: 18%; right: 18%; bottom: 0; height: 1px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--door-thread), transparent); opacity: .8;
+}
+#windowLayer .btn.primary:focus-visible { box-shadow: var(--lamp5-edge), var(--brass); }
+/* Слова извещения — одной строкой по центру, как у образца A2-v2. */
+.toast { display: flex; align-items: center; justify-content: center; gap: 12px; text-align: center; }
+.toast-body { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; column-gap: .45em; min-width: 0; }
+.toast-text { margin-top: 0; }
+.toast-text:not(:empty)::before { content: "— "; }
+.toast-title { text-shadow: 0 0 18px rgba(var(--edge-rgb), .35); font-weight: var(--w-text); }

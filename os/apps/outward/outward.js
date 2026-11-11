@@ -149,7 +149,7 @@
         '<dl class="ow-facts">' +
           '<dt>' + esc(t.what) + '</dt><dd>' + esc(byLang(d.what)) + '</dd>' +
           '<dt>' + esc(t.who) + '</dt><dd>' + esc(byLang(d.who)) + '</dd>' +
-          '<dt>' + esc(t.where) + '</dt><dd class="ow-mono">' + esc((d.where || []).join(' · ')) + '</dd>' +
+          '<dt>' + esc(t.where) + '</dt><dd class="ow-mono" data-sb-nolang>' + esc((d.where || []).join(' · ')) + '</dd>' +
         '</dl>' +
         (d.toggle
           /* У каждой ручки есть имя (D-321): переключатель называется
@@ -178,15 +178,19 @@
       '</div>';
     if (keep) keep();
 
+    if (host._owWired) return;
+    host._owWired = true;
     host.addEventListener("click", function (ev) {
       var b = ev.target.closest && ev.target.closest("[data-toggle]");
       if (!b) return;
       var key = b.getAttribute("data-toggle");
       var next = b.getAttribute("aria-checked") !== "true";
       if (window.sbSetControlToggle) window.sbSetControlToggle(key, next);
-      render(win);
+      render(host);
     });
   }
+  /* Раздел «Наружу» в Настройках (D-723) строится этой же дверью. */
+  window.sbOutwardRender = render;
 
   if (typeof window.registerApp === "function") {
     window.registerApp("outward", {
@@ -196,7 +200,16 @@
       color: "linear-gradient(160deg,#ffd9a0 0%,#d98a3c 52%,#4a2a10 100%)",
       icon: ICON,
       size: { w: 720, h: 700 },
+      /* НЕ ПРИЛОЖЕНИЕ, А РАЗДЕЛ НАСТРОЕК · D-723 (основатель 03–04.11):
+         со стола, полки и палитры снято; открывается по имени и живёт в
+         Настройках → «Наружу». */
+      hidden: true,
+      why: "why.outward",
+      offDesk: "отложено решением",
       retranslate: true,
+      /* Дверь, которую хозяин называет (hand-check): раздел Настроек «Наружу»
+         строится этой комнатой через sbOutwardRender (D-723). */
+      opens: ["sbOutwardRender"],
       render: render
     });
   }
