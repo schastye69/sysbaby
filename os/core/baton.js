@@ -324,6 +324,10 @@
     ], "toast-baton");
     if (!card) return false;
     card.el.setAttribute("data-baton", "");
+    /* Голос говорит это своими словами (D-812): «Вы остановились здесь —
+       продолжить или отпустить?» — с обращением и родом из знакомства; что
+       именно было открыто, остаётся в самой карточке (её читают законы). */
+    if (window.sbVoice && window.sbVoice.retell) window.sbVoice.retell(card, function () { return window.sbVoice.form("voice.resume"); }, "baton");
     /* Касание мимо кнопок — «не сейчас»: карточка уходит, место остаётся. */
     card.el.addEventListener("click", function (ev) {
       if (ev.target && ev.target.closest && ev.target.closest("button")) return;

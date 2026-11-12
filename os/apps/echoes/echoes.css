@@ -128,7 +128,9 @@
   height: 100%;
 }
 
-.ec-empty-glyph { color: var(--violet-ink); }
+/* Пустой экран — антенна цветом акцента темы (сборка H4, аудит п.9/15):
+   лиловая --violet-ink была чужой в каждой из четырёх тем. */
+.ec-empty-glyph { color: var(--accent); }
 .ec-empty-glyph svg { width: 38px; height: 38px; opacity: .55; }
 .ec-empty-title { margin: 0; font-size: var(--f-read); font-weight: var(--w-strong); }
 .ec-empty-sub { margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-3); max-width: 300px; }

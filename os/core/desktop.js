@@ -1533,7 +1533,8 @@
     invite.className = "note-invite";
     invite.style.left = clamp(x, 12, window.innerWidth - 190) + "px";
     invite.style.top = clamp(y, 60, window.innerHeight - 90) + "px";
-    invite.innerHTML = '<span class="invite-plus" aria-hidden="true">+</span><span class="invite-word">' + esc(tr("note.invite")) + "</span>";
+    /* точка света без знака «+» (D-852): знака нет в разметке, а не спрятан кеглем 0 (type-scale, доска H4) */
+    invite.innerHTML = '<span class="invite-plus" aria-hidden="true"></span><span class="invite-word">' + esc(tr("note.invite")) + "</span>";
     invite.setAttribute("role", "button");
     invite.setAttribute("tabindex", "0");
     invite.setAttribute("aria-label", esc(tr("note.inviteAria")));
@@ -1543,6 +1544,15 @@
        иначе оно осталось бы предметом из другой системы, случайно попавшим
        на этот стол. */
     lightNote(invite);
+    /* ТОЧКА СВЕТА С ПОДПИСЬЮ (D-852): приглашение теперь не карточка шириной
+       196, а точка 5 px и слова рядом — их длина зависит от языка. У правого
+       края точка с подписью сдвигается внутрь, а не уходит за экран. */
+    var inv0 = invite;
+    requestAnimationFrame(function () {
+      if (invite !== inv0) return;
+      var r = inv0.getBoundingClientRect(), over = r.right - (window.innerWidth - 10);
+      if (over > 0) inv0.style.left = Math.max(10, parseFloat(inv0.style.left) - over) + "px";
+    });
     var px = x, py = y;
     function accept(ev) {
       ev.stopPropagation();
@@ -1994,6 +2004,155 @@
     });
   }
 
-  if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", init);
-  else init();
+  /* ── ПРИВЕТСТВЕННАЯ ЗАМЕТКА · решение D-851 (основатель 10–11.11.2026) ──
+     После первого слова на столе одна НАСТОЯЩАЯ заметка — из того же
+     хранилища, её двигают, правят и убирают, как любую. Фраза — одна из
+     пяти (№1, 3, 8, 23, 9 plan/PRIVETSTVIE-FRAZY.md), под ней тихая строка
+     «коснитесь пустого места, чтобы оставить свою».
+     ПАМЯТЬ — слово мира (sbDB, под замком вместе с заметками):
+       pending — первое слово сказано, заметка ждёт, пока стол освободится
+                 (ни двери, ни занавеса, ни окна знакомства поверх);
+       shown   — лежит на столе как приветствие;
+       own     — фразу переписали: заметка стала своей, строка ушла;
+       gone    — убрали: больше не возвращается никогда.
+     Состояние пишется ДО заметки: прерванная запись даёт «gone», а не
+     вторую заметку. На воротах её не видно: заметки за дверью не читаются,
+     а сама фраза живёт только в записи мира.
+     Охраняется tools/welcome-note-once-check.mjs. */
+  var WELCOME_KEY = "sysbaby.welcome.v1";
+  var WELCOME_P = ["welcome.p1", "welcome.p3", "welcome.p8", "welcome.p23", "welcome.p9"];
+  function wT(k, v) { return window.sbDeskT ? window.sbDeskT(k, v) : tr(k, v); }
+  function wState() { var v = readJSON(WELCOME_KEY, null); return v && typeof v === "object" ? v : null; }
+  function wPut(v) { writeJSON(WELCOME_KEY, v); if (window.sbDB && window.sbDB.flushSync) window.sbDB.flushSync(); }
+  function wClosed() { return !!(window.sbDB && window.sbDB.closed && window.sbDB.closed()); }
+  /* Фраза на любом из языков системы — всё ещё приветствие. */
+  function wIsPhrase(t) {
+    t = String(t || "").trim();
+    if (!t) return true;
+    var D = window.sbDeskStrings || {}, out = false;
+    /* D-808: фраза с формами {V:ты|вы} — приветствие в любой из форм. */
+    var A = window.sbAddr;
+    Object.keys(D).forEach(function (l) { WELCOME_P.forEach(function (k) {
+      var raw = D[l] && D[l][k]; if (!raw) return;
+      if (raw === t || (A && A.fill && (A.fill(raw, { ty: "ty" }) === t || A.fill(raw, { ty: "vy" }) === t))) out = true;
+    }); });
+    WELCOME_P.forEach(function (k) { if (wT(k) === t) out = true; });
+    return out;
+  }
+  function wRec(id) {
+    if (!window.sbNotesStore) return null;
+    var all = window.sbNotesStore.load();
+    for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
+    return null;
+  }
+  function wDeskFree() {
+    if (wClosed() || !notesLayer() || !window.sbNotesStore) return false;
+    if (doc.getElementById("sbVaultGate") || doc.getElementById("sbCurtain")) return false;
+    var ow = window.openWindows || {};
+    if (ow.meet && !ow.meet.minimized) return false;
+    /* окно знакомства первого слова (П2) — сначала разговор, потом заметка */
+    if (doc.getElementById("sbMeetFirst") || doc.getElementById("sbMeetScrim")) return false;
+    return true;
+  }
+  var wTry = 0;
+  function wBirth() {
+    clearTimeout(wTry);
+    var st = wState();
+    if (!st || st.state !== "pending") return;
+    if (!wDeskFree()) { wTry = setTimeout(wBirth, 700); return; }
+    var S = window.sbNotesStore, id = S.uid();
+    var p = (st.p >= 0 && st.p < WELCOME_P.length) ? st.p : 0;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    /* фраза длиннее обычной заметки: место считается по её будущей ширине (до 320), чтобы на телефоне она не ушла за край */
+    var wd = Math.min(NOTE_MAX_W, vw - 24);
+    var spot = noteSpotNear(Math.round(Math.max(12, (vw - wd) / 2)), Math.round(Math.max(110, Math.min(vh * 0.36, vh - 320))), wd, 110, null);
+    spot.x = Math.max(12, Math.min(spot.x, vw - wd - 12));
+    wPut({ state: "shown", id: id, p: p, at: st.at || Date.now() });
+    var live = S.load();
+    live.unshift({ id: id, text: wT(WELCOME_P[p]), pinned: false, updatedAt: Date.now(), onDesktop: true, welcome: true, x: spot.x, y: spot.y });
+    S.save(live);
+    S.notify();
+    setTimeout(function () {
+      var el = $('#sbNoteLayer .sticky-note[data-id="' + id + '"]');
+      if (el && !reduced()) { el.classList.add("nv-born"); setTimeout(function () { el.classList.remove("nv-born"); }, 1000); }
+      wDress();
+    }, 40);
+  }
+  function wOwn(st) {
+    st.state = "own"; wPut(st);
+    var el = $('#sbNoteLayer .sticky-note[data-id="' + st.id + '"]');
+    if (el) { el.classList.remove("nv-welcome"); var h = el.querySelector(".nv-hint"); if (h) h.remove(); var t2 = el.querySelector(".note-text"); if (t2) autoGrow(t2); }
+  }
+  function wDress() {
+    var st = wState();
+    if (!st || st.state !== "shown" || wClosed()) return;
+    var el = $('#sbNoteLayer .sticky-note[data-id="' + st.id + '"]');
+    if (!el) return;
+    var ta = el.querySelector(".note-text");
+    /* язык сменили — приветствие говорит на новом, пока оно приветствие */
+    /* ОТКАТ: номер фразы приветствия из старой записи вне списка — берётся первая фраза; слов «из ниоткуда» не бывает. */
+    if (ta && !el.classList.contains("focused") && wIsPhrase(ta.value) && ta.value !== wT(WELCOME_P[st.p] || WELCOME_P[0])) {
+      var rec = wRec(st.id);
+      if (rec) {
+        var live = window.sbNotesStore.load();
+        live.forEach(function (n) { if (n.id === st.id) n.text = wT(WELCOME_P[st.p] || WELCOME_P[0]); });
+        window.sbNotesStore.save(live);
+        ta.value = wT(WELCOME_P[st.p] || WELCOME_P[0]);
+      }
+    }
+    el.classList.add("nv-welcome");
+    var hint = el.querySelector(".nv-hint");
+    if (!hint) {
+      hint = doc.createElement("div");
+      hint.className = "nv-hint";
+      hint.setAttribute("aria-hidden", "true");
+      var host = el.querySelector(".note-chip-host");
+      el.insertBefore(hint, host || null);
+    }
+    hint.textContent = wT("welcome.hint");
+    /* у приветствия шрифт чуть крупнее — размер заметки перемеряется тем же замером */
+    if (ta) autoGrow(ta);
+    if (ta && !ta._sbWelcome) {
+      ta._sbWelcome = 1;
+      ta.addEventListener("input", function () {
+        var s2 = wState();
+        if (!s2 || s2.state !== "shown" || s2.id !== st.id || wIsPhrase(ta.value)) return;
+        wOwn(s2);
+      });
+    }
+  }
+  function wWatch() {
+    var st = wState();
+    if (!st || wClosed()) return;
+    if (st.state === "pending") { wBirth(); return; }
+    if (st.state !== "shown" && st.state !== "own") return;
+    var rec = wRec(st.id);
+    if (!rec) { st.state = "gone"; wPut(st); return; }      /* убрали — больше не возвращается */
+    if (st.state === "shown" && !wIsPhrase(rec.text)) { wOwn(st); return; }
+    wDress();
+  }
+  window.addEventListener("sb:first-word", function (ev) {
+    if (wClosed()) return;
+    if (wState()) { wWatch(); return; }                       /* одна на мир: второе событие ничего не рождает */
+    var p = Math.floor(Math.random() * WELCOME_P.length);
+    wPut({ state: "pending", p: p, at: (ev && ev.detail && ev.detail.at) || Date.now() });
+    setTimeout(wBirth, 900);
+  });
+  function wInit() {
+    if (window.sbNotesStore) window.sbNotesStore.onChange(function () { setTimeout(wWatch, 0); });
+    var layer = notesLayer();
+    if (layer && window.MutationObserver) new MutationObserver(function () { wDress(); }).observe(layer, { childList: true });
+    if (window.sbBus && window.sbBus.on) window.sbBus.on("translate:done", function () { setTimeout(wDress, 0); });
+    window.addEventListener("sb:strings", wDress);
+    /* мир открыли дверью — дочитать, что ждало (pending после перезагрузки) */
+    var tries = 0, iv = setInterval(function () {
+      if (++tries > 600) { clearInterval(iv); return; }
+      if (wClosed() || doc.getElementById("sbVaultGate")) return;
+      clearInterval(iv); wWatch();
+    }, 500);
+  }
+  window.sbWelcomeNote = { state: function () { var s = wState(); return s ? { state: s.state, id: s.id, p: s.p } : null; } };
+
+  if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", function () { init(); wInit(); });
+  else { init(); wInit(); }
 })();

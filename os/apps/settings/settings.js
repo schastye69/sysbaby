@@ -22,6 +22,11 @@
      label, чтобы «Appearance» физически негде было написать. */
   var SECTIONS = [
     { id: "general", labelKey: "set.tab.general", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8.4" r="3.2"/><path d="M5.2 19.4a6.8 6.8 0 0 1 13.6 0"/></svg>' },
+    /* «Знакомство» (D-835, архив «Дом — мой»; основатель 10.11, демо dom-moy-A
+       сцена 6): что дом узнал о человеке, смена ответов, «пройти разговор
+       заново», «на людях» и вид «времени на столе». Знание — у core/meet.js
+       (sbAddr, sbMeet); раздел — только двери к нему. */
+    { id: "meet", labelKey: "set.tab.meet", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 18.5c0-3 2.4-5.2 5.5-5.2s5.5 2.2 5.5 5.2"/><circle cx="10" cy="8" r="3.2"/><path d="M16.5 6.5c1.4.4 2.4 1.7 2.4 3.2M18 13.6c1.3.7 2 2.1 2 3.9"/></svg>' },
     { id: "appearance", labelKey: "set.tab.appearance", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="7.8"/><path d="M12 4.2v15.6"/></svg>' },
     { id: "sound", labelKey: "set.tab.sound", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 9.5h3l4-3.2v11.4l-4-3.2h-3Z"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6"/></svg>' },
     { id: "desktop", labelKey: "set.tab.desktop", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.4" y="5" width="17.2" height="11.4" rx="2"/><path d="M8 19.6h8"/></svg>' },
@@ -160,7 +165,8 @@
     return '<h2 class="st-title">' + esc(t("set.tab.general")) + "</h2>" +
       installRow() +
       rowMarkup(esc(t("set.general.identity")),
-        esc(t("set.general.identitySub", { mail: appName("mail"), messenger: appName("messenger") })),
+        /* «Письма» ушли в Разговор (tekst.md п.10): подпись больше не перечисляет комнаты. */
+        esc(t("set.general.identitySub")),
         '<span class="st-username"><input type="text" id="stUsername" maxlength="18" spellcheck="false" autocomplete="off" value="' + esc(name) + '">' +
           '<span class="st-saved" id="stUsernameSaved">' + esc(t("set.general.saved")) + "</span></span>") +
       rowMarkup(esc(t("set.general.language")), esc(t("set.general.languageSub")),
@@ -646,8 +652,90 @@
     return "—";
   }
 
+  /* ── ЗНАКОМСТВО · D-835 ─────────────────────────────────────────────────
+     Ответы знакомства меняются здесь и становятся «задано здесь»; образец
+     фразы показывает, как дом теперь скажет. Вопросы, которых в языке нет
+     (ты/вы и род в EN, род и «она/он» в ET), здесь не показываются: их нет и
+     в разговоре. Охраняется tools/settings-meet-check.mjs. */
+  var MEET_ROWS = { ru: { ty: 1, rod: 1, dom: 1 }, ee: { ty: 1 }, en: {} };
+  function meetMarkup() {
+    var A = window.sbAddr;
+    if (!A) return '<h2 class="st-title">' + esc(t("set.tab.meet")) + "</h2>";
+    var p = A.get(), lang = currentLang(), rows = MEET_ROWS[lang] || {};
+    function stat(k) {
+      /* ОТКАТ: ответа на вопрос знакомства ещё нет — «none», строка показывает «не сказано», ничего не выдумывая. */
+      var h = p.how[k] || "none";
+      return '<span class="st-meet-q' + (h === "none" ? " open" : "") + '">' + esc(t("set.meet.st." + h)) + "</span>";
+    }
+    function seg(k, opts, now) {
+      return '<span class="st-segment" role="group" aria-label="' + esc(t("set.meet." + (k === "ty" ? "addr" : k))) + '">' + opts.map(function (o) {
+        var on = o[0] === now;
+        return '<button type="button" class="st-seg' + (on ? " active" : "") + '" aria-pressed="' + (on ? "true" : "false") + '" data-meet="' + k + '" data-v="' + o[0] + '">' + esc(t(o[1])) + "</button>";
+      }).join("") + "</span>";
+    }
+    var open = [];
+    if (rows.ty && p.how.ty === "none") open.push(t("set.meet.open.addr"));
+    if (rows.rod && p.how.rod === "none") open.push(t("set.meet.open.rod"));
+    if (rows.dom && p.how.dom === "none") open.push(t("set.meet.open.dom"));
+    var view = A.view ? A.view() : "lines";
+    var sample = A.t("meet.sample.resume") + (lang === "en" ? "" : " · " + A.t("meet.thanks"));
+    return '<h2 class="st-title">' + esc(t("set.tab.meet")) + "</h2>" +
+      '<div id="stMeet" class="st-meet">' +
+      '<div class="st-group">' +
+      rowMarkup(esc(t("set.meet.name")), p.name ? "" : '<span class="st-meet-q open">' + esc(t("set.meet.namePh")) + "</span>",
+        '<input type="text" class="st-meet-input" id="stMeetName" maxlength="24" spellcheck="false" autocomplete="off" placeholder="' + esc(t("set.meet.namePh")) + '" value="' + esc(p.name) + '" aria-label="' + esc(t("set.meet.name")) + '">') +
+      (rows.ty ? rowMarkup(esc(t("set.meet.addr")), stat("ty"), seg("ty", [["vy", "set.meet.addr.optVy"], ["ty", "set.meet.addr.optTy"]], p.ans.ty || "vy")) : "") +
+      (rows.rod ? rowMarkup(esc(t("set.meet.rod")), stat("rod") + " · " + esc(t("set.meet.rodSub")), seg("rod", [["none", "set.meet.rod.none"], ["m", "set.meet.rod.m"], ["f", "set.meet.rod.f"]], p.ans.rod || "none")) : "") +
+      (rows.dom ? rowMarkup(esc(t("set.meet.dom")), stat("dom"), seg("dom", [["dom", "set.meet.dom.dom"], ["she", "set.meet.dom.she"], ["he", "set.meet.dom.he"]], p.ans.dom || "dom")) : "") +
+      rowMarkup(esc(t("set.meet.sys")), esc(t("set.meet.sysSub")),
+        '<input type="text" class="st-meet-input" id="stMeetSys" maxlength="24" spellcheck="false" autocomplete="off" value="' + esc(p.sys) + '" aria-label="' + esc(t("set.meet.sys")) + '">') +
+      "</div>" +
+      '<div class="st-note"><p class="st-meet-sample">' + esc(t("set.meet.sample")) + ' <b id="stMeetSample">«' + esc(sample) + "»</b></p>" +
+      (open.length ? '<p class="st-meet-sample">' + esc(t("set.meet.open", { list: open.join(", ") })) + "</p>" : "") + "</div>" +
+      (rows.ty || rows.rod || rows.dom ? '<button type="button" class="st-btn st-meet-again" id="stMeetAgain">' + esc(t("set.meet.again")) + "</button>" : "") +
+      '<h3 class="st-subtitle">' + esc(t("set.meet.pubTitle")) + "</h3>" +
+      '<div class="st-group">' + rowMarkup(esc(t("set.meet.pub")), esc(t("set.meet.pubSub")),
+        '<button type="button" class="st-switch' + (p.pub ? " on" : "") + '" role="switch" aria-checked="' + (p.pub ? "true" : "false") + '" id="stMeetPub" aria-label="' + esc(t("set.meet.pub")) + '"><i></i></button>') + "</div>" +
+      '<h3 class="st-subtitle">' + esc(t("set.meet.timeTitle")) + "</h3>" +
+      '<div class="st-group">' + rowMarkup(esc(t("set.meet.time")), esc(t("set.meet.timeSub")),
+        '<span class="st-segment" role="group" aria-label="' + esc(t("set.meet.time")) + '">' + [["lines", "set.meet.time.lines"], ["dust", "set.meet.time.dust"]].map(function (o) {
+          var on = o[0] === view;
+          return '<button type="button" class="st-seg' + (on ? " active" : "") + '" aria-pressed="' + (on ? "true" : "false") + '" data-desktime="' + o[0] + '">' + esc(t(o[1])) + "</button>";
+        }).join("") + "</span>") + "</div>" +
+      '<div class="st-note"><p>' + esc(t("set.meet.note")) + "</p></div>" +
+      "</div>";
+  }
+
+  function wireMeet(win, host) {
+    var pane = host.querySelector("#stMeet"), A = window.sbAddr;
+    if (!pane || !A) return;
+    pane.querySelectorAll("[data-meet]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var patch = {}; patch[b.getAttribute("data-meet")] = b.getAttribute("data-v");
+        A.set(patch); render(win);
+      });
+    });
+    [["#stMeetName", "name"], ["#stMeetSys", "sys"]].forEach(function (f) {
+      var i = pane.querySelector(f[0]); if (!i) return;
+      var put = function () { var patch = {}; patch[f[1]] = i.value; if (String(A.get()[f[1]]) !== String(i.value).trim()) { A.set(patch); render(win); } };
+      i.addEventListener("change", put);
+      i.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); put(); } });
+    });
+    var pub = pane.querySelector("#stMeetPub");
+    if (pub) pub.addEventListener("click", function () { A.set({ pub: !A.pub() }); render(win); });
+    pane.querySelectorAll("[data-desktime]").forEach(function (b) {
+      b.addEventListener("click", function () { if (A.setView) A.setView(b.getAttribute("data-desktime")); render(win); });
+    });
+    var again = pane.querySelector("#stMeetAgain");
+    if (again) again.addEventListener("click", function () {
+      if (window.closeWindow) window.closeWindow("settings");
+      if (window.sbMeet) window.sbMeet.again();
+    });
+  }
+
   var RENDERERS = {
     general: generalMarkup,
+    meet: meetMarkup,
     appearance: appearanceMarkup,
     account: function () { return '<h2 class="st-title">' + esc(t("set.tab.account")) + '</h2><div class="st-account" id="stAccountHost"></div>'; },
     sound: soundMarkup,
@@ -752,6 +840,7 @@
     var openBuild = host.querySelector("#stOpenBuild");
     if (openBuild) openBuild.addEventListener("click", function () { if (window.toggleApp) window.toggleApp("build"); });
     wireGeneral(win, host);
+    wireMeet(win, host);
     wireAppearance(win, host);
     wireSound(win, host);
     wireDesktop(win, host);
@@ -769,6 +858,7 @@
    * source of that very event), and repaints collapse to one per frame. */
   var SECTION_KINDS = {
     general: { lang: 1 },
+    meet: {},
     appearance: { mood: 1, brightness: 1, toggle: 1, side: 1, fullscreen: 1, pult: 1 },
     account: {},
     sound: { toggle: 1, volume: 1 },
@@ -803,6 +893,16 @@
     });
   }
   document.addEventListener("sysbaby:setting-changed", liveSync);
+  /* Знакомство изменилось в разговоре (ответ словом, касание стола) — открытый
+     раздел «Знакомство» перерисовывается тем же кадром. Поле, в котором
+     человек печатает, не выхватывается. */
+  window.addEventListener("sb:addr", function () {
+    var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("settings") : null;
+    if (!win || !bodyOf(win) || win._settingsSection !== "meet") return;
+    var a = document.activeElement;
+    if (a && bodyOf(win).contains(a) && a.tagName === "INPUT") return;
+    requestAnimationFrame(function () { render(win); });
+  });
 
   function wireGeneral(win, host) {
     var inst = host.querySelector("#stInstall");
@@ -832,7 +932,7 @@
     function commit(typing) {
       if (timer) { clearTimeout(timer); timer = null; }
       if (typeof window.sbSetUsername !== "function") return;
-      if (typing === true && !String(input.value || "").toLowerCase().replace(/[^a-z0-9_.\-]/g, "")) return;
+      if (typing === true && !String(input.value || "").replace(/[^\p{L}\p{M}\p{N}_.\-]/gu, "")) return;
       var applied;
       try { applied = window.sbSetUsername(input.value); }
       catch (err) { console.error("[settings] username write failed", err); return; }

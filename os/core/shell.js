@@ -468,7 +468,7 @@
   /* Живой чип настроения показывает свет своего часа тем веществом, каким он
      будет в этой комнате: углями в Очаге, глиной в Светлице (D-325). */
   window.sbMoodChipLight = function (w) {
-    var seam = window.sbSeamForRoom({ hue: w.hue, sat: w.sat || 73, level: w.level }, window.sbGetTheme());
+    var seam = window.sbSeamForRoom({ hue: w.hue, sat: w.sat || 73, level: w.level, mood: w.mood }, window.sbGetTheme());
     return { a1: seam.a1, a2: seam.a2 };
   };
 
@@ -646,34 +646,30 @@
        при +28° он уходил в жёлтый 54…62°, и на тёмном жёлтое пятно читалось
        оливковым — зелёным. Тепло тёплое по всему столу; стережёт
        tools/teplo-warm-check.mjs. */
-    { id: "studio", name: "Warmth", pult: true, words: true, hue: 30, span: 8, cycle: 40 * 60000, room: [0.30, 0.46], sat: 68, holdC: true, lift: 6 },
+    /* ── ТЕПЛО «МАНДАРИН» · решение D-824 (основатель 11.11.2026, показ
+       колориста, вариант 7, #ec9455) ──────────────────────────────────────
+       Пояс 25 ± 2° (23…27°), насыщенность 80. У Тепла СВОЯ светлота шва
+       (L 63) — не кривая LIGHT: при 30° кривая ведёт светлоту вниз, к 46 %, и
+       шов с полем уходили в коричневое. Вторая краска — a2 [+3°, 84, 72]
+       (#f4b47c); свет комнаты: t1/t2 — два пятна [сдвиг тона, насыщ.,
+       светлота], t3 — дымка; k1/k2/wk — множители их силы: дымка оранжевая
+       и на 76 % слабее прежней бежевой. holdC снят: при постоянной светлоте
+       сочность шва и так ровная по всему поясу.
+       ОТКАТ: вернуть { hue: 30, span: 8, sat: 68, holdC: true, lift: 6 } без
+       L/a2/t1/t2/t3/k1/k2/wk — шов и свет комнаты снова по кривой LIGHT.
+       Охраняется tools/teplo-mandarin-check.mjs и tools/teplo-orange-check.mjs. */
+    { id: "studio", name: "Warmth", pult: true, words: true, hue: 25, span: 4, cycle: 40 * 60000, room: [0.30, 0.46], sat: 80, lift: 3,
+      L: 63, a2: [3, 84, 72], t1: [0, 84, 56], t2: [-1, 84, 48], t3: [-1, 84, 54], k1: 1, k2: 0.95, wk: 0.24,
+      dayRoom: { id: "studio", name: "Warmth", hue: 30, span: 8, cycle: 40 * 60000, room: [0.30, 0.46], sat: 68, holdC: true, lift: 6 } },
     { id: "ocean", name: "Ocean", pult: true, words: true, hue: 196, span: 30, cycle: 34 * 60000, room: [0.26, 0.44], sat: 70 },
     { id: "aurora", name: "Aurora", pult: true, words: true, hue: 152, span: 74, cycle: 26 * 60000, room: [0.24, 0.46], sat: 72 },
-    /* ── ПРАЗДНИК: ГОД СВЕТА ЗА ДВЕ МИНУТЫ, НАЧИНАЯ С СЕГОДНЯ (D-150) ─────
-       ПОВОД, дословно от основателя 26.08.2026: «нужно ещё придумать третью
-       экстра тему, например, праздник (только более гениально) и тогда
-       светотерапия в ускоренном темпе + какой-то гениальный и концептуальный
-       трюк», «всё максимально интеллектуально и дорого».
-       ЧТО ЗДЕСЬ ЗА ТРЮК И ПОЧЕМУ ОН НЕ УКРАШЕНИЕ. Ускоренная светотерапия
-       сама по себе — это «то же, но быстрее»; праздником её делает не
-       скорость. Круг цвета и круг года — ОДНА И ТА ЖЕ ОКРУЖНОСТЬ: 365 дней
-       ложатся на 360 градусов почти один в один. Поэтому у праздника есть
-       НАЧАЛО, и оно не в нуле — оно СЕГОДНЯ: тон стартует с угла текущего дня
-       года, комната проходит весь год за две минуты и возвращается ровно в
-       тот день, в котором человек сидит. 26 августа — 238-й день, то есть
-       235°: синева. Первое января — красное. Праздник у каждой даты свой — и
-       свой БЕЗ ЕДИНОЙ ЗАПИСАННОЙ ДАТЫ: система не знает ни одного праздника
-       по имени и ничего не празднует за человека. Она показывает ему его
-       собственный год.
-       ЦЕНА НАЗВАНА ВСЛУХ. Шов ступает раз в четыре градуса; круг за две
-       минуты — это ступенька каждые 1.3 с, всемеро чаще светотерапии.
-       Праздник — комната на минуты, а не на день. */
-    { id: "feast", name: "Feast", pult: true, drift: true, session: true, feast: true, span: 360,
-      cycle: 4 * 60000, room: [0.58, 1.0], sat: 94 },
-    { id: "mono", name: "Dusk", hue: 218, span: 8, cycle: 48 * 60000, room: [0.20, 0.36], sat: 14 },
-    { id: "daylight", name: "Daylight", drift: true, day: true, cycle: 24 * 3600000, room: null, sat: 73 },
-    { id: "therapy", name: "Light therapy", drift: true, session: true, span: 360,
-      cycle: 14 * 60000, room: [0.62, 1.0], sat: 78 },
+    /* ── ТЕМ ЧЕТЫРЕ · решение D-870 (основатель 10–11.11.2026, «Дом — мой») ──
+       Праздник (D-150), Сумерки, Дневной свет и Светотерапия сняты из системы:
+       у кого была выбрана одна из них — тихо Тепло (RETIRED_MOODS ниже), данные
+       целы. Четвёртая тема — Затмение (бывшие Угли, ключ хранения прежний):
+       и в Световоде (pult), и в строке слов «крупных чисел» (words) —
+       «тепло · океан · аврора · затмение». Охраняется
+       tools/themes-four-check.mjs и tools/eclipse-migrate-check.mjs. */
     /* ── УГЛИ · решение D-187 ─────────────────────────────────────────────
        Это подарок, и он сделан не по заявке, а по обстоятельствам.
 
@@ -705,7 +701,13 @@
        И ещё одно, вслух. Комната называется Углями, а не Пеплом. Угли — это
        то, что горит, когда пламени уже не видно.
        Охраняется tools/ember-check.mjs. */
-    { id: "ember", name: "Ember", hue: 16, span: 6, cycle: 52 * 60000, room: [0.10, 0.20], sat: 56 }
+    /* ── ЗАТМЕНИЕ · решение D-872 (бывшие Угли, вариант «кромка») ──────────
+       Акцент — тёплый янтарь в тон кромке: пояс 23–29° (было 13–19°: шов
+       давал лососево-красный #c95b3a), насыщенность 64. Второй свет шва —
+       +6°, как у Тепла (lift, D-738): при +28° он уходил в оливковый 54°.
+       Рисунок кромки — os/core/field.js (sbEclipse). Охраняется
+       tools/eclipse-edge-check.mjs. */
+    { id: "ember", name: "Eclipse", pult: true, words: true, hue: 26, span: 6, cycle: 52 * 60000, room: [0.10, 0.20], sat: 64, lift: 6 }
   ];
   function moodDef(id) {
     for (var i = 0; i < MOODS.length; i++) if (MOODS[i].id === id) return MOODS[i];
@@ -730,6 +732,9 @@
 
   window.sbRoomLight = function (ms, moodId) {
     var m = moodDef(moodId || (window.sbGetWallpaperMood ? window.sbGetWallpaperMood() : "studio"));
+    /* Светлица Мандарином не тронута (D-824): в светлой теме у Тепла прежний
+       пояс 26↔34° и сочность holdC — глина шва и солнце те же, что до решения. */
+    if (m.dayRoom && root.getAttribute("data-theme") === "light") m = m.dayRoom;
     var t = (typeof ms === "number" ? ms : Date.now());
     if (m.day) {
       var d = new Date(t);
@@ -859,8 +864,11 @@
   window.sbSeamForRoom = function (w, theme) {
     var sat = (w && w.sat) || 73;
     var hue = (w && w.hue) || 0;
-    var ember = hslHex(hue, sat, driftLight(hue));
+    /* Своя светлота шва у комнаты, где она объявлена (L, Тепло — D-824),
+       иначе — кривая LIGHT. */
+    var md = w && w.mood ? moodDef(w.mood) : null;
     var day = (theme || (root.getAttribute("data-theme") === "light" ? "light" : "dark")) === "light";
+    var ember = hslHex(hue, sat, !day && md && typeof md.L === "number" ? md.L : driftLight(hue));
     if (day) {
       /* В Светлице шов — глина: тот же тон, но пигмент, а не свет (D-325).
          Светлота подбирается под КОНТРАСТ к стене, как кривая LIGHT подобрана
@@ -871,12 +879,14 @@
       return { a1: clayFor(hue, sat), a2: clayFor(hue + 14, sat), hue: hue, ember: ember };
     }
     /* Вторая краска шва — тот же сдвиг, что у второго света комнаты (lift, D-738):
-       у Тепла +6°, а не +28° — при +28° выходил оливково-жёлтый #c2c812 (тон
-       Oklab ~108°) в градиентах кнопок и черте часов. */
-    var md = w && w.mood ? moodDef(w.mood) : null, h2 = hue + (md && typeof md.lift === "number" ? md.lift : 28);
+       у Затмения +6°, а не +28° — при +28° выходил оливково-жёлтый #c2c812 (тон
+       Oklab ~108°) в градиентах кнопок и черте часов. У Тепла с D-824 вторая
+       краска своя (a2 ниже), прежде была +6°. */
+    var h2 = hue + (md && typeof md.lift === "number" ? md.lift : 28);
     return {
       a1: ember,
-      a2: hslHex(h2, sat, Math.min(92, driftLight(h2) + 10)),
+      /* У Тепла вторая краска своя (a2, D-824): тон +3°, насыщ. 84, светлота 72. */
+      a2: md && md.a2 ? hslHex(hue + md.a2[0], md.a2[1], md.a2[2]) : hslHex(h2, sat, Math.min(92, driftLight(h2) + 10)),
       hue: hue,
       ember: ember
     };
@@ -1184,12 +1194,17 @@
     var mix = function (p) { return r2(p[0] + (p[1] - p[0]) * lvl); };
     /* Сдвиг второго света — свой у комнаты, где он объявлен (D-738), иначе +28°. */
     var md = w.mood ? moodDef(w.mood) : null, h2 = w.hue + (md && typeof md.lift === "number" ? md.lift : 28);
+    /* У Тепла свет комнаты свой (D-824): пятна t1/t2 и дымка t3 — тон
+       комнаты со сдвигом, своя насыщенность и светлота; k1/k2/wk — их сила.
+       Дымка — оранжевая (было бежевое 26 % / 66 %) и в четыре раза тише:
+       бежевая пелена на тёмном и делала стол бурым. */
+    var k = function (v, f) { return md && typeof f === "number" ? r2(v * f) : v; };
     return {
       hue: w.hue, level: lvl, sat: w.sat,
-      c1: hslHex(w.hue, w.sat, driftLight(w.hue)),
-      c2: hslHex(h2, w.sat, Math.min(92, driftLight(h2) + 10)),
-      c3: hslHex(w.hue, WP_WASH_SAT, WP_WASH_LIGHT),
-      a1: mix(WP_A1), a2: mix(WP_A2), a3: mix(WP_WASH)
+      c1: md && md.t1 ? hslHex(w.hue + md.t1[0], md.t1[1], md.t1[2]) : hslHex(w.hue, w.sat, driftLight(w.hue)),
+      c2: md && md.t2 ? hslHex(w.hue + md.t2[0], md.t2[1], md.t2[2]) : hslHex(h2, w.sat, Math.min(92, driftLight(h2) + 10)),
+      c3: md && md.t3 ? hslHex(w.hue + md.t3[0], md.t3[1], md.t3[2]) : hslHex(w.hue, WP_WASH_SAT, WP_WASH_LIGHT),
+      a1: k(mix(WP_A1), md && md.k1), a2: k(mix(WP_A2), md && md.k2), a3: k(mix(WP_WASH), md && md.wk)
     };
   }
   window.sbRoomTint = tintOf;
@@ -1368,7 +1383,8 @@
   };
   /* Снятые темы (D-630): у кого сохранён «Закат», тот тихо переходит на
      «Тепло» — без извещения, одной записью при первом чтении. */
-  var RETIRED_MOODS = { sunset: "studio" };
+  /* D-871: снятые четыре — тоже тихо на Тепло. */
+  var RETIRED_MOODS = { sunset: "studio", feast: "studio", mono: "studio", daylight: "studio", therapy: "studio" };
   window.sbGetWallpaperMood = function () {
     var v = (window.sbDB && window.sbDB.get(MOOD_KEY)) || "studio";
     if (Object.prototype.hasOwnProperty.call(RETIRED_MOODS, v)) {
@@ -1383,9 +1399,96 @@
     if (window.sbDB) window.sbDB.set(MOOD_KEY, valid);
     $$('[data-mood]').forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-mood") === valid); });
     sbBus.emit("mood:change", { id: valid });
+    sbEvent("sb:theme", { id: valid });
     announceSetting("mood", { id: valid });
     return valid;
   };
+
+  /* ── КРЮЧКИ «ДОМ — МОЙ» (D-800, v178-H4a; пакет П0) ───────────────────
+     Пять пакетов работают параллельно и не правят чужих файлов, поэтому
+     оболочка даёт им крючки, а не места в своём коде:
+       sb:theme       — тема сменилась ({ id }); шлётся из sbSetWallpaperMood.
+       sb:say         — система хочет сказать ({ title, text, kind, tone,
+                        sticky, source, el }); пока голоса (П1) нет, каждое
+                        извещение .toast порождает sb:say — переходник ниже.
+       sb:first-word  — первое слово сказано, мир создан и стол открыт
+                        ({ at, lang }); слушают знакомство (П2) и
+                        приветственная заметка (П3).
+     Все три — CustomEvent на window и то же имя в sbBus.
+     sbMoodsHook — список тем для П4 (themes.css/field.js): заменить ряд,
+     снять тему с тихим переходом (ember → eclipse). Сами темы здесь не
+     заводятся. */
+  function sbEvent(name, detail) {
+    try { window.dispatchEvent(new CustomEvent(name, { detail: detail })); } catch (e) { /* без CustomEvent — только шина */ }
+    sbBus.emit(name, detail);
+  }
+  window.sbEvent = sbEvent;
+  function moodRow(m) {
+    return { id: m.id, name: m.name, drift: !!m.drift, session: !!m.session, pult: !!m.pult, words: !!m.words };
+  }
+  window.sbMoodsHook = {
+    /* Копии: снаружи список правится только дверями ниже. */
+    list: function () { return MOODS.map(function (m) { var o = {}, k; for (k in m) o[k] = m[k]; return o; }); },
+    retired: function () { var o = {}, k; for (k in RETIRED_MOODS) o[k] = RETIRED_MOODS[k]; return o; },
+    /* Заменить ряд тем целиком (порядок — порядок показа). sbWallpaperMoods
+       правится НА МЕСТЕ: окна держат ссылку на этот же массив. */
+    replace: function (defs) {
+      if (!Array.isArray(defs) || !defs.length) return false;
+      MOODS.length = 0;
+      defs.forEach(function (d) { if (d && d.id) MOODS.push(d); });
+      window.sbWallpaperMoods.length = 0;
+      MOODS.forEach(function (m) { window.sbWallpaperMoods.push(moodRow(m)); });
+      return true;
+    },
+    /* Снять тему: у кого сохранена from, тот тихо переходит на to при
+       первом же чтении (как sunset → studio, D-630). */
+    retire: function (from, to) {
+      if (!from || !to) return false;
+      RETIRED_MOODS[from] = to;
+      return true;
+    }
+  };
+
+  /* ПЕРЕХОДНИК «извещение → sb:say». Смотрит на #toastLayer, а не правит
+     showToast: блок извещений — пакет П1, и он заберёт тосты целиком.
+     Смысл берётся из самого извещения: kind (event — пришло само, confirm —
+     ответ на нажатие), tone (warn/calm/ask/standing/undo/plain), sticky —
+     ждёт ответа и не тает. Когда П1 сам шлёт sb:say, он ставит
+     window.sbSayOwned = true, и переходник молчит. */
+  (function sayBridge() {
+    function tone(el) {
+      var c = el.classList;
+      if (c.contains("toast-warn")) return "warn";
+      if (c.contains("toast-ask")) return "ask";
+      if (c.contains("toast-standing")) return "standing";
+      if (c.contains("toast-undo")) return "undo";
+      if (c.contains("toast-calm")) return "calm";
+      return "plain";
+    }
+    function watch() {
+      var host = doc.getElementById("toastLayer");
+      if (!host || typeof MutationObserver !== "function") return;
+      new MutationObserver(function (recs) {
+        if (window.sbSayOwned) return;
+        recs.forEach(function (r) {
+          Array.prototype.forEach.call(r.addedNodes, function (el) {
+            if (!el || el.nodeType !== 1 || !el.classList.contains("toast")) return;
+            sbEvent("sb:say", {
+              title: el.getAttribute("data-title") || "",
+              text: el.getAttribute("data-text") || "",
+              kind: el.getAttribute("data-kind") || "confirm",
+              tone: tone(el),
+              sticky: el.getAttribute("data-ttl") === "inf",
+              source: "toast",
+              el: el
+            });
+          });
+        });
+      }).observe(host, { childList: true });
+    }
+    if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", watch);
+    else watch();
+  })();
 
   /* wallpaper contract stubs — engine dropped (§12); callers must never throw */
   window.sbWallpaperPulse = function (/* x_px, y_px */) { };
@@ -1395,8 +1498,6 @@
   window.sbIconGlowClear = function () { };
 
   /* =============================================================== toasts §7 */
-  var toastLayer = null;
-  function layer() { return toastLayer || (toastLayer = $("#toastLayer")); }
 
   function dnd() { return window.sbGetControlToggle("dnd"); }
 
@@ -1415,71 +1516,50 @@
   }
 
   function mountToast(t, ttl) {
-    var host = layer();
-    if (!host) return null;
-    /* Одно место речи (v66): извещение встаёт на линию подсказки, и
-       самопришедшая подсказка уступает ему. Вызванная лампочкой — нет. */
-    if (window.sbDeskHintYield) window.sbDeskHintYield();
-    /* ── ПОДТВЕРЖДЕНИЕ ЗАМЕЩАЕТ ПОДТВЕРЖДЕНИЕ · D-252 ───────────────────
-       Совет снял все комнаты подряд на телефоне и на каждом снимке увидел
-       ТРИ извещения «закрыто — Отменить» столбиком: треть экрана. Закон
-       v47.3 убрал их из списка («оповещения о закрытии — лишний шум и
-       мусор», слово основателя), а на экране они остались и копились.
-       Правило то же, что у списка, — одинаковое освежает первую строку, а
-       не заводит вторую, — применённое к экрану: подтверждение (ответ на
-       нажатие самого человека) не встаёт в очередь, а сменяет предыдущее.
-       Событие (пришло письмо) человек не вызывал и мог пропустить — оно
-       остаётся стоять рядом.
-       Охраняется tools/toast-surface-check.mjs. */
-    if (t.getAttribute("data-kind") === "confirm") {
-      $$(".toast[data-kind=\"confirm\"]", host).forEach(function (old) {
-        if (old.parentNode) old.parentNode.removeChild(old);
-      });
-    }
-    /* Нить порога (D-726): её длина — сколько осталось до ухода. */
-    if (ttl === Infinity) t.setAttribute("data-ttl", "inf");
-    else t.style.setProperty("--toast-ttl", num(ttl, 5800) + "ms");
-    host.appendChild(t);
-    /* ── ПОКОЙ — БАЗА, ДВИЖЕНИЕ — ИСКЛЮЧЕНИЕ (D-176) ──────────────────────
-       Извещение уже стоит на своём месте и видимо: так объявлен сам класс
-       .toast. Анимация прихода навешивается ТОЛЬКО ВНУТРИ КАДРА — значит
-       только там, где кадры вообще идут. Нет кадров (фоновая вкладка, слабый
-       телефон, полсекунды счёта растяжки пароля) — нет и анимации, а
-       извещение всё равно на месте и видно.
-       Прежние две редакции ошибались одинаково: сначала класс ставился через
-       кадр, потом через кадр ИЛИ срок — но и переход, и анимация всё равно
-       требуют кадров, чтобы ДОЕХАТЬ, и замороженные держали извещение в своём
-       первом кадре: невидимым и на 14 точек ниже места. Доска ловила это
-       дважды, а закон при этом мерил чужой предмет в движении. */
-    requestAnimationFrame(function () {
-      t.classList.add("enter");
-      /* И СНИМАЕТСЯ ПО СРОКУ, А НЕ ПО КОНЦУ АНИМАЦИИ. Доска показала четвёртый
-         оборот той же ошибки: кадр случился (класс встал), но часы анимации не
-         пошли — браузер душит их в невидимой вкладке, — и класс держал
-         извещение в первом кадре анимации целых три секунды. Украшение не
-         имеет права держать предмет дольше своего срока: класс снимается сам,
-         и с этого мига положение задаёт только база. */
-      setTimeout(function () { t.classList.remove("enter"); }, 700);
-    });
-    var kill = function () {
-      if (!t.parentNode) return;
-      t.classList.add("out");
-      setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 240);
-    };
-    t.addEventListener("click", function (ev) {
-      if (ev.target && ev.target.closest && ev.target.closest("button.toast-action")) return;
-      /* Вопрос (D-335) сам знает, что касание мимо кнопок — отказ: ему
-         надо не только уйти, но и ответить тому, кто спросил. */
-      if (t.classList.contains("toast-ask")) return;
-      kill();
-    });
-    /* Бессрочное извещение (D-286) ждёт ответа и не снимается по часам. */
-    if (ttl !== Infinity) setTimeout(kill, num(ttl, 5800));
-    return { el: t, dismiss: kill };
+    /* ── ИЗВЕЩЕНИЕ ГОВОРИТ ГОЛОС (D-810, v178-H4a) ─────────────────────────
+       Решение основателя 11.11.2026: плашки .toast уходят — их слова говорит
+       голос дома (core/voice.js, пыль света у самого низа). Сорок с лишним мест
+       зовут showToast/showStandingToast/sbAsk/sbShowUndoToast как прежде; здесь
+       — переходник: тот же элемент (data-title, кнопки .toast-action, handle.el)
+       отдаётся голосу, и он становится строкой фразы, а кнопки — словами.
+       Голоса нет (voice.js не загрузился) — старая плашка ниже, как была.
+       Охраняется tools/voice-no-plaques-check.mjs. */
+    if (window.sbVoice && typeof window.sbVoice.take === "function") return window.sbVoice.take(t, ttl);
+    /* ── ДО ГОЛОСА — НЕ ПЛАШКА, А ОЖИДАНИЕ (D-822, основатель 11.11.2026:
+       «не будут всплывать абсолютно никакие оповещения, никакие подсказки,
+       кроме самого голоса») ─────────────────────────────────────────────
+       shell.js грузится раньше voice.js, и слово, сказанное в этот миг
+       (запись не легла, ключи, замок), прежде вставало старой плашкой .toast.
+       Теперь оно ждёт голоса и уходит ему, как только он встал. Голос так и
+       не пришёл (voice.js не загрузился) — слово не рисуется ничем: на столе
+       нет второго места речи. Охраняется tools/only-voice-check.mjs. */
+    return waitVoice(t, ttl);
   }
+  var preVoice = [], preVoiceT = 0, preVoiceN = 0;
+  function waitVoice(t, ttl) {
+    var e = { t: t, ttl: ttl, h: null, gone: false };
+    preVoice.push(e);
+    if (!preVoiceT) preVoiceT = setInterval(function () {
+      var V = window.sbVoice;
+      if (V && typeof V.take === "function") {
+        clearInterval(preVoiceT); preVoiceT = 0;
+        preVoice.splice(0).forEach(function (q) { if (!q.gone) q.h = V.take(q.t, q.ttl); });
+        return;
+      }
+      /* ОТКАТ: голоса нет полминуты — ожидание снимается молча, плашки нет. */
+      if (++preVoiceN > 300) { clearInterval(preVoiceT); preVoiceT = 0; preVoice.length = 0; if (window.console) console.warn("[shell] голос не пришёл — извещение не сказано"); }
+    }, 100);
+    return { el: t, dismiss: function () { e.gone = true; if (e.h && e.h.dismiss) e.h.dismiss(); } };
+  }
+  /* Прежняя плашка (тело mountToast до D-810: место на линии, замещение
+     подтверждений D-252, нить порога D-726, покой D-176) снята D-822: её
+     работу делает голос (voice.js: очередь, «подтверждение сменяет
+     подтверждение», срок, «меньше движения»). */
 
   window.showToast = function (title, text, iconSvg, force, extraClass, kind) {
-    if (dnd() && !force) return null;
+    /* «Не беспокоить» глушит голос, но не вечерний выпуск: пришедшее само
+       ложится туда молча (D-813). */
+    if (dnd() && !force) { if (window.sbVoice && window.sbVoice.quietly) window.sbVoice.quietly(title, text, kind, extraClass); return null; }
     return mountToast(buildToast(title, text, iconSvg, extraClass, kind), 5800);
   };
 
@@ -1491,6 +1571,8 @@
      уходят своим обычным путём (та же анимация, что по нажатию) — они и
      так живут пять секунд, а подсказка не ждёт. */
   window.sbToastsYield = function () {
+    /* голос уступает так же: фраза, пришедшая сама, тает (важное и вопрос — нет) */
+    if (window.sbVoice && window.sbVoice.yieldTo) { var was = window.sbVoice.state().speaking; window.sbVoice.yieldTo(); return was ? 1 : 0; }
     var host = $("#toastLayer");
     if (!host) return 0;
     var list = $$(".toast", host);
@@ -4560,7 +4642,7 @@
     /* Карточка входа, дверь замка, прощание — не стол: касание по ним не
        снимает фокус с окна, открытого на входе (D-259, снимок основателя:
        «build стало тёмным при входе»). */
-    if (t.closest(".window, #dock, #topbar, #sbCmdk, .panel-overlay, #sbControlCenter, #sbCtxMenu, #toastLayer, #sbLogin, #sbVaultGate, #sbFarewell, #sbDeskHint")) return;
+    if (t.closest(".window, #dock, #topbar, #sbCmdk, .panel-overlay, #sbControlCenter, #sbCtxMenu, #toastLayer, #sbLogin, #sbVaultGate, #sbFarewell")) return;
     if (focusedId) unfocusAll();
   });
 
@@ -5788,7 +5870,15 @@
           try { localStorage.setItem("sysbaby.authed", "1"); } catch (e) { /* ignore */ }
           adoptDoorLangIfNone();
           s.close();
-          worldGuard(function () { openedGate(); });
+          worldGuard(function () {
+            openedGate();
+            /* Крючок «Дом — мой» (D-800): первое слово сказано, мир создан,
+               стол открыт. Ворота уже ушли — знакомство на них не видно. */
+            window.sbFirstWordAt = Date.now();
+            var fwLang = gateLang();
+            try { fwLang = localStorage.getItem("sysbaby.i18n.lang") || fwLang; } catch (e) { /* язык двери */ }
+            sbEvent("sb:first-word", { at: window.sbFirstWordAt, lang: fwLang });
+          });
         }, function () { going = false; gate.classList.remove("vg-work"); say("lock.first.fail"); });
       }
       s.querySelector("#sbFirstGo").addEventListener("click", go);

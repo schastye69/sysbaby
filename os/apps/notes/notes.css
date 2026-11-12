@@ -288,9 +288,12 @@
 .notes-smiles svg.sb-sm.big { width: 44px; height: 44px; margin: 0; }
 .notes-bodywrap { position: relative; flex: 1; min-height: 0; display: flex; }
 .notes-bodywrap .notes-body { width: 100%; }
+/* Живые смайлики лежат ровно на буквах поля: тот же кегль, строка и отступы,
+   что у одного поля системы (D-819). */
 .notes-live {
   position: absolute; inset: 0; overflow: auto; display: none;
-  font: inherit; font-size: var(--f-read); line-height: var(--lh-read); color: inherit;
+  padding: calc((var(--field-h) - 1lh) / 2) var(--field-pad-x);
+  font: inherit; font-size: var(--field-fs, var(--f-ui)); line-height: var(--lh-read); color: inherit;
   white-space: pre-wrap; overflow-wrap: anywhere; cursor: text;
 }
 .notes-bodywrap.has-sm .notes-live { display: block; }

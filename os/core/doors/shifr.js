@@ -44,6 +44,7 @@ let vw = 1, vh = 1, dpr = 1, baseH = 0, lastW = 0;
 let NEED = kit.need || null;
 // lattice
 let fs = 11, cw = 25, ch = 19, cols = 0, rows = 0, N = 0, PX = null, PY = null, BYTES = null, HUES = null, SZ = null, MONOC = null, CX = null, CY = null, VOID = null, LUM = null, TINT = null, MASK = null, GONE = null;
+let HOLE = null, KW = null, LB = null; // D-806: печати под знаком; знак, уменьшенный под клавиатурой; тихое место у слова
 let act = [], inAct = null, bg = null, RINGS = new Map(), RA = new Map(), RT = new Map();
 // how the field answers a sign: no wave; rings that turn at random, at most three at once (founder, vvod-6)
 const TM = { wave: 'none', spin: 'rand', max: 3 };
@@ -89,7 +90,7 @@ function layout() {
   geom();
   kit.line(boxTop); kit.place(boxTop, 1);
   if (P.emblem === 'stars') starsLayout();
-  if (true) { BUILD = true; if (BUILD_X) BUILD_X(); BUILD_X = ZSTEP.run((function* () { yield* gridG(); yield; paintBg(); yield; yield* paintLatticeG(); yield; drawBlock(performance.now() / 1000); if (true) { yield; yield* POL.layoutG(); } BUILD = false; if (!S) sayReady(); loop(); })()); return; } // D-603: in steps
+  if (true) { BUILD = true; if (BUILD_X) BUILD_X(); BUILD_X = ZSTEP.run((function* () { yield* gridG(); yield; paintBg(); yield; yield* paintLatticeG(); yield; drawBlock(performance.now() / 1000); if (true) { yield; yield* POL.layoutG(); } BUILD = false; kwRead(); if (!S) sayReady(); loop(); })()); return; } // D-603: in steps
   grid(); paintBg(); paintLattice(); drawBlock(performance.now() / 1000);
   if (true && true) POL.layout();
 }
@@ -427,7 +428,10 @@ function* gridG() {
     // Лимб: the field lies in rings around the lock, like the wheels of a safe seen from above
     const xs = [], ys = [], far = Math.hypot(Math.max(BX, vw - BX), Math.max(BY, vh - BY)) + cw;
     PLR = [];
-    for (let r = (S ? R * 1.18 : cw * 2), ring = 0; r < far; r += ch * 1.05, ring++) {
+    /* D-806: кольца поля идут и внутри круга (от cw·2), под знаком они спрятаны (HOLE) — их показывает только знак,
+       уменьшенный под клавиатурой (kwRead): вокруг маленького знака то же поле, а не пустота на месте большого */
+    const r0 = S ? R * 1.18 : cw * 2, nin = S ? Math.floor((r0 - cw * 2) / (ch * 1.05)) : 0;
+    for (let r = r0 - nin * ch * 1.05, ring = -nin; r < far; r += ch * 1.05, ring++) {
       const n = Math.floor((2 * Math.PI * r) / cw), off = rf() * 6.283;
       for (let j = 0; j < n; j++) { const a = off + (j / n) * 6.283, x = BX + Math.cos(a) * r - fs / 2, y = BY + Math.sin(a) * r - fs / 2; if (x > -fs && y > -fs && x < vw && y < vh) { xs.push(x); ys.push(y); PLR.push([ring, r / far, a, r]); } }
     }
@@ -441,12 +445,12 @@ function* gridG() {
   for (let c = 0; c < cols; c++) PX[c] = ox + Math.floor(c / 4) * bw + (c % 4) * cw;
   for (let r = 0; r < rows; r++) PY[r] = oy + Math.floor(r / 4) * bh + (r % 4) * ch;
   }
-  BYTES = new Uint16Array(N); HUES = new Uint16Array(N); SZ = new Float32Array(N); MONOC = new Uint8Array(N); CX = new Float32Array(N); CY = new Float32Array(N); VOID = new Uint8Array(N);
+  BYTES = new Uint16Array(N); HUES = new Uint16Array(N); HOLE = new Uint8Array(N); SZ = new Float32Array(N); MONOC = new Uint8Array(N); CX = new Float32Array(N); CY = new Float32Array(N); VOID = new Uint8Array(N);
   const WM = P.word ? wordMask() : null; LUM = new Float32Array(N); TINT = new Uint8Array(N); MASK = new Float32Array(N); GONE = new Uint8Array(N);
   inAct = new Uint8Array(N); act = []; RINGS = new Map(); RA = new Map(); RT = new Map();
   // quiet around the word and the block: the lattice steps back where people read
   const bxw = Math.min(vw * 0.9, 360) / 2 + 26, x0 = vw / 2 - bxw, x1 = vw / 2 + bxw, y0 = boxTop - 12, y1 = boxTop + (NEED && NEED.h > 0 ? NEED.h : 250) + 14;
-  if (true) { ALB = new Float32Array(N); LITF = (x, y) => { const dr = Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1)), db = S ? Math.max(0, Math.hypot(x - BX, y - BY) - R - 10) : 1e9, d = Math.min(shadeDist(x, y, dr), db), inRing = S && Math.hypot(x - BX, y - BY) < R + 8, edge = Math.min(x, vw - x, y, vh - y), fl = P.word ? 0.3 : (LOOK.shadeFloor || 0.12); return (inRing ? 0.05 : fl + (1 - fl) * ease(d / 110)) * (P.word ? 0.8 + 0.2 * ease(edge / 140) : 0.55 + 0.45 * ease(edge / 140)); }; } else { LITF = null; ALB = null; }
+  KW = null; LB = { x0, x1, y0, y1 }; ALB = new Float32Array(N); LITF = litAt;
   let __k = 0;
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
     if ((++__k & 31) === 0) yield;
@@ -454,9 +458,9 @@ function* gridG() {
     // Россыпь: no grid — each seal is pushed off its place, and some places stay empty
     CX[i] = PLX ? PLX[i] : PX[c] + (P.scatter ? (rf() - 0.5) * cw * 0.55 : 0); CY[i] = PLY ? PLY[i] : PY[r] + (P.scatter ? (rf() - 0.5) * ch * 0.55 : 0);
     if (P.scatter && rf() < (P.voidp || 0.3)) VOID[i] = 1;
-    if (PLR && (TM.spin === 'rand' || PLR[i][3] < R * 3.4)) { const g = PLR[i][0]; if (!RINGS.has(g)) { RINGS.set(g, []); RA.set(g, 0); RT.set(g, 0); } RINGS.get(g).push([i, PLR[i][2], PLR[i][3]]); } // the rings near the lock may turn
+    if (PLR && PLR[i][0] >= 0 && (TM.spin === 'rand' || PLR[i][3] < R * 3.4)) { const g = PLR[i][0]; if (!RINGS.has(g)) { RINGS.set(g, []); RA.set(g, 0); RT.set(g, 0); } RINGS.get(g).push([i, PLR[i][2], PLR[i][3]]); } // the rings near the lock may turn
     // where colour lives: everywhere (full), nowhere (mono), every fourth ring (rings), or growing outward (radial)
-    { const pr = PLR ? PLR[i] : [r, 0.5, 0]; MONOC[i] = P.cmode === 'full' ? 0 : P.cmode === 'rings' ? (pr[0] % 4 === 3 ? 0 : 1) : P.cmode === 'radial' ? (rf() < Math.pow(pr[1], 1.6) * 1.3 ? 0 : 1) : P.mono ? 1 : 0; }
+    { const pr = PLR ? PLR[i] : [r, 0.5, 0]; MONOC[i] = P.cmode === 'full' ? 0 : P.cmode === 'rings' ? ((pr[0] % 4 + 4) % 4 === 3 ? 0 : 1) : P.cmode === 'radial' ? (rf() < Math.pow(pr[1], 1.6) * 1.3 ? 0 : 1) : P.mono ? 1 : 0; }
     const x = CX[i] + fs / 2, y = CY[i] + fs / 2;
     // Имя пустотами: where the name lies, there is no seal — sys.baby is written by absence
     if (WM && WM(x, y)) VOID[i] = 1;
@@ -467,6 +471,7 @@ function* gridG() {
     const d = Math.min(shadeDist(x, y, dr), db), inRing = S && Math.hypot(x - BX, y - BY) < R + 8;
     const edge = Math.min(x, vw - x, y, vh - y);
     MASK[i] = (inRing ? 0.05 : (P.word ? 0.3 : (LOOK.shadeFloor || 0.12)) + (1 - (P.word ? 0.3 : (LOOK.shadeFloor || 0.12))) * ease(d / 110)) * (P.word ? 0.8 + 0.2 * ease(edge / 140) : 0.55 + 0.45 * ease(edge / 140)) * (P.word ? 0.92 + 0.16 * rf() : 0.72 + 0.56 * rf()) * (P.depth ? [0.55, 0.8, 1.15][SZ[i] < 0.6 ? 0 : SZ[i] < 1 ? 1 : 2] : 1);
+    if (PLR && S && PLR[i][3] < R * 1.18) { HOLE[i] = 1; MASK[i] = 0; ALB[i] = (P.word ? 0.92 + 0.16 * rf() : 0.72 + 0.56 * rf()); continue; } // D-806: под знаком — спрятано
     if (LITF) ALB[i] = MASK[i] / Math.max(1e-4, LITF(x, y));
   }
 }
@@ -488,7 +493,10 @@ function grid() {
     // Лимб: the field lies in rings around the lock, like the wheels of a safe seen from above
     const xs = [], ys = [], far = Math.hypot(Math.max(BX, vw - BX), Math.max(BY, vh - BY)) + cw;
     PLR = [];
-    for (let r = (S ? R * 1.18 : cw * 2), ring = 0; r < far; r += ch * 1.05, ring++) {
+    /* D-806: кольца поля идут и внутри круга (от cw·2), под знаком они спрятаны (HOLE) — их показывает только знак,
+       уменьшенный под клавиатурой (kwRead): вокруг маленького знака то же поле, а не пустота на месте большого */
+    const r0 = S ? R * 1.18 : cw * 2, nin = S ? Math.floor((r0 - cw * 2) / (ch * 1.05)) : 0;
+    for (let r = r0 - nin * ch * 1.05, ring = -nin; r < far; r += ch * 1.05, ring++) {
       const n = Math.floor((2 * Math.PI * r) / cw), off = rf() * 6.283;
       for (let j = 0; j < n; j++) { const a = off + (j / n) * 6.283, x = BX + Math.cos(a) * r - fs / 2, y = BY + Math.sin(a) * r - fs / 2; if (x > -fs && y > -fs && x < vw && y < vh) { xs.push(x); ys.push(y); PLR.push([ring, r / far, a, r]); } }
     }
@@ -502,20 +510,20 @@ function grid() {
   for (let c = 0; c < cols; c++) PX[c] = ox + Math.floor(c / 4) * bw + (c % 4) * cw;
   for (let r = 0; r < rows; r++) PY[r] = oy + Math.floor(r / 4) * bh + (r % 4) * ch;
   }
-  BYTES = new Uint16Array(N); HUES = new Uint16Array(N); SZ = new Float32Array(N); MONOC = new Uint8Array(N); CX = new Float32Array(N); CY = new Float32Array(N); VOID = new Uint8Array(N);
+  BYTES = new Uint16Array(N); HUES = new Uint16Array(N); HOLE = new Uint8Array(N); SZ = new Float32Array(N); MONOC = new Uint8Array(N); CX = new Float32Array(N); CY = new Float32Array(N); VOID = new Uint8Array(N);
   const WM = P.word ? wordMask() : null; LUM = new Float32Array(N); TINT = new Uint8Array(N); MASK = new Float32Array(N); GONE = new Uint8Array(N);
   inAct = new Uint8Array(N); act = []; RINGS = new Map(); RA = new Map(); RT = new Map();
   // quiet around the word and the block: the lattice steps back where people read
   const bxw = Math.min(vw * 0.9, 360) / 2 + 26, x0 = vw / 2 - bxw, x1 = vw / 2 + bxw, y0 = boxTop - 12, y1 = boxTop + (NEED && NEED.h > 0 ? NEED.h : 250) + 14;
-  if (true) { ALB = new Float32Array(N); LITF = (x, y) => { const dr = Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1)), db = S ? Math.max(0, Math.hypot(x - BX, y - BY) - R - 10) : 1e9, d = Math.min(shadeDist(x, y, dr), db), inRing = S && Math.hypot(x - BX, y - BY) < R + 8, edge = Math.min(x, vw - x, y, vh - y), fl = P.word ? 0.3 : (LOOK.shadeFloor || 0.12); return (inRing ? 0.05 : fl + (1 - fl) * ease(d / 110)) * (P.word ? 0.8 + 0.2 * ease(edge / 140) : 0.55 + 0.45 * ease(edge / 140)); }; } else { LITF = null; ALB = null; }
+  KW = null; LB = { x0, x1, y0, y1 }; ALB = new Float32Array(N); LITF = litAt;
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
     const i = r * cols + c;
     // Россыпь: no grid — each seal is pushed off its place, and some places stay empty
     CX[i] = PLX ? PLX[i] : PX[c] + (P.scatter ? (rf() - 0.5) * cw * 0.55 : 0); CY[i] = PLY ? PLY[i] : PY[r] + (P.scatter ? (rf() - 0.5) * ch * 0.55 : 0);
     if (P.scatter && rf() < (P.voidp || 0.3)) VOID[i] = 1;
-    if (PLR && (TM.spin === 'rand' || PLR[i][3] < R * 3.4)) { const g = PLR[i][0]; if (!RINGS.has(g)) { RINGS.set(g, []); RA.set(g, 0); RT.set(g, 0); } RINGS.get(g).push([i, PLR[i][2], PLR[i][3]]); } // the rings near the lock may turn
+    if (PLR && PLR[i][0] >= 0 && (TM.spin === 'rand' || PLR[i][3] < R * 3.4)) { const g = PLR[i][0]; if (!RINGS.has(g)) { RINGS.set(g, []); RA.set(g, 0); RT.set(g, 0); } RINGS.get(g).push([i, PLR[i][2], PLR[i][3]]); } // the rings near the lock may turn
     // where colour lives: everywhere (full), nowhere (mono), every fourth ring (rings), or growing outward (radial)
-    { const pr = PLR ? PLR[i] : [r, 0.5, 0]; MONOC[i] = P.cmode === 'full' ? 0 : P.cmode === 'rings' ? (pr[0] % 4 === 3 ? 0 : 1) : P.cmode === 'radial' ? (rf() < Math.pow(pr[1], 1.6) * 1.3 ? 0 : 1) : P.mono ? 1 : 0; }
+    { const pr = PLR ? PLR[i] : [r, 0.5, 0]; MONOC[i] = P.cmode === 'full' ? 0 : P.cmode === 'rings' ? ((pr[0] % 4 + 4) % 4 === 3 ? 0 : 1) : P.cmode === 'radial' ? (rf() < Math.pow(pr[1], 1.6) * 1.3 ? 0 : 1) : P.mono ? 1 : 0; }
     const x = CX[i] + fs / 2, y = CY[i] + fs / 2;
     // Имя пустотами: where the name lies, there is no seal — sys.baby is written by absence
     if (WM && WM(x, y)) VOID[i] = 1;
@@ -526,6 +534,7 @@ function grid() {
     const d = Math.min(shadeDist(x, y, dr), db), inRing = S && Math.hypot(x - BX, y - BY) < R + 8;
     const edge = Math.min(x, vw - x, y, vh - y);
     MASK[i] = (inRing ? 0.05 : (P.word ? 0.3 : (LOOK.shadeFloor || 0.12)) + (1 - (P.word ? 0.3 : (LOOK.shadeFloor || 0.12))) * ease(d / 110)) * (P.word ? 0.8 + 0.2 * ease(edge / 140) : 0.55 + 0.45 * ease(edge / 140)) * (P.word ? 0.92 + 0.16 * rf() : 0.72 + 0.56 * rf()) * (P.depth ? [0.55, 0.8, 1.15][SZ[i] < 0.6 ? 0 : SZ[i] < 1 ? 1 : 2] : 1);
+    if (PLR && S && PLR[i][3] < R * 1.18) { HOLE[i] = 1; MASK[i] = 0; ALB[i] = (P.word ? 0.92 + 0.16 * rf() : 0.72 + 0.56 * rf()); continue; } // D-806: под знаком — спрятано
     if (LITF) ALB[i] = MASK[i] / Math.max(1e-4, LITF(x, y));
   }
 }
@@ -563,9 +572,40 @@ function paintBg() {
 // THE SHADOW the form sits in (demo: ?s=1..5). Not a box any more: 1 cast by the dial, 2 a pool, 3 none,
 // 4 a beam from the lock down through the form, 5 the dial's disc laid on the floor under the form.
 const SHADE = LOOK.shade; let LITF = null, ALB = null; // D-603: light by place, albedo by seal
-function shadeDist(x, y, dr) {
+/* Свет поля по месту: тень круга и тихое место у слова. D-806 (основатель 11.11.2026, планшет лёжа, видео: «круг
+   уменьшается и фон теряется»): пока клавиатура держит знак уменьшенным (shell.js kbSign — transform холста знака),
+   тень берётся от уменьшенного круга (KW), а не от прежнего большого — поле вокруг него то же, что без клавиатуры. */
+function litAt(x, y) {
+  const wx = KW ? KW.x : BX, wy = KW ? KW.y : BY, wr = KW ? KW.r : R;
+  const dr = Math.hypot(Math.max(LB.x0 - x, 0, x - LB.x1), Math.max(LB.y0 - y, 0, y - LB.y1)), db = S ? Math.max(0, Math.hypot(x - wx, y - wy) - wr - 10) : 1e9;
+  const d = Math.min(shadeDist(x, y, dr, wx, wy, wr), db), inRing = S && Math.hypot(x - wx, y - wy) < wr + 8, edge = Math.min(x, vw - x, y, vh - y), fl = P.word ? 0.3 : (LOOK.shadeFloor || 0.12);
+  return (inRing ? 0.05 : fl + (1 - fl) * ease(d / 110)) * (P.word ? 0.8 + 0.2 * ease(edge / 140) : 0.55 + 0.45 * ease(edge / 140));
+}
+/* Знак уменьшен клавиатурой? Оболочка ставит холсту знака transform «translate(x, y) scale(k)» от его начала (0 0):
+   центр круга — (x + k·BX, y + k·BY), радиус — k·R. Поле не перестраивается: печати, чей свет изменился, и печати
+   под прежним кругом перерисовываются по одной, по шагам (ZSTEP, ≤ 6 мс) — без пустого кадра и без рывка. */
+let KW_X = null;
+function kwRead() {
+  if (!S || !MASK || BUILD) return;
+  const m = /translate\(\s*(-?[\d.]+)px\s*,\s*(-?[\d.]+)px\s*\)\s*scale\(\s*([\d.]+)\s*\)/.exec(blk.style.transform || '');
+  const kw = m && +m[3] > 0 ? { x: +m[1] + +m[3] * BX, y: +m[2] + +m[3] * BY, r: +m[3] * R } : null;
+  if (!kw && !KW) return;
+  if (kw && KW && Math.abs(kw.x - KW.x) < 0.5 && Math.abs(kw.y - KW.y) < 0.5 && Math.abs(kw.r - KW.r) < 0.5) return;
+  KW = kw;
+  if (KW_X) KW_X();
+  KW_X = ZSTEP.run((function* () {
+    for (let i = 0; i < N; i++) {
+      if ((i & 127) === 127) yield;
+      const nm = HOLE[i] && !KW ? 0 : litAt(CX[i] + fs / 2, CY[i] + fs / 2) * ALB[i];
+      if (Math.abs(nm - MASK[i]) > 0.002) { MASK[i] = nm; if (!inAct[i]) redrawCell(i); }
+    }
+    KW_X = null;
+  })());
+}
+const KW_MO = new MutationObserver(() => kwRead()); KW_MO.observe(blk, { attributes: true, attributeFilter: ['style'] });
+function shadeDist(x, y, dr, wx = BX, wy = BY, wr = R) {
   const nh = NEED && NEED.h > 0 ? NEED.h : 250, bw = (NEED && NEED.w) || Math.min(vw * 0.86, 340), cyB = boxTop + nh / 2, bot = boxTop + nh;
-  if (SHADE === 1) { const tt = clamp((y - BY) / Math.max(1, bot + 30 - BY), 0, 1), rad = R * (0.75 + 0.45 * tt) + (bw / 2 - R * 0.75) * tt * 0.6, cy = clamp(y, BY, bot + 30); return Math.max(0, Math.hypot(x - BX, y - cy) - rad) * 0.9; }
+  if (SHADE === 1) { const tt = clamp((y - wy) / Math.max(1, bot + 30 - wy), 0, 1), rad = wr * (0.75 + 0.45 * tt) + (bw / 2 - wr * 0.75) * tt * 0.6, cy = clamp(y, wy, bot + 30); return Math.max(0, Math.hypot(x - wx, y - cy) - rad) * 0.9; }
   if (SHADE === 2) { const top = S ? BY - R : boxTop, cy = (top + bot) / 2, rx = Math.max(R, bw / 2) * 1.35, ry = ((bot - top) / 2) * 1.12, q = Math.hypot((x - BX) / rx, (y - cy) / ry); return Math.max(0, q - 0.78) * 260; }
   if (SHADE === 3) return 1e9;
   if (SHADE === 4) { const hw = Math.max(R * 0.92, bw / 2 + 10), top = S ? BY - R : boxTop; return y < top - 30 || y > bot + 70 ? 1e9 : Math.max(0, Math.abs(x - BX) - hw) * 1.1; }
@@ -605,7 +645,8 @@ function sealColor(h, l, a, tint, mono) {
 }
 function cellAlpha(i) {
   const l = LUM[i], m = MASK[i];
-  if (VOID[i]) return 0;
+  /* ОТКАТ: не откат на чужое значение — «||» здесь логическое «или»: клетка пуста, если она пустота знака или дыра под клавиатурой. */
+  if (VOID[i] || (HOLE[i] && !KW)) return 0;
   if (GONE[i]) return l > 0.01 ? Math.min(0.95, l * 0.9) : 0;
   return Math.min(0.95, P.a0 * m + l * (0.12 + 0.75 * m));
 }
@@ -1095,7 +1136,7 @@ return {
     if (P.emblem) emblemOpen(opening);
     loop();
   },
-  destroy() { held = true; }
+  destroy() { held = true; KW_MO.disconnect(); if (KW_X) KW_X(); }
 };
 });
 })();

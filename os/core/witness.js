@@ -157,6 +157,9 @@
       { id: "outward", label: t("open"), run: function () { if (window.toggleApp) window.toggleApp("outward"); } }
     ], "toast-warn", true);
     if (h && h.el) h.el.setAttribute("data-witness-warn", "");
+    /* Голос говорит коротко (D-812, одна-две строки на телефоне); адреса —
+       в самой строке Свидетеля и в вечернем выпуске. Не тает до касания (D-814). */
+    if (h && window.sbVoice && window.sbVoice.retell) window.sbVoice.retell(h, function () { return window.sbVoice.form("voice.witness"); }, "witness");
   }
   var warned = false;
   function tryWarn() { if (warned || !readable()) return; warned = true; warn(); }

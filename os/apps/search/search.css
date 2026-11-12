@@ -13,8 +13,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 13px var(--pad-room);
-  border-bottom: 1px solid var(--hairline, rgba(var(--film-rgb), .09));
+  padding: 10px var(--pad-room);
+  /* Черты под строкой поиска нет (D-819): поле одно на всю систему. */
+  border-bottom: 0;
   flex: 0 0 auto;
 }
 

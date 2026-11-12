@@ -168,7 +168,11 @@
     wrap.innerHTML = guideHtml(platform());
     var g = wrap.firstChild;
     doc.body.appendChild(g);
-    var close = function () { if (g.parentNode) g.parentNode.removeChild(g); };
+    /* Esc закрывает подсказку, как любое окно системы (доска H4: press-and-rest — подсказка без Esc
+       стояла над столом, и ни одна комната больше не открывалась). */
+    var esc = function (ev) { if (ev.key === "Escape") close(); };
+    var close = function () { doc.removeEventListener("keydown", esc, true); if (g.parentNode) g.parentNode.removeChild(g); };
+    doc.addEventListener("keydown", esc, true);
     g.querySelector(".sig-close").addEventListener("click", close);
     g.addEventListener("click", function (ev) { if (ev.target === g) close(); });
     try { g.querySelector(".sig-close").focus(); } catch (e) { /* ignore */ }

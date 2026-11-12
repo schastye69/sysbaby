@@ -1,0 +1,130 @@
+/* sys.baby OS — core/desk.css
+ * Вид стола «Дом — мой» (П3, v178-H4a, D-850…852). Только вид — поведение
+ * заметок (перенос, правка, разворот, удаление в Эхо, свет от обоев --nx/--ny,
+ * сроки is-due/is-late) остаётся в desktop.js и core.css как было.
+ *
+ * ЗАМЕТКА «СВЕТ ПО КРОМКЕ» · решение D-850 (основатель 11.11.2026, вариант 2
+ * демо dom-moy-C). Тело прозрачно, свет собран в кромке и ярче с той
+ * стороны, откуда светят обои. Своя тонкая подложка (--veil) и размытие
+ * 16 px — чтобы буквы читались на любой теме; в светлом режиме подложка
+ * светлая, буквы графитовые. Охраняется tools/note-contrast-check.mjs и
+ * tools/note-drag-perf-check.mjs.
+ * Правила держатся за #sbNoteLayer: так они сильнее классов core.css и не
+ * задевают заметки вне стола. */
+
+/* ── общее вещество ── */
+#sbNoteLayer .sticky-note {
+  --nl: var(--wp-light-rgb, 236, 138, 95);
+  --veil: 18, 16, 20;
+  --veil-a: .34;
+  /* буквы и свет заметки (--ink-n, --ink-n2, --nv-*) — слова словаря ядра (core.css, «ЗАМЕТКА НА СТОЛЕ · КРАСКА»; доска H4: paint-tokens) */
+  --warm: 255, 238, 214;
+  color: var(--ink-n);
+  border: 0;
+  -webkit-backdrop-filter: blur(16px) saturate(1.35);
+  backdrop-filter: blur(16px) saturate(1.35);
+  background: var(--nv-face);
+  box-shadow: var(--nv-glow);
+  transition: left var(--t-move) var(--ease-enter), top var(--t-move) var(--ease-enter), box-shadow var(--t-move) var(--ease-move), background var(--t-move) var(--ease-move);
+}
+#sbNoteLayer .sticky-note:not(.full) { border-radius: var(--r-window); padding: 13px; }
+#sbNoteLayer .sticky-note .note-text,
+#sbNoteLayer .sticky-note .note-body { color: var(--ink-n); text-shadow: var(--nv-text-shadow); }
+#sbNoteLayer .sticky-note .note-text::placeholder,
+#sbNoteLayer .sticky-note .note-body::placeholder { color: var(--nv-ph); }
+#sbNoteLayer .sticky-note .note-chip { color: var(--ink-n2); background: var(--nv-chip-bg); border-color: var(--nv-chip-rim); }
+
+/* кромка света: конический свет под маской, ярче со стороны света обоев */
+#sbNoteLayer .sticky-note::before {
+  content: ""; position: absolute; inset: 0; border-radius: var(--r-window); padding: 1.5px; pointer-events: none;
+  background: var(--nv-rim);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: .9; transition: opacity var(--t-move) var(--ease-move);
+}
+#sbNoteLayer .sticky-note.full::before { border-radius: var(--r-card); }   /* угол кромки = угол листа (было inherit; radius-scale, доска H4) */
+#sbNoteLayer .sticky-note.focused::before,
+#sbNoteLayer .sticky-note.dragging::before { opacity: 1; }
+#sbNoteLayer .sticky-note.focused { box-shadow: var(--nv-glow-focus); }
+/* несомую заметку перерисовывают каждый кадр: тень одна и короче, кромка та же */
+#sbNoteLayer .sticky-note.dragging { transition: none; box-shadow: var(--nv-drag-shadow); }
+#sbNoteLayer .sticky-note.selected { outline: 1px solid rgba(var(--nl), .5); outline-offset: 2px; }
+/* вторая кромка «под листом есть тело» — того же вещества */
+#sbNoteLayer .sticky-note.has-body::after {
+  left: 12px; right: 12px; bottom: -4px; height: 5px; border-radius: 0 0 var(--r-card) var(--r-card);
+  background: rgba(var(--veil), .34); border: 0;
+  box-shadow: inset 0 -1px 0 rgba(var(--warm), .16);
+}
+/* на весь экран заметку читают долго: подложка гуще */
+#sbNoteLayer .sticky-note.full { background-color: rgba(var(--veil), .8); }
+#sbNoteLayer .sticky-note.full .note-body { color: var(--nv-body-full); }
+/* сроки и звонок — кольцом света, а не рамкой (рамки у заметки больше нет) */
+#sbNoteLayer .sticky-note.is-due { box-shadow: var(--nv-due); }
+#sbNoteLayer .sticky-note.is-late { box-shadow: var(--nv-late); }
+
+/* ── кнопки над заметкой: без капсулы (D-643), знак из света с тёмной тенью — виден на любом фоне ── */
+#sbNoteLayer .sticky-note .note-lights { bottom: calc(100% + 4px); gap: 2px; background: none; box-shadow: none; }
+#sbNoteLayer .sticky-note.lights-below .note-lights { top: calc(100% + 6px); bottom: auto; }
+#sbNoteLayer .sticky-note.full .note-lights { top: 14px; bottom: auto; }
+/* цвет знака — тот же, что у кнопок окна (D-643, note-window-check); свет и тень вокруг знака — свои */
+#sbNoteLayer .sticky-note .note-lights .light {
+  background: none !important; box-shadow: none !important;
+  filter: var(--nv-light-glow);
+}
+#sbNoteLayer .sticky-note .note-lights .light svg { stroke-width: 1.6; }
+
+/* ── светлый режим: подложка светлая, буквы графитовые — ветка темы живёт в словаре ядра (core.css), не здесь ── */
+
+/* ── приветственная заметка (D-851): одна тихая строка под фразой ── */
+#sbNoteLayer .sticky-note .nv-hint {
+  margin-top: 8px; font-size: var(--f-meta); line-height: var(--lh-ui);
+  color: var(--nv-hint); text-shadow: var(--nv-hint-shadow);
+  pointer-events: none; -webkit-user-select: none; user-select: none;
+}
+#sbNoteLayer .sticky-note.full .nv-hint { display: none; }
+#sbNoteLayer .sticky-note.nv-welcome .note-text { font-size: var(--f-read); line-height: var(--lh-read); }
+#sbNoteLayer .sticky-note.nv-born { animation: nvBorn .9s var(--ease-enter) both; }
+@keyframes nvBorn { from { opacity: 0; transform: translateY(6px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
+
+/* ── «оставите здесь заметку?» — точка света 5 px с подписью (D-852), вместо кольца ── */
+html .note-invite.note-invite {
+  width: auto; max-width: calc(100vw - 24px); padding: 8px 10px 8px 0; gap: 11px;
+  background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+  border-radius: 0; transform: translate(-3px, -50%);
+  font-size: var(--f-read); font-weight: var(--w-text); white-space: nowrap;
+  color: var(--ni-ink); text-shadow: var(--ni-shadow);
+  animation: nvFade .28s var(--ease-enter) both;
+}
+html .note-invite.note-invite:focus-visible { border: 0; color: var(--ni-ink-on); outline: none; }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .note-invite.note-invite:hover { border: 0; color: var(--ni-ink-on); outline: none; }
+}
+html .note-invite.note-invite:focus-visible .invite-word::after { opacity: 1; height: 1.5px; }
+html .note-invite.note-invite .invite-plus {
+  position: relative; width: 5px; height: 5px; flex: none; border: 0; border-radius: var(--r-round); overflow: visible; color: transparent;   /* знака «+» нет в разметке (desktop.js; type-scale, доска H4) */
+  background: var(--ni-dot); box-shadow: var(--ni-dot-glow);
+}
+html .note-invite.note-invite .invite-plus::before {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: var(--r-round);
+  background: var(--ni-halo);
+  animation: nvHalo 2.6s ease-in-out .3s infinite;
+}
+html .note-invite.note-invite .invite-word { position: relative; }
+html .note-invite.note-invite .invite-word::after {
+  content: ""; position: absolute; left: 0; right: -18px; bottom: -4px; height: 1px; opacity: .8;
+  background: var(--ni-word-line);
+}
+@keyframes nvFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes nvHalo { 0%, 100% { opacity: .75; transform: scale(.92); } 50% { opacity: 1; transform: scale(1.08); } }
+
+/* ── меньше движения: ни рождения, ни дыхания точки, ни переходов ── */
+html[data-motion="reduced"] #sbNoteLayer .sticky-note.nv-born,
+html[data-motion="reduced"] .note-invite.note-invite,
+html[data-motion="reduced"] .note-invite.note-invite .invite-plus::before { animation: none !important; }
+html[data-motion="reduced"] #sbNoteLayer .sticky-note,
+html[data-motion="reduced"] #sbNoteLayer .sticky-note::before { transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  #sbNoteLayer .sticky-note.nv-born, .note-invite.note-invite, .note-invite.note-invite .invite-plus::before { animation: none !important; }
+  #sbNoteLayer .sticky-note, #sbNoteLayer .sticky-note::before { transition: none !important; }
+}

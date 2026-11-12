@@ -327,6 +327,10 @@
       "</div>" +
       /* Копия говорит, откуда она и не устарела ли (D-267). */
       (note.source && window.sbHand && window.sbHand.sourceHtml ? window.sbHand.sourceHtml(note.source) : "") +
+      /* ОДИН ЛИСТ (D-820): заголовок и текст лежат в одной поверхности
+         .notes-sheet — одни края, один радиус, без шва; заголовок отделён
+         кеглем, весом и воздухом. */
+      '<div class="notes-sheet">' +
       '<input type="text" class="notes-title" id="noteTitleInput" placeholder="' + esc(t("nt.ph.title")) + '" spellcheck="false" autocomplete="off" value="' + esc(title) + '">' +
       /* The leading newline compensates for the one HTML parsing eats right
        * after <textarea>. Without it a note written as "Title\n\nbody" would
@@ -338,7 +342,7 @@
          строкой. Стережёт tools/smiles-check.mjs. */
       '<div class="notes-bodywrap">' +
       '<textarea class="notes-body" id="noteBodyInput" autocomplete="off" placeholder="' + esc(t("nt.ph.body")) + '">\n' + esc(body) + "</textarea>" +
-      '<div class="notes-live" aria-hidden="true"></div></div>';
+      '<div class="notes-live" aria-hidden="true"></div></div></div>';
   }
 
   /* Запись как вещь: первая строка — имя, остальное — текст. Одна мерка и

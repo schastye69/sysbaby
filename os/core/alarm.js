@@ -144,19 +144,33 @@
   }
 
   /* ── СЛОЙ 1 ───────────────────────────────────────────────────────────── */
+  /* ── ЧАСЫ ПАНЕЛИ (D-853, «Дом — мой») ─────────────────────────────────
+     Таймер и будильник панели часов — те же записи, что у заметок, только
+     хозяин у них не заметка, а сами часы: note = "clock:timer" | "clock:alarm".
+     Все три слоя прежние; «увидено» здесь значит «прозвучало при открытой
+     вкладке» — время на столе в этот миг само говорит «время вышло»/«пора». */
+  function isClock(rec) { return !!rec && /^clock:/.test(String(rec.note)); }
+  function ringWords(rec) {
+    if (isClock(rec) && rec.note === "clock:timer") {
+      var dt = function (k, v) { return window.sbDeskT ? window.sbDeskT(k, v) : tr(k, v); };
+      return [dt("clock.timer.title"), dt("clock.timer.rang", { name: rec.say ? " \u00b7 " + rec.say : "" })];
+    }
+    return [tr("alarm.title"), tr("alarm.now", { time: clockOf(rec.at) })];
+  }
   function ring(rec) {
     var sound = tone();
     flashRoom();
-    var seen = bringForward(rec.note);
+    var seen = isClock(rec) ? true : bringForward(rec.note);
     rec.rang = Date.now();
     rec.sound = sound;
     /* Увиденным будильник считается, только если он И прозвучал, И заметка
        нашлась на столе. Иначе его подхватит слой 2 при возвращении. */
     rec.seen = (sound === "played" && seen && !doc.hidden);
+    var words = ringWords(rec);
     if (!rec.seen) {
-      if (doc.hidden) outsideSay(tr("alarm.title"), tr("alarm.now", { time: clockOf(rec.at) }));
+      if (doc.hidden) outsideSay(words[0], words[1]);
     } else {
-      say(tr("alarm.title"), tr("alarm.now", { time: clockOf(rec.at) }));
+      say(words[0], words[1]);
     }
     if (window.sbBus && window.sbBus.emit) {
       window.sbBus.emit("alarm:rang", { id: rec.id, at: rec.at, sound: sound, seen: rec.seen });
@@ -229,6 +243,17 @@
       if (window.sbBus && window.sbBus.emit) window.sbBus.emit("alarm:clear", { id: want, at: at });
       return true;
     },
+    /* Часы панели: срок известен до миллисекунды — звенеть в него, а не
+       в ближайший шаг проверки (5 с). Возвращает "played" | "blocked" | null. */
+    ringNow: function (noteId, at) {
+      var want = idOf(noteId, at), list = readAll(), i;
+      for (i = 0; i < list.length; i++) {
+        var r = list[i];
+        if (r && r.id === want && r.armed && !r.rang) { var snd = ring(r); writeAll(list); return snd; }
+      }
+      return null;
+    },
+    clock: function () { return readAll().filter(function (r) { return isClock(r) && r.armed && !r.rang; }); },
     /* Наружу — чтобы закон гонял оба слоя настоящими числами, а не ждал. */
     tick: tick,
     reportMissed: reportMissed,

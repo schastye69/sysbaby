@@ -63,10 +63,33 @@
   --win-pane-2: color-mix(in srgb, rgb(var(--wp-light-rgb)) 12%, var(--bg));
   /* ОДНО СТЕКЛО НА ВСЕХ ШИРИНАХ · D-747. Основатель 11.11.2026 (видео с
      планшета шире 860): окно «слишком прозрачное», а в руке становится
-     другим — тёмной плитой. Плёнка уплотнена до .86/.90 и стоит теперь и
-     шире 860 (там поверх неё остаётся размытие); покой, полёт и
-     перетаскивание носят ОДНУ заливку, без размытия разница — в десятой доле. */
-  --win-pane: linear-gradient(180deg, color-mix(in srgb, var(--win-pane-1) 86%, transparent), color-mix(in srgb, var(--win-pane-2) 90%, transparent));
+     другим — тёмной плитой. Покой, полёт и перетаскивание носят ОДНУ заливку.
+     ── СТЕКЛО «B» · D-809 (основатель 11.11.2026, снимок с планшета и демо
+     steklo-B): «окно в покое и при перемещении — одинаковый фон». Окно без
+     размытия на всех ширинах и во всех состояниях; заливка — РОВНАЯ, из
+     цвета поля темы (середина --win-pane-1 и --win-pane-2), плотность .98.
+     Вертикального градиента в теле больше нет: на большом тёмном окне (Эхо)
+     его тёмные тона ложились ступенями по одному уровню — «полосы». А .80
+     вверху пропускало значки стола сквозь верх окна (Поиск) — «призраки»:
+     теперь в каждой точке окна непрозрачность ≥ .97.
+     Охраняется tools/window-one-glass-check.mjs. */
+  --win-pane: color-mix(in srgb, color-mix(in srgb, var(--win-pane-1) 50%, var(--win-pane-2)) 98%, transparent);
+  /* Зерно стекла (D-809): незаметный шум, 2 % альфы, плитка 160 px. Он
+     дробит любой остаток перелива (обои сквозь 2 %, колонна списка) на
+     точки ниже одного уровня яркости — ступеней не видно ни в одной теме.
+     Шум — SVG feTurbulence, рисуется один раз и кладётся плиткой: кадров не
+     стоит. Серый (r = g = b), поэтому тон темы не сдвигает. */
+  --win-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1.4 1.4 1.4 0 -1.6 1.4 1.4 1.4 0 -1.6 1.4 1.4 1.4 0 -1.6 0 0 0 0 .02'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
+  /* Тело окна целиком: зерно · ровная заливка. Одно объявление — его носят
+     покой, полёт, рука и правило ≤ 860.
+     СВЕТ КОМНАТЫ СВЕРХУ СНЯТ С ТЕЛА ОКНА (D-809, второй снимок основателя
+     11.11.2026, пустое окно Записи): перелив --glass-tint → прозрачно к 58 %
+     обрывался на трети высоты — «широкая полоса через всё окно» (излом
+     наклона глаз видит как край), а верх был на 10–14 уровней светлее низа.
+     ОТКАТ: вернуть слой linear-gradient(180deg, var(--glass-tint),
+     transparent 58%) между зерном и заливкой, если основатель захочет свет
+     сверху обратно, — тогда плавным спадом на всю высоту, не к 58 %. */
+  --win-face: var(--win-grain), var(--win-pane);
   /* ── ГОЛОС СИСТЕМЫ — ПОВЕРХНОСТЬ, А НЕ СТЕКЛО (D-252) ─────────────────
      Извещение говорит от имени системы и обязано быть слышно над чем угодно.
      Замер: сквозь пустой участок извещения над белой плитой доходило 255 из
@@ -88,6 +111,7 @@
      3.9. Буква шва — тот же тон, светлее на пятую часть. В Светлице глина
      уже держит меру и на кальке, и на извести. */
   --accent-ink: color-mix(in srgb, var(--accent) 78%, #fff);
+  --accent-ink-deep: var(--accent-ink);   /* буква шва на стекле окна; в Светлице на ступень темнее (D-805 п.7, доска H4: os-settings-sync) */
   /* Стена Светлицы — одно число на обе темы (обе темы: глину для Светлицы
      шов готовит и тогда, когда на документе ещё Очаг, — в миг перехода и в
      живом чипе настроения; спрашивать ему стену не у кого, кроме этого
@@ -177,9 +201,10 @@
   /* Свет поля на предметах стола до первой записи поля (D-738): тёплый свет
      Тепла (MOOD_PALETTE.studio c0 / уголь), а не холодные запасные
      91,124,255 / 143,168,242 в правилах ниже. Поле пишет свои значения в
-     корень сразу, как надело комнату. */
-  --wp-light-rgb: 92, 47, 12;
-  --wp-light-2-rgb: 197, 117, 38;
+     корень сразу, как надело комнату. С D-824 — уголь и свет Мандарина
+     (было 92,47,12 / 197,117,38). */
+  --wp-light-rgb: 114, 48, 3;
+  --wp-light-2-rgb: 238, 136, 58;
   /* Воздух верхней полосы (D-147): чернила наверху, книзу в ноль. */
   --air-rgb: 8, 9, 12;
   /* Блик по верхней кромке окна: свет падает сверху. */
@@ -239,6 +264,16 @@
   --t-scene: .45s;
   --t-drift: .6s;
   --t-rise: 1s;
+  /* ── СКОРОСТИ ГОЛОСА · D-823 (доска H4, решение координатора п.3) ─────────
+     Темп голоса «живой» утверждён основателем по демо (D-823: нить слова,
+     сумрак под фразой, свет из-под двери) — его не подгоняют под шесть
+     скоростей ответа, а объявляют словами шкалы, по разу. Голос — не ответ
+     на касание, а речь дома: у неё свой выдох. Охраняется duration-scale-check. */
+  --t-voice-thread: .9s;      /* нить под словом-кнопкой прочерчивается */
+  --t-voice-dawn: .5s;        /* сумрак под фразой приходит */
+  --t-voice-dusk: 1.2s;       /* сумрак под фразой уходит */
+  --t-voice-door: 1.4s;       /* свет из-под двери разгорается */
+  --t-voice-door-rise: 1.8s;  /* свет из-под двери поднимается */
   /* ─── ШКАЛА РАЗМЕРА БУКВЫ (v119, D-230) ──────────────────────────────
      ПОВОД: «прошу совет довести дизайн каждого приложения до идеала».
      Идеал здесь — НЕ «красивее», а ИЗ ОДНОГО ВЕЩЕСТВА. Перепись нашла 371
@@ -598,13 +633,13 @@ html[data-theme="light"] {
      первой светлой темы и остаётся верным). Сквозь кальку видно свет и
      пятно солнца, но не подписи стола. */
   --glass: rgba(250, 250, 247, .82);
+  --glass-2: rgba(252, 252, 250, .93);
+  --glass-tint: rgba(var(--sun-rgb), .26);
   /* D-747: калька окна — та же плёнка .86/.90, но свет солнца подмешан
      к белой кальке (14 % и 11 %), а не к серому --bg-elev: при 18 % буквы окон Терминал и Фонарь
      падали до 4.14 и 4.47 при мере 4.5 (light-contrast). */
   --win-pane-1: color-mix(in srgb, rgb(var(--wp-light-rgb)) 14%, rgb(250, 250, 247));
   --win-pane-2: color-mix(in srgb, rgb(var(--wp-light-rgb)) 11%, rgb(246, 246, 242));
-  --glass-2: rgba(252, 252, 250, .93);
-  --glass-tint: rgba(var(--sun-rgb), .26);
   --voice: rgba(250, 250, 247, .96);
   --sun-rgb: 255, 240, 214;
   --on-accent: #fbfaf7;
@@ -614,6 +649,7 @@ html[data-theme="light"] {
   --accent-soft: rgba(168, 67, 28, .14);
   --accent-ring: rgba(168, 67, 28, .55);
   --accent-ink: var(--accent);
+  --accent-ink-deep: color-mix(in oklab, var(--accent-ink) 85%, #000);   /* «ещё не спрошено» на стекле Настроек — мера 4.5 (light-contrast); раньше — ветка темы в settings.css */
   --danger: #b03a2e;
   --warn: #8a6a00;
   --good: #2d7a52;
@@ -2873,13 +2909,16 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
      прозрачное, как было (плотное — только при «меньше прозрачности»).
      Охраняется tools/okna-sintez-check.mjs. */
   border-radius: var(--r-card);
-  /* Окно сделано из комнаты: сверху её свет, книзу он сходит на нет, и под
-     всем этим тончайшая плёнка. Плита превращается в воздух, но край и блик
+  /* Окно сделано из комнаты: сверху её свет, книзу он сходит на нет, под
+     ним — ровное стекло из цвета поля темы (D-747, D-809). Край и блик
      остаются — иначе окно перестанет читаться как предмет. */
-  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--win-pane);  /* D-747: была плёнка --glass .04 */
+  background: var(--win-face);
   border: 0; box-shadow: inset 0 0 0 1px var(--win-edge), var(--win-shadow);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  /* Стекло «B» (D-809): размытия нет ни на одной ширине и ни в одном
+     состоянии — при .98 сквозь окно размывать нечего, а в руке оно стоило
+     кадров (D-720). ОТКАТ: вернуть blur(var(--glass-blur)) saturate(1.6),
+     если основатель снова захочет видеть стол сквозь окно. */
+  backdrop-filter: none; -webkit-backdrop-filter: none;
 }
 .window::before { content: none; }
 /* ── ПОКА ОКНО ЛЕТИТ, ОНО НЕ РАЗМЫВАЕТ (v47.1 открытие; v47.2 все пути) ──
@@ -2892,13 +2931,13 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
    window-motion-check спросил: а чем сворачивание хуже? Ничем. Класс
    traveling — то же правило для ЛЮБОГО полёта окна: свернуть, вернуть,
    закрыть, развернуть. Полёт длится 260 мс и заканчивается ровно там, где
-   окно и должно стоять, — разницу увидеть невозможно, а кадры возвращаются. */
+   окно и должно стоять, — разницу увидеть невозможно, а кадры возвращаются.
+   С D-809 размытия нет и у стоящего окна; правило осталось ради will-change. */
 .window.opening,
 .window.traveling {
-  backdrop-filter: none; -webkit-backdrop-filter: none;
-  /* Свет комнаты летит вместе с окном (D-272): градиент не стоит кадров,
-     и окно не «загорается» в конце полёта. */
-  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--win-pane);  /* D-747: та же заливка, что в покое */
+  /* Свет комнаты летит вместе с окном (D-272), и стекло в полёте то же, что
+     в покое (D-747, D-809): размытия нет и у стоящего окна, заливка — одна
+     (--win-face в правиле .window), здесь её повторять нечего. */
   will-change: transform, opacity;
 }
 /* ── НЕАКТИВНОЕ ОКНО НЕ ТЕМНЕЕТ · D-721 (откат D-251/D-259) ──────────────
@@ -2964,12 +3003,10 @@ html.sb-fullscreen-window #topbar {
    ПОЯВЛЯЛОСЬ ровно на время перетаскивания. Теперь на это время размытие
    заменяется плотным стеклом того же вида (свет комнаты сверху тот же, что у
    летящего окна, D-272) и возвращается при отпускании.
-   Охраняется tools/window-drag-lag-check.mjs. */
-html.dragging .window {
-  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
-  /* D-747: в руке — то же стекло, что в покое (было --bg-elev — тёмная плита). */
-  background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--win-pane);
-}
+   С D-809 размытия у окна нет вовсе — возвращать нечего: в руке то же
+   стекло, что в покое. Охраняется tools/window-drag-lag-check.mjs. */
+/* D-747, D-809: в руке — то же стекло, что в покое; размытия нет и в покое,
+   поэтому отдельной заливки «для руки» больше нет (была --bg-elev — плита). */
 html.dragging .window.dragged { will-change: transform; }
 /* Полоса окна 48 px (D-610): кнопки окна под палец — на всех устройствах одинаково (D-272). */
 .titlebar {
@@ -3344,6 +3381,18 @@ html.dock-away #dock:focus-within .dock-tile, html.dock-away #dock:focus-within 
   html.dock-away:where(:not([data-input="touch"])) #dock:hover .dock-tile, html.dock-away:where(:not([data-input="touch"])) #dock:hover .dock-label { filter: none; }
 }
 @media (prefers-reduced-motion: reduce) { html.dock-away #dock { transform: translate(-50%, 0); } }
+/* ── ПОЛКА УСТУПАЕТ ГОЛОСУ · решение D-807 ──────────────────────────────
+   Голос говорит у самого низа (voice.css, --voice-floor) — там, где на
+   телефоне стоит полка. Пока звучит короткая фраза, полка мягко опускается
+   за край и гаснет; фраза растаяла — полка возвращается сама. Касание или
+   фокус в зоне полки возвращают её сразу (voice.js, reclaimDock). Фраза,
+   которая ждёт ответа, полку не прячет — она встаёт над ней. Класс ставит
+   только voice.js. Охраняется tools/voice-dock-check.mjs. */
+html.sb-dock-yield:not(.dock-empty) #dock {
+  opacity: 0; pointer-events: none;
+  transform: translate(-50%, calc(100% + max(14px, env(safe-area-inset-bottom))));
+}
+html[data-motion="reduced"].sb-dock-yield #dock { transition-duration: var(--t-touch); }
 .dock-shelf {
   --dock-gap: 8px;
   display: flex; align-items: flex-end; gap: var(--dock-gap); padding: 8px 10px;
@@ -4034,8 +4083,8 @@ html[data-motion="reduced"] .dock-item { transform: none !important; }
      Охраняется tools/window-glass-tablet-check.mjs. */
   .window, .window.focused, .window.opening, .window.traveling, html.dragging .window {
     box-shadow: inset 0 0 0 var(--tile5-edge-w) var(--tile5-edge), inset 0 1px 0 rgba(var(--edge-rgb), .10);
-    backdrop-filter: none; -webkit-backdrop-filter: none;
-    background: linear-gradient(180deg, var(--glass-tint), transparent 58%), var(--win-pane);
+    /* Стекло и отсутствие размытия — те же, что шире 860 (D-809): правило
+       .window; здесь только кромка и тень. */
   }
 }
 /* Icon step-down (§4.2, the "681 px lesson"): the small-icon regime must extend
@@ -4677,10 +4726,7 @@ body.sb-alarm-flash::after {
   --door-thread: rgba(255,240,222,.95);
   --door-thread-glow: 0 0 12px 1px rgba(255,226,190,.6), 0 0 40px 6px rgba(255,214,170,.22);
   --door-ink: #fbf5ec;
-  /* Поле «стекло со световой чертой» (G6) и кнопка «светильник» (G9). */
-  --field5-bg: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
-  --field5-line: linear-gradient(90deg, transparent, rgba(255,236,214,.55) 22%, rgba(255,236,214,.55) 78%, transparent);
-  --field5-line-on: linear-gradient(90deg, transparent, rgba(255,240,222,.95) 18%, rgba(255,240,222,.95) 82%, transparent);
+  /* Кнопка «светильник» (G9). Поле теперь одно (D-819, --field-face). */
   --lamp5-bg: radial-gradient(70% 120% at 50% 118%, rgba(255,228,192,.30), rgba(255,220,180,.08) 55%, transparent 80%), linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01));
   --lamp5-edge: inset 0 0 0 1px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.14);
   --lamp5-ink: #fbf6ef;
@@ -4712,9 +4758,6 @@ html[data-theme="light"] {
   --door-thread: rgba(176,96,40,.9);
   --door-thread-glow: 0 0 10px 1px rgba(214,140,70,.35);
   --door-ink: #2a1d14;
-  --field5-bg: linear-gradient(180deg, rgba(255,255,255,.6), rgba(255,255,255,.4));
-  --field5-line: linear-gradient(90deg, transparent, rgba(150,90,40,.45) 22%, rgba(150,90,40,.45) 78%, transparent);
-  --field5-line-on: linear-gradient(90deg, transparent, rgba(176,96,40,.9) 18%, rgba(176,96,40,.9) 82%, transparent);
   --lamp5-bg: radial-gradient(70% 120% at 50% 118%, rgba(214,140,70,.22), rgba(214,140,70,.06) 55%, transparent 80%), linear-gradient(180deg, rgba(255,255,255,.7), rgba(255,255,255,.45));
   --lamp5-edge: inset 0 0 0 1px rgba(60,40,20,.12), inset 0 1px 0 rgba(255,255,255,.9);
   --lamp5-ink: #2a1d14;
@@ -4871,18 +4914,89 @@ html[data-motion="reduced"] .toast::after { animation: none; }
   :where(html:not([data-input="touch"])) .light:hover { background: radial-gradient(70% 90% at 50% 110%, rgba(var(--edge-rgb), .16), transparent 80%), var(--glass-2); }
 }
 
-/* ── ПОЛЕ G6 «СТЕКЛО СО СВЕТОВОЙ ЧЕРТОЙ» · D-728 ─────────────────────────
-   Не серый прямоугольник с рамкой: стекло без кромки, под строкой — черта
-   света, ярче к середине; в фокусе черта разгорается. */
-#windowLayer :is(input[type="text"], input[type="search"], input[type="password"], input[type="email"], input[type="url"], input:not([type]), textarea):not(.ow-sw) {
-  background-color: transparent;
-  background-image: var(--field5-line), var(--field5-bg);
-  background-repeat: no-repeat; background-size: 100% 1px, 100% 100%; background-position: bottom center, center;
-  border-color: transparent; border-radius: var(--r-card);
+/* ── ОДНО ПОЛЕ НА ВСЮ СИСТЕМУ · D-819 (было «поле G6 со световой чертой», D-728)
+   Основатель 11.11.2026 (снимок с планшета: Поиск «Искать везде», Записи
+   «Найти заметку», «Новая заметка», «Начните писать…»): у каждого поля своя
+   заливка, черта и отступ подсказки — «нигде такого быть не должно».
+   Теперь вид поля один, и задан только здесь:
+     • поверхность --field-face — то же стекло окна, на ступень светлее
+       (тёплая плёнка, без своей «плиты» и без кромки);
+     • черты под строкой нет (световая черта G6 снята);
+     • радиус --r-ctrl, высота строки --field-h, отступ слева --field-pad-x;
+     • кегль один — --field-fs (--f-ui, кегль кнопок; на касании --f-lead,
+       иначе телефон увеличивает страницу); подсказка того же кегля, цвета
+       --ink-3, по центру строки;
+       у многострочного поля — в первой строке, с тем же отступом;
+     • в фокусе — свет по кромке цветом акцента темы (D-746, правило ниже).
+   Кегль не --f-lead и не --f-read на мыши: в узкой колонне Разговора
+   (208 px) «Найти переписку» при 16 px и «Search conversations» при 13.5 px
+   не помещаются (placeholder-fits).
+   Терминал (.term-input) и переключатель витрины (.ow-sw) — не поля этого
+   вида: у строки терминала свой моноширинный голос, у .ow-sw — вид кнопки.
+   Поле панели часов (#sbClockPanel .ck-field) живёт в своей палитре панели
+   (--ck-ink) и пока остаётся её; привести его к этому виду — дело панели.
+   Охраняется tools/field-one-look-check.mjs. */
+/* Поверхность поля — на ступень СВЕТЛЕЕ стекла (D-819, основатель 11.11.2026
+   после демо: «поля слишком тёмные» — тёмный колодец читался дырой в
+   стекле): тёплая плёнка света кромки (--edge-rgb) поверх стекла окна,
+   +6 % в тёмных темах; в Светлице — бумага светлее кальки. Без черты.
+   ОТКАТ: было на шаг глубже (84 % к чёрному, Светлица — 91 % к --film-rgb). */
+:root { --field-h: 36px; --field-pad-x: 12px; --field-fs: var(--f-ui); --field-face: color-mix(in srgb, color-mix(in srgb, var(--win-pane-1) 50%, var(--win-pane-2)) 94%, rgb(var(--edge-rgb))); }
+html.is-touch { --field-fs: var(--f-lead); }
+html[data-theme="light"] { --field-face: color-mix(in srgb, color-mix(in srgb, var(--win-pane-1) 50%, var(--win-pane-2)) 30%, #fffdf9); }
+#windowLayer :is(input[type="text"], input[type="search"], input[type="password"], input[type="email"], input[type="url"], input[type="tel"], input[type="number"], input[type="date"], input:not([type]), textarea, [contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]):not(.term-input, .ow-sw) {
+  box-sizing: border-box; min-height: var(--field-h);
+  padding: 0 var(--field-pad-x);
+  background: var(--field-face); background-image: none;
+  border: 0; border-radius: var(--r-ctrl);
+  color: var(--ink); font-family: inherit; font-size: var(--field-fs, var(--f-ui)); line-height: var(--lh-ui);   /* кегль поля — ступень шкалы: --f-ui, на касании --f-lead (через --field-fs; type-scale, доска H4) */
+  outline: none;
 }
-#windowLayer :is(input[type="text"], input[type="search"], input[type="password"], input[type="email"], input[type="url"], input:not([type]), textarea):focus {
-  background-image: var(--field5-line-on), var(--field5-bg); background-size: 100% 1.5px, 100% 100%;
+#windowLayer :is(input[type="text"], input[type="search"], input[type="password"], input[type="email"], input[type="url"], input[type="tel"], input[type="number"], input[type="date"], input:not([type])):not(.term-input, .ow-sw) { height: var(--field-h); }
+/* Многострочное поле: строка чтения, первая строка стоит там же, где строка
+   однострочного поля, — сверху и снизу по (--field-h − 1lh) / 2.
+   (:not(input) — не смысл, а вес: правило обязано перевесить общее выше.) */
+#windowLayer :is(textarea, [contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]):not(.term-input, .ow-sw):not(input) {
+  line-height: var(--lh-read);
+  padding-block: calc((var(--field-h) - 1lh) / 2);
 }
+#windowLayer :is(input[type="text"], input[type="search"], input[type="password"], input[type="email"], input[type="url"], input[type="tel"], input[type="number"], input[type="date"], input:not([type]), textarea, [contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]):not(.term-input, .ow-sw)::placeholder {
+  color: var(--ink-3); opacity: 1; font-size: var(--field-fs, var(--f-ui)); font-weight: var(--w-text); font-style: normal;
+}
+/* Свет по кромке (D-746) — и над теми полями, у которых было своё кольцо
+   фокуса (2 px акцента, тень --accent-soft): у поля один фокус. */
+#windowLayer :is(input[type="text"], input[type="search"], input[type="password"], input[type="email"], input[type="url"], input[type="tel"], input[type="number"], input[type="date"], input:not([type]), textarea, [contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]):not(.term-input, .ow-sw):focus {
+  outline: 1px solid transparent; outline-offset: 0; box-shadow: var(--field-edge-on);
+  background: var(--field-face); background-image: none;
+}
+#windowLayer :is(input[type="text"], input[type="search"], input[type="password"], input[type="email"], input[type="url"], input[type="tel"], input[type="number"], input[type="date"], input:not([type]), textarea, [contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]):not(.term-input, .ow-sw).sb-kfocus:focus {
+  box-shadow: var(--brass), var(--field-edge-on);
+}
+/* ── РЕДАКТОР ЗАПИСИ — ОДНА ПОВЕРХНОСТЬ · D-820 ───────────────────────────
+   Основатель 11.11.2026 (снимок с планшета, окно Записи): заголовок «Новая
+   заметка» и «Начните писать…» были двумя плитами с разными краями — слева
+   и справа уступы и стык. Теперь это ОДНО поле: лист .notes-sheet несёт
+   поверхность, радиус и свет по кромке (когда курсор в заголовке ИЛИ в
+   тексте), а заголовок и текст внутри — прозрачны, без своих краёв.
+   Заголовок отделён только кеглем (--f-lead), весом и воздухом; отступ
+   слева — тот же --field-pad-x, что у любого поля. Охраняется
+   tools/field-one-look-check.mjs. */
+#windowLayer .notes-sheet {
+  flex: 1; min-height: 0; display: flex; flex-direction: column;
+  background: var(--field-face); border-radius: var(--r-ctrl); overflow: hidden;
+}
+#windowLayer .notes-sheet:focus-within { box-shadow: var(--field-edge-on); }
+#windowLayer .notes-sheet:has(.sb-kfocus:focus) { box-shadow: var(--brass), var(--field-edge-on); }
+#windowLayer .notes-sheet :is(input.notes-title, textarea.notes-body),
+#windowLayer .notes-sheet :is(input.notes-title, textarea.notes-body):focus,
+#windowLayer .notes-sheet :is(input.notes-title, textarea.notes-body).sb-kfocus:focus {
+  background: transparent; border-radius: 0; box-shadow: none; width: 100%; margin: 0;
+}
+#windowLayer .notes-sheet input.notes-title {
+  height: auto; min-height: 0; padding: 14px var(--field-pad-x) 2px;
+  font-size: var(--f-lead); font-weight: var(--w-strong);
+}
+#windowLayer .notes-sheet input.notes-title::placeholder { font-size: var(--f-lead); font-weight: var(--w-strong); }
 
 /* ── ПЛАШКИ G8 «СЛОВА И ПОДНОС» · D-728 ──────────────────────────────────
    Ряд обведённых капсул стал словами на одном подносе: у слова нет своей
@@ -4911,3 +5025,77 @@ html[data-motion="reduced"] .toast::after { animation: none; }
 .toast-text { margin-top: 0; }
 .toast-text:not(:empty)::before { content: "— "; }
 .toast-title { text-shadow: 0 0 18px rgba(var(--edge-rgb), .35); font-weight: var(--w-text); }
+
+/* ── ПАНЕЛЬ ЧАСОВ · КРАСКА · D-853 (доска H4: paint-tokens) ────────────────
+   «Ночные часы на стекле» — тёмное стекло панели в любой теме, свет — по
+   настроению стола. Числа демо перенесены из clock.css в словарь как есть:
+   комната берёт слово, а не число. */
+#sbClockPanel {
+  --ck-ink: #f4f1ec; --ck-ink7: rgba(244, 241, 236, .74); --ck-ink5: rgba(244, 241, 236, .54); --ck-ink3: rgba(244, 241, 236, .4);
+  --ck-ink-on: #fbf6ef; --ck-spark: #fff3e4;
+  --ck-glow: 255, 226, 190; --ck-edge: 255, 234, 206; --ck-lit: linear-gradient(180deg, #FFF9F1, #EED6BC);
+  --ck-thread: rgba(255, 240, 222, .95);
+  --ck-lamp: radial-gradient(70% 120% at 50% 118%, rgba(255, 228, 192, .30), rgba(255, 220, 180, .08) 55%, transparent 80%), linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, .01));
+  --ck-lamp-rim: inset 0 0 0 1px rgba(255, 255, 255, .08), inset 0 1px 0 rgba(255, 255, 255, .14);
+  --ck-lamp-rim-0: inset 0 0 0 1px rgba(255, 255, 255, .08);
+  --ck-line: linear-gradient(90deg, transparent, rgba(255, 236, 214, .55) 22%, rgba(255, 236, 214, .55) 78%, transparent);
+  --ck-line-on: linear-gradient(90deg, transparent, rgba(255, 240, 222, .95) 18%, rgba(255, 240, 222, .95) 82%, transparent);
+  --ck-brass: 0 0 0 1.5px rgba(212, 184, 146, .92), 0 0 0 3px rgba(40, 30, 22, .55), 0 0 22px 3px rgba(232, 196, 150, .18);
+  --ck-glass: radial-gradient(60% 45% at 78% -8%, rgba(var(--ck-glow), .10), transparent 70%), linear-gradient(180deg, rgba(36, 31, 36, .95), rgba(21, 19, 24, .97));
+  --ck-rim: inset 0 0 0 1px rgba(255, 255, 255, .10), inset 0 1px 0 rgba(255, 255, 255, .14), 0 30px 70px -24px rgba(0, 0, 0, .6);
+  --ck-tray: linear-gradient(180deg, rgba(255, 255, 255, .045), rgba(255, 255, 255, .015));
+  --ck-tray-rim: inset 0 0 0 1px rgba(255, 255, 255, .07), inset 0 1px 0 rgba(255, 255, 255, .08);
+  --ck-word-on: radial-gradient(80% 120% at 50% 120%, rgba(var(--ck-glow), .14), transparent 75%), rgba(255, 255, 255, .045);
+  --ck-field: linear-gradient(180deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .025));
+  --ck-hover: rgba(255, 255, 255, .05);
+}
+#sbClockPanel[data-mood="ocean"] { --ck-glow: 150, 214, 240; --ck-edge: 200, 236, 250; --ck-thread: rgba(222, 246, 255, .95); --ck-lit: linear-gradient(180deg, #F6FDFF, #CBE7F2);
+  --ck-lamp: radial-gradient(70% 120% at 50% 118%, rgba(170, 222, 245, .26), rgba(150, 210, 240, .07) 55%, transparent 80%), linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, .01));
+  --ck-line: linear-gradient(90deg, transparent, rgba(214, 240, 252, .5) 22%, rgba(214, 240, 252, .5) 78%, transparent);
+  --ck-line-on: linear-gradient(90deg, transparent, rgba(226, 246, 255, .95) 18%, rgba(226, 246, 255, .95) 82%, transparent); }
+#sbClockPanel[data-mood="aurora"] { --ck-glow: 160, 236, 206; --ck-edge: 206, 246, 230; --ck-thread: rgba(224, 255, 242, .95); --ck-lit: linear-gradient(180deg, #F4FFFA, #C6EEDC); }
+#sbClockPanel[data-mood="eclipse"], #sbClockPanel[data-mood="ember"] { --ck-glow: 255, 196, 150; --ck-lit: linear-gradient(180deg, #FFF4EA, #F0C9A4); }
+
+/* ── ЗАМЕТКА НА СТОЛЕ · КРАСКА · D-850…852 (доска H4: paint-tokens) ────────
+   «Свет по кромке»: в тёмных темах буквы светлые на тонкой подложке, в
+   Светлице подложка светлая, буквы графитовые. Числа и ветка темы перенесены
+   из desk.css в словарь как есть; --nx, --warm, --nl, --veil ставит лист. */
+#sbNoteLayer .sticky-note {
+  --ink-n: #f8f4ee; --ink-n2: rgba(248, 244, 238, .58);
+  --nv-face: radial-gradient(90% 80% at calc(var(--nx) * 100%) 0%, rgba(var(--warm), .09), transparent 70%), linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .01)), rgba(var(--veil), var(--veil-a));
+  --nv-glow: 0 0 24px -4px rgba(var(--warm), .16), 0 0 34px -10px rgba(var(--nl), .30), 0 16px 30px -18px rgba(0, 0, 0, .55);
+  --nv-glow-focus: 0 0 34px -6px rgba(var(--nl), .38), 0 16px 30px -18px rgba(0, 0, 0, .55);
+  --nv-drag-shadow: 0 22px 36px -20px rgba(0, 0, 0, .72);
+  --nv-due: 0 0 0 1px rgba(var(--accent-rgb), .5), 0 16px 30px -18px rgba(0, 0, 0, .6);
+  --nv-late: 0 0 0 1px rgba(var(--bad-rgb), .45), 0 16px 30px -18px rgba(0, 0, 0, .6);
+  --nv-rim: conic-gradient(from calc(190deg + var(--nx) * 80deg), rgba(255, 246, 234, 1), rgba(var(--warm), .62) 14%, rgba(var(--nl), .30) 30%, rgba(var(--warm), .10) 50%, rgba(var(--nl), .34) 74%, rgba(var(--warm), .7) 88%, rgba(255, 246, 234, 1));
+  --nv-text-shadow: 0 1px 2px rgba(0, 0, 0, .38);
+  --nv-ph: rgba(248, 244, 238, .5);
+  --nv-chip-bg: rgba(255, 255, 255, .05); --nv-chip-rim: rgba(255, 255, 255, .10);
+  --nv-body-full: rgba(248, 244, 238, .8);
+  --nv-light-glow: drop-shadow(0 0 3px rgba(255, 226, 190, .38)) drop-shadow(0 1px 1.5px rgba(0, 0, 0, .75));
+  --nv-hint: rgba(248, 244, 238, .62); --nv-hint-shadow: 0 1px 2px rgba(0, 0, 0, .45);
+}
+html[data-theme="light"] #sbNoteLayer .sticky-note {
+  --veil: 250, 249, 246; --veil-a: .74; --ink-n: #1e1d1a; --ink-n2: rgba(30, 29, 26, .62);
+  --nv-text-shadow: none; --nv-ph: rgba(30, 29, 26, .45); --nv-body-full: rgba(30, 29, 26, .82);
+  --nv-light-glow: drop-shadow(0 0 2px rgba(255, 255, 255, .8));
+  --nv-hint: rgba(30, 29, 26, .62); --nv-hint-shadow: none;
+}
+.note-invite {
+  --ni-ink: rgba(252, 248, 242, .92); --ni-ink-on: #fffaf3; --ni-shadow: 0 1px 6px rgba(0, 0, 0, .65), 0 0 2px rgba(0, 0, 0, .4);
+  --ni-dot: #fff8ec; --ni-dot-glow: 0 0 6px 1.5px rgba(255, 238, 214, .55), 0 0 0 .5px rgba(255, 250, 240, .6);
+  --ni-halo: radial-gradient(closest-side, rgba(255, 236, 212, .26), rgba(255, 236, 212, .06) 60%, transparent);
+  --ni-word-line: linear-gradient(90deg, rgba(255, 234, 208, .42), transparent);
+}
+html[data-theme="light"] .note-invite {
+  --ni-ink: rgba(30, 29, 26, .9); --ni-ink-on: rgba(30, 29, 26, .9); --ni-shadow: 0 0 6px rgba(255, 255, 255, .85);
+  --ni-dot: #3a2a1a; --ni-dot-glow: 0 0 6px 1.5px rgba(255, 190, 120, .55);
+}
+
+/* ── ГОЛОС · СВЕТЛИЦА · D-823 (доска H4: paint-tokens) ─────────────────────
+   Голос не тёмный брус: под строкой светлая дымка бумаги, свет — акцентом.
+   Ветка темы перенесена из voice.css в словарь как есть. */
+html[data-theme="light"] #sbVoiceShade { --sbv-shade: rgba(var(--well-rgb), .5); --sbv-pool: rgba(var(--accent-rgb), .05); --sbv-lit: rgba(var(--accent-rgb), .08); }
+html[data-theme="light"] #sbVoiceShade.deep { --sbv-shade: rgba(var(--well-rgb), .82); }
+html[data-theme="light"] { --sbv-thread: rgba(var(--accent-rgb), .85); --sbv-thread-glow: rgba(var(--accent-rgb), .3); }

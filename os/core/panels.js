@@ -372,11 +372,14 @@
   });
   if (timePanel) {
     window.sbPanels = window.sbPanels || {};
+    /* ПРЕЖНИЙ КАЛЕНДАРЬ ВЫКЛЮЧЕН (сборка H4, D-853): касание времени ведёт в
+       панель часов core/clock.js (sbClock), и она же отвечает тем, кто зовёт
+       sbPanels.sbTimeOverlay.open(). Здесь остаётся только запас — если
+       панели часов в странице нет, касание открывает прежний календарь. */
     var btn = doc.getElementById("sbClockBtn");
-    if (btn) btn.addEventListener("click", function () { timePanel.open(); });
-    /* Пока панель открыта, крупное время идёт: стоящие часы в окне «время» —
-       это ровно та ложь, ради которой окно и открывают. */
+    if (btn) btn.addEventListener("click", function () { if (!window.sbClock) timePanel.open(); });
     setInterval(function () {
+      if (window.sbClock) return;
       var ov = doc.getElementById("sbTimeOverlay");
       if (ov && ov.classList.contains("open")) paintTime();
     }, 1000);
@@ -425,7 +428,8 @@
   }
   function notifSave(list) { writeJSON(NOTIF_KEY, list.slice(0, 30)); }
 
-  function unseenCount() { return notifList().filter(function (n) { return !n.seen; }).length; }
+  /* важное, которого ещё не коснулись, считается, пока его не прочитали (D-814) */
+  function unseenCount() { return notifList().filter(function (n) { return !n.seen || (n.safe && !n.read); }).length; }
   function paintBell() {
     var badge = $("#sbBellBadge");
     if (!badge) return;
@@ -457,8 +461,20 @@
   function recordToast(node) {
     var kind = node.getAttribute("data-kind") || "confirm";
     if (kind !== "event") return;
-    var title = node.getAttribute("data-title") || "";
-    var text = node.getAttribute("data-text") || "";
+    /* голос уже записал сам — с ключами слов и пометкой важного (D-813) */
+    if (node.hasAttribute("data-voice-logged") || node.hasAttribute("data-voice-warm")) return;
+    record({ title: node.getAttribute("data-title") || "", text: node.getAttribute("data-text") || "" });
+  }
+  /* ── ВЕЧЕРНИЙ ВЫПУСК (D-813, v178-H4a) ────────────────────────────────
+     Решение основателя 11.11.2026: колокольчик — «вечерний выпуск», журнал
+     всего, что голос дома сказал по делу. Событие, пришедшее само, и важное
+     для безопасности — строка выпуска; ответ на своё же нажатие — нет
+     (v47.3); тёплые слова голоса сюда не приходят и не хранятся нигде.
+     Строка помнит ключи своих слов (tk/xk): смена языка перерисовывает её.
+     Важное (safe) остаётся непрочитанным, пока его не коснулись. Голос пишет
+     сюда сам (sbNotifRecord) — и тогда, когда «Не беспокоить» его заглушило. */
+  function record(e) {
+    var title = String(e.title == null ? "" : e.title), text = String(e.text == null ? "" : e.text);
     var list = notifList();
     var same = null;
     for (var i = 0; i < list.length; i++) {
@@ -479,11 +495,38 @@
         seen: false
       });
     }
+    var row = list[0];
+    if (e.safe) { row.safe = true; row.read = false; row.seen = false; }
+    if (e.tk) row.tk = e.tk;
+    if (e.xk) row.xk = e.xk;
     notifSave(list);
     paintBell();
     if (notifPanel && notifPanel.isOpen()) paintNotifPanel();
+    return row.id;
+  }
+  window.sbNotifRecord = function (e) { return e ? record(e) : null; };
+  window.sbNotifRead = function (id) {
+    var list = notifList(), hit = false;
+    list.forEach(function (n) { if (n.id === id) { n.read = true; n.seen = true; hit = true; } });
+    if (hit) { notifSave(list); paintBell(); if (notifPanel && notifPanel.isOpen()) paintNotifPanel(); }
+    return hit;
+  };
+  window.sbNotifList = function () { return notifList().map(function (n) { return { id: n.id, title: said(n, "title"), text: said(n, "text"), ts: n.ts, seen: !!n.seen, safe: !!n.safe, read: !!n.read }; }); };
+  /* строка на языке, который сейчас: из ключа, если голос его знал */
+  function said(n, f) {
+    var k = f === "title" ? n.tk : n.xk;
+    if (k && k.k) { var v = tr(k.k, k.v || undefined); if (v && v !== k.k) return v; }
+    return n[f];
   }
 
+  /* колокольчик зовётся «вечерний выпуск» (решение основателя 11.11.2026) — на любом языке */
+  function bellName() {
+    var head = $("#sbNotifTitle");
+    if (head && head.getAttribute("data-i18n") !== "voice.bell") head.setAttribute("data-i18n", "voice.bell");
+    if (head) head.textContent = tr("voice.bell");
+  }
+  bellName();
+  if (window.sbBus && window.sbBus.on) window.sbBus.on("translate:done", function () { bellName(); if (notifPanel && notifPanel.isOpen()) paintNotifPanel(); });
   function observeToasts() {
     var host = $("#toastLayer");
     if (!host || !window.MutationObserver) return;
@@ -501,19 +544,26 @@
     var body = panelBody("sbNotifOverlay");
     if (!body) return;
     var list = notifList();
+    bellName();
+    var foot = '<p class="panel-copy dim sbv-foot">' + esc(tr("voice.bellFoot")) + "</p>";
     if (!list.length) {
-      body.innerHTML = '<div class="panel-scroll"><p class="panel-empty">' + esc(tr("p.noNotifications")) + '</p></div>';
+      body.innerHTML = '<div class="panel-scroll"><p class="panel-empty">' + esc(tr("p.noNotifications")) + "</p>" + foot + "</div>";
       return;
     }
     body.innerHTML = '<div class="panel-scroll">' + list.map(function (n) {
-      return '<div class="notif-row" data-id="' + esc(n.id) + '">' +
-        '<div class="notif-main"><div class="notif-title">' + esc(n.title) + "</div>" +
-        '<div class="notif-text">' + esc(n.text) + "</div></div>" +
+      var unread = n.safe && !n.read;
+      return '<div class="notif-row' + (n.safe ? " sbv-safe" : "") + (unread ? " sbv-unread" : "") + '" data-id="' + esc(n.id) + '">' +
+        '<div class="notif-main"><div class="notif-title">' + esc(said(n, "title")) + "</div>" +
+        '<div class="notif-text">' + esc(said(n, "text")) + (unread ? " · " + esc(tr("voice.unread")) : "") + "</div></div>" +
         '<div class="notif-time">' + esc(timeAgo(n.ts)) + "</div>" +
+        (unread ? '<button class="btn tiny sbv-read" type="button" data-read="' + esc(n.id) + '">' + esc(tr("voice.read")) + "</button>" : "") +
         '<button class="notif-x" type="button" aria-label="' + esc(tr("p.dismiss")) + '">✕</button></div>';
-    }).join("") + "</div>" +
+    }).join("") + foot + "</div>" +
       '<div class="panel-foot"><button class="btn ghost" type="button" id="sbNotifClear">' + esc(tr("p.clearAll")) + '</button></div>';
 
+    $$(".sbv-read", body).forEach(function (b) {
+      b.addEventListener("click", function (ev) { ev.stopPropagation(); window.sbNotifRead(b.getAttribute("data-read")); });
+    });
     $$(".notif-row", body).forEach(function (row) {
       row.addEventListener("click", function () {
         var id = row.getAttribute("data-id");
@@ -2259,7 +2309,9 @@
     K.fresh().then(function (fresh) {
       if (!fresh.length) return;
       var shown = fresh.slice(-3).map(knockWhen).join(", ");
-      if (window.showToast) window.showToast(tr("knock.title"), tr("knock.body", { n: fresh.length, when: shown }), "", true, "", "event");
+      var h = window.showToast ? window.showToast(tr("knock.title"), tr("knock.body", { n: fresh.length, when: shown }), "", true, "", "event") : null;
+      /* голос говорит о стуке своей фразой; «на людях» — без времени (D-816) */
+      if (h && window.sbVoice && window.sbVoice.retell) window.sbVoice.retell(h, function () { return window.sbVoice.form("voice.knock", { n: fresh.length, when: shown }); }, "knock", { sticky: true });
       K.seen();
     });
   }

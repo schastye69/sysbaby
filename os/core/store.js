@@ -130,6 +130,24 @@
   function showBootReport(rec) {
     if (reporterShown) return;
     reporterShown = true;
+    /* ── ОТЧЁТ О ЗАПУСКЕ — ГОЛОСОМ (D-822) ──────────────────────────────
+       Модуль упал при запуске, а голос встал — отчёт говорит он: важное,
+       не тает до касания, слово-кнопка «Reload». Своя коробка #sbBootFail
+       остаётся только запасом на случай, когда не встал и сам голос: иначе
+       человек смотрел бы в пустой экран без единого слова. */
+    var said = 0;
+    var voice = function () {
+      var V = window.sbVoice;
+      if (V && typeof V.say === "function" && document.body) {
+        var where0 = rec.where || "unknown module";
+        try {
+          if (V.say("sys.baby did not finish starting (" + where0 + "). Nothing was lost — [Reload]", { sticky: true, kind: "event", on: function () { window.location.reload(); } })) return;
+        } catch (e) { /* голос упал — запас ниже */ }
+      }
+      /* ОТКАТ: голос восемь секунд не может сказать (не встал или молчит у ворот) — тогда коробка. */
+      if (++said < 80) { setTimeout(voice, 100); return; }
+      paint();
+    };
     var paint = function () {
       if (!document.body) { setTimeout(paint, 50); return; }
       var box = document.createElement("div");
@@ -140,7 +158,7 @@
         "\nNothing was lost. Reloading usually works — and this text is exactly what is needed to fix the cause.";
       document.body.appendChild(box);
     };
-    paint();
+    voice();
   }
 
   function shortWhere(src, line, col) {
@@ -192,21 +210,27 @@
     window.sbStorageFailed = true;
     var title = "Couldn't save";
     var text = "Storage may be full or restricted in this browser.";
-    var done = false;
-    if (typeof window.showToast === "function") {
-      try { window.showToast(title, text, "", true, "toast-warn", "event"); done = true; } catch (e) { done = false; }
-    }
-    if (done) return;
-    var paint = function () {
-      if (!document.body) { setTimeout(paint, 60); return; }
-      if (document.getElementById("sbQuotaBanner")) return;
-      var b = document.createElement("div");
-      b.id = "sbQuotaBanner";
-      b.setAttribute("role", "alert");
-      b.textContent = title + " — " + text;
-      document.body.appendChild(b);
+    /* ── БЕДА ГОВОРИТ ГОЛОС, А НЕ ПОЛОСА (D-822, основатель 11.11.2026:
+       «не будут всплывать абсолютно никакие оповещения… кроме самого
+       голоса») ──────────────────────────────────────────────────────────
+       Здесь была своя полоса #sbQuotaBanner — на случай, когда запись не
+       легла раньше, чем встал блок извещений. Теперь слово ждёт блока
+       (shell.js отдаёт его голосу: важное, не тает до касания) и не рисует
+       ничего своего. Охраняется tools/only-voice-check.mjs. */
+    var tries = 0;
+    var tell = function () {
+      if (typeof window.showToast === "function") {
+        /* слова — на языке человека, когда словарь уже есть (английские — запас) */
+        var T = window.sbT, tt = T ? T("nt.save.failTitleShort") : "", tx = T ? T("nt.save.failBody") : "";
+        if (tt && tt !== "nt.save.failTitleShort") title = tt;
+        if (tx && tx !== "nt.save.failBody") text = tx;
+        try { window.showToast(title, text, "", true, "toast-warn", "event"); } catch (e) { /* голос занят — запись всё равно не легла, повторять незачем */ }
+        return;
+      }
+      /* ОТКАТ: блок извещений так и не встал за минуту — молчим, полосы нет. */
+      if (++tries < 600) setTimeout(tell, 100);
     };
-    paint();
+    tell();
   }
 
   function flush() {

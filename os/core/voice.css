@@ -1,0 +1,161 @@
+/* sys.baby OS — core/voice.css · ГОЛОС ДОМА (D-810…819, v178-H4a, пакет П1)
+   Пыль света, шрифт Nunito вариативный (OFL-1.1, fonts/NUNITO-LICENSE.txt; D-823), строка у самого
+   низа — на линии «шёпота внизу» (--desk-row-b). Плашек больше нет: .toast —
+   носитель фразы, его буквы прозрачны, свет рисует холст #sbVoiceLight. */
+/* ── ГОЛОС «ЖИВОЙ» · D-823 ──────────────────────────────────────────────────
+   Вариативный Nunito, ось веса урезана до 200–400 (буквы собираются в весе
+   240/260 и «наливаются» до 340/365); два подмножества — кириллица и латиница.
+   Без ?b= — адреса совпадают с описью офлайна (rel="sb-precache" в index.html).
+   ОТКАТ: статичный nunito-cyr.woff2 (вес 400) снят — вес сборки не меняется у статичного шрифта. */
+/* Грани шрифта «SB Voice» ставит voice.js (FontFace) по адресам link rel="sb-precache" data-face в index.html:
+   так Ковчег везёт шрифт внутри файла data:-адресом (ark-check, доска H4). Грани прежние: вес 200–400,
+   кириллица U+0400-045F, U+2116 / латиница. ОТКАТ: два @font-face с адресами файлов шрифта — ковчег уносил их наружу. */
+:root {
+  /* сумрак и свет под фразой — из токенов темы (D-823): тёплых чисел у голоса нет */
+  --sbv-shade: rgba(var(--veil-rgb, 4, 5, 8), .46); --sbv-pool: rgba(var(--edge-rgb), .075); --sbv-lit: rgba(var(--accent-rgb), .14);
+  --sbv-thread: rgba(var(--edge-rgb), .95); --sbv-thread-glow: rgba(var(--edge-rgb), .55);
+  /* ── ПОЛ ГОЛОСА · решение D-807 ─────────────────────────────────────────
+     Повод — снимок основателя 11.11.2026 (планшет): «строка висит заметно
+     выше низа». Голос стоял на линии нижнего ряда (--desk-row-b = полка +
+     зазор 12 + отступ 14), хотя полки на столе чаще всего нет. Теперь у
+     голоса свой пол: самый низ экрана, вырез (safe-area) учитывается, на
+     системную полосу строка не садится. Играет музыка — пол поднимается на
+     линию речи над полосой проигрывателя (min(...) равен нулю, пока её нет).
+     Над полкой голос встаёт только для фразы, которая ждёт ответа; короткой
+     фразе полка уступает место сама (core.css, html.sb-dock-yield). */
+  --voice-floor: max(8px, env(safe-area-inset-bottom, 0px), min(var(--desk-row-b), var(--player-row, 0px) * 1000));
+}
+
+/* ── место: тот же слой речи, что был у извещений (v66) ── */
+#toastLayer.sb-voice-layer { display: block; gap: 0; pointer-events: none; bottom: var(--voice-floor); }
+/* фраза ждёт ответа, а внизу полка — голос встаёт ровно над ней (линия нижнего ряда) */
+html.sb-voice-over-dock #toastLayer.sb-voice-layer { bottom: var(--desk-row-b); }
+#toastLayer .toast.sb-voice {
+  display: block; position: relative; margin: 0; padding: 0; border: 0; border-radius: 0;
+  background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+  text-align: center; pointer-events: none; animation: none; opacity: 1; transform: none;
+}
+/* фраза не ложится под круглую кнопку: ей оставлено место по той же мерке, что у подсказки (D-286) */
+/* ОТКАТ: прежняя мерка оставляла на 390 между словами и «+» 4 px — воздуха нужно ≥ 12 px (D-823):
+   к мерке добавлен ещё один зазор ряда (12 px) — строка отходит от кнопки по ширине. */
+#toastLayer .toast.sb-voice, #toastLayer .toast.sb-voice.toast-standing {
+  margin-right: max(0px, calc(var(--fab-inset) + var(--fab-size) + var(--desk-row-gap) * 2 - (100vw - min(560px, 100vw - 32px)) / 2));
+}
+#toastLayer .toast.sb-voice.out { display: none; }
+.toast.sb-voice > .toast-icon, .toast.sb-voice > .toast-actions { display: none; }
+/* свет двери и нить порога плашки (D-726) голосу не нужны: свет — #sbVoiceShade по всей строке (D-807).
+   ОТКАТ: нить-таймер под строкой голоса читалась как «свечение короче слов» (снимок основателя 11.11.2026). */
+#toastLayer .toast.sb-voice::before, #toastLayer .toast.sb-voice::after { content: none; animation: none; }
+/* полные слова извещения остаются в носителе — для чтения экраном и поиска по тексту; глазу их говорит голос */
+.toast.sb-voice > .toast-body { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; margin: 0; padding: 0; }
+/* строка: те же буквы того же шрифта, прозрачные — места, перенос и кернинг считает браузер */
+/* Кегль голоса — как в утверждённом демо «живой»: 31 px на широком планшете (1728), не меньше 21,5 на средних (D-823). */
+.sb-vl {
+  position: relative; display: inline-block; max-width: 100%; margin: 0; font: 340 clamp(21.5px, 1.8vw, 31px)/1.5 "SB Voice", system-ui, sans-serif; letter-spacing: .01em;
+  color: transparent; text-wrap: balance; -webkit-font-smoothing: antialiased; font-kerning: normal;
+  font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0, "clig" 0;
+  pointer-events: auto; cursor: default; user-select: none; -webkit-user-select: none;
+  touch-action: none;   /* смахнуть вниз — жест голоса, не прокрутка (D-823) */
+}
+/* невидимая кнопка «закрыть фразу» — только для чтеца и клавиатуры; крестика глазу нет */
+.toast.sb-voice > .sb-vclose { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; margin: 0; padding: 0; border: 0; background: none; pointer-events: auto; }
+.toast.sb-voice > .sb-vclose[hidden] { display: none; }
+.sb-w { white-space: nowrap; }
+/* короткая фраза поверх окна: простые слова пропускают касание к окну под ними, слова-кнопки и поле — свои (voice.js placeShade, доска H4) */
+.toast.sb-voice.sb-over-window .sb-vl { pointer-events: none; }
+.toast.sb-voice.sb-over-window .sb-vl .toast-action.sb-vb, .toast.sb-voice.sb-over-window .toast-field { pointer-events: auto; }
+.sb-c { color: transparent; }
+/* слова-кнопки — настоящие кнопки из света */
+.toast.sb-voice .toast-action.sb-vb {
+  /* сброс кнопки явными свойствами, а не all: unset — тот в CSSOM объявляет и --safe-top (safe-top-check, доска H4) */
+  appearance: none; -webkit-appearance: none; background: none; border: 0; margin: 0; font: inherit; letter-spacing: inherit; line-height: inherit; text-align: inherit; text-transform: inherit; box-shadow: none; outline: none; min-width: 0; min-height: 0;
+  display: inline; position: relative; color: transparent; border-radius: var(--r-ctrl); cursor: pointer; pointer-events: auto;
+  /* цель для пальца ≥ 32 px (мера кнопок окон): поле сверху и снизу, строку не раздвигает */
+  padding: 5px 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.toast.sb-voice .toast-action.sb-vb::after {
+  content: ""; position: absolute; left: 2%; right: 2%; bottom: -3px; height: 1.5px; border-radius: var(--r-pill); transform: scaleX(0); transform-origin: left;
+  background: linear-gradient(90deg, transparent, var(--sbv-thread) 20%, var(--sbv-thread) 80%, transparent);
+  box-shadow: 0 0 10px 1px var(--sbv-thread-glow); transition: transform var(--t-voice-thread) var(--ease-enter);
+}
+.toast.sb-voice.sb-ready .toast-action.sb-vb::after { transform: scaleX(1); animation: sbvBreath 3.4s ease-in-out .9s infinite; }
+@keyframes sbvBreath { 50% { opacity: .55; } }
+.toast.sb-voice .toast-action.sb-vb:focus-visible { outline: none; box-shadow: 0 0 0 6px rgba(var(--edge-rgb), .07), 0 0 0 7px rgba(var(--edge-rgb), .38); }
+/* непоправимое — нить слова теплее, без красной плашки (D-335) */
+.toast.sb-voice.toast-ask-danger .toast-action.sb-vb[data-act="yes"]::after { background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .95) 20%, rgba(var(--accent-rgb), .95) 80%, transparent); }
+/* поле вопроса: настоящее, но без рамки — светлая нить под словом */
+.toast.sb-voice .toast-field.sb-vf, .toast.sb-voice .toast-field {
+  display: inline-block; width: min(16ch, 60%); margin: 0 .3em; padding: 0 2px 2px; vertical-align: baseline; box-sizing: border-box;
+  font: inherit; color: rgba(var(--edge-rgb), .95); background: none; border: 0; border-radius: 0;
+  border-bottom: 1.5px solid rgba(var(--edge-rgb), .6); box-shadow: 0 6px 10px -8px rgba(var(--edge-rgb), .7); text-align: center;
+}
+.toast.sb-voice .toast-field:focus-visible { outline: none; border-bottom-color: rgba(var(--edge-rgb), .95); }
+/* важное: под фразой ровная нить, не дышит */
+.toast.sb-voice.toast-warn .sb-vl::after {
+  content: ""; position: absolute; left: 50%; bottom: -8px; width: 72px; height: 1px; transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, rgba(var(--edge-rgb), .75), transparent);
+}
+
+/* свет букв — холст у низа экрана, под строкой (строка прозрачна и ловит касания) */
+#sbVoiceLight { position: fixed; left: 0; top: 0; z-index: var(--z-speech, 90); pointer-events: none; }
+/* небо голоса (D-823): дальний слой — туманность и мелкие звёзды; рисуется один раз,
+   поднимается с фразой и растворяется вместе с ней (прозрачность и сдвиг ставит voice.js) */
+#sbVoiceSky { position: fixed; left: 0; top: 0; z-index: var(--z-speech, 90); pointer-events: none; opacity: 0; will-change: opacity, transform; }
+/* тень и свечение под фразой: без стекла (backdrop-filter над живым полем дорог).
+   ── СВЕЧЕНИЕ ШИРЕ СЛОВ · D-807 ─────────────────────────────────────────
+   Повод — тот же снимок: «свечение под ней короче слов». Был круг
+   radial-gradient(closest-side) шириной 1,32 строки: к краям фразы он уже
+   таял до 8 % от середины — длинная фраза выходила концами из света. Теперь
+   это ровное поле: по ширине — строка плюс поля --sbv-px с каждой стороны
+   (их и место ставит placeShade() в voice.js по настоящей строке), по высоте
+   — строка плюс --sbv-py. Внутри строки сила ровная, тает только поле.
+   Тёплый свет поднимается от нижнего края поля (радиальный, очень широкий —
+   по ширине почти ровный), под ним — сумрак; оба режет одна маска-поле.
+   Прежняя «нить порога» плашки D-726 (.toast::after — её длина = сколько
+   осталось до ухода) у голоса снята: на снимке это и была светлая черта
+   под первыми словами, «короче слов». Голос уходит сам — пылью. */
+#sbVoiceShade {
+  --sbv-px: 56px; --sbv-py: 26px;
+  position: fixed; left: 0; top: 0; width: 0; height: 0; z-index: var(--z-speech, 90); pointer-events: none; border-radius: 0;
+  background:
+    radial-gradient(220% 150% at 50% 100%, var(--sbv-lit), var(--sbv-pool) 45%, transparent 85%),
+    linear-gradient(var(--sbv-shade), var(--sbv-shade));
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--sbv-px), #000 calc(100% - var(--sbv-px)), transparent), linear-gradient(180deg, transparent, #000 var(--sbv-py), #000 calc(100% - var(--sbv-py)), transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 var(--sbv-px), #000 calc(100% - var(--sbv-px)), transparent), linear-gradient(180deg, transparent, #000 var(--sbv-py), #000 calc(100% - var(--sbv-py)), transparent);
+  mask-composite: intersect;
+  opacity: 0; transition: opacity var(--t-voice-dusk) var(--ease-move);
+}
+#sbVoiceShade.on { opacity: 1; transition-duration: var(--t-voice-dawn); }
+#sbVoiceShade.deep { --sbv-shade: rgba(var(--veil-rgb, 4, 5, 8), .86); }
+/* Светлица: голос не тёмный брус — под строкой светлая дымка бумаги, свет — акцентом.
+   Ветка темы живёт в словаре ядра (core.css, «ГОЛОС · СВЕТЛИЦА»; paint-tokens, доска H4). */
+#sbVoiceShade.quiet { opacity: .7; }
+
+/* свет из-под двери — у самого низа, в фоне стола (под значками и окнами) */
+#sbVoiceDoor { position: absolute; left: 0; right: 0; bottom: 0; height: 400px; z-index: 0; pointer-events: none; opacity: 0;
+  transform: translateY(40px); transition: opacity var(--t-voice-door) var(--ease-move), transform var(--t-voice-door-rise) var(--ease-enter); }
+#sbVoiceDoor i { position: absolute; display: block; }
+/* свет из-под двери — акцентом темы (D-823). ОТКАТ: молоко кромки (--edge-rgb, в Тепле —
+   кремовое) над оранжевым полом читалось бурым (teplo-mandarin: +10 % бурых нижней шестой).
+   Через #sbVoiceDoor: свет двери — часть голоса, его цвет задаёт голос из токена темы. */
+#sbVoiceDoor .sb-door-glow { inset: 0; background: radial-gradient(58% 100% at 50% 100%, rgba(var(--accent-rgb), .26), rgba(var(--accent-rgb), .08) 46%, transparent 80%); }
+.sb-door-line { left: 50%; bottom: 0; width: 520px; max-width: 80%; transform: translateX(-50%); height: 2px; border-radius: var(--r-pill);
+  background: linear-gradient(90deg, transparent, var(--sbv-thread) 22%, var(--sbv-thread) 78%, transparent);
+  box-shadow: 0 0 12px 1px rgba(var(--edge-rgb), .6), 0 0 40px 6px rgba(var(--edge-rgb), .22); }
+#desktop.sb-door #sbVoiceDoor { opacity: .8; transform: none; }
+#desktop.sb-knock #sbVoiceDoor { opacity: 1; }
+#desktop.sb-knock .sb-door-glow { animation: sbvBreath 4.2s ease-in-out 1.8s infinite; }
+
+#sbVoiceLive { position: fixed; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+@media (max-width: 480px) { .sb-vl { font-size: 19.5px; font-weight: 365; } }
+@media (prefers-reduced-motion: reduce) {
+  .toast.sb-voice .toast-action.sb-vb::after, #desktop.sb-knock .sb-door-glow { animation: none !important; transition: none !important; }
+  #sbVoiceShade, #sbVoiceDoor { transition: none !important; }
+  #sbVoiceSky { display: none; }
+}
+html[data-motion="reduced"] .toast.sb-voice .toast-action.sb-vb::after, html[data-motion="reduced"] #desktop.sb-knock .sb-door-glow { animation: none !important; }
+html[data-motion="reduced"] #sbVoiceShade, html[data-motion="reduced"] #sbVoiceDoor { transition: none !important; }
+html[data-motion="reduced"] #sbVoiceSky { display: none; }

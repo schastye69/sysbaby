@@ -843,13 +843,14 @@
     var st = state();
     if (!st.night || !st.night.dayRoom) return;
     var inEmber = typeof window.sbGetWallpaperMood === "function" && window.sbGetWallpaperMood() === "ember";
-    /* ПЕРВОЕ УТРО: не рывком. Двадцать минут — Суточная комната (её утренний
-       свет и есть рассвет), приветствие по имени и по дню, потом своя. */
+    /* ПЕРВОЕ УТРО: приветствие по имени и по дню — и сразу своя комната.
+       Суточная комната (Дневной свет) снята (D-871): включать её значит
+       уронить стол в Тепло и не вернуть свою (сборка H4). */
     if (inEmber && kindGranted("morning") && !st.morning) {
       var mins = morningMinutes();
       st.morning = { dayRoom: st.night.dayRoom, until: Date.now() + mins * 60000 };
       st.night = null; save();
-      window.sbSetWallpaperMood("daylight");
+      window.sbSetWallpaperMood(st.morning.dayRoom);
       if (window.showToast) window.showToast(fmt(T().morningTitle, { name: username() }), fmt(T().morningLine, { n: daysKept(), m: mins }), ICON, true, "", "event");
       return;
     }
@@ -861,7 +862,7 @@
     var st = state();
     if (!st.morning) return;
     if (Date.now() < st.morning.until) return;
-    if (typeof window.sbGetWallpaperMood === "function" && window.sbGetWallpaperMood() === "daylight" && st.morning.dayRoom) window.sbSetWallpaperMood(st.morning.dayRoom);
+    /* своя комната уже стоит с утра (D-871: Дневного света нет) — только отметка */
     st.morning = null; save();
   }
   setInterval(function () { try { nightTick(); morningTick(); refreshCountdowns(); focusTick(); traceTick(); guestTick(); milestoneTick(); } catch (e) { /* ignore */ } }, 60000);

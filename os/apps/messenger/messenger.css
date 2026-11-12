@@ -25,7 +25,10 @@
   display: flex;
   gap: 7px;
   align-items: center;
-  padding: 10px;
+  /* Поле поиска — одно поле системы (D-819, отступ подсказки 12 px): по
+     бокам ряда 8, а не 10, чтобы «Search conversations» помещалось целиком
+     в колонне 208 px (placeholder-fits). */
+  padding: 10px 8px;
   border-bottom: 1px solid rgba(var(--film-rgb), .07);
 }
 

@@ -403,3 +403,25 @@
 .app-settings .st-door-def { opacity: .78; }   /* ≥ 4,5:1 в обеих темах (light-contrast-check) — тише подписи, но читается */
 .app-settings .st-door-warn[hidden] { display: none; }
 .app-settings .st-door-warn p { margin: 0 0 10px; }
+
+/* ── «ЗНАКОМСТВО» · D-835 (архив «Дом — мой», П2) ─────────────────────────
+   Раздел ответов знакомства: поле имени — как поле имени в «Общих»;
+   неотвеченное — светом акцента, отвеченное — тихо. Только токены. */
+.st-meet-input {
+  width: 150px; max-width: 100%;
+  padding: 6px 9px;
+  border-radius: var(--r-ctrl);
+  border: 1px solid rgba(var(--film-rgb), .12);
+  background: rgba(var(--film-rgb), .05);
+  color: inherit; font: inherit; font-size: var(--f-ui);
+}
+.st-meet-input:focus { outline: 2px solid var(--accent-ring); outline-offset: 1px; }
+.st-meet-q { color: var(--ink-3); }
+/* «ещё не спрошено»: в Светлице --accent-ink на стекле Настроек давал 4.47 — словарь ядра даёт
+   ступень темнее (--accent-ink-deep), тема живёт в словаре, а не в комнате (доска H4: os-settings-sync). */
+.st-meet-q.open { color: var(--accent-ink-deep); }
+.st-meet-sample { margin: 0 0 6px; }
+.st-meet-sample b { font-weight: var(--w-strong); color: var(--ink-2); }   /* вес — слово шкалы (type-words, доска H4) */
+.st-meet-again { margin: 10px 0 4px; }
+.st-meet .st-subtitle { margin: 22px 0 8px; font-size: var(--f-ui); font-weight: var(--w-strong); color: var(--ink-2); }
+@media (max-width: 520px) { .st-meet-input { width: 100%; } }

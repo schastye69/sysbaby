@@ -5,7 +5,7 @@
   X-Frame-Options: SAMEORIGIN
   Cross-Origin-Opener-Policy: same-origin
   Permissions-Policy: geolocation=(self), microphone=(), camera=(), payment=(), usb=()
-  Content-Security-Policy: default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self' 'sha256-KLgka53EhYPF+HaG9e5tC3nE/SnHlIUSNh7ion9cs9s=' 'sha256-vg6aV2t99APTVsX/8Hw8iQDfdrqyBnd2yCcVdAsgrgo=' 'sha256-sVl2MuYBpbtepCnHSocU9Remo90bUQbIIFEhNJIz1oA=' 'sha256-6b12PNXjS4o84cn+awIQBDRXQdt4VEseDXzWPzIv8wU=' 'sha256-WqVQaIynO6yiFcl8Cgiv88+It47nLjSeSc5cqgZZtDs='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' blob:; worker-src 'self'; connect-src 'self' https://duckduckgo.com https://formsubmit.co; form-action 'self' https://duckduckgo.com https://formsubmit.co; frame-src 'self' https:; frame-ancestors 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self' 'sha256-KLgka53EhYPF+HaG9e5tC3nE/SnHlIUSNh7ion9cs9s=' 'sha256-vg6aV2t99APTVsX/8Hw8iQDfdrqyBnd2yCcVdAsgrgo=' 'sha256-sVl2MuYBpbtepCnHSocU9Remo90bUQbIIFEhNJIz1oA=' 'sha256-6b12PNXjS4o84cn+awIQBDRXQdt4VEseDXzWPzIv8wU=' 'sha256-7ETzg1LBFg7uXxgrqSh1+iCKGCOsQSad58/nojNGuOU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' blob:; worker-src 'self'; connect-src 'self' https://duckduckgo.com https://formsubmit.co; form-action 'self' https://duckduckgo.com https://formsubmit.co; frame-src 'self' https:; frame-ancestors 'self'; upgrade-insecure-requests
 
 # Документ всегда свежий: в нём метка сборки, и он маленький.
 /
