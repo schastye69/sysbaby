@@ -40,7 +40,7 @@
       line: "Witness, last visit: out — {out} · sealed {sealed}",
       warn: "Last visit something left for an address that is not in the list: {hosts}. This should never happen — look at «Outward».",
       warnTitle: "Witness", open: "Open Outward",
-      limit: "Counted by the browser itself (Resource Timing): the requests of this page. It cannot see what a stranger's page does inside its own frame — from here that is unknowable.",
+      limit: "Counted by the browser itself: the requests of this page. It cannot see what a stranger's page does inside its own frame — from here that is unknowable.",
       first: "This is the first visit the witness has seen."
     },
     ru: {
@@ -50,7 +50,7 @@
       line: "Свидетель, прошлый вход: наружу — {out} · запечатано {sealed}",
       warn: "В прошлый вход что-то ушло по адресу, которого нет в описи: {hosts}. Так не должно быть никогда — посмотрите «Наружу».",
       warnTitle: "Свидетель", open: "Открыть «Наружу»",
-      limit: "Считает сам браузер (Resource Timing): запросы этой страницы. Что делает чужая страница внутри своей рамки, отсюда не видно — и знать это изнутри нельзя.",
+      limit: "Считает сам браузер — по своей описи загрузок: запросы этой страницы. Что делает чужая страница внутри своей рамки, отсюда не видно — и знать это изнутри нельзя.",
       first: "Это первый вход, который видит Свидетель."
     },
     ee: {
@@ -60,7 +60,7 @@
       line: "Tunnistaja, eelmine külastus: välja — {out} · pitseeritud {sealed}",
       warn: "Eelmisel külastusel läks midagi aadressile, mida loetelus ei ole: {hosts}. Nii ei tohi kunagi olla — vaata «Välja».",
       warnTitle: "Tunnistaja", open: "Ava «Välja»",
-      limit: "Loeb brauser ise (Resource Timing): selle lehe päringud. Mida võõras leht oma raami sees teeb, siit ei näe — ja seestpoolt seda teada ei saa.",
+      limit: "Loeb brauser ise: selle lehe päringud. Mida võõras leht oma raami sees teeb, siit ei näe — ja seestpoolt seda teada ei saa.",
       first: "See on esimene külastus, mida tunnistaja näeb."
     }
   };

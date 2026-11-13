@@ -8,17 +8,15 @@
    ширины колонки комнат и не дальше. Охраняется room-center-check. */
 .vw-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: var(--room-col); margin-inline: auto; }
 .vw-head { padding: 2px 2px 0; }
-.vw-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: var(--w-strong); letter-spacing: var(--track-tight); }
-.vw-lead { margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2); max-width: 60ch; }
+/* Заголовок «Замок» повторял шапку окна (обход п.58): остаётся для чтеца;
+   вступление — на ширину окна, одной-двумя строками. */
+.vw-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
+.vw-lead { margin: 0; font-size: var(--f-lead); line-height: var(--lh-read); color: var(--ink-2); max-width: 64ch; }
 .vw-nolock {
   margin: 6px 0 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink);
-  padding: 14px 16px; border-radius: var(--r-card);
-  background: var(--accent-soft); border: 1px solid var(--accent-ring);
   display: flex; flex-direction: column;
 }
 .vw-nolock-p { margin: 0; }
-/* Кнопка ядра на подложке того же тона: ей нужна своя граница (D-317). */
-.vw-nolock .sb-lock-call { background: var(--glass); }
 
 /* ── РЕШЁТКА ──────────────────────────────────────────────────────────────
    Плитка на кусок носителя (до v177 — на конверт). Размер выбран так, чтобы тридцать два поместились в ряд
@@ -79,7 +77,7 @@
   border: 1px solid var(--line); background: rgba(var(--film-rgb), .026);
   display: flex; flex-direction: column; gap: 7px;
 }
-.vw-card h3 { margin: 0; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ink-3); font-weight: var(--w-strong); }
+.vw-card h3 { margin: 0; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: none; color: var(--ink-3); font-weight: var(--w-strong); }
 .vw-big { margin: 0; display: flex; align-items: baseline; gap: 7px; }
 .vw-big b { font-size: var(--f-figure); font-weight: var(--w-strong); line-height: var(--lh-one); letter-spacing: var(--track-tight); font-variant-numeric: tabular-nums; }
 .vw-big span { font-size: var(--f-ui); color: var(--ink-3); }
@@ -105,10 +103,7 @@
 .vw-grind .vw-cell { filter: brightness(.7) saturate(.7); }
 
 .vw-honest {
-  margin: 2px 0 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2);
-  padding: 13px 15px; border-radius: var(--r-card);
-  border: 1px solid var(--line); border-left: 2px solid var(--accent-ring);
-  background: rgba(var(--film-rgb), .018); max-width: 78ch;
+  margin: 2px 0 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); max-width: 78ch;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -132,7 +127,7 @@
   font: inherit; font-size: var(--f-read); padding: 9px 12px; color: var(--ink);
   background: rgba(var(--film-rgb), .04); border: 1px solid var(--line); border-radius: var(--r-ctrl);
 }
-.vw-keyfile { display: flex; flex-direction: column; gap: 5px; font-size: var(--f-meta); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ink-3); }
+.vw-keyfile { display: flex; flex-direction: column; gap: 5px; font-size: var(--f-meta); letter-spacing: var(--track-caps); text-transform: none; color: var(--ink-3); }
 .vw-keyfile input[type="file"] {
   font: inherit; font-size: var(--f-ui); text-transform: none; letter-spacing: 0; color: var(--ink-2);
   padding: 9px 10px; background: rgba(var(--film-rgb), .03);
@@ -147,7 +142,7 @@
    Два поля стоят рядом и совершенно одинаково. Никакого «правильного»
    оформления у настоящего нет — в этом весь смысл. */
 .vw-tell { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: var(--r-card); border: 1px solid var(--line); background: rgba(var(--film-rgb), .022); }
-.vw-tell h3 { margin: 0; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ink-3); font-weight: var(--w-strong); }
+.vw-tell h3 { margin: 0; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: none; color: var(--ink-3); font-weight: var(--w-strong); }
 .vw-tell-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .vw-tell-pair figure { margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .vw-tell-c { width: 100%; aspect-ratio: 1; display: block; border-radius: var(--r-ctrl); background: rgba(var(--shade-rgb), calc(.18 * var(--sink-k))); border: 1px solid var(--line); }

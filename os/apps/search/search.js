@@ -9,7 +9,7 @@
 (function () {
   "use strict";
 
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="6.2"/><path d="m15.6 15.6 3.9 3.9"/></svg>';
+  var ICON = sbZnak("search");
 
   var TYPE_FALLBACK_COLOR = {
     app: "linear-gradient(160deg,#4a4e58 0%,#2a2c33 50%,#111216 100%)",
@@ -43,7 +43,9 @@
     order.forEach(function (id) {
       var def = apps[id];
       if (!def || def.hidden) return;
-      out.push({ id: id, title: window.sbAppTitle ? window.sbAppTitle(id) : (def.title || id), label: window.sbAppLabel ? window.sbAppLabel(id) : "", color: def.color || TYPE_FALLBACK_COLOR.app, icon: def.icon || ICON });
+      var own = false;
+      own = !!(window.sbAppOwnName && window.sbAppOwnName(id));   /* своё имя — у оболочки (D-257), не у Сундука напрямую (D-245) */
+      out.push({ id: id, own: own, title: window.sbAppTitle ? window.sbAppTitle(id) : (def.title || id), label: window.sbAppLabel ? window.sbAppLabel(id) : "", color: def.color || TYPE_FALLBACK_COLOR.app, icon: def.icon || ICON });
     });
     return out;
   }
@@ -116,7 +118,10 @@
   }
 
   function appRow(app) {
-    return { type: "app", id: app.id, title: app.title, sub: t("menu.open", { app: app.title }) };
+    /* имя комнаты в найденном — строчными, как у значка (D-1003-SEARCH-WORDS); своё имя — как дано */
+    var nm = app.title;
+    if (!app.own) { try { nm = String(nm).toLocaleLowerCase(); } catch (e) { nm = String(nm).toLowerCase(); } }
+    return { type: "app", id: app.id, title: nm, sub: t("menu.open", { app: nm }) };
   }
 
   function collect(query) {
@@ -187,7 +192,8 @@
         '<div class="sk-section-title">' + esc(t("sk.suggested")) + "</div>" +
         '<div class="sk-chips">' +
           registry().map(function (app) {
-            return '<button type="button" class="sk-chip" data-app="' + esc(app.id) + '">' + esc(app.title) + "</button>";
+            /* имя комнаты строчными, как у значка и шапки окна (D-1003); своё имя — как дано */
+            return '<button type="button" class="sk-chip" data-app="' + esc(app.id) + '"' + (app.own ? " data-sb-userdata" : "") + ">" + esc(app.title) + "</button>";
           }).join("") +
         "</div>" +
         (rows.length ? '<div class="sk-section-title">' + esc(t("sk.recent")) + '</div><div class="sk-rows">' + rows.map(rowMarkup).join("") + "</div>" : "");
@@ -211,9 +217,10 @@
     host.innerHTML =
       '<div class="app-search">' +
         '<div class="sk-field">' +
-          '<span class="sk-field-icon">' + ICON + "</span>" +
+          /* Лупы перед полем нет (обход п.53, D-1003-SEARCH-WORDS): лупа уже стоит в имени окна,
+             а знак снаружи поля читался второй кнопкой; поле — одно, как везде (D-819). */
           '<input type="text" id="skInput" class="sk-input" placeholder="' + esc(t("sk.ph")) + '" autocomplete="off" spellcheck="false" value="' + esc(query) + '">' +
-          '<kbd class="sk-kbd">⌘K</kbd>' +
+          /* «⌘K» в поле снят (обход п.53): поле и так в фокусе. */
         "</div>" +
         '<div class="sk-results">' + sections + "</div>" +
       "</div>";

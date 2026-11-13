@@ -12,16 +12,16 @@
 
   var doc = document;
   var KEY = "sysbaby.files.v1";
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.2a1.2 1.2 0 0 1 1.2-1.2h4l1.8 2h8.3a1.2 1.2 0 0 1 1.2 1.2v8.6a1.2 1.2 0 0 1-1.2 1.2H4.7a1.2 1.2 0 0 1-1.2-1.2V7.2Z"/></svg>';
-  var FOLDER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.2a1.2 1.2 0 0 1 1.2-1.2h4l1.8 2h8.3a1.2 1.2 0 0 1 1.2 1.2v8.6a1.2 1.2 0 0 1-1.2 1.2H4.7a1.2 1.2 0 0 1-1.2-1.2V7.2Z"/></svg>';
+  var ICON = sbZnak("files");
+  var FOLDER_SVG = sbZnak("folder");
   var THING_SVG = {
-    image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></svg>',
-    doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/><path d="M8 12.5h7M8 15.5h7M8 18h4"/></svg>',
-    sound: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.5h3l4-3v11l-4-3H5z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.8a7.5 7.5 0 0 1 0 10.4"/></svg>',
-    film: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M10 9.5l5 2.5-5 2.5z"/></svg>',
-    thing: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/></svg>'
+    image: sbZnak("image"),
+    doc: sbZnak("doc"),
+    sound: sbZnak("sound"),
+    film: sbZnak("film"),
+    thing: sbZnak("file")
   };
-  var FILE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/></svg>';
+  var FILE_SVG = sbZnak("file");
 
   /* ------------------------------------------------------------ seed data */
 
@@ -258,9 +258,11 @@
      и «документ», и переводятся вместе с ними. */
   function weigh(bytes) {
     var b = Number(bytes) || 0;
-    if (b < 1024) return b + " " + t("fv.unitB");
+    /* Меньше килобайта — словами, а не «23 Б» (обход п.48); дробь — по-местному. */
+    if (b < 1024) return t("fv.unitTiny");
     if (b < 1024 * 1024) return Math.round(b / 1024) + " " + t("fv.unitKB");
-    return (Math.round(b / 104857.6) / 10) + " " + t("fv.unitMB");
+    var mb = Math.round(b / 104857.6) / 10, L = window.sbLang ? window.sbLang() : "en";
+    return (L === "en" ? String(mb) : String(mb).replace(".", ",")) + " " + t("fv.unitMB");
   }
 
   /* Ссылки на вещи, выданные браузеру. Держатся, пока окно живо, и
@@ -340,6 +342,8 @@
   /* -------------------------------------------------------------- markup */
 
   function breadcrumbMarkup() {
+    /* в корне крошка «начало» не показывается — она ничего не говорит (обход п.46/72, D-915) */
+    if (pathStack.length <= 1) return "";
     return pathStack.map(function (node, idx) {
       var label = idx === 0 ? t("fv.home") : node.name;
       var last = idx === pathStack.length - 1;
@@ -357,13 +361,15 @@
     return '<div class="fv-item' + (idx === selectedIndex ? " selected" : "") + '" data-index="' + idx + '" tabindex="0">' +
       '<div class="fv-tile ' + (isFolder ? "folder" : "file") + (isThing ? " thing kind-" + esc(node.kind || "thing") : "") + '">' + tile + "</div>" +
       '<div class="fv-name" data-sb-userdata data-name-for="' + idx + '">' + esc(node.name) + "</div>" +
-      (isThing ? '<div class="fv-thing-note">' + esc(t("fv.thingKind", { kind: kindWord(node.kind || "thing"), size: weigh(node.size) })) + "</div>" : "") +
+      /* на плитке — только вид вещи: «файл · меньше килобайта» не помещался в 80 px и резался на каждой
+         плитке (глубокий аудит Б-15, D-868); вес — в сведениях вещи и подсказкой по наведению */
+      (isThing ? '<div class="fv-thing-note" title="' + esc(weigh(node.size)) + '">' + esc(kindWord(node.kind || "thing")) + "</div>" : "") +
       '<div class="fv-mini">' +
         '<button type="button" class="fv-mini-btn" data-rename="' + idx + '" title="' + esc(t("fv.rename")) + '" aria-label="' + esc(t("fv.rename")) + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 19.5h4l10-10a1.6 1.6 0 0 0 0-2.3l-1.7-1.7a1.6 1.6 0 0 0-2.3 0l-10 10v4Z"/></svg>' +
+          sbZnak("pencil") +
         "</button>" +
         '<button type="button" class="fv-mini-btn danger" data-delete="' + idx + '" title="' + esc(t("fv.delete")) + '" aria-label="' + esc(t("fv.delete")) + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l1 12.2a1 1 0 0 0 1 .9h7a1 1 0 0 0 1-.9L17.5 7"/></svg>' +
+          sbZnak("trash") +
         "</button>" +
       "</div>" +
     "</div>";
@@ -384,10 +390,10 @@
       '<span class="fv-preview-name" data-sb-userdata>' + esc(node.name) + "</span>" +
       '<span class="fv-preview-actions">' +
         '<button type="button" class="fv-edit" id="fvThingOpen" title="' + esc(t("fv.thingOpen")) + '" aria-label="' + esc(t("fv.thingOpen")) + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>' +
+          sbZnak("eye") +
         "</button>" +
         '<button type="button" class="fv-edit" id="fvThingSave" title="' + esc(t("fv.thingSave")) + '" aria-label="' + esc(t("fv.thingSave")) + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v10M8.2 11l3.8 3.8L15.8 11M5 18.5h14"/></svg>' +
+          sbZnak("download") +
         "</button>" +
       "</span></div>";
     var body = kind === "image"
@@ -415,10 +421,10 @@
              вынести было нечем. Одно слово на все файлы — fv.thingSave.
              Охраняется tools/vault-save-check.mjs. */
           '<button type="button" class="fv-edit" id="fvFileSave" title="' + esc(t("fv.thingSave")) + '" aria-label="' + esc(t("fv.thingSave")) + '">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg>' +
+            sbZnak("download") +
           "</button>" +
           '<button type="button" class="fv-edit" id="fvEdit" title="' + esc(t("fv.edit")) + '" aria-label="' + esc(t("fv.edit")) + '">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 19.5h4l10-10a1.6 1.6 0 0 0 0-2.3l-1.7-1.7a1.6 1.6 0 0 0-2.3 0l-10 10v4Z"/></svg>' +
+            sbZnak("pencil") +
           "</button>" +
         "</span>" +
       "</div>" +
@@ -455,13 +461,13 @@
           '<div class="fv-crumbs">' + breadcrumbMarkup() + "</div>" +
           '<div class="fv-tools">' +
             '<button type="button" class="fv-tool" id="fvNewFolder" title="' + esc(t("fv.newFolder")) + '">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.2a1.2 1.2 0 0 1 1.2-1.2h4l1.8 2h8.3a1.2 1.2 0 0 1 1.2 1.2v8.6a1.2 1.2 0 0 1-1.2 1.2H4.7a1.2 1.2 0 0 1-1.2-1.2V7.2Z"/><path d="M12 11.6v5M9.5 14.1h5"/></svg>' +
+              sbZnak("folder-plus") +
               "<span>" + esc(t("fv.newFolder")) + "</span></button>" +
             '<button type="button" class="fv-tool" id="fvNewFile" title="' + esc(t("fv.newFile")) + '">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/><path d="M11.5 12v5M9 14.5h5"/></svg>' +
+              sbZnak("file-plus") +
               "<span>" + esc(t("fv.newFile")) + "</span></button>" +
             '<button type="button" class="fv-tool" id="fvBring" title="' + esc(t("fv.bring")) + '">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16.5v-10M8.2 10L12 6.2 15.8 10M5 19.5h14"/></svg>' +
+              sbZnak("upload") +
               "<span>" + esc(t("fv.bring")) + "</span></button>" +
             /* ОБЩАЯ ПЕРЕДАЧА (D-241). Разметка приходит из ядра: одна кнопка
                на все комнаты. Отдаётся ВЫБРАННЫЙ файл; если не выбрано
@@ -473,7 +479,7 @@
         '<div class="fv-grid" id="fvGrid">' +
           (children.length
             ? children.map(itemMarkup).join("")
-            : '<div class="fv-empty">' + esc(t("fv.empty")) + "</div>") +
+            : '<div class="fv-empty">' + ICON + "<span>" + esc(t("fv.empty")) + "</span></div>") +
         "</div>" +
         (previewNode ? previewMarkup(previewNode) : "") +
         '<div class="fv-catch">' + esc(t("fv.bringDrop")) + "</div>" +

@@ -81,7 +81,8 @@ html.sb-voice-over-dock #toastLayer.sb-voice-layer { bottom: var(--desk-row-b); 
 }
 .toast.sb-voice.sb-ready .toast-action.sb-vb::after { transform: scaleX(1); animation: sbvBreath 3.4s ease-in-out .9s infinite; }
 @keyframes sbvBreath { 50% { opacity: .55; } }
-.toast.sb-voice .toast-action.sb-vb:focus-visible { outline: none; box-shadow: 0 0 0 6px rgba(var(--edge-rgb), .07), 0 0 0 7px rgba(var(--edge-rgb), .38); }
+/* фокус — латунная оправа с полем 4 px вокруг слова, а не узкая рамка по буквам (D-855, обход п.30) */
+.toast.sb-voice .toast-action.sb-vb:focus-visible { outline: 1px solid rgba(var(--edge-rgb), .55); outline-offset: 4px; border-radius: var(--r-ctrl); box-shadow: 0 0 0 4px rgba(var(--edge-rgb), .07); }
 /* непоправимое — нить слова теплее, без красной плашки (D-335) */
 .toast.sb-voice.toast-ask-danger .toast-action.sb-vb[data-act="yes"]::after { background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .95) 20%, rgba(var(--accent-rgb), .95) 80%, transparent); }
 /* поле вопроса: настоящее, но без рамки — светлая нить под словом */

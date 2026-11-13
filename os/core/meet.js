@@ -171,7 +171,13 @@
         var v = patch[k]; if (MAP[k].indexOf(v) < 0) return;
         p.ans[k] = v; p.how[k] = "set";
       });
-      if (patch.name != null) p.name = clip(patch.name);
+      if (patch.name != null) {
+        p.name = clip(patch.name);
+        /* одно имя на весь дом (D-1001-ONE-NAME): имя из «Знакомства» доходит до шапки и Общего */
+        if (!patch.fromName && typeof window.sbSetUsername === "function") {
+          try { window.sbSetUsername(p.name); p.name = clip(window.sbUsernameStored && window.sbUsernameStored() ? window.sbGetUsername() : ""); } catch (e) { /* ignore */ }
+        }
+      }
       if (patch.sys != null) p.sys = clip(patch.sys) || DEF_SYS;
       if (patch.pub != null) p.pub = !!patch.pub;
       save();
@@ -319,21 +325,26 @@
     if (doc.getElementById("sbMeetStyle")) return;
     var s = doc.createElement("style"); s.id = "sbMeetStyle";
     s.textContent =
-      "#sbMeetScrim{position:absolute;inset:0;z-index:880;background:rgba(var(--veil-rgb),.42);display:flex;align-items:center;justify-content:center;padding:16px}" +
+      /* Чистота (D-847, обход п.37): знакомство говорит языком А/Б — тихий поднос
+         --tray5 без вуали и размытия, кегли 20 / 13 / 11, поля — одно поле окна
+         (--field-face, нить света), «войти» — светильник, «пропустить» — слово. */
+      "#sbMeetScrim{position:absolute;inset:0;z-index:880;background:none;display:flex;align-items:center;justify-content:center;padding:16px}" +
       "#sbMeetFirst{width:min(440px,100%);border-radius:var(--r-card);padding:22px 22px 18px;color:var(--ink);" +
-      "background:linear-gradient(180deg,var(--glass-tint),transparent 58%),var(--menu-bg);box-shadow:inset 0 0 0 1px var(--win-edge),var(--win-shadow)}" +
-      "#sbMeetFirst h2{margin:0 0 6px;font-size:17px;font-weight:600}" +
-      "#sbMeetFirst p{margin:0 0 14px;font-size:14px;line-height:1.45;color:var(--ink-2,var(--ink))}" +
-      "#sbMeetFirst .sb-meet-sub{font-size:12.5px;opacity:.72;margin:4px 0 16px}" +
-      "#sbMeetFirst label{display:block;font-size:13px;margin:0 0 12px}" +
-      "#sbMeetFirst input{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:10px 12px;border-radius:var(--r-ctrl);border:0;font:inherit;font-size:15px;color:var(--ink);" +
-      "background:rgba(var(--well-rgb),.6);box-shadow:inset 0 0 0 1px var(--line)}" +
-      "#sbMeetFirst input:focus{outline:2px solid var(--accent-ring);outline-offset:1px}" +
-      "#sbMeetFirst .sb-meet-acts{display:flex;gap:10px;justify-content:flex-end}" +
-      "#sbMeetFirst button{min-height:40px;padding:0 16px;border-radius:var(--r-ctrl);border:0;font:inherit;font-size:14px;cursor:pointer;color:var(--ink);background:rgba(var(--film-rgb),.08)}" +
-      "#sbMeetFirst button.main{background:var(--accent);color:var(--on-accent)}" +
+      "background:var(--tray5-bg),var(--menu-bg);box-shadow:var(--tray5-edge),var(--shadow)}" +
+      "#sbMeetFirst h2{margin:0 0 6px;font-size:var(--f-title);font-weight:500}" +
+      "#sbMeetFirst p{margin:0 0 14px;font-size:var(--f-ui);line-height:1.45;color:var(--ink-2,var(--ink))}" +
+      "#sbMeetFirst .sb-meet-sub{font-size:var(--f-meta);color:var(--ink-3);margin:4px 0 16px}" +
+      "#sbMeetFirst label{display:block;font-size:var(--f-ui);color:var(--ink-2);margin:0 0 12px}" +
+      "#sbMeetFirst input{display:block;width:100%;box-sizing:border-box;margin-top:6px;height:var(--field-h,36px);padding:0 var(--field-pad-x,12px);border-radius:var(--r-ctrl);border:0;font:inherit;font-size:var(--f-ui);color:var(--ink);" +
+      "background:var(--field-face,rgba(var(--film-rgb),.05));box-shadow:var(--field-edge,inset 0 -1px 0 rgba(var(--edge-rgb),.4))}" +
+      "#sbMeetFirst input:focus{outline:1px solid transparent;box-shadow:var(--field-edge-on,inset 0 0 0 1px var(--accent-ring))}" +
+      "#sbMeetFirst .sb-meet-acts{display:flex;gap:10px;justify-content:flex-end;align-items:center}" +
+      "#sbMeetFirst button{min-height:36px;padding:0 10px;border-radius:var(--r-ctrl);border:0;font:inherit;font-size:var(--f-ui);cursor:pointer;color:var(--ink-2);background:none}" +
+      "#sbMeetFirst button:focus-visible{outline:none;box-shadow:var(--brass)}" +
+      "#sbMeetFirst button.main{position:relative;overflow:hidden;min-height:40px;padding:0 18px;border-radius:var(--r-lamp);background:var(--lamp5-bg);box-shadow:var(--lamp5-edge);color:var(--lamp5-ink);font-weight:var(--w-strong)}" +
+      "#sbMeetFirst button.main::after{content:'';position:absolute;left:18%;right:18%;bottom:0;height:1px;background:linear-gradient(90deg,transparent,var(--door-thread),transparent);opacity:.8}" +
       "#sbMeetLine{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--dock-h,76px) + 30px);z-index:870;max-width:min(640px,calc(100% - 32px));" +
-      "text-align:center;font-size:17px;line-height:1.5;color:var(--ink);text-shadow:0 1px 10px rgba(var(--shade-rgb),.6)}" +
+      "text-align:center;font-size:var(--f-lead);line-height:var(--lh-read);color:var(--ink);text-shadow:0 1px 10px rgba(var(--shade-rgb),.6)}" +
       "#sbMeetLine[hidden]{display:none}" +
       "#sbMeetLine .sb-meet-w{font:inherit;color:var(--accent-ink);background:none;border:0;padding:2px 3px;cursor:pointer;text-decoration:underline;text-underline-offset:4px}";
     doc.head.appendChild(s);

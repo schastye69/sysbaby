@@ -16,7 +16,7 @@
 #sbNoteLayer .sticky-note {
   --nl: var(--wp-light-rgb, 236, 138, 95);
   --veil: 18, 16, 20;
-  --veil-a: .34;
+  --veil-a: var(--note-veil-a);   /* слово темы (core.css / themes.css): в Затмении плотнее — ореол кромки под серединой стола */
   /* буквы и свет заметки (--ink-n, --ink-n2, --nv-*) — слова словаря ядра (core.css, «ЗАМЕТКА НА СТОЛЕ · КРАСКА»; доска H4: paint-tokens) */
   --warm: 255, 238, 214;
   color: var(--ink-n);
@@ -27,7 +27,7 @@
   box-shadow: var(--nv-glow);
   transition: left var(--t-move) var(--ease-enter), top var(--t-move) var(--ease-enter), box-shadow var(--t-move) var(--ease-move), background var(--t-move) var(--ease-move);
 }
-#sbNoteLayer .sticky-note:not(.full) { border-radius: var(--r-window); padding: 13px; }
+#sbNoteLayer .sticky-note:not(.full) { border-radius: var(--r-card); padding: 13px; }
 #sbNoteLayer .sticky-note .note-text,
 #sbNoteLayer .sticky-note .note-body { color: var(--ink-n); text-shadow: var(--nv-text-shadow); }
 #sbNoteLayer .sticky-note .note-text::placeholder,
@@ -36,7 +36,7 @@
 
 /* кромка света: конический свет под маской, ярче со стороны света обоев */
 #sbNoteLayer .sticky-note::before {
-  content: ""; position: absolute; inset: 0; border-radius: var(--r-window); padding: 1.5px; pointer-events: none;
+  content: ""; position: absolute; inset: 0; border-radius: var(--r-card); padding: 1.5px; pointer-events: none;
   background: var(--nv-rim);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -52,7 +52,7 @@
 #sbNoteLayer .sticky-note.selected { outline: 1px solid rgba(var(--nl), .5); outline-offset: 2px; }
 /* вторая кромка «под листом есть тело» — того же вещества */
 #sbNoteLayer .sticky-note.has-body::after {
-  left: 12px; right: 12px; bottom: -4px; height: 5px; border-radius: 0 0 var(--r-card) var(--r-card);
+  left: 12px; right: 12px; bottom: -4px; height: 5px; border-radius: 0 0 var(--r-ctrl) var(--r-ctrl);
   background: rgba(var(--veil), .34); border: 0;
   box-shadow: inset 0 -1px 0 rgba(var(--warm), .16);
 }
@@ -83,7 +83,7 @@
   pointer-events: none; -webkit-user-select: none; user-select: none;
 }
 #sbNoteLayer .sticky-note.full .nv-hint { display: none; }
-#sbNoteLayer .sticky-note.nv-welcome .note-text { font-size: var(--f-read); line-height: var(--lh-read); }
+#sbNoteLayer .sticky-note.nv-welcome .note-text { font-size: var(--f-lead); line-height: var(--lh-read); }
 #sbNoteLayer .sticky-note.nv-born { animation: nvBorn .9s var(--ease-enter) both; }
 @keyframes nvBorn { from { opacity: 0; transform: translateY(6px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
 
@@ -92,7 +92,7 @@ html .note-invite.note-invite {
   width: auto; max-width: calc(100vw - 24px); padding: 8px 10px 8px 0; gap: 11px;
   background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
   border-radius: 0; transform: translate(-3px, -50%);
-  font-size: var(--f-read); font-weight: var(--w-text); white-space: nowrap;
+  font-size: var(--f-lead); font-weight: var(--w-text); white-space: nowrap;
   color: var(--ni-ink); text-shadow: var(--ni-shadow);
   animation: nvFade .28s var(--ease-enter) both;
 }

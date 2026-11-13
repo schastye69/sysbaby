@@ -70,8 +70,10 @@
   function rim(b, t) {
     b.fillStyle = "rgba(2,1,1,.965)"; b.fillRect(0, 0, W, H);
     var g = geom(), cx = g.cx, cy = g.cy, R = g.R, ang = t * 6.2832 / PERIOD, br = 0.75 + 0.25 * Math.sin(t * 6.2832 / 13);
-    glow(b, cx, cy, R * 1.5, [150, 70, 40], 0.09 * br);
-    ell(b, cx + Math.cos(ang) * R * 0.5, cy + Math.sin(ang) * R * 0.5, R * 1.15, R * 1.15, [235, 140, 80], 0.2 * br);
+    /* кромка заметнее (глубокий аудит Б-53, D-909): на обычном экране стол Затмения читался чёрным, тема была
+       неотличима от выключенного экрана — ореол и пятно света ярче в 1,6 раза; углы стола по-прежнему тёмные */
+    glow(b, cx, cy, R * 1.5, [150, 70, 40], 0.145 * br);
+    ell(b, cx + Math.cos(ang) * R * 0.5, cy + Math.sin(ang) * R * 0.5, R * 1.15, R * 1.15, [235, 140, 80], 0.32 * br);
     var dg = b.createRadialGradient(cx, cy, 0, cx, cy, R * 1.06);
     dg.addColorStop(0, "rgba(1,1,1,1)"); dg.addColorStop(0.9, "rgba(1,1,1,1)"); dg.addColorStop(1, "rgba(1,1,1,0)");
     b.fillStyle = dg; b.beginPath(); b.arc(cx, cy, R * 1.06, 0, 6.2832); b.fill();

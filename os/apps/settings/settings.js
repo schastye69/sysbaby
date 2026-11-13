@@ -9,7 +9,7 @@
 (function () {
   "use strict";
 
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><path d="M19.2 14.2a1.5 1.5 0 0 0 .3 1.65l.06.06a1.8 1.8 0 1 1-2.55 2.55l-.06-.06a1.5 1.5 0 0 0-1.65-.3 1.5 1.5 0 0 0-.9 1.37V20a1.8 1.8 0 0 1-3.6 0v-.1a1.5 1.5 0 0 0-.98-1.37 1.5 1.5 0 0 0-1.65.3l-.06.06A1.8 1.8 0 1 1 4.56 16.3l.06-.06a1.5 1.5 0 0 0 .3-1.65 1.5 1.5 0 0 0-1.37-.9H3a1.8 1.8 0 0 1 0-3.6h.1a1.5 1.5 0 0 0 1.37-.98 1.5 1.5 0 0 0-.3-1.65l-.06-.06A1.8 1.8 0 1 1 6.66 4.85l.06.06a1.5 1.5 0 0 0 1.65.3H8.5a1.5 1.5 0 0 0 .9-1.37V3a1.8 1.8 0 0 1 3.6 0v.1a1.5 1.5 0 0 0 .9 1.37 1.5 1.5 0 0 0 1.65-.3l.06-.06a1.8 1.8 0 1 1 2.55 2.55l-.06.06a1.5 1.5 0 0 0-.3 1.65v.08a1.5 1.5 0 0 0 1.37.9H21a1.8 1.8 0 0 1 0 3.6h-.1a1.5 1.5 0 0 0-1.37.9Z"/></svg>';
+  var ICON = sbZnak("settings");
 
   var AUTHED_KEY = "sysbaby.authed";                 // raw localStorage
 
@@ -21,27 +21,27 @@
      лету видят ключ и не видят литерал. Ярлык раздела — labelKey, а не
      label, чтобы «Appearance» физически негде было написать. */
   var SECTIONS = [
-    { id: "general", labelKey: "set.tab.general", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8.4" r="3.2"/><path d="M5.2 19.4a6.8 6.8 0 0 1 13.6 0"/></svg>' },
+    { id: "general", labelKey: "set.tab.general", icon: sbZnak("user") },
     /* «Знакомство» (D-835, архив «Дом — мой»; основатель 10.11, демо dom-moy-A
        сцена 6): что дом узнал о человеке, смена ответов, «пройти разговор
        заново», «на людях» и вид «времени на столе». Знание — у core/meet.js
        (sbAddr, sbMeet); раздел — только двери к нему. */
-    { id: "meet", labelKey: "set.tab.meet", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 18.5c0-3 2.4-5.2 5.5-5.2s5.5 2.2 5.5 5.2"/><circle cx="10" cy="8" r="3.2"/><path d="M16.5 6.5c1.4.4 2.4 1.7 2.4 3.2M18 13.6c1.3.7 2 2.1 2 3.9"/></svg>' },
-    { id: "appearance", labelKey: "set.tab.appearance", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="7.8"/><path d="M12 4.2v15.6"/></svg>' },
-    { id: "sound", labelKey: "set.tab.sound", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 9.5h3l4-3.2v11.4l-4-3.2h-3Z"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6"/></svg>' },
-    { id: "desktop", labelKey: "set.tab.desktop", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.4" y="5" width="17.2" height="11.4" rx="2"/><path d="M8 19.6h8"/></svg>' },
+    { id: "meet", labelKey: "set.tab.meet", icon: sbZnak("people") },
+    { id: "appearance", labelKey: "set.tab.appearance", icon: sbZnak("appearance") },
+    { id: "sound", labelKey: "set.tab.sound", icon: sbZnak("sound") },
+    { id: "desktop", labelKey: "set.tab.desktop", icon: sbZnak("desktop") },
     /* «Ключи и замок» (D-637): всё, что было под ключницей в окне «Аккаунт»
        и не относится к самим ключам, — имя в системе, замок целиком с
        самозапиранием, копии, уход и стирание. Узлы и разводку строит ядро
        (sbAccountDetails), раздел — только место. */
-    { id: "account", labelKey: "set.tab.account", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="12" r="3.6"/><path d="M12.1 12H20M17 12v3M20 12v2.4"/></svg>' },
-    { id: "privacy", labelKey: "set.tab.privacy", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.8 5.4 6.4v5c0 4.2 2.8 7.6 6.6 8.8 3.8-1.2 6.6-4.6 6.6-8.8v-5L12 3.8Z"/></svg>' },
-    { id: "advanced", labelKey: "set.tab.advanced", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 7.5h14M5 12h14M5 16.5h14"/><circle cx="9" cy="7.5" r="1.6"/><circle cx="15" cy="16.5" r="1.6"/></svg>' },
+    { id: "account", labelKey: "set.tab.account", icon: sbZnak("keys") },
+    { id: "privacy", labelKey: "set.tab.privacy", icon: sbZnak("shield") },
+    { id: "advanced", labelKey: "set.tab.advanced", icon: sbZnak("sliders") },
     /* «Наружу» — не приложение, а раздел Настроек (D-723, основатель
        03–04.11, восстановлено 10.11): что и куда выходит из дома. Разметку
        строит сама комната (sbOutwardRender), раздел — только место. */
-    { id: "outward", labelKey: "set.tab.outward", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5h6v6M19 5l-8 8"/><path d="M17 14v4.2a1.8 1.8 0 0 1-1.8 1.8H6.8A1.8 1.8 0 0 1 5 18.2V9.8A1.8 1.8 0 0 1 6.8 8H11"/></svg>' },
-    { id: "about", labelKey: "set.tab.about", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="7.8"/><path d="M12 11v5.2M12 8.1v.1"/></svg>' }
+    { id: "outward", labelKey: "set.tab.outward", icon: sbZnak("outward") },
+    { id: "about", labelKey: "set.tab.about", icon: sbZnak("info") }
   ];
 
   /* -------------------------------------------------------------- helpers */
@@ -132,7 +132,8 @@
       if (!label.id) label.id = "stRowLabel" + (++rowSeq);
       row.querySelectorAll(".st-row-control button, .st-row-control input, .st-row-control select, .st-row-control textarea").forEach(function (c) {
         if (c.hasAttribute("aria-label") || c.hasAttribute("aria-labelledby")) return;
-        if (c.tagName === "BUTTON" && String(c.textContent || "").trim()) return;
+        /* слова тумблера «да · нет» спрятаны от чтеца (aria-hidden) — имя ему даёт строка */
+        if (c.tagName === "BUTTON" && c.getAttribute("role") !== "switch" && String(c.textContent || "").trim()) return;
         c.setAttribute("aria-labelledby", label.id);
       });
     });
@@ -140,7 +141,12 @@
 
   function switchMarkup(key) {
     var on = toggleState(key);
-    return '<button type="button" class="st-switch' + (on ? " on" : "") + '" role="switch" aria-checked="' + (on ? "true" : "false") + '" data-toggle="' + esc(key) + '"><i></i></button>';
+    return '<button type="button" class="st-switch' + (on ? " on" : "") + '" role="switch" aria-checked="' + (on ? "true" : "false") + '" data-toggle="' + esc(key) + '">' + switchWords() + "</button>";
+  }
+  /* Тумблер — пара слов «да · нет» в кромке света (Чистота Б, D-840-WORDS-SWITCHES):
+     кнопка, её роль и aria-checked прежние; выбранное слово горит. */
+  function switchWords() {
+    return '<span class="st-sw-yes" aria-hidden="true">' + esc(t("set.switch.on")) + '</span><span class="st-sw-no" aria-hidden="true">' + esc(t("set.switch.off")) + "</span>";
   }
 
   /* ------------------------------------------------------------- sections */
@@ -152,30 +158,52 @@
     return "en";
   }
 
+  /* Касательный ввод: нет мыши-указателя или стоит отметка касания ядра. */
+  function touchInput() {
+    var r = document.documentElement;
+    if (r.getAttribute("data-input") === "touch" || r.classList.contains("is-touch")) return true;
+    return !!(window.matchMedia && window.matchMedia("(any-pointer: coarse)").matches && !window.matchMedia("(pointer: fine)").matches);
+  }
+
   function generalMarkup() {
-    var name = "guest";
+    /* Пустое имя — пустое поле, а «гость» на языке человека — подсказкой поля
+       (D-1000-NAME-FIELD-HONEST): в поле не стоит слово, которое человек не набирал. */
+    var name = "", guestPh = "";
     if (typeof window.sbGetUsername === "function") {
-      try { name = window.sbGetUsername() || "guest"; } catch (err) { console.error("[settings] username read failed", err); }
+      try { name = window.sbGetUsername() || ""; } catch (err) { console.error("[settings] username read failed", err); }
+    }
+    if (typeof window.sbGuestWord === "function") {
+      guestPh = window.sbGuestWord();
+      if (name === guestPh && typeof window.sbUsernameStored === "function" && !window.sbUsernameStored()) name = "";
     }
     var langNow = currentLang();
-    var langs = [{ code: "en", label: "English" }, { code: "ru", label: "Русский" }, { code: "ee", label: "Eesti" }];
+    /* Языки — один вид везде (обход п.19): «eesti · english · русский», строчными,
+       каждое имя на своём языке, порядок как в шапке. Выбор — словами со светом;
+       сам список остаётся в разметке (его читают законы) и получает значение. */
+    var langs = [{ code: "ee", label: "eesti" }, { code: "en", label: "english" }, { code: "ru", label: "русский" }];
     var options = langs.map(function (l) {
       return '<option value="' + esc(l.code) + '"' + (l.code === langNow ? " selected" : "") + ">" + esc(l.label) + "</option>";
+    }).join("");
+    var words = langs.map(function (l) {
+      var on = l.code === langNow;
+      return '<button type="button" class="st-seg' + (on ? " active" : "") + '" data-lang-pick="' + esc(l.code) + '" lang="' + (l.code === "ee" ? "et" : l.code) + '" aria-pressed="' + (on ? "true" : "false") + '">' + esc(l.label) + "</button>";
     }).join("");
     return '<h2 class="st-title">' + esc(t("set.tab.general")) + "</h2>" +
       installRow() +
       rowMarkup(esc(t("set.general.identity")),
         /* «Письма» ушли в Разговор (tekst.md п.10): подпись больше не перечисляет комнаты. */
         esc(t("set.general.identitySub")),
-        '<span class="st-username"><input type="text" id="stUsername" maxlength="18" spellcheck="false" autocomplete="off" value="' + esc(name) + '">' +
+        '<span class="st-username"><input type="text" id="stUsername" maxlength="24" spellcheck="false" autocomplete="off" placeholder="' + esc(guestPh) + '" value="' + esc(name) + '">' +
           '<span class="st-saved" id="stUsernameSaved">' + esc(t("set.general.saved")) + "</span></span>") +
       rowMarkup(esc(t("set.general.language")), esc(t("set.general.languageSub")),
         /* Имена языков — каждое на своём языке, по всеобщему обычаю: человек,
            не читающий по-русски, ищет слово «English», а не «Английский».
            Это единственное место, где кириллица на английском экране
            законна, и оно объявлено вне языка (D-253). */
-        '<select class="st-select" id="stLang" data-sb-nolang>' + options + "</select>") +
-      '<div class="st-note"><p>' + esc(t("set.general.note")) + "</p></div>";
+        '<span class="st-segment" role="group" aria-label="' + esc(t("set.general.language")) + '" data-sb-nolang>' + words + "</span>" +
+        '<select class="st-select st-select-quiet" id="stLang" data-sb-nolang tabindex="-1" aria-hidden="true">' + options + "</select>") +
+      /* Клавиш на касании нет — и обещания клавиш тоже (Чистота Б, п.6). */
+      '<div class="st-note"><p>' + esc(t(touchInput() ? "set.general.noteTouch" : "set.general.note")) + "</p></div>";
   }
 
   /* ── РЯД КРАСОК СНЯТ ЦЕЛИКОМ (D-141) ───────────────────────────────────
@@ -331,9 +359,9 @@
       /* Единственный выключатель системы, за которым стоит выход наружу
          (D-198, слой 3). Он выключен по умолчанию, и подпись рядом говорит
          ровно это, а не «улучшить уведомления». */
-      rowMarkup(esc(t("set.desktop.wake")), esc(t("set.desktop.wakeSub")), switchMarkup("wakeOutside")) +
-      rowMarkup(esc(t("set.desktop.tidy")), esc(t("set.desktop.tidySub")),
-        '<button type="button" class="st-btn" id="stTidy">' + esc(t("set.desktop.tidyBtn")) + "</button>");
+      rowMarkup(esc(t("set.desktop.wake")), esc(t("set.desktop.wakeSub")), switchMarkup("wakeOutside"));
+      /* «Выровнять виджеты» снята (обход п.68): виджетов на столе нет — строка
+         обещала то, чего не бывает. Вернётся вместе с виджетами. */
   }
 
   function profilesApi() { return window.sbProfiles || null; }
@@ -534,11 +562,8 @@
   function aboutMarkup() {
     /* ОТКАТ: печати сборки ещё нет — имя системы у ядра, иначе само слово. */
     var build = (window.sbBuild && window.sbBuild.name) || "sys.baby";
-    var registered = null, launchable = null;
     try {
       if (window.sbBuild && typeof window.sbBuild.stamp === "function") build = window.sbBuild.stamp();
-      if (window.SysBaby && window.SysBaby.order) registered = window.SysBaby.order.length;
-      if (typeof window.sbLaunchableApps === "function") launchable = window.sbLaunchableApps().length;
     } catch (err) { console.error("[settings] about read failed", err); }
 
     var keyCount = 0;
@@ -573,15 +598,13 @@
 
     var rows = [
       [t("set.about.build"), esc(build)],
-      [t("set.about.apps"), registered != null
-        ? esc(t("set.about.appsValue", { registered: registered, launchable: launchable }))
-        : esc(t("set.about.appsNA"))],
       [t("set.about.madeOf"), esc(t("set.about.madeOfValue"))],
       [t("set.about.runsOn"), esc(t("set.about.runsOnValue"))],
-      [t("set.about.data"), esc(t("set.about.dataValue", { count: keyCount })) + " · <span id='stAboutStorage'>" + esc(t("set.storage.measuring")) + "</span>"],
+      /* Сколько занято — одно место, Приватность (обход п.60); здесь — только своё. */
+      [t("set.about.data"), esc(t("set.about.dataValue", { count: keyCount }))],
       [t("set.about.network"), esc(t("set.about.networkValue"))],
       /* Языки называют себя на себе — это не перевод, а имена собственные. */
-      [t("set.about.languages"), "English · Русский · Eesti"]
+      [t("set.about.languages"), "eesti · english · русский"]
     ].map(function (pair) {
       return '<div class="st-spec"><span>' + esc(pair[0]) + "</span><span>" + pair[1] + "</span></div>";
     }).join("");
@@ -695,7 +718,7 @@
       (rows.ty || rows.rod || rows.dom ? '<button type="button" class="st-btn st-meet-again" id="stMeetAgain">' + esc(t("set.meet.again")) + "</button>" : "") +
       '<h3 class="st-subtitle">' + esc(t("set.meet.pubTitle")) + "</h3>" +
       '<div class="st-group">' + rowMarkup(esc(t("set.meet.pub")), esc(t("set.meet.pubSub")),
-        '<button type="button" class="st-switch' + (p.pub ? " on" : "") + '" role="switch" aria-checked="' + (p.pub ? "true" : "false") + '" id="stMeetPub" aria-label="' + esc(t("set.meet.pub")) + '"><i></i></button>') + "</div>" +
+        '<button type="button" class="st-switch' + (p.pub ? " on" : "") + '" role="switch" aria-checked="' + (p.pub ? "true" : "false") + '" id="stMeetPub" aria-label="' + esc(t("set.meet.pub")) + '">' + switchWords() + "</button>") + "</div>" +
       '<h3 class="st-subtitle">' + esc(t("set.meet.timeTitle")) + "</h3>" +
       '<div class="st-group">' + rowMarkup(esc(t("set.meet.time")), esc(t("set.meet.timeSub")),
         '<span class="st-segment" role="group" aria-label="' + esc(t("set.meet.time")) + '">' + [["lines", "set.meet.time.lines"], ["dust", "set.meet.time.dust"]].map(function (o) {
@@ -802,7 +825,6 @@
        первого касания не случается. */
     if (window.sbPaintAllRanges) window.sbPaintAllRanges(host);
     if (section === "privacy") measureStorage(win, "#stStorage");
-    if (section === "about") measureStorage(win, "#stAboutStorage");
   }
 
   /* Строки раздела — одной карточкой (D-634): соседние .st-row собираются
@@ -843,7 +865,6 @@
     wireMeet(win, host);
     wireAppearance(win, host);
     wireSound(win, host);
-    wireDesktop(win, host);
     wirePrivacy(win, host);
     wireAdvanced(win, host);
   }
@@ -912,6 +933,13 @@
       });
     }
     var langSel = host.querySelector("#stLang");
+    if (langSel) host.querySelectorAll("[data-lang-pick]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (langSel.value === b.getAttribute("data-lang-pick")) return;
+        langSel.value = b.getAttribute("data-lang-pick");
+        langSel.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    });
     if (langSel) {
       langSel.addEventListener("change", function () {
         if (typeof window.sbSetLang !== "function") return;
@@ -939,7 +967,10 @@
       if (typeof applied !== "string" && typeof window.sbGetUsername === "function") {
         try { applied = window.sbGetUsername(); } catch (err) { console.error("[settings] username read failed", err); }
       }
-      if (typeof applied === "string") input.value = applied;
+      /* Пока человек печатает, поле не переписывается (D-1000): иначе пробел между
+         «Анна» и «Мария» снимался обрезкой краёв через полсекунды паузы — и имя
+         склеивалось молча. Как сохранено — видно, когда он ушёл из поля. */
+      if (typeof applied === "string" && typing !== true) input.value = applied === (window.sbGuestWord ? window.sbGuestWord() : "") && window.sbUsernameStored && !window.sbUsernameStored() ? "" : applied;
       if (savedTag) {
         savedTag.classList.add("show");
         setTimeout(function () { savedTag.classList.remove("show"); }, 1400);
@@ -1041,16 +1072,6 @@
       if (window.SysBaby && typeof window.SysBaby.playNotifSound === "function") {
         try { window.SysBaby.playNotifSound(); } catch (err) { console.error("[settings] chime failed", err); }
       }
-    });
-  }
-
-  function wireDesktop(win, host) {
-    var tidy = host.querySelector("#stTidy");
-    if (!tidy) return;
-    tidy.addEventListener("click", function () {
-      if (typeof window.sbTidyWidgets !== "function") return;
-      try { window.sbTidyWidgets(); } catch (err) { console.error("[settings] tidy failed", err); }
-      toast(t("set.desktop.tidyDoneTitle"), t("set.desktop.tidyDoneBody"));
     });
   }
 

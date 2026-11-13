@@ -54,6 +54,9 @@
 .fv-crumb-sep { color: var(--ink-3); font-size: var(--f-ui); }
 
 .fv-tools { display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto; min-width: 0; }
+/* в корне крошки нет (D-915) — пустая колонка не держит места, ряд инструментов по центру окна (room-center, D-273) */
+.fv-crumbs:empty { display: none; }
+.fv-bar:has(.fv-crumbs:empty) { justify-content: center; }
 /* Узкий экран: ряд крошек и ряд инструментов — по центру окна, как и всё
    содержимое комнаты (решение основателя 05.11). Охраняется
    tools/room-center-check.mjs. */
@@ -135,12 +138,16 @@
 .fv-tile.folder { background: linear-gradient(160deg, rgba(var(--ink-rgb), .16), rgba(var(--ink-rgb), .05)); }
 .fv-tile svg { width: 23px; height: 23px; }
 
+/* Имя — две строки с многоточием, а не срез по высоте (обход п.47). */
 .fv-name {
   font-size: var(--f-meta);
   line-height: var(--lh-ui);
   text-align: center;
   word-break: break-word;
-  max-height: 30px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
 }
 

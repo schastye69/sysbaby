@@ -29,7 +29,8 @@
   "use strict";
 
   var doc = document;
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><path d="M3.5 12h17"/><path d="M12 3.4c2.4 2.4 3.6 5.3 3.6 8.6s-1.2 6.2-3.6 8.6c-2.4-2.4-3.6-5.3-3.6-8.6S9.6 5.8 12 3.4Z"/></svg>';
+  /* Чистота А: знака этой комнаты в малом наборе нет — значок не рисуется, остаётся слово (имя комнаты). */
+  var ICON = "";
 
   var HIST_KEY = "sysbaby.browser.history";
   var MARK_KEY = "sysbaby.browser.marks";
@@ -142,11 +143,11 @@
   };
 
   var I = {
-    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>',
-    fwd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg>',
-    again: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5V10h-5.5"/></svg>',
-    mark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4.5h11v15l-5.5-4-5.5 4z"/></svg>',
-    out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 5.5H19V11"/><path d="M19 5.5 11 13.5"/><path d="M17 14.5v3.5a1.5 1.5 0 0 1-1.5 1.5H6a1.5 1.5 0 0 1-1.5-1.5V8.5A1.5 1.5 0 0 1 6 7h3.5"/></svg>'
+    back: sbZnak("back"),
+    fwd: sbZnak("fwd"),
+    again: "",   /* Чистота А: знака «обновить» в малом наборе нет — на кнопке слово */
+    mark: sbZnak("star"),
+    out: sbZnak("outward")
   };
 
   function markup() {
@@ -154,7 +155,7 @@
       '<div class="br-bar">' +
         '<button type="button" class="br-btn br-back" aria-label="' + esc(t("br.back")) + '" title="' + esc(t("br.back")) + '">' + I.back + "</button>" +
         '<button type="button" class="br-btn br-fwd" aria-label="' + esc(t("br.fwd")) + '" title="' + esc(t("br.fwd")) + '">' + I.fwd + "</button>" +
-        '<button type="button" class="br-btn br-again" aria-label="' + esc(t("br.again")) + '" title="' + esc(t("br.again")) + '">' + I.again + "</button>" +
+        '<button type="button" class="br-btn br-again" aria-label="' + esc(t("br.again")) + '" title="' + esc(t("br.again")) + '">' + (I.again || '<span class="sb-word">' + esc(String(t("br.again")).toLowerCase()) + "</span>") + "</button>" +
         '<input class="br-url" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" ' +
           'placeholder="' + esc(t("br.placeholder")) + '" aria-label="' + esc(t("br.placeholder")) + '" />' +
         '<button type="button" class="br-btn br-mark" aria-label="' + esc(t("br.bookmark")) + '" title="' + esc(t("br.bookmark")) + '">' + I.mark + "</button>" +

@@ -38,8 +38,8 @@
   function mss(ms) { var s = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return (h ? h + ":" + p2(m) : m) + ":" + p2(s % 60); }
   function swf(ms) { var t = Math.floor(ms / 100), s = Math.floor(t / 10), m = Math.floor(s / 60); return { main: m + ":" + p2(s % 60), sub: "," + (t % 10) }; }
 
-  var X = '<svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg>';
-  function chev(d) { return '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="' + (d < 0 ? "M10 3L5 8l5 5" : "M6 3l5 5-5 5") + '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'; }
+  var X = sbZnak("close");
+  function chev(d) { return sbZnak(d < 0 ? "back" : "fwd"); }
   var TABS = ["cal", "timer", "sw", "alarm"];
   var MODE2TAB = { timer: "timer", stopwatch: "sw", alarm: "alarm" };
   var PRE = [45000, 180000, 300000, 600000, 1500000];
@@ -56,7 +56,7 @@
       }).join("") + '</div>' +
       '<div class="ck-sec-tab" data-sec="cal" role="tabpanel"><div class="ck-mh"><b class="ck-mon"></b><span class="ck-year"></span><span style="flex:1"></span>' +
       '<button class="ck-nav" type="button" data-nav="-1" aria-label="' + esc(T("clock.prev")) + '">' + chev(-1) + '</button><button class="ck-nav" type="button" data-nav="1" aria-label="' + esc(T("clock.next")) + '">' + chev(1) + '</button></div>' +
-      '<div class="ck-grid"></div><div class="ck-hint">' + esc(T("clock.cal.hint")) + '</div></div>' +
+      '<div class="ck-grid"></div><div class="ck-hint">' + esc(T(doc.documentElement.classList.contains("is-touch") ? "clock.cal.hint" : "clock.cal.hintPointer")) + '</div></div>' +
       '<div class="ck-sec-tab" data-sec="timer" role="tabpanel"><div class="ck-big"><span class="m ck-lt ck-tm">0:00</span></div><div class="ck-sub ck-tsub" aria-live="polite"></div>' +
       '<div class="ck-tray small ck-pre">' + PRE.map(function (ms) { return '<button class="ck-w" type="button" data-ms="' + ms + '" aria-pressed="false">' + esc(preLabel(ms)) + '</button>'; }).join("") + '</div>' +
       '<input class="ck-field ck-tname" type="text" maxlength="24" autocomplete="off" placeholder="' + esc(T("clock.timer.name")) + '" aria-label="' + esc(T("clock.timer.nameAria")) + '">' +
@@ -71,7 +71,14 @@
   function isOpen() { return !!(api && api.isOpen()); }
 
   /* ---------- место: под полосой, справа; время на столе — ниже панели ---------- */
-  function topY() { var tb = doc.getElementById("topbar"); var r = tb ? tb.getBoundingClientRect() : null; return Math.round((r && r.height ? r.bottom : 44) + 8); }
+  /* Не на телефоне панель встаёт под рядом значков (Чистота, D-845): зона значков
+     неприкосновенна; низ ряда называет ядро (sbIconZoneBottom). */
+  function topY() {
+    var tb = doc.getElementById("topbar"); var r = tb ? tb.getBoundingClientRect() : null;
+    var y = Math.round((r && r.height ? r.bottom : 44) + 8);
+    if (!root.classList.contains("is-compact") && Number(window.sbIconZoneBottom) > 0) y = Math.max(y, Math.round(window.sbIconZoneBottom + 12));
+    return y;
+  }
   function layout() {
     var top = topY();
     panel.style.top = top + "px";

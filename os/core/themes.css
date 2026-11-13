@@ -21,6 +21,7 @@ html[data-wp-mood="aurora"]:not([data-theme="light"]) {
 }
 /* Затмение — тёплый янтарь в тон кромке за диском (D-872), не молоко Тепла. */
 html:is([data-wp-mood="ember"], [data-wp-mood="eclipse"]):not([data-theme="light"]) {
+  --note-veil-a: .44;   /* кромка обходит круг за 60 с, её ореол (D-909) проходит под серединой стола — подложка заметки плотнее */
   --edge-rgb: 255, 214, 170;
   --edge-glow: 0 0 26px 2px rgba(255,190,130,.12), 0 14px 30px -10px rgba(240,160,100,.16);
   --brass: 0 0 0 1.5px rgba(222,170,112,.92), 0 0 0 3px rgba(30,18,10,.6), 0 0 22px 3px rgba(235,160,90,.18);
@@ -77,7 +78,7 @@ html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) {
   --edge-glow: 0 0 26px 2px rgba(255,222,194,.12), 0 14px 30px -10px rgba(255,222,194,.16);
   --brass: 0 0 0 1.5px rgba(238,136,58,.92), 0 0 0 3px rgba(20,14,6,.6), 0 0 22px 3px rgba(238,136,58,.2);
   --ember-dot: #ff9a52;
-  --tile5-edge: rgba(255,222,194,.225);   /* сила кромки прежняя (D-736), цвет — молоко Мандарина */
+  --tile5-edge: rgba(255,222,194,.09);   /* тёплая кайма ≤ .10 (Чистота З6), цвет — молоко Мандарина */
   /* свет из-под двери (извещение) — тем же молоком */
   --door-light: radial-gradient(46% 100% at 50% 100%, rgba(255,222,194,.34), rgba(255,222,194,.12) 46%, transparent 78%);
   --door-thread: rgba(255,222,194,.95);
@@ -88,3 +89,76 @@ html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) {
   --sbv-pool: rgba(255, 170, 110, .075);
 }
 /* Свет из-под двери голоса берёт акцент темы в voice.css (D-823) — своё правило Тепла здесь снято, чтобы цвет не задавался в двух местах. */
+
+/* ── ТЕМА ДОХОДИТ ДО ВСЕГО · Чистота (D-875-THEME-REACHES-ALL, обход п.70–74) ──
+ * Океан: молоко знака холодно-белое, а не кремовое; Океан и Аврора: тьма
+ * меню, пульта, подносов и панели часов (--menu-bg) — из поля темы, а не
+ * нейтрально-серая; Аврора: стекло окна — того же сине-лилового вещества,
+ * что поле, а не бутылочно-зелёное от зелёного света шва. Затмение, Тепло и
+ * Светлица — прежние. ОТКАТ: снять этот блок. */
+html[data-wp-mood="ocean"]:not([data-theme="light"]) {
+  --glyph-1: #F4FAFF; --glyph-2: #DCEAF8; --glyph-3: #7F93A8; --glyph-4: #3f4a58;
+  --menu-bg: #141a26;
+  --door-thread: rgba(222, 240, 255, .95);
+}
+html[data-wp-mood="aurora"]:not([data-theme="light"]) {
+  --glyph-1: #F6F4FF; --glyph-2: #E2DEF6; --glyph-3: #8C87A8; --glyph-4: #45405a;
+  --menu-bg: #171528;
+  --door-thread: rgba(236, 232, 255, .95);
+  --win-pane-1: color-mix(in srgb, rgb(120, 96, 236) 16%, var(--bg-elev));
+  --win-pane-2: color-mix(in srgb, rgb(84, 104, 220) 11%, var(--bg));
+}
+
+/* ── «ГЛУБИНА» — ВИД ЧЕТЫРЁХ ТЕМ · решение D-1080 (пакет GLUBINA) ─────────
+ * Основатель 12.11.2026 (показ temy-glubina): «глубина» — сам вид Тепла,
+ * Океана, Авроры и Затмения, без переключателя. Холст — core/depth.js
+ * (#sbDepthField), не зависящее от темы — core/depth.css. Светлица и
+ * инкогнито — прежние. ОТКАТ: снять этот блок (и подключение depth.*). */
+#sbDepthField { display: none; }
+html:not([data-theme="light"]):not(.sb-incognito):not(.sb-depth-nogl) #sbDepthField { display: block; width: 100%; height: 100%; }
+/* слои прежнего поля под глубиной не видны (поле и не рисует — suppressed() в field.js) */
+html:not([data-theme="light"]):not(.sb-incognito):not(.sb-depth-nogl) :is(#sbGrain, #sbStone, #sbBreath) { visibility: hidden !important; }
+/* свет комнаты по часам (#sbMoodTint, D-107/D-127: ночью темнее, днём светлее) остаётся — тише, чтобы
+   глубина пола и потолок света под тихими словами держались (wallpaper-light, note-contrast) */
+html:not([data-theme="light"]):not(.sb-incognito):not(.sb-depth-nogl) #sbMoodTint { opacity: .38; }
+
+/* ── слова и стекло: общие для четырёх тем ── */
+html:not([data-theme="light"]):not(.sb-incognito) {
+  --dp-base: 19, 8, 2;   /* обе темы: пол холста глубины — Светлица его не читает (холст в ней не виден) */
+  --ink: #f7f4f0;
+  --ink-2: rgba(247, 244, 240, .82);
+  --ink-3: rgba(247, 244, 240, .70);
+  /* окно — стекло «B» системы (D-809: ровная плотная заливка без размытия из света поля темы), не тёмная
+     плита: основатель 12.11.2026 — окна глубины читались кирпичами; токены окна прежние, из core.css */
+  /* плитки знаков — прежние (D-736 «средне», tile-look): стекло знака не тронуто */
+}
+/* пол холста — свой оттенок черноты у каждой темы (шапка и плита пульта берут его же); токены --bg, --bg-elev,
+   --menu-bg, --air-rgb — прежние: у Тепла тьма Мандарина (D-824), у остальных — core.css (teplo-mandarin п.4) */
+html[data-wp-mood="ocean"]:not([data-theme="light"]):not(.sb-incognito) { --dp-base: 2, 3, 10; }
+html[data-wp-mood="aurora"]:not([data-theme="light"]):not(.sb-incognito) { --dp-base: 2, 6, 9; }
+html:is([data-wp-mood="ember"], [data-wp-mood="eclipse"]):not([data-theme="light"]):not(.sb-incognito) { --dp-base: 1, 1, 1; }
+
+/* шапка: та же чернота, без цветной дымки — свет темы остаётся внизу, в дуге */
+html:not([data-theme="light"]):not(.sb-incognito):not(.sb-depth-nogl) #topbar {
+  background: linear-gradient(180deg, rgba(var(--dp-base), .78), rgba(var(--dp-base), .30) 62%, transparent);
+}
+
+/* пульт: плита глубины — та же чернота пола под стеклом, чтобы свет темы (оранжевое зарево Тепла, облако)
+   не проступал сквозь размытие под тихими словами (pult-krupno, light-contrast ≥ 4,5:1). Пересекается с
+   правкой плиты пульта в зоне D — при сборке оставить одну, плотностью не ниже этой. */
+html:not([data-theme="light"]):not(.sb-incognito):not(.sb-depth-nogl) #sbControlCenter:not(.krupno) {
+  background: linear-gradient(rgba(var(--dp-base), .72), rgba(var(--dp-base), .72)), var(--glass);
+}
+/* «крупные числа»: своя плита (--kn-glass, D-908) — в глубине та же чернота пола, плотнее */
+html:not([data-theme="light"]):not(.sb-incognito):not(.sb-depth-nogl) #sbControlCenter.krupno {
+  --kn-glass: linear-gradient(180deg, color-mix(in srgb, rgb(var(--dp-base)) 93%, transparent), color-mix(in srgb, rgb(var(--dp-base)) 97%, transparent));
+}
+
+/* ворота Шифра темы не носят (D-700, gate-plain): слова и плитки глубины на них не действуют — те же
+   числа, что у вида по умолчанию в core.css */
+#sbVaultGate#sbVaultGate {
+  color: var(--ink);
+  --ink: #f2f2f0;
+  --ink-2: rgba(242, 242, 240, .70);
+  --ink-3: rgba(242, 242, 240, .61);
+}

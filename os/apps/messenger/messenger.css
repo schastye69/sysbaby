@@ -31,6 +31,8 @@
   padding: 10px 8px;
   border-bottom: 1px solid rgba(var(--film-rgb), .07);
 }
+/* переписок нет — поиска нет (обход п.52): один «+» в ряду стоит по центру, как и пустой экран под ним (room-center, D-273) */
+.mg-side-top:has(.mg-side-gap) { justify-content: center; }
 
 .mg-input {
   flex: 1;
@@ -73,7 +75,7 @@
   :where(html:not([data-input="touch"])) .mg-newbtn:hover, :where(html:not([data-input="touch"])) .mg-attach-btn:hover { background: rgba(var(--film-rgb), .13); }
 }
 .mg-newbtn svg, .mg-attach-btn svg, .mg-send svg { width: 16px; height: 16px; }
-.mg-send { background: var(--accent); border-color: transparent; color: var(--on-accent); }
+.mg-send { background: var(--lamp5-bg); border: 0; box-shadow: var(--lamp5-edge); color: var(--lamp5-ink); }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал. Повод — снимок основателя
@@ -528,7 +530,7 @@
 .mg-seal-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .mg-seal-row .mg-input { flex: 1 1 180px; min-width: 0; }
 .mg-seal-text {
-  width: 100%; min-height: 68px; resize: vertical; padding: 8px 10px; box-sizing: border-box;
+  width: 100%; min-height: 68px; resize: none; padding: 8px 10px; box-sizing: border-box;
   font-family: var(--mono); font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-2); overflow-wrap: anywhere;
   background: rgba(var(--shade-rgb), calc(.18 * var(--sink-k))); border: 1px solid var(--line); border-radius: var(--r-ctrl);
 }

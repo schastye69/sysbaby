@@ -17,10 +17,10 @@
   var KEY_V2 = "sysbaby.messenger.v2";
   var KEY_V1 = "sysbaby.messenger.v1";
 
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.4A1.9 1.9 0 0 1 6.4 4.5h11.2a1.9 1.9 0 0 1 1.9 1.9v7.4a1.9 1.9 0 0 1-1.9 1.9H9.8L5.6 19.3a.6.6 0 0 1-1-.47V15.7a1.9 1.9 0 0 1-.1-.6V6.4Z"/></svg>';
-  var PAPERCLIP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18.5 11.3 12 17.8a4 4 0 0 1-5.7-5.7l7-7a2.7 2.7 0 0 1 3.8 3.8l-7 7a1.3 1.3 0 0 1-1.9-1.9l6.3-6.3"/></svg>';
-  var FILE_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/></svg>';
-  var GROUP_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9.5" r="3"/><path d="M3.8 19a5.2 5.2 0 0 1 10.4 0"/><path d="M16 7.1a2.9 2.9 0 0 1 0 5.6M17.4 19a5.2 5.2 0 0 0-2-4.1"/></svg>';
+  var ICON = sbZnak("messenger");
+  var PAPERCLIP = sbZnak("clip");
+  var FILE_GLYPH = sbZnak("file");
+  var GROUP_GLYPH = sbZnak("people");
 
   var PALETTE = ["#0a84ff", "#ff9500", "#30d158", "#ff375f", "#5e5ce6", "#ffd60a", "#64d2ff", "#bf5af2"];
   var REACTIONS = ["👍", "❤️", "😂", "😮", "😢"];
@@ -348,11 +348,11 @@
       '<span class="mg-convo-actions">' +
         '<button type="button" class="mg-mini" data-mute="' + esc(c.id) + '" title="' + esc(c.muted ? t("mg.unmute") : t("mg.mute")) + '" aria-label="' + esc(c.muted ? t("mg.unmute") : t("mg.mute")) + '">' +
           (c.muted
-            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 9.5h3l4-3.2v11.4l-4-3.2h-3Z"/><path d="m15 9.5 4.5 5M19.5 9.5 15 14.5"/></svg>'
-            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 9.5h3l4-3.2v11.4l-4-3.2h-3Z"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6"/></svg>') +
+            ? sbZnak("mute")
+            : sbZnak("sound")) +
         "</button>" +
         '<button type="button" class="mg-mini danger" data-del-convo="' + esc(c.id) + '" title="' + esc(t("mg.delete")) + '" aria-label="' + esc(t("mg.deleteConvo")) + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l1 12.2a1 1 0 0 0 1 .9h7a1 1 0 0 0 1-.9L17.5 7"/></svg>' +
+          sbZnak("trash") +
         "</button>" +
       "</span>" +
     "</div>";
@@ -400,7 +400,7 @@
         (seen ? "<span>· " + esc(t("mg.seen")) + "</span>" : "") +
         '<button type="button" class="mg-meta-btn" data-react="' + esc(m.id) + '" title="' + esc(t("mg.react")) + '" aria-label="' + esc(t("mg.react")) + '">🙂</button>' +
         '<button type="button" class="mg-meta-btn" data-del-msg="' + esc(m.id) + '" title="' + esc(t("mg.delMsg")) + '" aria-label="' + esc(t("mg.delMsg")) + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l1 12.2a1 1 0 0 0 1 .9h7a1 1 0 0 0 1-.9L17.5 7"/></svg>' +
+          sbZnak("trash") +
         "</button>" +
       "</div>" +
     "</div>";
@@ -408,7 +408,7 @@
 
   function threadMarkup(win, c) {
     if (!c) {
-      return '<div class="mg-thread-empty"><div class="mg-glyph">' + ICON + "</div><p>" + esc(t("mg.selectConvo")) + "</p></div>";
+      return '<div class="mg-thread-empty"><div class="mg-glyph">' + ICON + "</div><p>" + esc(t(convos.length ? "mg.selectConvo" : "mg.listEmpty")) + "</p></div>";
     }
     var messages = c.messages || [];
     var lastOwnId = null;
@@ -444,12 +444,12 @@
         '<button type="button" class="mg-attach-btn" id="mgAttach" title="' + esc(t("mg.attach", { files: appName("files") })) + '" aria-label="' + esc(t("mg.attach", { files: appName("files") })) + '">' + PAPERCLIP + "</button>" +
         '<input type="text" id="msgrInput" class="mg-input flat" placeholder="' + esc(t("mg.ph.message", { name: firstWord })) + '" autocomplete="off">' +
         '<button type="button" class="mg-send" id="mgSend" title="' + esc(t("mg.send")) + '" aria-label="' + esc(t("mg.send")) + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4 4 10.4l6.3 2.4L20 4Z"/><path d="M20 4 13.4 20l-3.1-7.2L20 4Z"/></svg>' +
+          sbZnak("send") +
         "</button>" +
       "</div>";
   }
 
-  var SEAL_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7.5h15v10a1.5 1.5 0 0 1-1.5 1.5H6a1.5 1.5 0 0 1-1.5-1.5v-10Z"/><path d="m4.5 7.5 7.5 6 7.5-6"/><circle cx="12" cy="16" r="1.4"/></svg>';
+  var SEAL_GLYPH = sbZnak("seal");
   /* Три тихие панели запечатанной переписки: общее слово, выданная печать,
      вставка полученной. Каждая открывается касанием и не висит без дела. */
   function sealPanels(win, c) {
@@ -530,15 +530,16 @@
       '<div class="app-msgr">' +
         '<aside class="mg-side">' +
           '<div class="mg-side-top">' +
-            '<input type="search" id="mgSearch" class="mg-input" placeholder="' + esc(t("mg.search")) + '" autocomplete="off" value="' + esc(win._msgrFilter) + '">' +
+            /* Пока переписок нет — поиска нет, и пустой экран говорит один раз (обход п.52). */
+            (convos.length || needle ? '<input type="search" id="mgSearch" class="mg-input" placeholder="' + esc(t("mg.search")) + '" autocomplete="off" value="' + esc(win._msgrFilter) + '">' : '<span class="mg-side-gap"></span>') +
             '<button type="button" class="mg-newbtn" id="mgNew" title="' + esc(t("mg.new")) + '" aria-label="' + esc(t("mg.new")) + '">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5.5v13M5.5 12h13"/></svg></button>' +
+              sbZnak("plus") + '</button>' +
           "</div>" +
           newFormMarkup(win) +
           '<div class="mg-list">' +
             (list.length
               ? list.map(convoRowMarkup).join("")
-              : '<div class="mg-list-empty">' + esc(needle ? t("mg.listEmptySearch", { q: win._msgrFilter.trim() }) : t("mg.listEmpty")) + "</div>") +
+              : (needle ? '<div class="mg-list-empty">' + esc(t("mg.listEmptySearch", { q: win._msgrFilter.trim() })) + "</div>" : "")) +
           "</div>" +
         "</aside>" +
         '<section class="mg-thread">' + threadMarkup(win, active) + "</section>" +

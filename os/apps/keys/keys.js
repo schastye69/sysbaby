@@ -25,8 +25,7 @@
   "use strict";
 
   var doc = document;
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
-    '<circle cx="8.2" cy="12" r="3.4"/><path d="M11.6 12h8.2M17 12v3.1M14.4 12v2.2"/></svg>';
+  var ICON = sbZnak("keys");
 
   var STORE_KEY = "sysbaby.keys.v1";
   var WIPE_AFTER = 20000;     /* через сколько буфер обмена затирается */
@@ -43,63 +42,60 @@
   var UI = {
     en: {
       title: "Keys", label: "Keys",
-      lead: "Passwords for places you keep. For places created here the password is not stored anywhere — it is derived from your locked vault, on this device, every time.",
-      needLock: "Derived keys need the lock. Set it — and the passwords of places made here will not have to be stored at all: they will be derived from the lock.",
-      addPlace: "New place", place: "Place", login: "Login or e-mail", note: "Note",
-      modeDerived: "Derived — nothing is stored", modeStored: "My own — stored here",
-      own: "The password you already have", save: "Save", cancel: "Cancel",
-      show: "Show", hide: "Hide", copy: "Copy", copied: "Copied — the clipboard clears itself in 20 seconds",
-      rotate: "New password", rotated: "Changed. The old one will never come back.",
+      lead: "Passwords for the places you keep. They are not stored here — they are derived anew every time.",
+      needLock: "The lock comes first — the passwords are derived from it.",
+      addPlace: "new place", place: "Place", login: "Login or e-mail", note: "Note",
+      modeDerived: "derived — nothing is stored", modeStored: "my own — stored here",
+      own: "The password you already have", save: "save", cancel: "cancel",
+      show: "show", hide: "hide", copy: "copy", copied: "Copied — the clipboard clears itself in 20 seconds",
+      rotate: "new password", rotated: "Changed. The old one will never come back.",
       rotateAsk: "New password for {place}? The current one is no longer shown here and will not come back \u2014 change it on the site right after.",
       removeAsk: "Forget {place}? The place and the password it keeps are gone for good.",
-      remove: "Forget this place", search: "Search places", empty: "Nothing here yet.", miss: "No places match “{q}”",
+      remove: "forget this place", search: "Search places", empty: "Nothing here yet.", miss: "No places match “{q}”",
       counter: "change", derived: "derived", stored: "stored",
-      honest: "What this cannot do: passwords made elsewhere cannot be derived — those are stored, like everything else — sealed while the lock stands. And one master word opens all of them at once: that is the price of having nothing to steal.",
-            costTitle: "What actually protects all of this",
+      honest: "Passwords made elsewhere are stored sealed. One word of the lock opens them all — make it long.",
       costBody: "One attempt at your master word costs {ms} ms on this very device — measured just now, not promised. A machine a thousand times faster still needs {years} to walk through a six-word phrase.",
-      costHonest: "And this is the honest part: the strength of the generated password barely matters. Nobody attacks it — they attack the one word you type. Make that one long.",
-      measure: "Measure it here",
+      measure: "measure the word’s strength here",
       dupe: "the same password is used in another place",
+      more: "how this works"
     },
     ru: {
       title: "Ключи", label: "Ключи",
-      lead: "Пароли мест, которые вы держите. Для мест, заведённых здесь, пароль не хранится нигде — он выводится из вашего запертого хранилища, на этом устройстве, каждый раз заново.",
-      needLock: "Выведенным ключам нужен замок. Поставьте его — и пароли мест, заведённых здесь, не придётся хранить вовсе: они будут выводиться из замка.",
-      addPlace: "Новое место", place: "Место", login: "Логин или почта", note: "Заметка",
-      modeDerived: "Выведенный — не хранится нигде", modeStored: "Свой — хранится здесь",
-      own: "Пароль, который у вас уже есть", save: "Сохранить", cancel: "Отмена",
-      show: "Показать", hide: "Скрыть", copy: "Копировать", copied: "Скопировано — буфер сотрётся через 20 секунд",
-      rotate: "Новый пароль", rotated: "Сменён. Прежний не вернётся никогда.",
+      lead: "Пароли мест, которые вы держите. Здесь они не хранятся — выводятся заново каждый раз.",
+      needLock: "Сначала нужен замок — из него и выводятся пароли.",
+      addPlace: "новое место", place: "Место", login: "Логин или почта", note: "Заметка",
+      modeDerived: "выведенный — не хранится нигде", modeStored: "свой — хранится здесь",
+      own: "Пароль, который у вас уже есть", save: "сохранить", cancel: "отмена",
+      show: "показать", hide: "скрыть", copy: "копировать", copied: "Скопировано — буфер сотрётся через 20 секунд",
+      rotate: "новый пароль", rotated: "Сменён. Прежний не вернётся никогда.",
       rotateAsk: "Новый пароль для {place}? Нынешний больше не покажется здесь и не вернётся \u2014 смените его на сайте сразу после.",
       removeAsk: "Забыть {place}? Место и пароль, который оно хранит, исчезнут навсегда.",
-      remove: "Забыть это место", search: "Поиск по местам", empty: "Здесь пока пусто.", miss: "Нет мест по запросу «{q}»",
+      remove: "забыть это место", search: "Поиск по местам", empty: "Здесь пока пусто.", miss: "Нет мест по запросу «{q}»",
       counter: "смена", derived: "выведенный", stored: "хранимый",
-      honest: "Чего это не может: пароли, заведённые не здесь, вывести нельзя — они хранятся, как всё остальное, — запечатанными, пока стоит замок. И одно мастер-слово открывает их все разом: это и есть цена того, что красть нечего.",
-            costTitle: "Что на самом деле держит всё это",
+      honest: "Пароли, заведённые не здесь, хранятся запечатанными. Одно слово замка открывает все — сделайте его длинным.",
       costBody: "Одна попытка подобрать ваше мастер-слово стоит {ms} мс на этом самом устройстве — измерено сейчас, а не обещано. Машине в тысячу раз быстрее на перебор фразы из шести слов нужно {years}.",
-      costHonest: "И вот честная часть: стойкость выданного пароля почти ничего не решает. Его никто не подбирает — подбирают то единственное слово, которое вы набираете руками. Сделайте его длинным.",
-      measure: "Измерить здесь",
+      measure: "измерить стойкость слова здесь",
       dupe: "такой же пароль стоит ещё в одном месте",
+      more: "как это устроено"
     },
     ee: {
       title: "Võtmed", label: "Võtmed",
-      lead: "Kohtade paroolid. Siin loodud kohtade parool ei ole kuskil salvestatud — see tuletatakse lukustatud hoidlast, selles seadmes, iga kord uuesti.",
-      needLock: "Tuletatud võtmed vajavad lukku. Pane see — ja siin loodud kohtade paroole ei pea üldse hoidma: need tuletatakse lukust.",
-      addPlace: "Uus koht", place: "Koht", login: "Kasutaja või e-post", note: "Märkus",
-      modeDerived: "Tuletatud — ei salvestata kuskil", modeStored: "Oma — hoitakse siin",
-      own: "Parool, mis sul juba on", save: "Salvesta", cancel: "Loobu",
-      show: "Näita", hide: "Peida", copy: "Kopeeri", copied: "Kopeeritud — lõikelaud tühjeneb 20 sekundiga",
-      rotate: "Uus parool", rotated: "Muudetud. Vana enam ei naase.",
+      lead: "Kohtade paroolid. Neid siin ei hoita — need tuletatakse iga kord uuesti.",
+      needLock: "Kõigepealt on vaja lukku — sellest tuletataksegi paroolid.",
+      addPlace: "uus koht", place: "Koht", login: "Kasutaja või e-post", note: "Märkus",
+      modeDerived: "tuletatud — ei salvestata kuskil", modeStored: "oma — hoitakse siin",
+      own: "Parool, mis sul juba on", save: "salvesta", cancel: "loobu",
+      show: "näita", hide: "peida", copy: "kopeeri", copied: "Kopeeritud — lõikelaud tühjeneb 20 sekundiga",
+      rotate: "uus parool", rotated: "Muudetud. Vana enam ei naase.",
       rotateAsk: "Uus parool kohale {place}? Praegust siin enam ei näidata ja see ei naase \u2014 vaheta see saidil kohe pärast.",
       removeAsk: "Kas unustada {place}? Koht ja selle hoitav parool kaovad jäädavalt.",
-      remove: "Unusta see koht", search: "Otsi kohti", empty: "Siin pole veel midagi.", miss: "Otsingule „{q}“ ei vasta ükski koht",
+      remove: "unusta see koht", search: "Otsi kohti", empty: "Siin pole veel midagi.", miss: "Otsingule „{q}“ ei vasta ükski koht",
       counter: "vahetus", derived: "tuletatud", stored: "hoitud",
-      honest: "Mida see ei suuda: mujal loodud paroole ei saa tuletada — need hoitakse nagu kõik muu — pitseerituna, kuni lukk seisab. Ja üks peasõna avab need kõik korraga: see ongi hind selle eest, et varastada pole midagi.",
-            costTitle: "Mis seda kõike tegelikult hoiab",
+      honest: "Mujal loodud paroole hoitakse pitseerituna. Üks luku sõna avab need kõik — tee see pikaks.",
       costBody: "Üks katse sinu peasõna ära arvata maksab sellessamas seadmes {ms} ms — mõõdetud praegu, mitte lubatud. Tuhat korda kiiremal masinal kulub kuuesõnalise fraasi läbikäimiseks {years}.",
-      costHonest: "Ja aus osa: loodud parooli tugevus ei otsusta peaaegu midagi. Seda ei murra keegi — murtakse seda ühte sõna, mille sa käsitsi kirjutad. Tee see pikaks.",
-      measure: "Mõõda siin",
+      measure: "mõõda sõna tugevust siin",
       dupe: "sama parool on veel ühes kohas",
+      more: "kuidas see töötab"
     }
   };
 
@@ -268,17 +264,22 @@
     }) : list;
 
     var out = '<div class="ky-wrap">';
+    /* Чистота Б (D-843-ONE-ACTION): заголовок, повторявший шапку окна, — только
+       для чтеца; вступление две строки; без замка главное действие одно —
+       «поставить замок» (светильник), «новое место» — тихое слово; поиск
+       появляется, когда есть что искать; «как это устроено» — свёрнуто. */
+    var lockOn = vaultOpen();
     out += '<header class="ky-head">' +
       '<h1 class="ky-title">' + esc(t.title) + "</h1>" +
       '<p class="ky-lead">' + esc(t.lead) + "</p>" +
       /* Причина — и сразу дорога к замку, одна на всю систему (D-317). */
-      (vaultOpen() ? "" : '<div class="ky-need"><p class="ky-need-p">' + esc(t.needLock) + "</p>" +
+      (lockOn ? "" : '<div class="ky-need"><p class="ky-need-p">' + esc(t.needLock) + "</p>" +
         (window.sbLockCallHtml ? window.sbLockCallHtml() : "") + "</div>") +
       "</header>";
 
     out += '<div class="ky-bar">' +
-      '<input type="search" class="ky-search" id="kySearch" autocomplete="off" placeholder="' + esc(t.search) + '" aria-label="' + esc(t.search) + '" value="' + esc(query) + '">' +
-      '<button type="button" class="ky-add" id="kyAdd">+ ' + esc(t.addPlace) + "</button>" +
+      (list.length || q ? '<input type="search" class="ky-search" id="kySearch" autocomplete="off" placeholder="' + esc(t.search) + '" aria-label="' + esc(t.search) + '" value="' + esc(query) + '">' : "") +
+      '<button type="button" class="ky-add' + (lockOn ? "" : " ky-add-quiet") + '" id="kyAdd">' + sbZnak("plus") + esc(t.addPlace) + "</button>" +
       "</div>";
 
     if (adding) {
@@ -338,18 +339,16 @@
       out += "</div>";
     }
 
-    out += '<p class="ky-honest">' + esc(t.honest) + "</p>";
     /* ── ЦЕНА ОДНОЙ ПОПЫТКИ, ИЗМЕРЕННАЯ ЗДЕСЬ ЖЕ ────────────────────────
-       Не обещание в рекламе, а секундомер на этом устройстве. И рядом —
-       то, что производители менеджеров паролей не пишут никогда: стойкость
-       ВЫДАННОГО пароля почти ничего не решает, потому что подбирают не его. */
-    out += '<section class="ky-cost">' +
-      '<h3>' + esc(t.costTitle) + "</h3>" +
-      '<p class="ky-cost-line" id="kyCost">' +
-        '<button type="button" id="kyMeasure">' + esc(t.measure) + "</button>" +
-      "</p>" +
-      '<p class="ky-cost-honest">' + esc(t.costHonest) + "</p>" +
-      "</section>";
+       Не обещание в рекламе, а секундомер на этом устройстве. Вместе с
+       «чего это не может» — под «как это устроено», двумя строками. */
+    out += '<details class="sb-more"><summary>' + esc(t.more) + "</summary>" +
+      '<p class="ky-honest">' + esc(t.honest) + "</p>" +
+      '<section class="ky-cost">' +
+        '<p class="ky-cost-line" id="kyCost">' +
+          '<button type="button" id="kyMeasure">' + esc(t.measure) + "</button>" +
+        "</p>" +
+      "</section></details>";
     out += '<p class="ky-say" id="kySay" role="status"></p>';
     out += "</div>";
 

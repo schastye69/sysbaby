@@ -123,7 +123,7 @@
   function dnd() { return !!(window.sbGetControlToggle && window.sbGetControlToggle("dnd")); }
 
   /* ── шрифт ────────────────────────────────────────────────────────── */
-  /* Вариативный Nunito (OFL-1.1, ось веса 200–400, D-823): буквы собираются в лёгком
+  /* Вариативный Nunito (OFL-1.1, ось веса 200–700 — с H4b им говорит весь интерфейс, D-829; голос D-823): буквы собираются в лёгком
      весе wA, после сборки вес «наливается» до wF — тем весом стоит прозрачный носитель
      (.sb-vl в voice.css), поэтому итоговый кадр холста совпадает с раскладкой носителя. */
   var FONT = "SB Voice", fontsReady = false;
@@ -134,13 +134,16 @@
   function fcss(p, w) { return Math.round(w || wF()) + " " + (p || px()) + "px \"" + FONT + "\", system-ui, sans-serif"; }
   /* Грани шрифта голоса — здесь, а не @font-face в voice.css (доска H4, ark-check): адреса берутся у
      link rel="sb-precache" data-face (их же читает опись офлайна), Ковчег подменяет их data:-адресами,
-     и файл без сети говорит тем же шрифтом. Грани прежние: вес 200–400, кириллица / латиница. */
-  var FACES = { cyr: "U+0400-045F, U+2116", lat: "U+0020-007E, U+00A0, U+00AB, U+00B0, U+00BB, U+00C0-00FF, U+2013, U+2014, U+2026" };
+     и файл без сети говорит тем же шрифтом. Грани: вес 200–700 (один шрифт интерфейса, D-829), кириллица / латиница. */
+  /* D-1046: грани несут и то, что в файлах есть, а в адресе грани не было, — знак ударения U+0301, тонкую
+     и нулевую пробелы U+2009/U+200B, штрихи U+2032-2033, ‹ › U+2039-203A, ™ U+2122: иначе эти знаки
+     писались system-ui рядом с Nunito. Стрелок ← → в файлах нет — в словах их заменили знаки ‹ › (D-1063). */
+  var FACES = { cyr: "U+0400-045F, U+0301, U+2116", lat: "U+0020-007E, U+00A0-00FF, U+0301, U+2009, U+200B, U+2013-2014, U+2018-201E, U+2022, U+2026, U+2032-2033, U+2039-203A, U+20AC, U+2122, U+2212" };
   if (window.FontFace && doc.fonts && doc.fonts.add) {
     Array.prototype.forEach.call(doc.querySelectorAll('link[rel="sb-precache"][data-face]'), function (l) {
       var k = l.getAttribute("data-face");
       if (!FACES[k]) return;
-      try { doc.fonts.add(new FontFace(FONT, 'url("' + l.href + '") format("woff2")', { weight: "200 400", style: "normal", display: "swap", unicodeRange: FACES[k] })); }
+      try { doc.fonts.add(new FontFace(FONT, 'url("' + l.href + '") format("woff2")', { weight: "200 700", style: "normal", display: "swap", unicodeRange: FACES[k] })); }
       catch (e) { /* грань не встала — фраза пишется system-ui, как до загрузки шрифта (fcss держит запасной) */ }
     });
   }
@@ -868,8 +871,8 @@
     doorOn(p.kind === "event" && !p.quiet && !p.user, p.src === "knock");
     live.textContent = ""; var said = p.plain; setTimeout(function () { if (cur === p) live.textContent = said; }, 40);
     srBtn.hidden = false; t.appendChild(srBtn);
-    /* вопрос — фокус на ответ (первым — согласие) и после того, как фраза встала в строку */
-    if (p.ask) requestAnimationFrame(function () { if (cur !== p || p.gone) return; var f = p.field && p.field.isConnected ? p.field : p.acts[0]; if (f && doc.activeElement !== f && (!doc.activeElement || !t.contains(doc.activeElement))) try { f.focus({ preventScroll: true }); } catch (e) { /* фокус не обязателен */ } });
+    /* вопрос — фокус на ответ (первым — согласие; у опасного — «нет», D-855) и после того, как фраза встала в строку */
+    if (p.ask) requestAnimationFrame(function () { if (cur !== p || p.gone) return; var f = p.field && p.field.isConnected ? p.field : (t.classList.contains("toast-ask-danger") ? (p.acts.filter(function (b) { return b.getAttribute("data-act") === "no"; })[0] || p.acts[p.acts.length - 1]) : p.acts[0]); if (f && doc.activeElement !== f && (!doc.activeElement || !t.contains(doc.activeElement))) try { f.focus({ preventScroll: true }); } catch (e) { /* фокус не обязателен */ } });
     if (window.sbEvent) { try { window.sbEvent("sb:say", { title: p.title0, text: p.plain, kind: p.kind, sticky: !!p.sticky, warm: !!p.warm, source: "voice", el: t }); } catch (e) { /* слушатель упал — голос говорит дальше */ } }
     kick();
   }
@@ -1007,6 +1010,9 @@
     if (gated() || curtain()) return;
     /* важное — первым: стук у замка не ждёт за «продолжить?» */
     var k = 0; for (var i = 0; i < queue.length; i++) if (queue[i].sticky) { k = i; break; }
+    /* …затем вопрос, заданный нажатием человека: он ждёт ответа сейчас, а «вы остановились здесь» подождёт
+       (keys-presence-3, доска H4b: «Выйти?» стояло в очереди за Эстафетой, и кнопки «да» не было) */
+    if (!queue[k].sticky) for (var j = 0; j < queue.length; j++) if (queue[j].ask && !queue[j].answered) { k = j; break; }
     var p = queue.splice(k, 1)[0];
     p.gone = false; p.requeue = false;
     p.el.classList.remove("out");
@@ -1019,6 +1025,10 @@
     if (p.user) queue = queue.filter(function (q) { return !(q.kind === "confirm" && !q.ask); });   /* подтверждение сменяет подтверждение (D-252) */
     if (!cur) { if (curtain()) { queue.push(p); waitCurtain(); } else speak(p); return; }
     if (cur.sticky && !p.user) { queue.push(p); return; }
+    /* Вопрос, на который человек ещё не ответил, не сменяется тем, что пришло само (keys-presence-3, доска H4b):
+       «Выйти?» после нажатия уступало «вы остановились здесь» Эстафеты и уходило в очередь — кнопки «да» не было.
+       Само пришедшее ждёт ответа в очереди; ответ на собственное нажатие (p.user) говорит сразу, как прежде. */
+    if (cur.ask && !cur.answered && !p.user && !p.ask) { queue.push(p); return; }
     var prev = cur;
     prev.requeue = (prev.sticky || prev.standing) && !prev.answered;
     melt(prev, true, true);

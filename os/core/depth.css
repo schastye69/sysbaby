@@ -1,0 +1,41 @@
+/* sys.baby OS — core/depth.css
+ * «ГЛУБИНА» — ВИД ЧЕТЫРЁХ ТЕМ · решение D-1080 (основатель 12.11.2026, показ
+ * temy-glubina/sravnenie.html). Пакет GLUBINA. Холст света — core/depth.js
+ * (#sbDepthField в .wp-layer, сразу над #sbField). Переключателя нет: вид
+ * живёт во всех тёмных темах; Светлица и инкогнито — прежние, из core.css.
+ * Язык: пол почти чёрный, свет темы — только большими глубокими формами;
+ * стекло окон и плиток темнее и плотнее, слова светлее. Тихие слова (--ink-3,
+ * подписи знаков, пустые состояния) — не ниже 4,5:1 к самому светлому месту
+ * под ними (light-contrast-check, legible-check).
+ * Перенос на H4b (из h5-temy, дерево H4a): кайма плитки и её блик — по
+ * «Чистоте» H4b (≤ .10, без белого блика, З6), а не по пробному слою; Тепло
+ * держит тьму Мандарина (--bg, --bg-elev, --menu-bg — D-824); ворота Шифра
+ * темы не носят (D-700) — их токены свои, в gate.css.
+ * Слова темы (пол, чернила, плитки, шапка, пульт, видимость холста) живут в
+ * словаре тем — os/core/themes.css, блок «ГЛУБИНА» (paint-tokens: тема — в
+ * словаре, не в комнатах); здесь — только то, что от темы не зависит.
+ * ОТКАТ: снять подключение depth.css/depth.js в index.html, блок «ГЛУБИНА» в
+ * themes.css и условие глубины в suppressed() поля — вид тем прежний. */
+
+/* Затмение: кромку за диском рисует #sbEclipse (D-872) поверх пола глубины; во время шва
+   смены темы холст кромки скрыт, проявляется после шва — без скачка */
+#sbEclipse { transition: opacity var(--t-drift) var(--ease-enter); }   /* слова шкалы времени и кривых (duration/easing-scale) */
+html.sb-depth-seam:not(.sb-depth-nogl) #sbEclipse { opacity: 0; transition: none; }
+
+/* знак загорается, когда над ним проходит шов */
+#sbIconLayer .desk-icon.sb-depth-lit .icon-tile { animation: sbDepthLit 1.3s var(--ease-enter); }
+#sbIconLayer .desk-icon.sb-depth-lit .sb-glyph { animation: sbDepthGlyph 1.3s var(--ease-move); }
+@keyframes sbDepthLit {
+  0% { box-shadow: var(--tile5-shade); }
+  14% { box-shadow: var(--tile5-shade), 0 0 0 .75px rgba(var(--edge-rgb), .6), 0 0 22px 3px rgba(var(--accent-rgb), .35); }
+  100% { box-shadow: var(--tile5-shade); }
+}
+@keyframes sbDepthGlyph { 0% { filter: brightness(1); } 14% { filter: brightness(1.6); } 100% { filter: brightness(1); } }
+@media (prefers-reduced-motion: reduce) {
+  #sbIconLayer .desk-icon.sb-depth-lit :is(.icon-tile, .sb-glyph) { animation: none; }
+}
+html[data-motion="reduced"] #sbIconLayer .desk-icon.sb-depth-lit :is(.icon-tile, .sb-glyph) { animation: none; }
+
+/* холст глубины проявляется после первой отрисовки слоя (сборка шейдера идёт после входа, не во время) */
+#sbDepthField { opacity: 0; transition: opacity var(--t-rise) var(--ease-enter); }
+#sbDepthField.sb-depth-on { opacity: 1; }

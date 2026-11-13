@@ -53,10 +53,32 @@
   var kbdLast = false;
   doc.addEventListener("keydown", function (ev) { if (ev.key === "Tab" || ev.key === "Enter" || ev.key === " " || /^Arrow/.test(ev.key)) kbdLast = true; }, true);
   doc.addEventListener("pointerdown", function () { kbdLast = false; }, true);
+  /* ── ПОДНОС У СВОЕЙ КНОПКИ (Чистота, D-847-TRAY-AT-BUTTON) ──────────────
+     Выпуск и ключница были модалкой по центру — вуаль, размытие, серая плита
+     с чертой. Теперь это поднос --tray5 под своей кнопкой в шапке (как меню
+     языка): стол виден, касание мимо подноса его закрывает. */
+  var TRAY_AT = { sbNotifOverlay: "sbBell", sbAccountOverlay: "sbTopIdentity" };
+  function placeTray(overlay, anchorId) {
+    var a = doc.getElementById(anchorId), p = overlay.querySelector(".panel");
+    if (!a || !p) return;
+    var r = a.getBoundingClientRect(), W = window.innerWidth, gap = 8;
+    var w = Math.min(p.offsetWidth || 420, W - 24);
+    var x = Math.round(r.left + r.width / 2 - w / 2);
+    p.style.left = Math.max(12, Math.min(x, W - w - 12)) + "px";
+    p.style.top = Math.round(r.bottom + gap) + "px";
+  }
   window.sbRegisterPanel = function (overlayId, closeBtnId, onOpen) {
     var overlay = doc.getElementById(overlayId);
     if (!overlay) return null;                      /* guarded degradation */
     var lastFocus = null;
+    var trayAt = TRAY_AT[overlayId] || null;
+    if (trayAt) overlay.classList.add("is-tray");
+    function outside(ev) {
+      var t = ev.target;
+      if (!t || !t.closest) return;
+      if (t.closest("#" + overlayId + " .panel") || t.closest("#" + trayAt)) return;
+      close();
+    }
 
     function isOpen() { return overlay.classList.contains("open"); }
     function open() {
@@ -68,6 +90,10 @@
       overlay.classList.add("open");
       overlay.removeAttribute("hidden");
       if (typeof onOpen === "function") { try { onOpen(); } catch (e) { if (window.console) console.error("[panel] " + overlayId, e); } }
+      if (trayAt) {
+        placeTray(overlay, trayAt);
+        setTimeout(function () { doc.addEventListener("pointerdown", outside, true); }, 0);
+      }
       var btn = closeBtnId ? doc.getElementById(closeBtnId) : null;
       /* Окно аккаунта (D-620): фокус встаёт на ✕, но рамка фокуса видна только
          при навигации клавиатурой — открытие касанием или из кода её не рисует. */
@@ -79,6 +105,7 @@
       if (!isOpen()) return;
       overlay.classList.remove("open");
       overlay.setAttribute("hidden", "");
+      if (trayAt) doc.removeEventListener("pointerdown", outside, true);
       if (typeof api.onClose === "function") { try { api.onClose(); } catch (e) { /* ignore */ } }
       if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) { /* ignore */ } }
       lastFocus = null;
@@ -389,7 +416,7 @@
     var body = panelBody("sbShortcutsOverlay");
     if (!body) return;
     var rows = SHORTCUT_ROWS.map(function (r) {
-      return '<div class="kv-row"><kbd>' + esc(r[0]) + "</kbd><span>" + esc(tr(r[1])) + "</span></div>";
+      return '<div class="kv-row"><kbd>' + esc(window.sbKeys ? window.sbKeys(r[0]) : r[0]) + "</kbd><span>" + esc(tr(r[1])) + "</span></div>";
     }).join("");
     var appRows = "";
     var map = window.sbAppShortcuts || {};
@@ -545,9 +572,12 @@
     if (!body) return;
     var list = notifList();
     bellName();
-    var foot = '<p class="panel-copy dim sbv-foot">' + esc(tr("voice.bellFoot")) + "</p>";
+    /* пояснение о выпуске — под тихим словом «как это устроено», а не каждый раз под списком (обход п.28, D-913) */
+    var foot = '<details class="sb-more sbv-more"><summary>' + esc(tr("voice.bellMore")) + '</summary><p class="panel-copy dim sbv-foot">' + esc(tr("voice.bellFoot")) + "</p></details>";
     if (!list.length) {
-      body.innerHTML = '<div class="panel-scroll"><p class="panel-empty">' + esc(tr("p.noNotifications")) + "</p>" + foot + "</div>";
+      /* Пусто — один вид пустых экранов (обход п.29): знак колокольчика и одна
+         строка; пояснение о выпуске — только когда в нём что-то есть. */
+      body.innerHTML = '<div class="panel-scroll"><p class="panel-empty panel-empty-znak">' + sbZnak("bell") + "<span>" + esc(tr("p.noNotifications")) + "</span></p></div>";
       return;
     }
     body.innerHTML = '<div class="panel-scroll">' + list.map(function (n) {
@@ -557,7 +587,7 @@
         '<div class="notif-text">' + esc(said(n, "text")) + (unread ? " · " + esc(tr("voice.unread")) : "") + "</div></div>" +
         '<div class="notif-time">' + esc(timeAgo(n.ts)) + "</div>" +
         (unread ? '<button class="btn tiny sbv-read" type="button" data-read="' + esc(n.id) + '">' + esc(tr("voice.read")) + "</button>" : "") +
-        '<button class="notif-x" type="button" aria-label="' + esc(tr("p.dismiss")) + '">✕</button></div>';
+        '<button class="notif-x" type="button" aria-label="' + esc(tr("p.dismiss")) + '">' + sbZnak("close") + '</button></div>';
     }).join("") + foot + "</div>" +
       '<div class="panel-foot"><button class="btn ghost" type="button" id="sbNotifClear">' + esc(tr("p.clearAll")) + '</button></div>';
 
@@ -599,7 +629,7 @@
         '<span class="task-name">' + esc(appTitle(id)) + "</span>" +
         '<span class="task-sub">' + esc(tr("p.openNow")) + '</span>' +
         '<button class="btn tiny" type="button" data-act="focus">' + esc(tr("p.focus")) + '</button>' +
-        '<button class="task-x" type="button" data-act="close" aria-label="' + esc(tr("p.close")) + '">✕</button></div>';
+        '<button class="task-x" type="button" data-act="close" aria-label="' + esc(tr("p.close")) + '">' + sbZnak("close") + '</button></div>';
     }).join("") : '<p class="panel-empty">' + esc(tr("p.noWindows")) + '</p>';
 
     var recent = readJSON(RECENT_KEY, []);
@@ -808,7 +838,7 @@
           '<span class="task-name">' + esc(L.name) + "</span>" +
           '<span class="task-sub">' + esc(tr("p.windowsCount", { n: (L.windows || []).length })) + esc(timeAgo(L.ts)) + "</span>" +
           '<button class="btn tiny" type="button" data-act="restore">' + esc(tr("p.restore")) + '</button>' +
-          '<button class="task-x" type="button" data-act="del" aria-label="' + esc(tr("p.delete")) + '">✕</button></div>';
+          '<button class="task-x" type="button" data-act="del" aria-label="' + esc(tr("p.delete")) + '">' + sbZnak("close") + '</button></div>';
       }).join("") : '<p class="panel-empty">' + esc(tr("p.noLayouts")) + "</p>") + "</div>" +
       '<div class="panel-foot"><span class="foot-note">' + esc(tr("p.layoutsNote")) + '</span>' +
       '<button class="btn" type="button" id="sbLayoutSave">' + esc(tr("p.saveCurrent")) + '</button></div>';
@@ -1210,8 +1240,8 @@
     /* Подписи строк — из словаря на языке окна (D-692); имена алгоритмов —
        имена собственные и стоят как есть. Прежде вся опись была английской
        («padding 256 B») и в русском окне читалась непереведённой. */
-    return [tr("lock.cipher.ciphers", { v: (c.ciphers || []).join("  →  ") }), c.mac ? tr("lock.cipher.mac", { v: c.mac }) : "",
-      tr("lock.cipher.kdf", { v: (c.kdf || []).join("  →  ") }),
+    return [tr("lock.cipher.ciphers", { v: (c.ciphers || []).join("  ›  ") }), c.mac ? tr("lock.cipher.mac", { v: c.mac }) : "",
+      tr("lock.cipher.kdf", { v: (c.kdf || []).join("  ›  ") }),
       tr("lock.cipher.pad", { n: c.pad || 256 }), c.names ? tr("lock.cipher.names", { v: c.names }) : ""]
       .filter(Boolean).join("\n");
   }
@@ -1287,7 +1317,7 @@
          даёт вовсе (D-178). Молчание оставило бы человека думать, что замок
          сломан, — а он просто не может здесь существовать. */
       return '<h4 class="panel-sub">' + esc(tr("lock.title")) + "</h4>" +
-        '<p class="lock-warn">' + esc(tr("lock.insecure")) + "</p>";
+        '<p class="sb-note lock-insecure">' + esc(tr("lock.insecure")) + "</p>";
     }
     var locked = V.isLocked();
     var head = '<h4 class="panel-sub">' + esc(tr("lock.title")) + "</h4>" +
@@ -1789,6 +1819,12 @@
     });
   }
 
+  /* ОТКАТ: Чистота А (D-836) заменила ключницу нитью света и четырьмя знаками
+     в лунках; основатель 12.11.2026 вернул объёмную ключницу как ритуал —
+     перекладина, воронёные ключи, сливовый бархатный мешочек (D-828-KEY-RACK-RITUAL:
+     ключница — исключение-ритуал из закона «знаки одной семьи»). Рисунок и цвета —
+     прежние, из сборки v178-H4a (D-620, D-635); колорист готовит варианты цвета
+     отдельно. Слова под планкой — по-прежнему языком «Чистоты» (D-837). */
   /* ── КЛЮЧНИЦА «ТЁМНЫЙ МЕТАЛЛ» · решение D-620 (основатель 09.11.2026) ──────
      Утверждено по klyuchi4/u4.png и u2.png: воронёные ключи на тёмной планке,
      ушки разные, чтобы ключи не путались, — трилистник (пароль), кольцо (код
@@ -2106,9 +2142,12 @@
      их не показывает. */
   function accountBodyParts() {
     var name = (window.sbGetUsername ? window.sbGetUsername() : "") || "";
+    /* пустое имя — пустое поле с «гость» подсказкой; предел — как у хранения, 24 (D-1000) */
+    var guestPh = window.sbGuestWord ? window.sbGuestWord() : "";
+    if (window.sbUsernameStored && !window.sbUsernameStored()) name = "";
     return {
       field: '<label class="acc-field"><span class="acc-label">' + esc(tr("acc.name")) + "</span>" +
-        '<input type="text" id="sbAccName" maxlength="18" autocomplete="username" autocapitalize="off" spellcheck="false" value="' + esc(name) + '">' +
+        '<input type="text" id="sbAccName" maxlength="24" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="' + esc(guestPh) + '" value="' + esc(name) + '">' +
         "</label>" +
         '<p class="panel-copy dim">' + esc(tr("acc.nameSub")) + "</p>" +
         '<div class="acc-acts"><button type="button" class="btn ghost" id="sbAccSave">' + esc(tr("acc.save")) + "</button></div>",
@@ -2272,8 +2311,7 @@
      kind "open" — подпись «Открыть замок» (как строка «Замок» в Настройках):
      для случая, когда замок есть, но в нём надо что-то поменять.
      Охраняется tools/lock-call-check.mjs. */
-  var LOCK_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
-    '<rect x="5" y="10.5" width="14" height="9.5" rx="2.2"/><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"/></svg>';
+  var LOCK_GLYPH = sbZnak("vault");
   window.sbLockCallHtml = function (kind) {
     var label = kind === "open" ? tr("set.privacy.lockOpen") : tr("lock.call");
     return '<button type="button" class="sb-lock-call" data-sb-lock-call>' +

@@ -26,8 +26,8 @@
   var doc = document;
   var STORE_KEY = "sysbaby.solitaire.v1";
   var UNDO_MAX = 200;
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
-    '<rect x="4" y="3.5" width="11" height="15" rx="2"/><path d="M9 7.5h.01M15 9.5v9a2 2 0 0 1-2 2H7"/><path d="M9.5 13.5c0-1.2 1-1.8 1.5-1 .5-.8 1.5-.2 1.5 1 0 1-1.5 2-1.5 2s-1.5-1-1.5-2z"/></svg>';
+  /* Чистота А: знака этой комнаты в малом наборе нет — значок не рисуется, остаётся слово (имя комнаты). */
+  var ICON = "";
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {

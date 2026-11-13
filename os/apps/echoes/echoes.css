@@ -47,19 +47,13 @@
 
 .ec-wave {
   flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 2px;
+  display: grid;
+  place-items: center;
+  width: 20px;
   height: 20px;
-  width: 40px;
+  color: var(--ink-3);
 }
-
-.ec-wave i {
-  display: block;
-  width: 2px;
-  border-radius: var(--r-pill);
-  background: linear-gradient(180deg, var(--accent-2), var(--accent));
-}
+.ec-wave svg.sb-znak { width: 14px; height: 14px; }
 
 .ec-app-tile {
   flex: 0 0 auto;
@@ -79,17 +73,19 @@
 
 .ec-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 5px; }
 
+/* «вернуть», «заглушить всё» — слова без рамки (Чистота А, обход п.51); × — знак набора. */
 .ec-btn {
-  border: 1px solid rgba(var(--film-rgb), .13);
-  background: rgba(var(--film-rgb), .05);
-  color: inherit;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
   font: inherit;
-  font-size: var(--f-meta);
-  padding: 4px 9px;
+  font-size: var(--f-ui);
+  padding: 6px 8px;
   border-radius: var(--r-ctrl);
   cursor: pointer;
   white-space: nowrap;
 }
+.ec-btn:focus-visible { outline: none; box-shadow: var(--brass); }
 
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -97,16 +93,17 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .ec-btn:hover { background: rgba(var(--film-rgb), .13); }
+  :where(html:not([data-input="touch"])) .ec-btn:hover { background: rgba(var(--film-rgb), .05); color: var(--ink); }
 }
 .ec-btn.quiet { font-size: var(--f-meta); color: var(--ink-2); }
 
 .ec-btn.x {
-  width: 24px;
-  padding: 4px 0;
-  text-align: center;
+  width: 28px;
+  padding: 6px 0;
+  display: inline-grid; place-items: center;
   color: var(--ink-3);
 }
+.ec-btn.x svg.sb-znak { width: 12px; height: 12px; }
 
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
@@ -114,7 +111,7 @@
    25.08.2026: подложка осталась висеть вокруг знака после нажатия.
    Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .ec-btn.x:hover { color: var(--bad-ink); border-color: rgba(var(--bad-rgb), .5); background: rgba(var(--bad-rgb), .12); }
+  :where(html:not([data-input="touch"])) .ec-btn.x:hover { color: rgb(var(--danger-rgb)); background: none; }
 }
 
 .ec-empty {
@@ -128,9 +125,7 @@
   height: 100%;
 }
 
-/* Пустой экран — антенна цветом акцента темы (сборка H4, аудит п.9/15):
-   лиловая --violet-ink была чужой в каждой из четырёх тем. */
-.ec-empty-glyph { color: var(--accent); }
-.ec-empty-glyph svg { width: 38px; height: 38px; opacity: .55; }
-.ec-empty-title { margin: 0; font-size: var(--f-read); font-weight: var(--w-strong); }
-.ec-empty-sub { margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-3); max-width: 300px; }
+/* Пустой экран — как у всех комнат (Чистота А): знак комнаты 18 px цвета
+   подписи и одна строка под ним. */
+.ec-empty-glyph { color: var(--ink-3); margin-bottom: 4px; line-height: 0; }
+.ec-empty-title { margin: 0; font-size: var(--f-ui); font-weight: var(--w-text); color: var(--ink-3); }

@@ -6,18 +6,13 @@
    ширины колонки комнат и не дальше. Охраняется room-center-check. */
 .hf-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: var(--room-col); margin-inline: auto; }
 .hf-head { padding: 2px 2px 0; }
-.hf-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: var(--w-strong); letter-spacing: var(--track-tight); }
 .hf-lead { margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2); max-width: 60ch; }
 
 .hf-in { display: block; }
-.hf-got, .hf-ask, .hf-bad {
-  padding: 14px 15px; border-radius: var(--r-card); border: 1px solid var(--line);
-  background: rgba(var(--film-rgb), .03); display: flex; flex-direction: column; gap: 8px;
+.hf-got, .hf-ask, .hf-bad { display: flex; flex-direction: column; gap: 8px;
 }
-.hf-got { border-left: 2px solid var(--accent-ring); }
-.hf-bad { border-left: 2px solid rgba(var(--heed-rgb), .55); }
 .hf-got h3, .hf-ask h3, .hf-bad h3 {
-  margin: 0; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase;
+  margin: 0; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: none;
   color: var(--ink-3); font-weight: var(--w-strong);
 }
 .hf-got-text {
@@ -27,19 +22,28 @@
 .hf-ask p, .hf-bad p { margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); }
 
 .hf-out { display: flex; flex-direction: column; gap: 9px; }
-.hf-lab { font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ink-3); font-weight: var(--w-strong); }
+.hf-lab { font-size: var(--f-ui); letter-spacing: 0; color: var(--ink-3); font-weight: var(--w-text); }
 .hf-text, .hf-word, .hf-sendword {
   font: inherit; font-size: var(--f-read); padding: 10px 12px; color: var(--ink);
   background: rgba(var(--film-rgb), .04); border: 1px solid var(--line); border-radius: var(--r-ctrl);
-  resize: vertical;
+  resize: none;
 }
-.hf-mode { display: flex; align-items: center; gap: 8px; font-size: var(--f-read); color: var(--ink-2); }
+/* Выбор способа — слова в строку (Чистота Б): кружок прозрачен, но ловит палец
+   и клавиатуру; выбранное слово светлое, под ним нить света. */
+.hf-modes { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-left: -8px; }
+.hf-mode-hint { margin: -4px 0 0; font-size: var(--f-ui); color: var(--ink-3); line-height: var(--lh-read); }
+.hf-mode { position: relative; display: inline-flex; align-items: center; padding: 6px 8px 8px; border-radius: var(--r-ctrl); font-size: var(--f-ui); color: var(--ink-3); cursor: pointer; }
+.hf-mode > input[type="radio"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; }
+.hf-mode::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 3px; height: 1px; background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .95) 30%, rgba(var(--accent-rgb), .95) 70%, transparent) no-repeat 50% 100% / 0 1px; transition: background-size var(--t-move) var(--ease-enter); }
+.hf-mode:has(> input:checked) { color: var(--ink); text-shadow: 0 0 14px rgba(var(--accent-rgb), .42); }
+.hf-mode:has(> input:checked)::after { background-size: 100% 1px; }
+.hf-mode:has(> input:focus-visible) { box-shadow: var(--brass); }
 .hf-act {
   align-self: flex-start; font: inherit; font-size: var(--f-read); padding: 9px 15px; cursor: pointer;
   color: var(--ink); background: var(--accent-soft); border: 1px solid var(--accent-ring);
   border-radius: var(--r-ctrl);
 }
-.hf-act.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; color: var(--on-accent); font-weight: var(--w-strong); }
+.hf-act.primary { background: var(--lamp5-bg); border: 0; box-shadow: var(--lamp5-edge); color: var(--lamp5-ink); font-weight: var(--w-strong); }
 .hf-link-acts { display: flex; flex-wrap: wrap; gap: 8px; }
 .hf-ready { margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink); }
 .hf-got .hf-act { margin-top: 2px; }
@@ -58,15 +62,13 @@
 .hf-say { margin: 0; font-size: var(--f-ui); color: var(--ink-2); }
 
 .hf-honest {
-  margin: 2px 0 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2);
-  padding: 13px 15px; border-radius: var(--r-card);
-  border: 1px solid var(--line); border-left: 2px solid var(--accent-ring);
-  background: rgba(var(--film-rgb), .018); max-width: 78ch;
+  margin: 2px 0 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); max-width: 78ch;
 }
 
 /* Взять то, что уже есть в системе: система перестаёт быть набором окон там,
    где одно окно умеет взять содержимое другого. */
 .hf-pick { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.hf-pick[hidden] { display: none; }
 .hf-pick-l { font-size: var(--f-ui); color: var(--ink-3); }
 .hf-src {
   font: inherit; font-size: var(--f-read); padding: 7px 10px; color: var(--ink); min-width: 0; flex: 1 1 200px;

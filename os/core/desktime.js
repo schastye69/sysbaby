@@ -12,7 +12,14 @@
  * не просит. «Меньше движения» — те же цифры, сразу и неподвижно: одна
  * перерисовка на смену секунды.
  * Управление — window.sbDeskTime (его зовёт панель часов, core/clock.js).
- * Охраняется tools/desk-time-switch-check.mjs и tools/note-drag-perf-check.mjs. */
+ * ИНСТРУМЕНТЫ СТОЛА (D-880, архив «Инструменты стола», основатель 11.11.2026):
+ * тот же холст и тот же свет показывают счёт, ожидание, счётчик и второй
+ * город — sbDeskTime.show({ str, label, sub }) / hide(). Слой инструмента
+ * лежит поверх хода времени, но время важнее: таймер или будильник, дошедший
+ * до конца, снимает инструмент и говорит своё «время вышло». К цифрам
+ * добавлены знаки счёта (+ − × ÷ = , . ( ) % ^) тем же однолинейным пером.
+ * Охраняется tools/desk-time-switch-check.mjs, tools/note-drag-perf-check.mjs
+ * и tools/desktools-light-check.mjs. */
 (function () {
   "use strict";
   var doc = document, root = doc.documentElement, mq = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
@@ -45,7 +52,21 @@
     "7": ["M .01 0 L .57 0 L .2 1"],
     "8": ["M .29 .47 A .23 .235 0 1 1 .29 0 A .23 .235 0 1 1 .29 .47", "M .29 .47 A .27 .265 0 1 1 .29 1 A .27 .265 0 1 1 .29 .47"],
     "9": ["M .08 .94 C .14 .98 .21 1 .27 1 C .46 1 .56 .8 .56 .44 C .56 .17 .45 0 .28 0 C .12 0 .02 .13 .02 .3 C .02 .48 .13 .59 .28 .59 C .41 .59 .51 .52 .55 .4"],
-    ":": ["M .11 .3 L .11 .302", "M .11 .74 L .11 .742"]
+    ":": ["M .11 .3 L .11 .302", "M .11 .74 L .11 .742"],
+    /* знаки счёта (D-881) — то же перо, та же коробка 0.58×1 */
+    ".": ["M .11 .96 L .11 .962"],
+    ",": ["M .13 .9 L .07 1.06"],
+    "\u2212": ["M .07 .56 L .51 .56"],
+    "+": ["M .07 .56 L .51 .56", "M .29 .34 L .29 .78"],
+    "\u00d7": ["M .12 .38 L .46 .74", "M .46 .38 L .12 .74"],
+    "\u00f7": ["M .07 .56 L .51 .56", "M .29 .33 L .29 .332", "M .29 .79 L .29 .792"],
+    "=": ["M .07 .46 L .51 .46", "M .07 .66 L .51 .66"],
+    "(": ["M .38 0 C .08 .25 .08 .75 .38 1"],
+    ")": ["M .06 0 C .36 .25 .36 .75 .06 1"],
+    "%": ["M .5 .04 L .08 .96", "M .14 .08 A .08 .11 0 1 1 .14 .3 A .08 .11 0 1 1 .14 .08", "M .44 .7 A .08 .11 0 1 1 .44 .92 A .08 .11 0 1 1 .44 .7"],
+    "^": ["M .1 .3 L .29 .08 L .48 .3"],
+    /* пробел разрядов (D-905): место без пера — «3 000 000» читается тройками */
+    " ": []
   };
   var P2 = {}, SV = {}, LEN = {}, glyphsReady = false;
   function buildGlyphs() {
@@ -60,7 +81,7 @@
       LEN[k].T = LEN[k].reduce(function (a, b) { return a + b; }, 0);
     });
   }
-  function wOf(ch) { return ch === ":" ? 0.22 : 0.58; }
+  function wOf(ch) { return ch === " " ? 0.16 : ch === ":" || ch === "." || ch === "," ? 0.22 : ch === "(" || ch === ")" ? 0.44 : 0.58; }
   function ptAt(ch, f) {
     var L = LEN[ch], t = cl(f) * L.T, i = 0;
     while (i < L.length - 1 && t > L[i]) { t -= L[i]; i++; }
@@ -73,7 +94,9 @@
   /* ---------- состояние ---------- */
   var cv, ctx, W = 0, H = 0, dpr = 1, Hd = 84, S = 1, cache = {}, variant = readView(), mode = null;
   var total = 0, label = "", vBase = 0, rBase = 0, endAt = null, lastKey = "", pausedAt = null, painted = 0;
-  var cyT = null, cyC = null, cyDrawn = null, lastT = 0, CW = 0, CH = 0, CY = 0, posY = null;
+  var cxT = null, cyT = null, cyC = null, cyDrawn = null, lastT = 0, CW = 0, CH = 0, CY = 0, posY = null;
+  /* слой инструмента (D-880): { str, prev, t0, label, sub } — или null */
+  var tool = null, toolTmo = 0;
   function vnow() { return pausedAt != null ? pausedAt : vBase + (performance.now() - rBase); }
   function begin(m, tot, lbl, elapsed) {
     mode = m; total = tot || 0; label = lbl || ""; vBase = elapsed || 0; rBase = performance.now(); endAt = null; pausedAt = null; lastKey = "";
@@ -81,7 +104,10 @@
   }
   function moodId() { return window.sbGetWallpaperMood ? window.sbGetWallpaperMood() : "studio"; }
   /* ОТКАТ: у темы нет своей палитры времени (новая или снятая тема) — время на столе берёт палитру Тепла, а не пропадает. */
-  function pal() { var m = moodId(); return [m, PAL[m] || PAL.studio]; }
+  /* Светлица (светлая тема, data-theme="light"): свет на светлом столе — тёплые чернила с мягким
+     ореолом, иначе цифры инструментов и времени белым по белому не видны (D-900, контраст ≥ 4,5). */
+  var INK = { c: [84, 50, 22], g: [255, 176, 110] };
+  function pal() { if (root.getAttribute("data-theme") === "light") return ["light", INK]; var m = moodId(); return [m, PAL[m] || PAL.studio]; }
   function fmt(sec) { var h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, s = sec % 60; return (h ? h + ":" + (m < 10 ? "0" : "") : "") + m + ":" + (s < 10 ? "0" : "") + s; }
   function state(v) {
     var o = { mode: mode };
@@ -102,7 +128,7 @@
   }
 
   /* ---------- кэш знаков ---------- */
-  var PAD = 0.55;
+  var PAD = 0.55, capN = 0;
   function mk(ch) { var c = doc.createElement("canvas"); c.width = Math.ceil((wOf(ch) + 2 * PAD) * Hd * dpr); c.height = Math.ceil((1 + 2 * PAD) * Hd * dpr); return c; }
   function unit(x) { var k = Hd * dpr; x.setTransform(k, 0, 0, k, PAD * k, PAD * k); }
   function strokeG(x, ch, lwPx, style) {
@@ -135,16 +161,33 @@
   function dot(px, py, size, al) { if (al <= 0.003) return; var sp = sprite(); ctx.globalAlpha = cl(al); ctx.drawImage(sp, (px - size / 2) * dpr, (py - size / 2) * dpr, size * dpr, size * dpr); ctx.globalAlpha = 1; }
   /* подпись рисуется один раз в свой холст: тень текста дорога, а кадр перетекания идёт 60 раз в секунду */
   function caption(txt, y, al) {
-    if (!txt || al <= 0.003) return; var key = "cap" + txt, c = cache[key];
-    if (!c) {
-      var P = pal()[1], fs = Math.round(10.5 * Math.max(1, S)), f = "500 " + fs + "px Inter, system-ui, sans-serif", TT = txt.toUpperCase();
-      c = doc.createElement("canvas"); var x = c.getContext("2d"); x.font = f; try { x.letterSpacing = "0.22em"; } catch (e) { /* старый холст */ }
-      var w = Math.ceil(x.measureText(TT).width + fs * 3 + 24); c.width = Math.ceil(w * dpr); c.height = Math.ceil((fs + 28) * dpr);
-      x = c.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.font = f; try { x.letterSpacing = "0.22em"; } catch (e) { /* старый холст */ }
-      x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = rgba(P.c, 0.55); x.shadowColor = rgba(P.g, 0.5); x.shadowBlur = 8 * dpr;
-      x.fillText(TT, w / 2 + 1, (fs + 28) / 2); c._w = w; c._h = fs + 28; cache[key] = c;
-    }
+    if (!txt || al <= 0.003) return 0; var c = capCanvas(txt);
     ctx.globalAlpha = cl(al); ctx.drawImage(c, Math.round((CW / 2 - c._w / 2) * dpr), Math.round((y - c._h / 2) * dpr)); ctx.globalAlpha = 1;
+    return c._h;
+  }
+  function capH(txt) { return txt ? capCanvas(txt)._h : 0; }
+  function capCanvas(txt) {
+    var key = "cap" + Math.round(CW) + "|" + txt, c = cache[key];   /* перенос зависит от ширины экрана */
+    /* набор на столе рождает новую подпись на каждую цифру — кэш не растёт без края */
+    if (!c && ++capN > 240) { Object.keys(cache).forEach(function (k) { if (k.indexOf("cap") === 0) delete cache[k]; }); capN = 1; }
+    if (!c) {
+      /* Подпись — строчными, без разрядки, 13 px голосом дома, с переносом по словам в ширину
+         min(экран − 32, 520): капс и разрядка .22em уезжали за край телефона (D-829, глубокий аудит Б-16/Б-34). */
+      var P = pal()[1], fs = 13, lh = Math.round(fs * 1.4), f = "400 " + fs + "px \"SB Voice\", system-ui, sans-serif", TT = String(txt).toLowerCase();
+      c = doc.createElement("canvas"); var x = c.getContext("2d"); x.font = f; try { x.letterSpacing = "0px"; } catch (e) { /* старый холст */ }
+      var maxW = Math.max(120, Math.min(CW - 32, 520)), words = TT.split(" "), lines = [], cur = "";
+      for (var wi = 0; wi < words.length; wi++) { var t = cur ? cur + " " + words[wi] : words[wi]; if (cur && x.measureText(t).width > maxW) { lines.push(cur); cur = words[wi]; } else cur = t; }
+      if (cur) lines.push(cur);
+      /* точка-разделитель не висит в конце строки и не начинает строку (D-1045; обход п.17 — то же правило, что в пульте) */
+      lines = lines.map(function (l) { return l.replace(/\s*·$/, "").replace(/^·\s*/, ""); }).filter(function (l) { return !!l; });
+      var wMax = 0; for (var li = 0; li < lines.length; li++) wMax = Math.max(wMax, x.measureText(lines[li]).width);
+      var w = Math.ceil(wMax + 24), h = lines.length * lh + 20; c.width = Math.ceil(w * dpr); c.height = Math.ceil(h * dpr);
+      x = c.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.font = f;
+      x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = rgba(P.c, 0.74); x.shadowColor = rgba(P.g, 0.45); x.shadowBlur = 6 * dpr;
+      for (var lj = 0; lj < lines.length; lj++) x.fillText(lines[lj], w / 2, 10 + lh / 2 + lj * lh);
+      c._w = w; c._h = h; cache[key] = c;
+    }
+    return c;
   }
 
   /* ---------- линии света: новая цифра вычерчивается светящимся пером, старая стирается следом ---------- */
@@ -163,13 +206,16 @@
   function tip(sl, ch, f, al) { var p = ptAt(ch, f); dot(sl.x + p[0] * Hd, sl.y + p[1] * Hd, 22 * S, al); }
   function vLine(st, A, B, E) {
     for (var i = 0; i < B.length; i++) {
-      var n = B[i], o = A[i];
+      var n = B[i], o = A[i] && A[i].ch !== " " ? A[i] : null;
+      if (n.ch === " ") continue;
       if (E != null) {
         var sw = 1 + 0.55 * bell(E / 1500), u = sm((E - 1400) / 4200);
         if (u <= 0) { put(glyph("lineFull", n.ch), n, 1); put(glyph("lineGlow", n.ch), n, sw - 1); }
         else { put(glyph("lineGlow", n.ch), n, 1 - u); traceCore(n, n.ch, u, 1, 1); if (u < 1) tip(n, n.ch, u, 0.8 * (1 - u)); }
         continue;
       }
+      /* знак без пары (строка инструмента стала длиннее) вычерчивается с нуля тем же пером */
+      if (!o && st.appear && st.e < 1) { var ta = sm(st.e); put(glyph("lineGlow", n.ch), n, Math.pow(ta, 1.6)); traceCore(n, n.ch, 0, ta, 1); tip(n, n.ch, ta, 0.9 * bell(st.e)); continue; }
       if (!o || o.ch === n.ch || st.e >= 1) { put(glyph("lineFull", n.ch), n, 1); continue; }
       var e = st.e, t = sm(e);
       put(glyph("lineGlow", o.ch), o, Math.pow(1 - t, 1.3)); traceCore(o, o.ch, t, 1, 1 - t * 0.6);
@@ -202,8 +248,9 @@
     var i, k;
     ctx.globalCompositeOperation = "lighter";
     for (i = 0; i < B.length; i++) {
-      var n = B[i], o = A[i], moving = o && o.ch !== n.ch && st.e < 1, t = sm(st.e), Pn = pts(n.ch), Po = moving ? pts(o.ch) : null;
-      if (E == null && !moving) { put(dustStill(n.ch, i), n, 1); continue; }
+      if (B[i].ch === " ") continue;
+      var n = B[i], o = A[i] && A[i].ch !== " " ? A[i] : null, moving = o && o.ch !== n.ch && st.e < 1, t = sm(st.e), Pn = pts(n.ch), Po = moving ? pts(o.ch) : null;
+      if (E == null && !moving) { put(dustStill(n.ch, i), n, !o && st.appear && st.e < 1 ? sm(st.e) : 1); continue; }
       if (E != null) put(glyph("dustGlow", n.ch), n, 1 - sm(E / 1800));
       else { put(glyph("dustGlow", o.ch), o, 1 - t); put(glyph("dustGlow", n.ch), n, t); }
       for (k = 0; k < Pn.length; k++) {
@@ -234,7 +281,14 @@
     if (rm || Math.abs(cyT - cyC) < 0.5) cyC = cyT; else cyC += (cyT - cyC) * (1 - Math.exp(-dt / 110));
     var moving = cyC !== cyT;
     /* холст — только полоса времени; сдвиг под панель — перенос холста композитором, без перерисовки */
-    var py = Math.round(cyC - CY); if (py !== posY) { posY = py; cv.style.transform = "translate3d(" + Math.round((W - CW) / 2) + "px," + py + "px,0)"; }
+    /* по горизонтали — середина стола, а у телефона на боку — середина левой колонки (setCx, POLISH-C D-1023) */
+    var px = Math.round((cxT == null ? W / 2 : cxT) - CW / 2), py = Math.round(cyC - CY), pk = px + "," + py;
+    if (pk !== posY) { posY = pk; cv.style.transform = "translate3d(" + px + "px," + py + "px,0)"; }
+    if (tool) {
+      /* время важнее инструмента: дошедший таймер или будильник снимает слой */
+      if (mode && mode !== "stopwatch" && pausedAt == null && vnow() >= total) { tool = null; lastKey = ""; emit("tool-yield"); }
+      else { frameTool(now, rm, moving); return; }
+    }
     if (!mode) {
       if (cyDrawn !== -1) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); cyDrawn = -1; lastKey = ""; painted++; }
       if (moving) kick();
@@ -272,13 +326,48 @@
       tmo = setTimeout(kick, wait);
     }
   }
+  var runLine = "";
+  function frameTool(now, rm, moving) {
+    var e = rm ? 1 : cl((now - tool.t0) / 800), busy = e < 1;
+    runLine = "";
+    if (mode) {
+      var rv = vnow(), sec = mode === "stopwatch" ? Math.floor(rv / 1000) : Math.ceil(Math.max(0, total - rv) / 1000);
+      runLine = T(mode === "timer" ? "desk.t.timer" : mode === "stopwatch" ? "desk.t.sw" : "desk.t.alarm") + " " + fmt(sec) + (pausedAt != null ? " \u00b7 " + T("desk.t.paused") : "");
+    }
+    var key = ["T", variant, pal()[0], W, H, tool.prev, tool.str, tool.label, tool.sub, runLine, rm, busy ? e.toFixed(3) : 1].join("|");
+    if (busy || key !== lastKey) {
+      lastKey = key; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); cyDrawn = CY; painted++;
+      var st = { e: e, appear: true }, A = slots(tool.prev, CW / 2, CY), B = slots(tool.str, CW / 2, CY);
+      if (A.length !== B.length) A = [];
+      if (variant === "dust") vDust(st, A, B, null); else vLine(st, A, B, null);
+      var cY = CY + (tool.str ? Hd * 0.5 + 34 * S : 0);
+      /* подпись может лечь в две строки на телефоне — вторая встаёт под неё, а не на неё */
+      var capH1 = caption(tool.label, cY, 1) || 38, capH2 = capH(tool.sub);
+      caption(tool.sub, cY + Math.max(Math.round(22 * Math.max(1, S)), Math.round(capH1 / 2 + capH2 / 2 - 16)), 0.8);
+      /* СЕРЕДИНА ОДНА (D-906): идущий таймер, секундомер или будильник не пропадает под
+         инструментом — тихой строкой над ним; инструмент убрали — время снова главное */
+      if (runLine) caption(runLine, CY - Hd * 0.5 - Math.round(22 * Math.max(1, S)), 0.7);
+    }
+    if (busy || moving) kick();
+    /* идущий под слоем таймер: проснуться к его концу, даже если инструмент неподвижен */
+    clearTimeout(toolTmo);
+    /* под слоем идёт время: строка над инструментом обновляется на смене секунды, а к концу таймера слой уступит */
+    if (!busy && mode && pausedAt == null) { var vv = vnow(); toolTmo = setTimeout(kick, Math.max(16, (1000 - vv % 1000) + 4)); }
+  }
+  /* сколько знаков помещается в полосу: длинное выражение показывает хвост — как табло калькулятора */
+  function fit(str) {
+    str = String(str == null ? "" : str).split("").filter(function (c) { return !!G[c]; }).join("");
+    var room = (CW * 0.94) / Math.max(1, Hd), w = 0, i;
+    for (i = str.length - 1; i >= 0; i--) { w += wOf(str[i]) + 0.15; if (w - 0.15 > room) break; }
+    return str.slice(i + 1);
+  }
   function kick() { if (!raf && cv && !doc.hidden) raf = requestAnimationFrame(frame); }
   function size() {
     var oldH = H;
     W = window.innerWidth; H = window.innerHeight; dpr = Math.min(2, window.devicePixelRatio || 1);
     /* размер «как крупные часы на стене»: цифры ~ 12 % короткой стороны */
     Hd = Math.round(Math.max(56, Math.min(96, Math.min(W, H) * 0.118))); S = Hd / 84;
-    CW = Math.min(W, Math.round(Hd * 6.4)); CH = Math.round(Hd * 3.6); CY = Math.round(Hd * 1.95); posY = null;
+    CW = Math.min(W, Math.round(Hd * 6.4)); CH = Math.round(Hd * 3.6) + 56; CY = Math.round(Hd * 1.95); posY = null;   /* +56: подпись в три строки на 390 (солнце) обрезалась низом холста (D-1045); ОТКАТ: без +56 */
     cv.width = Math.round(CW * dpr); cv.height = Math.round(CH * dpr); cv.style.width = CW + "px"; cv.style.height = CH + "px"; cache = {}; lastKey = ""; cyDrawn = null;
     if (cyT == null || cyT === Math.round(oldH * 0.5)) { cyT = cyC = Math.round(H * 0.5); }
     kick();
@@ -297,10 +386,23 @@
     resume: function () { if (pausedAt != null) { vBase = pausedAt; rBase = performance.now(); pausedAt = null; lastKey = ""; kick(); emit("resume"); } },
     stop: function () { mode = null; pausedAt = null; endAt = null; clearTimeout(tmo); kick(); emit("stop"); },
     info: function () { var v = vnow(); return { mode: mode, v: v, total: total, label: label, paused: pausedAt != null, done: !!(mode && mode !== "stopwatch" && v >= total) }; },
+    setCx: function (x) { var nx = x == null ? null : Math.round(x); if (nx === cxT) return; cxT = nx; posY = null; kick(); },
     setCy: function (y) { var c = capY(); cyT = y == null ? Math.round(H * 0.5) : Math.min(Math.round(y), c); kick(); },
     rect: function () { return cv ? cv.getBoundingClientRect() : null; },
     frames: function () { return painted; },
-    on: function (f) { if (typeof f === "function") listeners.push(f); }
+    on: function (f) { if (typeof f === "function") listeners.push(f); },
+    /* ---- инструменты стола (D-880) ---- */
+    show: function (o) {
+      o = o || {}; var str = fit(o.str || ""), now = performance.now();
+      if (tool && tool.str === str && tool.label === (o.label || "") && tool.sub === (o.sub || "")) return str;
+      tool = { str: str, prev: tool ? tool.str : "", t0: tool && tool.str === str ? tool.t0 - 1e4 : now, label: o.label || "", sub: o.sub || "" };
+      lastKey = ""; kick(); emit("tool"); return str;
+    },
+    hide: function () { if (!tool) return; tool = null; clearTimeout(toolTmo); lastKey = ""; kick(); emit("tool-off"); },
+    tool: function () { return tool ? { str: tool.str, label: tool.label, sub: tool.sub } : null; },
+    fit: function (s) { return fit(s); },
+    has: function (ch) { return !!G[ch]; },
+    pal: function () { var p = pal(); return { mood: p[0], c: p[1].c.slice(), g: p[1].g.slice() }; }
   };
   window.sbDeskTime = api;
 
@@ -316,6 +418,7 @@
     var onM = function () { lastKey = ""; kick(); };
     if (mq.addEventListener) mq.addEventListener("change", onM);
     if (window.MutationObserver) new MutationObserver(onM).observe(root, { attributes: true, attributeFilter: ["data-motion"] });
+    if (window.MutationObserver) new MutationObserver(retheme).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
     window.addEventListener("sb:desktime", function (ev) { setView(ev && ev.detail && ev.detail.view ? ev.detail.view : readView()); });
     window.addEventListener("storage", function (ev) { if (ev.key === VIEW_KEY) setView(readView()); });
     if (window.sbBus && window.sbBus.on) window.sbBus.on("translate:done", function () { cache = {}; lastKey = ""; kick(); });

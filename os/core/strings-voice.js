@@ -10,6 +10,7 @@
     en: {
       "voice.bell": "Evening edition",
       "voice.bellFoot": "Everything the house said that matters is here. Warm words are kept nowhere.",
+      "voice.bellMore": "how this works",
       "voice.undo": "bring it back",
       "voice.or": " or ",
       "voice.read": "read",
@@ -22,6 +23,7 @@
     ru: {
       "voice.bell": "Вечерний выпуск",
       "voice.bellFoot": "Здесь — всё, что дом сказал по делу. Тёплые слова не хранятся нигде.",
+      "voice.bellMore": "как это устроено",
       "voice.undo": "вернуть",
       "voice.or": " или ",
       "voice.read": "прочитано",
@@ -37,6 +39,7 @@
     ee: {
       "voice.bell": "Õhtune väljaanne",
       "voice.bellFoot": "Siin on kõik, mida maja asja pärast ütles. Soojad sõnad ei jää kuhugi.",
+      "voice.bellMore": "kuidas see töötab",
       "voice.undo": "too tagasi",
       "voice.or": " või ",
       "voice.read": "loetud",

@@ -96,11 +96,13 @@
   :where(html:not([data-input="touch"])) .notes-row:hover { background: rgba(var(--film-rgb), .05); }
 }
 
+/* Выбранная заметка — один признак: кромка света, как у открытого значка
+   (обход п.49); полоса слева и серая подложка сняты. */
 .notes-row.active {
-  background: var(--side-on);
+  background: none;
   border-color: transparent;
+  box-shadow: inset 0 0 0 1px rgba(var(--edge-rgb), .42), 0 0 14px rgba(var(--edge-rgb), .08);
 }
-.notes-row.active::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; border-radius: var(--r-pill); background: var(--accent); }
 
 .notes-row.dragging-source { opacity: .4; }
 
@@ -215,8 +217,8 @@
   padding: 0 32px;
 }
 
-.notes-glyph svg { width: 34px; height: 34px; opacity: .45; }
-.notes-glyph { color: var(--accent); }
+.notes-glyph svg { width: 18px; height: 18px; }
+.notes-glyph { color: var(--ink-3); line-height: 0; }
 
 /* Cursor-following drag chip. Class + data-id are the shell drop contract. */
 .notes-row-ghost {
@@ -298,3 +300,44 @@
 }
 .notes-bodywrap.has-sm .notes-live { display: block; }
 .notes-bodywrap.has-sm .notes-body { color: transparent; }
+
+/* ── СТОПКИ, ГЛАВНОЕ СЕГОДНЯ, ПОВТОР (D-886…D-888, «Инструменты стола») ──
+   Стопки — строчные слова над списком, без плашек: выбранная светлее и с
+   тонкой чертой акцента; «+» — та же кнопка-знак, что «новая запись».
+   Звезда «главное сегодня» — знак в шапке записи, горит акцентом темы. */
+.notes-stacks { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; padding: 2px 2px 8px; }
+.notes-stack {
+  min-height: 28px; padding: 0 2px; border: 0; background: none; cursor: pointer; color: var(--ink-3);
+  font: inherit; font-size: var(--f-ui); letter-spacing: var(--track-air);   /* ближайшее слово шкалы (.02 → .03em, D-1060) */ text-transform: lowercase; border-bottom: 1px solid transparent;
+}
+.notes-stack.on { color: var(--ink); border-bottom-color: var(--accent-ring); }
+.notes-stack.add { width: 28px; display: inline-grid; place-items: center; color: var(--ink-2); }
+.notes-stack.add svg { width: 14px; height: 14px; }
+.notes-stack.drop { color: var(--ink-3); font-size: var(--f-meta); }   /* ступени шкалы вместо 12,5/11,5 px (type-scale, H4b) */
+.notes-stack:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-ctrl); }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .notes-stack:hover { color: var(--ink); }
+}
+.notes-stack-input[hidden] { display: none; }
+.notes-stack-input { flex: 1 1 120px; min-width: 0; }
+.notes-today {
+  width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: var(--r-ctrl);
+  background: transparent; color: var(--ink-3); cursor: pointer;
+}
+.notes-today svg { width: 16px; height: 16px; opacity: .55; transition: opacity var(--t-touch) var(--ease-move); }
+.notes-today.on svg { opacity: 1; filter: drop-shadow(0 0 6px var(--accent-ring)); }
+.notes-today:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (hover: hover) {
+  :where(html:not([data-input="touch"])) .notes-today:hover svg { opacity: .9; }
+}
+.notes-stack-pick {
+  height: 28px; max-width: 150px; margin-right: auto; padding: 0 6px; border: 0; border-radius: var(--r-ctrl);
+  background: transparent; color: var(--ink-2); font: inherit; font-size: var(--f-ui); text-transform: lowercase; cursor: pointer;
+}
+.notes-stack-pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.notes-row-today { display: inline-flex; vertical-align: -2px; margin-right: 6px; }
+.notes-row-today svg { width: 12px; height: 12px; }
+.notes-row-due.repeat { color: var(--ink-2); }
+/* кнопка смайликов в шапке записи — одноцветный знак 16 px среди знаков набора, а не цветной комок 22 px
+   (обход п.50, глубокий аудит Б-49, D-912); сами смайлики в подносе — цветные, как были */
+.notes-smile > svg { width: 16px; height: 16px; filter: grayscale(1) brightness(1.3); opacity: .75; }

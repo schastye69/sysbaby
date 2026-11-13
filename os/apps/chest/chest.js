@@ -38,9 +38,8 @@
   var root = doc.documentElement;
   var STORE_KEY = "sysbaby.chest.v1";
   var DAY = 24 * 3600 * 1000;
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
-    '<path d="M3.5 10.5V18a1.5 1.5 0 0 0 1.5 1.5h14A1.5 1.5 0 0 0 20.5 18v-7.5"/>' +
-    '<path d="M3.5 10.5V9a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v1.5z"/><path d="M10.5 10.5v3h3v-3"/></svg>';
+  /* Чистота А: знака этой комнаты в малом наборе нет — значок не рисуется, остаётся слово (имя комнаты). */
+  var ICON = "";
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {

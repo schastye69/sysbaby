@@ -5,92 +5,107 @@
  * Стекло без размытия под собой: над живым временем на столе оно
  * пересчитывалось бы каждый кадр (бюджет кадров «Дом — мой»).
  * Охраняется tools/clock-panel-stays-check.mjs. */
+/* ЧИСТОТА (D-846-CLOCK-PANEL-LANGUAGE, основатель 11.11.2026): панель говорит
+   языком А/Б — цвета из токенов темы (в Светлице светлая, в Авроре — вещество
+   поля), радиусы 16/10, кегли 11 · 13 · 15 · 20 · 28 (большие цифры — один
+   --f-hero), вкладки — слова-включатели, «поставить»/«старт» — светильник,
+   пресеты — слова без коробки, × ‹ › — знаки малого набора. Панель встаёт под
+   рядом значков (--icons-b), а не на нём. ОТКАТ: литералы v178-H4a (D-853). */
 #sbClockPanel {
-  /* краска панели — слова --ck-* в словаре ядра (core.css, «ПАНЕЛЬ ЧАСОВ · КРАСКА»; доска H4: paint-tokens) */
+  --ck-ink: var(--ink); --ck-ink7: var(--ink-2); --ck-ink5: var(--ink-3); --ck-ink3: var(--ink-3);
+  --ck-glow: var(--edge-rgb); --ck-edge: var(--edge-rgb); --ck-lit: linear-gradient(180deg, var(--glyph-1), var(--glyph-3));
+  --ck-thread: var(--door-thread);
+  --ck-lamp: var(--lamp5-bg);
+  --ck-line: linear-gradient(90deg, transparent, rgba(var(--edge-rgb), .55) 22%, rgba(var(--edge-rgb), .55) 78%, transparent);
+  --ck-line-on: linear-gradient(90deg, transparent, var(--door-thread) 18%, var(--door-thread) 82%, transparent);
+  --ck-brass: var(--brass);
   position: fixed; right: 12px; top: 56px; z-index: var(--z-panel, 100);
   width: min(452px, calc(100vw - 24px)); padding: 20px 22px; box-sizing: border-box;
+  max-height: calc(100vh - 80px);
   overflow: auto; overscroll-behavior: contain; scrollbar-width: none;
-  color: var(--ck-ink); font: var(--w-text) var(--f-read)/var(--lh-ui) Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: var(--ck-glass);
-  box-shadow: var(--ck-rim);
-  border-radius: var(--r-window);   /* угол — слово шкалы (radius-scale, доска H4); было 26 px демо */
+  color: var(--ck-ink); font: 400 var(--f-ui)/1.4 var(--font);
+  background: radial-gradient(60% 45% at 78% -8%, rgba(var(--ck-glow), .10), transparent 70%), var(--menu-bg);
+  box-shadow: var(--tray5-edge), 0 30px 70px -24px rgba(var(--shade-rgb, 0, 0, 0), .6);
+  border-radius: var(--r-card);
   display: block; opacity: 0; visibility: hidden; transform: translateY(-6px); pointer-events: none;
-  transition: opacity var(--t-move) var(--ease-enter), transform var(--t-move) var(--ease-enter), visibility 0s var(--ease-move) var(--t-move);   /* шкала скоростей (было .26 с демо) */
+  transition: opacity var(--t-move) var(--ease-enter), transform var(--t-move) var(--ease-enter), visibility 0s var(--ease-move) var(--t-move);   /* шкала скоростей (было .26 с демо; доска H4) */
 }
 #sbClockPanel[hidden] { display: block; }
 #sbClockPanel.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition: opacity var(--t-move) var(--ease-enter), transform var(--t-move) var(--ease-enter), visibility 0s var(--ease-move); }
 #sbClockPanel::-webkit-scrollbar { display: none; }
-/* настроения панели (океан, аврора, затмение) — в словаре ядра рядом с краской панели */
 #sbClockPanel * { box-sizing: border-box; }
 /* сброс кнопки явными свойствами, а не all: unset — тот в CSSOM объявляет и --safe-top (safe-top-check, доска H4) */
 #sbClockPanel button { appearance: none; -webkit-appearance: none; background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; letter-spacing: inherit; text-align: inherit; text-transform: inherit; line-height: inherit; outline: none; box-sizing: border-box; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-#sbClockPanel button:focus-visible { box-shadow: var(--ck-brass); border-radius: var(--r-lamp); }
+#sbClockPanel button:focus-visible { box-shadow: var(--ck-brass); border-radius: var(--r-ctrl); }
 #sbClockPanel .ck-lt { background: var(--ck-lit); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 10px rgba(var(--ck-glow), .38)); }
 
 /* часы с секундами */
 #sbClockPanel .ck-head { display: flex; align-items: flex-start; gap: 12px; }
-#sbClockPanel .ck-clock { display: flex; align-items: baseline; gap: 8px; font-weight: var(--w-thin); line-height: var(--lh-one); font-variant-numeric: tabular-nums; letter-spacing: var(--track-tight); }   /* крупные тонкие цифры — те же слова, что у «крупных чисел» (D-742) */
+#sbClockPanel .ck-clock { display: flex; align-items: baseline; gap: 8px; font-weight: var(--w-hair); line-height: var(--lh-one); font-variant-numeric: tabular-nums; letter-spacing: var(--track-hair); }
 #sbClockPanel .ck-hm { font-size: var(--f-hero); }
-#sbClockPanel .ck-sec { font-size: var(--f-title); font-weight: var(--w-thin); letter-spacing: 0; color: rgba(var(--ck-glow), .7); min-width: 2ch; }
-#sbClockPanel .ck-date { font-size: var(--f-read); color: var(--ck-ink7); margin-top: 8px; font-weight: var(--w-text); }
-#sbClockPanel .ck-x { margin-left: auto; width: 36px; height: 30px; display: grid; place-items: center; border-radius: var(--r-light); color: var(--ck-ink5); }
+#sbClockPanel .ck-sec { font-size: var(--f-hero); font-weight: var(--w-hair); letter-spacing: var(--track-hair); color: var(--ck-ink5); min-width: 2ch; }   /* секунды тем же кеглем, тише (обход п.25) */
+#sbClockPanel .ck-date { font-size: var(--f-ui); color: var(--ck-ink7); margin-top: 8px; font-weight: var(--w-text); }
+#sbClockPanel .ck-x { margin-left: auto; width: 36px; height: 30px; display: grid; place-items: center; border-radius: var(--r-ctrl); color: var(--ck-ink5); }
+#sbClockPanel :is(.ck-x, .ck-nav) svg.sb-znak { width: 12px; height: 12px; }
 
-/* слова на одном подносе (G8) */
-#sbClockPanel .ck-tray { display: flex; gap: 2px; padding: 4px; border-radius: var(--r-lamp); margin-top: 18px; overflow-x: auto; scrollbar-width: none;
-  background: var(--ck-tray); box-shadow: var(--ck-tray-rim); }
+/* вкладки и пресеты — слова-включатели Б: без подноса и таблеток; выбранное
+   слово светлое, с ореолом и нитью света из акцента под ним */
+#sbClockPanel .ck-tray { display: flex; flex-wrap: wrap; gap: 2px 6px; padding: 0; margin-top: 18px; overflow: visible; background: none; box-shadow: none; }
 #sbClockPanel .ck-tray::-webkit-scrollbar { display: none; }
-#sbClockPanel .ck-w { position: relative; flex: 1 0 auto; text-align: center; padding: 9px 10px; border-radius: var(--r-light); font-size: var(--f-read); color: var(--ck-ink5); white-space: nowrap; transition: color var(--t-touch) var(--ease-move), background var(--t-touch) var(--ease-move); }
-#sbClockPanel .ck-w[aria-selected="true"], #sbClockPanel .ck-w[aria-pressed="true"] { color: var(--ck-ink-on); background: var(--ck-word-on); }
-#sbClockPanel .ck-run { display: inline-block; margin-left: 6px; font-size: var(--f-ui); font-variant-numeric: tabular-nums; color: rgba(var(--ck-glow), .9); }
-#sbClockPanel .ck-run::before { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: var(--r-round); margin: 0 5px 2px 0; vertical-align: middle; background: var(--ck-spark); box-shadow: 0 0 8px 2px rgba(var(--ck-glow), .6); }
+#sbClockPanel .ck-w { position: relative; flex: 0 0 auto; text-align: center; padding: 8px 8px 9px; border-radius: var(--r-ctrl); font-size: var(--f-ui); color: var(--ck-ink5); white-space: nowrap; transition: color var(--t-touch) var(--ease-move), text-shadow var(--t-touch) var(--ease-move); }
+#sbClockPanel .ck-w::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 3px; height: 1px; background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .95) 30%, rgba(var(--accent-rgb), .95) 70%, transparent) no-repeat 50% 100% / 0 1px; transition: background-size var(--t-touch) var(--ease-move); }
+#sbClockPanel .ck-w[aria-selected="true"], #sbClockPanel .ck-w[aria-pressed="true"] { color: var(--ck-ink); text-shadow: 0 0 14px rgba(var(--accent-rgb), .42); }
+#sbClockPanel .ck-w[aria-selected="true"]::after, #sbClockPanel .ck-w[aria-pressed="true"]::after { background-size: 100% 1px; }
+#sbClockPanel .ck-run { display: inline-block; margin-left: 6px; font-size: var(--f-meta); font-variant-numeric: tabular-nums; color: rgba(var(--ck-glow), .9); }
+#sbClockPanel .ck-run::before { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: var(--r-round); margin: 0 5px 2px 0; vertical-align: middle; background: var(--accent-ink); box-shadow: 0 0 8px 2px rgba(var(--accent-rgb), .6); }
 #sbClockPanel .ck-sec-tab { display: none; margin-top: 18px; }
 #sbClockPanel .ck-sec-tab.on { display: block; }
 
 /* календарь */
 #sbClockPanel .ck-mh { display: flex; align-items: center; gap: 10px; margin: 2px 2px 8px; }
-#sbClockPanel .ck-mh b { font-weight: var(--w-strong); font-size: var(--f-read); }
-#sbClockPanel .ck-mh span { color: var(--ck-ink5); font-size: var(--f-read); }
-#sbClockPanel .ck-nav { width: 34px; height: 30px; display: grid; place-items: center; border-radius: var(--r-light); color: var(--ck-ink5); }
+#sbClockPanel .ck-mh b { font-weight: var(--w-strong); font-size: var(--f-ui); }
+#sbClockPanel .ck-mh span { color: var(--ck-ink5); font-size: var(--f-ui); }
+#sbClockPanel .ck-nav { width: 34px; height: 30px; display: grid; place-items: center; border-radius: var(--r-ctrl); color: var(--ck-ink5); }
 #sbClockPanel .ck-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; row-gap: 2px; }
-#sbClockPanel .ck-wd { font-size: var(--f-meta); letter-spacing: var(--track-caps); color: var(--ck-ink5); padding: 4px 0 6px; }
-#sbClockPanel .ck-d { position: relative; height: 38px; display: grid; place-items: center; font-size: var(--f-lead); font-weight: var(--w-text); font-variant-numeric: tabular-nums; color: var(--ck-ink7); border-radius: var(--r-card); }
+#sbClockPanel .ck-wd { font-size: var(--f-meta); letter-spacing: 0; color: var(--ck-ink5); padding: 4px 0 6px; }
+#sbClockPanel .ck-d { position: relative; height: 38px; display: grid; place-items: center; font-size: var(--f-lead); font-weight: var(--w-text); font-variant-numeric: tabular-nums; color: var(--ck-ink7); border-radius: var(--r-ctrl); }
 #sbClockPanel .ck-d.we { color: var(--ck-ink5); }
 #sbClockPanel .ck-d.past { color: var(--ck-ink3); }
 #sbClockPanel .ck-d.today::before { content: ""; position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: var(--r-round); background: radial-gradient(closest-side, rgba(var(--ck-glow), .22), transparent); pointer-events: none; }
 #sbClockPanel .ck-d.today { font-weight: var(--w-strong); }
 #sbClockPanel .ck-d.today .ck-lt { position: relative; }
-#sbClockPanel .ck-d.note::after { content: ""; position: absolute; left: 50%; bottom: 4px; width: 4px; height: 4px; margin-left: -2px; border-radius: var(--r-round); background: var(--ck-spark); box-shadow: 0 0 6px 1px rgba(var(--ck-glow), .6); }
-#sbClockPanel .ck-hint { font-size: var(--f-read); color: var(--ck-ink5); margin-top: 12px; line-height: var(--lh-read); }
+#sbClockPanel .ck-d.note::after { content: ""; position: absolute; left: 50%; bottom: 4px; width: 4px; height: 4px; margin-left: -2px; border-radius: var(--r-round); background: var(--accent-ink); box-shadow: 0 0 6px 1px rgba(var(--accent-rgb), .6); }
+#sbClockPanel .ck-hint { font-size: var(--f-meta); color: var(--ck-ink5); margin-top: 12px; line-height: var(--lh-read); }
 
 /* поле «стекло со световой чертой» (G6) */
 #sbClockPanel .ck-field { display: block; width: 100%; margin-top: 10px; padding: 12px 14px; border: 0; outline: 0; border-radius: var(--r-ctrl); color: var(--ck-ink); font: inherit; font-size: var(--f-lead);
-  background-color: transparent; background-image: var(--ck-line), var(--ck-field);
+  background-color: transparent; background-image: var(--ck-line), linear-gradient(180deg, rgba(var(--film-rgb), .055), rgba(var(--film-rgb), .025));
   background-repeat: no-repeat; background-size: 100% 1px, 100% 100%; background-position: bottom center, center; }
 #sbClockPanel .ck-field::placeholder { color: var(--ck-ink3); }
-#sbClockPanel .ck-field:focus { background-image: var(--ck-line-on), var(--ck-field); background-size: 100% 1.5px, 100% 100%; }
+#sbClockPanel .ck-field:focus { background-image: var(--ck-line-on), linear-gradient(180deg, rgba(var(--film-rgb), .055), rgba(var(--film-rgb), .025)); background-size: 100% 1.5px, 100% 100%; }
 
 /* светильник и тихое слово рядом (G9) */
 #sbClockPanel .ck-row { display: flex; align-items: center; gap: 18px; margin-top: 16px; flex-wrap: wrap; }
-#sbClockPanel .ck-lamp { position: relative; overflow: hidden; display: inline-flex; align-items: center; min-height: 40px; padding: 0 20px; border-radius: var(--r-lamp);
-  background: var(--ck-lamp); box-shadow: var(--ck-lamp-rim); color: var(--ck-ink-on); font-weight: var(--w-strong); font-size: var(--f-read); }
+#sbClockPanel .ck-lamp { position: relative; overflow: hidden; display: inline-flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: var(--r-lamp);
+  background: var(--ck-lamp); box-shadow: var(--lamp5-edge); color: var(--lamp5-ink); font-weight: var(--w-strong); font-size: var(--f-ui); }
 #sbClockPanel .ck-lamp::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: 0; height: 1px; pointer-events: none; background: linear-gradient(90deg, transparent, var(--ck-thread), transparent); opacity: .8; }
-#sbClockPanel .ck-lamp:focus-visible { box-shadow: var(--ck-lamp-rim-0), var(--ck-brass); }
-#sbClockPanel .ck-q { font-size: var(--f-read); color: var(--ck-ink7); padding: 8px 4px; }
-#sbClockPanel .ck-big { display: flex; align-items: baseline; gap: 8px; font-weight: var(--w-thin); line-height: var(--lh-one); font-variant-numeric: tabular-nums; letter-spacing: var(--track-tight); margin-top: 4px; }
+#sbClockPanel .ck-lamp:focus-visible { box-shadow: var(--lamp5-edge), var(--ck-brass); }
+#sbClockPanel .ck-q { font-size: var(--f-ui); color: var(--ck-ink7); padding: 8px 4px; }
+#sbClockPanel .ck-big { display: flex; align-items: baseline; gap: 8px; font-weight: var(--w-hair); line-height: var(--lh-one); font-variant-numeric: tabular-nums; letter-spacing: var(--track-hair); margin-top: 4px; }
 #sbClockPanel .ck-big .m { font-size: var(--f-hero); }
-#sbClockPanel .ck-big .s { font-size: var(--f-title); font-weight: var(--w-thin); letter-spacing: 0; color: rgba(var(--ck-glow), .7); }
-#sbClockPanel .ck-sub { font-size: var(--f-read); color: var(--ck-ink5); margin-top: 8px; min-height: 1.4em; }
+#sbClockPanel .ck-big .s { font-size: var(--f-hero); font-weight: var(--w-hair); letter-spacing: var(--track-hair); color: var(--ck-ink5); }
+#sbClockPanel .ck-sub { font-size: var(--f-ui); color: var(--ck-ink5); margin-top: 8px; min-height: 1.4em; }
 #sbClockPanel .ck-tray.small { margin-top: 14px; }
 #sbClockPanel .ck-tray.small .ck-w { padding: 8px 6px; font-size: var(--f-ui); }
-#sbClockPanel .ck-laps { margin-top: 12px; font-size: var(--f-read); color: var(--ck-ink5); font-variant-numeric: tabular-nums; display: grid; gap: 4px; }
+#sbClockPanel .ck-laps { margin-top: 12px; font-size: var(--f-ui); color: var(--ck-ink5); font-variant-numeric: tabular-nums; display: grid; gap: 4px; }
 #sbClockPanel .ck-laps div { display: flex; justify-content: space-between; max-width: 240px; }
 
 /* наведение — только мышью (hover-is-not-touch-check) */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) #sbClockPanel .ck-x:hover { color: var(--ck-ink); background: radial-gradient(70% 90% at 50% 110%, rgba(var(--ck-edge), .16), transparent 80%); }
+  :where(html:not([data-input="touch"])) #sbClockPanel .ck-x:hover { color: var(--ck-ink); }
   :where(html:not([data-input="touch"])) #sbClockPanel .ck-w:hover { color: var(--ck-ink7); }
   :where(html:not([data-input="touch"])) #sbClockPanel .ck-nav:hover { color: var(--ck-ink); }
-  :where(html:not([data-input="touch"])) #sbClockPanel .ck-d:hover { background: var(--ck-hover); }
+  :where(html:not([data-input="touch"])) #sbClockPanel .ck-d:hover { background: rgba(var(--film-rgb), .05); }
   :where(html:not([data-input="touch"])) #sbClockPanel .ck-q:hover { color: var(--ck-ink); }
 }
 @media (max-width: 520px) {
@@ -99,7 +114,7 @@
   /* на телефоне у слова остаётся только точка бега: текст срезан шириной точки, а не кеглем 0 (type-scale, доска H4) */
   #sbClockPanel .ck-run { width: 4px; overflow: hidden; white-space: nowrap; vertical-align: middle; color: transparent; margin-left: 3px; }
   #sbClockPanel .ck-run::before { margin: 0 0 2px; }
-  #sbClockPanel .ck-hm { font-size: var(--f-hero); }
+  #sbClockPanel .ck-hm, #sbClockPanel .ck-sec { font-size: var(--f-figure); }
   #sbClockPanel .ck-d { height: 36px; }
 }
 @media (prefers-reduced-motion: reduce) { #sbClockPanel, #sbClockPanel .ck-w { transition: none !important; } }

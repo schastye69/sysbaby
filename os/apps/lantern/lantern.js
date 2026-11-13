@@ -39,11 +39,7 @@
 
   var doc = document;
 
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
-    '<path d="M9 2h6M10 2v2.4M14 2v2.4"/>' +
-    '<path d="M7.2 4.4h9.6l-1 3.2H8.2z"/>' +
-    '<path d="M8.2 7.6h7.6v10a2 2 0 0 1-2 2h-3.6a2 2 0 0 1-2-2z"/>' +
-    '<path d="M12 10.6v6"/></svg>';
+  var ICON = sbZnak("lantern");
 
   function esc(s) {
     return (window.escapeHtml || function (v) { return String(v == null ? "" : v); })(s);
@@ -114,10 +110,10 @@
   var UI = {
     en: {
       title: "Lantern", label: "Lantern",
-      lead: "What is worth knowing exactly when there is no network. All of it lives on this device: no request goes out, and none has to.",
-      warn: "This is a reference, not medicine, and it does not replace the emergency number. There is not a single medicine dose here, and there never will be. If you can call — call first, then read.",
+      lead: "What is worth knowing when there is no network — all of it lives on this device.",
+      warn: "This is a reference, not medicine: it does not replace the emergency number. If you can call — call first, then read.",
       groups: { now: "When it is happening", home: "The home is in danger", dark: "When something stops", away: "Away from home", body: "The body", soul: "The soul", numbers: "Numbers", words: "Ten sentences" },
-      ask: "What happened?", askPh: "Write what happened", askGo: "Find",
+      ask: "what happened?", askPh: "write what happened", askGo: "find",
       askTop: "This looks like it:", askMore: "It may also be:", askOpen: "Open",
       askNone: "I did not find anything by those words. Everything there is stands below. If a life is in danger — call 112.",
             open: "Open", back: "Back", step: "Step", of: "of", next: "Next", done: "Done",
@@ -125,7 +121,7 @@
       clockStart: "Start", clockStop: "Stop", clockReset: "Reset",
       clockUp: "Time since you started", clockDown: "Keep cooling until zero",
       clockFlush: "Keep flushing until zero", clockPinch: "Keep pinching until zero",
-      torch: "Light", torchNight: "Night light", torchOff: "Put out",
+      torch: "light", torchNight: "night light", torchOff: "put out",
       whereGo: "Where am I — find my coordinates",
       whereWait: "Asking the device… outdoors it is faster: GPS needs to see the sky.",
       whereLat: "Latitude", whereLon: "Longitude",
@@ -137,23 +133,23 @@
       whereFail: "The location was not found ({why}). Step into the open and try again — or describe the place in words.",
       whereNote: "The coordinates are shown only here: sys.baby does not keep them and sends them nowhere. A phone with GPS finds them without a network; a computer often asks its browser's location service over Wi-Fi, and without internet it may not find them.",
       whereWhat: "has a “Where am I” button",
-      tapNext: "Tap to go on",
+      tapNext: "tap — next", tapNextKey: "space — next",
       source: "Source", checked: "checked"
     },
     ru: {
       title: "Фонарь", label: "Фонарь",
-      lead: "То, что стоит знать именно тогда, когда сети нет. Всё это лежит на устройстве: наружу не уходит ни одного запроса, и не должен.",
-      warn: "Это справка, а не медицина, и она не заменяет экстренный номер. Здесь нет ни одной дозировки лекарства и не будет. Если можете позвонить — сперва звоните, потом читайте.",
+      lead: "То, что стоит знать, когда сети нет, — всё лежит на этом устройстве.",
+      warn: "Это справка, а не медицина: она не заменяет экстренный номер. Если можете позвонить — сперва звоните, потом читайте.",
       groups: { now: "Когда это происходит", home: "Дом в опасности", dark: "Когда что-то пропало", away: "Вдали от дома", body: "Тело", soul: "Душа", numbers: "Номера", words: "Десять фраз" },
-      ask: "Что случилось?", askPh: "Напишите, что случилось", askGo: "Найти",
+      ask: "что случилось?", askPh: "напишите, что случилось", askGo: "найти",
       askTop: "Похоже на это:", askMore: "Ещё может подойти:", askOpen: "Открыть",
-      askNone: "По этим словам ничего не нашёл. Ниже — всё, что есть. Если жизнь в опасности — звоните 112.",
-            open: "Открыть", back: "Назад", step: "Шаг", of: "из", next: "Дальше", done: "Готово",
+      askNone: "По этим словам ничего нет — ниже всё, что есть. Если жизнь в опасности — звоните 112.",
+            open: "открыть", back: "назад", step: "шаг", of: "из", next: "дальше", done: "готово",
       beatStart: "Включить ритм", beatStop: "Остановить", beatWhat: "110 в минуту — жмите в такт",
       clockStart: "Пуск", clockStop: "Стоп", clockReset: "Сброс",
       clockUp: "Прошло с начала", clockDown: "Охлаждать до нуля",
       clockFlush: "Промывать до нуля", clockPinch: "Держать зажатым до нуля",
-      torch: "Свет", torchNight: "Ночной свет", torchOff: "Погасить",
+      torch: "свет", torchNight: "ночной свет", torchOff: "погасить",
       whereGo: "Где я — узнать координаты",
       whereWait: "Спрашиваю у устройства… на улице быстрее: GPS нужно видеть небо.",
       whereLat: "Широта", whereLon: "Долгота",
@@ -165,15 +161,15 @@
       whereFail: "Место не определилось ({why}). Выйдите на открытое место и попробуйте ещё раз — или опишите его словами.",
       whereNote: "Координаты видны только здесь: sys.baby их не хранит и никуда не отправляет. Телефон с GPS находит их и без сети; компьютер часто спрашивает службу местоположения своего браузера по Wi-Fi — без интернета место может не найтись.",
       whereWhat: "есть кнопка «Где я»",
-      tapNext: "Нажмите, чтобы дальше",
+      tapNext: "коснитесь — дальше", tapNextKey: "пробел — дальше",
       source: "Источник", checked: "сверено"
     },
     ee: {
       title: "Latern", label: "Latern",
-      lead: "See, mida tasub teada just siis, kui võrku pole. Kõik see on selles seadmes: ükski päring ei lähe välja ega peagi minema.",
-      warn: "See on teatmik, mitte meditsiin, ega asenda hädaabinumbrit. Siin ei ole ühtegi ravimiannust ega tule kunagi. Kui saad helistada — helista enne, loe pärast.",
+      lead: "See, mida tasub teada, kui võrku pole, — kõik on selles seadmes.",
+      warn: "See on teatmik, mitte meditsiin: see ei asenda hädaabinumbrit. Kui saad helistada — helista enne, loe pärast.",
       groups: { now: "Kui see juhtub", home: "Kodu on ohus", dark: "Kui midagi kaob", away: "Kodust eemal", body: "Keha", soul: "Hing", numbers: "Numbrid", words: "Kümme lauset" },
-      ask: "Mis juhtus?", askPh: "Kirjuta, mis juhtus", askGo: "Otsi",
+      ask: "mis juhtus?", askPh: "kirjuta, mis juhtus", askGo: "otsi",
       askTop: "Tundub, et see:", askMore: "Võib olla ka:", askOpen: "Ava",
       askNone: "Nende sõnade järgi ma midagi ei leidnud. All on kõik, mis on. Kui elu on ohus — helista 112.",
             open: "Ava", back: "Tagasi", step: "Samm", of: "/", next: "Edasi", done: "Valmis",
@@ -181,7 +177,7 @@
       clockStart: "Käivita", clockStop: "Peata", clockReset: "Nulli",
       clockUp: "Aega algusest", clockDown: "Jahuta nullini",
       clockFlush: "Loputa nullini", clockPinch: "Hoia kinni nullini",
-      torch: "Valgus", torchNight: "Öövalgus", torchOff: "Kustuta",
+      torch: "valgus", torchNight: "öövalgus", torchOff: "kustuta",
       whereGo: "Kus ma olen — leia koordinaadid",
       whereWait: "Küsin seadmelt… õues on kiirem: GPS peab taevast nägema.",
       whereLat: "Laius", whereLon: "Pikkus",
@@ -193,7 +189,7 @@
       whereFail: "Asukohta ei leitud ({why}). Mine lagedale ja proovi uuesti — või kirjelda kohta sõnadega.",
       whereNote: "Koordinaadid on näha ainult siin: sys.baby ei hoia neid ega saada kuhugi. GPS-iga telefon leiab need ka võrguta; arvuti küsib sageli oma brauseri asukohateenuselt Wi-Fi kaudu — ilma internetita ei pruugi asukoht leiduda.",
       whereWhat: "on nupp «Kus ma olen»",
-      tapNext: "Puuduta, et edasi",
+      tapNext: "puuduta — edasi", tapNextKey: "tühik — edasi",
       source: "Allikas", checked: "kontrollitud"
     }
   };
@@ -1458,7 +1454,7 @@
     var body = c[L] || c.en;
     return '<button type="button" class="lt-ask-hit ' + cls + '" data-ask-open="' + esc(c.id) + '">' +
       '<span class="lt-ask-hit-title">' + esc(body.title) + "</span>" +
-      '<span class="lt-ask-hit-go">' + esc(t.askOpen) + " →</span>" +
+      '<span class="lt-ask-hit-go">' + esc(t.askOpen) + " ›</span>" +
       "</button>";
   }
   function askOutHtml(t, L) {
@@ -1483,6 +1479,15 @@
       "</form>" +
       '<div class="lt-ask-out" id="ltAskOut" aria-live="polite">' + askOutHtml(t, L) + "</div>" +
       "</section>";
+  }
+
+  /* Дата сверки словами языка — «27 августа 2026», не ISO (обход п.55). */
+  function dayWords(iso, L) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
+    if (!m) return String(iso || "");
+    try {
+      return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString(L === "ru" ? "ru-RU" : (L === "ee" ? "et-EE" : "en-GB"), { day: "numeric", month: "long", year: "numeric" }).replace(/\s*г\.$/, "");
+    } catch (e) { return String(iso); }
   }
 
   /* ── ПОЛКА ─────────────────────────────────────────────────────────────── */
@@ -1515,7 +1520,7 @@
           "</p>" +
           '<p class="lt-src">' + esc(t.source) + ": " +
             '<a href="' + esc(s2.url) + '" target="_blank" rel="noopener noreferrer">' + esc(s2.name) + "</a>" +
-            " · " + esc(t.checked) + " " + esc(s2.checked) +
+            " · " + esc(t.checked) + " " + esc(dayWords(s2.checked, L)) +
           "</p>" +
           "</article>";
       });
@@ -1560,17 +1565,18 @@
     }
     return '<div class="lt-open" data-open="' + esc(c.id) + '">' +
       '<div class="lt-top">' +
-        '<button type="button" class="lt-back" data-back="1">← ' + esc(t.back) + "</button>" +
+        '<button type="button" class="lt-back" data-back="1">' + esc(t.back) + "</button>" +
         '<span class="lt-count">' + esc(t.step) + " " + (i + 1) + " " + esc(t.of) + " " + n + "</span>" +
       "</div>" +
       '<h2 class="lt-open-title">' + esc(body.title) + "</h2>" +
       '<p class="lt-step" id="ltStep">' + esc(body.steps[i]) + "</p>" +
       tool +
       '<div class="lt-nav">' +
-        (i > 0 ? '<button type="button" class="lt-small" data-step="prev">← ' + esc(t.back) + "</button>" : '<span></span>') +
-        '<button type="button" class="lt-big next" data-step="next">' + esc(last ? t.done : t.next) + " →</button>" +
+        (i > 0 ? '<button type="button" class="lt-small" data-step="prev">' + esc(t.back) + "</button>" : '<span></span>') +
+        '<button type="button" class="lt-big next" data-step="next">' + esc(last ? t.done : t.next) + "</button>" +
       "</div>" +
-      '<p class="lt-tap">' + esc(t.tapNext) + "</p>" +
+      /* глагол по вводу (обход п.57): касание — «коснитесь», клавиатура — «пробел» */
+      '<p class="lt-tap">' + esc(document.documentElement.classList.contains("is-touch") ? t.tapNext : (t.tapNextKey || t.tapNext)) + "</p>" +
       "</div>";
   }
 

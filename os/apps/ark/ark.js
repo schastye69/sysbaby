@@ -40,10 +40,8 @@
   "use strict";
 
   var doc = document;
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
-    '<path d="M3.2 13.4h17.6l-2.1 4.3a2.2 2.2 0 0 1-2 1.3H7.3a2.2 2.2 0 0 1-2-1.3z"/>' +
-    '<path d="M7.2 13.4V9.2h9.6v4.2"/><path d="M10.2 9.2V6.6h3.6v2.6"/>' +
-    '<path d="M2.6 21.2c1.3 0 1.3-.8 2.6-.8s1.3.8 2.6.8 1.3-.8 2.6-.8 1.3.8 2.6.8 1.3-.8 2.6-.8 1.3.8 2.6.8 1.3-.8 2.6-.8"/></svg>';
+  /* Чистота А: знака этой комнаты в малом наборе нет — значок не рисуется, остаётся слово (имя комнаты). */
+  var ICON = "";
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {

@@ -37,14 +37,16 @@
      настоящий код (ISO 639-1), и ровно так он написан на витрине. Показывать
      «EE» значило бы показывать код СТРАНЫ — та же ошибка, что флаг вместо
      языка, из-за которой и появилось решение D-041. */
+  /* word — то, что стоит в шапке тихим словом; name — имя в меню, строчными и
+     на своём языке (Чистота Б, D-839). Коды (show) живут для законов и чтеца. */
   var LANGS = [
-    { code: "ee", show: "ET", label: "Eesti" },
-    { code: "en", show: "EN", label: "English" },
-    { code: "ru", show: "RU", label: "Русский" },
+    { code: "ee", show: "ET", label: "Eesti", word: "eesti", name: "eesti" },
+    { code: "en", show: "EN", label: "English", word: "eng", name: "english" },
+    { code: "ru", show: "RU", label: "Русский", word: "рус", name: "русский" },
     /* resting: финский временно убран из выбора языка в пульте (основатель
        09.11.2026, решение D-633: «финский язык временно убрать»). Язык и его
        строки остаются в системе — снимается только слово в пульте. */
-    { code: "fi", show: "FI", label: "Suomi", resting: true }
+    { code: "fi", show: "FI", label: "Suomi", word: "suomi", name: "suomi", resting: true }
   ];
 
   function lang() {
@@ -57,7 +59,7 @@
   /* partial — язык, на котором говорит витрина, но ещё не система: словаря
      нет, и система честно отвечает по-английски (D-286 спрашивает это,
      чтобы не требовать своих слов там, где их не обещали). */
-  window.sbLangs = function () { return LANGS.map(function (l) { return { code: l.code, show: l.show, label: l.label, partial: !STRINGS[l.code], resting: !!l.resting }; }); };
+  window.sbLangs = function () { return LANGS.map(function (l) { return { code: l.code, show: l.show, label: l.label, word: l.word, name: l.name, partial: !STRINGS[l.code], resting: !!l.resting }; }); };
   /* sbT(key) -> the string; sbT(key, {name: "x"}) -> the string with {name}
      filled in. Interpolation lives here rather than at the call sites because
      word order differs between the three languages: a sentence assembled from
@@ -79,10 +81,15 @@
     var k = key + "." + form;
     return (L && L[k]) || STRINGS.en[k] ? k : key;
   }
+  /* ⌘ — знак клавиш Apple; на Windows, Linux и Android та же клавиша — Ctrl (D-860-CTRL-NOT-CMD,
+     глубокий аудит Б-13): «⌘K» в словах и подсказках там говорится «Ctrl K». */
+  var APPLE = (function () { try { var p = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || ""; return /mac|iphone|ipad|ipod/i.test(p) || /Mac OS X|iPhone|iPad/.test(navigator.userAgent || ""); } catch (e) { return false; } })();
+  function keysOf(s) { return APPLE || typeof s !== "string" || s.indexOf("\u2318") < 0 ? s : s.replace(/\u2318\s?/g, "Ctrl "); }
+  window.sbKeys = keysOf;
   window.sbT = function (key, vars) {
     var L = STRINGS[lang()];
     key = pluralKey(L, key, vars);
-    var s = (L && L[key]) || STRINGS.en[key] || key;
+    var s = keysOf((L && L[key]) || STRINGS.en[key] || key);
     if (!vars) return s;
     return String(s).replace(/\{(\w+)\}/g, function (m, k) {
       return Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : m;
@@ -109,37 +116,21 @@
   /* Полоса языков: всё состояние видно сразу, переключение — одно нажатие. */
   function tr(k) { return window.sbT ? window.sbT(k) : k; }
 
-  /* ── ЯЗЫК: ОДИН КОД, КОТОРЫЙ И ЕСТЬ КНОПКА (v47, вторая редакция) ────────
-   *
-   * Первая редакция показывала все четыре кода разом: ноль нажатий, чтобы
-   * увидеть язык, одно — чтобы сменить. Основатель посмотрел на телефоне и
-   * снял её одной фразой: столько места занимать нельзя, и часы из-за неё не
-   * помещались в экран. Он прав, и вот почему: четыре кода — это состояние
-   * ЧЕТЫРЁХ языков, а человеку нужно состояние ОДНОГО, своего. Остальные три
-   * нужны ему один раз в жизни, при первой встрече.
-   *
-   * Поэтому здесь один код — тот, на котором система говорит сейчас. Он же и
-   * кнопка: нажатие переводит на следующий язык, долгое нажатие раскрывает
-   * все четыре, если нужен конкретный. Место — правый угол верхней панели,
-   * рядом с часами; занимает он ширину двух букв.
-   *
-   * Почему понятно, что это язык, без слова «язык»: код набран моноширинным,
-   * как коды языков на витрине (D-041 — коды, а не флаги, потому что флаг
-   * обозначает страну), одет в ту же стеклянную плашку с волосяной рамкой,
-   * что и остальные значки панели, — плашка и говорит «это можно нажать», —
-   * и озвучен полностью для тех, кто читает экран голосом. Пунктир под кодом
-   * тут стоял до v53 и был снят: на телефоне тонкая точечная линия под двумя
-   * буквами читается как подчёркивание ОПЕЧАТКИ, а не как приглашение.
+  /* ── ЯЗЫК: ОДНО ТИХОЕ СЛОВО И МЕНЮ (Чистота Б, D-839; было D-070/v47) ──────
+   * В шапке — одно слово того языка, на котором система говорит сейчас
+   * («рус», «eng», «eesti»), той же гарнитурой, что и вся шапка. Касание
+   * открывает меню «eesti · english · русский»: имена строчными и на своём
+   * языке, кодов нет. Прежний круг по касанию (ET → EN → RU) на телефоне
+   * одним случайным касанием включал чужой язык; код в стеклянной плашке
+   * моноширинным был другим голосом в шапке одной гарнитуры. Язык без
+   * перевода (финский, D-633) в меню не предлагается. Охраняют
+   * os-lang-cycle-check (переведён) и topbar-one-face-check.
    */
-  function nextLang(code) {
-    var i = 0, k;
-    for (k = 0; k < LANGS.length; k++) if (LANGS[k].code === code) i = k;
-    return LANGS[(i + 1) % LANGS.length].code;
-  }
-
   function closeLangMenu() {
     var m = doc.getElementById("sbLangMenu");
     if (m && m.parentNode) m.parentNode.removeChild(m);
+    var now = doc.getElementById("sbLangNow");
+    if (now) now.setAttribute("aria-expanded", "false");
     doc.removeEventListener("pointerdown", onOutsideLang, true);
   }
   function onOutsideLang(ev) {
@@ -158,6 +149,8 @@
     m.setAttribute("role", "menu");
     LANGS.forEach(function (l) {
       var partial = !STRINGS[l.code];
+      /* Язык без перевода (финский, D-633) в меню не предлагается. */
+      if (l.resting && l.code !== cur) return;
       var b = doc.createElement("button");
       b.type = "button";
       b.className = "tb-lang-item" + (l.code === cur ? " is-active" : "") + (partial ? " is-partial" : "");
@@ -165,12 +158,14 @@
       b.setAttribute("lang", l.code === "ee" ? "et" : l.code);
       b.setAttribute("role", "menuitemradio");
       b.setAttribute("aria-checked", l.code === cur ? "true" : "false");
-      b.innerHTML = '<span class="tb-lang-code">' + l.show + '</span><span class="tb-lang-name">' + l.label + '</span>';
+      b.innerHTML = '<span class="tb-lang-name">' + l.name + '</span>';
       b.title = partial ? l.label + " — " + tr("lang.partial") : l.label;
       b.addEventListener("click", function () { closeLangMenu(); window.sbSetLang(l.code); });
       m.appendChild(b);
     });
     host.appendChild(m);
+    var now = doc.getElementById("sbLangNow");
+    if (now) now.setAttribute("aria-expanded", "true");
     setTimeout(function () { doc.addEventListener("pointerdown", onOutsideLang, true); }, 0);
   }
   window.sbOpenLangMenu = openLangMenu;
@@ -190,34 +185,23 @@
     b.id = "sbLangNow";
     b.setAttribute("data-lang", cur);
     b.setAttribute("lang", cur === "ee" ? "et" : cur);
-    b.textContent = rec.show;
+    b.textContent = rec.word;
     b.title = tr("aria.langs") + ": " + rec.label;
     b.setAttribute("aria-label", tr("aria.langs") + ": " + rec.label);
     b.setAttribute("aria-haspopup", "menu");
-
-    /* Короткое нажатие — следующий язык. Долгое — выбрать любой.
-       Порог 420 мс: короче человек не успевает понять, что держит. */
-    var holdTimer = null, held = false;
-    var startHold = function () {
-      held = false;
-      holdTimer = setTimeout(function () { held = true; openLangMenu(); }, 420);
-    };
-    var endHold = function () { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } };
-    b.addEventListener("pointerdown", startHold);
-    b.addEventListener("pointerup", endHold);
-    b.addEventListener("pointerleave", endHold);
-    b.addEventListener("pointercancel", endHold);
+    b.setAttribute("aria-expanded", "false");
+    /* Касание открывает меню языков (Чистота Б): прежний круг по касанию на
+       телефоне одним случайным касанием включал чужой язык. */
     b.addEventListener("click", function () {
-      if (held) { held = false; return; }
-      window.sbSetLang(nextLang(lang()));
+      if (doc.getElementById("sbLangMenu")) closeLangMenu(); else openLangMenu();
     });
-    b.addEventListener("contextmenu", function (ev) { ev.preventDefault(); openLangMenu(); });
     host.appendChild(b);
   }
   window.sbPaintLangs = paintLangs;
 
   function applyLang() {
     paintLangs();
+    paintIdentity();   /* «гость» на языке человека меняется вместе с языком (D-856) */
     var code = lang();
     root.setAttribute("lang", DOC_LANG[code] || code);
     $$("[data-i18n]").forEach(function (n) {
@@ -258,21 +242,33 @@
   /* ========================================================= identity (§5) */
   var USER_KEY = "sysbaby.username";
   /* Имя — буквы любого письма (сборка H4: «Анна» из знакомства и Настроек
-     доходит до шапки; раньше пропускалась только латиница и кириллица
-     превращалась в «guest»). Латиница, как прежде, строчная; буквы других
-     письменностей — как набраны. Знаки разметки и пробелы не проходят. */
-  function sanitize(v) { return String(v || "").replace(/[A-Z]/g, function (c) { return c.toLowerCase(); }).replace(/[^\p{L}\p{M}\p{N}_.\-]/gu, "").slice(0, 18); }
+     доходит до шапки). С H4b (D-856-NAME-AS-TYPED, глубокий аудит Б-1): имя хранится
+     как набрано — регистр не трогается, пробел внутри имени разрешён («Анна Мария»,
+     «Mary Ann»), повторные пробелы сжимаются, края обрезаются; знаки разметки не
+     проходят. Предел 24 знака — шапка показывает длинное имя с многоточием (CSS), а не
+     обрезкой хранения. Пустое имя хранится пустым; на виду — «гость» на языке
+     человека (boot.guest), а не латинское «guest» при русском. */
+  function sanitize(v) { return String(v || "").replace(/[^\p{L}\p{M}\p{N}_.\- ]/gu, "").replace(/ {2,}/g, " ").trim().slice(0, 24).trim(); }
+  function guestWord() { var g = tr("boot.guest"); return g && g !== "boot.guest" ? g : "guest"; }
+  /* Слово «гость» и «имя задано?» — наружу, чтобы поля имени показывали «гость»
+     подсказкой, а не значением (D-1000-NAME-FIELD-HONEST). */
+  window.sbGuestWord = guestWord;
+  window.sbUsernameStored = function () { return !!sanitize(window.sbDB ? window.sbDB.get(USER_KEY) : ""); };
 
   window.sbGetUsername = function () {
     var v = window.sbDB ? window.sbDB.get(USER_KEY) : null;
-    return sanitize(v) || "guest";
+    return sanitize(v) || guestWord();
   };
   window.sbSetUsername = function (name) {
-    var v = sanitize(name) || "guest";
+    var v = sanitize(name);
     if (window.sbDB) window.sbDB.set(USER_KEY, v);
     paintIdentity();
-    try { doc.dispatchEvent(new CustomEvent("sysbaby:username-changed", { detail: { username: v } })); } catch (e) { /* ignore */ }
-    return v;
+    var shown = v || guestWord();
+    /* Одно имя на весь дом (D-1001-ONE-NAME): «Знакомство» зовёт тем же именем,
+       что стоит в шапке. Обратная дорога — в sbAddr.set (meet.js, без петли). */
+    try { var A = window.sbAddr; if (A && A.set && typeof A.name === "function" && A.name() !== v) A.set({ name: v, fromName: true }); } catch (e) { /* знакомство не обязательно */ }
+    try { doc.dispatchEvent(new CustomEvent("sysbaby:username-changed", { detail: { username: shown } })); } catch (e) { /* ignore */ }
+    return shown;
   };
 
   function paintIdentity() {
@@ -595,55 +591,23 @@
     /* ЧАСЫ БЕЗ СЕКУНД (D-609, основатель 04.11.2026: «Секунды убираем, конечно»): в верхней панели — часы и
        минуты на любой ширине; секунды живут в виджете «Время». Стережёт tools/desk-items-check.mjs. */
     var timeStr = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
-    var whole = narrow ? timeStr : dateStr + "  " + timeStr;
+    /* ── ШАПКА ОДНОЙ ГАРНИТУРОЙ (Чистота Б, D-839-TOPBAR-ONE-FACE) ─────────
+       Часы набраны той же гарнитурой, что вся шапка, цифрами одной ширины
+       (tabular-nums): «ср 11 нояб  19:28». Семисегментные стержни (D-135) в
+       шапке сняты: «11» читалось как «ı ı». Стержни остались у крупного
+       времени виджета и проигрывателя (sbClockGlyph). Запятая и точка
+       сокращения убраны; дата тише (--ink-3), время ярче.
+       ОТКАТ: вернуть сборку ячеек clock-cell/makeGlyph из v178-H4a. */
+    dateStr = dateStr.replace(/,/g, "").replace(/\.(?=\s|$)/g, "").replace(/\s+/g, " ").trim();
+    var whole = narrow || !dateStr ? timeStr : dateStr + "  " + timeStr;
     if (whole === lastClock && !force) return;
-
-    /* Пересборка нужна, только когда СОСТАВ строки изменился — например,
-       окно сузилось и секунды ушли. Обычная секунда состава не меняет. */
-    var shape = whole.replace(/\d/g, "#");
-    if (!clockCells || clockCells.length !== whole.length || clockCells._shape !== shape || force) {
-      host.innerHTML = "";
-      clockCells = [];
-      clockCells._shape = shape;
-      for (var i = 0; i < whole.length; i++) {
-        var s = doc.createElement("span");
-        s.className = "clock-cell";
-        if (DIGIT[whole[i]] !== undefined) {
-          s.className += " digit";
-          var g = makeGlyph();
-          setGlyph(g, whole[i]);
-          s.appendChild(g);
-          s._sbGlyph = g;
-        } else {
-          s.textContent = whole[i];
-        }
-        host.appendChild(s);
-        clockCells.push(s);
-      }
-    } else {
-      for (var j = 0; j < whole.length; j++) {
-        var cell = clockCells[j];
-        var cur = cell._sbGlyph ? cell._sbGlyph._sbCh : cell.textContent;
-        if (cur === whole[j]) continue;
-        if (cell._sbGlyph) setGlyph(cell._sbGlyph, whole[j]);
-        else cell.textContent = whole[j];
-        if (!reduced()) {
-          cell.classList.remove("roll");
-          void cell.offsetWidth;
-          cell.classList.add("roll");
-        }
-      }
+    if (!clockCells || force || clockCells[0].parentNode !== host) {
+      host.innerHTML = '<span class="tb-date"></span><span class="tb-time"></span>';
+      clockCells = [host.firstChild, host.lastChild];
     }
-    /* ── СВЕТ НЕ ПРИВЯЗАН К МИНУТЕ (D-143) ────────────────────────────────
-       Здесь стоял вызов paintLight(). Ход часов — это МИНУТА: раньше цифры
-       не меняются, и до сюда мы доходим раз в минуту. Свет комнаты за это
-       время успевает уйти далеко, и минутная стрелка догоняла его одним
-       рывком — в замершей комнате это выглядело как запись в корень «сама
-       по себе», и закон root-restyle-check ловил её то в одном прогоне, то
-       в другом. Причина не в пороге и не в удаче: у света и у цифр РАЗНЫЙ
-       ход, и связывать их нельзя. Свет ставит комната — wpTick зовёт
-       sbClockLight ровно тогда, когда шов ступил (D-141). Часы рисуют
-       цифры. Каждый прибор при своём предмете. */
+    clockCells[0].textContent = narrow ? "" : dateStr;
+    clockCells[0].hidden = narrow || !dateStr;
+    clockCells[1].textContent = timeStr;
     host.setAttribute("data-whole", whole);
     host.setAttribute("aria-label", whole);
     lastClock = whole;
@@ -787,18 +751,16 @@
      keyboard chord. On a touch device those are not tips, they are false
      statements, so they are never offered there. */
   var TIPS = [
-    /* The first thing this desktop says is why it exists: who makes it and
-       what else they build. Прежде здесь была подсказка о работах клиентов
-       (D-066 → раздел «Избранные проекты»); с D-354 работы временно сняты, и
-       первое слово ведёт в build на первый экран. */
-    { id: "studio", panel: null, app: "build" },
-    { id: "inlinesearch", panel: null, pointer: true },
+    /* Подсказки о студии больше нет (Чистота Б, D-842-OBSOLETE-GONE): реклама
+       внизу стола снята; первое слово стола — о самом столе. Подсказки об искре
+       у значка (inlinesearch) нет вместе с искрой (Чистота З4). */
     { id: "cmdk", panel: null, pointer: true },
     { id: "stickynotes", panel: null },
     /* v66: заметка выросла в окно (D-111) — подсказки обязаны расти вместе
        с системой, о чём основатель просил отдельно: «прошу постоянно
        обновлять информацию в подсказках». */
-    { id: "notefull", panel: null },
+    /* «Enter в первой строке» — про клавиатуру: на касании не говорится. */
+    { id: "notefull", panel: null, pointer: true },
     { id: "windowspanel", panel: "sbTaskOverlay", pointer: true },
     { id: "appshortcuts", panel: "sbShortcutsOverlay", pointer: true },
     { id: "shortcutslist", panel: "sbShortcutsOverlay", pointer: true },
@@ -836,18 +798,10 @@
     return TIPS.filter(function (t) { return !(pointerless && t.pointer); });
   }
 
-  /* The studio tip leads once per session: the first thing the desktop
-     says is why it exists. After that it goes back into the shuffle with the
-     rest — leading every cycle would be nagging, not teaching. */
-  var studioLed = false;
   function nextTip() {
     var seen = tipsSeen();
     var unseen = offerable().filter(function (t) { return seen.indexOf(t.id) === -1; });
     if (!unseen.length) return null;
-    if (!studioLed) {
-      studioLed = true;
-      for (var i = 0; i < unseen.length; i++) if (unseen[i].id === "studio") return unseen[i];
-    }
     return unseen[Math.floor(Math.random() * unseen.length)];
   }
   function nextTipLeft() { var seen = tipsSeen(); return offerable().some(function (t) { return seen.indexOf(t.id) === -1; }); }
@@ -876,11 +830,6 @@
     tipActed = true;
     markTip(tip.id);
     if (tip.panel && window.sbPanels && window.sbPanels[tip.panel]) window.sbPanels[tip.panel].open();
-    else if (tip.id === "inlinesearch" && window.sbSeekReveal) window.sbSeekReveal();
-    else if (tip.id === "studio") {
-      if (typeof window.sbOpenBuildAt === "function") window.sbOpenBuildAt(null);
-      else if (window.toggleApp) window.toggleApp("build");
-    }
     else if (tip.id === "echoes" && window.toggleApp) window.toggleApp("echoes");
     else if (tip.id === "cmdk" && window.openCmdk) window.openCmdk("");
   }
@@ -910,7 +859,10 @@
       }
     });
     if (!h) return false;
-    h.el.setAttribute("data-tip", tip.id);   /* какая именно — читают законы (D-347) */
+    /* какая именно — читают законы (D-347). Служебный атрибут — data-tip-id:
+       data-tip у ядра значит текст подписи при наведении (shell.js), и сырой
+       ключ «windowspanel» выходил наружу подписью (обход п.7). */
+    h.el.setAttribute("data-tip-id", tip.id);
     h.el.addEventListener("click", function (ev) {
       if (ev.target && ev.target.closest && ev.target.closest("button")) return;
       tipAct(tip);
@@ -1018,13 +970,15 @@
   doc.addEventListener("visibilitychange", function () { if (doc.visibilityState === "hidden") flushCounts(); });
   /* Уровни глубины: что, по какому поведению, и что считается «уже умеет». */
   var LEAD = [
-    /* Подсказка о build — только при ПЕРВОМ входе (основатель 09.11.2026,
-       решение D-632): «иначе навязывание». Счёт входов уже включает этот. */
-    { id: "studio",        level: 1, once: true, when: function (c) { return (c.entries || 0) <= 1; } },
-    { id: "privacy",       level: 1, when: function (c) { return (c.roomsOut || 0) >= 1; } },
+    /* Первое слово входа (D-822) — о том, что всё остаётся здесь: подсказку-рекламу студии
+       «Чистота» сняла (D-842), голос стола студию не рекламирует; без первого слова вход молчал
+       (only-voice, доска H4b). */
+    { id: "privacy",       level: 1, when: function (c) { return (c.roomsOut || 0) >= 1 || (c.entries || 0) <= 1; } },
     { id: "stickynotes",   level: 1, when: function (c) { return (c.entries || 0) >= 2; } },
     { id: "cmdk",          level: 2, when: function (c) { return (c.pointerOpens || 0) >= 3; } },
-    { id: "notefull",      level: 2, when: function (c) { return (c.notes || 0) >= 1; } },
+    /* подсказка о заметке — только там, где заметка: открыты Записи или заметка на столе в руках
+       (D-862-TIP-IN-PLACE, обход п.6, глубокий аудит Б-6); в Фонаре и Эхо она звучала не к месту */
+    { id: "notefull",      level: 2, when: function (c) { return (c.notes || 0) >= 1 && !!((window.getOpenWindow && window.getOpenWindow("notes")) || doc.querySelector(".sticky-note.focused")); } },
     { id: "windowspanel",  level: 2, when: function (c) { return Object.keys(window.openWindows || {}).length >= 3; } },
     { id: "snap",          level: 3, when: function (c) { return (c.drags || 0) >= 2; } },
     { id: "echoes",        level: 3, when: function (c) { return (c.thrown || 0) >= 1; } },
@@ -1033,7 +987,6 @@
     { id: "shortcutslist", level: 4, when: function (c) { return (c.cmdk || 0) >= 2; } },
     { id: "iconhide",      level: 4, when: function (c) { return (c.entries || 0) >= 4; } },
     { id: "layouts",       level: 4, when: function (c) { return (c.drags || 0) >= 6; } },
-    { id: "inlinesearch",  level: 4, when: function (c) { return (c.pointerOpens || 0) >= 9; } },
     { id: "diag",          level: 5, when: function () { return false; } }   /* только по просьбе */
   ];
   window.sbTipLevels = function () { return LEAD.map(function (l) { return { id: l.id, level: l.level }; }); };
@@ -1244,7 +1197,9 @@
     box.classList.toggle("kn-fold", !open);
     btn.setAttribute("aria-expanded", open ? "true" : "false");
     var st = btn.querySelector(".sv-st");
-    if (st) st.textContent = open ? "↑" : "↓";
+    /* ↓ ↑ в Nunito нет — их писал запасной шрифт. Знак тот же «›» из своего
+       шрифта, повёрнут вниз или вверх по aria-expanded (core.css .sv-chev, D-1063). */
+    if (st) st.textContent = "›";
     if (cc) cc.classList.toggle("sv-open", !!open);
   }
   window.sbCcOtherOpen = function (v) { if (v != null) setCcOther(!!v); var b = $("#sbCcOtherBtn"); return !!b && b.getAttribute("aria-expanded") === "true"; };
@@ -1382,6 +1337,36 @@
     paintRowStates();
     paintSliderVals();
     paintNet();
+    paintEol();
+  }
+
+  /* ── ТОЧКА НЕ ВИСИТ В КОНЦЕ СТРОКИ · D-1042 (обход п.17, глубокий аудит) ──
+     Точка-разделитель стоит после слова; когда строка переносится, она
+     оставалась хвостом в конце строки («меньше прозрачности ·», «унести дом
+     с собой ·»). Слово, за которым на той же строке ничего нет, получает
+     kn-eol — его точка гаснет (visibility, а не content: ширина слова та же,
+     и перенос не прыгает туда-обратно). Меряется по раскладке, при каждой
+     отрисовке и при каждой смене размера пульта. ОТКАТ: убрать paintEol(). */
+  var eolRO = null;
+  function paintEol() {
+    var cc = $("#sbControlCenter");
+    if (!cc) return;
+    if (!eolRO && window.ResizeObserver) { eolRO = new ResizeObserver(function () { if (ccOpen) paintEol(); }); eolRO.observe(cc); }
+    $$(".kn-eol", cc).forEach(function (e) { e.classList.remove("kn-eol"); });
+    if (!ccOpen || !cc.classList.contains("krupno")) return;
+    var groups = [];
+    [".sv-rows", "#sbCcMoods", "#sbCcThemes", "#sbCcSide", "#sbCcLang"].forEach(function (q) { var h = $(q, cc); if (h) groups.push(Array.prototype.slice.call(h.children)); });
+    groups.push(["#sbCcTools", "#sbCcOtherBtn", "#sbCcExport", "#sbCcImport", "#sbCcSignOut"].map(function (q) { return $(q, cc); }).filter(Boolean));
+    groups.forEach(function (els) {
+      var rs = els.map(function (e) { var r = e.getBoundingClientRect(); return r.width && r.height ? r : null; });
+      els.forEach(function (e, i) {
+        var r = rs[i], more = false;
+        if (!r) return;
+        var mid = (r.top + r.bottom) / 2;
+        for (var j = 0; j < els.length && !more; j++) { var o = rs[j]; if (j !== i && o && o.left >= r.right - 2 && o.top < mid && o.bottom > mid) more = true; }
+        if (!more) e.classList.add("kn-eol");
+      });
+    });
   }
 
   /* ── ЖИЛА «СВЕТОВОДА» (D-619) ─────────────────────────────────────────
@@ -1614,7 +1599,7 @@
         return res;
       }).then(function (res) {
         if (!res || !window.showToast) return;
-        if (res.ok) window.showToast("Profile exported", (res.sealed ? "sealed · " : "") + res.count + " keys" + (res.name ? " → " + res.name : ""), "");
+        if (res.ok) window.showToast("Profile exported", (res.sealed ? "sealed · " : "") + res.count + " keys" + (res.name ? " › " + res.name : ""), "");
         else if (res.error) window.showToast("Export", res.error, "", true, "toast-warn", "event");
       });
     });

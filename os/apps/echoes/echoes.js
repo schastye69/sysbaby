@@ -13,7 +13,15 @@
 
   var FADE_SPAN = 14 * 86400000;   // 14 days — cosmetic only, never a purge deadline
 
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="2.2"/><path d="M7.8 8.4a5.6 5.6 0 0 0 0 7.2M16.2 8.4a5.6 5.6 0 0 1 0 7.2"/><path d="M4.9 5.6a9.6 9.6 0 0 0 0 12.8M19.1 5.6a9.6 9.6 0 0 1 0 12.8"/></svg>';
+  var ICON = sbZnak("echoes");
+  /* «5 отзвуков» строкой, а не «Эхо: 5» (обход п.51): русская форма числа —
+     одна · несколько · много; у остальных языков «несколько» = «много». */
+  function countForm(n) {
+    var L = window.sbLang ? window.sbLang() : "en";
+    if (n === 1 || (L === "ru" && n % 10 === 1 && n % 100 !== 11)) return "one";
+    if (L === "ru" && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) return "few";
+    return "many";
+  }
 
   /* Trace content — the system's memory of itself, resting where removed
    * things rest. The shell spec (os-shell.md §12) originally DROPPED the
@@ -119,23 +127,6 @@
     return t("time.w", { n: Math.floor(d / 7) });
   }
 
-  function hash(text) {
-    var h = 0, s = String(text == null ? "" : text);
-    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-    return Math.abs(h);
-  }
-
-  /* Deterministic per id — the wave never reshuffles between renders. */
-  function barHeights(id) {
-    var seed = hash(id) || 1;
-    var out = [];
-    for (var i = 0; i < 9; i++) {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      out.push(0.22 + (seed % 1000) / 1000 * 0.78);
-    }
-    return out;
-  }
-
   function fadeOf(deletedAt) {
     var age = Date.now() - (Number(deletedAt) || 0);
     return Math.min(1, Math.max(0, age / FADE_SPAN));
@@ -172,12 +163,11 @@
 
   /* -------------------------------------------------------------- markup */
 
+  /* Вместо оранжевых псевдо-волн — знак комнаты, откуда пришло эхо, 14 px
+     (обход п.51); чем старше эхо, тем он тише. */
   function waveMarkup(note, fade) {
-    var bars = barHeights(note.id).map(function (h) {
-      var height = Math.max(2, Math.round(h * 18 * (1 - fade * 0.55)));
-      return '<i style="height:' + height + 'px"></i>';
-    }).join("");
-    return '<span class="ec-wave">' + bars + "</span>";
+    var id = note && note.app && window.sbZnakIds && window.sbZnakIds().indexOf(note.app) !== -1 ? note.app : "notes";
+    return '<span class="ec-wave" style="opacity:' + (1 - fade * 0.45).toFixed(2) + '">' + sbZnak(id) + "</span>";
   }
 
   function echoRowMarkup(note) {
@@ -191,7 +181,7 @@
       "</span>" +
       '<span class="ec-actions">' +
         '<button type="button" class="ec-btn" data-restore="' + esc(note.id) + '">' + esc(t("ec.restore")) + "</button>" +
-        '<button type="button" class="ec-btn x" data-silence="' + esc(note.id) + '" title="' + esc(t("ec.silenceTitle")) + '" aria-label="' + esc(t("ec.silenceAria")) + '">✕</button>' +
+        '<button type="button" class="ec-btn x" data-silence="' + esc(note.id) + '" title="' + esc(t("ec.silenceTitle")) + '" aria-label="' + esc(t("ec.silenceAria")) + '">' + sbZnak("close") + '</button>' +
       "</span>" +
     "</div>";
   }
@@ -250,7 +240,7 @@
           (where ? " · " + esc(where) : "") + " · " + esc(timeAgo(f.deletedAt)) + "</i>" +
       "</span>" +
       '<button type="button" class="ec-btn" data-restore-file="' + esc(f.id) + '">' + esc(t("ec.restore")) + "</button>" +
-      '<button type="button" class="ec-btn x" data-silence-file="' + esc(f.id) + '" title="' + esc(t("ec.silenceTitle")) + '" aria-label="' + esc(t("ec.silenceAria")) + '">✕</button>' +
+      '<button type="button" class="ec-btn x" data-silence-file="' + esc(f.id) + '" title="' + esc(t("ec.silenceTitle")) + '" aria-label="' + esc(t("ec.silenceAria")) + '">' + sbZnak("close") + '</button>' +
     "</div>";
   }
 
@@ -267,13 +257,12 @@
       markup = '<div class="ec-empty">' +
         '<div class="ec-empty-glyph">' + ICON + "</div>" +
         '<p class="ec-empty-title">' + esc(t("ec.empty.title")) + "</p>" +
-        '<p class="ec-empty-sub">' + esc(t("ec.empty.sub", { echoes: appName("echoes") })) + "</p>" +
       "</div>";
     } else {
       markup = "";
       if (echoes.length) {
         markup += '<div class="ec-head">' +
-          "<span>" + esc(t(echoes.length === 1 ? "ec.count.one" : "ec.count.many", { n: echoes.length })) + "</span>" +
+          "<span>" + esc(t(({ one: "ec.count.one", few: "ec.count.few", many: "ec.count.many" })[countForm(echoes.length)], { n: echoes.length })) + "</span>" +
           '<button type="button" class="ec-btn quiet" id="ecSilenceAll">' + esc(t("ec.silenceAll")) + "</button>" +
         "</div>" + echoes.map(echoRowMarkup).join("");
       }

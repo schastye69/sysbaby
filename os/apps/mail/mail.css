@@ -182,7 +182,7 @@
 .ml-draft-tag {
   margin-left: 6px;
   font-size: var(--f-micro);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: var(--track-caps);
   padding: 1px 5px;
   border-radius: var(--r-tag);
@@ -232,6 +232,8 @@
   color: var(--ink-3);
   font-size: var(--f-ui);
 }
+/* пустая папка в узкой колонке списка: Nunito шире прежнего набора (D-829) — поля меньше, строка ≥ 32 знаков (line-measure) */
+.ml-list .ml-empty { padding-inline: 8px; }
 
 .ml-empty-glyph svg { width: 30px; height: 30px; opacity: .4; }
 
@@ -301,7 +303,7 @@
 .ml-link-kind {
   flex: 0 0 auto;
   font-size: var(--f-micro);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: var(--track-caps);
   color: var(--ink-3);
   padding: 2px 6px;

@@ -335,7 +335,7 @@
     });
     return true;
   }
-  var GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
+  var GLYPH = sbZnak("ret");
 
   /* Возвращение: стол встал — и, если стоит замок, дверь открыта. */
   function whenReady() {

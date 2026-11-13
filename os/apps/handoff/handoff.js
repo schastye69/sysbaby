@@ -35,8 +35,7 @@
   "use strict";
 
   var doc = document;
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
-    '<path d="M4.6 12h11.2M12.4 7.6 16.8 12l-4.4 4.4"/><path d="M15.6 4.4h2.2a1.6 1.6 0 0 1 1.6 1.6v12a1.6 1.6 0 0 1-1.6 1.6h-2.2"/></svg>';
+  var ICON = sbZnak("handoff");
 
   var ITER = 1000000;         /* растяжка слова: одна попытка для подбирающего */
   var MAX = 4000;             /* знаков текста; настоящий предел — длина ссылки, и она меряется */
@@ -140,13 +139,13 @@
   var UI = {
     en: {
       title: "Hand over", label: "Hand over",
-      lead: "Seal something and send it as a link. The part after # never reaches any server — not ours, not anyone's. There is nothing for us to see even if we wanted to.",
+      lead: "Seal it and send it as a link — no server will read it.",
       pick: "or take something you already have", pickNone: "nothing here yet",
       note: "note", file: "file", tooBig: "This makes a {n}-character link — too long. Keep the text shorter.",
       linkNote: "Length checked by arithmetic, not by sending. Some messengers cut long links — send yourself one and see.",
-      text: "What you are handing over", modeKey: "Key inside the link — simple",
-      modeWord: "Word said separately — properly", word: "The word you will say out loud",
-      make: "Seal it", again: "Seal another", copy: "Copy the link", copied: "Copied",
+      text: "what you are handing over", modeKey: "key in the link",
+      modeWord: "word said apart", word: "The word you will say out loud",
+      make: "seal it", again: "Seal another", copy: "Copy the link", copied: "Copied",
       share: "Send…", copyFail: "This browser did not let the link be copied. It is selected above — copy it by hand.",
       copyText: "Copy the text", own: "Hand over something of your own",
       leadIn: "Someone sealed this and sent it to you. It was opened here, in your browser — no server saw it on the way.", ready: "Sealed. Send the link — the recipient needs nothing but it.",
@@ -155,17 +154,18 @@
       gotTitle: "Someone handed this to you", ask: "This one needs the word you were told.",
       openIt: "Open", badTitle: "This link does not open",
       bad: "Either it was damaged on the way, or the word is not the right one. Nothing else can be said — and guessing would be worse than silence.",
-      honest: "What this does not give you. The link is the secret: anyone who gets it, in the simple mode, reads it — so treat it like the thing itself. It stays in your browser history and in whatever chat you sent it through, and we cannot reach in and delete it there. It cannot be recalled, and it has no expiry — a link works for as long as it exists. What it does give: the machine that serves sys.baby never receives what you handed over, and that is a property of the web itself, not a promise of ours.",
+      honest: "The link cannot be recalled: it stays in the chat and in the browser history. The server never receives what you hand over — that is how the web works.",
+      more: "what this does not give", hintKey: "simpler: whoever gets the link reads it", hintWord: "safer: say the word out loud", textPh: "text, a link or a file"
     },
     ru: {
       title: "Передать", label: "Передать",
-      lead: "Запечатайте и отправьте ссылкой. То, что стоит после #, не доходит ни до одного сервера — ни до нашего, ни до чужого. Нам нечего увидеть, даже если бы мы захотели.",
+      lead: "Запечатайте и отправьте ссылкой — ни один сервер её не прочтёт.",
       pick: "или взять то, что уже есть", pickNone: "пока нечего брать",
       note: "заметка", file: "файл", tooBig: "Выходит ссылка в {n} знаков — это слишком. Сократите текст.",
       linkNote: "Длина проверена арифметикой, а не пересылкой. Часть мессенджеров режет длинные ссылки — пришлите себе одну и посмотрите.",
-      text: "Что передаёте", modeKey: "Ключ внутри ссылки — просто",
-      modeWord: "Слово отдельно — по-настоящему", word: "Слово, которое вы скажете голосом",
-      make: "Запечатать", again: "Запечатать ещё", copy: "Скопировать ссылку", copied: "Скопировано",
+      text: "что передаёте", modeKey: "ключ в ссылке",
+      modeWord: "слово отдельно", word: "Слово, которое вы скажете голосом",
+      make: "запечатать", again: "Запечатать ещё", copy: "Скопировать ссылку", copied: "Скопировано",
       share: "Отправить…", copyFail: "Браузер не дал скопировать ссылку. Она выделена выше — скопируйте её сами.",
       copyText: "Скопировать текст", own: "Передать своё",
       leadIn: "Это запечатали и прислали вам. Открыто здесь, в вашем браузере, — по дороге этого не видел ни один сервер.", ready: "Запечатано. Отправьте ссылку — получателю не нужно ничего, кроме неё.",
@@ -174,17 +174,18 @@
       gotTitle: "Вам передали", ask: "Здесь нужно слово, которое вам сказали.",
       openIt: "Открыть", badTitle: "Эта ссылка не открывается",
       bad: "Либо её повредило по дороге, либо слово не то. Больше сказать нечего — а угадывать было бы хуже, чем молчать.",
-      honest: "Чего это не даёт. В простом способе ссылка И ЕСТЬ тайна: кто её получил, тот прочёл, — обращайтесь с ней как с самим содержимым. Она остаётся в истории вашего браузера и в той переписке, через которую вы её послали, и оттуда мы её не достанем. Её нельзя отозвать, и у неё нет срока: ссылка работает, пока существует. Что это даёт взамен: машина, отдающая sys.baby, НЕ ПОЛУЧАЕТ переданного вовсе — и это свойство самого устройства сети, а не наше обещание.",
+      honest: "Ссылку нельзя отозвать: она остаётся в переписке и в истории браузера. Сервер переданного не получает — так устроена сеть.",
+      more: "чего это не даёт", hintKey: "проще: кто получил ссылку, тот и прочтёт", hintWord: "надёжнее: слово скажите голосом", textPh: "текст, ссылка или файл"
     },
     ee: {
       title: "Anna edasi", label: "Anna edasi",
-      lead: "Pitseeri ja saada lingina. See, mis on pärast #, ei jõua ühtegi serverisse — ei meie ega võõrasse. Meil ei ole midagi näha, isegi kui tahaksime.",
+      lead: "Pitseeri ja saada lingina — ükski server seda ei loe.",
       pick: "või võta see, mis juba olemas", pickNone: "praegu pole midagi võtta",
       note: "märkmik", file: "fail", tooBig: "Tuleb {n} märgiga link — liiga pikk. Lühenda teksti.",
       linkNote: "Pikkus on kontrollitud arvutusega, mitte saatmisega. Osa sõnumirakendusi lõikab pikki linke — saada endale üks ja vaata.",
-      text: "Mida annad edasi", modeKey: "Võti lingi sees — lihtne",
-      modeWord: "Sõna eraldi — päriselt", word: "Sõna, mille ütled häälega",
-      make: "Pitseeri", again: "Pitseeri veel", copy: "Kopeeri link", copied: "Kopeeritud",
+      text: "mida annad edasi", modeKey: "võti lingis",
+      modeWord: "sõna eraldi", word: "Sõna, mille ütled häälega",
+      make: "pitseeri", again: "Pitseeri veel", copy: "Kopeeri link", copied: "Kopeeritud",
       share: "Saada…", copyFail: "Brauser ei lasknud linki kopeerida. See on ülal valitud — kopeeri see ise.",
       copyText: "Kopeeri tekst", own: "Anna edasi midagi oma",
       leadIn: "Keegi pitseeris selle ja saatis sulle. See avati siin, sinu brauseris — teel ei näinud seda ükski server.", ready: "Pitseeritud. Saada link — saajal pole vaja midagi peale selle.",
@@ -193,7 +194,8 @@
       gotTitle: "Sulle anti edasi", ask: "Siin on vaja sõna, mis sulle öeldi.",
       openIt: "Ava", badTitle: "See link ei avane",
       bad: "Kas ta sai teel viga või ei ole sõna õige. Rohkem ei saa öelda — ja arvamine oleks halvem kui vaikimine.",
-      honest: "Mida see ei anna. Lihtsas viisis ON link ise saladus: kes ta saab, see loeb — kohtle teda nagu sisu ennast. Ta jääb sinu brauseri ajalukku ja sellesse vestlusesse, kust ta saatsid, ja sealt me teda kätte ei saa. Teda ei saa tagasi võtta ja tal ei ole tähtaega. Mida ta annab: masin, mis sys.baby'd jagab, EI SAA edasiantut üldse — ja see on võrgu enda omadus, mitte meie lubadus.",
+      honest: "Linki ei saa tagasi võtta: see jääb vestlusesse ja brauseri ajalukku. Server edasiantut kunagi ei saa — nii on võrk ise ehitatud.",
+      more: "mida see ei anna", hintKey: "lihtsam: kes lingi saab, see loeb", hintWord: "kindlam: ütle sõna häälega", textPh: "tekst, link või fail"
     }
   };
   function T() { return UI[lang()] || UI.en; }
@@ -241,10 +243,11 @@
 
     host.innerHTML =
       '<div class="hf-wrap">' +
-        '<div class="hf-head"><h2 class="hf-title">' + esc(t.title) + '</h2>' +
-        /* Пришедшему читать — слова о том, что перед ним, а не о том, как
-           отправлять (D-279). */
-        '<p class="hf-lead">' + esc(incoming ? t.leadIn : t.lead) + '</p></div>' +
+        /* Чистота Б (D-843-ONE-ACTION): заголовок, повторявший шапку окна, снят;
+           вступление — одна строка; выбор — словами, под ним одна строка про
+           выбранное; действие одно — «запечатать»; граница — под «чего это не
+           даёт», двумя строками. */
+        '<div class="hf-head"><p class="hf-lead">' + esc(incoming ? t.leadIn : t.lead) + '</p></div>' +
         (incoming ? '<section class="hf-in"></section>' +
           /* Кто пришёл ЧИТАТЬ, видит прочитанное, а не форму отправки: она
              свёрнута до его же просьбы (D-279). */
@@ -253,17 +256,20 @@
           /* У каждой ручки есть имя (D-321): подпись над полем и слова перед
              списком видны глазом — и слышны теми же словами. */
           '<label class="hf-lab">' + esc(t.text) + '</label>' +
-          '<textarea class="hf-text" rows="5" autocomplete="off" maxlength="' + MAX + '" aria-label="' + esc(t.text) + '"></textarea>' +
+          '<textarea class="hf-text" rows="5" autocomplete="off" maxlength="' + MAX + '" aria-label="' + esc(t.text) + '" placeholder="' + esc(t.textPh) + '"></textarea>' +
           '<div class="hf-pick"><span class="hf-pick-l">' + esc(t.pick) + '</span>' +
             '<select class="hf-src" aria-label="' + esc(t.pick) + '"><option value="">—</option></select></div>' +
-          '<label class="hf-mode"><input type="radio" name="hfmode" value="k" checked> ' + esc(t.modeKey) + '</label>' +
-          '<label class="hf-mode"><input type="radio" name="hfmode" value="w"> ' + esc(t.modeWord) + '</label>' +
+          '<div class="hf-modes" role="radiogroup">' +
+            '<label class="hf-mode"><input type="radio" name="hfmode" value="k" checked>' + esc(t.modeKey) + '</label>' +
+            '<label class="hf-mode"><input type="radio" name="hfmode" value="w">' + esc(t.modeWord) + '</label>' +
+          '</div>' +
+          '<p class="hf-mode-hint">' + esc(t.hintKey) + '</p>' +
           '<input type="text" class="hf-sendword" autocomplete="off" placeholder="' + esc(t.word) + '" hidden>' +
           '<button type="button" class="hf-act" data-act="hf-seal">' + esc(t.make) + '</button>' +
           '<div class="hf-link" hidden></div>' +
           '<p class="hf-say" role="status"></p>' +
         '</section>' +
-        '<p class="hf-honest">' + esc(t.honest) + '</p>' +
+        '<details class="sb-more"><summary>' + esc(t.more) + '</summary><p class="hf-honest">' + esc(t.honest) + '</p></details>' +
       '</div>';
     /* Вещь, принятая из другой комнаты, ложится в поле — и забывается:
        второй раз её никто не приносил. */
@@ -282,6 +288,8 @@
       if (!have.length) {
         src.innerHTML = '<option value="">' + esc(t.pickNone) + '</option>';
         src.disabled = true;
+        /* «или взять то, что уже есть» не стоит, пока брать нечего (Чистота Б). */
+        var pk = host.querySelector(".hf-pick"); if (pk) pk.hidden = true;
       } else {
         src.innerHTML = '<option value="">—</option>' + have.map(function (o, i) {
           return '<option value="' + i + '">' + esc((o.kind === "note" ? t.note : t.file) + " · " + o.name) + '</option>';
@@ -296,6 +304,8 @@
     host.addEventListener("change", function (ev) {
       if (ev.target.name === "hfmode") {
         host.querySelector(".hf-sendword").hidden = ev.target.value !== "w";
+        var hint = host.querySelector(".hf-mode-hint");
+        if (hint) hint.textContent = ev.target.value === "w" ? t.hintWord : t.hintKey;
         return;
       }
       if (ev.target.classList && ev.target.classList.contains("hf-src")) {

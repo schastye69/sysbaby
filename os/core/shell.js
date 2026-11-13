@@ -128,7 +128,14 @@
        у телефона; планшет 720 px шириной и больше — обычные плавающие окна,
        которые двигаются, а открытые окна — в верхней панели, без дока.
        Охраняется tools/planshet-check.mjs. */
-    root.classList.toggle("is-compact", window.innerWidth < PHONE_MAX);
+    /* Телефон горизонтально (844×390) — тоже телефон (D-857-PHONE-BY-HEIGHT, глубокий аудит Б-4):
+       по одной ширине он считался столом — ряд значков съедал 90 px из 390, окна плавали и были
+       видны на 100–140 px, панели обрезались снизу. Палец и высота меньше 500 — лист и полка. */
+    /* меряется экран устройства, а не окно: поднятая клавиатура планшета уменьшает окно, но не делает его телефоном */
+    var scr = window.screen ? Math.min(window.screen.width || 9999, window.screen.height || 9999) : 9999;
+    var shortPhone = isTouch() && window.innerHeight < 500 && scr < 500;
+    root.classList.toggle("is-short", shortPhone);
+    root.classList.toggle("is-compact", window.innerWidth < PHONE_MAX || shortPhone);
     if (window.sbBuildDock && applyFlags.ready) root.classList.toggle("dock-empty", !dockShown());
     root.classList.toggle("is-narrow", window.innerWidth <= 620);
   }
@@ -1677,6 +1684,10 @@
       var onKey = function (ev) {
         if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); no(); return; }
         if (ev.key === "Enter" && (ev.target === field || (ev.target && ev.target.closest && ev.target.closest(".toast-ask")))) {
+          /* ОПАСНЫЙ ВОПРОС (D-855-DANGER-ASKS-NO, глубокий аудит Б-2): Enter никогда не стирает —
+             привычный Enter или повторное нажатие отвечают «нет»; «удалить» — только явным касанием
+             или пробелом на кнопке, до которой дошли Tab. */
+          if (opts.danger) { ev.preventDefault(); ev.stopPropagation(); no(); return; }
           if (ev.target && ev.target.closest && ev.target.closest("button.toast-action.quiet")) return;
           ev.preventDefault(); ev.stopPropagation(); yes();
         }
@@ -1705,7 +1716,8 @@
       });
       doc.addEventListener("keydown", onKey, true);
       askOpen = { cancel: no, el: t };
-      requestAnimationFrame(function () { try { (field || okBtn).focus({ preventScroll: true }); } catch (e) { /* фокус не обязателен */ } });
+      /* опасный вопрос — фокус на «нет» (D-855): первым под рукой стоит то, что ничего не теряет */
+      requestAnimationFrame(function () { try { (field || (opts.danger ? noBtn : okBtn)).focus({ preventScroll: true }); } catch (e) { /* фокус не обязателен */ } });
     });
   };
   window.sbAskOpen = function () { return !!askOpen; };
@@ -1743,6 +1755,10 @@
   }
   function tipShow(el, text) {
     if (!doc.contains(el)) return;
+    /* На касании подписи нет; при открытой панели — тоже: подпись к кнопке
+       не висит под тем, что эта кнопка открыла (обход п.8). */
+    if (root.getAttribute("data-input") === "touch") return;
+    if (window.sbAnyPanelOpen && window.sbAnyPanelOpen()) return;
     if (!tipEl) { tipEl = doc.createElement("div"); tipEl.className = "sb-tip"; tipEl.setAttribute("role", "tooltip"); doc.body.appendChild(tipEl); }
     tipEl.textContent = text;
     tipEl.classList.remove("on");
@@ -2141,6 +2157,8 @@
     return deskDefault(id);
   }
   window.sbAppTitle = appTitle;
+  /* своё имя комнаты, данное человеком (D-257), — через оболочку: комнаты не ходят к Сундуку сами (hand-check, D-245) */
+  window.sbAppOwnName = ownName;
   window.sbAppLabel = appLabel;
   window.sbDeskLabel = deskLabel;
 
@@ -2158,17 +2176,19 @@
   };
 
   var ICONS = {
-    window: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/></svg>',
-    mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></svg>',
-    note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v6h6"/></svg>',
-    spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l3 3M15 15l3 3M18 6l-3 3M9 15l-3 3"/></svg>',
-    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 13 4 4L19 7"/></svg>'
+    window: sbZnak("desktop"),
+    mail: sbZnak("send"),
+    note: sbZnak("doc"),
+    check: sbZnak("check")
   };
   window.sbIcons = ICONS;
 
-  function appIconMarkup(id) {
+  function appIconMarkup(id, small) {
     var def = apps[id];
     if (!def) return "";
+    /* Малый размер (шапка окна, свёрнутое в шапке стола; ≤ 22 px) — плоский знак
+       малого набора, без свечения: на 16 px свечение делает пятно (Чистота А). */
+    if (small) return (window.sbZnak && window.sbZnak(id, "sb-znak-app")) || def.icon || ICONS.window;
     /* Значок «Свет внутри» (D-724): один набор на стол, полку, палитру и окно. */
     var lit = window.sbGlyph ? window.sbGlyph(id) : "";
     return lit || def.icon || ICONS.window;
@@ -2233,9 +2253,9 @@
 
   function lightsMarkup() {
     return '<div class="lights">' +
-      '<button class="light close" type="button" aria-label="' + escapeHtml(tr("win.close")) + '"><svg viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="m3.5 3.5 5 5m0-5-5 5"/></svg></button>' +
-      '<button class="light min" type="button" aria-label="' + escapeHtml(tr("win.minimize")) + '"><svg viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M3 6h6"/></svg></button>' +
-      '<button class="light max" type="button" aria-label="' + escapeHtml(tr("win.maximize")) + '"><svg viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M4.5 7.5 2.5 9.5M2.5 9.5V7M2.5 9.5H5M7.5 4.5 9.5 2.5M9.5 2.5V5M9.5 2.5H7"/></svg></button>' +
+      '<button class="light close" type="button" aria-label="' + escapeHtml(tr("win.close")) + '">' + sbZnak("close") + '</button>' +
+      '<button class="light min" type="button" aria-label="' + escapeHtml(tr("win.minimize")) + '">' + sbZnak("min") + '</button>' +
+      '<button class="light max" type="button" aria-label="' + escapeHtml(tr("win.maximize")) + '">' + sbZnak("max") + '</button>' +
       "</div>";
   }
 
@@ -2257,12 +2277,41 @@
       var cr = compactRect();
       w = cr.w; h = cr.h; x = cr.x; y = cr.y;
     } else {
+      /* ОКНО НЕ ЗАКРЫВАЕТ ЗНАЧКИ (Чистота, D-845): верх окна — ниже ряда
+         значков на 16 px; место одно и то же — по центру под рядом; каскад
+         только у второго и следующих окон; высота — сколько осталось до
+         низа (−108 на полку). Высоту по содержимому подгоняет fitWindow. */
+      if (!Object.keys(openWindows).length) cascade = 0;
       var off = (cascade % 5);
       cascade++;
-      x = Math.round((window.innerWidth - w) / 2) + off * 24;
-      y = Math.round((window.innerHeight - h) / 2) + off * 18;
+      /* Каскад, которого не видно, — не каскад (D-863-CASCADE-SEEN, глубокий аудит Б-7): «−108 на полку»
+         только там, где полка есть (телефон); если вниз сдвигать некуда, второе окно уходит вправо
+         на ≥ 48 px и становится ниже на 36 px — видно, что окон два. */
+      var shelf = compact() ? 108 : 16;
+      var floor = Math.max(48, iconZoneBottom() + 16);
+      var room = Math.max(280, window.innerHeight - floor - shelf);
+      if (h > room) h = room;
+      var yFree = window.innerHeight - shelf - floor - h;
+      if (off && yFree < off * 18) { h = Math.max(240, h - off * 36); yFree = window.innerHeight - shelf - floor - h; }
+      var dx = off ? (yFree >= off * 18 ? 24 : 56) : 0;
+      x = Math.round((window.innerWidth - w) / 2) + off * dx;
+      y = floor + Math.max(0, Math.round((window.innerHeight - shelf - floor - h) / 2)) + off * 18;
       x = Math.max(14, Math.min(x, window.innerWidth - w - 14));
-      y = clamp(y, 48, Math.max(48, window.innerHeight - h - 108));
+      y = clamp(y, floor, Math.max(floor, window.innerHeight - h - shelf));
+      /* Сдвиг от середины ещё не каскад (POLISH-C, D-1021-CASCADE-APART): окна разной ширины, каждое по
+         центру и +24, вставали почти точно одно на другом (1440: левые края 304 и 328, верх 237 и 243).
+         Новое окно сверяется с уже открытыми: если левый и верхний край ближе 40 px к какому-то из
+         них — уходит вправо на 48 (некуда — влево), а если и так тесно — ниже на 40. */
+      var ow = Object.keys(openWindows).map(function (k) { return openWindows[k]; }).filter(function (o) { return o && !o.minimized && o.el; });
+      for (var tries = 0; tries < 8; tries++) {
+        var near = ow.filter(function (o) { var r = o.el.getBoundingClientRect(); return Math.abs(r.left - x) < 40 && Math.abs(r.top - y) < 40; })[0];
+        if (!near) break;
+        var nr = near.el.getBoundingClientRect();
+        var right = Math.round(nr.left + 48), left = Math.round(nr.left - 48);
+        if (right <= window.innerWidth - w - 14) x = right;
+        else if (left >= 14) x = left;
+        else y = Math.min(Math.round(nr.top + 40), Math.max(floor, window.innerHeight - h - shelf));
+      }
     }
 
     var el = doc.createElement("section");
@@ -2282,7 +2331,7 @@
     var sc = window.sbAppShortcuts[id];
     el.innerHTML =
       '<header class="titlebar">' + lightsMarkup() +
-      '<div class="win-title"><span class="win-chip" aria-hidden="true">' + appIconMarkup(id) + '</span>' +
+      '<div class="win-title"><span class="win-chip" aria-hidden="true">' + appIconMarkup(id, true) + '</span>' +
       '<span class="win-name">' + escapeHtml(appTitle(id)) + "</span>" +
       (def.brand ? '<span class="win-brand">' + escapeHtml(def.brand) + "</span>" : "") + "</div>" +
       '<div class="tb-right">' + (sc ? '<kbd class="win-kbd">' + escapeHtml(sc.label) + "</kbd>" : "") + "</div>" +
@@ -2302,7 +2351,7 @@
 
     var win = {
       id: id, el: el, x: x, y: y, w: w, h: h,
-      minimized: false, maximized: born.maximized, snapped: null, prevRect: null, z: ++zCounter
+      minimized: false, maximized: born.maximized, snapped: null, prevRect: null, z: ++zCounter, bornAt: now()
     };
     el.style.zIndex = String(win.z);
     if (born.maximized) el.classList.add("maximized");
@@ -2316,6 +2365,7 @@
 
     wireWindow(win);
     renderApp(id);
+    if (!compact() && FIT_ROOMS[id]) fitWindow(win);
     focusWindow(id);
     updateAppSequence();
     buildDock();
@@ -2326,6 +2376,67 @@
     });
     sbBus.emit("app:open", { app: id });
     return win;
+  }
+
+  /* Нижний край зоны значков (layoutIcons): ниже него встают окна и панели. */
+  function iconZoneBottom() {
+    var z = Number(window.sbIconZoneBottom);
+    return isFinite(z) && z > 0 ? z : 0;
+  }
+  /* ВЫСОТА ПО СОДЕРЖИМОМУ (обход п.43): у комнат-колонок окно не выше того,
+     что в нём лежит (не ниже 280), и растёт, когда содержимое прибавилось, —
+     пока человек сам не тянул окно и не разворачивал его. Комнаты со своей
+     раскладкой во всю высоту (Записи, Разговор) не подгоняются. */
+  /* law_translated (POLISH-C, D-1022-ROOMS-FIT, глубокий аудит Б-8): Хранилище (files) и Настройки
+     тоже по содержимому — пустое Хранилище было пустым стеклом на 62 % окна, Общее — на 43 %. Хранилище
+     растёт с вещами (MutationObserver), Настройки (2) — растут под длинный раздел, но не сжимаются при
+     переходе между разделами. Записи и Разговор — по-прежнему во всю высоту. */
+  var FIT_ROOMS = { keys: 1, vault: 1, handoff: 1, lantern: 1, echoes: 1, search: 1, outward: 1, files: 1, settings: 2 };
+  function fitWindow(win) {
+    var el = win.el, body = el.querySelector(".window-body");
+    if (!body) return;
+    var bar = el.querySelector(".titlebar");
+    var fit = function () {
+      if (!openWindows[win.id] || win.maximized || win.snapped || win.userSized || el.classList.contains("minimized")) return;
+      var inner = body.firstElementChild;
+      if (!inner) return;
+      /* Мерка — низ последнего видимого предмета колонки, а не высота самой
+         колонки: она растянута на всё окно и мерила бы окно, а не содержимое. */
+      var top = inner.getBoundingClientRect().top - inner.scrollTop, low = 0;
+      Array.prototype.forEach.call(inner.children, function (c) {
+        var r = c.getBoundingClientRect();
+        if (r.height && r.bottom - top > low) low = r.bottom - top;
+      });
+      var pb = parseFloat(getComputedStyle(inner).paddingBottom) || 0;
+      /* Растянутый пустой экран мерил окно, а не содержимое (обход п.43, глубокий аудит Б-8): Поиск пуст
+         на 313 px из 552. Мерка берётся при наименьшей высоте окна — растянутое сжимается до своего,
+         и окно встаёт по содержимому + 24 (D-864-WINDOW-FITS). */
+      var h0 = el.style.height; el.style.height = "280px";
+      /* колонка со своей прокруткой внутри (меню Настроек, сетка Хранилища) при сжатии не
+         переполняет внешнюю — её содержимое меряется её же scrollHeight (POLISH-C, D-1022) */
+      var natural = inner.scrollHeight, it = inner.getBoundingClientRect().top;
+      Array.prototype.forEach.call(inner.children, function (c) {
+        var r = c.getBoundingClientRect(); if (!r.height) return;
+        natural = Math.max(natural, Math.ceil(r.top - it + c.scrollHeight));
+      });
+      el.style.height = h0;
+      var low2 = Math.min(low, natural);
+      var need = Math.ceil((bar ? bar.offsetHeight : 44) + low2 + pb + 24);
+      var max = Math.max(280, window.innerHeight - win.y - (compact() ? 108 : 16));
+      var h = clamp(need, 280, max);
+      /* комната с разделами (Настройки) не прыгает при каждом разделе: после первой мерки — только растёт */
+      if (FIT_ROOMS[win.id] === 2 && win.fitted && h < win.h) return;
+      win.fitted = true;
+      if (Math.abs(h - win.h) < 4) return;
+      win.h = h; el.style.height = h + "px";
+    };
+    requestAnimationFrame(fit);
+    setTimeout(fit, 120);
+    if (window.MutationObserver) {
+      var t = null;
+      new MutationObserver(function () { if (t) return; t = setTimeout(function () { t = null; fit(); }, 60); })
+        .observe(body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "open"] });
+    }
   }
 
   function tileRectFor(id) {
@@ -2429,7 +2540,7 @@
     var name = win.el.querySelector(".win-name");
     if (name) name.textContent = appTitle(id);
     var chip = win.el.querySelector(".win-chip");
-    if (chip) chip.innerHTML = appIconMarkup(id);
+    if (chip) chip.innerHTML = appIconMarkup(id, true);
     if (typeof def.render === "function") {
       try { def.render(win); } catch (e) {
         if (window.console) console.error("[shell] render " + id, e);
@@ -2534,7 +2645,12 @@
       if (pendingClose[id] && pendingClose[id].win === win) delete pendingClose[id];
     }, 6000);
 
-    showUndoToast(tr("toast.closed", { app: appTitle(id) }), tr("toast.closedBody"), function () {
+    /* ГОЛОС ПОСЛЕ ЗАКРЫТИЯ — ТОЛЬКО КОГДА ЗАКРЫТИЕ МОГЛО БЫТЬ СЛУЧАЙНЫМ (D-861-CLOSE-QUIET, обход п.39,
+       глубокий аудит Б-5): окно прожило меньше 1,5 с или в нём есть несохранённое (data-unsaved у окна).
+       Иначе — молча: закрытие — ответ на собственное нажатие, а вернуть окно можно клавишей W и списком
+       недавно закрытых. Отмена 6 с живёт и без голоса (pendingClose выше). */
+    var mayBeSlip = (now() - (win.bornAt || 0) < 1500) || !!(el.querySelector && el.querySelector("[data-unsaved]")) || el.hasAttribute("data-unsaved");
+    if (mayBeSlip) showUndoToast(tr("toast.closed", { app: appTitle(id) }), tr("toast.closedBody"), function () {
       clearTimeout(timer);
       var pend = pendingClose[id];
       if (!pend || pend.win !== win) return;
@@ -3085,6 +3201,7 @@
         if (win.maximized || win.el.classList.contains("fullscreen")) return;
         ev.preventDefault(); ev.stopPropagation();
         rs = { sx: ev.clientX, sy: ev.clientY, x: win.x, y: win.y, w: win.w, h: win.h, c: corner, el: handle };
+        win.userSized = true;   /* тянули рукой — высоту по содержимому больше не подгоняем */
         try { handle.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
         root.classList.add("dragging");
         win.el.classList.add("grip-hot");
@@ -3299,8 +3416,10 @@
       b.className = "seq-item" + (focusedId === id ? " active" : "") + (win.minimized ? " dim" : "");
       b.setAttribute("data-app", id);
       b.title = appTitle(id);
-      b.innerHTML = '<span class="seq-tile" aria-hidden="true">' + appIconMarkup(id) + '</span>' +
-        (focusedId === id ? '<span class="seq-name">' + escapeHtml(appTitle(id)) + "</span>" : "");
+      b.innerHTML = '<span class="seq-tile" aria-hidden="true">' + appIconMarkup(id, true) + '</span>' +
+        /* Свёрнутое — знак комнаты и слово строчными (обход п.11): кружок без
+           названия не читался. Открытое в фокусе — тоже со словом. */
+        ((focusedId === id || win.minimized) ? '<span class="seq-name">' + escapeHtml(String(appTitle(id)).toLocaleLowerCase()) + "</span>" : "");
       b.addEventListener("click", function () { toggleApp(id); });
       host.appendChild(b);
     });
@@ -3382,7 +3501,7 @@
          три разных ответа, ни одного лишнего значка. */
       node.classList.toggle("is-min", !!(win && win.minimized));
       node.classList.toggle("active-app", focusedId === id);
-      node.title = appTitle(id) + (win ? " — open" : "");
+      node.title = appTitle(id);   /* «— open» по-английски снят (обход п.15): открытое видно светом */
     });
     Object.keys(existing).forEach(function (id) { if (existing[id].parentNode) existing[id].parentNode.removeChild(existing[id]); });
 
@@ -3819,8 +3938,9 @@
         node.setAttribute("role", "button");
         node.setAttribute("aria-label", tr("win.openApp", { app: appTitle(id) }));
         node.innerHTML = '<span class="icon-tile">' + appIconMarkup(id) + "</span>" +
-          '<span class="icon-label">' + escapeHtml(deskLabel(id)) + "</span>" +
-          '<button class="icon-spark" type="button" tabindex="-1" aria-label="' + escapeHtml(tr("win.quickAction", { app: appTitle(id) })) + '">' + ICONS.spark + "</button>";
+          '<span class="icon-label">' + escapeHtml(deskLabel(id)) + "</span>";
+        /* Чистота · значки стола (З4): искорки ✳ у значка больше нет — у значка один вид;
+           быстрый ввод Поиска открывается sbSeekReveal (капсула та же). */
         wireIcon(node, id);
         host.appendChild(node);
       }
@@ -3830,8 +3950,6 @@
       var lbl = node.querySelector(".icon-label");
       if (lbl) { lbl.textContent = deskLabel(id); lbl.toggleAttribute("data-sb-userdata", !!(ownName(id) || iconName(id))); }
       node.setAttribute("aria-label", tr("win.openApp", { app: appTitle(id) }));
-      var spark = node.querySelector(".icon-spark");
-      if (spark) spark.setAttribute("aria-label", tr("win.quickAction", { app: appTitle(id) }));
       node.classList.toggle("hidden-icon", hidden.indexOf(id) !== -1);
     });
     Object.keys(existing).forEach(function (id) { if (existing[id].parentNode) existing[id].parentNode.removeChild(existing[id]); });
@@ -3884,7 +4002,10 @@
       cols = count;
       if (count > 1) gapX = clamp(Math.floor((avail - count * cellW) / (count - 1)), minGap, gapX);
     } else {
-      cols = Math.max(1, Math.floor((avail + gapX) / (cellW + gapX)));
+      /* Ряды ровные (обход п.3): не 8 + 2, а 5 + 5; на телефоне 4 + 4 + 2 —
+         и неполный ряд стоит по центру, а не прижат влево. */
+      var maxCols = Math.max(1, Math.floor((avail + gapX) / (cellW + gapX)));
+      cols = Math.ceil(count / Math.ceil(count / maxCols));
     }
     var rows = Math.ceil(count / cols);
     var blockW = cols * cellW + (cols - 1) * gapX;
@@ -3919,6 +4040,9 @@
       stoneOf[id] = { c: c, r: r };
     });
     var slot = 0;
+    /* Неполный последний ряд — по центру, пока рука ничего не переставила. */
+    var lastIn = count - (rows - 1) * cols;
+    var lastShift = (!placed.length && rows > 1 && lastIn < cols) ? Math.round((cols - lastIn) * stepX / 2) : 0;
     nodes.forEach(function (n) {
       if (n.getAttribute("data-dragged") === "1") return;   /* палец ещё держит — не вырывать */
       var c, r, guard = 0;
@@ -3926,7 +4050,7 @@
         c = slot % cols; r = Math.floor(slot / cols); slot++;
       } while (taken[c + "," + r] && guard++ < 400);
       taken[c + "," + r] = 1;
-      n.style.left = (originX + c * stepX) + "px";
+      n.style.left = (originX + c * stepX + (r === rows - 1 ? lastShift : 0)) + "px";
       n.style.top = (originY + r * stepY) + "px";
       n.style.width = cellW + "px";
       n.style.height = cellH + "px";
@@ -3951,6 +4075,14 @@
       cols: cols, rows: rows, gapX: gapX, gapY: gapY,
       stepX: cellW + gapX, stepY: cellH + gapY
     };
+    /* ЗОНА ЗНАЧКОВ НЕПРИКОСНОВЕННА (Чистота, D-845-WINDOWS-DONT-COVER-ICONS):
+       нижний край ряда значков в координатах экрана — одно число для окон,
+       панели часов и пульта. Пишется в корень только когда изменилось (раз на
+       раскладку, не в кадре). */
+    var hb = host.getBoundingClientRect();
+    var zone = Math.round(hb.top + originY + rows * stepY - gapY);
+    window.sbIconZoneBottom = zone;
+    if (root.style.getPropertyValue("--icons-b") !== zone + "px") root.style.setProperty("--icons-b", zone + "px");
   }
   window.sbLayoutDesktopIcons = layoutIcons;
 
@@ -4049,7 +4181,6 @@
     });
     node.addEventListener("pointerdown", function (ev) {
       if (ev.button !== 0) return;
-      if (ev.target && ev.target.closest(".icon-spark")) return;
       drag = { sx: ev.clientX, sy: ev.clientY, ox: node.offsetLeft, oy: node.offsetTop, moved: false, armed: false, menu: false, lp: 0 };
       /* ДОЛГОЕ КАСАНИЕ — ТОЛЬКО МЕНЮ (D-612, основатель 04.11.2026: «когда производишь долгое нажатие по иконке на
          планшете или телефоне, чтобы открыть меню, само приложение открываться не должно»): касание или перо,
@@ -4460,11 +4591,6 @@
     function scheduleHide() {
       if (hideTimer) clearTimeout(hideTimer);
       hideTimer = setTimeout(function () { hide(false); }, 260);
-    }
-    var spark = node.querySelector(".icon-spark");
-    if (spark) {
-      spark.addEventListener("pointerenter", function () { if (hideTimer) clearTimeout(hideTimer); show(); });
-      spark.addEventListener("click", function (ev) { ev.preventDefault(); ev.stopPropagation(); show(); });
     }
     node.addEventListener("pointerleave", scheduleHide);
     node._sbCapsuleShow = show;
@@ -4901,7 +5027,7 @@
     var cur = gateLang();
     return '<div class="vg-langs" role="group" aria-label="' + escapeHtml(gateText("aria.langs")) + '" data-gk-aria="aria.langs">' +
       langs.map(function (l) {
-        return '<button type="button" class="vg-lang' + (l.code === cur ? " on" : "") + '" data-gate-lang="' + escapeHtml(l.code) + '" lang="' + escapeHtml(l.code === "ee" ? "et" : l.code) + '" aria-pressed="' + (l.code === cur ? "true" : "false") + '" title="' + escapeHtml(l.label) + '">' + escapeHtml(l.show) + "</button>";
+        return '<button type="button" class="vg-lang' + (l.code === cur ? " on" : "") + '" data-gate-lang="' + escapeHtml(l.code) + '" lang="' + escapeHtml(l.code === "ee" ? "et" : l.code) + '" aria-pressed="' + (l.code === cur ? "true" : "false") + '" title="' + escapeHtml(l.label) + '">' + escapeHtml(l.name || l.show) + "</button>";
       }).join("") + "</div>";
   }
   /* Выбор двери у двери (D-581, D-587): Собор · Порог · Шифр — те, чьи сцены
@@ -5757,9 +5883,9 @@
        уходит за край. «Свернуть» у двери — убрать окно (дока у двери нет).
        Стережёт tools/door-for-all-check.mjs (раздел «окна двери»). */
     var LIGHTS_SVG = {
-      close: '<svg viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="m3.5 3.5 5 5m0-5-5 5"/></svg>',
-      min: '<svg viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M3 6h6"/></svg>',
-      max: '<svg viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M4.5 7.5 2.5 9.5M2.5 9.5V7M2.5 9.5H5M7.5 4.5l2-2M9.5 2.5V5M9.5 2.5H7"/></svg>'
+      close: sbZnak("close"),
+      min: sbZnak("min"),
+      max: sbZnak("max")
     };
     function sheet(title, html, opts) {
       opts = opts || {};

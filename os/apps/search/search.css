@@ -53,7 +53,7 @@
 .sk-section-title,
 .sk-count {
   font-size: var(--f-micro);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: var(--track-caps);
   color: var(--ink-3);
   margin: 8px 4px 7px;
@@ -62,6 +62,9 @@
 .sk-count { text-transform: none; letter-spacing: 0; font-size: var(--f-ui); font-weight: var(--w-strong); color: var(--ink); }
 
 .sk-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+/* Подсказки — имена комнат строчными, как значок и шапка окна (обход п.53, D-1003-SEARCH-WORDS);
+   своё имя, данное человеком (data-sb-userdata), — как набрано. */
+.sk-chip:not([data-sb-userdata]) { text-transform: lowercase; }
 
 .sk-chip {
   padding: 6px 11px;
@@ -128,7 +131,7 @@
 .sk-kicker {
   flex: 0 0 auto;
   font-size: var(--f-micro);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: var(--track-caps);
   color: var(--ink-3);
 }

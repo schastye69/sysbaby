@@ -63,7 +63,9 @@
 .st-side-icon svg { width: 16px; height: 16px; }
 
 .st-pane { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 24px 40px 40px; }
-.st-title { margin: 0 0 20px; font-size: var(--f-figure); line-height: var(--lh-ui); font-weight: var(--w-strong); letter-spacing: var(--track-tight); }
+/* Заголовок раздела повторял выбранный пункт меню рядом (обход п.61): он
+   остаётся для чтеца и законов, глазу его заменяет светящийся пункт меню. */
+.st-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
 /* Строки раздела — одной карточкой: render() собирает соседние .st-row в
    .st-group; между строками — волосок, а не зазор. */
 .st-group { border-radius: var(--r-card); background: rgba(var(--film-rgb), .03); box-shadow: inset 0 0 0 1px var(--line); margin: 0 0 24px; }
@@ -93,7 +95,7 @@
 }
 
 .st-row-text { flex: 1 1 260px; min-width: 200px; }
-.st-row-label { font-size: var(--f-ui); font-weight: var(--w-strong); }
+.st-row-label { font-size: var(--f-ui); font-weight: var(--w-text); color: var(--ink); }   /* подпись строки 13, чернилами --ink (обход п.62; веса шкалы — 400 · 600, D-337) */
 /* Описание настройки — то, по чему человек решает, трогать её или нет.
    Стояло на собственных .48 мимо шкалы чернил и давало 3.44 на карточке,
    которая сама светлее стола: на светлой поверхности тусклое проседает
@@ -121,61 +123,41 @@
 .st-value { font-size: var(--f-ui); color: var(--ink-2); }
 .st-muted { font-size: var(--f-meta); color: var(--ink-3); }
 
+/* ── СЛОВА-ВКЛЮЧАТЕЛИ (Чистота Б, D-840-WORDS-SWITCHES) ──────────────────
+   iOS-тумблер стал парой слов «да · нет». Выбранное слово — в кромке света
+   акцента (тот же язык, что у открытого приложения): волосяная кромка,
+   внутреннее свечение, слабая заливка; включённое «да» — с тёплой точкой-
+   светлячком. Невыбранное — --ink-3 без кромки. */
 .st-switch {
-  width: 42px;
-  height: 24px;
-  border-radius: var(--r-pill);
-  border: 1px solid rgba(var(--film-rgb), .14);
-  background: rgba(var(--film-rgb), .08);
-  cursor: pointer;
-  padding: 0;
-  position: relative;
-  transition: background var(--t-touch) var(--ease-move);
+  display: inline-flex; gap: 6px; align-items: center; padding: 0; border: 0; background: none;
+  cursor: pointer; font: inherit; font-size: var(--f-ui); border-radius: var(--r-pill);
 }
-
-.st-switch i {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
-  border-radius: var(--r-pill);
-  background: var(--knob);
-  transition: transform var(--t-touch) var(--ease-move);
+.st-switch > span {
+  display: inline-block; padding: 7px 12px; line-height: var(--lh-one); border-radius: var(--r-pill); color: var(--ink-3);
+  transition: color var(--t-touch) var(--ease-move), box-shadow var(--t-touch) var(--ease-move), background-color var(--t-touch) var(--ease-move);
 }
+.st-switch.on .st-sw-yes, .st-switch:not(.on) .st-sw-no {
+  color: var(--ink); font-weight: var(--w-text); text-shadow: 0 0 10px rgba(var(--accent-rgb), .42);
+  background-color: rgba(var(--accent-rgb), .10);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .62), inset 0 0 10px rgba(var(--accent-rgb), .22), 0 0 12px rgba(var(--accent-rgb), .28);
+}
+.st-switch.on .st-sw-yes {
+  padding-left: 24px;
+  background-image: radial-gradient(circle at 13px 50%, var(--glyph-1) 0 2px, rgba(var(--accent-rgb), .95) 3px, rgba(var(--accent-rgb), .35) 5px, transparent 8px);
+}
+.st-switch:focus-visible { outline: none; box-shadow: var(--brass); }
 
-.st-switch.on { background: var(--accent); border-color: transparent; }
-.st-switch.on i { transform: translateX(18px); }
-
+/* Кнопка Настроек — слово без рамки (Чистота А): светлеет при наведении,
+   латунная оправа при фокусе; опасное — тёплым красным, только цветом. */
 .st-btn {
-  border: 1px solid rgba(var(--film-rgb), .14);
-  background: rgba(var(--film-rgb), .05);
-  color: inherit;
-  font: inherit;
-  font-size: var(--f-ui);
-  padding: 6px 11px;
-  border-radius: var(--r-ctrl);
-  cursor: pointer;
-  white-space: nowrap;
+  border: 0; background: none; color: var(--ink-2); font: inherit; font-size: var(--f-ui);
+  padding: 8px 10px; min-height: 36px; border-radius: var(--r-ctrl); cursor: pointer; white-space: nowrap;
 }
-
-/* Наведение — это про мышь. На устройстве без мыши :hover включается по
-   касанию и держится до следующего касания где-нибудь ещё: человек видит
-   предмет в состоянии, которого не выбирал. Повод — снимок основателя
-   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
-   Охраняется tools/hover-is-not-touch-check.mjs. */
 @media (hover: hover) {
-  :where(html:not([data-input="touch"])) .st-btn:hover { background: rgba(var(--film-rgb), .12); }
+  :where(html:not([data-input="touch"])) .st-btn:hover { background: rgba(var(--film-rgb), .05); color: var(--ink); }
 }
-.st-btn.danger { color: var(--bad-ink); border-color: rgba(var(--bad-rgb), .4); }
-/* Наведение — это про мышь. На устройстве без мыши :hover включается по
-   касанию и держится до следующего касания где-нибудь ещё: человек видит
-   предмет в состоянии, которого не выбирал. Повод — снимок основателя
-   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
-   Охраняется tools/hover-is-not-touch-check.mjs. */
-@media (hover: hover) {
-  :where(html:not([data-input="touch"])) .st-btn.danger:hover { background: rgba(var(--bad-rgb), .16); }
-}
+.st-btn:focus-visible { outline: none; box-shadow: var(--brass); }
+.st-btn.danger { color: rgb(var(--danger-rgb)); }
 
 .st-username { display: inline-flex; align-items: center; gap: 4px; }
 
@@ -201,50 +183,29 @@
 
 .st-saved.show { opacity: 1; }
 
-.st-segment { display: inline-flex; padding: 2px; gap: 0; border-radius: var(--r-ctrl); border: 0; background: rgba(var(--film-rgb), .06); overflow: hidden; }
-
-.st-seg {
-  border: 0;
-  background: transparent;
-  color: var(--ink-2);
-  font: inherit;
-  /* Сегмент — орган управления, а не подпись: буква строки интерфейса,
-     без разрядки подписи (аудит мелкого текста, 28.09.2026). */
-  font-size: var(--f-ui);
-  min-height: 24px;
-  padding: 0 12px;
-  border-radius: var(--r-tag);
-  cursor: pointer;
+/* Сегменты и чипы — строчные слова со светом (Чистота Б): выбранное светлое, с
+   ореолом, под ним нить света из акцента; остальные тихие. Без плашек и теней. */
+.st-segment { display: inline-flex; flex-wrap: wrap; gap: 6px; padding: 0; border: 0; background: none; overflow: visible; }
+.st-seg, .st-chip {
+  position: relative; border: 0; background: none; color: var(--ink-3);
+  font: inherit; font-size: var(--f-ui); font-weight: var(--w-text);
+  min-height: 30px; padding: 0 8px; border-radius: var(--r-ctrl); cursor: pointer;
+  transition: color var(--t-touch) var(--ease-move), text-shadow var(--t-touch) var(--ease-move);
 }
-
-.st-seg.active { background: var(--seg-on); color: var(--ink); font-weight: var(--w-strong); box-shadow: 0 1px 2px rgba(var(--shade-rgb), .35), inset 0 1px 0 rgba(var(--film-rgb), .08); }
+.st-seg::after, .st-chip::after {
+  content: ""; position: absolute; left: 8px; right: 8px; bottom: 3px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .95) 30%, rgba(var(--accent-rgb), .95) 70%, transparent) no-repeat 50% 100% / 0 1px;
+  filter: drop-shadow(0 0 3px rgba(var(--accent-rgb), .42));
+  transition: background-size var(--t-move) var(--ease-enter);
+}
+.st-seg.active, .st-chip.active { color: var(--ink); text-shadow: 0 0 14px rgba(var(--accent-rgb), .42); }
+.st-seg.active::after, .st-chip.active::after { background-size: 100% 1px; }
+@media (hover: hover) { :where(html:not([data-input="touch"])) :is(.st-seg, .st-chip):hover { color: var(--ink-2); } }
 
 /* Ряд красок (.st-swatch, .st-color) снят вместе с выбором краски (D-141):
    ни одна разметка его больше не рисует, а мёртвый стиль лжёт, что он бывает. */
 
 .st-chips { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
-
-.st-chip {
-  min-height: 24px;
-  padding: 0 10px;
-  border-radius: var(--r-tag);
-  border: 0;
-  background: rgba(var(--film-rgb), .06);
-  color: var(--ink-2);
-  font: inherit;
-  font-size: var(--f-ui);
-  cursor: pointer;
-}
-
-/* Наведение — это про мышь. На устройстве без мыши :hover включается по
-   касанию и держится до следующего касания где-нибудь ещё: человек видит
-   предмет в состоянии, которого не выбирал. Повод — снимок основателя
-   25.08.2026: подложка осталась висеть вокруг знака после нажатия.
-   Охраняется tools/hover-is-not-touch-check.mjs. */
-@media (hover: hover) {
-  :where(html:not([data-input="touch"])) .st-chip:hover { background: rgba(var(--film-rgb), .12); }
-}
-.st-chip.active { background: var(--seg-on); color: var(--ink); font-weight: var(--w-strong); box-shadow: 0 1px 2px rgba(var(--shade-rgb), .35), inset 0 1px 0 rgba(var(--film-rgb), .08); }
 
 .st-card {
   padding: 13px;
@@ -273,12 +234,6 @@
 
 .st-actions { display: flex; gap: 7px; flex-wrap: wrap; }
 
-.st-note {
-  padding: 11px 13px;
-  border-radius: var(--r-card);
-  border: 1px dashed rgba(var(--film-rgb), .13);
-  background: rgba(var(--film-rgb), .02);
-}
 
 .st-note p { margin: 0; font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-3); }
 
@@ -288,26 +243,17 @@
 .st-hero-name { margin-top: 9px; font-size: var(--f-lead); font-weight: var(--w-strong); letter-spacing: var(--track-tight); }
 .st-hero-version { font-size: var(--f-meta); color: var(--ink-3); }
 
-.st-specs { border-radius: var(--r-card); border: 1px solid rgba(var(--film-rgb), .08); overflow: hidden; margin-bottom: 12px; }
-
-.st-spec {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 9px 13px;
-  font-size: var(--f-ui);
-  background: rgba(var(--film-rgb), .03);
-  border-bottom: 1px solid rgba(var(--film-rgb), .06);
-}
-
-.st-spec:last-child { border-bottom: 0; }
-.st-spec span:first-child { color: var(--ink-3); }
+/* О системе — пары «слово — значение» без черт и таблицы (обход п.69): метка 11
+   --ink-3 над значением; на узком значение не рвётся посреди метки сборки. */
+.st-specs { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px 22px; margin: 4px 0 18px; padding: 0 2px; }
+.st-spec { display: flex; flex-direction: column; gap: 3px; font-size: var(--f-ui); color: var(--ink); }
+.st-spec span:first-child { font-size: var(--f-meta); color: var(--ink-3); }
+.st-spec span:last-child { overflow-wrap: break-word; word-break: normal; }
 
 @media (max-width: 620px) {
   .app-settings { flex-direction: column; }
   .st-side { width: auto; flex: 0 0 auto; flex-direction: row; overflow-x: auto; border-right: 0; box-shadow: inset 0 -1px 0 var(--line); }
   .st-pane { padding: 16px 16px 24px; }
-  .st-title { font-size: var(--f-title); }
   /* Вкладка — одна строка: полоса прокручивается вбок, а подпись не
      ломается в столбик «Звук / и / фокус» (найдено обходом комнат, D-273). */
   .st-side-item { flex: 0 0 auto; white-space: nowrap; }
@@ -323,10 +269,11 @@
 
 /* v21 — parity controls (language select, sliders shared with the Control Center) */
 /* Стрелка списка и его поведение — у ядра (D-338); здесь только плёнка и отступы. */
+/* Список, который остался списком, — тихое слово со стрелкой, без коробки (Чистота Б). */
 .st-select {
-  background-color: rgba(var(--film-rgb), .08); color: inherit;
-  border: 1px solid rgba(var(--film-rgb), .14); border-radius: var(--r-ctrl);
-  font: inherit; font-size: var(--f-ui); padding: 6px 28px 6px 10px;
+  background-color: transparent; color: var(--ink);
+  border: 0; border-bottom: 1px solid rgba(var(--film-rgb), .14); border-radius: 0;
+  font: inherit; font-size: var(--f-ui); padding: 6px 22px 6px 0;
 }
 .st-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .st-select option { background: var(--menu-bg); color: var(--ink); }
@@ -336,29 +283,9 @@
   background: transparent; cursor: pointer;
 }
 
-/* Суточное настроение обоев — тот же знак, что у суточной краски: дуга,
-   обошедшая циферблат. Знак один на две вещи, потому что вещь одна: свет,
-   идущий по кругу суток. */
-/* ЗНАКИ ДВУХ ЖИВЫХ НАСТРОЕНИЙ.
-   Первая редакция брала знак у круглой краски — кольцо, повёрнутое как
-   стрелка, обошедшая циферблат. На КРУГЛОЙ точке это читается; на широкой
-   пилюле то же кольцо растянулось в косой овал и налезло на соседний чип.
-   Знак был верный, а место — нет.
-   Теперь у каждого свой глиф ВНУТРИ чипа, слева от слова:
-     Daylight — круг, наполовину светлый: день, идущий по кругу;
-     Светотерапия — точка света с ореолом: свет, идущий наружу.
-   Оба нарисованы currentColor, поэтому живут в любом цвете чипа. */
-.st-chip.is-drift, .st-chip.is-session { display: inline-flex; align-items: center; }
-.st-chip.is-drift::before {
-  content: ""; width: 9px; height: 9px; border-radius: var(--r-round); flex: none;
-  border: 1px solid currentColor; margin-right: 7px;
-  background: linear-gradient(90deg, currentColor 0 50%, transparent 50% 100%);
-}
-.st-chip.is-session::before {
-  content: ""; width: 5px; height: 5px; border-radius: var(--r-round); flex: none;
-  background: currentColor; margin: 0 9px 0 3px;
-  outline: 1px solid currentColor; outline-offset: 2.5px;
-}
+/* Список языков стоит в разметке спрятанным: выбор делают слова рядом. Знаков
+   внутри слов-тем больше нет (Чистота Б) — слово само себе знак. */
+.st-select-quiet { position: absolute !important; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
 /* Длинное имя в «О системе» (D-128). Оно пришло из верхней панели, где было
    не к месту, и здесь ему дано настоящее место: во всю ширину карточки, с

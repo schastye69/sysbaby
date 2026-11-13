@@ -176,8 +176,12 @@
     /* «Угли» — чистый чёрный (D-631, основатель 09.11.2026): поле в них не
        рисует ни плазмы, ни светлых пятен по углам; светит одно тлеющее
        пятнышко (#sbSmoulder, os/core/shell.js). */
+    /* «Глубина» — вид четырёх тем (D-1080, пакет GLUBINA): пока её холст рисует
+       (#sbDepthField, core/depth.js), поле не рисует — его не видно. Без WebGL
+       глубины нет, и поле рисует как прежде. ОТКАТ: снять последнее условие. */
     return root.getAttribute("data-theme") === "light" || root.classList.contains("sb-incognito") ||
-      root.getAttribute("data-wp-mood") === "ember";
+      root.getAttribute("data-wp-mood") === "ember" ||
+      !!(window.sbDepth && window.sbDepth.live && window.sbDepth.live());
   }
 
   /* Windows are frosted glass: backdrop-filter: blur(58px). A blurred backdrop
@@ -261,6 +265,7 @@
       if (this.cv) return;
       this.cv = q("#sbField");
       if (!this.cv) return;
+      dither();
       /* Холст отдаётся потоку ДО того, как его коснётся главный: у холста,
          у которого уже взяли рисование, отдать управление нельзя. */
       this.worker = offload(this);
@@ -980,6 +985,32 @@
   /* Отдать холст потоку поля. Возвращает поток — или null, и тогда поле
      считается в главном потоке, как всегда. */
   var pixelAsks = {}, pixelSeq = 0;
+  /* ── ШУМ ПРОТИВ ЛЕСЕНКИ (Чистота, D-849) ───────────────────────────────
+     Поле на 8 битах: в тёмном шаг 1/255 на большом градиенте читается
+     ступенью. Поверх — неподвижная текстура 64×64: у каждого пикселя случайно
+     чуть светлее (белый, α .006 ≈ +1,4 уровня на тёмном) или чуть темнее
+     (чёрный, α .06 ≈ −1,2), четверть — без изменения. Средний сдвиг ≈ 0,
+     ступени растворяются. Рисуется ОДИН раз за сеанс: кадров не просит.
+     Генератор детерминированный (xorshift), чтобы снимки законов сходились. */
+  function dither() {
+    var host = q("#sbDither");
+    if (!host || host.style.backgroundImage) return;
+    try {
+      var N = 64, c = doc.createElement("canvas"); c.width = N; c.height = N;
+      var x = c.getContext("2d"), im = x.createImageData(N, N), d = im.data, h = 2463534242;
+      for (var i = 0; i < N * N; i++) {
+        h ^= h << 13; h ^= h >>> 17; h ^= h << 5;
+        var r = (h >>> 0) % 4, o = i * 4;
+        if (r === 0) continue;
+        var lit = r !== 3;
+        d[o] = d[o + 1] = d[o + 2] = lit ? 255 : 0;
+        d[o + 3] = lit ? 2 : 15;
+      }
+      x.putImageData(im, 0, 0);
+      host.style.backgroundImage = "url(" + c.toDataURL("image/png") + ")";
+    } catch (e) { /* без шума поле прежнее — не беда */ }
+  }
+
   function offload(F) {
     var cv = F.cv;
     if (!FIELD_SRC || typeof window.Worker !== "function" || typeof cv.transferControlToOffscreen !== "function" ||
@@ -1154,7 +1185,9 @@
   function occluded() {
     var cv = Field.cv;
     if (!cv) return false;
-    var f = cv.getBoundingClientRect();
+    /* Рамка обоев — слой .wp-layer, а не сам холст: погашенный холст (display: none — Светлица, Затмение,
+       «глубина», D-1080) рамки не имеет, и стол под окном не парковался бы никогда. Слой — та же рамка. */
+    var f = (cv.parentNode && cv.parentNode.getBoundingClientRect ? cv.parentNode : cv).getBoundingClientRect();
     if (!(f.width > 0 && f.height > 0)) return false;
     var tb = doc.getElementById("topbar");
     var deskTop = tb ? tb.getBoundingClientRect().bottom : f.top;
