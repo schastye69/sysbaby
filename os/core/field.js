@@ -181,7 +181,9 @@
        глубины нет, и поле рисует как прежде. ОТКАТ: снять последнее условие. */
     return root.getAttribute("data-theme") === "light" || root.classList.contains("sb-incognito") ||
       root.getAttribute("data-wp-mood") === "ember" ||
-      !!(window.sbDepth && window.sbDepth.live && window.sbDepth.live());
+      !!(window.sbDepth && window.sbDepth.live && window.sbDepth.live()) ||
+      /* Тайник (бывшее Тепло, D-1229): фон — поле витрины (core/tainik.js), поле системы не рисует */
+      (!root.getAttribute("data-wp-mood") && !!window.sbTainik);
   }
 
   /* Windows are frosted glass: backdrop-filter: blur(58px). A blurred backdrop

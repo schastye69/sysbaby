@@ -162,3 +162,96 @@ html:not([data-theme="light"]):not(.sb-incognito):not(.sb-depth-nogl) #sbControl
   --ink-2: rgba(242, 242, 240, .70);
   --ink-3: rgba(242, 242, 240, .61);
 }
+
+/* ── ТАЙНИК (бывшее Тепло, ключ studio) — ПОЛЕ ВИТРИНЫ · решение D-1229 (основатель 13.11.2026) ──────
+ * Фон — холсты core/tainik.js: почти чёрное поле, печати (сцена витрины «здесь ничего нет» — поле печатей
+ * приглушено до .22), пыль, фонарь по касанию. Прочие слои фона в Тайнике не видны: глубина не рисует
+ * (depth.js), поле системы молчит (field.js). Вуаль витрины (#veil) — псевдоэлемент слоя, остановки гладкие.
+ * Светлица и инкогнито — прежние. ОТКАТ: снять этот блок и core/tainik.js из index.html. */
+#sbTainikBg, #sbTainikFx { display: none; }
+html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) {
+  --tainik-em-rgb: 241, 154, 85;
+  /* свет под строкой голоса на почти чёрном поле — глубже по цвету, чтобы не выйти бурым (teplo-mandarin-check, D-824) */
+  --sbv-pool: rgba(238, 104, 18, .075); --sbv-lit: rgba(238, 104, 18, .14);
+  --wp-g1: transparent; --wp-g2: transparent; --wp-f1: #110801; --wp-f2: #110801; --wp-f3: #110801; /* угольный Мандарин (D-824) */
+}
+html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) :is(#sbTainikBg, #sbTainikFx) { display: block; width: 100%; height: 100%; }
+html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) #sbTainikBg { opacity: .22; }
+/* окно на столе: решётка печатей под стеклом притихает (window-one-glass-check: профиль под стеклом без ступенек; решение D-1229) */
+#sbTainikBg { transition: opacity var(--t-scene) var(--ease-move); }
+html.tn-covered:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) #sbTainikBg { opacity: .1; }
+/* то же для свечения двери голоса: пока говорит голос, его низ просвечивал стекло окна ступенькой яркости (window-one-glass-check) */
+html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) #sbVoiceDoor .sb-door-glow { transition: opacity var(--t-touch) var(--ease-move); }
+html.tn-covered:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) #sbVoiceDoor .sb-door-glow { opacity: .2; }
+/* пока открыто окно (поле на стоянке, wp-parked), пыль тихо уходит: под стеклом окна остаётся ровное поле печатей,
+   а не застывшие пылинки (window-one-glass-check: тело окна на настоящем столе — без пятен) */
+#sbTainikFx { transition: opacity var(--t-touch) var(--ease-move); }
+html:is(.wp-parked, .tn-covered):not([data-wp-mood]) #sbTainikFx { opacity: 0; }
+/* свечение двери голоса на почти чёрном поле: акцентный тон в сумраке выходил бурым (teplo-mandarin-check, D-824) —
+   в Тайнике оно того же места и силы, но глубже по цвету (угольный Мандарин) */
+html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) #sbVoiceDoor .sb-door-glow { background: /* своя краска: свет двери голоса — тон лампы Тайника, не словарная краска (D-824) */ radial-gradient(58% 100% at 50% 100%, rgba(241, 118, 34, .34), rgba(241, 118, 34, .12) 46%, transparent 80%); }
+/* стекло плиток значков: белая дымка над почти чёрным полем выходила бурой (teplo-mandarin-check, D-824) — в Тайнике та же
+   верх стекла прежний (белый .1225, glyphs-check), низ — тоном лампы */
+html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) #sbIconLayer .icon-tile { background-image: /* своя краска: стекло плиток — белый .1225 по glyphs-check, низ тоном лампы Тайника (D-824) */ radial-gradient(120% 90% at 50% 7%, rgba(255, 255, 255, .1225), rgba(var(--tainik-em-rgb), .0285) 59%, rgba(var(--tainik-em-rgb), .045)); }
+html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) :is(#sbDepthField, #sbField, #sbMoodTint, #sbGrain, #sbStone, #sbBreath, #sbDither, #sbEclipse) { visibility: hidden !important; }
+html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) .wp-layer::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: var(--z-flat);
+  background: /* своя краска: подпол голоса — чёрная вуаль без цвета темы */ radial-gradient(120% 70% at 50% 108%, rgba(0, 0, 0, .72), rgba(0, 0, 0, .58) 15%, rgba(0, 0, 0, .36) 30%, rgba(0, 0, 0, .16) 45%, rgba(0, 0, 0, .04) 55%, transparent 60%),
+    radial-gradient(90% 60% at 50% -10%, rgba(0, 0, 0, .55), rgba(0, 0, 0, .44) 17%, rgba(0, 0, 0, .27) 35%, rgba(0, 0, 0, .12) 52%, rgba(0, 0, 0, .03) 64%, transparent 70%);
+}
+
+/* ── ВЕРХНЕЙ ПОЛОСЫ НЕТ — МАЛЫЕ ЗНАКИ НА ПОЛЕ · решение D-1230 (основатель 13.11.2026: «Панель верхняя не
+ * существует»; «у нас очень много пространства») ─────────────────────────────────────────────────────
+ * Во всех темах: у #topbar нет фона, размытия, тени и черты снизу; сама полоса прозрачна для касаний.
+ * Каждый знак — капсула витрины «Магия» (.chip: 32 px, тонкая кайма, тёмное стекло blur 10 px), поле
+ * касания ≥ 44 px (::before). Открытые приложения: подписано только активное, лента листается. Акцент темы —
+ * в кайме активного приложения и в точке. Телефон (≤ 600 px): дата и имя прячутся (как в показе).
+ * Охраняется tools/marks-no-band-check.mjs. ОТКАТ: снять этот блок. */
+html {
+  --mark-bg: rgba(var(--veil-rgb, 4, 5, 8), .45);
+  --mark-line: rgba(var(--edge-rgb, 255, 226, 196), .13);
+}
+html[data-theme="light"] { --mark-bg: rgba(255, 255, 255, .55); --mark-line: rgba(0, 0, 0, .10); }
+#topbar#topbar { background: none; box-shadow: none; border: 0; -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; gap: 8px; }
+#topbar#topbar::after, #topbar#topbar::before { content: none; display: none; }
+#topbar .tb-sep { display: none; }
+#topbar :is(.tb-left, .tb-center, .tb-right) { gap: 8px; }
+#topbar :is(.tb-mark, .tb-identity, .tb-btn:not([hidden]), .tb-clock-btn, .tb-lang-now, .seq-item) {
+  pointer-events: auto; position: relative; box-sizing: border-box; height: 32px; min-width: 32px; padding: 0 11px; border-radius: var(--r-pill);
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: none;
+  background: var(--mark-bg); border: 1px solid var(--mark-line); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+/* fps-check: размытий подложки на пустом столе не больше 6 — у колокольчика и языка (самые малые знаки) размытия нет, фон у них тот же */
+#topbar#topbar #sbBell, #topbar#topbar #sbLangNow { -webkit-backdrop-filter: none; backdrop-filter: none; }
+#topbar :is(.tb-mark, .tb-identity, .tb-btn:not([hidden]), .tb-clock-btn, .tb-lang-now, .seq-item)::before { content: ""; position: absolute; inset: -6px; }
+#topbar .tb-mark { padding: 0 9px; }
+/* полоса касаний не ловит — но всё, что в ней кроме раскладки, ловит: знаки, меню языка и любые всплывающие из шапки */
+#topbar#topbar * { pointer-events: auto; }
+#topbar#topbar :is(.tb-left, .tb-center, .tb-right, .tb-langs, .tb-sep) { pointer-events: none; }
+#topbar#topbar :is(.tb-left, .tb-center, .tb-right, .tb-langs) > :is(button, nav, [role="menu"], .tb-lang-menu) { pointer-events: auto; }
+/* полный экран окна: полоса уходит (core.css, window-controls) — и знаки вместе с ней не ловят ничего */
+html.sb-fullscreen-window #topbar#topbar, html.sb-fullscreen-window #topbar#topbar * { pointer-events: none !important; }
+#topbar .tb-seq { pointer-events: auto; gap: 6px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding: 6px 2px; margin: -6px 0; min-width: 0; }
+#topbar .tb-seq::-webkit-scrollbar { display: none; }
+#topbar .seq-item { max-width: none; }
+#topbar .seq-item:not(.active) .seq-name { display: none; }
+#topbar .seq-item.active { border-color: rgba(var(--accent-rgb), .5); }
+#topbar .tb-left { min-width: 0; flex: 1 1 auto; }
+@media (max-width: 600px) {
+  #topbar .tb-clock .tb-date { display: none; }
+  #topbar .tb-seq { display: flex; }
+}
+
+/* телефон: дата прячется, знаки помещаются в одну строку. Имя остаётся: это кнопка аккаунта и «тихий жар»
+   замка (D-617, quiet-heat-check) — единственный вход в аккаунт; на узком экране оно сжимается многоточием. */
+@media (max-width: 600px) {
+  #topbar#topbar .tb-clock .tb-date { display: none; }
+  #topbar#topbar .tb-identity { max-width: 30vw; min-width: 0; }
+  #topbar#topbar .tb-identity .id-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (max-width: 400px) {
+  #topbar#topbar { gap: 6px; padding-left: 8px; padding-right: 8px; }
+  #topbar :is(.tb-left, .tb-right) { gap: 6px; }
+  #topbar#topbar :is(.tb-mark, .tb-btn:not([hidden]), .tb-clock-btn, .tb-lang-now, .seq-item) { padding: 0 8px; }
+  #topbar .tb-right { flex: none; }
+}

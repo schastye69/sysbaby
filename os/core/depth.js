@@ -175,10 +175,14 @@
       wbusy = false;
       var f = wpend; wpend = null;
       if (!f || !wg) return;
-      if (oc.width !== f.w || oc.height !== f.h) { oc.width = f.w; oc.height = f.h; }
-      glFrame(wg, wu, f);
-      var bmp = oc.transferToImageBitmap();
-      self.postMessage({ type: "bmp", bmp: bmp }, [bmp]);
+      /* D-1231: сбой кадра (потерян контекст, нулевой холст, нехватка памяти на планшете) не должен
+         ронять систему: воркер сообщает «fail», главный поток переходит на запасной рисунок. */
+      try {
+        if (oc.width !== f.w || oc.height !== f.h) { oc.width = f.w; oc.height = f.h; }
+        glFrame(wg, wu, f);
+        var bmp = oc.transferToImageBitmap();
+        self.postMessage({ type: "bmp", bmp: bmp }, [bmp]);
+      } catch (err) { wg = null; self.postMessage({ type: "fail" }); }
     };
     self.onmessage = function (e) {
       var m = e.data || {};
@@ -213,7 +217,8 @@
   var mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
   function reduced() { return mq.matches || root.getAttribute("data-motion") === "reduced"; }
   /* слой виден: тёмная тема, не инкогнито (Светлица и инкогнито — прежний вид core.css) */
-  function shown() { return root.getAttribute("data-theme") !== "light" && !root.classList.contains("sb-incognito"); }
+  /* Тайник (бывшее Тепло, ключ studio) — поле витрины (core/tainik.js, D-1229): глубина в нём не рисует */
+  function shown() { return root.getAttribute("data-theme") !== "light" && !root.classList.contains("sb-incognito") && mood() !== "studio"; }
   function parked() { return root.classList.contains("wp-parked"); }
   function eclipse(m) { return m === "ember" || m === "eclipse"; }
   /* Турбо (sb-turbo) и «фон выключен» (уровень поля off) — свет стоит, шов — сразу (room-and-seam п.6) */
@@ -244,7 +249,8 @@
         if (queued) { var q = queued; queued = null; if (!parked() && !doc.hidden) send(q); }
       }
     };
-    worker.onerror = function () { if (worker) { worker.terminate(); worker = null; swapCanvas(); buildMain(); if (live) size(); } };
+    /* D-1231: ошибка воркера глубины — не ошибка запуска системы: событие гасится, фон уходит на запасной рисунок */
+    worker.onerror = function (ev) { if (ev && ev.preventDefault) ev.preventDefault(); if (worker) { worker.terminate(); worker = null; swapCanvas(); buildMain(); if (live) size(); } };
     worker.postMessage({ type: "init", w: Math.round(innerWidth * K), h: Math.round(innerHeight * K) });
     return true;
   }
@@ -415,7 +421,7 @@
       if (!cv) return;
       var m = mood();
       /* тема, надетая при входе (восстановление из хранилища), — без шва: шов — ответ на выбор человека */
-      if (m !== cur && performance.now() - bootAt < 2500) { cur = m; dirty = true; seen = stamp(); loop(); return; }
+      if (m !== cur && (performance.now() - bootAt < 2500 || m === "studio" || cur === "studio")) { cur = m; dirty = true; seen = stamp(); loop(); return; }
       if (m !== cur) { seen = stamp(); startSeam(cur || m, m); return; }
       var st = stamp();
       if (st === seen) return;
