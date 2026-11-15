@@ -1,0 +1,21 @@
+/* sys.baby — СМАЙЛИКИ, набор «kosmos»: живые картинки (анимированный WebP; D-946, D-949; основатель 12.11:
+   «все наборы живые, как Перламутр»). Кадры сняты с живых смайликов утверждённой сцены «Под одеялом»
+   (ODL.sm: материал набора, лицо и жест канона), 12 кадров/с на петлю чувства, честная альфа по чёрной
+   и белой подложке. inl — 96 px (строка, средний, меню), big — 256 px (большой, огромный-стикер).
+   Файл подключает core/smiles.js лениво; картинку браузер берёт, только когда смайлик показан. */
+.sb-sm-img.inl[data-s="kosmos"][data-e="happy"]{background-image:url("kosmos/happy-s.webp")}
+.sb-sm-img.big[data-s="kosmos"][data-e="happy"]{background-image:url("kosmos/happy-b.webp")}
+.sb-sm-img.inl[data-s="kosmos"][data-e="laugh"]{background-image:url("kosmos/laugh-s.webp")}
+.sb-sm-img.big[data-s="kosmos"][data-e="laugh"]{background-image:url("kosmos/laugh-b.webp")}
+.sb-sm-img.inl[data-s="kosmos"][data-e="love"]{background-image:url("kosmos/love-s.webp")}
+.sb-sm-img.big[data-s="kosmos"][data-e="love"]{background-image:url("kosmos/love-b.webp")}
+.sb-sm-img.inl[data-s="kosmos"][data-e="wow"]{background-image:url("kosmos/wow-s.webp")}
+.sb-sm-img.big[data-s="kosmos"][data-e="wow"]{background-image:url("kosmos/wow-b.webp")}
+.sb-sm-img.inl[data-s="kosmos"][data-e="sad"]{background-image:url("kosmos/sad-s.webp")}
+.sb-sm-img.big[data-s="kosmos"][data-e="sad"]{background-image:url("kosmos/sad-b.webp")}
+.sb-sm-img.inl[data-s="kosmos"][data-e="think"]{background-image:url("kosmos/think-s.webp")}
+.sb-sm-img.big[data-s="kosmos"][data-e="think"]{background-image:url("kosmos/think-b.webp")}
+.sb-sm-img.inl[data-s="kosmos"][data-e="wink"]{background-image:url("kosmos/wink-s.webp")}
+.sb-sm-img.big[data-s="kosmos"][data-e="wink"]{background-image:url("kosmos/wink-b.webp")}
+.sb-sm-img.inl[data-s="kosmos"][data-e="calm"]{background-image:url("kosmos/calm-s.webp")}
+.sb-sm-img.big[data-s="kosmos"][data-e="calm"]{background-image:url("kosmos/calm-b.webp")}

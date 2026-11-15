@@ -83,7 +83,7 @@
 .vw-big span { font-size: var(--f-ui); color: var(--ink-3); }
 .vw-sub { margin: 0; font-size: var(--f-ui); color: var(--ink-2); }
 .vw-sub b { font-variant-numeric: tabular-nums; }
-.vw-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--f-micro); line-height: var(--lh-read); color: var(--ink-3); overflow-wrap: anywhere; }
+.vw-mono { font-family: "SB Smile", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--f-micro); line-height: var(--lh-read); color: var(--ink-3); overflow-wrap: anywhere; }
 .vw-note { margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-3); }
 .vw-act {
   margin-top: 4px; align-self: flex-start; font: inherit; font-size: var(--f-ui);

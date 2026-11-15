@@ -143,15 +143,7 @@
   function tr(key, vars, o) { var s = window.sbT ? window.sbT(key, vars) : key; return fill(s, o); }
 
   /* ── время на столе: линии света · пыль света ── */
-  function view() { var v = null; try { v = localStorage.getItem(VIEW_KEY); } catch (e) { v = null; } return v === "dust" ? "dust" : "lines"; }
-  function setView(v) {
-    v = v === "dust" ? "dust" : "lines";
-    try { localStorage.setItem(VIEW_KEY, v); } catch (e) { /* ignore */ }
-    root.setAttribute("data-sb-desktime", v);
-    if (window.sbEvent) window.sbEvent("sb:desktime", { view: v });
-    else { try { window.dispatchEvent(new CustomEvent("sb:desktime", { detail: { view: v } })); } catch (e) { /* ignore */ } }
-    return v;
-  }
+  function view() { return "lines"; }   /* D-1260: «пыль света» на крупных цифрах убрана; старое "dust" читается как линии */
 
   window.sbAddr = {
     V: function (t, v, o) { return cur(o).ty === "ty" ? t : v; },
@@ -183,7 +175,7 @@
       save();
       return true;
     },
-    view: view, setView: setView
+    view: view
   };
   try { root.setAttribute("data-sb-desktime", view()); } catch (e) { /* ignore */ }
 

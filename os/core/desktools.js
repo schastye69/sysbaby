@@ -72,10 +72,30 @@
   var KEYS = ["C", "(", ")", "÷", "7", "8", "9", "×", "4", "5", "6", "−", "1", "2", "3", "+", "0", "dec", "back", "="];
   /* МЫСЛЬ ПЕРВОЙ (основатель 12.11): касание середины даёт только строку мысли; клавиши
      света — только у «расчёта». line — мысль, calc — расчёт (та же строка, плюс клавиши). */
-  var TOOLS = ["line", "calc", "breath", "wait", "count", "city", "noise", "sun"];
+  /* D-1287: два ряда по смыслу — сверху покой и мир, снизу числа и время */
+  var TOOLS = ["line", "noise", "breath", "wait", "sun", "city", "calc", "count", "timer", "stopwatch", "alarm"];
+  /* D-1262: таймер · секундомер · будильник — обычные режимы ряда; дело и состояние — те же, что в панели часов (sbClock.ctl) */
+  var TIMEISH = { timer: "clock.tab.timer", stopwatch: "clock.tab.sw", alarm: "clock.tab.alarm" };
+  /* ОТКАТ: у таймера, секундомера и будильника слово — из таблицы часов; у остальных режимов — своё «dt.tool.<имя>». Это выбор таблицы, а не подмена: слово есть в обеих. */
+  function toolWord(t) { return T(TIMEISH[t] || "dt.tool." + t); }
+  var ICO = {
+    /* D-1286: у каждого режима свой знак из семейства значков — заливка цветом слова, без свечения */
+    line: '<path d="M13 3.5c2.3 0 4.2 1.5 4.8 3.6A4 4 0 0 1 17 15H8a4.5 4.5 0 0 1-1-8.9A5 5 0 0 1 13 3.5z"/><circle cx="7.5" cy="18" r="1.8"/><circle cx="4.6" cy="20.8" r="1.1"/>',
+    noise: '<rect x="2.5" y="10" width="2.6" height="4" rx="1.3"/><rect x="6.6" y="6.5" width="2.6" height="11" rx="1.3"/><rect x="10.7" y="3" width="2.6" height="18" rx="1.3"/><rect x="14.8" y="7.5" width="2.6" height="9" rx="1.3"/><rect x="18.9" y="9.5" width="2.6" height="5" rx="1.3"/>',
+    breath: '<circle cx="12" cy="12" r="5.2"/><path fill-rule="evenodd" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 1.8a8.2 8.2 0 1 0 0 16.4 8.2 8.2 0 0 0 0-16.4z" opacity=".55"/>',
+    wait: '<path fill-rule="evenodd" d="M8 2a1 1 0 0 1 1 1v1h6V3a1 1 0 1 1 2 0v1h1.5A2.5 2.5 0 0 1 21 6.5v12a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5v-12A2.5 2.5 0 0 1 5.5 4H7V3a1 1 0 0 1 1-1zM5 10v8.5c0 .3.2.5.5.5h13c.3 0 .5-.2.5-.5V10zm9 3h3v3h-3z"/>',
+    sun: '<circle cx="12" cy="12" r="4.6"/><g><rect x="11" y="1.5" width="2" height="3.4" rx="1"/><rect x="11" y="19.1" width="2" height="3.4" rx="1"/><rect x="1.5" y="11" width="3.4" height="2" rx="1"/><rect x="19.1" y="11" width="3.4" height="2" rx="1"/><rect x="11" y="1.5" width="2" height="3.4" rx="1" transform="rotate(45 12 12)"/><rect x="11" y="19.1" width="2" height="3.4" rx="1" transform="rotate(45 12 12)"/><rect x="1.5" y="11" width="3.4" height="2" rx="1" transform="rotate(45 12 12)"/><rect x="19.1" y="11" width="3.4" height="2" rx="1" transform="rotate(45 12 12)"/></g>',
+    city: '<path d="M3 21V10l5-3v3l4-2.5V4h7a1 1 0 0 1 1 1v16zm12-14v2h2V7zm0 4v2h2v-2zm0 4v2h2v-2zM6 13v2h2v-2zm0 4v2h2v-2zm4-4v2h2v-2zm0 4v2h2v-2z" fill-rule="evenodd"/>',
+    calc: '<path fill-rule="evenodd" d="M6.5 2h11A2.5 2.5 0 0 1 20 4.5v15a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2zM7 5v4h10V5zm0 7v2h2v-2zm4 0v2h2v-2zm4 0v2h2v-2zm-8 4v2h2v-2zm4 0v2h2v-2zm4 0v2h2v-2z"/>',
+    count: '<path fill-rule="evenodd" d="M6 3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zm5 4.5v3.5H7.5v2H11v3.5h2V13h3.5v-2H13V7.5z"/>',
+    timer: '<path d="M6 2h12v2h-1v2.6c0 1.9-1.1 3.2-2.6 4.6L13 12l1.4.8c1.5 1.4 2.6 2.7 2.6 4.6V20h1v2H6v-2h1v-2.6c0-1.9 1.1-3.2 2.6-4.6L11 12l-1.4-.8C8.1 9.8 7 8.5 7 6.6V4H6z"/>',
+    stopwatch: '<path fill-rule="evenodd" d="M10 2h4v2h-1v1.1A8 8 0 1 1 11 5.1V4h-1zM12 8a.9.9 0 0 0-.9.9V13c0 .3.2.6.45.78l2.6 1.5.9-1.56-2.15-1.24V8.9A.9.9 0 0 0 12 8zM18.2 5.4l1.4 1.4-1.2 1.2-1.4-1.4z"/>',
+    alarm: '<path d="M12 2a1 1 0 0 1 1 1v1.1a6 6 0 0 1 5 5.9v4.2l1.8 2.4a.8.8 0 0 1-.6 1.3H4.8a.8.8 0 0 1-.6-1.3L6 14.2V10a6 6 0 0 1 5-5.9V3a1 1 0 0 1 1-1zm-2.2 17h4.4a2.2 2.2 0 0 1-4.4 0z"/>'
+  };
+  function icoOf(t) { return ICO[t] ? '<svg class="dt-ico" viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true" focusable="false">' + ICO[t] + "</svg>" : ""; }
   function lineish(t) { return (t || tool) === "line" || (t || tool) === "calc"; }
   /* закрепить можно то, что показывает число на столе (D-890); у шума свой знак, у дыхания — свой срок */
-  var PINNABLE = { count: 1, wait: 1, city: 1, sun: 1 };
+  var PINNABLE = { count: 1, wait: 1, city: 1, sun: 1, timer: 1, stopwatch: 1, alarm: 1 };
   var lastRes = null, holdT = 0, held = false;
   function decSign() { return lang() === "en" ? "." : ","; }
   function keyFace(k) { return k === "dec" ? decSign() : k === "back" ? "‹" : k === "C" ? T("dt.key.clear") : k; }
@@ -94,15 +114,13 @@
       }).join("") + "</div>" +
       '<div class="dt-pane" hidden></div>' +
       '<div class="dt-tray" role="toolbar" aria-label="' + esc(T("dt.tray.aria")) + '">' + TOOLS.map(function (t) {
-        return '<button type="button" class="dt-word" data-tool="' + t + '" aria-pressed="false">' + esc(T("dt.tool." + t)) + "</button>";
+        /* D-1287: после «города» — перенос строки: два ровных ряда по центру, 6 + 5 */
+        return '<button type="button" class="dt-word" data-tool="' + t + '" aria-pressed="false">' + icoOf(t) + esc(toolWord(t)) + "</button>" + (t === "city" ? '<span class="dt-br" aria-hidden="true"></span>' : "");
       }).join("") + "</div>" +
-      /* тихие слова внизу: закрепить · линии · пыль (D-890, D-898) */
+      /* тихие слова внизу: закрепить · закрыть (D-890; «линии · пыль» убраны, D-1240) */
       '<div class="dt-hist" role="list" aria-label="' + esc(T("dt.hist.aria")) + '" hidden></div>' +
       '<div class="dt-foot"><button type="button" class="dt-quiet dt-pin" aria-pressed="false" hidden>' + esc(T("dt.pin")) + "</button>" +
       '<button type="button" class="dt-quiet dt-histbtn" aria-expanded="false" hidden>' + esc(T("dt.hist")) + "</button>" +
-      '<span class="dt-view" role="group" aria-label="' + esc(T("dt.view.aria")) + '">' +
-      '<button type="button" class="dt-quiet" data-view="lines" aria-pressed="false">' + esc(T("dt.view.lines")) + '</button><span class="dt-dot" aria-hidden="true">·</span>' +
-      '<button type="button" class="dt-quiet" data-view="dust" aria-pressed="false">' + esc(T("dt.view.dust")) + "</button></span>" +
       '<button type="button" class="dt-quiet dt-shut">' + esc(T("dt.shut")) + "</button></div>" +
       "</div>" +
       '<button type="button" class="dt-sound" hidden><span class="dt-sound-dot" aria-hidden="true"></span></button>' +
@@ -220,8 +238,7 @@
     var P = DT.pal();
     ov.style.setProperty("--dt-c", P.c.join(","));
     ov.style.setProperty("--dt-g", P.g.join(","));
-    ov.setAttribute("data-view", DT.variant() === "dust" ? "dust" : "line");
-    if (foot) [].forEach.call(foot.querySelectorAll("[data-view]"), function (b) { var on = (b.dataset.view === "dust") === (DT.variant() === "dust"); b.setAttribute("aria-pressed", on ? "true" : "false"); b.classList.toggle("on", on); });
+    ov.setAttribute("data-view", "line");
   }
 
   /* ---------- открыть / убрать ---------- */
@@ -406,6 +423,7 @@
     paintFoot();
     if (was === "breath" && t !== "breath") stopBreath();
     clearInterval(cityTick); cityTick = 0;
+    clearInterval(timeTick); timeTick = 0;
     [].forEach.call(tray.querySelectorAll(".dt-word"), function (b) { var on = b.dataset.tool === t; b.setAttribute("aria-pressed", on ? "true" : "false"); b.classList.toggle("on", on); });
     ov.setAttribute("data-tool", t);
     var isLine = lineish(t);
@@ -432,9 +450,85 @@
     else if (t === "breath") paneBreath();
     else if (t === "sun") paneSun();
     else if (t === "noise") paneNoise();
+    else if (TIMEISH[t]) paneTime(t);
     layout();
+    trayToActive();
   }
   function btnW(data, word, extra) { return '<button type="button" class="dt-word' + (extra || "") + '" ' + data + ">" + esc(word) + "</button>"; }
+
+  /* ---------- таймер · секундомер · будильник (D-1262) ----------
+     Один источник правды — core/clock.js (sbClock.ctl) и свет на столе (sbDeskTime): таймер, начатый здесь, —
+     тот же таймер в панели часов, и наоборот; запись будильника системы одна, звенит один раз.
+     Идёт своё время — его рисует сам свет на столе (крупно); пока не идёт — здесь показан срок «про запас». */
+  var timeTick = 0, timeSig = "";
+  var PRE = [45000, 180000, 300000, 600000, 1500000];
+  function p2(n) { return (n < 10 ? "0" : "") + n; }
+  function mss(ms) { var s = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return (h ? h + ":" + p2(m) : m) + ":" + p2(s % 60); }
+  function swf(ms) { var t = Math.floor(ms / 100), s = Math.floor(t / 10), m = Math.floor(s / 60); return { main: m + ":" + p2(s % 60), sub: "," + (t % 10) }; }
+  function CK() { var c = window.sbClock && window.sbClock.ctl; return c && c.ready() ? c : null; }
+  function ckBtn(k, v, word, extra) { return btnW('data-ck="' + k + ":" + v + '"', T(word), extra); }
+  function preWord(ms) { return ms < 60000 ? T("clock.sec", { n: ms / 1000 }) : T("clock.min", { n: ms / 60000 }); }
+  function hmOf(d) { return d.getHours() + ":" + p2(d.getMinutes()); }
+  function paneTime(t) {
+    timeSig = "";
+    var h = "";
+    if (t === "timer") h = '<div class="dt-row dt-pre" role="group" aria-label="' + esc(T("clock.tab.timer")) + '">' + PRE.map(function (ms) { return btnW('data-ck="ms:' + ms + '" aria-pressed="false"', preWord(ms)); }).join("") + "</div>";
+    if (t === "alarm") h = '<div class="dt-row">' + ckBtn("a", "1", "clock.alarm.in1") + ckBtn("a", "-5", "clock.alarm.minus5") + ckBtn("a", "5", "clock.alarm.plus5") +
+      '<input type="time" class="dt-field dt-time" data-ck-at="1" autocomplete="off" aria-label="' + esc(T("clock.tab.alarm")) + '"></div>';
+    pane.innerHTML = h + '<div class="dt-row dt-tact"></div><div class="dt-laps" aria-live="polite"></div>';
+    viewTime();
+    timeTick = setInterval(function () { if (open && TIMEISH[tool]) viewTime(); }, 250);
+  }
+  function viewTime() {
+    if (!open || !DT || !TIMEISH[tool] || !pane) return;
+    var c = CK(), i = DT.info(), st = c ? c.state() : { timerSet: 180000, laps: [] }, mine = (tool === "timer" && i.mode === "timer") || (tool === "stopwatch" && i.mode === "stopwatch") || (tool === "alarm" && i.mode === "alarm");
+    var a = "", sub = "", str = "", laps = "";
+    if (tool === "timer") {
+      str = mss(st.timerSet);
+      sub = "";
+      a = !mine ? ckBtn("t", "go", "clock.go", " lamp") : i.done ? ckBtn("t", "go", "clock.again", " lamp") + ckBtn("t", "stop", "clock.ok") :
+        (i.paused ? ckBtn("t", "on", "clock.on", " lamp") : ckBtn("t", "pause", "clock.pause", " lamp")) + ckBtn("t", "stop", "clock.reset");
+      [].forEach.call(pane.querySelectorAll("[data-ck^='ms:']"), function (b) { b.setAttribute("aria-pressed", +b.dataset.ck.slice(3) === (mine ? i.total : st.timerSet) ? "true" : "false"); });
+    } else if (tool === "stopwatch") {
+      str = "0:00"; sub = "";
+      a = !mine ? ckBtn("s", "go", "clock.sw.start", " lamp") : i.paused ? ckBtn("s", "on", "clock.on", " lamp") + ckBtn("s", "stop", "clock.reset") :
+        ckBtn("s", "pause", "clock.pause", " lamp") + ckBtn("s", "lap", "clock.lap");
+      var L = st.laps || [];
+      laps = L.slice(-3).map(function (v, j, arr) { var n = L.length - arr.length + j, prev = n ? L[n - 1] : 0, x = swf(v - prev); return T("clock.lapN", { n: n + 1 }) + " · " + x.main + x.sub; }).join("   ");
+    } else {
+      var at = new Date(c ? c.alarmAt() : Date.now() + 3600000), now = new Date();
+      str = hmOf(at);
+      var mins = Math.max(0, Math.round((at - now) / 60000)), tomorrow = at.toDateString() !== now.toDateString(), wd = "";
+      try { wd = at.toLocaleDateString(lang() === "ru" ? "ru-RU" : lang() === "ee" ? "et-EE" : "en-GB", { weekday: "long" }); } catch (e) { wd = ""; }
+      sub = T("clock.alarm.left", { when: tomorrow ? T("clock.alarm.tomorrow", { day: wd }) : T("clock.alarm.today"), left: mins >= 60 ? T("clock.alarm.hm", { h: Math.floor(mins / 60), m: mins % 60 }) : T("clock.alarm.m", { m: mins }) });
+      a = !mine ? ckBtn("a2", "go", "clock.alarm.set", " lamp") : i.done ? ckBtn("a2", "stop", "clock.ok", " lamp") : ckBtn("a2", "stop", "clock.alarm.off");
+      var ti = pane.querySelector(".dt-time"); if (ti && doc.activeElement !== ti) { var hv = p2(at.getHours()) + ":" + p2(at.getMinutes()); if (ti.value !== hv) ti.value = hv; }
+    }
+    var tact = pane.querySelector(".dt-tact"), lp = pane.querySelector(".dt-laps");
+    if (tact && tact.__h !== a) { tact.innerHTML = a; tact.__h = a; }
+    if (lp && lp.textContent !== laps) lp.textContent = laps;
+    /* идёт своё время — крупно рисует свет на столе; нет — срок про запас тем же светом */
+    if (mine) { DT.hide(); timeSig = ""; return; }
+    var sig = tool + "|" + str + "|" + sub;
+    if (sig !== timeSig) { timeSig = sig; DT.show({ str: str, label: toolWord(tool), sub: sub }); }
+  }
+  function timeAct(spec) {
+    var c = CK(); if (!c) return;
+    var k = spec.indexOf(":"), d = {}; d[spec.slice(0, k)] = spec.slice(k + 1);
+    c.act(d); timeSig = ""; viewTime();
+  }
+  /* ряд мягко прокручивается по ширине (телефон): кромки гаснут, лишнего этажа нет */
+  function fitTray() {
+    if (!tray) return;
+    var sl = tray.scrollLeft, over = tray.scrollWidth - tray.clientWidth > 2;
+    tray.style.setProperty("--dt-fl", over && sl > 2 ? "26px" : "0px");
+    tray.style.setProperty("--dt-fr", over && sl < tray.scrollWidth - tray.clientWidth - 2 ? "26px" : "0px");
+  }
+  function trayToActive() {
+    if (!tray || tray.scrollWidth - tray.clientWidth <= 2) { fitTray(); return; }
+    var ob = tray.querySelector(".dt-word.on"); if (ob) tray.scrollLeft = Math.max(0, ob.offsetLeft - (tray.clientWidth - ob.offsetWidth) / 2);
+    fitTray();
+  }
 
   /* счётчик: касание = +1 */
   function showCount(n, first) { DT.show({ str: String(n).replace("-", "−"), label: T("dt.count.label"), sub: first ? T("dt.count.tap") + " \u00b7 " + T("dt.count.long") : "" }); }
@@ -665,6 +759,11 @@
     else if (p === "wait") showWait();
     else if (p === "city") showCity();
     else if (p === "sun") showSun();
+    else if (TIMEISH[p]) pinnedTime(p);
+  }
+  function pinnedTime(p) {
+    var c = CK(), st = c ? c.state() : { timerSet: 180000 }, str = p === "timer" ? mss(st.timerSet) : p === "stopwatch" ? "0:00" : hmOf(new Date(c ? c.alarmAt() : Date.now()));
+    DT.show({ str: str, label: toolWord(p), sub: "" });
   }
   /* закреплённый — на столе, пока инструменты убраны; идущее время важнее: под таймером слой молчит */
   function showPinned() {
@@ -699,23 +798,14 @@
   function drawBreath(r, word, al) {
     var P = DT.pal(), dpr = Math.min(2, window.devicePixelRatio || 1), S = bR * 2 + 40, x = bctx;
     x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, bcv.width, bcv.height); x.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var c = S / 2, rad = bR * (0.28 + 0.72 * r), dust = DT.variant() === "dust", core = "rgba(" + P.c.join(",") + ",", glow = "rgba(" + P.g.join(",") + ",";
+    var c = S / 2, rad = bR * (0.28 + 0.72 * r), core = "rgba(" + P.c.join(",") + ",", glow = "rgba(" + P.g.join(",") + ",";
     var g = x.createRadialGradient(c, c, 0, c, c, rad * 1.25);
     g.addColorStop(0, glow + (0.16 + 0.14 * r) * al + ")"); g.addColorStop(0.7, glow + 0.06 * al + ")"); g.addColorStop(1, glow + "0)");
     x.fillStyle = g; x.beginPath(); x.arc(c, c, rad * 1.25, 0, 6.283); x.fill();
-    if (dust) {
-      x.globalCompositeOperation = "lighter";
-      for (var i = 0; i < 90; i++) {
-        var a = i * 2.39996, j = 1 + 0.05 * Math.sin(i * 12.9898), px = c + Math.cos(a) * rad * j, py = c + Math.sin(a) * rad * j, s = 1.2 + (i % 5) * 0.35;
-        x.fillStyle = core + (0.55 + 0.35 * ((i * 7) % 3) / 2) * al + ")"; x.beginPath(); x.arc(px, py, s, 0, 6.283); x.fill();
-      }
-      x.globalCompositeOperation = "source-over";
-    } else {
-      x.lineWidth = 6; x.strokeStyle = glow + 0.25 * al + ")"; x.filter = "blur(4px)"; x.beginPath(); x.arc(c, c, rad, 0, 6.283); x.stroke();
-      x.filter = "none"; x.lineWidth = 1.4; x.strokeStyle = core + 0.92 * al + ")"; x.beginPath(); x.arc(c, c, rad, 0, 6.283); x.stroke();
-    }
+    x.lineWidth = 6; x.strokeStyle = glow + 0.25 * al + ")"; x.filter = "blur(4px)"; x.beginPath(); x.arc(c, c, rad, 0, 6.283); x.stroke();
+    x.filter = "none"; x.lineWidth = 1.4; x.strokeStyle = core + 0.92 * al + ")"; x.beginPath(); x.arc(c, c, rad, 0, 6.283); x.stroke();
     if (word) {
-      x.font = "300 " + Math.round(Math.max(15, bR * 0.13)) + "px \"SB Voice\", system-ui, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
+      x.font = "300 " + Math.round(Math.max(15, bR * 0.13)) + "px \"SB Voice\", \"SB Smile\", system-ui, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
       x.shadowColor = glow + "0.6)"; x.shadowBlur = 10; x.fillStyle = core + 0.85 * al + ")"; x.fillText(word, c, c); x.shadowBlur = 0;
     }
   }
@@ -779,7 +869,6 @@
     return tcv;
   }
   function hideToday() { if (tctx) { tctx.setTransform(1, 0, 0, 1, 0, 0); tctx.clearRect(0, 0, tcv.width, tcv.height); } tKey = ""; if (todayBtn) todayBtn.hidden = true; }
-  function rnd(i) { var x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
   function paintToday(force) {
     if (!DT || !todayBtn) return;
     var N = window.sbNoteToday ? window.sbNoteToday.get() : null, info = DT.info();
@@ -793,28 +882,14 @@
     var view = DT.variant(), P = DT.pal(), key = [txt, view, P.mood, W, H, cy, reduced()].join("|");
     if (!force && key === tKey) return;
     tKey = key;
-    var fs = Math.round(Math.max(20, Math.min(40, Hd * 0.42))), font = "300 " + fs + "px \"SB Voice\", system-ui, sans-serif";
+    var fs = Math.round(Math.max(20, Math.min(40, Hd * 0.42))), font = "300 " + fs + "px \"SB Voice\", \"SB Smile\", system-ui, sans-serif";
     var m = tctx; m.font = font; var tw = Math.ceil(m.measureText(txt).width), bw = Math.min(W - 24, tw + fs * 2), bh = fs * 3;
     tcv.width = Math.round(bw * dpr); tcv.height = Math.round(bh * dpr); tcv.style.width = bw + "px"; tcv.style.height = bh + "px";
     tcv.style.transform = "translate3d(" + Math.round(W / 2 - bw / 2) + "px," + Math.round(cy - bh / 2) + "px,0)";
     var x = tctx; x.setTransform(dpr, 0, 0, dpr, 0, 0); x.font = font; x.textAlign = "center"; x.textBaseline = "middle";
     var core = "rgba(" + P.c.join(",") + ",", glow = "rgba(" + P.g.join(",") + ",";
-    if (view === "dust") {
-      /* пыль: буквы — маской, по маске — пылинки (раз на смену текста, не каждый кадр) */
-      var mk = doc.createElement("canvas"); mk.width = Math.ceil(bw); mk.height = Math.ceil(bh);
-      var mx = mk.getContext("2d"); mx.font = font; mx.textAlign = "center"; mx.textBaseline = "middle"; mx.fillStyle = "#fff"; mx.fillText(txt, bw / 2, bh / 2);
-      var px = mx.getImageData(0, 0, mk.width, mk.height).data, step = 2, i = 0;
-      x.shadowColor = glow + "0.5)"; x.shadowBlur = 6;
-      for (var yy = 0; yy < mk.height; yy += step) for (var xx = 0; xx < mk.width; xx += step) {
-        if (px[(yy * mk.width + xx) * 4 + 3] < 120) continue;
-        i++; if (rnd(i) > 0.55) continue;
-        x.fillStyle = core + (0.45 + 0.45 * rnd(i + 3)) + ")"; x.beginPath(); x.arc(xx + rnd(i + 7) - 0.5, yy + rnd(i + 9) - 0.5, 0.7 + rnd(i + 5) * 0.8, 0, 6.283); x.fill();
-      }
-      x.shadowBlur = 0;
-    } else {
       x.shadowColor = glow + "0.55)"; x.shadowBlur = 16; x.fillStyle = glow + "0.35)"; x.fillText(txt, bw / 2, bh / 2);
-      x.shadowBlur = 5; x.fillStyle = core + "0.92)"; x.fillText(txt, bw / 2, bh / 2); x.shadowBlur = 0;
-    }
+    x.shadowBlur = 5; x.fillStyle = core + "0.92)"; x.fillText(txt, bw / 2, bh / 2); x.shadowBlur = 0;
     tRect = { x: Math.round(W / 2 - Math.min(bw, tw + 24) / 2), y: Math.round(cy - fs * 0.9), w: Math.min(bw, tw + 24), h: Math.round(fs * 1.8) };
     todayBtn.hidden = false; todayBtn.dataset.id = N.id;
     todayBtn.setAttribute("aria-label", T("dt.today.aria", { t: txt }));
@@ -904,6 +979,7 @@
     /* смахивания нет (основатель 12.11: жест пришлось бы объяснять) — внизу слово «закрыть», Esc и кнопка для чтеца */
     pane.addEventListener("click", function (ev) {
       var b = ev.target.closest && ev.target.closest("button"); if (!b) return;
+      if (b.dataset.ck) { timeAct(b.dataset.ck); return; }
       if (b.dataset.c === "plus" || b.dataset.c === "minus") count(b.dataset.c === "plus" ? 1 : -1);
       /* сброс — только после вопроса голосом: случайное касание не стирает счёт */
       if (b.dataset.c === "reset") say(T("dt.count.ask") + " [" + T("dt.count.yes") + "] [" + T("dt.count.no") + "]", { on: function (w, i) { if (i === 0) count(0); } });
@@ -927,6 +1003,7 @@
     });
     pane.addEventListener("change", function (ev) {
       var t = ev.target;
+      if (t.dataset && t.dataset.ckAt && t.value) { var c0 = CK(); if (c0) { c0.act({ at: t.value }); timeSig = ""; viewTime(); } }
       if (t.dataset && t.dataset.w) putWait();
       if (t.dataset && t.dataset.city) putCity(t.value);
       if (t.dataset && t.dataset.sun) putSun(t.value);
@@ -943,11 +1020,6 @@
       if (b.classList.contains("dt-pin")) togglePin();
       if (b.classList.contains("dt-shut")) closeTools();
       if (b.classList.contains("dt-histbtn")) { var hl = ov.querySelector(".dt-hist"), on = hl.hidden; if (on) paintHist(); hl.hidden = !on; b.setAttribute("aria-expanded", on ? "true" : "false"); layout(); }
-      /* линии · пыль прямо в инструменте (D-898): тот же выбор, что в Настройках */
-      if (b.dataset.view) {
-        if (window.sbAddr && window.sbAddr.setView) window.sbAddr.setView(b.dataset.view);
-        else { try { localStorage.setItem("sysbaby.desktime.view", b.dataset.view); } catch (e) { /* без памяти */ } window.dispatchEvent(new CustomEvent("sb:desktime", { detail: { view: b.dataset.view } })); }
-      }
     });
     sign.addEventListener("click", function () { if (!open) openTools(root.classList.contains("is-touch") ? "touch" : "pointer"); setTool("noise"); });
     /* голос: кнопка видна, если у браузера есть вопрос «на устройстве?»; сам вопрос — только по касанию (D-894) */
@@ -972,6 +1044,8 @@
   }
   function wire() {
     wireInner();
+    window.addEventListener("resize", function () { if (open) trayToActive(); });
+    if (DT && DT.on) DT.on(function (ev) { if (ev !== "tool" && ev !== "tool-off" && ev !== "mood" && ev !== "ready" && open && TIMEISH[tool]) { timeSig = ""; viewTime(); } });
     /* счётчик с клавиатуры: + и = — плюс один, − — минус (слушатель на самом ov: он не пересоздаётся при смене языка) */
     ov.addEventListener("keydown", function (ev) {
       if (tool !== "count" || (ev.target && /INPUT|TEXTAREA/.test(ev.target.tagName))) return;
@@ -1050,6 +1124,7 @@
       if ((ev === "stop" || ev === "gone") && !open) setTimeout(showPinned, 0);
       if (ev === "variant" || ev === "mood") { paint(); paintToday(true); if (tool === "sun" && open) showSun(); }
     });
+    tray.addEventListener("scroll", fitTray, { passive: true });
     setTimeout(function () { paint(); showPinned(); }, 500);
     /* полночь: вчерашнее главное гаснет само */
     setInterval(function () { paintToday(); }, 60000);

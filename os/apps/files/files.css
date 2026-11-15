@@ -293,7 +293,7 @@
   overflow: auto;
   margin: 0;
   padding: 10px 13px 13px;
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  font-family: "SB Smile", ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   font-size: var(--f-meta);
   line-height: var(--lh-read);
   white-space: pre-wrap;

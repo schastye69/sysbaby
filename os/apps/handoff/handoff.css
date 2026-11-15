@@ -54,7 +54,7 @@
   background: rgba(var(--film-rgb), .02);
 }
 .hf-url {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--f-meta); line-height: var(--lh-read);
+  font-family: "SB Smile", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--f-meta); line-height: var(--lh-read);
   color: var(--ink-2); overflow-wrap: anywhere; max-height: 7.2em; overflow-y: auto;
 }
 .hf-len { font-size: var(--f-meta); color: var(--ink-3); font-variant-numeric: tabular-nums; }

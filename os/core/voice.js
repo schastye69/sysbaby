@@ -131,7 +131,9 @@
   function px() { return phone() ? 19.5 : 21.5; }
   function wA() { return phone() ? 260 : 240; }
   function wF() { return phone() ? 365 : 340; }
-  function fcss(p, w) { return Math.round(w || wF()) + " " + (p || px()) + "px \"" + FONT + "\", system-ui, sans-serif"; }
+  /* «SB Smile» сразу за гранью голоса (D-941, D-1142): смайлик во фразе голоса — наш перламутр и на холсте;
+     грани «SB Voice» знаков смайлика не содержат, поэтому порядок не меняет рисунка. */
+  function fcss(p, w) { return Math.round(w || wF()) + " " + (p || px()) + "px \"" + FONT + "\", \"SB Smile\", system-ui, sans-serif"; }
   /* Грани шрифта голоса — здесь, а не @font-face в voice.css (доска H4, ark-check): адреса берутся у
      link rel="sb-precache" data-face (их же читает опись офлайна), Ковчег подменяет их data:-адресами,
      и файл без сети говорит тем же шрифтом. Грани: вес 200–700 (один шрифт интерфейса, D-829), кириллица / латиница. */

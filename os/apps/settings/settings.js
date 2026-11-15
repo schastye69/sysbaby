@@ -700,7 +700,6 @@
     if (rows.ty && p.how.ty === "none") open.push(t("set.meet.open.addr"));
     if (rows.rod && p.how.rod === "none") open.push(t("set.meet.open.rod"));
     if (rows.dom && p.how.dom === "none") open.push(t("set.meet.open.dom"));
-    var view = A.view ? A.view() : "lines";
     var sample = A.t("meet.sample.resume") + (lang === "en" ? "" : " · " + A.t("meet.thanks"));
     return '<h2 class="st-title">' + esc(t("set.tab.meet")) + "</h2>" +
       '<div id="stMeet" class="st-meet">' +
@@ -719,12 +718,6 @@
       '<h3 class="st-subtitle">' + esc(t("set.meet.pubTitle")) + "</h3>" +
       '<div class="st-group">' + rowMarkup(esc(t("set.meet.pub")), esc(t("set.meet.pubSub")),
         '<button type="button" class="st-switch' + (p.pub ? " on" : "") + '" role="switch" aria-checked="' + (p.pub ? "true" : "false") + '" id="stMeetPub" aria-label="' + esc(t("set.meet.pub")) + '">' + switchWords() + "</button>") + "</div>" +
-      '<h3 class="st-subtitle">' + esc(t("set.meet.timeTitle")) + "</h3>" +
-      '<div class="st-group">' + rowMarkup(esc(t("set.meet.time")), esc(t("set.meet.timeSub")),
-        '<span class="st-segment" role="group" aria-label="' + esc(t("set.meet.time")) + '">' + [["lines", "set.meet.time.lines"], ["dust", "set.meet.time.dust"]].map(function (o) {
-          var on = o[0] === view;
-          return '<button type="button" class="st-seg' + (on ? " active" : "") + '" aria-pressed="' + (on ? "true" : "false") + '" data-desktime="' + o[0] + '">' + esc(t(o[1])) + "</button>";
-        }).join("") + "</span>") + "</div>" +
       '<div class="st-note"><p>' + esc(t("set.meet.note")) + "</p></div>" +
       "</div>";
   }
@@ -746,9 +739,6 @@
     });
     var pub = pane.querySelector("#stMeetPub");
     if (pub) pub.addEventListener("click", function () { A.set({ pub: !A.pub() }); render(win); });
-    pane.querySelectorAll("[data-desktime]").forEach(function (b) {
-      b.addEventListener("click", function () { if (A.setView) A.setView(b.getAttribute("data-desktime")); render(win); });
-    });
     var again = pane.querySelector("#stMeetAgain");
     if (again) again.addEventListener("click", function () {
       if (window.closeWindow) window.closeWindow("settings");
@@ -760,7 +750,9 @@
     general: generalMarkup,
     meet: meetMarkup,
     appearance: appearanceMarkup,
-    account: function () { return '<h2 class="st-title">' + esc(t("set.tab.account")) + '</h2><div class="st-account" id="stAccountHost"></div>'; },
+    account: function () { return '<h2 class="st-title">' + esc(t("set.tab.account")) + '</h2><div class="st-account" id="stAccountHost"></div>' +
+      /* D-1261: бывшее приложение «Замок» — прибор, показывающий настоящий диск, — раскрывается здесь */
+      (window.sbVaultRoom ? '<details class="st-vaultroom" id="stVaultRoom"><summary>' + esc(window.sbVaultRoom.title()) + '</summary><div id="stVaultHost"></div></details>' : ""); },
     sound: soundMarkup,
     desktop: desktopMarkup,
     privacy: privacyMarkup,
@@ -816,6 +808,13 @@
 
     groupRows(host);
     if (section === "account" && typeof window.sbAccountDetails === "function") window.sbAccountDetails(host.querySelector("#stAccountHost"));
+    if (section === "account" && window.sbVaultRoom) {
+      var vr = host.querySelector("#stVaultRoom"), vh = host.querySelector("#stVaultHost");
+      if (vr && vh) {
+        var vfill = function () { var fresh = vh.cloneNode(false); vh.parentNode.replaceChild(fresh, vh); vh = fresh; if (vr.open) window.sbVaultRoom.render(vh); else vh.innerHTML = ""; win._stVaultOpen = vr.open; };
+        vr.open = !!win._stVaultOpen; vr.addEventListener("toggle", vfill); vfill();
+      }
+    }
     if (section === "outward" && typeof window.sbOutwardRender === "function") window.sbOutwardRender(host.querySelector("#stOutwardHost"));
     if (_sbKeep) _sbKeep();
 

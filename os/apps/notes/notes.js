@@ -346,8 +346,9 @@
       return '<div class="notes-row' + (n.id === activeId ? " active" : "") +
         (due && due.late ? " is-late" : (due && due.today ? " is-due" : "")) + '" data-id="' + esc(n.id) + '">' +
         /* Название и начало заметки — то, что написал сам посетитель. */
-        '<div class="notes-row-title" data-sb-userdata>' + esc(titleOf(n.text)) + "</div>" +
-        (preview ? '<div class="notes-row-prev" data-sb-userdata>' + esc(preview) + "</div>" : "") +
+        /* смайлик в списке — наш (шрифт SB Smile), чтец слышит имя чувства (D-945) */
+        '<div class="notes-row-title" data-sb-userdata>' + escSm(titleOf(n.text)) + "</div>" +
+        (preview ? '<div class="notes-row-prev" data-sb-userdata>' + escSm(preview) + "</div>" : "") +
         '<div class="notes-row-time">' + dueMark + esc(timeAgo(n.updatedAt)) + "</div>" +
         "</div>";
     }).join("") +
@@ -384,9 +385,9 @@
          предлагать того, чего не будет. Охраняется tools/hand-check.mjs. */
       /* ОБЩАЯ КНОПКА ПЕРЕДАЧИ (D-241). Разметка приходит из ядра: одна на
          все комнаты, иначе «один способ» становится тремя похожими. */
-      (window.sbSmiles ? '<button type="button" class="notes-smile" id="notesSmile" title="' + esc(t("nt.smileHint")) + '" aria-label="' + esc(t("nt.smile")) + '" aria-expanded="false">' + window.sbSmiles.svg("happy", "small") + "</button>" +
-        '<div class="notes-smiles" id="notesSmiles" role="group" aria-label="' + esc(t("nt.smile")) + '" hidden>' +
-        window.sbSmiles.list().map(function (x) { return '<button type="button" data-sm="' + x.ch + '" aria-label="' + x.ch + '">' + window.sbSmiles.svg(x.e, "big") + "</button>"; }).join("") + "</div>" : "") +
+      /* ОДНО МЕНЮ (D-943): кнопка записи открывает общее меню системы
+         (sbSmiles.menu) — своей палитры у Записей больше нет. */
+      (window.sbSmiles ? '<button type="button" class="notes-smile" id="notesSmile" title="' + esc(t("nt.smileHint")) + '" aria-label="' + esc(t("nt.smile")) + '" aria-haspopup="dialog" aria-expanded="false">' + window.sbSmiles.svg("happy", "small") + "</button>" : "") +
       (window.sbHand ? window.sbHand.menuHtml("запись", "notes") : "") +
       "</div>" +
       /* Копия говорит, откуда она и не устарела ли (D-267). */
@@ -395,23 +396,26 @@
          .notes-sheet — одни края, один радиус, без шва; заголовок отделён
          кеглем, весом и воздухом. */
       '<div class="notes-sheet">' +
-      '<input type="text" class="notes-title" id="noteTitleInput" placeholder="' + esc(t("nt.ph.title")) + '" spellcheck="false" autocomplete="off" value="' + esc(title) + '">' +
+      '<input type="text" class="notes-title" id="noteTitleInput" data-sm-key placeholder="' + esc(t("nt.ph.title")) + '" spellcheck="false" autocomplete="off" value="' + esc(title) + '">' +
       /* The leading newline compensates for the one HTML parsing eats right
        * after <textarea>. Without it a note written as "Title\n\nbody" would
        * silently lose its blank line the next time it was edited. */
-      /* ЖИВЫЕ СМАЙЛИКИ (D-590). Запись остаётся текстом с эмодзи; пока человек
-         не пишет, поверх поля лежит живой вид (.notes-live), где эмодзи —
-         живые смайлики; касание — снова поле. Кнопка-смайлик открывает
-         палитру: коротко — маленький в строку, долго — большой отдельной
-         строкой. Стережёт tools/smiles-check.mjs. */
+      /* СМАЙЛИКИ (D-590, D-940…D-943). Запись остаётся текстом со знаком
+         смайлика; в поле знак рисует наш шрифт SB Smile — и при наборе, и в
+         покое; в покое поверх поля ещё и живой слой ядра (sbSmiles.field),
+         совпадающий с полем до точки. Стерегут tools/smiles-check.mjs и
+         tools/smiles-one-check.mjs. */
       '<div class="notes-bodywrap">' +
-      '<textarea class="notes-body" id="noteBodyInput" autocomplete="off" placeholder="' + esc(t("nt.ph.body")) + '">\n' + esc(body) + "</textarea>" +
-      '<div class="notes-live" aria-hidden="true"></div></div></div>';
+      '<textarea class="notes-body" id="noteBodyInput" data-sm-key autocomplete="off" placeholder="' + esc(t("nt.ph.body")) + '">\n' + esc(body) + "</textarea>" +
+      "</div></div>";
   }
 
   /* Запись как вещь: первая строка — имя, остальное — текст. Одна мерка и
      для передачи, и для ответа «какая вещь у меня сейчас» (D-267): две
      мерки разошлись бы, и копия считала бы себя устаревшей без причины. */
+  /* Текст строки списка: смайлик — с именем для чтеца (D-945). */
+  function escSm(x) { return window.sbSmiles && window.sbSmiles.html ? window.sbSmiles.html(x) : esc(x); }
+
   function noteThing(note) {
     var lines = String(note.text == null ? "" : note.text).split("\n");
     return { kind: "запись", name: (lines[0] || "").trim(),
@@ -602,71 +606,28 @@
     }
     if (titleEl) titleEl.addEventListener("input", onEdit);
     if (bodyEl) bodyEl.addEventListener("input", onEdit);
-    if (bodyEl) wireSmiles(host, bodyEl);
+    if (bodyEl) wireSmiles(host, bodyEl, titleEl);
   }
 
-  /* ── ЖИВЫЕ СМАЙЛИКИ В ЗАПИСИ (D-590) ──────────────────────────────────── */
-  var LONG_MS = 450;
-  function wireSmiles(host, bodyEl) {
+  /* ── СМАЙЛИКИ В ЗАПИСИ (D-590 → D-943) ─────────────────────────────────
+     Палитра, вставка и живой вид — у ядра (core/smiles.js), одни на систему.
+     Здесь только: какое поле записи ждёт смайлик (последнее в фокусе —
+     название или текст) и кнопка, которая зовёт общее меню. */
+  function wireSmiles(host, bodyEl, titleEl) {
     var S = window.sbSmiles;
-    var wrap = host.querySelector(".notes-bodywrap"), live = host.querySelector(".notes-live");
-    var btn = host.querySelector("#notesSmile"), pal = host.querySelector("#notesSmiles");
-    if (!S || !wrap || !live) return;
-    function paint() {
-      var on = S.has(bodyEl.value) && document.activeElement !== bodyEl;
-      wrap.classList.toggle("has-sm", on);
-      if (on) live.innerHTML = S.render(bodyEl.value);
-      else live.innerHTML = "";
-    }
-    bodyEl.addEventListener("focus", function () { wrap.classList.add("editing"); paint(); });
-    bodyEl.addEventListener("blur", function () { wrap.classList.remove("editing"); paint(); });
-    bodyEl.addEventListener("input", function () { if (document.activeElement !== bodyEl) paint(); });
-    live.addEventListener("click", function () { try { bodyEl.focus(); } catch (e) { /* ignore */ } });
-    paint();
-    if (!btn || !pal) return;
-    var caret = null;
-    function keepCaret() { if (document.activeElement === bodyEl) caret = [bodyEl.selectionStart, bodyEl.selectionEnd]; }
-    bodyEl.addEventListener("keyup", keepCaret); bodyEl.addEventListener("click", keepCaret); bodyEl.addEventListener("blur", keepCaret);
-    btn.addEventListener("pointerdown", keepCaret);
-    btn.addEventListener("click", function () {
-      pal.hidden = !pal.hidden;
-      btn.setAttribute("aria-expanded", pal.hidden ? "false" : "true");
+    if (!S || !S.menu) return;
+    var last = bodyEl;
+    [titleEl, bodyEl].forEach(function (el) {
+      if (!el) return;
+      S.field(el);
+      el.addEventListener("focus", function () { last = el; });
     });
-    function put(ch, big) {
-      var v = bodyEl.value, a = caret ? caret[0] : v.length, b = caret ? caret[1] : v.length;
-      var ins = ch;
-      if (big) {
-        var before = v.slice(0, a), after = v.slice(b);
-        ins = (before && !/\n$/.test(before) ? "\n" : "") + ch + (after && !/^\n/.test(after) ? "\n" : "");
-      }
-      bodyEl.value = v.slice(0, a) + ins + v.slice(b);
-      var at = a + ins.length;
-      caret = [at, at];
-      bodyEl.dispatchEvent(new Event("input"));
-      try { bodyEl.focus(); bodyEl.setSelectionRange(at, at); } catch (e) { /* ignore */ }
-      pal.hidden = true;
-      btn.setAttribute("aria-expanded", "false");
-    }
-    pal.addEventListener("pointerdown", function (ev) {
-      var b = ev.target.closest && ev.target.closest("[data-sm]");
-      if (!b) return;
-      ev.preventDefault();
-      var long = false;
-      var tm = setTimeout(function () { long = true; b.classList.add("go"); put(b.getAttribute("data-sm"), true); }, LONG_MS);
-      var up = function () {
-        clearTimeout(tm);
-        b.removeEventListener("pointerup", up); b.removeEventListener("pointerleave", cancel);
-        if (!long) put(b.getAttribute("data-sm"), false);
-      };
-      var cancel = function () { clearTimeout(tm); b.removeEventListener("pointerup", up); b.removeEventListener("pointerleave", cancel); };
-      b.addEventListener("pointerup", up); b.addEventListener("pointerleave", cancel);
-    });
-    /* С клавиатуры: Enter — в строку, Shift+Enter — большой отдельной строкой. */
-    pal.addEventListener("keydown", function (ev) {
-      var b = ev.target.closest && ev.target.closest("[data-sm]");
-      if (!b || ev.key !== "Enter") return;
-      ev.preventDefault();
-      put(b.getAttribute("data-sm"), ev.shiftKey);
+    var btn = host.querySelector("#notesSmile");
+    if (!btn) return;
+    /* касание кнопки не уводит фокус из поля: клавиатура телефона не падает */
+    btn.addEventListener("pointerdown", function (ev) { if (document.activeElement === bodyEl || document.activeElement === titleEl) ev.preventDefault(); });
+    btn.addEventListener("click", function (ev) {
+      S.menu.toggle({ field: last, anchor: btn, keyboard: ev.detail === 0 });
     });
   }
 

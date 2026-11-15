@@ -51,7 +51,7 @@ html.sb-voice-over-dock #toastLayer.sb-voice-layer { bottom: var(--desk-row-b); 
 /* строка: те же буквы того же шрифта, прозрачные — места, перенос и кернинг считает браузер */
 /* Кегль голоса — как в утверждённом демо «живой»: 31 px на широком планшете (1728), не меньше 21,5 на средних (D-823). */
 .sb-vl {
-  position: relative; display: inline-block; max-width: 100%; margin: 0; font: 340 clamp(21.5px, 1.8vw, 31px)/1.5 "SB Voice", system-ui, sans-serif; letter-spacing: .01em;
+  position: relative; display: inline-block; max-width: 100%; margin: 0; font: 340 clamp(21.5px, 1.8vw, 31px)/1.5 "SB Voice", "SB Smile", system-ui, sans-serif; letter-spacing: .01em;   /* «SB Smile» — как у холста (fcss, D-941, D-1142) */
   color: transparent; text-wrap: balance; -webkit-font-smoothing: antialiased; font-kerning: normal;
   font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0, "clig" 0;
   pointer-events: auto; cursor: default; user-select: none; -webkit-user-select: none;

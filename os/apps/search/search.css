@@ -37,7 +37,7 @@
 
 .sk-kbd {
   flex: 0 0 auto;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: "SB Smile", ui-monospace, "SF Mono", Menlo, monospace;
   font-size: var(--f-micro);
   /* Окно крупнее (D-634) ложится на более светлый участок стола: третьи
      чернила давали 4.45 — подпись клавиши взяла вторые (light-contrast). */

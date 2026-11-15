@@ -79,15 +79,10 @@
 @media (hover: hover) { :where(html:not([data-input="touch"])) #sbDeskTools .dt-key:hover::before { opacity: .7; } }
 #sbDeskTools .dt-key:focus-visible { outline: 1px solid rgba(var(--dt-c), .5); outline-offset: -8px; }
 
-/* пыль света: знак набран точками — тот же свет, что у цифр пыли */
-#sbDeskTools[data-view="dust"] .dt-key,
-#sbDeskTools[data-view="dust"] .dt-word {
-  color: transparent; text-shadow: none; font-weight: var(--w-strong);
-  background-image: radial-gradient(circle, rgba(var(--dt-c), .95) .85px, rgba(var(--dt-c), 0) 1.35px);
-  background-size: 3px 3px; -webkit-background-clip: text; background-clip: text;
-  filter: drop-shadow(0 0 5px rgba(var(--dt-g), .55));
-}
-#sbDeskTools[data-view="dust"] .dt-key { font-weight: var(--w-text); }
+/* ПЫЛЬ — ТОЛЬКО У КРУПНОГО (D-1240, основатель 14.11: «в инструментах не нужно выбор пыль или линии света»).
+   Выбора «линии · пыль» в инструментах нет (он только в Настройках, по умолчанию «линии»). Клавиши, слова,
+   действия, подсказки и подписи — всегда чёткий текст цвета «линий»; пылью рисуются только крупные цифры
+   и строка света на холсте. */
 
 /* слова инструментов и действий — строчные, светом; нажатое — ярче, без плашки */
 #sbDeskTools .dt-tray, #sbDeskTools .dt-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; }
@@ -131,9 +126,8 @@ html.is-touch #sbDeskTools .dt-field { font-size: max(16px, var(--f-lead)); }
 html[data-motion="reduced"] #sbDeskTools .dt-block { animation: none; opacity: 1; }
 html[data-motion="reduced"] #sbDeskTools .dt-keys, html[data-motion="reduced"] #sbDeskTools .dt-word { transition: none; }
 
-/* ── тихие слова внизу инструмента: закрепить · линии · пыль (D-890, D-898) ── */
+/* ── тихие слова внизу инструмента: закрепить · закрыть (D-890, D-1240) ── */
 #sbDeskTools .dt-foot { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0 18px; margin-top: -4px; }
-#sbDeskTools .dt-view { display: inline-flex; align-items: baseline; gap: 0 6px; }
 #sbDeskTools .dt-dot { color: rgba(var(--dt-c), .4); font-size: var(--f-ui); }   /* было 12 px; ступень шкалы (type-scale, H4b) */
 #sbDeskTools .dt-quiet {
   min-height: 32px; padding: 0 2px; border: 0; background: transparent; cursor: pointer; text-transform: lowercase;
@@ -193,3 +187,28 @@ html.sb-tools-wide #sbIconLayer { opacity: 0; visibility: hidden; transition: op
 #sbDeskTools.land .dt-pane { gap: 6px; }
 #sbDeskTools.land .dt-linebox { position: fixed; left: 16px; top: var(--dt-ltop); width: calc(50% - 24px); }
 #sbDeskTools.land .dt-hit { position: fixed; left: 16px; top: var(--dt-htop); width: calc(50% - 24px); right: auto; }
+
+/* ---- D-1262: таймер · секундомер · будильник — режимы ряда ---- */
+#sbDeskTools .dt-ico { width: 15px; height: 15px; margin-right: 5px; vertical-align: -2px; flex: none; shape-rendering: geometricPrecision; filter: none; }
+#sbDeskTools .dt-word { white-space: nowrap; }
+#sbDeskTools .dt-laps { min-height: 0; font: var(--w-text) var(--f-ui)/var(--lh-one) var(--font); color: rgba(var(--dt-c), .78); white-space: pre; }
+#sbDeskTools .dt-laps:empty { display: none; }
+#sbDeskTools .dt-time { width: 7.2em; text-align: center; }
+/* D-1287: два ровных ряда по центру (6 + 5) на любой ширине; на телефоне знак над словом, без прокрутки */
+#sbDeskTools .dt-tray .dt-br { flex-basis: 100%; height: 0; }
+/* узкий столбец (телефон и половина экрана лёжа): шесть в ряд, знак над словом, низкая строка — блок не растёт */
+@media (max-width: 700px) {
+  #sbDeskTools .dt-tray { flex-wrap: wrap; justify-content: center; gap: 2px 0; max-width: 100%; overflow: visible; }
+  #sbDeskTools .dt-tray > .dt-word { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: calc((100% - 2px) / 6); min-width: 0; min-height: 40px; padding: 0; font-size: var(--f-meta); text-align: center; }
+  #sbDeskTools .dt-tray > .dt-word .dt-ico { width: 18px; height: 18px; margin: 0; }
+  /* второй ряд стоит места: на телефоне блок собран плотнее, чтобы будильник и таймер оставались в одном экране */
+  #sbDeskTools .dt-tray { gap: 0; }
+  #sbDeskTools .dt-tray > .dt-word { min-height: 36px; }
+  #sbDeskTools .dt-block { gap: 8px; }
+  #sbDeskTools .dt-pane { gap: 6px; }
+  #sbDeskTools:is([data-tool="alarm"], [data-tool="timer"], [data-tool="stopwatch"]) .dt-block { gap: 4px; }
+  #sbDeskTools:is([data-tool="alarm"], [data-tool="timer"], [data-tool="stopwatch"]) .dt-pane { gap: 2px; }
+}
+#sbDeskTools.land .dt-tray { flex-wrap: wrap; justify-content: center; gap: 0; max-width: 100%; overflow: visible; }
+#sbDeskTools.land .dt-tray > .dt-word { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: calc((100% - 2px) / 6); min-width: 0; min-height: 36px; padding: 0; font-size: var(--f-meta); text-align: center; }
+#sbDeskTools.land .dt-tray > .dt-word .dt-ico { width: 18px; height: 18px; margin: 0; }

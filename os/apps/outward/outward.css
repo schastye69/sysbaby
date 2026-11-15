@@ -38,7 +38,7 @@
   color: var(--ink-2); padding-top: 3px; white-space: nowrap;
 }
 .ow-facts dd { margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); }
-.ow-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--f-meta); overflow-wrap: anywhere; }
+.ow-mono { font-family: "SB Smile", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--f-meta); overflow-wrap: anywhere; }
 
 .ow-switch { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 2px; }
 .ow-sw {

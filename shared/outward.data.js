@@ -329,6 +329,42 @@ window.SB_OUTWARD = {
         "en": "Your browser's location service (Google for Chrome, Apple for Safari) — and only when you pressed “Where am I” and allowed access to your location.",
         "ee": "Sinu brauseri asukohateenus (Chrome'il Google, Safaril Apple) — ja ainult siis, kui vajutasid «Kus ma olen» ja lubasid asukohale juurdepääsu."
       }
+    },
+    {
+      "id": "smiles-sets",
+      "title": {
+        "ru": "Смайлики — свои наборы и окно наборов",
+        "en": "Smileys — the system's own sets and the sets window",
+        "ee": "Emotikonid — süsteemi enda komplektid ja komplektide aken"
+      },
+      "where": [
+        "os/core/smiles.js:260",
+        "os/core/smiles.js:546"
+      ],
+      "side": "self",
+      "byHand": false,
+      "host": "",
+      "noToggleWhy": {
+        "ru": "Выключателя нет: это файлы самой системы — стили наборов смайликов и страница выбора набора с того же адреса. Чужих хозяев здесь нет.",
+        "en": "There is no switch: these are the system's own files — the smiley set styles and the set-picking page from the same address. No outside owners here.",
+        "ee": "Lülitit pole: need on süsteemi enda failid — emotikonikomplektide stiilid ja komplekti valiku leht samalt aadressilt. Võõraid omanikke siin pole."
+      },
+      "what": {
+        "ru": "Запрос за стилями набора смайликов и за страницей наборов — с того же адреса, что и вся система.",
+        "en": "A request for a smiley set's styles and for the sets page — from the same address as the whole system.",
+        "ee": "Päring emotikonikomplekti stiilide ja komplektide lehe järele — samalt aadressilt kui kogu süsteem."
+      },
+      "who": {
+        "ru": "Тот, кто держит sys.baby, и посредник сети. Ни одного чужого хозяина.",
+        "en": "Whoever hosts sys.baby, and the network intermediary. Not a single outside owner.",
+        "ee": "See, kes sys.baby-d hoiab, ja võrgu vahendaja. Mitte ühtegi võõrast omanikku."
+      },
+      "default": "on",
+      "defaultWhy": {
+        "ru": "Свой адрес, чужих хозяев нет; выключателя нет — см. причину рядом.",
+        "en": "On by default: our own address, no outside owners; there is no switch — see the reason beside it.",
+        "ee": "Vaikimisi sees: oma aadress, võõraid omanikke pole; lülitit pole — vaata põhjust kõrval."
+      }
     }
   ]
 };

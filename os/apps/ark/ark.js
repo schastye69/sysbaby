@@ -376,6 +376,8 @@
           /* Предзагрузка шрифта — подсказка сети; у файла сети нет. Опись шрифта — тот же шрифт data:-адресом. */
           if (PRELOAD_FONT_RE.test(m)) return "";
           var fh = hrefOf(m);
+          /* Опись офлайна (наборы смайликов, оверлей-страница) — это адреса для сети; у файла сети нет, ссылка наружу была бы лишней (D-1280). */
+          if (PRECACHE_RE.test(m) && !/\.woff2$/i.test(fh)) return "";
           if (PRECACHE_RE.test(m) && fontData[fh]) return m.replace('href="' + fh + '"', 'href="' + fontData[fh] + '"');
           return m;
         });

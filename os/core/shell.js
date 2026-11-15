@@ -2391,7 +2391,7 @@
      тоже по содержимому — пустое Хранилище было пустым стеклом на 62 % окна, Общее — на 43 %. Хранилище
      растёт с вещами (MutationObserver), Настройки (2) — растут под длинный раздел, но не сжимаются при
      переходе между разделами. Записи и Разговор — по-прежнему во всю высоту. */
-  var FIT_ROOMS = { keys: 1, vault: 1, handoff: 1, lantern: 1, echoes: 1, search: 1, outward: 1, files: 1, settings: 2 };
+  var FIT_ROOMS = { keys: 1, handoff: 1, lantern: 1, echoes: 1, search: 1, outward: 1, files: 1, settings: 2 };
   function fitWindow(win) {
     var el = win.el, body = el.querySelector(".window-body");
     if (!body) return;
@@ -3266,7 +3266,16 @@
     }, { passive: true });
   }());
 
+  /* D-1261: «Замок» — не приложение. Любая старая дорога к нему (поиск, голос, ?open=vault,
+     значок из памяти) приводит в Настройки → «ключи и замок», а не в несуществующее окно. */
   function toggleApp(id) {
+    if (id === "vault" && !apps.vault) {
+      if (typeof window.sbOpenAccountAt === "function") {
+        /* старая дорога вела к «прибору» замка — он раскрыт в том же разделе */
+        window.sbOpenAccountAt("#sbLockP1, #sbLockCur").then(function () { var d = doc.getElementById("stVaultRoom"); if (d && !d.open) d.open = true; });
+      } else if (apps.settings) toggleApp("settings");
+      return;
+    }
     var def = apps[id];
     if (!def) return;
     if (typeof def.onOpen === "function") { try { def.onOpen(); } catch (e) { if (window.console) console.error(e); } }
@@ -3856,6 +3865,8 @@
       placesEpoch = storeEpoch();
       var v = readJSON("sysbaby.icons.pos", {});
       iconPlaces = (v && typeof v === "object" && !Array.isArray(v)) ? v : {};
+      /* D-1261: места значка бывшего «Замка» тихо снимаются; чужие места не трогаются */
+      if (Object.prototype.hasOwnProperty.call(iconPlaces, "vault")) { delete iconPlaces.vault; writeJSON("sysbaby.icons.pos", iconPlaces); }
       /* Записи прошлых версий (доли) переводятся в клетки ОДИН РАЗ, при
          чтении: у кого стол уже расставлен, тот не должен ничего чинить
          руками. Тот же приём, что у места кнопки действия (v54). */
@@ -6974,7 +6985,8 @@
     var m = /[?&]open=([a-z]+)/.exec(entrySearch());
     if (!m) return;
     var id = m[1];
-    setTimeout(function () { if (apps[id]) toggleApp(id); }, 350);
+    /* ОТКАТ: это условие, а не значение — «Замок» не приложение (D-1261), но ссылка ?open=vault по-прежнему ведёт в его комнату. */
+    setTimeout(function () { if (apps[id] || id === "vault") toggleApp(id); }, 350);
   }
 
   /* =============================================================== bootstrap */

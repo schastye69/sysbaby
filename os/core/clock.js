@@ -225,8 +225,16 @@
     if (b.dataset.nav) { calShift += +b.dataset.nav; paintCal(); return; }
     if (b.dataset.day) { var v = viewMonth(); dayNote(new Date(v.getFullYear(), v.getMonth(), +b.dataset.day)); return; }
     if (b.dataset.ms) { timerSet = +b.dataset.ms; if (i.mode === "timer" && !i.done) startTimer(timerSet, timerName); paintTimer(); return; }
-    var t = b.dataset.t, s = b.dataset.s, a = b.dataset.a, a2 = b.dataset.a2;
-    if (t === "go") { timerName = (q(".ck-tname").value || "").trim(); startTimer(timerSet, timerName); }
+    act2(b.dataset);
+  }
+  /* D-1262: одно дело для двух экранов — панель часов и режимы «таймер · секундомер · будильник» в
+     инструментах стола зовут ЭТУ функцию (d: ms | t | s | a | a2 | at, + name). Состояние одно:
+     таймер, начатый в инструментах, — тот же таймер в панели; запись будильника системы одна. */
+  function act2(d) {
+    var i = DT.info();
+    if (d.ms) { timerSet = +d.ms; if (i.mode === "timer" && !i.done) startTimer(timerSet, timerName); paintTimer(); return; }
+    var t = d.t, s = d.s, a = d.a, a2 = d.a2;
+    if (t === "go") { timerName = String(d.name != null ? d.name : (q(".ck-tname").value || "")).trim(); startTimer(timerSet, timerName); }
     if (t === "pause") { DT.pause(); forget(); }
     if (t === "on") { var r = DT.info(); DT.resume(); remember("timer", Date.now() + Math.max(0, r.total - r.v), r.label); }
     if (s === "pause") DT.pause();
@@ -241,6 +249,7 @@
       if (at < new Date()) at = new Date(at.getTime() + 86400000);
       alarmAt = at;
     }
+    if (d.at) { var hh = /^(\d{1,2}):(\d{2})$/.exec(String(d.at)); if (hh) { var ad = new Date(); ad.setHours(+hh[1] % 24, +hh[2], 0, 0); if (ad < new Date()) ad.setDate(ad.getDate() + 1); alarmAt = ad; } }
     if (a2 === "go") { var at2 = alarmTarget(); DT.alarm(at2 - Date.now(), hm(at2)); remember("alarm", at2.getTime(), hm(at2)); }
     paintTimer(); paintSW(); paintAlarm(); paintRun(); deskCy();
   }
@@ -339,7 +348,17 @@
   window.sbClock = {
     open: function (t) { if (t) tab = t; if (api) api.open(); },
     close: function () { if (api) api.close(); },
-    isOpen: isOpen
+    isOpen: isOpen,
+    /* D-1262: тот же таймер · секундомер · будильник — для режимов в инструментах стола */
+    ctl: {
+      ready: function () { return !!(panel && DT); },
+      act: function (d) { if (panel && DT) act2(d || {}); },
+      state: function () {
+        return { timerSet: timerSet, timerName: timerName, alarmAt: alarmAt ? alarmAt.getTime() : null, laps: laps.slice() };
+      },
+      alarmAt: function () { return alarmTarget().getTime(); },
+      onChange: function (f) { if (DT) DT.on(f); }
+    }
   };
 
   var tries = 0, iv = setInterval(function () {

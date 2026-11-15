@@ -255,3 +255,8 @@ html.sb-fullscreen-window #topbar#topbar, html.sb-fullscreen-window #topbar#topb
   #topbar#topbar :is(.tb-mark, .tb-btn:not([hidden]), .tb-clock-btn, .tb-lang-now, .seq-item) { padding: 0 8px; }
   #topbar .tb-right { flex: none; }
 }
+
+/* D-1241 (основатель 14.11.2026: «на весь экран долго была темнота, выход находил вслепую»): окно на весь экран никогда не
+   оставляет человека в темноте — плотная подложка цвета стола под стеклом и видимые кнопки окна на любом фоне. */
+.window.fullscreen { background-color: var(--wp-f2); }   /* --wp-f2 есть у каждой темы: свой откат не нужен */
+.window.fullscreen .titlebar .light, .window.fullscreen .light.close, .window.fullscreen .light.min, .window.fullscreen .light.zoom { background-color: /* своя краска: кнопки окна видны на любом фоне — белая дымка без цвета темы (D-1241) */ rgba(255, 255, 255, .16); box-shadow: /* своя краска: тонкий белый ободок кнопки на любом фоне (D-1241) */ 0 0 0 1px rgba(255, 255, 255, .22); }

@@ -2,8 +2,7 @@
  * ВРЕМЯ НА СТОЛЕ · решение D-854 (основатель 10.11.2026; демо dom-moy-B,
  * утверждено 11.11). Пока идёт таймер, секундомер или будильник, время
  * рисуется светом прямо в фоне стола — за окнами и под значками (холст живёт
- * внутри .wp-layer). Два вида, оба утверждены: «линии света» (line) и «пыль
- * света» (dust). Выбор — ТОЛЬКО в Настройках (П2): слово устройства
+ * внутри .wp-layer). Вид один — «линии света» (D-1260: «пыль света» убрана). Старое слово устройства
  * sysbaby.desktime.view; Настройки пишут его и шлют window-событие
  * sb:desktime ({ view }) — вид меняется без перезагрузки.
  * МЕСТО — верх или центр стола: низ занимает голос дома. Под открытой
@@ -89,7 +88,7 @@
   }
 
   /* ---------- вид: слово устройства ---------- */
-  function readView() { var v = null; try { v = window.localStorage.getItem(VIEW_KEY); } catch (e) { v = null; } return v === "dust" ? "dust" : "line"; }
+  function readView() { var v = null; try { v = window.localStorage.getItem(VIEW_KEY); } catch (e) { v = null; } return "line"; }   /* D-1260: «пыли» на крупных цифрах больше нет; старое сохранённое "dust" молча читается как "line" */
 
   /* ---------- состояние ---------- */
   var cv, ctx, W = 0, H = 0, dpr = 1, Hd = 84, S = 1, cache = {}, variant = readView(), mode = null;
@@ -143,8 +142,6 @@
       unit(x); blur(x, 16 * S); strokeG(x, ch, 13 * S, rgba(P.g, 0.2));
       blur(x, 5 * S); strokeG(x, ch, 5 * S, rgba(P.g, 0.42)); blur(x, 0);
       if (kind === "lineFull") { strokeG(x, ch, 3.2 * S, rgba(P.c, 0.3)); strokeG(x, ch, 1.4 * S, rgba(P.c, 0.95)); }
-    } else if (kind === "dustGlow") {
-      unit(x); blur(x, 0.09 * Hd); strokeG(x, ch, 0.13 * Hd, rgba(P.g, 0.16)); blur(x, 0);
     }
     return (cache[key] = c);
   }
@@ -222,54 +219,6 @@
       put(glyph("lineGlow", n.ch), n, Math.pow(t, 1.6)); traceCore(n, n.ch, 0, t, 1); tip(n, n.ch, t, 0.9 * bell(e));
     }
   }
-  /* ---------- пыль света: цифры из пылинок; на смене секунды пыль перетекает в новую цифру ---------- */
-  var NP = 120, NC = 22, PTS = {};
-  function rnd(i) { var x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
-  function pts(ch) {
-    if (PTS[ch]) return PTS[ch]; var n = ch === ":" ? NC : NP, out = [];
-    for (var i = 0; i < n; i++) {
-      var p = ptAt(ch, ch === ":" ? (i < n / 2 ? 0 : 1) : (i + 0.5) / n), j = ch === ":" ? 0.035 : 0.013, a = rnd(i + 7) * 6.283, r = Math.sqrt(rnd(i + 3)) * j;
-      out.push([p[0] + Math.cos(a) * r, p[1] + Math.sin(a) * r]);
-    }
-    return (PTS[ch] = out);
-  }
-  /* стоящая цифра пыли — один раз в свой холст: на смене секунды пересыпаются только меняющиеся цифры */
-  function dustStill(ch, i) {
-    var key = "ds" + i + ch, c = cache[key]; if (c) return c;
-    c = mk(ch); var x = c.getContext("2d"), sp = sprite(), Pn = pts(ch), g = glyph("dustGlow", ch);
-    x.drawImage(g, 0, 0); x.globalCompositeOperation = "lighter";
-    for (var k = 0; k < Pn.length; k++) {
-      var seed = i * 1000 + k, sz = (5 + 6 * rnd(seed)) * S, px = (PAD + Pn[k][0]) * Hd, py = (PAD + Pn[k][1]) * Hd;
-      x.globalAlpha = cl(0.5 + 0.4 * rnd(seed + 9)); x.drawImage(sp, (px - sz / 2) * dpr, (py - sz / 2) * dpr, sz * dpr, sz * dpr);
-    }
-    return (cache[key] = c);
-  }
-  function vDust(st, A, B, E) {
-    var i, k;
-    ctx.globalCompositeOperation = "lighter";
-    for (i = 0; i < B.length; i++) {
-      if (B[i].ch === " ") continue;
-      var n = B[i], o = A[i] && A[i].ch !== " " ? A[i] : null, moving = o && o.ch !== n.ch && st.e < 1, t = sm(st.e), Pn = pts(n.ch), Po = moving ? pts(o.ch) : null;
-      if (E == null && !moving) { put(dustStill(n.ch, i), n, !o && st.appear && st.e < 1 ? sm(st.e) : 1); continue; }
-      if (E != null) put(glyph("dustGlow", n.ch), n, 1 - sm(E / 1800));
-      else { put(glyph("dustGlow", o.ch), o, 1 - t); put(glyph("dustGlow", n.ch), n, t); }
-      for (k = 0; k < Pn.length; k++) {
-        var seed = i * 1000 + k, sz = (5 + 6 * rnd(seed)) * S, x = n.x + Pn[k][0] * Hd, y = n.y + Pn[k][1] * Hd, al = 0.5 + 0.4 * rnd(seed + 9);
-        if (E != null) {
-          var d = 300 + 1600 * rnd(seed + 2), q = Math.max(0, E - d) / 1000;
-          y -= (14 + 26 * rnd(seed + 4)) * S * Math.pow(q, 1.25); x += Math.sin(q * (0.6 + rnd(seed + 5)) + seed) * 6 * S * q;
-          al *= 1 - sm((E - d) / (2600 + 2600 * rnd(seed + 6)));
-        } else {
-          var ox = o.x + Po[k][0] * Hd, oy = o.y + Po[k][1] * Hd, w = sm(cl((st.e - 0.25 * rnd(seed + 1)) / 0.75)), bend = Math.sin(Math.PI * w) * Hd * 0.12 * (rnd(seed + 8) - 0.5);
-          var dx = x - ox, dy = y - oy, L = Math.sqrt(dx * dx + dy * dy) || 1;
-          x = ox + dx * w - dy / L * bend; y = oy + dy * w + dx / L * bend; al *= 0.85 + 0.3 * bell(w);
-        }
-        dot(x, y, sz, al);
-      }
-    }
-    ctx.globalCompositeOperation = "source-over";
-  }
-
   /* ---------- кадр ---------- */
   var raf = 0, tmo = 0, listeners = [];
   function emit(ev) { listeners.forEach(function (f) { try { f(ev); } catch (e) { /* слушатель не роняет кадр */ } }); }
@@ -310,7 +259,7 @@
       if (A.length !== B.length) A = [];
       var cY = cy + Hd * 0.5 + 34 * S, EE = E;
       if (rm && E != null) E = null;   /* неподвижно: «0:00» и подпись, без угасания */
-      if (variant === "dust") vDust(st, A, B, E); else vLine(st, A, B, E);
+      vLine(st, A, B, E);
       var lbl = T(mode === "timer" ? "desk.t.timer" : mode === "stopwatch" ? "desk.t.sw" : "desk.t.alarm") + (label ? " · " + label : "");
       if (pausedAt != null) lbl += " · " + T("desk.t.paused");
       if (st.done) {
@@ -339,7 +288,7 @@
       lastKey = key; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); cyDrawn = CY; painted++;
       var st = { e: e, appear: true }, A = slots(tool.prev, CW / 2, CY), B = slots(tool.str, CW / 2, CY);
       if (A.length !== B.length) A = [];
-      if (variant === "dust") vDust(st, A, B, null); else vLine(st, A, B, null);
+      vLine(st, A, B, null);
       var cY = CY + (tool.str ? Hd * 0.5 + 34 * S : 0);
       /* подпись может лечь в две строки на телефоне — вторая встаёт под неё, а не на неё */
       var capH1 = caption(tool.label, cY, 1) || 38, capH2 = capH(tool.sub);
@@ -373,7 +322,7 @@
     kick();
   }
   function retheme() { cache = {}; lastKey = ""; kick(); emit("mood"); }
-  function setView(k) { var nv = k === "dust" ? "dust" : "line"; if (nv === variant) return; variant = nv; lastKey = ""; kick(); emit("variant"); }
+  function setView() { variant = "line"; lastKey = ""; kick(); }
 
   var api = {
     Hd: function () { return Hd; }, S: function () { return S; },
