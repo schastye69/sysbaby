@@ -456,7 +456,23 @@
   function notifSave(list) { writeJSON(NOTIF_KEY, list.slice(0, 30)); }
 
   /* важное, которого ещё не коснулись, считается, пока его не прочитали (D-814) */
-  function unseenCount() { return notifList().filter(function (n) { return !n.seen || (n.safe && !n.read); }).length; }
+  /* ИЗВЕЩЕНИЕ НА ЭКРАНЕ КОЛОКОЛЬЧИК НЕ СЧИТАЕТ (H4e, D-1304; основатель 15.11.2026, демо стола): пока строка
+     видна, она сама и есть извещение — то же число в колокольчике было бы вторым показом одного и того же.
+     Ушла непрочитанной (сама, смахнули, Esc) — встаёт в колокольчик; прочли касанием или кнопкой — отмечена. */
+  var ONSCREEN = {};
+  window.sbNotifLive = function (id, on, read) {
+    if (!id) return;
+    if (on) { ONSCREEN[id] = 1; paintBell(); return; }
+    delete ONSCREEN[id];
+    if (read) {
+      var list = notifList(), hit = false;
+      list.forEach(function (n) { if (n.id === id && !n.safe) { n.seen = true; hit = true; } });
+      if (hit) notifSave(list);
+    }
+    paintBell();
+    if (notifPanel && notifPanel.isOpen()) paintNotifPanel();
+  };
+  function unseenCount() { return notifList().filter(function (n) { return !ONSCREEN[n.id] && (!n.seen || (n.safe && !n.read)); }).length; }
   function paintBell() {
     var badge = $("#sbBellBadge");
     if (!badge) return;
@@ -490,7 +506,12 @@
     if (kind !== "event") return;
     /* голос уже записал сам — с ключами слов и пометкой важного (D-813) */
     if (node.hasAttribute("data-voice-logged") || node.hasAttribute("data-voice-warm")) return;
-    record({ title: node.getAttribute("data-title") || "", text: node.getAttribute("data-text") || "" });
+    var id = record({ title: node.getAttribute("data-title") || "", text: node.getAttribute("data-text") || "" });
+    /* D-1304: пока плашка на экране — не в счёт; кнопка плашки — прочитано */
+    if (id && node.isConnected) {
+      node.setAttribute("data-notif-id", id); window.sbNotifLive(id, true);
+      node.addEventListener("click", function (ev) { if (ev.target && ev.target.closest && ev.target.closest("button") && !ev.target.closest(".toast-close, [data-close]")) node.setAttribute("data-notif-read", "1"); }, true);
+    }
   }
   /* ── ВЕЧЕРНИЙ ВЫПУСК (D-813, v178-H4a) ────────────────────────────────
      Решение основателя 11.11.2026: колокольчик — «вечерний выпуск», журнал
@@ -561,6 +582,10 @@
       records.forEach(function (r) {
         Array.prototype.forEach.call(r.addedNodes, function (n) {
           if (n.nodeType === 1 && n.classList && n.classList.contains("toast")) recordToast(n);
+        });
+        /* D-1304: плашка ушла — непрочитанная встаёт в колокольчик */
+        Array.prototype.forEach.call(r.removedNodes, function (n) {
+          if (n.nodeType === 1 && n.getAttribute && n.getAttribute("data-notif-id")) window.sbNotifLive(n.getAttribute("data-notif-id"), false, n.getAttribute("data-notif-read") === "1");
         });
       });
     });

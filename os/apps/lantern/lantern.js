@@ -109,7 +109,7 @@
 
   var UI = {
     en: {
-      title: "Lantern", label: "Lantern",
+      title: "Help", label: "Help",
       lead: "What is worth knowing when there is no network — all of it lives on this device.",
       warn: "This is a reference, not medicine: it does not replace the emergency number. If you can call — call first, then read.",
       groups: { now: "When it is happening", home: "The home is in danger", dark: "When something stops", away: "Away from home", body: "The body", soul: "The soul", numbers: "Numbers", words: "Ten sentences" },
@@ -137,7 +137,7 @@
       source: "Source", checked: "checked"
     },
     ru: {
-      title: "Фонарь", label: "Фонарь",
+      title: "Помощь", label: "Помощь",
       lead: "То, что стоит знать, когда сети нет, — всё лежит на этом устройстве.",
       warn: "Это справка, а не медицина: она не заменяет экстренный номер. Если можете позвонить — сперва звоните, потом читайте.",
       groups: { now: "Когда это происходит", home: "Дом в опасности", dark: "Когда что-то пропало", away: "Вдали от дома", body: "Тело", soul: "Душа", numbers: "Номера", words: "Десять фраз" },
@@ -165,7 +165,7 @@
       source: "Источник", checked: "сверено"
     },
     ee: {
-      title: "Latern", label: "Latern",
+      title: "Abi", label: "Abi",
       lead: "See, mida tasub teada, kui võrku pole, — kõik on selles seadmes.",
       warn: "See on teatmik, mitte meditsiin: see ei asenda hädaabinumbrit. Kui saad helistada — helista enne, loe pärast.",
       groups: { now: "Kui see juhtub", home: "Kodu on ohus", dark: "Kui midagi kaob", away: "Kodust eemal", body: "Keha", soul: "Hing", numbers: "Numbrid", words: "Kümme lauset" },

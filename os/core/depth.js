@@ -40,6 +40,15 @@
     ember:  { base: [1, 1, 1],   atm: [176, 82, 36],  rim: [255, 198, 140], far: [90, 38, 14],    k: [-1, 1, 1] }
   };
   PAL.eclipse = PAL.ember;
+  /* H4e (D-1306): флаги сцены — Океан: без контура + вода; Аврора: без контура (горизонт-«зеркало» рисует холст
+     #sbHorizon ниже в этом файле); Тайник и Затмение — прежние (0) */
+  function flags(m) {
+    if (m === "ocean") return [1, 1, 0];
+    /* свет Авроры — от той же ровной глубины, что у Океана (за водой «зеркала»): над горизонтом виден только его
+       верхний, самый тихий край, как в показе — больших светлых поверхностей нет */
+    if (m === "aurora") return [1, 0, 0];
+    return [0, 0, 0];
+  }
   function vec(m) {
     var p = PAL[m], f = function (c) { return [c[0] / 255, c[1] / 255, c[2] / 255]; };
     return new Float32Array([].concat(f(p.base), f(p.atm), f(p.rim), f(p.far), p.k));
@@ -49,7 +58,9 @@
   var FS = [
     "precision highp float;",
     "const float LCAP = .11, LLOW = .05;",
-    "uniform vec2 uRes; uniform float uT, uPx, uMode, uR, uSeam;",
+    "uniform vec2 uRes; uniform float uT, uPx, uMode, uR, uSeam, uBr;",
+    /* H4e (D-1306): флаги сцены — x: без контура планеты (ровная глубина), y: вода (Океан), z: высота горизонта (доля H) */
+    "uniform vec3 uFA, uFB;",
     "uniform vec2 uO; uniform vec3 uA[5]; uniform vec3 uB[5]; uniform vec4 uWin[8]; uniform float uNW;",
     /* под окнами кромки дуги нет: сквозь стекло «B» (.98) тонкая яркая линия читалась бы ступенью в теле
        окна (window-one-glass п.4); 2 % света её и не показали бы. Края выреза мягкие (8 px). */
@@ -69,10 +80,20 @@
     "  float k0 = cap*.6, k1 = cap*.4; if (y <= k0) return c;",
     "  float y2 = k0 + k1*(1. - exp(-(y - k0)/k1)); return c*pow(y2/y, 1./2.2); }",
     /* сцена одной темы; p — в пикселях холста, y вниз; k = (−1 — только пол, сила атмосферы, сила облака) */
-    "vec3 scene(vec3 base, vec3 atm, vec3 rim, vec3 far, vec3 k, vec2 p, float t, out vec3 rr){",
+    /* ВОДА ОКЕАНА (H4e, D-1306, показ okean-avrora): мягкие пятна света, как сквозь толщу под медленной волной —
+       только низкие частоты, без нитей и краёв */
+    "float water(vec2 q, float t){",
+    "  vec2 w = vec2(fbm(q*1.3 + vec2(t*.050, -t*.031)), fbm(q*1.3 + vec2(-t*.041, t*.027) + 7.7));",
+    "  float v = fbm(q*2.0 + w*1.6 + vec2(t*.022, t*.015));",
+    "  return smoothstep(.42, .78, v); }",
+    "vec3 scene(vec3 base, vec3 atm, vec3 rim, vec3 far, vec3 k, vec3 fl, vec2 p, float t, out vec3 rr){",
     "  float W = uRes.x, H = uRes.y, mn = min(W, H), mx = max(W, H);",
     "  vec2 q = p/mn;",
-    "  float form = fbm(q*1.15 + vec2(t*.006, -t*.004));",
+    "  float uFlat = fl.x, uWater = fl.y;",
+    /* ДЫХАНИЕ (H4e, D-1306): три медленных круга 9–13,5 с, малая амплитуда; uBr = 0 при «меньше движения» */
+    "  float TAU = 6.2831853;",
+    "  float b1 = sin(TAU*t/11.), b2 = sin(TAU*t/13.5 + 1.3), b3 = sin(TAU*t/9. + 2.1);",
+    "  float form = fbm(q*1.15 + vec2(t*(.006 + .012*uBr), -t*(.004 + .009*uBr)));",
     /* Затмение: только пол — диск и кромку рисует #sbEclipse (D-872) */
     "  rr = vec3(0.);",
     "  if (k.x < -.5) return base;",
@@ -81,31 +102,45 @@
     "  float apex = H*(W > H ? .80 : .82);",
     "  vec2 c = vec2(W*(.5 + .05*sin(t*.011)), apex + R);",
     "  float d = length(p - c) - R;",
+    /* без контура (H4e, D-1306): та же сила света, но от ровной глубины у горизонта — ни дуги, ни тёмного диска;
+       свет медленно поднимается и опускается, как зыбь (Океан); у Авроры горизонт — линия воды «зеркала» */
+    "  float hz = fl.z > 0. ? fl.z : (W > H ? .86 : .87);",
+    "  float dflat = H*(hz + .012*b3*uBr) - p.y;",
+    "  d = mix(d, dflat, uFlat);",
     "  float lat = exp(-pow((p.x - c.x)/(W*.62), 2.));",
-    "  float dp = max(d, 0.), dn = max(-d, 0.);",
+    "  float dp = max(d, 0.) + uFlat*max(-d, 0.)*.35, dn = max(-d, 0.);",
     /* под окном край планеты мягче (6 % меньшей стороны) — по той же причине, что и вырез кромки */
     "  float uw = underWin(p), ew = mix(uPx*1.2, mn*.06, uw);",
-    "  float sky = smoothstep(-ew, ew, d);",
+    "  float sky = mix(smoothstep(-ew, ew, d), 1., uFlat);",
     /* близкий свет у дуги — как был; дальний (широкий) — с силой темы: у Тепла он поднимается
        оранжевым заревом до середины стола, верх остаётся глубоким */
-    "  float g = k.y;",
-    "  vec3 a1 = atm*(.50*exp(-dp/(mn*.055)) + g*.22*exp(-dp/(mn*.24)) + g*.09*exp(-dp/(mn*.70)))*(.30 + .70*lat)*(.85 + .3*form);",
+    "  float g = k.y*(1. + .09*b1*uBr);",
+    /* Аврора: дальний свет над горизонтом дышит неровно по ширине — то выше, то ниже, очень медленно */
+    "  float wv = 1. + uBr*(1. - uWater)*uFlat*.16*sin(p.x/W*2.6 + t*.21)*(.55 + .45*b2);",
+    "  vec3 a1 = atm*((.50 - .42*uFlat)*exp(-dp/(mn*.055)) + g*.22*exp(-dp/(mn*.24*wv)) + g*.09*exp(-dp/(mn*.70)))*(.30 + .70*lat)*(.85 + .3*form);",
     "  float rw = max(uPx*1.4, mn*.0018);",
-    "  rr = (1. - uw)*min(rim*(exp(-pow(d/rw, 2.))*.85 + .22*exp(-pow(d/(mn*.010), 2.)))*(.25 + .75*lat), 1.);",
+    "  rr = (1. - uFlat)*(1. - uw)*min(rim*(exp(-pow(d/rw, 2.))*.85 + .22*exp(-pow(d/(mn*.010), 2.)))*(.25 + .75*lat), 1.);",
     "  vec3 inner = atm*.10*g*exp(-dn/(mn*.05))*(.3 + .7*lat) + base*.6;",
     "  vec3 col = mix(inner, base + a1, sky);",
     /* дальние облака — по краям, середина пуста; у Тепла облако ниже и сильнее (под знаками, не под шапкой, выше неба голоса) */
     "  float cy1 = k.z > 1.2 ? .46 : .10;",
-    "  vec2 f1 = (p - vec2(W*.96, H*cy1))/mn; float g1 = exp(-dot(f1*vec2(1., 1.25), f1*vec2(1., 1.25))*3.2);",
-    "  vec2 f2 = (p - vec2(W*.02, H*.46))/mn; float g2 = exp(-dot(f2*vec2(1.5, .9), f2*vec2(1.5, .9))*4.);",
-    "  col += far*.42*k.z*g1*(.40 + 1.2*form) + atm*.13*k.z*g2*(.35 + 1.3*form);",
+    "  vec2 o1 = uBr*vec2(.018*sin(t*.11), .014*sin(t*.083 + 1.))*mn, o2 = uBr*vec2(.016*sin(t*.095 + 2.), .02*sin(t*.07))*mn;",
+    "  vec2 f1 = (p - vec2(W*.96, H*cy1) - o1)/mn; float g1 = exp(-dot(f1*vec2(1., 1.25), f1*vec2(1., 1.25))*3.2);",
+    "  vec2 f2 = (p - vec2(W*.02, H*.46) - o2)/mn; float g2 = exp(-dot(f2*vec2(1.5, .9), f2*vec2(1.5, .9))*4.);",
+    "  float kz = k.z*(1. + .14*b2*uBr);",
+    "  col += far*.42*kz*g1*(.40 + 1.2*form) + atm*.13*kz*g2*(.35 + 1.3*form);",
+    /* вода: свет сверху сквозь толщу — сильнее у поверхности, гаснет к глубине; медленно и тихо */
+    /* вода считается только у сцены с водой (у остальных множитель 0 — тот же кадр, втрое меньше шума на пиксель) */
+    "  float wl = uWater*uBr > 0. ? water(q, t) * uWater * uBr : 0.;",
+    "  float dep = 1. - smoothstep(0., H*.9, p.y);",
+    "  col += mix(atm, rim, .45)*wl*(.016 + .026*dep);",
     "  return capL(col, capAt(p)*(1. - max(k.x, 0.)));",
     "}",
     /* кромка дуги ложится «экраном»: каналы не упираются в 255, и у Тепла она остаётся оранжевой, не жёлтой */
     "void main(){",
     "  vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);",
     "  vec3 col;",
-    "  if (uMode < .5) { vec3 Ar; vec3 A = scene(uA[0], uA[1], uA[2], uA[3], uA[4], p, uT, Ar); col = A + Ar*(1. - A); }",
+    "  if (uMode < .5) { vec3 Ar; vec3 A = scene(uA[0], uA[1], uA[2], uA[3], uA[4], uFA, p, uT, Ar); col = A + Ar*(1. - A); }",
     "  else {",
     "    float mn = min(uRes.x, uRes.y);",
     "    float d = length(p - uO);",
@@ -116,10 +151,10 @@
     "    float m = smoothstep(uR + soft, uR - soft, dd);",
     /* каждая сцена считается только там, где её видно: шов не вдвое дороже покоя */
     "    vec3 Ac = vec3(0.), Bc = vec3(0.), Ar = vec3(0.), Br = vec3(0.);",
-    "    if (m < .999) { vec3 A = scene(uA[0], uA[1], uA[2], uA[3], uA[4], p, uT, Ar);",
+    "    if (m < .999) { vec3 A = scene(uA[0], uA[1], uA[2], uA[3], uA[4], uFA, p, uT, Ar);",
     "      float ahead = exp(-max(dd - uR, 0.)/(mn*.10))*(1. - m);",
     "      Ac = A*(1. - .35*ahead*uSeam); }",
-    "    if (m > .001) { vec3 B = scene(uB[0], uB[1], uB[2], uB[3], uB[4], p, uT, Br);",
+    "    if (m > .001) { vec3 B = scene(uB[0], uB[1], uB[2], uB[3], uB[4], uFB, p, uT, Br);",
     "      float behind = exp(-max(uR - dd, 0.)/(mn*.14))*m;",
     "      Bc = B*(1. + .8*behind*uSeam); }",
     "    float rw = max(uPx*1.5, mn*.0028);",
@@ -151,7 +186,7 @@
     g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), g.STATIC_DRAW);
     var loc = g.getAttribLocation(pr, "a"); g.enableVertexAttribArray(loc); g.vertexAttribPointer(loc, 2, g.FLOAT, false, 0, 0);
     var u = {};
-    ["uRes", "uT", "uPx", "uMode", "uR", "uSeam", "uO", "uA", "uB", "uWin", "uNW"].forEach(function (n) { u[n] = g.getUniformLocation(pr, n); });
+    ["uRes", "uT", "uPx", "uMode", "uR", "uSeam", "uO", "uA", "uB", "uWin", "uNW", "uBr", "uFA", "uFB"].forEach(function (n) { u[n] = g.getUniformLocation(pr, n); });
     return u;
   }
   function glFrame(g, u, f) {
@@ -160,6 +195,7 @@
     g.uniform3fv(u.uA, f.A); g.uniform3fv(u.uB, f.B); g.uniform1f(u.uMode, f.mode);
     g.uniform4fv(u.uWin, f.wins); g.uniform1f(u.uNW, f.nw);
     g.uniform2f(u.uO, f.ox, f.oy); g.uniform1f(u.uR, f.R); g.uniform1f(u.uSeam, f.seam);
+    g.uniform1f(u.uBr, f.br || 0); g.uniform3fv(u.uFA, f.FA || [0, 0, 0]); g.uniform3fv(u.uFB, f.FB || [0, 0, 0]);
     g.drawArrays(g.TRIANGLES, 0, 3);
   }
 
@@ -246,6 +282,11 @@
         if (bmpctx) bmpctx.transferFromImageBitmap(m.bmp);
         if (!cv.classList.contains("sb-depth-on")) cv.classList.add("sb-depth-on");
         /* отложенный кадр уходит, только если стол всё ещё виден */
+        /* слабое устройство (кадр туда-обратно дольше 50 мс, программный GPU): следующий кадр шва — после паузы
+           той же длины, иначе слой занимает GPU целиком и стол (плитки, окна, переходы) стоит без кадров;
+           на обычном GPU кадр — единицы мс, и пауз нет */
+        var rtt = performance.now() - sentAt;
+        if (queued && rtt > 50) { inflight = true; setTimeout(function () { inflight = false; var q2 = queued; queued = null; if (q2 && !parked() && !doc.hidden) send(q2); }, Math.min(rtt, 400)); return; }
         if (queued) { var q = queued; queued = null; if (!parked() && !doc.hidden) send(q); }
       }
     };
@@ -260,7 +301,8 @@
     var n = cv.cloneNode(false); cv.parentNode.replaceChild(n, cv); cv = n;
   }
   /* счёт кадров — в миг, когда кадр заказан: это и есть работа слоя */
-  function send(f) { inflight = true; draws++; worker.postMessage({ type: "frame", f: f }); }
+  var sentAt = 0;
+  function send(f) { inflight = true; draws++; sentAt = performance.now(); worker.postMessage({ type: "frame", f: f }); }
   function build() {
     if (cv) return true;
     cv = doc.getElementById("sbDepthField");
@@ -304,7 +346,8 @@
     var m = cur || mood();
     var f = { w: Math.max(2, Math.round(W * K)), h: Math.max(2, Math.round(H * K)), t: t,
       A: vec(tr ? tr.from : m), B: vec(tr ? tr.to : m), mode: tr ? 1 : 0, wins: new Float32Array(wins), nw: nWins,
-      ox: tr ? tr.o.x * K : 0, oy: tr ? tr.o.y * K : 0, R: tr ? tr.R * K : 0, seam: tr ? tr.seam : 0 };
+      ox: tr ? tr.o.x * K : 0, oy: tr ? tr.o.y * K : 0, R: tr ? tr.R * K : 0, seam: tr ? tr.seam : 0,
+      br: reduced() ? 0 : 1, FA: flags(tr ? tr.from : m), FB: flags(tr ? tr.to : m) };
     dirty = false;
     if (worker) { if (inflight) queued = f; else send(f); return; }
     glFrame(gl, U, f);
@@ -400,7 +443,10 @@
       key += Math.round(r.left) + "," + Math.round(r.top) + "," + Math.round(r.right) + "," + Math.round(r.bottom) + ";";
       n++;
     }
-    if (key !== readWins.key || n !== nWins) { readWins.key = key; nWins = n; dirty = true; loop(); }
+    /* ровная глубина (Океан, Аврора — D-1306) кромки дуги не рисует, и окна в её кадре ничего не меняют: кадр на каждое
+       движение окна — пустая работа, а на слабом GPU он занимал его как раз тогда, когда стол перерисовывает окно
+       (window-one-glass). Прямоугольники запоминаются — кадр по другой причине возьмёт свежие. */
+    if (key !== readWins.key || n !== nWins) { readWins.key = key; nWins = n; if (tr || !flags(cur || mood())[0]) { dirty = true; loop(); } }
   }
   function winsChanged() { if (!winTimer) winTimer = setTimeout(readWins, 250); }
   var bootAt = 0;
@@ -446,4 +492,246 @@
   }
   if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", later);
   else later();
+})();
+
+/* ── ОКЕАН И АВРОРА: ГОРИЗОНТ-«ЗЕРКАЛО» И ОТВЕТ НА КАСАНИЕ · H4e, D-1306…D-1308 ─────────────────────────
+ * Основатель 15–16.11.2026: «Океан: фон ТЕКУЩИЙ + только анимация нажатия v8 + убрать контур + оживить (дыхание).
+ * Аврора: фон ТЕКУЩИЙ + нажатие v8 + оживить; вместо контура — горизонт», выбран «зеркало» — исходный вариант из
+ * показа zvezdy-temy4 («окончательно»). Тайник и Затмение не тронуты: в них оба холста скрыты.
+ *  · #sbHorizon — Аврора: ровный тёмный горизонт и спокойная вода, перенесено из показа (drawGround, ветка
+ *    «зеркало» в покое: вода, дальние низкие хребты с отражением, редкие острова, низкий туман, дымка горизонта).
+ *    Свет глубины (выше) поднимается от той же линии (флаг горизонта в шейдере). Рябь и туман дышат медленно;
+ *    кадр — раз в полсекунды, как покой глубины; «меньше движения» — один кадр.
+ *  · #sbThemeTap — касание стола: перенесено без изменений из показа тем v8 (h4c-temy-lighttap / okean-avrora):
+ *    Океан — над пальцем открывается просвет: луч от поверхности доходит до пальца, под ним разливается свет;
+ *    Аврора — занавес сияния просыпается над пальцем, яркость расходится вдоль него, снизу розовая кайма.
+ *    Только ответ на касание, без прежнего фона v8. 1,2 с; «меньше движения» — без отклика.
+ * Под окном во весь стол (wp-parked), за воротами и в скрытой вкладке — ни кадра. Сети нет. */
+(function () {
+  "use strict";
+  if (typeof document === "undefined" || typeof window === "undefined") return;
+  var root = document.documentElement, doc = document;
+  var mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
+  function reduced() { return mq.matches || root.getAttribute("data-motion") === "reduced"; }
+  function curMood() { var m = root.getAttribute("data-wp-mood"); return (m === "ocean" || m === "aurora") && root.getAttribute("data-theme") !== "light" && !root.classList.contains("sb-incognito") && !root.classList.contains("sb-depth-nogl") ? m : ""; }
+  function parked() { return root.classList.contains("wp-parked") || !!doc.getElementById("sbVaultGate"); }
+  function portrait() { return window.innerWidth < 700; }
+  /* доля высоты горизонта «зеркала» — как в показе: телефон .66, стол .64 */
+  function frac() { return portrait() ? 0.66 : 0.64; }
+  var T0 = performance.now();
+
+  /* ── помощники показа — без изменений ── */
+  function hsh(k) { var x = Math.sin(k * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+  function gN(x, k) { return Math.sin(x * 0.011 + k * 1.7) * 0.5 + Math.sin(x * 0.027 + k * 3.1) * 0.28 + Math.sin(x * 0.061 + k * 5.3) * 0.14 + Math.sin(x * 0.13 + k * 2.2) * 0.06; }
+  function sst(a, b, x) { var v = Math.min(1, Math.max(0, (x - a) / (b - a))); return v * v * (3 - 2 * v); }
+  function mixc(a, b, f) { return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f]; }
+  function rgb(c, a) { return "rgba(" + (c[0] | 0) + "," + (c[1] | 0) + "," + (c[2] | 0) + "," + (a === undefined ? 1 : a) + ")"; }
+  var MIST = null;
+  function mistSpr() {
+    if (MIST) return MIST;
+    var cv = doc.createElement("canvas"); cv.width = 256; cv.height = 64; var c = cv.getContext("2d"), g = c.createRadialGradient(128, 32, 0, 128, 32, 128);
+    g.addColorStop(0, "rgba(190,236,220,1)"); g.addColorStop(0.5, "rgba(190,236,220,.4)"); g.addColorStop(1, "rgba(190,236,220,0)");
+    c.setTransform(1, 0, 0, 0.25, 0, 24); c.fillStyle = g; c.fillRect(0, -100, 256, 256); return (MIST = cv);
+  }
+
+  /* ── горизонт «зеркало»: drawGround показа, ветка sc = "mirror" в покое (камера на месте, без полёта) ── */
+  var hcv = null, hx = null, W = 0, H = 0, K = 1;
+  function drawGround(s) {
+    var g = hx; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, hcv.width, hcv.height); g.setTransform(K, 0, 0, K, 0, 0);
+    var p = portrait(), yh = H * frac(), f = H * (p ? 0.6 : 0.74), hc = 16, cx = W / 2, dz = 170, camZ = 0, zmin = f * hc / (H - yh + 20), zmax = 9500;
+    var HZ = [26, 64, 60], DK = [3, 6, 7], wob = 0.18;
+    /* 1. вода: свет неба у горизонта, глубина у нас */
+    var gb = g.createLinearGradient(0, yh, 0, H); gb.addColorStop(0, "rgb(30,76,70)"); gb.addColorStop(0.12, "rgb(19,50,49)"); gb.addColorStop(0.45, "rgb(9,24,26)"); gb.addColorStop(1, "rgb(4,11,14)"); g.fillStyle = gb; g.fillRect(0, yh, W, H - yh);
+    var rg = g.createRadialGradient(W * 0.3, yh, 0, W * 0.3, yh, W * 0.5); rg.addColorStop(0, "rgba(80,220,170,.14)"); rg.addColorStop(1, "rgba(80,220,170,0)"); g.fillStyle = rg; g.fillRect(0, yh, W, H - yh);
+    rg = g.createRadialGradient(W * 0.8, yh, 0, W * 0.8, yh, W * 0.35); rg.addColorStop(0, "rgba(130,100,230,.1)"); rg.addColorStop(1, "rgba(130,100,230,0)"); g.fillStyle = rg; g.fillRect(0, yh, W, H - yh);
+    /* 3. дальние хребты на бесконечности, с отражением */
+    var farL = [[0.03, 0.7, 1], [0.018, 0.35, 2]], li, x, i;
+    for (li = 0; li < farL.length; li++) {
+      var hgt = farL[li][0], haze = farL[li][1], j = farL[li][2];
+      var col = mixc(DK, HZ, haze * 0.9), top = [];
+      for (x = 0; x <= W + 4; x += 4) { var h = (0.5 + 0.5 * gN(x * (p ? 1.6 : 0.9) + j * 200, j + 3)) * 0.6; top.push(yh - H * hgt * Math.max(0, h)); }
+      g.fillStyle = rgb(mixc(col, [6, 18, 20], 0.5), 0.75); g.beginPath(); g.moveTo(0, yh);
+      for (i = 0; i < top.length; i++) g.lineTo(i * 4 + Math.sin((yh + (yh - top[i])) * 0.3 + s * 2) * wob * 0.6, yh + (yh - top[i]) * 0.85);
+      g.lineTo(W, yh); g.closePath(); g.fill();
+      g.fillStyle = rgb(col); g.beginPath(); g.moveTo(0, yh + 0.5); for (i = 0; i < top.length; i++) g.lineTo(i * 4, top[i]); g.lineTo(W, yh + 0.5); g.closePath(); g.fill();
+      g.strokeStyle = "rgba(150,240,205," + (0.05 + 0.05 * (3 - j) / 3).toFixed(3) + ")"; g.lineWidth = 1; g.beginPath(); for (i = 0; i < top.length; i++) g[i ? "lineTo" : "moveTo"](i * 4, top[i] + 0.4); g.stroke();
+    }
+    /* 4. редкие низкие острова и туман над водой: дальние сначала */
+    var k0 = Math.ceil((camZ + zmin * 0.9) / dz), k1 = Math.floor((camZ + zmax) / dz), sides = [-1, 1], k, sdI;
+    for (k = k1; k >= k0; k--) {
+      var z = k * dz - camZ; if (z < zmin * 0.9) continue; var kk = f / z, base = yh + f * hc / z; if (base > H + 60) continue;
+      var hz = 1 - Math.exp(-z / 3800), nf = sst(zmin * 0.9, zmin * 2, z) * Math.min(1, (zmax - z) / 2500), st = z > 3000 ? 8 : (p ? 3 : 4);
+      var colI = mixc(DK, HZ, Math.pow(hz, 0.9) * 0.92), colT = mixc(colI, HZ, 0.14);
+      for (sdI = 0; sdI < 2; sdI++) {
+        var sd = sides[sdI], h1 = hsh(k * 3.1 + sd * 7), h2 = hsh(k * 5.7 + sd * 3), h3 = hsh(k * 2.3 + sd * 11);
+        if (h3 < 0.55) continue;
+        var xin = 520 + 380 * h1, H0 = 10 + 16 * h2, taper = 300;
+        var xs0 = cx + sd * xin * kk; if (sd > 0 && xs0 > W + 4) continue; if (sd < 0 && xs0 < -4) continue;
+        var pts = [], xa = sd > 0 ? xs0 : 0, xb = sd > 0 ? W + st : xs0;
+        for (x = xa; x <= xb; x += st) { var xw = (x - cx) / kk, dd = Math.abs(xw) - xin, hh = H0 * sst(0, taper, dd) * (0.6 + 0.4 * gN(xw * 0.3 + k * 20, k)); pts.push([x, base - hh * kk]); }
+        if (sd > 0) pts.unshift([xs0, base]); else pts.push([xs0, base]);
+        g.fillStyle = rgb(mixc(colI, [5, 14, 16], 0.45), 0.82 * nf); g.beginPath();
+        for (i = 0; i < pts.length; i++) { var yr = base + (base - pts[i][1]) * 0.9, w2 = Math.sin(yr * 0.33 + s * 2.1 + k) * wob * (0.4 + (yr - yh) / (H - yh) * 2.2); g[i ? "lineTo" : "moveTo"](pts[i][0] + w2, yr); }
+        g.lineTo(pts[pts.length - 1][0], base); g.lineTo(pts[0][0], base); g.closePath(); g.fill();
+        var ymin = Infinity; for (i = 0; i < pts.length; i++) ymin = Math.min(ymin, pts[i][1]);
+        var gr = g.createLinearGradient(0, ymin, 0, base); gr.addColorStop(0, rgb(colT, nf)); gr.addColorStop(1, rgb(colI, nf));
+        g.fillStyle = gr; g.beginPath(); for (i = 0; i < pts.length; i++) g[i ? "lineTo" : "moveTo"](pts[i][0], pts[i][1]); g.lineTo(sd > 0 ? W + st : 0, base); g.closePath(); g.fill();
+        g.strokeStyle = "rgba(140,232,200," + (0.08 * nf * Math.max(0, 1 - hz * 1.6)).toFixed(3) + ")"; g.lineWidth = 1; g.beginPath(); for (i = 0; i < pts.length; i++) g[i ? "lineTo" : "moveTo"](pts[i][0], pts[i][1] - 0.5); g.stroke();
+      }
+      if (z < 3200) for (var jj = 0; jj < 2; jj++) { var xw2 = (hsh(k * 7 + jj) * 2 - 1) * 110, x2 = cx + xw2 * kk, w3 = (14 + 26 * hsh(k * 3 + jj)) * kk; g.fillStyle = "rgba(150,240,210," + (0.045 * (1 - z / 3200) * wob).toFixed(3) + ")"; g.fillRect(x2, base - kk * 2 + Math.sin(s * 2 + jj) * kk, w3, Math.max(0.5, kk * 0.35)); }
+      if (hsh(k * 9 + 2) < 0.85) {
+        var xm = (hsh(k * 13) * 2 - 1) * 260, wM = (500 + 700 * hsh(k * 17)) * kk, hM = (20 + 22 * hsh(k * 19)) * kk;
+        g.globalAlpha = 0.26 * nf * (1 - hz * 0.5); g.drawImage(mistSpr(), cx + xm * kk - wM / 2 + Math.sin(s * 0.4 + k) * 6 * kk, base - hM * 0.9, wM, hM); g.globalAlpha = 1;
+      }
+    }
+    /* 5. дымка у горизонта — свет сияния в воздухе */
+    var hzg = g.createLinearGradient(0, yh - H * 0.05, 0, yh + H * 0.04); hzg.addColorStop(0, "rgba(60,170,140,0)"); hzg.addColorStop(0.55, "rgba(70,180,150,.12)"); hzg.addColorStop(1, "rgba(60,170,140,0)"); g.fillStyle = hzg; g.fillRect(0, yh - H * 0.05, W, H * 0.09);
+    /* 6. «очень тёмная» вода (бриф H4e; правило основателя: никаких больших светлых поверхностей): весь горизонт
+       с водой притушен ровной ночной вуалью — рисунок показа тот же, яркость вдвое ниже; слова заметки над
+       линией горизонта держат 4,5:1 (note-contrast) */
+    var veil = g.createLinearGradient(0, yh - H * 0.06, 0, yh); veil.addColorStop(0, "rgba(1,3,4,0)"); veil.addColorStop(1, "rgba(1,3,4,.55)");
+    g.fillStyle = veil; g.fillRect(0, yh - H * 0.06, W, H * 0.06);
+    g.fillStyle = "rgba(1,3,4,.55)"; g.fillRect(0, yh, W, H - yh);
+  }
+
+  /* ── касание: показ тем v8 (10.11, утверждено) — только ответ на касание, без прежнего фона ── */
+  var tcv = null, tx = null, touches = [], SPR = {}, DUR = { ocean: 1.2, aurora: 1.2 }, mood = "";
+  function rgba(c, a) { return "rgba(" + (c[0] | 0) + "," + (c[1] | 0) + "," + (c[2] | 0) + "," + Math.max(0, Math.min(1, a)).toFixed(4) + ")"; }
+  function lift(c, f) { return [c[0] + (255 - c[0]) * f, c[1] + (255 - c[1]) * f, c[2] + (255 - c[2]) * f]; }
+  function mix(a, b, f) { return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f]; }
+  function eo(p) { return 1 - Math.pow(1 - p, 3); }
+  function bell(p, up) { p = Math.max(0, Math.min(1, p)); return p < up ? Math.sin(p / up * Math.PI / 2) : Math.pow((1 - p) / (1 - up), 1.7); }
+  function n1(t, s) { return Math.sin(t + s) * 0.5 + Math.sin(t * 2.13 + s * 1.7) * 0.3 + Math.sin(t * 3.71 + s * 2.9) * 0.2; }
+  function glow(g, x, y, r, c, a) {
+    if (a <= 0.002 || r <= 0) return;
+    var gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, rgba(c, a)); gr.addColorStop(0.3, rgba(c, a * 0.62)); gr.addColorStop(0.6, rgba(c, a * 0.2)); gr.addColorStop(1, rgba(c, 0));
+    g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  function ell(g, x, y, rx, ry, rot, c, a) { if (a <= 0.002) return; g.save(); g.translate(x, y); g.rotate(rot); g.scale(1, ry / rx); glow(g, 0, 0, rx, c, a); g.restore(); }
+  function sprite(key, w, h, row) {
+    if (SPR[key]) return SPR[key];
+    var c = doc.createElement("canvas"), g; c.width = w; c.height = h; g = c.getContext("2d");
+    for (var y = 0; y < h; y++) {
+      var r = row(y / h), half = w / 2 * r.w, gr = g.createLinearGradient(w / 2 - half, 0, w / 2 + half, 0);
+      gr.addColorStop(0, rgba(r.c, 0)); gr.addColorStop(0.25, rgba(r.c, r.a * 0.45)); gr.addColorStop(0.5, rgba(r.c, r.a));
+      gr.addColorStop(0.75, rgba(r.c, r.a * 0.45)); gr.addColorStop(1, rgba(r.c, 0));
+      g.fillStyle = gr; g.fillRect(w / 2 - half, y, half * 2, 1);
+    }
+    return (SPR[key] = c);
+  }
+  function shaftSpr(c) { return sprite("shaft" + c, 384, 768, function (f) { return { w: 0.3 + 0.7 * f, a: Math.min(1, f * 9) * Math.pow(1 - f, 1.5), c: c }; }); }
+  function raySpr() { return sprite("ray", 64, 256, function (v) { return { w: 0.75 + 0.25 * v, a: Math.pow(v, 1.7) * Math.pow(Math.min(1, (1 - v) * 3.2), 1.5), c: mix([150, 104, 236], [96, 238, 176], Math.pow(v, 0.8)) }; }); }
+  function pinkSpr() { return sprite("pink", 64, 256, function (v) { return { w: 0.8, a: Math.pow(v, 2.2) * Math.pow(Math.min(1, (1 - v) * 2.5), 1.5), c: [255, 116, 168] }; }); }
+  function shaft(g, spr, x0, y0, ang, w, L, a) { if (a <= 0.002) return; g.save(); g.globalAlpha = Math.min(1, a); g.translate(x0, y0); g.rotate(ang); g.scale(w / 384, L / 768); g.drawImage(spr, -192, 0); g.restore(); }
+  function live(t) { var r = []; for (var i = 0; i < touches.length; i++) { var p = (t - touches[i].t) / DUR[mood]; if (p >= 0 && p < 1) r.push([touches[i], p]); } return r; }
+  function tapScene(t, g) {
+    var L = live(t), i, j, o, p, a;
+    if (mood === "ocean") {
+      /* над пальцем открывается просвет: луч от поверхности доходит до пальца, под ним разливается свет */
+      var sea = [150, 205, 238], spr = shaftSpr(sea), lean = 0.2 + 0.04 * Math.sin(t * 0.031);
+      for (j = 0; j < L.length; j++) {
+        o = L[j][0]; p = L[j][1]; var b = bell(p, 0.3), L0 = (o.y + 20) / Math.cos(lean);
+        shaft(g, spr, o.x + L0 * Math.sin(lean), -20, lean, W * 0.17, (L0 + 90) * eo(Math.min(1, p / 0.45)), 0.42 * b);
+        ell(g, o.x, o.y + 6, 110, 36, 0, lift(sea, 0.45), 0.26 * bell(p, 0.42));
+      }
+    } else {
+      /* занавес сияния просыпается над пальцем: яркость расходится вдоль него, снизу розовая кайма */
+      var rs = raySpr(), N = 30, sx = W * 1.3 / (N - 1);
+      for (i = 0; i < N; i++) {
+        var x = W * -0.15 + sx * i + Math.sin(t * 0.06 + i * 0.5) * 22;
+        var base = H * 0.34 + Math.sin(x * 0.004 + t * 0.045) * H * 0.05 + Math.sin(x * 0.0013 - t * 0.03) * H * 0.04;
+        var hh = H * (0.2 + 0.09 * Math.sin(i * 1.7 + t * 0.08)), env = 0.55 + 0.45 * Math.sin(i * 0.33 - t * 0.09);
+        var boost = 0, fr = 0;
+        for (j = 0; j < L.length; j++) {
+          o = L[j][0]; p = L[j][1]; var d = Math.abs(x - o.x), front = W * 0.7 * eo(p);
+          var k = Math.exp(-(d - front) * (d - front) / (2 * 80 * 80)) * Math.pow(1 - p, 1.3) + Math.exp(-d * d / (2 * 70 * 70)) * bell(p, 0.12);
+          boost += k; fr += k;
+        }
+        /* занавес виден только там, где его разбудило касание: у фронта — та же сила, что в v8 (покой 1 + вспышка 3,4), вдали — ничего */
+        a = 0.27 * (0.35 + 0.65 * n1(t * 0.12 + i * 0.37, i)) * env * (1 + 3.4 * boost) * Math.min(1, boost * 2.5);
+        if (a > 0.002) { g.save(); g.globalAlpha = Math.min(1, a); g.translate(x, base - hh); g.scale(sx * 2.6 / 64, hh * 1.06 / 256); g.drawImage(rs, -32, 0); g.restore(); }
+        if (fr > 0.02) { g.save(); g.globalAlpha = Math.min(1, 0.2 * fr); g.translate(x, base - hh * 0.3); g.scale(sx * 2.6 / 64, hh * 0.55 / 256); g.drawImage(pinkSpr(), -32, 0); g.restore(); }
+      }
+      for (j = 0; j < L.length; j++) glow(g, L[j][0].x, L[j][0].y, 60, [110, 236, 190], 0.07 * bell(L[j][1], 0.2));
+    }
+  }
+
+  /* ── такты: горизонт — раз в полсекунды (покой глубины), касание — каждый кадр, пока оно живо ── */
+  var raf = 0, rest = 0, dirty = true, KT = 1;
+  var DESK_IDS = { desktop: 1, sbIconLayer: 1, sbNoteLayer: 1, sbWidgetLayer: 1 };
+  /* ОТКАТ: касание не по одному из слоёв стола (DESK_IDS) — своё, если пришлось на сам фон .wp-layer; иначе не наше (окно, панель) */
+  function ownTap(t) { return !!(t && t.nodeType === 1 && t.closest && (DESK_IDS[t.id] || t.closest(".wp-layer"))); }
+  function size() {
+    if (!hcv) return;
+    W = window.innerWidth; H = window.innerHeight; K = Math.min(window.devicePixelRatio || 1, 1.5); K = Math.min(K, Math.sqrt(2.4e6 / Math.max(1, W * H)));
+    KT = Math.min(1, 1400 / Math.max(W, H, 1));
+    fit();
+    dirty = true; kick();
+  }
+  /* холсты держат полный размер, только пока нужны: горизонт — в Авроре, касание — пока оно живо. Иначе 2×2:
+     два полноэкранных холста без дела занимали память GPU, и на слабом (программном) GPU стол терял кадры
+     (window-one-glass: подпись окна в Океане не успевала погаснуть к снимку) */
+  /* и в странице стоят, только пока нужны: без дела их нет среди слоёв стола (на слабом GPU лишние холсты в слое
+     фона замедляли кадры стола: window-one-glass, подпись окна не успевала погаснуть к снимку) */
+  var hLayer = null, hAfter = null;
+  /* порядок в слое: глубина, горизонт, касание */
+  function place(c, on, prev) {
+    if (!hLayer) return;
+    if (on && c.parentNode !== hLayer) { var p0 = prev && prev.parentNode === hLayer ? prev : hAfter; hLayer.insertBefore(c, p0 ? p0.nextSibling : null); }
+    else if (!on && c.parentNode) c.parentNode.removeChild(c);
+  }
+  function fit() {
+    var aur = mood === "aurora", hw = aur ? Math.max(2, Math.round(W * K)) : 2, hh = aur ? Math.max(2, Math.round(H * K)) : 2;
+    if (hcv.width !== hw || hcv.height !== hh) { hcv.width = hw; hcv.height = hh; dirty = true; }
+    var on = touches.length > 0, tw = on ? Math.max(2, Math.round(W * KT)) : 2, th = on ? Math.max(2, Math.round(H * KT)) : 2;
+    if (tcv.width !== tw || tcv.height !== th) { tcv.width = tw; tcv.height = th; }
+    place(hcv, aur, null); place(tcv, on, hcv);
+  }
+  function frame(now) {
+    raf = 0;
+    var m = curMood();
+    if (m !== mood) { mood = m; touches = []; dirty = true; }
+    fit();
+    root.classList.toggle("sb-horizon", mood === "aurora");
+    if (!mood || parked() || doc.hidden) return;
+    var still = reduced(), t = still ? 12 : (now - T0) / 1000;
+    if (still) touches = [];
+    touches = touches.filter(function (o) { return t - o.t < DUR[mood]; });
+    /* окно на столе — вода стоит (один кадр): под стеклом окна живой холст не перерисовывается */
+    var calm = still || !!doc.querySelector("#windowLayer .window:not(.minimized):not(.closing)");
+    if (mood === "aurora" && (dirty || (!calm && !rest))) { drawGround(still ? 0 : t * 0.5); dirty = false; if (!calm) rest = setTimeout(function () { rest = 0; kick(); }, 500); else if (!still) rest = setTimeout(function () { rest = 0; kick(); }, 1000); }
+    /* холст касания виден и перерисовывается только пока касание живо: в покое он снят со страницы
+       (полноэкранный холст, стираемый на каждую смену классов корня, мешал составлению окон поверх стола) */
+    var liveTap = touches.length > 0;
+    if (liveTap || tcv.classList.contains("live")) { tx.setTransform(1, 0, 0, 1, 0, 0); tx.clearRect(0, 0, tcv.width, tcv.height); }
+    tcv.classList.toggle("live", liveTap);
+    if (!liveTap) fit();
+    if (liveTap) { tx.setTransform(KT, 0, 0, KT, 0, 0); tapScene(t, tx); raf = requestAnimationFrame(frame); }
+  }
+  function kick() { if (!raf && hcv) raf = requestAnimationFrame(frame); }
+  function mount() {
+    var layer = doc.querySelector(".wp-layer"), after = doc.getElementById("sbDepthField"); if (!layer) return;
+    hcv = doc.createElement("canvas"); hcv.id = "sbHorizon"; hcv.setAttribute("aria-hidden", "true");
+    tcv = doc.createElement("canvas"); tcv.id = "sbThemeTap"; tcv.setAttribute("aria-hidden", "true");
+    hLayer = layer; hAfter = after && after.parentNode === layer ? after : null;
+    hx = hcv.getContext("2d"); tx = tcv.getContext("2d");
+    window.addEventListener("pointerdown", function (e) {
+      if (!mood || reduced() || parked() || !ownTap(e.target)) return;
+      touches.push({ x: e.clientX, y: e.clientY, t: (performance.now() - T0) / 1000 }); if (touches.length > 6) touches.shift();
+      kick();
+    }, { passive: true });
+    window.addEventListener("resize", size);
+    doc.addEventListener("visibilitychange", kick);
+    /* как у глубины выше: кадр — только когда изменилось видимое на фоне (тема, движение, инкогнито, Турбо, «накрыто
+       окном», без WebGL); прочие классы корня (перетаскивание, окна, ввод) кадра не стоят — иначе каждое движение окна
+       заказывало кадр, и на слабом GPU стол отставал (window-one-glass) */
+    var stampH = function () { var c = root.classList; return [root.getAttribute("data-wp-mood"), root.getAttribute("data-theme"), root.getAttribute("data-motion"), c.contains("sb-incognito"), c.contains("sb-turbo"), c.contains("wp-parked"), c.contains("sb-depth-nogl"), c.contains("has-windows"), c.contains("sb-has-session"), c.contains("rv-scene")].join("|"); };
+    var seenH = stampH();
+    new MutationObserver(function () { var st = stampH(); if (st === seenH) return; seenH = st; dirty = true; kick(); }).observe(root, { attributes: true, attributeFilter: ["data-wp-mood", "data-theme", "data-motion", "class"] });
+    if (mq.addEventListener) mq.addEventListener("change", function () { dirty = true; kick(); });
+    size();
+  }
+  window.sbHorizon = { frac: frac, get mood() { return mood; }, get touches() { return touches.length; } };
+  if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", mount); else mount();
 })();

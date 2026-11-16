@@ -750,6 +750,9 @@
     for (var i = 0; i < list.length; i++) {
       var e = list[i];
       if (e === shade || e === cv || (layer && layer.contains(e))) continue;
+      /* ручка «инструменты ⌃» (H4e, D-1302) стоит в ряду голоса только до фразы: с первым словом она уступает
+         и поднимается над небом голоса (desktools.css) — неба не гасит */
+      if (e.closest && e.closest("#sbDeskTools .dt-handle")) continue;
       if (e === root || e === doc.body) return false;
       return !(desk && desk.contains(e));
     }
@@ -925,6 +928,7 @@
       shade.classList.remove("on"); doorOn(false); dockSet(null);
       if (!keepQueue) setTimeout(next, fast ? 120 : 420);
     }
+    if (p.rec && typeof window.sbNotifLive === "function") try { window.sbNotifLive(p.rec, false, !!p.readIt); } catch (e) { /* выпуск недоступен */ }   /* D-1304 */
     if (p.onMelt && !p.requeue) { var f = p.onMelt; p.onMelt = null; try { f(); } catch (e) { if (window.console) console.error(e); } }
     kick();
   }
@@ -1046,6 +1050,8 @@
     if (p.warm || p.kind !== "event" || typeof window.sbNotifRecord !== "function") return;
     p.el.setAttribute("data-voice-logged", "");
     try { p.rec = window.sbNotifRecord({ title: p.title0, text: p.text0, safe: !!p.sticky, tk: keyOf(p.title0), xk: keyOf(p.text0) }); } catch (e) { if (window.console) console.error("[voice] journal", e); }
+    /* H4e (D-1304): пока фраза на экране, колокольчик её не считает; ушла непрочитанной — встаёт в счёт */
+    if (p.rec && !p.gone && typeof window.sbNotifLive === "function") try { window.sbNotifLive(p.rec, true); } catch (e) { /* выпуск недоступен */ }
   }
   function readSafe(p) {
     p.answered = true;
@@ -1078,7 +1084,7 @@
       p.answered = true; melt(p, true);
     });
     /* слово-кнопка ответила — фраза не вернётся из очереди */
-    t.addEventListener("click", function (ev) { if (ev.target && ev.target.closest && ev.target.closest("button.toast-action")) { if (p.sticky) readSafe(p); p.answered = true; } }, true);
+    t.addEventListener("click", function (ev) { if (ev.target && ev.target.closest && ev.target.closest("button.toast-action")) { if (p.sticky) readSafe(p); p.answered = true; p.readIt = true; } }, true);
     enqueue(p);
     return h;
   }
@@ -1164,7 +1170,7 @@
     var h = { el: t, dismiss: function () { drop(p); } };
     h.done = new Promise(function (r) { p.onMelt = function () { if (opt.melt) try { opt.melt(); } catch (e) { if (window.console) console.error(e); } r(); }; });
     p.handle = h;
-    t.addEventListener("click", function (ev) { if (ev.target.closest && ev.target.closest("button")) return; if (p.sticky) readSafe(p); if (!opt.keep || p.sticky) { p.answered = true; melt(p, true); } });
+    t.addEventListener("click", function (ev) { if (ev.target.closest && ev.target.closest("button")) return; p.readIt = true; if (p.sticky) readSafe(p); if (!opt.keep || p.sticky) { p.answered = true; melt(p, true); } });
     if (opt.after && cur && !cur.gone) { queue.push(p); return h; }   /* после того, что звучит сейчас */
     enqueue(p);
     return h;

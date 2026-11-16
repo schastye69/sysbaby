@@ -212,3 +212,52 @@ html.sb-tools-wide #sbIconLayer { opacity: 0; visibility: hidden; transition: op
 #sbDeskTools.land .dt-tray { flex-wrap: wrap; justify-content: center; gap: 0; max-width: 100%; overflow: visible; }
 #sbDeskTools.land .dt-tray > .dt-word { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: calc((100% - 2px) / 6); min-width: 0; min-height: 36px; padding: 0; font-size: var(--f-meta); text-align: center; }
 #sbDeskTools.land .dt-tray > .dt-word .dt-ico { width: 18px; height: 18px; margin: 0; }
+
+/* ── H4e: меню прячется, когда выбран инструмент; вернуть его — ручка «инструменты» внизу (D-1301, D-1302) ── */
+#sbDeskTools .dt-tray[hidden], #sbDeskTools .dt-foot[hidden] { display: none; }
+/* закреплённое — точка света под словом ряда */
+#sbDeskTools .dt-tray > .dt-word.pinned { position: relative; }
+#sbDeskTools .dt-tray > .dt-word.pinned::after { content: ""; position: absolute; left: 50%; bottom: 3px; width: 4px; height: 4px; margin-left: -2px; border-radius: var(--r-round); background: rgba(var(--dt-c), .9); box-shadow: 0 0 6px rgba(var(--dt-g), .9); }
+
+/* ── H4e: касание часов (закреплённого) — прозрачная кнопка над его светом (D-1300) ── */
+/* касание пальцем проходит сквозь кнопку на сам стол (рябь поля, свет касания темы) и открывает часы через общий
+   обработчик касания стола (inPinned); кнопка остаётся для клавиатуры и чтеца */
+#sbDeskTools .dt-pinhit { position: absolute; border: 0; padding: 0; background: transparent; cursor: pointer; pointer-events: none; border-radius: var(--r-card); -webkit-tap-highlight-color: transparent; }
+#sbDeskTools .dt-pinhit[hidden] { display: none; }
+#sbDeskTools .dt-pinhit:focus-visible { outline: 1px solid rgba(var(--dt-c), .45); outline-offset: 2px; }
+
+/* ── H4e: ручка «инструменты» у нижнего края, в ряд с «+» (D-1302) ── */
+#sbDeskTools .dt-handle {
+  position: absolute; left: 50%; transform: translate(-50%, -50%); height: 36px; padding: 0 14px 0 12px; border-radius: var(--r-pill);
+  display: inline-flex; align-items: center; gap: 8px; pointer-events: auto; cursor: pointer;
+  /* плашка ручки — тоном ореола темы, а не нейтральной вуалью: в Тепле тьма цветная, не бурая (D-824, teplo-mandarin) */
+  border: 1px solid rgba(var(--dt-g), .22); background: rgba(var(--dt-g), .08); color: rgba(var(--dt-g), .95);
+  font: var(--w-text) var(--f-ui)/var(--lh-one) var(--font); text-transform: lowercase; letter-spacing: 0; -webkit-tap-highlight-color: transparent;
+  transition: background var(--t-touch) var(--ease-move), border-color var(--t-touch) var(--ease-move), opacity var(--t-move) var(--ease-move);
+}
+#sbDeskTools .dt-handle[hidden] { display: none; }
+#sbDeskTools .dt-dots { display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; flex: none; }
+#sbDeskTools .dt-dots i { width: 4px; height: 4px; border-radius: var(--r-round); background: rgba(var(--dt-g), .95); box-shadow: 0 0 5px rgba(var(--dt-g), .5); transition: transform var(--t-move) var(--ease-move); }
+#sbDeskTools .dt-chev { width: 12px; height: 12px; flex: none; fill: none; stroke: rgba(var(--dt-g), .9); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--t-move) var(--ease-move); }
+#sbDeskTools .dt-handle.open { background: rgba(var(--dt-g), .14); border-color: rgba(var(--dt-g), .4); }
+#sbDeskTools .dt-handle.open .dt-chev { transform: rotate(180deg); }
+#sbDeskTools .dt-handle.open .dt-dots i:nth-child(odd) { transform: scale(.6); }
+#sbDeskTools .dt-handle:focus-visible { outline: 1px solid rgba(var(--dt-c), .5); outline-offset: 2px; }
+/* пока говорит голос, его строка — внизу посередине: ручка поднимается над ней и остаётся под пальцем */
+#sbDeskTools .dt-handle { transition: background var(--t-touch) var(--ease-move), border-color var(--t-touch) var(--ease-move), opacity var(--t-move) var(--ease-move), top var(--t-move) var(--ease-move); }
+html:has(#sbVoiceShade.on) #sbDeskTools .dt-handle { margin-top: -76px; }
+html.sb-kb #sbDeskTools .dt-handle { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { #sbDeskTools .dt-handle, #sbDeskTools .dt-chev, #sbDeskTools .dt-dots i { transition: none; } }
+html[data-motion="reduced"] #sbDeskTools .dt-handle, html[data-motion="reduced"] #sbDeskTools .dt-chev { transition: none; }
+
+/* ── H4e: бейдж идущего таймера в шапке — только когда самого таймера на столе не видно (D-1303) ── */
+#sbClockBtn .tb-run { display: inline-flex; align-items: center; gap: 5px; margin-right: 9px; color: var(--ink); font-variant-numeric: tabular-nums; }
+#sbClockBtn .tb-run[hidden] { display: none; }
+#sbClockBtn .tb-run svg { width: 13px; height: 13px; fill: rgb(var(--accent-rgb)); flex: none; }
+.tb-clock .tb-time[hidden] { display: none; }
+/* ── H4e: голос слушает — светится только черта пульта в шапке, стол спокоен (D-1305) ── */
+html.sb-listening #sbCcTrigger { border-color: rgba(var(--accent-rgb), .55); animation: dt-listen 1.7s ease-in-out infinite; }
+html.sb-listening #sbCcTrigger .ember-bar { filter: drop-shadow(0 0 5px rgba(var(--accent-rgb), .9)); }
+@keyframes dt-listen { 0%, 100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0), 0 0 10px rgba(var(--accent-rgb), .2); } 50% { box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .13), 0 0 24px rgba(var(--accent-rgb), .45); } }
+@media (prefers-reduced-motion: reduce) { html.sb-listening #sbCcTrigger { animation: none; box-shadow: 0 0 0 2px rgba(var(--accent-rgb), .3); } }
+html[data-motion="reduced"].sb-listening #sbCcTrigger { animation: none; box-shadow: 0 0 0 2px rgba(var(--accent-rgb), .3); }

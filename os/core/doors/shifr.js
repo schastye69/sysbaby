@@ -11,8 +11,8 @@ window.sbScenes.register('shifr', function (root, kit) {
    The whole screen is a quiet field of seals laid out in blocks of sixteen; above the word field stands one block —
    the 4×4 state of AES, each cell a large seal — inside a dial of 14 marks (AES-256 has 14 rounds). Every sign typed changes every seal
    of the state and sends a wave across the lattice: the avalanche effect, the property that makes a cipher a cipher.
-   Wrong word: the state scrambles and goes cold. Right word: 14 rounds play out (rows shift, columns mix), the block
-   comes apart like bolts withdrawing, and the lattice dissolves.
+   Wrong word: the state scrambles and goes cold. Right word (H4e, D-1297): a short run of rounds plays out — the wheels spin into place, rows shift,
+   columns mix — and the scene fades where it stands: no zoom, nothing flies apart.
    The scene never sees the word: it learns only how many signs were typed; every seal drawn here is fresh randomness,
    not derived from anything (the real carrier's seals stay where the door already shows them). Canvas 2D: the lattice is drawn once per size; a frame redraws only the cells in motion
    and the block. While the lock turns the key, nothing is drawn at all. */
@@ -953,7 +953,7 @@ function emblemFrame(t, dt) {
   rimBoost *= Math.exp(-dt / 0.9);
   if (opening) rimFlare = Math.min(1, rimFlare + dt * 3); else rimFlare *= Math.exp(-dt / 0.4);
   if (P.emblem === 'key') for (let i = 0; i < 256; i++) { if (KF[i] && t >= KF[i]) { KEY[i] = rb() & 1; KL[i] = 1; KF[i] = 0; } KL[i] *= Math.exp(-dt / 0.5); }
-  if (P.emblem === 'limb') for (const w of WH) { w.a += (w.ta - w.a) * Math.min(1, dt * (opening ? 3.2 : 14)); for (let i = 0; i < w.n; i++) w.l[i] *= Math.exp(-dt / 0.5); }
+  if (P.emblem === 'limb') for (const w of WH) { w.a += (w.ta - w.a) * Math.min(1, dt * (opening ? 5.2 : 14));   /* H4e D-1297: колёса доходят на место за короткое открытие */ for (let i = 0; i < w.n; i++) w.l[i] *= Math.exp(-dt / 0.5); }
   if (P.emblem === 'sphere') {
     if (!RM) { yaw += dt * (0.13 + spin); spin *= Math.exp(-dt / 0.5); }
     for (let i = 0; i < SPN; i++) SPL[i] *= Math.exp(-dt / 0.6);
@@ -1068,27 +1068,29 @@ function spinFrame(dt) {
   }
 }
 
-// ---------- opening: 14 rounds, then the block comes apart ----------
+// ---------- opening: the wheels spin, and that's it (H4e, D-1297) ----------
+/* Основатель 16.11.2026: «анимация входа в сейф слишком долгая; НЕТ приближения в конце — прокрутилось и точка».
+   Было: 14 раундов по 0,1 с, затем блок разлетался и колёса раздувались (≈ 2,6 с, приближение в конце).
+   Стало: OPEN_ROUNDS раундов по OPEN_RD — колёса прокручиваются на место, затем сцена тихо гаснет на месте,
+   ничего не растёт и не разлетается (apart остаётся 0). ОТКАТ: вернуть 14 × 0,1 с и фазу apart (D-1297). */
+const OPEN_ROUNDS = 10, OPEN_RD = 0.08, OPEN_FADE = 0.42;
 function stepOpen(t) {
-  const o = opening, e = t - o.t0, RD = 0.1, n = Math.min(14, Math.floor(e / RD) + 1);
-  if (e < 14 * RD) {
+  const o = opening, e = t - o.t0, RD = OPEN_RD, NR = OPEN_ROUNDS, n = Math.min(NR, Math.floor(e / RD) + 1);
+  if (e < NR * RD) {
     while (o.round < n) {
-      o.round++; ticksLit = o.round; keyFill = Math.round((o.round / 14) * 256); keyRot += 0.02; if (o.round > 10) gate = (o.round - 10) / 4;
+      o.round++; ticksLit = Math.round(o.round * 14 / NR); keyFill = Math.round((o.round / NR) * 256); keyRot += 0.028; if (o.round > NR - 4) gate = (o.round - (NR - 4)) / 4;
       for (let r = 1; r < 4; r++) { const row = [0, 1, 2, 3].map((q) => [ST[r * 4 + q], SH[r * 4 + q]]); for (let q = 0; q < 4; q++) { ST[r * 4 + q] = row[(q + r) & 3][0]; SH[r * 4 + q] = row[(q + r) & 3][1]; } } // ShiftRows
       for (let k = 0; k < 16; k++) { if (rf() < 0.5) ST[k] = rbits(); SL[k] = Math.max(SL[k], 0.55); } // SubBytes
       colGlow[o.round & 3] = 1; // MixColumns
-      if (o.round === 7 || o.round === 14) ripples.push({ t0: t, r0: R, v: Math.max(vw, vh) * 1.4, w: 0.8, tint: 2, flip: true, done: -1 });
+      if (o.round === Math.round(NR / 2) || o.round === NR) ripples.push({ t0: t, r0: R, v: Math.max(vw, vh) * 1.4, w: 0.8, tint: 2, flip: true, done: -1 });
     }
-    // ShiftRows: row r turns r cells to the left, every round; the bytes slide into their new places
     const pr = (e % RD) / RD;
     for (let r = 1; r < 4; r++) rowShift[r] = r * (1 - ease(Math.min(1, pr / 0.6)));
   } else {
     for (let r = 0; r < 4; r++) rowShift[r] = 0;
-    if (!o.apartAt) { o.apartAt = t; ripples.push({ t0: t, r0: 0, v: Math.max(vw, vh) * 0.9, w: 1, erase: true, done: -1 }); for (let k = 0; k < 16; k++) SL[k] = 1; }
-    const a = (t - o.apartAt) / 1.05;
-    apart = clamp(a, 0, 1); dialK = 1 + ease(a) * 0.9; dialA = 1 - ease(a);
-    if (a > 0.55 && !o.fade) { o.fade = 1; root.style.transition = 'opacity .55s ease'; root.style.opacity = '0'; }
-    if (a >= 1.15 && !o.fired) { o.fired = 1; o.done && o.done(); }
+    apart = 0;   // nothing grows, nothing flies apart: no zoom at the end
+    if (!o.fade) { o.fade = t; for (let k = 0; k < 16; k++) SL[k] = 1; root.style.transition = 'opacity ' + OPEN_FADE + 's ease'; root.style.opacity = '0'; }
+    if (t - o.fade >= OPEN_FADE && !o.fired) { o.fired = 1; o.done && o.done(); }
   }
 }
 

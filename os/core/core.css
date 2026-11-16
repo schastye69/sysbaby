@@ -2514,6 +2514,15 @@ html[data-theme="light"] #sbControlCenter.krupno {
 
 /* ============================================================== desktop §4 */
 #desktop { position: fixed; inset: 0; z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) var(--ease-enter); }
+/* ── ФОН ДО САМОГО НИЗА · H4e, D-1311 (основатель 16.11.2026, снимок планшета Android, Chrome, жесты): под столом
+   и под развёрнутым окном оставалась полоса 12–14 px за чертой жестов. При viewport-fit=cover страница рисует и под
+   панелью жестов, а слои, привязанные к видимой области (inset: 0), кончались над ней — там проступал другой цвет.
+   Теперь слой фона (поле, глубина, холсты Тайника, горизонт) уходит вниз на высоту области жестов
+   (--sb-safe-b = env(safe-area-inset-bottom)), развёрнутое окно и окно во весь экран — тоже (shell.js
+   maximizedRect, правило ниже), а пол страницы в каждой теме — цвет низа её фона (themes.css, D-1298).
+   Там, где области жестов нет, --sb-safe-b = 0 и ничего не меняется. ОТКАТ: снять это правило и --sb-safe-b. */
+:root { --sb-safe-b: env(safe-area-inset-bottom, 0px); }
+#desktop > .wp-layer { bottom: calc(-1 * var(--sb-safe-b)); }
 html.rv-scene #desktop { opacity: 1; }
 #sbIconLayer, #sbWidgetLayer, #sbNoteLayer { position: absolute; inset: var(--topbar-box) 0 0 0; }
 #sbIconLayer { z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) var(--ease-enter); }
@@ -3047,7 +3056,9 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
 /* Полный экран обязан быть полным: rect максимизации ставится инлайном с
    отступом под верхнюю панель, а второй нажим прячет панель — и сверху
    оставалась её тень пустоты. !important здесь бьёт инлайн-стили осознанно. */
-.window.fullscreen { top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: var(--z-fullwin); }
+.window.fullscreen { top: 0 !important; left: 0 !important; width: 100vw !important; height: calc(100vh + var(--sb-safe-b)) !important; z-index: var(--z-fullwin); }
+/* развёрнутое и во весь экран: стекло до самого низа, содержимое — над областью жестов (D-1311) */
+:is(.window.maximized, .window.fullscreen) > .window-body { padding-bottom: var(--sb-safe-b); }
 /* Fullscreen is a contract, not a costume (v21, закон window-controls):
    the window fills the glass to y:0 — so the bar RETREATS instead of
    parking itself over the window's own close/minimise/maximise keys.
@@ -4928,10 +4939,20 @@ html :is(input[type="text"], input[type="search"], input[type="password"], input
    при наводке. Ступень --f-lead теперь 15 (Чистота Б), поэтому порог назван сам. */
 html.is-touch { --field-fs: max(16px, var(--f-lead)); }
 html[data-theme="light"] { --field-face: color-mix(in srgb, color-mix(in srgb, var(--win-pane-1) 50%, var(--win-pane-2)) 30%, #fffdf9); }
+/* ── ПОЛЕ — ТЁМНОЕ СТЕКЛО · H4e, D-1312 (основатель 16.11.2026, снимок с планшета: поле «передать» — сплошная
+   бурая плита ≈#35200f; правило «никаких больших светлых поверхностей на тёмном»). Во всех тёмных темах, и в
+   Тайнике, поле окна (строка, многострочное, список) — почти прозрачная тёмная плёнка, не светлее самого окна;
+   тонкая рамка — акцент темы на .12 (тенью внутрь, не чертой: черты под строкой по-прежнему нет); фокус — тихое
+   кольцо акцента. Светлица — прежняя (D-819). ОТКАТ: снять этот блок — поле снова на ступень светлее стекла. */
+html:not([data-theme="light"]) {
+  --field-face: rgba(var(--veil-rgb, 4, 5, 8), .16);
+  --field-frame: inset 0 0 0 1px rgba(var(--accent-rgb), .12);
+  --field-edge-on: inset 0 0 0 1px rgba(var(--accent-rgb), .42), 0 0 0 3px rgba(var(--accent-rgb), .10);
+}
 #windowLayer :is(input[type="text"], input[type="search"], input[type="password"], input[type="email"], input[type="url"], input[type="tel"], input[type="number"], input[type="date"], input:not([type]), textarea, [contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]):not(.term-input, .ow-sw) {
   box-sizing: border-box; min-height: var(--field-h);
   padding: 0 var(--field-pad-x);
-  background: var(--field-face); background-image: none;
+  background: var(--field-face); background-image: none; box-shadow: var(--field-frame, none);
   border: 0; border-radius: var(--r-ctrl);
   color: var(--ink); font-family: inherit; font-size: var(--field-fs, var(--f-ui)); line-height: var(--lh-ui);   /* кегль поля — ступень шкалы: --f-ui, на касании --f-lead (через --field-fs; type-scale, доска H4) */
   outline: none;
@@ -5213,3 +5234,5 @@ html.is-touch #topbar :is(button, a, [role="button"]):not(#sbTopIdentity) { posi
 html.is-touch #topbar :is(button, a, [role="button"]):not(#sbTopIdentity)::after { content: ""; position: absolute; inset: -8px -6px; }
 html.is-touch #sbTopIdentity { padding-block: 8px; margin-block: -8px; }
 html.is-touch #sbControlCenter :is(.cc-toggle, .chip, .sv-more, .sv-links button) { min-height: 40px; }
+/* Список окна — той же тёмной плёнкой и рамкой акцента .12 (D-1312); Светлица — прежняя. */
+html:not([data-theme="light"]) #windowLayer select { background-color: var(--field-face); border-color: rgba(var(--accent-rgb), .12); }

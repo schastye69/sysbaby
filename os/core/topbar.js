@@ -586,8 +586,11 @@
        и это выбор, а не случайность: который час, человек узнаёт у телефона
        одним взглядом вверх, а на каком он языке — только у нас. */
     var narrow = window.innerWidth < 480;
+    /* НЕ ПОКАЗЫВАТЬ ОДНО И ТО ЖЕ ДВАЖДЫ (H4e, D-1300; основатель 15.11.2026: «гениальное решение»): пока часы
+       стоят на столе (html.sb-desk-clock ставит core/desktools.js), в шапке только дата; часы убрали — время вернулось. */
+    var deskClock = doc.documentElement.classList.contains("sb-desk-clock");
     var opts = window.innerWidth < 560 ? { day: "numeric", month: "short" } : { weekday: "short", day: "numeric", month: "short" };
-    var dateStr = narrow ? "" : d.toLocaleDateString(localeFor(), opts);
+    var dateStr = narrow && !deskClock ? "" : d.toLocaleDateString(localeFor(), opts);
     /* ЧАСЫ БЕЗ СЕКУНД (D-609, основатель 04.11.2026: «Секунды убираем, конечно»): в верхней панели — часы и
        минуты на любой ширине; секунды живут в виджете «Время». Стережёт tools/desk-items-check.mjs. */
     var timeStr = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
@@ -599,15 +602,17 @@
        сокращения убраны; дата тише (--ink-3), время ярче.
        ОТКАТ: вернуть сборку ячеек clock-cell/makeGlyph из v178-H4a. */
     dateStr = dateStr.replace(/,/g, "").replace(/\.(?=\s|$)/g, "").replace(/\s+/g, " ").trim();
-    var whole = narrow || !dateStr ? timeStr : dateStr + "  " + timeStr;
+    if (deskClock) { dateStr = dateStr.replace(/,/g, "").replace(/\.(?=\s|$)/g, "").replace(/\s+/g, " ").trim(); }
+    var whole = deskClock ? dateStr : narrow || !dateStr ? timeStr : dateStr + "  " + timeStr;
     if (whole === lastClock && !force) return;
     if (!clockCells || force || clockCells[0].parentNode !== host) {
       host.innerHTML = '<span class="tb-date"></span><span class="tb-time"></span>';
       clockCells = [host.firstChild, host.lastChild];
     }
-    clockCells[0].textContent = narrow ? "" : dateStr;
-    clockCells[0].hidden = narrow || !dateStr;
-    clockCells[1].textContent = timeStr;
+    clockCells[0].textContent = narrow && !deskClock ? "" : dateStr;
+    clockCells[0].hidden = (narrow && !deskClock) || !dateStr;
+    clockCells[1].textContent = deskClock ? "" : timeStr;
+    clockCells[1].hidden = deskClock;
     host.setAttribute("data-whole", whole);
     host.setAttribute("aria-label", whole);
     lastClock = whole;

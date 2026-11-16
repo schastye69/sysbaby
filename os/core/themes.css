@@ -136,6 +136,9 @@ html:not([data-theme="light"]):not(.sb-incognito) {
    --menu-bg, --air-rgb — прежние: у Тепла тьма Мандарина (D-824), у остальных — core.css (teplo-mandarin п.4) */
 html[data-wp-mood="ocean"]:not([data-theme="light"]):not(.sb-incognito) { --dp-base: 2, 3, 10; }
 html[data-wp-mood="aurora"]:not([data-theme="light"]):not(.sb-incognito) { --dp-base: 2, 6, 9; }
+/* H4e (D-1306…D-1308): холсты core/depth.js — горизонт-«зеркало» только в тёмной Авроре; свет касания — в Океане и Авроре, пока касание живо */
+html:is([data-wp-mood="ocean"], [data-wp-mood="aurora"]):not([data-theme="light"]):not(.sb-incognito):not(.sb-depth-nogl) #sbThemeTap.live { display: block; }
+html[data-wp-mood="aurora"]:not([data-theme="light"]):not(.sb-incognito):not(.sb-depth-nogl) #sbHorizon { display: block; }
 html:is([data-wp-mood="ember"], [data-wp-mood="eclipse"]):not([data-theme="light"]):not(.sb-incognito) { --dp-base: 1, 1, 1; }
 
 /* шапка: та же чернота, без цветной дымки — свет темы остаётся внизу, в дуге */
@@ -260,3 +263,47 @@ html.sb-fullscreen-window #topbar#topbar, html.sb-fullscreen-window #topbar#topb
    оставляет человека в темноте — плотная подложка цвета стола под стеклом и видимые кнопки окна на любом фоне. */
 .window.fullscreen { background-color: var(--wp-f2); }   /* --wp-f2 есть у каждой темы: свой откат не нужен */
 .window.fullscreen .titlebar .light, .window.fullscreen .light.close, .window.fullscreen .light.min, .window.fullscreen .light.zoom { background-color: /* своя краска: кнопки окна видны на любом фоне — белая дымка без цвета темы (D-1241) */ rgba(255, 255, 255, .16); box-shadow: /* своя краска: тонкий белый ободок кнопки на любом фоне (D-1241) */ 0 0 0 1px rgba(255, 255, 255, .22); }
+
+/* ── БЕЗ КОРИЧНЕВОЙ ПОЛОСЫ ВНИЗУ · H4e, D-1298 (основатель 16.11.2026, ошибки H4d п.1) ──────────────
+ * «Коричневая полоса внизу — на экране шифра (сейф) и на столе Тайника». Под всеми слоями лежит фон страницы
+ * (html, body: --bg Мандарина #130802, в остальных темах нейтральный #0a0a0b). Где слой не доходит до низа — полоса панели браузера, которая прячется
+ * при прокрутке, область жестов планшета при viewport-fit=cover, миг смены ворот и стола, 8 % прозрачности
+ * ворот, — проступал этот бурый пол под почти чёрным низом. Теперь пол страницы — того же цвета, что низ
+ * поверхности над ним: у ворот — их чернота, у Тайника — чёрный низ его вуали. Сумрак под строкой голоса
+ * в Тайнике — прежний тёмно-апельсиновый (D-824): чёрная вуаль на его месте делала низ при голосе бурым
+ * (teplo-mandarin). Прочее в Тайнике не тронуто. ОТКАТ: снять этот блок. */
+html:has(#sbVaultGate), html:has(#sbVaultGate) body { background-color: /* своя краска: пол под воротами — их чернота (gate: 6,7,10) */ #06070a; }
+/* Пол страницы в каждой теме — цвет самого низа её фона (замер нижней строки: Тайник 9,4,0 · Океан 21,32,70 ·
+   Аврора 11,18,21 — вода «зеркала» · Затмение 2,1,1). Прежде во всех темах, кроме Тайника, пол был нейтральным
+   #0a0a0b, а в Тайнике — бурым #130802: там, где слой не доходит до низа, проступала ровная одноцветная полоса. */
+html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)),
+html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)) body { background-color: /* своя краска: пол под Тайником — чёрный низ его вуали, не бурый Мандарин */ #080400; }
+html[data-wp-mood="ocean"]:not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)),
+html[data-wp-mood="ocean"]:not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)) body { background-color: /* своя краска: пол под Океаном — цвет низа его глубины */ #152046; }
+html[data-wp-mood="aurora"]:not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)),
+html[data-wp-mood="aurora"]:not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)) body { background-color: /* своя краска: пол под Авророй — цвет низа воды «зеркала» */ #0b1214; }
+html:is([data-wp-mood="ember"], [data-wp-mood="eclipse"]):not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)),
+html:is([data-wp-mood="ember"], [data-wp-mood="eclipse"]):not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)) body { background-color: /* своя краска: пол под Затмением — его чернота */ #020101; }
+/* H4e, D-1311: и Светлица — пол её цвета низа поля (замер нижней строки 196,198,194), а не белее (225) */
+html[data-theme="light"]:not(.sb-incognito):not(:has(#sbVaultGate)),
+html[data-theme="light"]:not(.sb-incognito):not(:has(#sbVaultGate)) body { background-color: /* своя краска: пол под Светлицей — цвет низа её поля */ #c4c6c2; }
+
+/* ── ОКНА ТАЙНИКА — СТЕКЛО ЗНАЧКОВ, А НЕ КОРИЧНЕВОЕ · H4e, D-1299 (основатель 16.11.2026, ошибки H4d п.4) ──
+ * «Окна (записи и др.) коричневые → цвет значков или гармоничный, не коричневый». Стекло окна смешивало свет
+ * поля (оранжевый) с полом Мандарина — выходила шоколадная плита; меню, извещения, пульт и поля — того же
+ * бурого. Теперь окна, всплывающие окна и меню Тайника — из того же вещества, что стекло плиток значков
+ * (--tile-glass-top 27,25,24 · кромка молоком): почти чёрное тёплое стекло без бурого. Заливка ровная и
+ * плотная (window-one-glass: ≥ .97, без ступеней). Только Тайник; Океан, Аврора, Затмение, Светлица — прежние.
+ * ОТКАТ: снять этот блок — окна снова из света поля и Мандарина (D-743/D-809/D-824). */
+html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) {
+  --win-pane-1: rgb(38, 34, 31);
+  --win-pane-2: rgb(29, 26, 23);
+  --bg-elev: #1b1816;
+  --menu-bg: #1f1c1a;
+  --well-rgb: 20, 18, 16;
+  --voice: rgba(22, 20, 18, .94);
+}
+/* H4e (D-1300): часы на столе — в шапке только дата, и на телефоне тоже (время уже на столе) */
+@media (max-width: 600px) {
+  html.sb-desk-clock #topbar#topbar .tb-clock .tb-date { display: inline; }
+}

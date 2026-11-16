@@ -594,11 +594,13 @@
     var c = hexToRgb(a1), st = root.style;
     /* Плёнка шва на кальке заметнее, чем на графите: доля тише (D-325). */
     var soft = root.getAttribute("data-theme") === "light" ? ".13" : ".18";
-    st.setProperty("--accent", a1);
-    st.setProperty("--accent-2", a2);
-    st.setProperty("--accent-rgb", c.r + "," + c.g + "," + c.b);
-    st.setProperty("--accent-soft", "rgba(" + c.r + "," + c.g + "," + c.b + "," + soft + ")");
-    st.setProperty("--accent-ring", "rgba(" + c.r + "," + c.g + "," + c.b + ",.55)");
+    /* то же значение не пишется второй раз: запись в корень объявляет устаревшим стиль всего документа (D-093) */
+    var put = function (k, v) { if (st.getPropertyValue(k) !== v) st.setProperty(k, v); };
+    put("--accent", a1);
+    put("--accent-2", a2);
+    put("--accent-rgb", c.r + "," + c.g + "," + c.b);
+    put("--accent-soft", "rgba(" + c.r + "," + c.g + "," + c.b + "," + soft + ")");
+    put("--accent-ring", "rgba(" + c.r + "," + c.g + "," + c.b + ",.55)");
     /* Угли Очага — всегда: ими светятся островки тьмы (дверь, занавес). */
     if (ember) {
       var e = hexToRgb(ember);
@@ -3039,6 +3041,13 @@
      Расхождение двух путей к одному состоянию — тот же класс ошибки, что
      когда-то дал два скрипта выкладки. Теперь прямоугольник считает одна
      функция, и разойтись им негде. */
+  /* высота области жестов внизу (env(safe-area-inset-bottom) через --sb-safe-b, core.css); нет её — 0 */
+  var safeProbe = null;
+  function safeBottom() {
+    if (!safeProbe) { safeProbe = doc.createElement("div"); safeProbe.setAttribute("aria-hidden", "true"); safeProbe.style.cssText = "position:fixed;left:0;top:0;width:0;visibility:hidden;pointer-events:none;height:var(--sb-safe-b,0px)"; }
+    if (!safeProbe.isConnected) (doc.body || root).appendChild(safeProbe);
+    return Math.round(safeProbe.getBoundingClientRect().height) || 0;
+  }
   function maximizedRect() {
     /* ── РАЗВЁРНУТОЕ ОКНО НАКРЫВАЕТ СТОЛ ДО НИЗА, А СОДЕРЖИМОЕ — НАД ПОЛКОЙ
        (D-273, вторая редакция) ────────────────────────────────────────────
@@ -3051,10 +3060,11 @@
        его ТЕЛО: core.css даёт .window-body развёрнутого окна нижнее поле в
        высоту полки. Полка лежит на стекле самого окна, обои под ним гаснут,
        и ничего из комнаты под полкой не прячется. */
+    /* H4e, D-1311: и через область жестов внизу (viewport-fit=cover) — без полосы под окном */
     return {
       x: 0, y: topbarBox(),
       w: window.innerWidth,
-      h: Math.max(160, window.innerHeight - topbarBox())
+      h: Math.max(160, window.innerHeight - topbarBox()) + safeBottom()
     };
   }
 

@@ -58,6 +58,15 @@
  */
 (function () {
   "use strict";
+  /* АДРЕС ОДЕЯЛА — ОТ САМОГО СКРИПТА, А НЕ ОТ СТРАНИЦЫ (H4e, D-1296). Система живёт и на /os/
+     (core/smiles.js), и в корне сайта (os/core/smiles.js, D-054). Относительный адрес
+     «apps/…» от страницы в корне вёл на /apps/smiles-blanket/blanket.html — такого файла нет,
+     и вместо одеяла открывалась страница «файл не найден». Адрес считается от src этого
+     скрипта: ../apps/smiles-blanket/blanket.html — один и тот же файл описи в обоих местах. */
+  var BLANKET_URL = (function () {
+    try { var cs = document.currentScript; if (cs && cs.src) return new URL("../apps/smiles-blanket/blanket.html", cs.src).href; } catch (e) { /* старый браузер */ }
+    return "apps/smiles-blanket/blanket.html";
+  })();
   /* где лежит сам этот файл: от него — свои файлы (грань-опора), с какой бы страницы его ни взяли */
   var SRC0 = document.currentScript && document.currentScript.src || "";
   if (window.sbSmiles) return;
@@ -557,7 +566,7 @@
   var BLK = null;
   function blanket() {
     if (BLK) return;
-    var url = window.SB_SMILE_BLANKET_URL || "apps/smiles-blanket/blanket.html";
+    var url = window.SB_SMILE_BLANKET_URL || BLANKET_URL;
     BLK = document.createElement("div");
     BLK.id = "sbSmBlanket"; BLK.className = "sb-sm-blanket"; BLK.setAttribute("role", "dialog"); BLK.setAttribute("aria-modal", "true"); BLK.setAttribute("aria-label", word("sets"));
     var f = document.createElement("iframe");

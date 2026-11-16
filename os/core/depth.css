@@ -39,3 +39,7 @@ html[data-motion="reduced"] #sbIconLayer .desk-icon.sb-depth-lit :is(.icon-tile,
 /* холст глубины проявляется после первой отрисовки слоя (сборка шейдера идёт после входа, не во время) */
 #sbDepthField { opacity: 0; transition: opacity var(--t-rise) var(--ease-enter); }
 #sbDepthField.sb-depth-on { opacity: 1; }
+
+/* ── H4e (D-1306…D-1308): горизонт-«зеркало» Авроры и ответ на касание Океана и Авроры (холсты core/depth.js);
+   когда они видны (по темам) — в словаре тем, os/core/themes.css («ГЛУБИНА»), paint-tokens ── */
+#sbHorizon, #sbThemeTap { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
