@@ -173,7 +173,17 @@
   }
   doc.addEventListener("sysbaby:desktop-ready", whenReady);
 
+  /* СОКЕТЫ (D-1404, Шёпот). Учёт загрузок браузера сокетов не видит: соединение с почтальоном
+     в него не попадает. Поэтому тот, кто открывает сокет, называет хост сам — здесь, в том же
+     счёте и по той же описи: названный в «Наружу» идёт «к чужим по описи», прочий — «вне описи». */
+  function socket(host) {
+    host = String(host || "").toLowerCase(); if (!host) return;
+    var bag = listed()[host] ? cur.third : cur.undeclared;
+    bag[host] = (bag[host] || 0) + 1;
+  }
+
   window.sbWitness = {
+    socket: socket,
     now: function () { return copy(cur); },
     prev: function () { readPrev(); return copy(prev); },
     line: line,

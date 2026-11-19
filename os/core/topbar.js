@@ -838,9 +838,18 @@
     else if (tip.id === "echoes" && window.toggleApp) window.toggleApp("echoes");
     else if (tip.id === "cmdk" && window.openCmdk) window.openCmdk("");
   }
+  /* ПОКА ШЁПОТ НА СВЯЗИ, ЭТИ СЛОВА — НЕПРАВДА (D-1408, решение основателя 17.11.2026, п.9: «Пока Шёпот на
+     связи, эта фраза не звучит: тогда она неправда»). Подсказка «Всё остаётся здесь — ничего не покидает эту
+     сессию» не говорится, пока запечатанные капли уходят почтальонам, и умолкает, если звучала в миг выхода
+     на связь. Выученной она при этом не считается. Охраняется tools/shepot-wire-check.mjs. */
+  function whisperOnLine() { try { return !!(window.sbShepotRoom && window.sbShepotRoom.on && window.sbShepotRoom.on()); } catch (e) { return false; } }
+  if (window.sbBus && typeof window.sbBus.on === "function") {
+    window.sbBus.on("shepot:line", function (e) { if (e && e.on && currentTip && currentTip.id === "privacy" && tipHandle) tipHandle.dismiss(); });
+  }
   function showTip(tip) {
     var V = window.sbVoice;
     if (!tip || !V || typeof V.say !== "function") return false;
+    if (tip.id === "privacy" && whisperOnLine()) return false;
     var requested = hintRequested;
     /* Человек вызвал подсказку — пришедшее само уступает ей (v47.1);
        пришедшая сама никого не вытесняет: шёпот ждёт свободной линии
@@ -1178,6 +1187,28 @@
     cc.classList.remove("open");
     cc.setAttribute("hidden", "");
   };
+  /* ПУЛЬТ — ПОД СВОЕЙ КНОПКОЙ (H4e3, D-1333; основатель, не раз: «не на месте» — Firefox 1920×1080 и планшет).
+     Пульт стоял у правого края экрана и под рядом значков (D-845), далеко от кнопки, что его открыла. Теперь он
+     открывается прямо под полосой, правым краем по правому краю своей кнопки, не выходя за края экрана (10 px) и не
+     накрывая полосы. На узком экране (≤ 600 px) — как был: во всю ширину под полосой. Место пересчитывается при
+     открытии и при смене размера окна. Охраняется tools/pult-place-check.mjs. */
+  /* ПУЛЬТ У ПРАВОГО КРАЯ, ПОД СВОЕЙ КНОПКОЙ (D-1337, основатель 18.11.2026, показ архива 2: «панель — в сторону, у правого
+     края экрана под своей кнопкой, а не посреди экрана»). Правый край пульта — с тем же полем, что у полосы (от края экрана
+     до её последней кнопки), верх — сразу под кнопкой; ≤ 600 px — во всю ширину с теми же полями, сверху под полосой.
+     Прежде (D-1333) правый край шёл по кнопке, и на планшете пульт вставал посреди экрана. */
+  function placeControlCenter() {
+    var cc = $("#sbControlCenter"), btn = $("#sbCcTrigger"), bar = $("#topbar");
+    if (!cc || !btn || !bar) return;
+    var vw = window.innerWidth, b = btn.getBoundingClientRect(), tb = bar.getBoundingClientRect();
+    var edge = 0; Array.prototype.forEach.call(bar.querySelectorAll("button, a, .tb-btn, .tb-clock-btn, .tb-lang-now"), function (e) { var r = e.getBoundingClientRect(); if (r.width && r.height && r.right <= vw + 1) edge = Math.max(edge, r.right); });
+    var m = Math.max(6, Math.round(edge ? vw - edge : 10));
+    var top = Math.round(vw <= 600 ? tb.bottom + 6 : Math.max(tb.bottom, b.bottom) + 6);
+    cc.style.top = top + "px"; cc.style.right = m + "px";
+    if (vw <= 600) { cc.style.left = m + "px"; cc.style.width = "auto"; }
+    else { cc.style.left = "auto"; cc.style.width = ""; }
+    cc.style.maxHeight = Math.max(200, Math.min(640, window.innerHeight - top - 12)) + "px";
+  }
+  window.addEventListener("resize", function () { if (ccOpen) placeControlCenter(); });
   function openControlCenter() {
     var cc = $("#sbControlCenter");
     if (!cc) return;
@@ -1188,6 +1219,7 @@
     cc.classList.add("open");
     setCcOther(false);
     paintCc();
+    placeControlCenter();
   }
   /* «Другое» (D-633): пульт открывается свёрнутым; нажатие разворачивает
      его — подсказка, горячие клавиши, раскладки, диагностика, «Унести дом
@@ -1272,16 +1304,20 @@
     var moreBtn = $("#sbCcMoreThemes");
     if (moreBtn) { moreBtn.hidden = big || moreN <= 0; moreBtn.textContent = moreThemesText(moreN); }
     if (moodHost) {
-      var ids = pultMoods.map(function (m) { return m.id; }).join(",");
+      /* светлый режим — имена двойников эталона Светлицы (D-1323); смена темы пересобирает ряд */
+      var lightOn = (window.sbGetTheme ? window.sbGetTheme() : document.documentElement.getAttribute("data-theme")) === "light";   /* выбранная тема: ставни надевают её кадром позже */
+      var ids = pultMoods.map(function (m) { return m.id; }).join(",") + (lightOn ? "|light" : "");
       if (moodHost.getAttribute("data-built") !== ids) {
         moodHost.setAttribute("data-built", ids);
         moodHost.innerHTML = pultMoods.map(function (m) {
-          var name = window.sbT("mood." + m.id);
-          if (name === "mood." + m.id) name = m.name || m.id;
+          var key = "mood." + m.id, lk = "mood.light." + m.id;
+          if (lightOn && window.sbT(lk) !== lk) key = lk;
+          var name = window.sbT(key);
+          if (name === key) name = m.name || m.id;
           /* «Остановки на жиле» (D-619): у каждой остановки узел на нити и
              имя под ним; имя переводится внутри, узел остаётся. */
           return '<button class="chip sv-stop" type="button" data-mood="' + esc(m.id) +
-            '"><i class="sv-dot" aria-hidden="true"></i><span data-i18n="mood.' + esc(m.id) + '">' + esc(name) + "</span></button>";
+            '"><i class="sv-dot" aria-hidden="true"></i><span data-i18n="' + esc(key) + '">' + esc(name) + "</span></button>";
         }).join("");
       }
     }

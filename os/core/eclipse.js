@@ -11,7 +11,7 @@
    в field.js), его отклик на касание не вызывается. Тлеющее пятнышко Углей снято
    (themes.css). Перенесено из демо dom-moy-D/zatmenie.js (temy-anim8).
    Свет медленный, поэтому фон рисуется 30 раз в секунду; под открытыми
-   окнами (wp-parked), на воротах, в Светлице и инкогнито холст стоит.
+   окнами (wp-parked), на воротах и в Светлице холст стоит (гость видит то же, что стол, D-1315).
    «Меньше движения» — один неподвижный кадр, касание без отклика.
    Наружу — window.sbEclipse (геометрия диска и счёт кадров) для закона
    tools/eclipse-edge-check.mjs; кадры — tools/themes-frames-check.mjs. */
@@ -29,8 +29,7 @@
   function gate() { return !!doc.getElementById("sbVaultGate"); }
   function on() {
     var m = root.getAttribute("data-wp-mood");
-    return (m === "ember" || m === "eclipse") && root.getAttribute("data-theme") !== "light" &&
-      !root.classList.contains("sb-incognito") && !gate();
+    return (m === "ember" || m === "eclipse") && root.getAttribute("data-theme") !== "light" && !gate();
   }
   /* «Накрыто окном» — тем же правилом, что у поля (occluded() в field.js): окно во
      весь стол. Своё, потому что погашенное в Затмении поле не паркуется.
@@ -52,6 +51,13 @@
     if (was && !covered) kick();
   }
   function parked() { return covered || root.classList.contains("wp-parked"); }
+  function underBar(y) {
+    /* ПОЛОСА СВЕРХУ — МЕБЕЛЬ И ТАМ, ГДЕ ОНА ПРОПУСКАЕТ КАСАНИЕ (H4e2, D-1320): пустая середина полосы касаний не
+       ловит (themes.css), и палец проходил сквозь неё на стол. Пока полоса видна, её высота — не стол. */
+    var b = document.getElementById("topbar"); if (!b) return false;
+    var r = b.getBoundingClientRect(), cs = getComputedStyle(b);
+    return r.height > 0 && r.bottom > 0 && y >= r.top && y <= r.bottom && cs.visibility !== "hidden" && cs.display !== "none" && +cs.opacity > 0.05;
+  }
   function rgba(c, a) { return "rgba(" + (c[0] | 0) + "," + (c[1] | 0) + "," + (c[2] | 0) + "," + Math.max(0, Math.min(1, a)).toFixed(4) + ")"; }
   function bell(p, up) { p = Math.max(0, Math.min(1, p)); return p < up ? Math.sin(p / up * Math.PI / 2) : Math.pow((1 - p) / (1 - up), 1.7); }
   function glow(g, x, y, r, c, a) {
@@ -132,6 +138,7 @@
       var tg = e.target;
       /* ОТКАТ: не откат на чужое значение — «||» здесь логическое «или»: касание по самому столу или по любому слою обоев. */
       if (!tg || tg.nodeType !== 1 || !(DESK[tg.id] || (tg.closest && tg.closest(".wp-layer")))) return;
+      if (underBar(e.clientY)) return;   /* полоса сверху — мебель (D-1320) */
       touches.push({ x: e.clientX, y: e.clientY, t: (performance.now() - T0) / 1000 });
       if (touches.length > 4) touches.shift();
       kick();

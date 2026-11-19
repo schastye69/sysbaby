@@ -159,10 +159,15 @@
 .st-btn:focus-visible { outline: none; box-shadow: var(--brass); }
 .st-btn.danger { color: rgb(var(--danger-rgb)); }
 
-.st-username { display: inline-flex; align-items: center; gap: 4px; }
+/* D-1349 (основатель 18.11, снимок с планшета: имя в поле обрезалось «…», а в шапке — целиком): поле шириной по имени
+   (settings.js fitName), не уже прежних 116 px и не шире карточки; «…» — только когда имя и правда не влезает. */
+.st-username { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; }
 
 .st-username input {
   width: 116px;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 6px 9px;
   border-radius: var(--r-ctrl);
   border: 1px solid rgba(var(--film-rgb), .12);

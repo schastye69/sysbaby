@@ -282,7 +282,9 @@
          печатает английское m.name, иначе два места назвали бы одно разными
          словами. Выбор обоев теперь — единственный выбор цвета в системе:
          шов приходит отсюда же (D-141). */
-      var moodName = t("mood." + m.id);
+      /* светлый режим — имена двойников эталона Светлицы (D-1323): Светлица, Зенит, Берег, Лазурь */
+      var lightK = (window.sbGetTheme ? window.sbGetTheme() : document.documentElement.getAttribute("data-theme")) === "light" ? "mood.light." + m.id : "";   /* выбранная тема, а не атрибут: ставни надевают её кадром позже */
+      var moodName = lightK && t(lightK) !== lightK ? t(lightK) : t("mood." + m.id);
       if (moodName === "mood." + m.id) moodName = m.name || m.label || m.id;
       /* Суточное настроение помечено тем же знаком, что и суточная краска:
          дуга, обошедшая круг. Человек, однажды узнавший этот знак на шве,
@@ -350,7 +352,9 @@
       rowMarkup(esc(t("set.sound.system")), esc(t("set.sound.systemSub")), switchMarkup("sound")) +
       rowMarkup(esc(t("set.sound.volume")), esc(t("set.sound.volumeSub")),
         '<span class="st-range-host" id="stVolume" data-range="volume" data-value="' + volume + '"></span>') +
-      rowMarkup(esc(t("set.sound.dnd")), esc(t("set.sound.dndSub")), switchMarkup("dnd"));
+      rowMarkup(esc(t("set.sound.dnd")), esc(t("set.sound.dndSub")), switchMarkup("dnd")) +
+      /* Шёпот: имя собеседника в голосе — только по руке человека, выключено с рождения (D-1414). */
+      (window.sbShepotRoom ? rowMarkup(esc(t("sh.set.name")), esc(t("sh.set.nameSub")), switchMarkup("shepotName")) : "");
   }
 
   function desktopMarkup() {
@@ -951,6 +955,24 @@
     if (!input) return;
     var savedTag = host.querySelector("#stUsernameSaved");
     var timer = null;
+    /* ШИРИНА ПО ИМЕНИ (D-1349): поле не уже 116 px и раздвигается под имя (или подсказку), пока хватает карточки —
+       дальше его держит max-width: 100% (settings.css), и только тогда «…» */
+    var fitCv = null;
+    function fitName() {
+      try {
+        var cs = getComputedStyle(input), txt = input.value || input.placeholder || "";
+        fitCv = fitCv || document.createElement("canvas");
+        var g = fitCv.getContext("2d"); g.font = cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+        var w = g.measureText(txt).width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth) + 4;
+        input.style.width = Math.ceil(Math.max(116, w)) + "px";
+      } catch (e) { /* ширина по умолчанию — 116 px */ }
+    }
+    fitName();
+    /* шрифт ещё грузится — перемерить, когда догрузится; document.fonts.ready не спрашиваем: его геттер дорог на каждом
+       открытии окна (open-cost-check) */
+    if (document.fonts && document.fonts.status !== "loaded" && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", fitName, { once: true });
+    input.addEventListener("input", fitName);
+    input.addEventListener("blur", function () { setTimeout(fitName, 0); });
 
     /* ПОКА ЧЕЛОВЕК ПЕЧАТАЕТ — ПУСТОЕ ОСТАЁТСЯ ПУСТЫМ · D-722 (основатель
        10.11.2026): стёрли имя до пусто — «guest» не возвращается, пока он
@@ -970,6 +992,7 @@
          «Анна» и «Мария» снимался обрезкой краёв через полсекунды паузы — и имя
          склеивалось молча. Как сохранено — видно, когда он ушёл из поля. */
       if (typeof applied === "string" && typing !== true) input.value = applied === (window.sbGuestWord ? window.sbGuestWord() : "") && window.sbUsernameStored && !window.sbUsernameStored() ? "" : applied;
+      fitName();
       if (savedTag) {
         savedTag.classList.add("show");
         setTimeout(function () { savedTag.classList.remove("show"); }, 1400);

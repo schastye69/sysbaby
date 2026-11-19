@@ -836,35 +836,6 @@ html[data-theme="light"] .tb-clock,
 html[data-theme="light"] .pl-time,
 html[data-theme="light"] .time-big { filter: none; }
 
-html.sb-incognito {
-  --bg: #000;
-  --bg-elev: #06060a;
-  --accent: #a06bff;
-  --accent-2: #6b3dff;
-  --accent-rgb: 160, 107, 255;
-  --line: rgba(255, 255, 255, .18);
-  --glass: rgba(255, 255, 255, .05);
-  /* Вещество значка в инкогнито (D-285): поле чёрное, плитка — уголь. */
-  --tile-top: #1d1d1e;
-  --tile-bottom: #0e0e0e;
-  --tile-edge: #3a3a3b;
-  --tile-top-on: #28282a;
-  --tile-bottom-on: #161617;
-  --tile-edge-on: #4a4a4c;
-  /* Стекло значка (D-616) в инкогнито: уголь, та же плотность. */
-  --tile-glass-top: rgba(29, 29, 30, .30);
-  --tile-glass-bottom: rgba(14, 14, 14, .40);
-  --tile-glass-top-on: rgba(40, 40, 42, .38);
-  --tile-glass-bottom-on: rgba(22, 22, 23, .48);
-  --tile-glass-edge: rgba(255, 255, 255, .07);
-  --tile-glass-edge-on: rgba(255, 255, 255, .12);
-  --tile-label: #969695;
-  --tile-label-on: #f2f2f0;
-  --tile-halo: #000000;
-  --tile-dot: #7e7e7d;
-  --tile-dot-min: #444445;
-}
-
 /* ── ТУРБО УДЕШЕВЛЯЕТ СТЕКЛО, А НЕ ОТМЕНЯЕТ ЕГО (D-148) ────────────────────
    Замер (открытие окна, телефонный кадр, медиана из 18 открытий):
        стекло 26px — 34.1 мс
@@ -1199,10 +1170,6 @@ html[data-wp-mood="therapy"], html[data-wp-mood="daylight"] {
   --wp-g1: transparent; --wp-g2: rgba(var(--ink-rgb), .04);
   --wp-f1: #101013; --wp-f2: #0a0a0c; --wp-f3: #070708;
 }
-html.sb-incognito {
-  --wp-g1-size: 800px 560px; --wp-g1-at: 72% 14%; --wp-g1-stop: 60%; --wp-g1: rgba(160, 107, 255, .14);
-  --wp-g2: transparent; --wp-f1: #000; --wp-f2: #000; --wp-f3: #000;
-}
 
 /* --------------------------------------------------- wallpaper: the field */
 /* Six layers inside .wp-layer, painted in DOM order. #sbField is opaque, so
@@ -1419,6 +1386,13 @@ html[data-theme="light"] #sbDither { display: none; }
 .vg-sheet-acts button { padding: 10px 14px; border-radius: var(--r-ctrl); border: 1px solid var(--line); background: var(--glass); color: var(--ink); font: inherit; font-size: var(--f-ui); cursor: pointer; }
 .vg-sheet-acts button.main { background: var(--lamp5-bg); border: 0; box-shadow: var(--lamp5-edge); color: var(--lamp5-ink); }
 .vg-sheet-acts button:focus-visible, .vg-sheet-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Беда Б (17.11.2026): окно первого слова думает вслух — кнопка «занята» и дышит, пока идёт растяжка (shell.js busy) */
+.vg-sheet-acts button.vg-busy-btn { cursor: progress; animation: vgBusyBreath 1.6s ease-in-out infinite alternate; }
+.vg-sheet-acts button:disabled { cursor: progress; }
+.vg-busy { color: var(--ink-2); }
+@keyframes vgBusyBreath { from { opacity: 1; } to { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .vg-sheet-acts button.vg-busy-btn { animation: none; opacity: .7; } }
+html[data-motion="reduced"] .vg-sheet-acts button.vg-busy-btn { animation: none; opacity: .7; }
 /* ── ЯЗЫК ДВЕРИ НА ЭТОТ ВХОД (D-288) ─────────────────────────────────────
    Ряд кодов над диафрагмой: каждый язык подписан собой, нажатый — светлее.
    Выбор живёт только в памяти страницы (см. gateLang в shell.js).
@@ -1605,13 +1579,12 @@ html[data-motion="reduced"] #sbBreath { opacity: .38; animation: none }
    breath holds still for the same reason the field does. */
 html.wp-parked #sbBreath { animation-play-state: paused }
 
-/* Поле — тёмная картина без светлой пары, а инкогнито нарочно не похоже на
-   обычный стол: там остаётся только пол. В Светлице поля и дыхания нет —
+/* Поле — тёмная картина без светлой пары. Гость (инкогнито) видит ту же тему,
+   что и обычный стол (D-1315): прежнее «там остаётся только пол» снято. В Светлице поля и дыхания нет —
    свет в комнату приносит солнце (#sbMoodTint, sbSun), а зерно и углы
    остаются: это вещество стены, а не освещение. */
 html[data-theme="light"] #sbField,
-html[data-theme="light"] #sbBreath,
-html.sb-incognito .wp-layer > * { display: none !important; }
+html[data-theme="light"] #sbBreath { display: none !important; }
 
 /* ============================================================== login §2.1 */
 #sbLogin {
@@ -3048,6 +3021,10 @@ html.sb-note-full[data-motion="reduced"] #sbIconLayer { transition: none; }
 /* Окно в фокусе не обводится оранжевым (D-634): та же светлая линия. */
 .window.focused { box-shadow: inset 0 0 0 1px var(--win-edge), var(--win-shadow); }
 .window.minimized { display: none; }
+/* у самого низа экрана тень окна — без сдвига вниз: зазор под окном остаётся полом, полосы нет (D-1332, shell.js nearFloorSync) */
+/* D-1354: глубокая тень у такого окна возвращена (D-634, okna-sintez), но поднята вверх так, что вниз за край окна не
+   выходит ни на пиксель (сдвиг −24 = размытие 48 − 24): по бокам и сверху окно стоит над столом, под ним — пол, полосы нет */
+.window.near-floor:not(.maximized):not(.fullscreen) { box-shadow: inset 0 0 0 1px var(--win-edge), 0 -24px 48px -24px rgba(var(--shade-rgb, 0, 0, 0), .7), 0 1px 1px rgba(var(--shade-rgb, 0, 0, 0), .22); }
 .window.maximized { border-radius: 0; }
 /* Fullscreen drops the frame, never the chrome. The title bar carries the only
    way out of the state — hiding it stranded the visitor with no close, no

@@ -2394,6 +2394,28 @@
      растёт с вещами (MutationObserver), Настройки (2) — растут под длинный раздел, но не сжимаются при
      переходе между разделами. Записи и Разговор — по-прежнему во всю высоту. */
   var FIT_ROOMS = { keys: 1, handoff: 1, lantern: 1, echoes: 1, search: 1, outward: 1, files: 1, settings: 2 };
+  /* ── ТЕНЬ ОКНА НЕ ЛОЖИТСЯ ПОЛОСОЙ У НИЗА ЭКРАНА (H4e3, D-1332) ─────────────────────────────────────────────
+     Правило основателя: полосы внизу не бывает никогда (D-1314). Окно на столе встаёт до «полки» 16 px над низом
+     экрана, а его тень (--win-shadow: 0 24px 64px −16px) уходит вниз на ~40 px — зазор под окном темнел до самого
+     края (замер с открытым Шёпотом на 1000×625: низ темнее пола на 9–18 уровней). Окну, чей низ ближе 48 px к низу
+     экрана, тень — без сдвига вниз (core.css .window.near-floor): под ним остаётся пол. Класс ставит один наблюдатель
+     слоя окон — по настоящему низу окна, при любом его движении. Охраняется tools/shepot-floor-check.mjs. */
+  var NEAR_FLOOR = 48;
+  function nearFloorSync() {
+    var layer = winLayer(); if (!layer) return;
+    Array.prototype.forEach.call(layer.querySelectorAll(".window"), function (el) {
+      var r = el.getBoundingClientRect(), near = r.height > 0 && window.innerHeight - r.bottom < NEAR_FLOOR && window.innerHeight - r.bottom > -1;
+      if (el.classList.contains("near-floor") !== near) el.classList.toggle("near-floor", near);
+    });
+  }
+  (function nearFloorWatch() {
+    var layer = winLayer(); if (!layer || !window.MutationObserver) { setTimeout(nearFloorWatch, 300); return; }
+    var queued = false, kick = function () { if (queued) return; queued = true; requestAnimationFrame(function () { queued = false; nearFloorSync(); }); };
+    new MutationObserver(kick).observe(layer, { subtree: true, childList: true, attributes: true, attributeFilter: ["style", "class"] });
+    window.addEventListener("resize", kick);
+    kick();
+  })();
+
   function fitWindow(win) {
     var el = win.el, body = el.querySelector(".window-body");
     if (!body) return;
@@ -3026,6 +3048,7 @@
     var el = $(".window.fullscreen");
     if (!el) return false;
     el.classList.remove("fullscreen");
+    updateTopbarAutoHide();   /* D-1316: класс полного экрана снимается и после Esc — панель возвращается */
     return true;
   }
 
@@ -3380,6 +3403,10 @@
       return !w.minimized && w.el && w.el.classList.contains("fullscreen");
     });
     root.classList.toggle("topbar-hidden", full);
+    /* D-1316 (основатель 17.11.2026: после закрытия окна, бывшего во весь экран, пропадает верхняя панель):
+       класс полного экрана — по тому же счёту, что и выше. Закрытие, сворачивание и Esc его не снимали, и
+       html.sb-fullscreen-window держал #topbar за краем экрана без окна во весь экран. */
+    root.classList.toggle("sb-fullscreen-window", full);
   }
   doc.addEventListener("pointermove", function (ev) {
     if (!root.classList.contains("topbar-hidden")) return;
@@ -5983,6 +6010,11 @@
         '<p class="vg-sheet-meta" id="sbFirstPm">' + escapeHtml(gateText("lock.first.pm")) + "</p>" +
         '<button type="button" class="vg-sheet-toggle" id="sbFirstNoSave" aria-pressed="false">' + escapeHtml(gateText("lock.first.nosave")) + "</button>" +
         '<p class="vg-err" id="sbFirstErr" role="alert" hidden></p>' +
+        /* Беда Б (основатель 17.11.2026, Firefox: «очень долгая пауза, думал, что не получится»): растяжка слова
+           и заведение склада — секунды (Chromium ~9 с, Firefox ~13 с до «Защиты мира»), а ворота думали под
+           окном, где их не видно. Отклик — сразу, в самом окне: строка «Считаю — эта задержка здесь нарочно» и
+           кнопка «занята». Одна и та же в обоих путях (мир есть / нет) — ни строки о том, есть ли здесь мир. */
+        '<p class="vg-sheet-meta vg-busy" id="sbFirstBusy" role="status" aria-live="polite" hidden></p>' +
         '<div class="vg-sheet-acts"><button type="button" class="main" id="sbFirstGo">' + escapeHtml(gateText("lock.menu.first")) + '</button><button type="button" data-sheet-x>' + escapeHtml(gateText("lock.notNow")) + "</button></div>");
       var w1 = s.querySelector("#sbFirstWord"), w2 = s.querySelector("#sbFirstWord2"), st = s.querySelector("#sbFirstStrength"), er = s.querySelector("#sbFirstErr");
       w1.addEventListener("input", function () { st.textContent = strengthText(w1.value); });
@@ -5991,8 +6023,12 @@
         this.setAttribute("aria-pressed", on ? "true" : "false");
         [w1, w2].forEach(function (x) { x.setAttribute("autocomplete", on ? "one-time-code" : "new-password"); });
       });
-      var going = false;
-      function say(k) { er.textContent = gateText(k); er.hidden = false; }
+      var going = false, bz = s.querySelector("#sbFirstBusy"), goBtn = s.querySelector("#sbFirstGo");
+      function busy(on) {
+        bz.textContent = on ? gateText("lock.busy") : ""; bz.hidden = !on;
+        goBtn.setAttribute("aria-busy", on ? "true" : "false"); goBtn.disabled = !!on; goBtn.classList.toggle("vg-busy-btn", !!on);
+      }
+      function say(k) { busy(false); er.textContent = gateText(k); er.hidden = false; }
       function go() {
         if (going) return;
         er.hidden = true;
@@ -6000,6 +6036,7 @@
         if (String(w).length < 4) { say("lock.first.short"); return; }
         if (w !== w2.value) { say("lock.mismatch"); return; }
         going = true;
+        busy(true);
         gate.classList.add("vg-work");
         /* Мир здесь уже есть: второго мира ячейки носителя не держат (D-351), и
            окно отвечает тем же, чем отвечает любая неудача запирания, и не раньше,
@@ -7057,7 +7094,9 @@
   var buildLabel = "v0";
   var buildMeta = (function () {
     var m = doc.querySelector('meta[name="sysbaby-build"]');
-    var v = /^v(\d+)(-[A-Za-z0-9]+)?$/.exec((m && m.content) || "");
+    /* Метка линии Шёпота несёт второй хвост («v178-H4e-shp1», решение основателя 17.11.2026, п.17, D-1409):
+       номер сборки читается из неё так же, как из прежней «v178-H4e». */
+    var v = /^v(\d+)((?:-[A-Za-z0-9]+){0,2})$/.exec((m && m.content) || "");
     if (v) buildLabel = "v" + v[1] + (v[2] || "");
     return v ? v[1] : "0";
   })();

@@ -110,7 +110,7 @@ let NOWv = 0;
 let last = 0, fAvg = 16.7, fN = 0, running = true;
 const BK = 4 * 6; const bucket = Array.from({ length: BK }, () => new Int32Array(PMAX)); const bn = new Int32Array(BK);
 /* живёт только в тёмном Тайнике (бывшее Тепло, ключ studio), не под окном во весь стол, не у ворот, не в скрытой вкладке */
-function on() { return !root.getAttribute("data-wp-mood") && root.getAttribute("data-theme") !== "light" && !root.classList.contains("sb-incognito"); }
+function on() { return !root.getAttribute("data-wp-mood") && root.getAttribute("data-theme") !== "light"; }
 /* окно на столе — пыль уходит под стекло (window-one-glass-check). Тайник следит за окнами сам: класс wp-parked
    ставит поле системы, а в Тайнике оно молчит — пылинка под стеклом окна выглядела бы ступенькой яркости. */
 const cover = () => root.classList.toggle("tn-covered", !!document.querySelector(".window"));

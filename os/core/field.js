@@ -165,8 +165,16 @@
 
      Охраняется tools/tap-belongs-check.mjs. */
   var DESK_IDS = { desktop: 1, sbIconLayer: 1, sbNoteLayer: 1, sbWidgetLayer: 1 };
-  function ownTap(t) {
+  function underBar(y) {
+    /* ПОЛОСА СВЕРХУ — МЕБЕЛЬ И ТАМ, ГДЕ ОНА ПРОПУСКАЕТ КАСАНИЕ (H4e2, D-1320): пустая середина полосы касаний не
+       ловит (themes.css), и палец проходил сквозь неё на стол. Пока полоса видна, её высота — не стол. */
+    var b = document.getElementById("topbar"); if (!b) return false;
+    var r = b.getBoundingClientRect(), cs = getComputedStyle(b);
+    return r.height > 0 && r.bottom > 0 && y >= r.top && y <= r.bottom && cs.visibility !== "hidden" && cs.display !== "none" && +cs.opacity > 0.05;
+  }
+  function ownTap(t, y) {
     if (!t || t.nodeType !== 1 || !t.closest) return false;
+    if (y != null && underBar(y)) return false;
     if (DESK_IDS[t.id]) return true;
     return !!t.closest(".wp-layer");
   }
@@ -179,7 +187,7 @@
     /* «Глубина» — вид четырёх тем (D-1080, пакет GLUBINA): пока её холст рисует
        (#sbDepthField, core/depth.js), поле не рисует — его не видно. Без WebGL
        глубины нет, и поле рисует как прежде. ОТКАТ: снять последнее условие. */
-    return root.getAttribute("data-theme") === "light" || root.classList.contains("sb-incognito") ||
+    return root.getAttribute("data-theme") === "light" ||
       root.getAttribute("data-wp-mood") === "ember" ||
       !!(window.sbDepth && window.sbDepth.live && window.sbDepth.live()) ||
       /* Тайник (бывшее Тепло, D-1229): фон — поле витрины (core/tainik.js), поле системы не рисует */
@@ -326,7 +334,7 @@
            ВООБЩЕ. Один сторож на оба пути: он же закрывает и те два, о
            которых основатель не говорил. */
         if (self.parked || !self.on) return;
-        if (!ownTap(e.target)) return;
+        if (!ownTap(e.target, e.clientY)) return;
         self.touchCount++;
         self.waves.push({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight, t: 0 });
         if (self.waves.length > 3) self.waves.shift();

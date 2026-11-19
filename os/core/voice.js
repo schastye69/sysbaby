@@ -274,7 +274,10 @@
     E.skyKey = o.key + "|" + w + "|" + SH + "|" + d;
     function inCloud() { for (;;) { var u = r() * 2 - 1, q = r(), X = w / 2 + u * w * 0.48, Y = SH - Math.pow(q, 0.75) * SH * 0.9, dx = (X - w / 2) / (w * 0.48), dy = (SH - Y) / (SH * 0.9); if (dx * dx + dy * dy <= 1) return [X, Y]; } }
     /* туманность: пять мягких пятен (геометрия демо: планшет — коробка 1400×460, телефон — 600×440) */
-    var GEO = ph ? [[130, 220, 340, 230], [70, 260, 230, 180], [300, 230, 250, 210], [200, 270, 200, 80], [170, 150, 260, 150]]
+    /* телефон: четвёртое пятно было приплюснуто (высота 80 при ширине 200) — его свет падал по вертикали круто и за кнопками
+       фразы и «+» читался светлой полосой с краем (H4e2, D-1321). Теперь оно выше и мягче; сила и место те же.
+       ОТКАТ: [200, 270, 200, 80]. */
+    var GEO = ph ? [[130, 220, 340, 230], [70, 260, 230, 180], [300, 230, 250, 210], [190, 245, 220, 140], [170, 150, 260, 150]]
       : [[330, 290, 760, 250], [170, 300, 540, 220], [760, 260, 540, 250], [520, 330, 380, 110], [400, 170, 520, 230]];
     var BW = ph ? 600 : Math.min(1400, w * 0.81 + 120), BH = ph ? 440 : 460, kx = ph ? 1 : BW / 1400, ky = SH / BH, bx = (w - BW) / 2 + (ph ? 0 : 50 * kx);
     var fs = sky; fs.width = Math.round((w + pad * 2) * d); fs.height = Math.round((SH + pad * 2) * d);
@@ -492,15 +495,25 @@
   }
 
   /* ── кадр ─────────────────────────────────────────────────────────── */
+  /* ПОКОЙ ФРАЗЫ — КАК У ОЧАГА (D-1340, решение основателя 18.11: Светлица в покое как Очаг; depth.js REST): фраза стоит,
+     звёзды неба погасли, пыли и искр нет — дышит только ореол (±7 % за 8,5 с); кадр раз в REST мс по таймеру настоящих
+     часов, а не кадр за кадром (прежде — 60 к/с, пока фраза стоит: батарея, и закон sun-check не доходил до конца).
+     Кадры те же: время фразы идёт по настоящим часам; новая фраза, касание, перетаскивание будят сразу (kick). */
+  var REST = 500, restT = 0, rested = false;
+  function calm(a0) {
+    var P = E.ph;
+    return !!P && P.final && E.T > P.tEnd + 0.05 && E.starK === 0 && !(E.N > 0) && !E.old && !E.lingers.length && !E.back && !E.dragY && E.skyA === a0;
+  }
   function frame(now) {
     raf = 0; if (!cx) return;
-    var dt = last ? Math.min(0.05, Math.max(0, (now - last) / 1000)) : 1 / 60; last = now;
-    var t0 = performance.now();
+    var dt = last ? Math.min(rested ? REST / 1000 + 0.1 : 0.05, Math.max(0, (now - last) / 1000)) : 1 / 60; last = now; rested = false;
+    var t0 = performance.now(), a0 = E.skyA;
     var busy = step(dt); draw();
     var ms = performance.now() - t0; COST.n++; COST.ms += ms; if (ms > COST.max) COST.max = ms;
-    if (busy) kick(); else { last = 0; E.phase = "rest"; }
+    if (busy && calm(a0)) { rested = true; restT = setTimeout(function () { restT = 0; kick(); }, REST); }
+    else if (busy) kick(); else { last = 0; E.phase = "rest"; }
   }
-  function kick() { if (!raf && cx) raf = requestAnimationFrame(frame); }
+  function kick() { if (restT) { clearTimeout(restT); restT = 0; } if (!raf && cx) raf = requestAnimationFrame(frame); }
   function step(dt) {
     var T = (E.T += dt), ph = E.ph, rm = still();
     /* небо поднимается с фразой (≈0,6 с; у короткой и срочной — едва), уходит вместе с ней:
@@ -509,6 +522,13 @@
     if (!ph && E.leftAt != null && T - E.leftAt < (E.fastSky ? 0.1 : 0.45)) tgt = a;
     if (a < tgt) a = Math.min(tgt, a + dt / (ph ? ph.o.rise : 0.6) * (ph ? ph.o.sky : 1)); else if (a > tgt) a = Math.max(tgt, a - dt / (E.fastSky ? 0.5 : 1.2));
     E.skyA = a;
+    /* ЗВЁЗДЫ НЕБА ГАСНУТ, ПОКА ФРАЗА СТОИТ (H4e2, D-1325; основатель 18.11.2026 — «пыль во всех темах»): вопрос стоит
+       долго, и звёзды неба голоса читались пылью Тайника в каждой теме. Через 3 с после того, как фраза собрана,
+       небо со звёздами мягко гаснет (1,2 с); новая фраза поднимает его снова (0,6 с). Сама фраза, её свет, искры
+       у букв и слова-кнопки остаются; величина неба (view().sky) прежняя — гаснет только то, что видно. */
+    var sk = E.starK == null ? 1 : E.starK, skT = ph ? (ph.readyAt == null || T - ph.readyAt < 3 ? 1 : 0) : sk;
+    if (sk < skT) sk = Math.min(skT, sk + dt / 0.6); else if (sk > skT) sk = Math.max(skT, sk - dt / 1.2);
+    E.starK = sk;
     if (ph) {
       if (!ph.readyAt && T >= ph.tEnd) { ph.readyAt = T; if (ph.onReady) { var f = ph.onReady; ph.onReady = null; f(); } }
       if (!ph.final && T > ph.tEnd) {   /* вес и разрядка «наливаются» после сборки */
@@ -540,7 +560,7 @@
     /* шаг неба на своём холсте: плывёт и гаснет стилем */
     if (sky) {
       var fin = sm(a), ddx = Math.sin(T * TAU / 70) * 16 + Math.sin(T * TAU / 47) * 1.1, ddy = Math.cos(T * TAU / 90) * 5 + (1 - a) * 36;
-      var op = fin.toFixed(3); if (sky.style.opacity !== op) sky.style.opacity = op;
+      var op = (fin * sm(E.starK)).toFixed(3); if (sky.style.opacity !== op) sky.style.opacity = op;
       sky.style.transform = "translate3d(" + ddx.toFixed(2) + "px," + ddy.toFixed(2) + "px,0)";
     }
     /* фраза стоит — кадры нужны дыханию ореола и звёздам; при «меньше движения» — только до проявления */
@@ -549,10 +569,14 @@
   }
   E.skyOff = function () { return band.h - band.sh; };
   function draw() {
-    var x = cx, d = dpr, T = E.T, DW = E.DW, DH = E.DH, o = pal, a = E.skyA, fin = sm(a), P = E.ph, comp = o.comp;
+    var x = cx, d = dpr, T = E.T, DW = E.DW, DH = E.DH, o = pal, a = E.skyA, fin = sm(a) * sm(E.starK == null ? 1 : E.starK), P = E.ph, comp = o.comp;   /* звёзды неба гаснут вместе с ним (D-1325) */
     x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.clearRect(0, 0, DW, DH);
     var q0 = P && P.o.quiet ? 0.62 : 1;
-    if (fin > 0.004) {
+    /* ОКНО ВО ВЕСЬ ЭКРАН (H4e2, D-1319; видео основателя 17.11.2026): звёзды и пылинки неба на этом холсте и искры,
+       оседающие от букв, читались звёздами на стекле окна — их нет, пока окно во весь экран. Буквы фразы и пыль,
+       из которой они собираются, остаются: голос читается. Небо-туманность (#sbVoiceSky) скрыто в voice.css. */
+    var fullWin = document.documentElement.classList.contains("sb-fullscreen-window");
+    if (fin > 0.004 && !fullWin) {
       var ox = Math.sin(T * TAU / 47) * 5 + Math.sin(T * TAU / 71) * 3, oy = Math.cos(T * TAU / 59) * 2.5, so = E.skyOff();
       x.globalCompositeOperation = comp;
       for (var i = 0; i < E.mid.length; i++) {
@@ -564,7 +588,7 @@
       E.near.forEach(function (p) { x.globalAlpha = p.a * fin * (0.8 + 0.2 * Math.sin(T * 0.2 + p.ph)); x.drawImage(p.s, (p.x + ox * 1.3) * d - p.s.width / 2, (p.y + oy * 1.3 + (1 - a) * 30 + so) * d - p.s.height / 2); });
       x.globalAlpha = 1; x.globalCompositeOperation = "source-over";
     }
-    for (var li = 0; li < E.lingers.length; li++) { var lp = E.lingers[li]; if (T < lp.t0) continue; var u = (T - lp.t0) / lp.life; x.globalAlpha = 0.55 * Math.sin(Math.PI * u) * Math.max(fin, 0.3) * q0; x.drawImage(lp.s, lp.x * d - lp.s.width / 2, lp.y * d - lp.s.height / 2); }
+    for (var li = 0; li < E.lingers.length && !fullWin; li++) { var lp = E.lingers[li]; if (T < lp.t0) continue; var u = (T - lp.t0) / lp.life; x.globalAlpha = 0.55 * Math.sin(Math.PI * u) * Math.max(fin, 0.3) * q0; x.drawImage(lp.s, lp.x * d - lp.s.width / 2, lp.y * d - lp.s.height / 2); }
     x.globalAlpha = 1;
     /* уходящий текст тает */
     if (E.old) { var oP = E.old.P, ofa = 1 - sm((T - E.old.t0) / E.old.fd); if (ofa > 0) { x.globalAlpha = ofa * E.old.da * q0; x.drawImage(oP.glow, oP.rect.x, oP.rect.y + E.old.oy); x.globalAlpha = ofa * E.old.da; x.drawImage(oP.crisp, oP.rect.x, oP.rect.y + E.old.oy); x.globalAlpha = 1; } }
@@ -727,6 +751,8 @@
     var px0 = SH_M + fx, py0 = 6 + fy;
     shade.style.left = Math.round(r.left - px0) + "px"; shade.style.width = Math.round(r.width + 2 * px0) + "px";
     shade.style.top = Math.round(r.top - py0) + "px"; shade.style.height = Math.round(r.height + 2 * py0) + "px";
+    /* низ экрана — пол страницы (D-1314): свет под фразой гаснет к самому низу, где его отмеряет --sbv-cut (от верха поля до низа экрана) */
+    shade.style.setProperty("--sbv-cut", Math.round(window.innerHeight - (r.top - py0)) + "px");
     var ov = overOther(r);
     shade.classList.toggle("deep", ov);
     /* Короткая фраза поверх окна (телефон: окно дошло до самого низа) не отнимает касаний у окна: простые

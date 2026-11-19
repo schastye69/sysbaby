@@ -158,8 +158,10 @@ html[data-motion="reduced"] #sbDeskTools .dt-keys, html[data-motion="reduced"] #
 html[data-motion="reduced"] #sbDeskTools .dt-sound-dot { animation: none; opacity: .85; }
 
 /* ── «инструменты» в пульте (D-899): знак малого набора и слово — в обоих видах ── */
-#sbControlCenter .cc-tools-in { display: inline-flex; align-items: center; gap: 8px; }
-#sbControlCenter .cc-tools .sb-znak { width: 15px; height: 15px; flex: 0 0 auto; opacity: .8; }
+/* D-1344 (основатель 18.11): «инструменты» в строке пульта — на той же базовой линии и той же высоты, что соседи:
+   знак — строчный, внутри строки, а не гибкий блок, который поднимал слово и растил кнопку на 3,5 px */
+#sbControlCenter .cc-tools-in { display: inline; }
+#sbControlCenter .cc-tools .sb-znak { display: inline-block; width: 15px; height: 15px; margin-right: 8px; vertical-align: -2px; line-height: 0; opacity: .8; }
 #sbControlCenter.krupno #sbCcTools { order: 7; flex: 0 0 auto; font-size: var(--f-read); }
 #sbControlCenter.krupno #sbCcTools::after { content: "·" / ""; display: inline-block; padding: 0 .45em; color: var(--kn-dim); text-shadow: none; font-weight: var(--w-text); }
 

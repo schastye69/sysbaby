@@ -103,6 +103,12 @@ html.sb-voice-over-dock #toastLayer.sb-voice-layer { bottom: var(--desk-row-b); 
 /* небо голоса (D-823): дальний слой — туманность и мелкие звёзды; рисуется один раз,
    поднимается с фразой и растворяется вместе с ней (прозрачность и сдвиг ставит voice.js) */
 #sbVoiceSky { position: fixed; left: 0; top: 0; z-index: var(--z-speech, 90); pointer-events: none; opacity: 0; will-change: opacity, transform; }
+/* окно во весь экран (D-1316): небо голоса — туманность и звёзды над всем экраном — не ложится на окно, иначе оно
+   выглядит прозрачным, а текст окна висит на «поле». Фраза, её свет и сумрак под ней остаются — голос слышен и читается. */
+html.sb-fullscreen-window #sbVoiceSky { visibility: hidden; }
+/* низ неба гаснет к самому низу экрана (D-1314): холст стоит на 16 px ниже экрана и плывёт на ±5 px — маска кончается
+   за 22 px до его низа, и туманность не красит пол страницы у края (без тёплой ступеньки) */
+#sbVoiceSky { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 110px), rgba(0, 0, 0, .98) calc(100% - 102px), rgba(0, 0, 0, .91) calc(100% - 94px), rgba(0, 0, 0, .82) calc(100% - 86px), rgba(0, 0, 0, .70) calc(100% - 78px), rgba(0, 0, 0, .57) calc(100% - 70px), rgba(0, 0, 0, .43) calc(100% - 62px), rgba(0, 0, 0, .30) calc(100% - 54px), rgba(0, 0, 0, .18) calc(100% - 46px), rgba(0, 0, 0, .09) calc(100% - 38px), rgba(0, 0, 0, .02) calc(100% - 30px), transparent calc(100% - 22px)); mask-image: linear-gradient(180deg, #000 calc(100% - 110px), rgba(0, 0, 0, .98) calc(100% - 102px), rgba(0, 0, 0, .91) calc(100% - 94px), rgba(0, 0, 0, .82) calc(100% - 86px), rgba(0, 0, 0, .70) calc(100% - 78px), rgba(0, 0, 0, .57) calc(100% - 70px), rgba(0, 0, 0, .43) calc(100% - 62px), rgba(0, 0, 0, .30) calc(100% - 54px), rgba(0, 0, 0, .18) calc(100% - 46px), rgba(0, 0, 0, .09) calc(100% - 38px), rgba(0, 0, 0, .02) calc(100% - 30px), transparent calc(100% - 22px)); }
 /* тень и свечение под фразой: без стекла (backdrop-filter над живым полем дорог).
    ── СВЕЧЕНИЕ ШИРЕ СЛОВ · D-807 ─────────────────────────────────────────
    Повод — тот же снимок: «свечение под ней короче слов». Был круг
@@ -117,14 +123,18 @@ html.sb-voice-over-dock #toastLayer.sb-voice-layer { bottom: var(--desk-row-b); 
    осталось до ухода) у голоса снята: на снимке это и была светлая черта
    под первыми словами, «короче слов». Голос уходит сам — пылью. */
 #sbVoiceShade {
-  --sbv-px: 56px; --sbv-py: 26px;
+  /* поле по высоте 64 px и мягкая кривая вместо прямой (H4e2, D-1321; основатель — «полоса в правом нижнем углу у кнопок
+     фразы и «+»»): с 26 px верх и низ бруса под фразой читались краем полосы (скачок ~8 уровней на 4 px на телефоне).
+     Сила под самой строкой прежняя. ОТКАТ: --sbv-py: 26px и прямой спуск маски. */
+  --sbv-px: 56px; --sbv-py: 64px;
   position: fixed; left: 0; top: 0; width: 0; height: 0; z-index: var(--z-speech, 90); pointer-events: none; border-radius: 0;
   background:
     radial-gradient(220% 150% at 50% 100%, var(--sbv-lit), var(--sbv-pool) 45%, transparent 85%),
     linear-gradient(var(--sbv-shade), var(--sbv-shade));
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--sbv-px), #000 calc(100% - var(--sbv-px)), transparent), linear-gradient(180deg, transparent, #000 var(--sbv-py), #000 calc(100% - var(--sbv-py)), transparent);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(90deg, transparent, #000 var(--sbv-px), #000 calc(100% - var(--sbv-px)), transparent), linear-gradient(180deg, transparent, #000 var(--sbv-py), #000 calc(100% - var(--sbv-py)), transparent);
+  /* третий слой (D-1314): к самому низу экрана свет и сумрак фразы мягко гаснут — внизу пол страницы, без тёплой ступеньки */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--sbv-px), #000 calc(100% - var(--sbv-px)), transparent), linear-gradient(180deg, transparent, rgba(0, 0, 0, .04) calc(var(--sbv-py) * .15), rgba(0, 0, 0, .14) calc(var(--sbv-py) * .3), rgba(0, 0, 0, .3) calc(var(--sbv-py) * .45), rgba(0, 0, 0, .5) calc(var(--sbv-py) * .58), rgba(0, 0, 0, .7) calc(var(--sbv-py) * .71), rgba(0, 0, 0, .86) calc(var(--sbv-py) * .84), #000 var(--sbv-py), #000 calc(100% - var(--sbv-py)), rgba(0, 0, 0, .86) calc(100% - var(--sbv-py) * .84), rgba(0, 0, 0, .7) calc(100% - var(--sbv-py) * .71), rgba(0, 0, 0, .5) calc(100% - var(--sbv-py) * .58), rgba(0, 0, 0, .3) calc(100% - var(--sbv-py) * .45), rgba(0, 0, 0, .14) calc(100% - var(--sbv-py) * .3), rgba(0, 0, 0, .04) calc(100% - var(--sbv-py) * .15), transparent), linear-gradient(180deg, #000 calc(var(--sbv-cut, 100000px) - 88px), rgba(0, 0, 0, .98) calc(var(--sbv-cut, 100000px) - 80px), rgba(0, 0, 0, .91) calc(var(--sbv-cut, 100000px) - 72px), rgba(0, 0, 0, .82) calc(var(--sbv-cut, 100000px) - 64px), rgba(0, 0, 0, .70) calc(var(--sbv-cut, 100000px) - 56px), rgba(0, 0, 0, .57) calc(var(--sbv-cut, 100000px) - 48px), rgba(0, 0, 0, .43) calc(var(--sbv-cut, 100000px) - 40px), rgba(0, 0, 0, .30) calc(var(--sbv-cut, 100000px) - 32px), rgba(0, 0, 0, .18) calc(var(--sbv-cut, 100000px) - 24px), rgba(0, 0, 0, .09) calc(var(--sbv-cut, 100000px) - 16px), rgba(0, 0, 0, .02) calc(var(--sbv-cut, 100000px) - 8px), transparent var(--sbv-cut, 100000px));
+  -webkit-mask-composite: source-in, source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 var(--sbv-px), #000 calc(100% - var(--sbv-px)), transparent), linear-gradient(180deg, transparent, rgba(0, 0, 0, .04) calc(var(--sbv-py) * .15), rgba(0, 0, 0, .14) calc(var(--sbv-py) * .3), rgba(0, 0, 0, .3) calc(var(--sbv-py) * .45), rgba(0, 0, 0, .5) calc(var(--sbv-py) * .58), rgba(0, 0, 0, .7) calc(var(--sbv-py) * .71), rgba(0, 0, 0, .86) calc(var(--sbv-py) * .84), #000 var(--sbv-py), #000 calc(100% - var(--sbv-py)), rgba(0, 0, 0, .86) calc(100% - var(--sbv-py) * .84), rgba(0, 0, 0, .7) calc(100% - var(--sbv-py) * .71), rgba(0, 0, 0, .5) calc(100% - var(--sbv-py) * .58), rgba(0, 0, 0, .3) calc(100% - var(--sbv-py) * .45), rgba(0, 0, 0, .14) calc(100% - var(--sbv-py) * .3), rgba(0, 0, 0, .04) calc(100% - var(--sbv-py) * .15), transparent), linear-gradient(180deg, #000 calc(var(--sbv-cut, 100000px) - 88px), rgba(0, 0, 0, .98) calc(var(--sbv-cut, 100000px) - 80px), rgba(0, 0, 0, .91) calc(var(--sbv-cut, 100000px) - 72px), rgba(0, 0, 0, .82) calc(var(--sbv-cut, 100000px) - 64px), rgba(0, 0, 0, .70) calc(var(--sbv-cut, 100000px) - 56px), rgba(0, 0, 0, .57) calc(var(--sbv-cut, 100000px) - 48px), rgba(0, 0, 0, .43) calc(var(--sbv-cut, 100000px) - 40px), rgba(0, 0, 0, .30) calc(var(--sbv-cut, 100000px) - 32px), rgba(0, 0, 0, .18) calc(var(--sbv-cut, 100000px) - 24px), rgba(0, 0, 0, .09) calc(var(--sbv-cut, 100000px) - 16px), rgba(0, 0, 0, .02) calc(var(--sbv-cut, 100000px) - 8px), transparent var(--sbv-cut, 100000px));
   mask-composite: intersect;
   opacity: 0; transition: opacity var(--t-voice-dusk) var(--ease-move);
 }

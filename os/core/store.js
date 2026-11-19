@@ -101,9 +101,11 @@
       window.localStorage.removeItem("sysbaby.__probe");
       if (!ok) throw new Error("facade not effective");
       window.sbIncognitoActive = true;
-      var de = document.documentElement;
-      de.setAttribute("data-theme", "dark");
-      de.classList.add("sb-incognito");
+      /* Гость видит ту же тему, что и обычный стол (D-1315, основатель 17.11.2026: «на каждой
+         теме просто тёмный экран… это просто кошмар»): комната тёмная (D-326), а класса
+         sb-incognito, гасившего поле, часы и цифры расчёта («только пол»), больше нет.
+         Тема гостя живёт в фасаде выше — на диск не ложится ничего. */
+      document.documentElement.setAttribute("data-theme", "dark");
     } catch (err) {
       /* fail safe: leave the space rather than run with mixed storage */
       try { Object.defineProperty(window, "localStorage", { value: nativeLS, configurable: true }); } catch (e2) { /* keep going */ }
@@ -286,6 +288,9 @@
       return true;
     },
     flushSync: function () { flush(); },
+    /* Что лежит на диске сейчас — мимо памяти вкладки и не трогая её (H4e3, D-1329): переписка сверяет свой список
+       с записанным другой вкладкой того же профиля, прежде чем писать поверх. */
+    peek: function (key) { return lsGet(nsKey(key)); },
     /* Записать в ЧУЖОЕ пространство — в профиль, куда человек сейчас войдёт.
        Нужно двери (D-306): имя входящего кладётся в его профиль, а не в тот,
        из которого он уходит. Прежняя дверь писала имя в текущий — и гость

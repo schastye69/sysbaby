@@ -2357,7 +2357,10 @@
   function knockWhen(ts) {
     var l = window.sbLang ? window.sbLang() : "en";
     var d = new Date(ts), now = new Date();
-    var same = d.toDateString() === now.toDateString();
+    /* D-1352: «недавно» — по давности (12 ч), а не по календарному дню: стук перед полуночью, увиденный после неё в одной
+       системе и до неё в другой, назывался разными словами («23:59» и «18 нояб., 23:59») — тревожная система выдавала
+       себя (knock-check п.4). Давний стук — с датой, как было. */
+    var same = now - d >= 0 && now - d < 12 * 3600 * 1000;
     try {
       return same ? d.toLocaleTimeString(l === "ee" ? "et" : l, { hour: "2-digit", minute: "2-digit" })
         : d.toLocaleString(l === "ee" ? "et" : l, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });

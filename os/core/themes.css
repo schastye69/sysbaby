@@ -261,8 +261,14 @@ html.sb-fullscreen-window #topbar#topbar, html.sb-fullscreen-window #topbar#topb
 
 /* D-1241 (основатель 14.11.2026: «на весь экран долго была темнота, выход находил вслепую»): окно на весь экран никогда не
    оставляет человека в темноте — плотная подложка цвета стола под стеклом и видимые кнопки окна на любом фоне. */
-.window.fullscreen { background-color: var(--wp-f2); }   /* --wp-f2 есть у каждой темы: свой откат не нужен */
-.window.fullscreen .titlebar .light, .window.fullscreen .light.close, .window.fullscreen .light.min, .window.fullscreen .light.zoom { background-color: /* своя краска: кнопки окна видны на любом фоне — белая дымка без цвета темы (D-1241) */ rgba(255, 255, 255, .16); box-shadow: /* своя краска: тонкий белый ободок кнопки на любом фоне (D-1241) */ 0 0 0 1px rgba(255, 255, 255, .22); }
+/* H4e2, D-1316 (основатель 17.11.2026, видео 1920×1080: «так во всех приложениях»): во весь экран окно — то же стекло,
+   что развёрнутое (--win-face), а плотная подложка --wp-f2 лежит ПОД ним. Раньше --wp-f2 заменяла стекло: окно
+   становилось почти чёрным цветом пола и читалось как пустой стол — «окно прозрачное». */
+.window.fullscreen { background: var(--win-grain), linear-gradient(var(--win-pane), var(--win-pane)), var(--wp-f2); }   /* --wp-f2 есть у каждой темы: свой откат не нужен */
+/* H4e3, D-1336 (основатель 18.11.2026, показ архива 2: «кнопки окна не должны меняться»): во весь экран кнопки окна — те же,
+   что у обычного окна (размер, подложка, ободок, значки); меняется только место окна. Белая дымка под кнопками (D-1241)
+   снята. ОТКАТ: вернуть строку:
+   .window.fullscreen .titlebar .light, .window.fullscreen .light.close, .window.fullscreen .light.min, .window.fullscreen .light.zoom { background-color: /* своя краска: кнопки окна видны на любом фоне — белая дымка без цвета темы (D-1241) * / rgba(255, 255, 255, .16); box-shadow: /* своя краска: тонкий белый ободок кнопки на любом фоне (D-1241) * / 0 0 0 1px rgba(255, 255, 255, .22); } */
 
 /* ── БЕЗ КОРИЧНЕВОЙ ПОЛОСЫ ВНИЗУ · H4e, D-1298 (основатель 16.11.2026, ошибки H4d п.1) ──────────────
  * «Коричневая полоса внизу — на экране шифра (сейф) и на столе Тайника». Под всеми слоями лежит фон страницы
@@ -272,21 +278,36 @@ html.sb-fullscreen-window #topbar#topbar, html.sb-fullscreen-window #topbar#topb
  * поверхности над ним: у ворот — их чернота, у Тайника — чёрный низ его вуали. Сумрак под строкой голоса
  * в Тайнике — прежний тёмно-апельсиновый (D-824): чёрная вуаль на его месте делала низ при голосе бурым
  * (teplo-mandarin). Прочее в Тайнике не тронуто. ОТКАТ: снять этот блок. */
-html:has(#sbVaultGate), html:has(#sbVaultGate) body { background-color: /* своя краска: пол под воротами — их чернота (gate: 6,7,10) */ #06070a; }
+html:has(#sbVaultGate), html:has(#sbVaultGate) body { --sb-floor: /* своя краска: пол под воротами — чернота низа их сцены (замер нижних строк 2,2,4; прежде #06070a — светлее низа, шов D-1314) */ #020204; background-color: var(--sb-floor); }
 /* Пол страницы в каждой теме — цвет самого низа её фона (замер нижней строки: Тайник 9,4,0 · Океан 21,32,70 ·
    Аврора 11,18,21 — вода «зеркала» · Затмение 2,1,1). Прежде во всех темах, кроме Тайника, пол был нейтральным
    #0a0a0b, а в Тайнике — бурым #130802: там, где слой не доходит до низа, проступала ровная одноцветная полоса. */
 html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)),
-html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)) body { background-color: /* своя краска: пол под Тайником — чёрный низ его вуали, не бурый Мандарин */ #080400; }
+html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)) body { --sb-floor: /* своя краска: пол под Тайником — чёрный низ его вуали, не бурый Мандарин */ #080400; background-color: var(--sb-floor); }
 html[data-wp-mood="ocean"]:not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)),
-html[data-wp-mood="ocean"]:not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)) body { background-color: /* своя краска: пол под Океаном — цвет низа его глубины */ #152046; }
+html[data-wp-mood="ocean"]:not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)) body { --sb-floor: /* своя краска: пол под Океаном — цвет низа его глубины */ #152046; background-color: var(--sb-floor); }
 html[data-wp-mood="aurora"]:not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)),
-html[data-wp-mood="aurora"]:not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)) body { background-color: /* своя краска: пол под Авророй — цвет низа воды «зеркала» */ #0b1214; }
+html[data-wp-mood="aurora"]:not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)) body { --sb-floor: /* своя краска: пол под Авророй — цвет низа воды «зеркала» */ #0b1214; background-color: var(--sb-floor); }
 html:is([data-wp-mood="ember"], [data-wp-mood="eclipse"]):not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)),
-html:is([data-wp-mood="ember"], [data-wp-mood="eclipse"]):not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)) body { background-color: /* своя краска: пол под Затмением — его чернота */ #020101; }
+html:is([data-wp-mood="ember"], [data-wp-mood="eclipse"]):not([data-theme="light"]):not(.sb-incognito):not(:has(#sbVaultGate)) body { --sb-floor: /* своя краска: пол под Затмением — его чернота */ #020101; background-color: var(--sb-floor); }
 /* H4e, D-1311: и Светлица — пол её цвета низа поля (замер нижней строки 196,198,194), а не белее (225) */
 html[data-theme="light"]:not(.sb-incognito):not(:has(#sbVaultGate)),
-html[data-theme="light"]:not(.sb-incognito):not(:has(#sbVaultGate)) body { background-color: /* своя краска: пол под Светлицей — цвет низа её поля */ #c4c6c2; }
+html[data-theme="light"]:not(.sb-incognito):not(:has(#sbVaultGate)) body { --sb-floor: /* своя краска: пол под Светлицей — цвет низа её поля */ #c4c6c2; background-color: var(--sb-floor); }
+
+/* ── НИЗ СТОЛА СХОДИТСЯ С ПОЛОМ · H4e1, D-1314 (снимок основателя 17.11.2026: Android-планшет, Brave, разделённый экран, Океан)
+ * Внизу была ровная полоса ~12 px цвета пола #152046: Brave на Android закрашивает область под чертой жестов
+ * ровным цветом фона html (inset = 0 — страница туда не дотягивается, D-1311 не помогает), а низ поля Океана
+ * светлее пола (≈24,39,88 против 21,32,70). Теперь у каждой темы пол — одно слово --sb-floor (им же красится
+ * html/body выше), и у самого низа стола фон плавно, мягкой кривой, сходит ТОЧНО в этот цвет: #sbFloorFade —
+ * сплошной пол под маской. Слой лежит над фоном и холстами поля (и над светом из-под двери голоса), под значками,
+ * заметками, окнами и речью; касаний не берёт. У гостя пол и переход те же, что на столе (D-1315).
+ * Охраняется tools/floor-seam-check.mjs. ОТКАТ: снять этот блок и <div id="sbFloorFade"> в os/index.html. */
+#sbFloorFade {
+  position: absolute; left: 0; right: 0; bottom: calc(-1 * var(--sb-safe-b, 0px)); height: calc(56px + var(--sb-safe-b, 0px));
+  z-index: var(--z-flat); pointer-events: none; background-color: var(--sb-floor, transparent);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, rgba(0, 0, 0, .03) 14%, rgba(0, 0, 0, .1) 27%, rgba(0, 0, 0, .21) 39%, rgba(0, 0, 0, .35) 50%, rgba(0, 0, 0, .5) 60%, rgba(0, 0, 0, .65) 69%, rgba(0, 0, 0, .79) 78%, rgba(0, 0, 0, .9) 86%, rgba(0, 0, 0, .97) 93%, #000 97%);
+  mask-image: linear-gradient(180deg, transparent 0, rgba(0, 0, 0, .03) 14%, rgba(0, 0, 0, .1) 27%, rgba(0, 0, 0, .21) 39%, rgba(0, 0, 0, .35) 50%, rgba(0, 0, 0, .5) 60%, rgba(0, 0, 0, .65) 69%, rgba(0, 0, 0, .79) 78%, rgba(0, 0, 0, .9) 86%, rgba(0, 0, 0, .97) 93%, #000 97%);
+}
 
 /* ── ОКНА ТАЙНИКА — СТЕКЛО ЗНАЧКОВ, А НЕ КОРИЧНЕВОЕ · H4e, D-1299 (основатель 16.11.2026, ошибки H4d п.4) ──
  * «Окна (записи и др.) коричневые → цвет значков или гармоничный, не коричневый». Стекло окна смешивало свет
@@ -307,3 +328,105 @@ html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) {
 @media (max-width: 600px) {
   html.sb-desk-clock #topbar#topbar .tb-clock .tb-date { display: inline; }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   СВЕТЛИЦА · ЧЕТЫРЕ ТЕМЫ · D-1323 (основатель 18.11.2026: «включить темы Светлицы в архив»)
+   Светлый режим системы — четыре темы, двойники тёмных: Тайник → Светлица, Затмение → Зенит, Океан → Берег,
+   Аврора → Лазурь. Перенесено из эталона svetlitsa-ETALON-17-11.html (демо 17.11, блок dm-style) как есть; снят
+   только пульт показа. Фон рисует os/core/svetlica.js (#sbLightSky, #sbLightHz, #sbLightFx в .wp-layer); всё ниже
+   включается классом html.sb-tw (светлая тема системы + фон двойника). Тёмные темы этот блок не трогает.
+   ОТКАТ: снять блок и подключение svetlica.js в os/index.html.
+   ═════════════════════════════════════════════════════════════════════════ */
+/* демо светлых тем: слой поверх настоящей системы. Тёмные темы этот слой не трогает:
+   всё ниже включается только классом html.sb-tw (светлая тема системы + наш фон). */
+#sbLightSky, #sbLightHz, #sbLightFx { display: none; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+html.sb-tw #sbLightSky, html.sb-tw #sbLightFx { display: block; }
+html.sb-tw[data-sb-tw="lazur"] #sbLightHz { display: block; }
+html.sb-tw :is(#sbField, #sbMoodTint, #sbGrain, #sbStone, #sbBreath, #sbDither, #sbDepthField, #sbTainikBg, #sbTainikFx, #sbEclipse) { visibility: hidden !important; }
+
+/* ── общее вещество светлых двойников: свет — фон темы, окна и плашки — стекло того же тона, не белые коробки ── */
+html.sb-tw {
+  --ink-rgb: var(--tw-ink-rgb);
+  --ink: rgb(var(--tw-ink-rgb));
+  --ink-2: rgba(var(--tw-ink-rgb), .80);
+  --ink-3: rgba(var(--tw-ink-rgb), .70);
+  --line: rgba(var(--tw-ink-rgb), .12);
+  --line-2: rgba(var(--tw-ink-rgb), .2);
+  --film-rgb: var(--tw-ink-rgb);
+  --bg: rgb(var(--tw-wall));
+  --bg-elev: rgb(var(--tw-pane));
+  --menu-bg: rgb(var(--tw-pane));
+  --veil-rgb: var(--tw-pane);
+  --well-rgb: var(--tw-pane);
+  --glass: rgba(var(--tw-pane), .86);
+  --glass-2: rgba(var(--tw-pane), .94);
+  --win-pane-1: rgb(var(--tw-pane));
+  --win-pane-2: rgb(var(--tw-pane-2));
+  --voice: rgba(var(--tw-pane), .96);
+  --field-face: rgb(var(--tw-pane-2));
+  --mark-bg: rgba(var(--tw-pane), .5);
+  --mark-line: rgba(var(--tw-ink-rgb), .12);
+  --accent: var(--tw-acc) !important;
+  --accent-2: var(--tw-acc) !important;
+  --accent-rgb: var(--tw-acc-rgb) !important;
+  --accent-soft: rgba(var(--tw-acc-rgb), .14) !important;
+  --accent-ring: rgba(var(--tw-acc-rgb), .55) !important;
+  --lit-ink: var(--tw-acc) !important;
+  --glyph-1: var(--tw-g1); --glyph-2: var(--tw-g2); --glyph-3: var(--tw-g3); --glyph-4: var(--tw-g4);
+  --glyph-o3: .92; --glyph-o4: .8;
+  --tile5-bg: radial-gradient(120% 90% at 50% 8%, rgba(var(--tw-tile), .26), rgba(var(--tw-tile), .10) 60%, rgba(var(--tw-acc-rgb), .05));
+  --tile5-edge: rgba(var(--tw-ink-rgb), .10);
+  --tile5-shade: inset 0 1px 0 rgba(var(--tw-tile), .55), 0 8px 18px -12px rgba(var(--tw-shade), .35);
+  --edge-rgb: var(--tw-acc-rgb);
+  --sb-floor: rgb(var(--tw-floor));
+}
+html.sb-tw #sbDeskTools { --dt-c: var(--tw-ink-rgb) !important; --dt-g: var(--tw-acc-rgb) !important; }
+html.sb-tw, html.sb-tw body { background-color: rgb(var(--tw-floor)) !important; }
+html.sb-tw #sbFloorFade { background-color: rgb(var(--tw-floor)); }
+html.sb-tw #sbNoteLayer .sticky-note { --veil: var(--tw-pane); --veil-a: .7; --ink-n: rgb(var(--tw-ink-rgb)); --ink-n2: rgba(var(--tw-ink-rgb), .7); }
+
+/* Светлица — тёплый молочный янтарь (двойник Тайника: пыль в солнечном луче вместо звёзд) */
+html.sb-tw[data-sb-tw="svetlica"] {
+  --tw-wall: 236, 222, 198; --tw-floor: 221, 200, 166; --tw-pane: 240, 229, 209; --tw-pane-2: 233, 219, 195; --tw-tile: 255, 247, 232; --tw-shade: 96, 60, 20;
+  /* D-1343, решение основателя 18.11: «акцент Окна чуть темнее, чтобы читался» — тот же тон 26°, светлота .369 → .344:
+     на извести стены (236, 222, 198) контраст 4,60 вместо 4,12 (было #a0561c) */
+  --tw-ink-rgb: 44, 31, 18; --tw-acc: #95501a; --tw-acc-rgb: 149, 80, 26;
+  --tw-g1: #8a4f1e; --tw-g2: #6e3c14; --tw-g3: #a8672c; --tw-g4: #d29a5c;
+}
+/* Зенит — светлое золото полудня (двойник Затмения: тот же диск, но солнце в полную силу) */
+html.sb-tw[data-sb-tw="zenit"] {
+  --tw-wall: 238, 226, 196; --tw-floor: 225, 206, 165; --tw-pane: 241, 231, 205; --tw-pane-2: 234, 222, 192; --tw-tile: 255, 249, 228; --tw-shade: 100, 72, 10;
+  --tw-ink-rgb: 42, 33, 14; --tw-acc: #946112; --tw-acc-rgb: 148, 97, 18;
+  --tw-g1: #8a5c10; --tw-g2: #6c4608; --tw-g3: #a87a26; --tw-g4: #d6ae5e;
+}
+/* Берег — песок и светлая вода (двойник Океана: та же вода, но мелкая и солнечная) */
+html.sb-tw[data-sb-tw="bereg"] {
+  --tw-wall: 200, 224, 220; --tw-floor: 222, 209, 182; --tw-pane: 226, 234, 226; --tw-pane-2: 216, 228, 220; --tw-tile: 246, 252, 248; --tw-shade: 20, 70, 76;
+  --tw-ink-rgb: 18, 40, 44; --tw-acc: #17707a; --tw-acc-rgb: 23, 112, 122;
+  --tw-g1: #136670; --tw-g2: #0c4e57; --tw-g3: #2a8590; --tw-g4: #7ec0bd;
+}
+/* Лазурь — бледное голубое небо, зелёный — лёгкий след сияния по краям (двойник Авроры: то же «зеркало») */
+html.sb-tw[data-sb-tw="lazur"] {
+  --tw-wall: 208, 224, 238; --tw-floor: 190, 206, 217; --tw-pane: 226, 234, 241; --tw-pane-2: 216, 227, 236; --tw-tile: 248, 251, 255; --tw-shade: 30, 60, 100;
+  --tw-ink-rgb: 20, 36, 56; --tw-acc: #2b6596; --tw-acc-rgb: 43, 101, 150;
+  --tw-g1: #275e8e; --tw-g2: #1b476f; --tw-g3: #2f7d8a; --tw-g4: #7cc4a8;
+}
+/* часы на столе в светлом рисуются чернилами Светлицы (коричневыми); у двойников — их тоном */
+html.sb-tw[data-sb-tw="zenit"] #sbDeskTime { filter: hue-rotate(12deg) saturate(1.1); }
+html.sb-tw[data-sb-tw="bereg"] #sbDeskTime { filter: hue-rotate(160deg) saturate(.9); }
+html.sb-tw[data-sb-tw="lazur"] #sbDeskTime { filter: hue-rotate(185deg) saturate(.85); }
+
+/* сумрак под строкой голоса — из пола темы, а не из стекла окон: низ при голосе сходится с полом */
+html.sb-tw #sbVoiceShade { --sbv-shade: rgba(var(--tw-floor), .28); --sbv-pool: rgba(var(--tw-acc-rgb), .025); --sbv-lit: rgba(var(--tw-acc-rgb), .04); }
+html.sb-tw #sbVoiceShade.deep { --sbv-shade: rgba(var(--tw-floor), .5); }
+/* свет из-под двери голоса в светлом дне не нужен: он давал ступень у самого низа (floor-seam) */
+html.sb-tw #sbVoiceDoor .sb-door-glow { visibility: hidden; }
+/* днём звёзд не видно: «небо голоса» (звёзды поверх стола) в светлых темах не показывается — на светлом это тёмные точки */
+html.sb-tw #sbVoiceSky { visibility: hidden !important; }
+
+/* ручка «инструменты» в Светлице: на светлом молоке — тёмные чернила и плотная подложка, а не бледный акцент */
+html.sb-tw[data-sb-tw="svetlica"] #sbDeskTools .dt-handle { color: rgb(var(--tw-ink-rgb)); background: rgba(var(--tw-pane), .78); border-color: rgba(var(--tw-acc-rgb), .38); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+html.sb-tw[data-sb-tw="svetlica"] #sbDeskTools .dt-dots i { background: rgb(var(--tw-acc-rgb)); box-shadow: none; }
+html.sb-tw[data-sb-tw="svetlica"] #sbDeskTools .dt-chev { stroke: rgb(var(--tw-acc-rgb)); }
+/* без WebGL (D-1331, os/core/svetlica.js): небо двойника — ровный переход от стены темы к полу, без шейдера */
+html.sb-tw.sb-tw-nogl #sbLightSky { background: linear-gradient(180deg, rgb(var(--tw-wall)), rgb(var(--tw-floor))); }

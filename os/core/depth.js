@@ -2,8 +2,8 @@
  * «ГЛУБИНА» — ВИД ЧЕТЫРЁХ ТЕМ · решение D-1080 (основатель 12.11.2026, показ
  * temy-glubina/sravnenie.html: «глубина» идёт в архив как САМ вид тем, не за
  * переключателем). Пакет GLUBINA. Перенесено из пробного слоя h5-temy (дерево
- * H4a) на H4b; переключателя больше нет — слой живёт всегда, кроме Светлицы и
- * инкогнито (там вид прежний, из core.css).
+ * H4a) на H4b; переключателя больше нет — слой живёт всегда, кроме Светлицы
+ * (там вид прежний, из core.css); гость видит его так же, как стол (D-1315).
  *
  * Что рисует: почти чёрный пол; свет темы — только большими глубокими формами:
  * дуга горизонта, как край планеты в темноте, и дальнее облако. Затмение —
@@ -27,6 +27,11 @@
 (function () {
   "use strict";
   var REST = 500;
+  /* ВОДА В ПОКОЕ — ПЛАВНО (D-1348, решение основателя 18.11: «Океан и Берег не должны тормозить»): вода движется
+     быстрее медленного света Авроры и Затмения, и кадр раз в REST читался ступенями (видео с планшета: фон меняется
+     ровно дважды в секунду). У Океана в покое — кадр раз в WATER мс (25 к/с) в .55 разрешения (D-1346); остальные
+     темы — прежний REST. */
+  var WATER = 40;
 
   /* кромки Океана и Авроры — насыщенные, не молочные: ярчайшая точка держит цвет (field-beam: нет белого пятна) */
   /* палитры: base — пол; atm — свет атмосферы; rim — кромка; far — облако;
@@ -67,8 +72,26 @@
     "float underWin(vec2 p){ float c = 0.; for (int i = 0; i < 8; i++) { if (float(i) >= uNW) break; vec4 r = uWin[i];",
     "  vec2 a = smoothstep(r.xy - 8., r.xy + 8., p) * (1. - smoothstep(r.zw - 8., r.zw + 8., p)); c = max(c, a.x*a.y); } return c; }",
     "float h1(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }",
+    /* УЗЛЫ ШУМА — ОДНО ЗНАЧЕНИЕ НА УЗЕЛ (H4e3, D-1330: «линии и прямоугольники с жёсткими краями» на планшете
+       основателя). Значение узла — прежний хеш h1, но считается ОДИН раз на узел: при сборке отдельный проход пишет его
+       в текстуру решётки 1024×1024, второй собирает в каждый тексель четыре угла клетки (latTex ниже); n2 читает клетку
+       одним обращением (NEAREST, центр текселя — точное число). Прежде n2 считал h1 у каждого угла каждой клетки сам;
+       h1 = fract(sin(…)·43758) усиливает ошибку последнего разряда в 10⁴ раз, мобильный компилятор считает угол i+(1,0)
+       иначе (dot(i,k) + 127.1), и один узел у соседних клеток получал разные значения — шум рвался по линиям решётки.
+       На настольном GPU значения узлов те же (до 1/255), рисунок пятен не меняется. Решётка текстуры замкнута (период
+       1024 узла, REPEAT): за её краем — те же узлы по кругу, шва нет. Без кадрового буфера — hq, хеш целым счётом:
+       тоже одно значение на узел. */
+    "uniform sampler2D uLat;",
+    "float hq(vec2 c){ c = mod(c, 256.); float a = mod(c.x*157. + c.y*113. + 41., 4096.);",
+    "  a = mod(floor(a*a/4096.) + a*61. + c.x + 11., 4096.); a = mod(floor(a*a/4096.) + a*61. + c.y + 11., 4096.);",
+    "  a = mod(floor(a*a/4096.) + a*61. + 18., 4096.); return a/4096.; }",
     "float n2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f);",
-    "  return mix(mix(h1(i), h1(i+vec2(1.,0.)), f.x), mix(h1(i+vec2(0.,1.)), h1(i+vec2(1.,1.)), f.x), f.y); }",
+    "#ifdef SB_NOLAT",
+    "  vec4 v = vec4(hq(i), hq(i+vec2(1.,0.)), hq(i+vec2(0.,1.)), hq(i+vec2(1.,1.)));",
+    "#else",
+    "  vec4 v = texture2D(uLat, (mod(i + 512., 1024.) + .5)/1024.);",
+    "#endif",
+    "  return mix(mix(v.x, v.y, f.x), mix(v.z, v.w, f.x), f.y); }",
     "float fbm(vec2 p){ return n2(p)*.6 + n2(p*2.1+5.3)*.28 + n2(p*4.3+1.7)*.12; }",
     /* потолок яркости света: тихие слова на прозрачных предметах стола (заметка «свет по кромке», пульт)
        держат 4,5:1 к самому светлому месту под ними — свет выше LCAP (линейная яркость) мягко сжимается,
@@ -80,12 +103,45 @@
     "  float k0 = cap*.6, k1 = cap*.4; if (y <= k0) return c;",
     "  float y2 = k0 + k1*(1. - exp(-(y - k0)/k1)); return c*pow(y2/y, 1./2.2); }",
     /* сцена одной темы; p — в пикселях холста, y вниз; k = (−1 — только пол, сила атмосферы, сила облака) */
-    /* ВОДА ОКЕАНА (H4e, D-1306, показ okean-avrora): мягкие пятна света, как сквозь толщу под медленной волной —
-       только низкие частоты, без нитей и краёв */
-    "float water(vec2 q, float t){",
-    "  vec2 w = vec2(fbm(q*1.3 + vec2(t*.050, -t*.031)), fbm(q*1.3 + vec2(-t*.041, t*.027) + 7.7));",
-    "  float v = fbm(q*2.0 + w*1.6 + vec2(t*.022, t*.015));",
-    "  return smoothstep(.42, .78, v); }",
+    /* ПОД ВОДОЙ — ОКЕАН (H4e3, D-1335, основатель 18.11.2026: «фон — как вода, максимально реалистично: человек
+       должен чувствовать, что он под водой»). Палитра темы та же (пол, атмосфера, кромка, облако); свет — сверху:
+       мерцающая поверхность над головой, мягкие лучи от неё, каустика — сетка света, гаснущая с глубиной, глубина
+       уходит в темноту книзу, редкие взвешенные частицы и пузырьки. Всё медленно (кадр покоя — раз в 500 мс, шаг
+       меньше ширины линии); «меньше движения» — тот же кадр неподвижно. Нет ни одного края: только гладкие функции,
+       частица — одна на клетку, её число считается в клетке один раз. Потолок света (capL) прежний — слова на столе держат меру. */
+    /* каустика — два витка вместо трёх (D-1342, основатель 18.11: «Океан на планшете очень медленный»): сетка света
+       та же по рисунку (разница кадра ≤ 3/255), работы на пиксель на треть меньше */
+    "float caus(vec2 uv, float t){ vec2 p = uv*6.2831853 - 250., i = p; float c = 0.;",
+    "  for (int n = 0; n < 2; n++) { float tt = t*(1. - 3.5/float(n + 1));",
+    "    i = p + vec2(cos(tt - i.x) + sin(tt + i.y), sin(tt - i.y) + cos(tt + i.x));",
+    "    c += 1./length(vec2(p.x/(sin(i.x + tt)/.006), p.y/(cos(i.y + tt)/.006))); }",
+    "  c = 1.17 - pow(c/2., 1.4); return smoothstep(1.25, 2.7, pow(abs(c), 8.)); }",
+    "vec3 sea(vec3 base, vec3 atm, vec3 rim, vec3 far, vec2 p, float t){",
+    "  float W = uRes.x, H = uRes.y, mn = min(W, H); vec2 q = p/mn; float y = p.y/H;",
+    "  float TAU = 6.2831853, sw = uBr*(.012*sin(TAU*t/23.) + .006*sin(TAU*t/9.7 + 1.1));",
+    "  vec3 lite = mix(atm, rim, .5);",
+    /* глубина: свет поверхности сверху, темнота книзу; облако темы — у поверхности справа */
+    "  vec3 col = base + atm*(.20*exp(-y*2.3) + .045*exp(-y*.7));",
+    "  vec2 f1 = (p - vec2(W*.84, -H*.06))/mn; col += far*.10*exp(-dot(f1, f1)*2.);",
+    /* поверхность над головой: вытянутая рябь, светлее у самого верха */
+    "  if (y < .4) { float s = fbm(vec2(q.x*3.1 + sw*6. + t*.018, q.y*13. - t*.035));",
+    "    col += lite*exp(-y*9.)*(.07 + .26*smoothstep(.36, .8, s))*smoothstep(.4, .3, y); }",
+    /* лучи: веер из-за поверхности, медленно ходят */
+    "  vec2 d = p - vec2(W*(.40 + sw), -H*.6); float ang = atan(d.x, d.y);",
+    "  float r1 = fbm(vec2(ang*8. + t*.010, t*.008)), r2 = .5 + .25*sin(ang*53. - t*.07) + .25*sin(ang*31. + t*.05 + 1.3);",
+    "  float rays = smoothstep(.45, .85, r1)*.75 + smoothstep(.55, .95, r2)*.35*(.5 + r1);",
+    "  col += lite*rays*exp(-y*1.9)*.17;",
+    /* каустика: сетка света от поверхности, крупная, гаснет с глубиной */
+    "  if (y < .78) col += rim*caus(q*.62 + vec2(sw*.6, 0.), t*.055)*.11*exp(-y*1.7)*smoothstep(.78, .55, y);",
+    /* взвесь: редкие частицы медленно опускаются; редко — пузырёк поднимается */
+    /* взвеси нет (D-1353, основатель: «пыли в темах не надо»; no-tainik-dust-elsewhere — точек в Океане быть не должно):
+       частицы убраны целиком, как пузырьки (D-1346); остальная вода прежняя */
+    /* пузырьков нет (D-1346, основатель 18.11: «пузырьки смотрятся дёшево» — убраны все, большие и малые) */
+    /* глубина книзу — темнее */
+    /* к низу — не в черноту, а в синюю мглу цвета пола страницы (--sb-floor Океана 21,32,70; floor-seam-check): шва у
+       нижней кромки нет; бока в толще чуть темнее — глубина */
+    "  float xc = (p.x/W - .5)*2.; col *= 1. - .30*xc*xc*smoothstep(.15, .7, y)*(1. - smoothstep(.75, 1., y));",
+    "  return mix(col, vec3(21., 32., 70.)/255., smoothstep(.55, 1., y)*.92); }",
     "vec3 scene(vec3 base, vec3 atm, vec3 rim, vec3 far, vec3 k, vec3 fl, vec2 p, float t, out vec3 rr){",
     "  float W = uRes.x, H = uRes.y, mn = min(W, H), mx = max(W, H);",
     "  vec2 q = p/mn;",
@@ -93,10 +149,13 @@
     /* ДЫХАНИЕ (H4e, D-1306): три медленных круга 9–13,5 с, малая амплитуда; uBr = 0 при «меньше движения» */
     "  float TAU = 6.2831853;",
     "  float b1 = sin(TAU*t/11.), b2 = sin(TAU*t/13.5 + 1.3), b3 = sin(TAU*t/9. + 2.1);",
-    "  float form = fbm(q*1.15 + vec2(t*(.006 + .012*uBr), -t*(.004 + .009*uBr)));",
     /* Затмение: только пол — диск и кромку рисует #sbEclipse (D-872) */
     "  rr = vec3(0.);",
+    /* Океан — под водой (D-1335): своя сцена, свет темы тот же, потолок тот же */
+    "  if (fl.y > .5) return capL(sea(base, atm, rim, far, p, t), capAt(p));",
     "  if (k.x < -.5) return base;",
+    /* облик пятен — только у сцен с горизонтом: Океан (вода) и Затмение (пол) его не берут, шума на пиксель меньше (D-1342) */
+    "  float form = fbm(q*1.15 + vec2(t*(.006 + .012*uBr), -t*(.004 + .009*uBr)));",
     /* горизонт планеты: большая окружность, вершина дуги — на 80–82 % высоты */
     "  float R = mx*1.7;",
     "  float apex = H*(W > H ? .80 : .82);",
@@ -129,11 +188,6 @@
     "  vec2 f2 = (p - vec2(W*.02, H*.46) - o2)/mn; float g2 = exp(-dot(f2*vec2(1.5, .9), f2*vec2(1.5, .9))*4.);",
     "  float kz = k.z*(1. + .14*b2*uBr);",
     "  col += far*.42*kz*g1*(.40 + 1.2*form) + atm*.13*kz*g2*(.35 + 1.3*form);",
-    /* вода: свет сверху сквозь толщу — сильнее у поверхности, гаснет к глубине; медленно и тихо */
-    /* вода считается только у сцены с водой (у остальных множитель 0 — тот же кадр, втрое меньше шума на пиксель) */
-    "  float wl = uWater*uBr > 0. ? water(q, t) * uWater * uBr : 0.;",
-    "  float dep = 1. - smoothstep(0., H*.9, p.y);",
-    "  col += mix(atm, rim, .45)*wl*(.016 + .026*dep);",
     "  return capL(col, capAt(p)*(1. - max(k.x, 0.)));",
     "}",
     /* кромка дуги ложится «экраном»: каналы не упираются в 255, и у Тепла она остаётся оранжевой, не жёлтой */
@@ -170,6 +224,41 @@
     "}"
   ].join("\n");
 
+  /* текстура решётки (D-1330): проход 1 — узел (x − 512, y − 512) → h1 тем же текстом, что был в n2 (24 бита);
+     проход 2 — в тексель клетки четыре её угла (по 8 бит), копии одного значения узла. Один раз при сборке.
+     Не вышло (нет кадрового буфера) — шейдер собирается с SB_NOLAT, шум на hq (ветка выбирается при сборке, не в кадре). */
+  var LAT_FS = "precision highp float;\nfloat h1(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\n" +
+    "void main(){ vec2 c = floor(gl_FragCoord.xy) - 512.; float h = h1(c);\n" +
+    "  gl_FragColor = vec4(floor(h*256.), floor(fract(h*256.)*256.), floor(fract(h*65536.)*256.), 255.)/255.; }";
+  var LAT4_FS = "precision highp float;\nuniform sampler2D uA;\n" +
+    "float g(vec2 o){ return dot(texture2D(uA, (floor(gl_FragCoord.xy) + o + .5)/1024.).rgb, vec3(255./256., 255./65536., 255./16777216.)); }\n" +
+    "void main(){ gl_FragColor = vec4(g(vec2(0., 0.)), g(vec2(1., 0.)), g(vec2(0., 1.)), g(vec2(1., 1.))); }";
+  function latTex(g, sh) {
+    try {
+      var run = function (fs, unit, prep) {
+        var pr = g.createProgram(); g.attachShader(pr, sh(g.VERTEX_SHADER, VS)); g.attachShader(pr, sh(g.FRAGMENT_SHADER, fs)); g.linkProgram(pr);
+        if (!g.getProgramParameter(pr, g.LINK_STATUS)) return null;
+        g.useProgram(pr); if (prep) prep(pr);
+        var la = g.getAttribLocation(pr, "a"); g.enableVertexAttribArray(la); g.vertexAttribPointer(la, 2, g.FLOAT, false, 0, 0);
+        var tx = g.createTexture(); g.activeTexture(unit); g.bindTexture(g.TEXTURE_2D, tx);
+        g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, 1024, 1024, 0, g.RGBA, g.UNSIGNED_BYTE, null);
+        [g.TEXTURE_MIN_FILTER, g.TEXTURE_MAG_FILTER].forEach(function (k) { g.texParameteri(g.TEXTURE_2D, k, g.NEAREST); });
+        [g.TEXTURE_WRAP_S, g.TEXTURE_WRAP_T].forEach(function (k) { g.texParameteri(g.TEXTURE_2D, k, g.REPEAT); });
+        var fb = g.createFramebuffer(); g.bindFramebuffer(g.FRAMEBUFFER, fb);
+        g.framebufferTexture2D(g.FRAMEBUFFER, g.COLOR_ATTACHMENT0, g.TEXTURE_2D, tx, 0);
+        var done = g.checkFramebufferStatus(g.FRAMEBUFFER) === g.FRAMEBUFFER_COMPLETE;
+        if (done) { g.viewport(0, 0, 1024, 1024); g.drawArrays(g.TRIANGLES, 0, 3); }
+        g.bindFramebuffer(g.FRAMEBUFFER, null); g.deleteFramebuffer(fb); g.deleteProgram(pr);
+        if (!done) { g.deleteTexture(tx); return null; }
+        return tx;
+      };
+      var t1 = run(LAT_FS, g.TEXTURE1);
+      if (!t1) return false;
+      var t4 = run(LAT4_FS, g.TEXTURE0, function (pr) { g.uniform1i(g.getUniformLocation(pr, "uA"), 1); });
+      g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, null); g.deleteTexture(t1); g.activeTexture(g.TEXTURE0);
+      return !!t4;
+    } catch (e) { return false; }
+  }
   /* одна сборка и одна запись кадра — для потока и для главного: картинка та же самой функцией */
   function glSetup(g) {
     var sh = function (type, src) {
@@ -177,16 +266,27 @@
       if (!g.getShaderParameter(o, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(o));
       return o;
     };
+    var buf = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, buf);
+    g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), g.STATIC_DRAW);
+    /* решётка шума — до сборки шейдера: без неё шейдер собирается с SB_NOLAT (D-1330) */
+    var lat = latTex(g, sh);
     var pr = g.createProgram();
-    g.attachShader(pr, sh(g.VERTEX_SHADER, VS)); g.attachShader(pr, sh(g.FRAGMENT_SHADER, FS));
+    g.attachShader(pr, sh(g.VERTEX_SHADER, VS)); g.attachShader(pr, sh(g.FRAGMENT_SHADER, (lat ? "" : "#define SB_NOLAT\n") + FS));
     g.linkProgram(pr);
     if (!g.getProgramParameter(pr, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(pr));
     g.useProgram(pr);
-    var buf = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, buf);
-    g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), g.STATIC_DRAW);
     var loc = g.getAttribLocation(pr, "a"); g.enableVertexAttribArray(loc); g.vertexAttribPointer(loc, 2, g.FLOAT, false, 0, 0);
     var u = {};
     ["uRes", "uT", "uPx", "uMode", "uR", "uSeam", "uO", "uA", "uB", "uWin", "uNW", "uBr", "uFA", "uFB"].forEach(function (n) { u[n] = g.getUniformLocation(pr, n); });
+    g.uniform1i(g.getUniformLocation(pr, "uLat"), 0);
+    /* ПРОГРЕВ (D-1345, основатель 18.11: «Океан дёргается в миг включения»): сборку шейдера браузер доводит до конца
+       только на первом рисовании — оно приходилось на сам миг смены темы (из Тайника и из Светлицы слой не рисует).
+       Здесь, в простое после входа, — один пиксель в стороне от экрана (холст ещё не показан, первый кадр закрывает
+       его целиком): программа и решётка уже готовы, смена темы берёт готовое. Вид не меняется. */
+    try {
+      g.viewport(0, 0, 1, 1); g.uniform2f(u.uRes, 1, 1); g.uniform1f(u.uMode, 1); g.uniform1f(u.uR, 0); g.uniform1f(u.uNW, 0);
+      g.drawArrays(g.TRIANGLES, 0, 3); g.readPixels(0, 0, 1, 1, g.RGBA, g.UNSIGNED_BYTE, new Uint8Array(4));
+    } catch (e) { /* прогрев не обязателен */ }
     return u;
   }
   function glFrame(g, u, f) {
@@ -244,7 +344,14 @@
   /* Адрес этого же файла — запустить его потоком; в ковчеге (D-314) адреса нет — поток из текста (как у поля). */
   var SRC = (doc.currentScript && (doc.currentScript.src ||
     (window.SB_ARK && typeof window.SB_ARK.self === "function" ? window.SB_ARK.self(doc.currentScript) : ""))) || "";
-
+  /* ПОТОК ЗАВОДИТСЯ СРАЗУ, ПРИ ЗАГРУЗКЕ (D-1351; закон door-address-check: после нажатия — ни одного запроса; строгость
+     страницы — поток только из своего адреса, не blob:): файл потока запрашивается один раз сейчас, пока страница
+     грузится, а сборка шейдера в нём — позже, в простое после входа (D-1345), уже без запросов. Поток без «init»
+     ничего не делает. */
+  var early = null;
+  try {
+    if (SRC && typeof Worker !== "undefined" && typeof OffscreenCanvas !== "undefined" && OffscreenCanvas.prototype.transferToImageBitmap) early = new Worker(SRC);
+  } catch (e) { early = null; }
   var cv = null, gcv = null, c2d = null, gl = null, prog = null, U = {}, W = 0, H = 0, K = 1, raf = 0, T0 = performance.now();
   var worker = null, bmpctx = null, inflight = false, queued = null;
   var cur = null, tr = null, lastTap = null, draws = 0, held = 0, live = false, dirty = true;
@@ -252,9 +359,9 @@
   var pending = !!window.WebGLRenderingContext;
   var mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
   function reduced() { return mq.matches || root.getAttribute("data-motion") === "reduced"; }
-  /* слой виден: тёмная тема, не инкогнито (Светлица и инкогнито — прежний вид core.css) */
+  /* слой виден: тёмная тема (Светлица — прежний вид core.css); гость видит то же, что стол (D-1315) */
   /* Тайник (бывшее Тепло, ключ studio) — поле витрины (core/tainik.js, D-1229): глубина в нём не рисует */
-  function shown() { return root.getAttribute("data-theme") !== "light" && !root.classList.contains("sb-incognito") && mood() !== "studio"; }
+  function shown() { return root.getAttribute("data-theme") !== "light" && mood() !== "studio"; }
   function parked() { return root.classList.contains("wp-parked"); }
   function eclipse(m) { return m === "ember" || m === "eclipse"; }
   /* Турбо (sb-turbo) и «фон выключен» (уровень поля off) — свет стоит, шов — сразу (room-and-seam п.6) */
@@ -263,6 +370,7 @@
   /* без WebGL — честно назад к полю системы */
   function fallback() {
     live = false; pending = false; root.classList.add("sb-depth-nogl");
+    if (early) { early.terminate(); early = null; }
     if (window.sbField) { window.sbField.refresh(); if (window.sbGetWallpaperMood) window.sbField.mood(window.sbGetWallpaperMood()); }
   }
   /* поток: сборка и кадры вне главного; не вышло — тот же холст, но в главном потоке */
@@ -270,8 +378,9 @@
     if (!SRC || typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined" ||
         !OffscreenCanvas.prototype.transferToImageBitmap || typeof createImageBitmap === "undefined") return false;
     try { bmpctx = cv.getContext("bitmaprenderer"); } catch (e) { bmpctx = null; }
-    if (!bmpctx) return false;
-    try { worker = new Worker(SRC); } catch (e) { worker = null; }
+    if (!bmpctx) { if (early) { early.terminate(); early = null; } return false; }
+    try { worker = early || new Worker(SRC); } catch (e) { worker = null; }
+    early = null;
     if (!worker) { swapCanvas(); return false; }
     worker.onmessage = function (e) {
       var m = e.data || {};
@@ -340,18 +449,26 @@
     if (!doc.getElementById("sbVaultGate") && !parked()) draw(performance.now()); else loop();
   }
 
+  /* ВОДА — МЕЛЬЧЕ ЭКРАНА (D-1346, основатель 18.11: «Океан на планшете дёргается»): свет под водой мягкий, без единого
+     края (контура у Океана нет) — в покое холст считается в WS = .55 от прежнего (≈ .5 × DPR на планшете), сверху
+     растягивается гладко; пикселей — втрое меньше. Шов идёт в полный пиксель (его кромка тонкая). */
+  var WS = 0.55;
   function draw(now) {
     if (!prog || !shown()) return;
     var t = reduced() ? 40 : (now - T0) / 1000;
     var m = cur || mood();
-    var f = { w: Math.max(2, Math.round(W * K)), h: Math.max(2, Math.round(H * K)), t: t,
-      A: vec(tr ? tr.from : m), B: vec(tr ? tr.to : m), mode: tr ? 1 : 0, wins: new Float32Array(wins), nw: nWins,
+    var S = !tr && m === "ocean" ? WS : 1, wz = new Float32Array(wins);
+    if (S !== 1) for (var wi = 0; wi < wz.length; wi++) wz[wi] *= S;
+    var f = { w: Math.max(2, Math.round(W * K * S)), h: Math.max(2, Math.round(H * K * S)), t: t,
+      A: vec(tr ? tr.from : m), B: vec(tr ? tr.to : m), mode: tr ? 1 : 0, wins: wz, nw: nWins,
       ox: tr ? tr.o.x * K : 0, oy: tr ? tr.o.y * K : 0, R: tr ? tr.R * K : 0, seam: tr ? tr.seam : 0,
       br: reduced() ? 0 : 1, FA: flags(tr ? tr.from : m), FB: flags(tr ? tr.to : m) };
     dirty = false;
     if (worker) { if (inflight) queued = f; else send(f); return; }
+    if (gcv.width !== f.w || gcv.height !== f.h) { gcv.width = f.w; gcv.height = f.h; }
     glFrame(gl, U, f);
-    c2d.drawImage(gcv, 0, 0);
+    c2d.imageSmoothingEnabled = true; c2d.imageSmoothingQuality = "high";
+    c2d.drawImage(gcv, 0, 0, cv.width, cv.height);
     draws++;
     if (draws === 1) cv.classList.add("sb-depth-on");
   }
@@ -409,14 +526,14 @@
       /* до следующего кадра покоя — таймер по настоящим часам, а не кадр за кадром: между ними страница не
          тронута, и приборы, ускоряющие время страницы (teplo-warm), кадры не разгоняют */
       draw(now);
-      rest = setTimeout(function () { rest = 0; loop(); }, REST);
+      rest = setTimeout(function () { rest = 0; loop(); }, (cur || mood()) === "ocean" ? WATER : REST);
     });
   }
 
   /* наружу: live() — слой рисует (поле системы молчит); hold — остановить время слоя на кадре (для снимков шва) */
   window.sbDepth = {
     live: function () { return (live || pending) && shown(); },
-    get draws() { return draws; }, get seam() { return tr; }, palettes: PAL, rest: REST,
+    get draws() { return draws; }, get seam() { return tr; }, palettes: PAL, rest: REST, restWater: WATER,
     /* где считаются кадры: «thread» — свой поток, «main» — главный */
     thread: function () { return worker ? "thread" : "main"; },
     hold: function (on) { held = on ? performance.now() : 0; if (!on && tr) tr.t0 += performance.now() - (tr.heldAt || performance.now()); if (on && tr) tr.heldAt = held; loop(); }
@@ -513,7 +630,7 @@
   var root = document.documentElement, doc = document;
   var mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
   function reduced() { return mq.matches || root.getAttribute("data-motion") === "reduced"; }
-  function curMood() { var m = root.getAttribute("data-wp-mood"); return (m === "ocean" || m === "aurora") && root.getAttribute("data-theme") !== "light" && !root.classList.contains("sb-incognito") && !root.classList.contains("sb-depth-nogl") ? m : ""; }
+  function curMood() { var m = root.getAttribute("data-wp-mood"); return (m === "ocean" || m === "aurora") && root.getAttribute("data-theme") !== "light" && !root.classList.contains("sb-depth-nogl") ? m : ""; }
   function parked() { return root.classList.contains("wp-parked") || !!doc.getElementById("sbVaultGate"); }
   function portrait() { return window.innerWidth < 700; }
   /* доля высоты горизонта «зеркала» — как в показе: телефон .66, стол .64 */
@@ -661,7 +778,14 @@
   var raf = 0, rest = 0, dirty = true, KT = 1;
   var DESK_IDS = { desktop: 1, sbIconLayer: 1, sbNoteLayer: 1, sbWidgetLayer: 1 };
   /* ОТКАТ: касание не по одному из слоёв стола (DESK_IDS) — своё, если пришлось на сам фон .wp-layer; иначе не наше (окно, панель) */
-  function ownTap(t) { return !!(t && t.nodeType === 1 && t.closest && (DESK_IDS[t.id] || t.closest(".wp-layer"))); }
+  function underBar(y) {
+    /* ПОЛОСА СВЕРХУ — МЕБЕЛЬ И ТАМ, ГДЕ ОНА ПРОПУСКАЕТ КАСАНИЕ (H4e2, D-1320): пустая середина полосы касаний не
+       ловит (themes.css), и палец проходил сквозь неё на стол. Пока полоса видна, её высота — не стол. */
+    var b = document.getElementById("topbar"); if (!b) return false;
+    var r = b.getBoundingClientRect(), cs = getComputedStyle(b);
+    return r.height > 0 && r.bottom > 0 && y >= r.top && y <= r.bottom && cs.visibility !== "hidden" && cs.display !== "none" && +cs.opacity > 0.05;
+  }
+  function ownTap(t, y) { return !!(t && t.nodeType === 1 && t.closest && !(y != null && underBar(y)) && (DESK_IDS[t.id] || t.closest(".wp-layer"))); }
   function size() {
     if (!hcv) return;
     W = window.innerWidth; H = window.innerHeight; K = Math.min(window.devicePixelRatio || 1, 1.5); K = Math.min(K, Math.sqrt(2.4e6 / Math.max(1, W * H)));
@@ -717,7 +841,7 @@
     hLayer = layer; hAfter = after && after.parentNode === layer ? after : null;
     hx = hcv.getContext("2d"); tx = tcv.getContext("2d");
     window.addEventListener("pointerdown", function (e) {
-      if (!mood || reduced() || parked() || !ownTap(e.target)) return;
+      if (!mood || reduced() || parked() || !ownTap(e.target, e.clientY)) return;
       touches.push({ x: e.clientX, y: e.clientY, t: (performance.now() - T0) / 1000 }); if (touches.length > 6) touches.shift();
       kick();
     }, { passive: true });

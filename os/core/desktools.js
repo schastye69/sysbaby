@@ -201,6 +201,13 @@
     var lowEdge = H - 76;
     ["#sbFab", "#dock"].forEach(function (q) { var e = doc.querySelector(q); if (!e) return; var r = e.getBoundingClientRect(); if (r.width && r.height && r.top > H * 0.5) lowEdge = Math.min(lowEdge, r.top - 12); });
     if (top + B > lowEdge) top = Math.max(safeTop(), lowEdge - B);
+    /* D-1341: закреплённый на столе инструмент (часы) открыт касанием — свет остаётся там, где стоял на столе:
+       блок встаёт от него, а не от середины; не помещается над голосом — лишнее прокручивается внутри (--dt-maxh) */
+    /* D-1350: то же, когда инструменты открыты ручкой «инструменты» (ряд, ничего не выбрано): свет — закреплённые часы */
+    if (open && pinnedLit()) {
+      var anc = freeCy() - Math.round(Hd / 2);
+      if (anc >= safeTop() && anc + Hd + capH + footH <= lowEdge) top = anc;
+    }
     ov.style.setProperty("--dt-maxh", Math.max(160, lowEdge - top) + "px");
     /* ЭКРАННАЯ КЛАВИАТУРА (D-900): видимая часть экрана — visualViewport; поднялась
        клавиатура — клавиши света уходят (печатает она), а строка встаёт над ней,
@@ -301,8 +308,11 @@
     announce(T("dt.tray.aria"));
   }
   function pinnedNow() { var p = readS().pin; return p && PINNABLE[p] ? p : null; }
+  /* свет середины сейчас — закреплённый (D-1341, D-1350): выбран он сам или открыт ряд инструментов (ничего не выбрано) */
+  function pinnedLit() { var p = pinnedNow(); return !!p && !DT.info().mode && (!picked || tool === p); }
   function closeTools(keepDraft) {
     if (!open) return;
+    var keepLit = pinnedLit();
     open = false;
     if (keepDraft !== false && tool === "line" && !answered && line.value.trim()) draft = line.value;
     else if (heldDraft) draft = heldDraft;
@@ -312,7 +322,8 @@
     if (window.sbThought && window.sbThought.mic.on()) window.sbThought.mic.stop();
     ov.classList.remove("on"); blk.hidden = true; pane.hidden = true; pane.innerHTML = ""; picked = false; menuFrom = "";
     if (doc.activeElement && ov.contains(doc.activeElement)) { try { doc.activeElement.blur(); } catch (e) { /* фокус не обязателен */ } }
-    DT.hide();
+    /* D-1341: закреплённый остаётся на столе тем же светом — не гасится и не вычерчивается заново (showPinned ниже) */
+    if (!keepLit) DT.hide();
     DT.setCx(null); ov.classList.remove("land"); root.classList.remove("sb-tools-wide");   /* значки возвращаются (D-1023) */
     if (!(window.sbClock && window.sbClock.isOpen && window.sbClock.isOpen())) DT.setCy(null);
     announce("");

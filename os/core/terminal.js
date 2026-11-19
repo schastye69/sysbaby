@@ -192,7 +192,7 @@
       var build = window.sbBuild ? window.sbBuild.stamp() : "sys.baby core";
       var reg = (window.SysBaby && window.SysBaby.order) ? window.SysBaby.order.length : 0;
       var launch = window.sbLaunchableApps ? window.sbLaunchableApps().length : 0;
-      /* Печать сборки и счёт окон — двумя строками: с именем «personal OS»
+      /* Печать сборки и счёт окон — двумя строками: с именем «personal world»
          (D-614) одна строка на 84 знака переносилась в окне по умолчанию
          (line-measure-check). Слова те же. */
       write(build, "term-dim");
