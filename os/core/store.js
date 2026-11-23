@@ -74,42 +74,43 @@
     if (ssGet("sysbaby.space") !== "incognito") return;
     if (!nativeLS) { ssDel("sysbaby.space"); return; }
     try {
-      /* Отсек гостя живёт в памяти вкладки (решение основателя 05.11): ни
-         одного ключа на диск — ни под префиксом, ни мимо него. Уходит вместе
-         с вкладкой и с её перезагрузкой. Гостю с порога нужны только «вошёл»,
-         «загрузка видена» и язык двери; язык — флагом сеанса рядом с
-         sysbaby.space, чтобы перезагрузка внутри пространства не роняла его. */
-      var mem = new Map();
-      if (ssGet("sysbaby.space.guest") === "1") { mem.set("sysbaby.authed", "1"); mem.set("sysbaby.boot.seen", "1"); }
-      var seedLang = ssGet("sysbaby.space.lang");
-      if (seedLang) mem.set("sysbaby.i18n.lang", seedLang);
+      var real = nativeLS;
       var facade = {
-        getItem: function (k) { k = String(k); return mem.has(k) ? mem.get(k) : null; },
-        setItem: function (k, v) {
-          k = String(k); v = String(v); mem.set(k, v);
-          if (k === "sysbaby.i18n.lang") ssSet("sysbaby.space.lang", v);
+        getItem: function (k) { return real.getItem(INCOG_PREFIX + k); },
+        setItem: function (k, v) { real.setItem(INCOG_PREFIX + k, String(v)); },
+        removeItem: function (k) { real.removeItem(INCOG_PREFIX + k); },
+        key: function (i) {
+          var mine = [], n = real.length, j;
+          for (j = 0; j < n; j++) { var kk = real.key(j); if (kk && kk.indexOf(INCOG_PREFIX) === 0) mine.push(kk.slice(INCOG_PREFIX.length)); }
+          return i >= 0 && i < mine.length ? mine[i] : null;
         },
-        removeItem: function (k) { mem.delete(String(k)); },
-        key: function (i) { var all = Array.from(mem.keys()); return i >= 0 && i < all.length ? all[i] : null; },
-        clear: function () { mem.clear(); }
+        clear: function () {
+          var doomed = [], n = real.length, j;
+          for (j = 0; j < n; j++) { var kk = real.key(j); if (kk && kk.indexOf(INCOG_PREFIX) === 0) doomed.push(kk); }
+          for (j = 0; j < doomed.length; j++) real.removeItem(doomed[j]);
+        }
       };
-      Object.defineProperty(facade, "length", { get: function () { return mem.size; } });
+      Object.defineProperty(facade, "length", {
+        get: function () {
+          var c = 0, n = real.length, j;
+          for (j = 0; j < n; j++) { var kk = real.key(j); if (kk && kk.indexOf(INCOG_PREFIX) === 0) c++; }
+          return c;
+        }
+      });
       Object.defineProperty(window, "localStorage", { value: facade, configurable: true, writable: false });
-      /* verify the swap actually took — и что на диск не легло ничего */
+      /* verify the swap actually took */
       window.localStorage.setItem("sysbaby.__probe", "1");
-      var ok = mem.get("sysbaby.__probe") === "1" && nativeLS.getItem(INCOG_PREFIX + "sysbaby.__probe") === null && nativeLS.getItem("sysbaby.__probe") === null;
+      var ok = real.getItem(INCOG_PREFIX + "sysbaby.__probe") === "1";
       window.localStorage.removeItem("sysbaby.__probe");
       if (!ok) throw new Error("facade not effective");
       window.sbIncognitoActive = true;
-      /* Гость видит ту же тему, что и обычный стол (D-1315, основатель 17.11.2026: «на каждой
-         теме просто тёмный экран… это просто кошмар»): комната тёмная (D-326), а класса
-         sb-incognito, гасившего поле, часы и цифры расчёта («только пол»), больше нет.
-         Тема гостя живёт в фасаде выше — на диск не ложится ничего. */
-      document.documentElement.setAttribute("data-theme", "dark");
+      var de = document.documentElement;
+      de.setAttribute("data-theme", "dark");
+      de.classList.add("sb-incognito");
     } catch (err) {
       /* fail safe: leave the space rather than run with mixed storage */
       try { Object.defineProperty(window, "localStorage", { value: nativeLS, configurable: true }); } catch (e2) { /* keep going */ }
-      ssDel("sysbaby.space"); ssDel("sysbaby.space.lang"); ssDel("sysbaby.space.guest"); ssDel("sysbaby.incognito.timerSec");
+      ssDel("sysbaby.space"); ssDel("sysbaby.incognito.timerSec");
       window.sbIncognitoActive = false;
       if (window.console) console.warn("[sysbaby] incognito facade unavailable:", err && err.message);
     }
@@ -132,24 +133,6 @@
   function showBootReport(rec) {
     if (reporterShown) return;
     reporterShown = true;
-    /* ── ОТЧЁТ О ЗАПУСКЕ — ГОЛОСОМ (D-822) ──────────────────────────────
-       Модуль упал при запуске, а голос встал — отчёт говорит он: важное,
-       не тает до касания, слово-кнопка «Reload». Своя коробка #sbBootFail
-       остаётся только запасом на случай, когда не встал и сам голос: иначе
-       человек смотрел бы в пустой экран без единого слова. */
-    var said = 0;
-    var voice = function () {
-      var V = window.sbVoice;
-      if (V && typeof V.say === "function" && document.body) {
-        var where0 = rec.where || "unknown module";
-        try {
-          if (V.say("sys.baby did not finish starting (" + where0 + "). Nothing was lost — [Reload]", { sticky: true, kind: "event", on: function () { window.location.reload(); } })) return;
-        } catch (e) { /* голос упал — запас ниже */ }
-      }
-      /* ОТКАТ: голос восемь секунд не может сказать (не встал или молчит у ворот) — тогда коробка. */
-      if (++said < 80) { setTimeout(voice, 100); return; }
-      paint();
-    };
     var paint = function () {
       if (!document.body) { setTimeout(paint, 50); return; }
       var box = document.createElement("div");
@@ -160,7 +143,7 @@
         "\nNothing was lost. Reloading usually works — and this text is exactly what is needed to fix the cause.";
       document.body.appendChild(box);
     };
-    voice();
+    paint();
   }
 
   function shortWhere(src, line, col) {
@@ -212,27 +195,21 @@
     window.sbStorageFailed = true;
     var title = "Couldn't save";
     var text = "Storage may be full or restricted in this browser.";
-    /* ── БЕДА ГОВОРИТ ГОЛОС, А НЕ ПОЛОСА (D-822, основатель 11.11.2026:
-       «не будут всплывать абсолютно никакие оповещения… кроме самого
-       голоса») ──────────────────────────────────────────────────────────
-       Здесь была своя полоса #sbQuotaBanner — на случай, когда запись не
-       легла раньше, чем встал блок извещений. Теперь слово ждёт блока
-       (shell.js отдаёт его голосу: важное, не тает до касания) и не рисует
-       ничего своего. Охраняется tools/only-voice-check.mjs. */
-    var tries = 0;
-    var tell = function () {
-      if (typeof window.showToast === "function") {
-        /* слова — на языке человека, когда словарь уже есть (английские — запас) */
-        var T = window.sbT, tt = T ? T("nt.save.failTitleShort") : "", tx = T ? T("nt.save.failBody") : "";
-        if (tt && tt !== "nt.save.failTitleShort") title = tt;
-        if (tx && tx !== "nt.save.failBody") text = tx;
-        try { window.showToast(title, text, "", true, "toast-warn", "event"); } catch (e) { /* голос занят — запись всё равно не легла, повторять незачем */ }
-        return;
-      }
-      /* ОТКАТ: блок извещений так и не встал за минуту — молчим, полосы нет. */
-      if (++tries < 600) setTimeout(tell, 100);
+    var done = false;
+    if (typeof window.showToast === "function") {
+      try { window.showToast(title, text, "", true, "toast-warn", "event"); done = true; } catch (e) { done = false; }
+    }
+    if (done) return;
+    var paint = function () {
+      if (!document.body) { setTimeout(paint, 60); return; }
+      if (document.getElementById("sbQuotaBanner")) return;
+      var b = document.createElement("div");
+      b.id = "sbQuotaBanner";
+      b.setAttribute("role", "alert");
+      b.textContent = title + " — " + text;
+      document.body.appendChild(b);
     };
-    tell();
+    paint();
   }
 
   function flush() {
@@ -288,9 +265,6 @@
       return true;
     },
     flushSync: function () { flush(); },
-    /* Что лежит на диске сейчас — мимо памяти вкладки и не трогая её (H4e3, D-1329): переписка сверяет свой список
-       с записанным другой вкладкой того же профиля, прежде чем писать поверх. */
-    peek: function (key) { return lsGet(nsKey(key)); },
     /* Записать в ЧУЖОЕ пространство — в профиль, куда человек сейчас войдёт.
        Нужно двери (D-306): имя входящего кладётся в его профиль, а не в тот,
        из которого он уходит. Прежняя дверь писала имя в текущий — и гость
@@ -577,49 +551,6 @@
         list.push(rec);
         writeProfiles(list);
         return rec;
-      });
-    },
-
-    /* ── ДВЕРЬ У ВСЕХ: СТАРЫЙ ПАРОЛЬ — ЭТО СЛОВО (D-588) ─────────────────
-       Основатель 02.11.2026, вариант Г: одинаковый экран для всех — дверь;
-       прежней карточки «имя + пароль» нет. Кто заводил имя раньше, пишет в
-       поле «Слово» свой старый пароль — и записи его профиля уходят под
-       замок, а пароль становится словом. Имени дверь не спрашивает: оно
-       лежит в пространстве самого профиля (nameIn), и проверка идёт по всем
-       профилям с паролем сразу. Работа у двери одна и та же при любом слове:
-       по выводу на каждый профиль, и один пустой вывод, если профилей нет.
-       Запись прежней сборки (v1: имя и почта в записи) при совпадении
-       переезжает: имя уходит в пространство профиля, из записи — имя и почта.
-       Охраняется tools/door-for-all-check.mjs. */
-    nameIn: function (id) { var v = lsGet(nsKeyFor(id, "sysbaby.username")); return v ? String(v) : ""; },
-    hasOwners: function () { return readProfiles().some(function (p) { return !!(p && p.auth && (p.auth.tag || p.auth.hash)); }); },
-    byWord: function (word) {
-      if (!subtleOk()) return Promise.resolve(null);
-      var list = readProfiles(), owners = list.filter(function (p) { return p && p.auth && (p.auth.tag || p.auth.hash); });
-      if (!owners.length) return derive(word, randomSaltHex()).then(function () { return null; });
-      var jobs = owners.map(function (p) {
-        if (p.auth.tag) return doorTag(sbAuth.nameIn(p.id), word).then(function (t) { return sameSecret(t, p.auth.tag) ? { p: p } : null; });
-        var name = String(p.email || "").split("@")[0].toLowerCase().replace(/[^a-z0-9_.\-]/g, "").slice(0, 18);
-        return derive(word, p.auth.salt, p.auth.iterations || AUTH_ITER).then(function (h) { return sameSecret(h, p.auth.hash) ? { p: p, v1: name } : null; });
-      });
-      return Promise.all(jobs).then(function (r) {
-        var hit = null, i;
-        for (i = 0; i < r.length; i++) if (r[i] && !hit) hit = r[i];
-        if (!hit) return null;
-        if (!hit.v1) return hit.p;
-        return doorTag(hit.v1, word).then(function (tag) {
-          var all = readProfiles(), j;
-          for (j = 0; j < all.length; j++) {
-            if (all[j].id === hit.p.id) {
-              all[j].auth = { algo: "PBKDF2-SHA256", iterations: AUTH_ITER, v: 2, tag: tag };
-              delete all[j].name;
-              delete all[j].email;
-            }
-          }
-          writeProfiles(all);
-          if (hit.v1) lsSet(nsKeyFor(hit.p.id, "sysbaby.username"), hit.v1);
-          return hit.p;
-        });
       });
     }
   };
@@ -1428,11 +1359,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      открытые миры в миг ухода, и общая запись замка, которую переписывали
      целиком, теряла щель одного мира от записи другого. Снаружи каждая —
      64 КиБ шума у всех замков одинаково; сведений в них не прибавилось. */
-  /* sysbaby.door — какую дверь человек попросил запомнить (D-587): видна до
-     слова по построению, поэтому названа здесь и в окне замка.
-     sysbaby.entry.day — день последнего полного входа (D-606): вход идёт до
-     слова, запись одинакова у всех и мира не выдаёт. */
-  var VAULT_NEVER = ["sysbaby.lock.v1", "sysbaby.lock.late.0", "sysbaby.lock.late.1", "sysbaby.activeProfile", "sysbaby.authed", "sysbaby.door", "sysbaby.entry.day"];
+  var VAULT_NEVER = ["sysbaby.lock.v1", "sysbaby.lock.late.0", "sysbaby.lock.late.1", "sysbaby.activeProfile", "sysbaby.authed"];
   function isProtectedKey(k) {
     var key = String(k || "");
     if (key.indexOf("sysbaby.") !== 0) return false;
@@ -1682,21 +1609,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       ]).then(function (k) { bits.fill(0); return { gcm: k[0], slot: k[1] }; }, function (e) { bits.fill(0); throw e; });
     });
   }
-  /* ── «КЛЮЧ ПОВОРАЧИВАЕТСЯ» (D-581) ─────────────────────────────────────
-     Весть о том, что идёт растяжка, — и ничего больше: ни слова, ни исхода.
-     Её слушает сцена двери (core/doors/doors.js) и на это время замирает:
-     её кадры не должны отнимать у растяжки время и делать цену попытки
-     зависящей от того, что нарисовано за дверью. */
-  var turning = 0;
-  function keyTurn(d) {
-    turning = Math.max(0, turning + d);
-    if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:turning", { on: turning > 0 });
-  }
   function deriveKEK(password, saltB64, it1, it2, fsec, a2, asBits) {
-    keyTurn(1);
-    return deriveKEKTurn(password, saltB64, it1, it2, fsec, a2, asBits).then(function (v) { keyTurn(-1); return v; }, function (e) { keyTurn(-1); throw e; });
-  }
-  function deriveKEKTurn(password, saltB64, it1, it2, fsec, a2, asBits) {
     var n1 = it1 || KDF1_ITER, n2 = it2 || KDF2_ITER;
     var enc = new TextEncoder();
     var salt = unb64(saltB64);
@@ -5562,28 +5475,12 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             tx.onabort = function () { resolve("fail"); };
           });
         }
-        var mine = [];
         function next() {
           if (i >= TH_CHUNKS) return one(TH_MAC_ID, thNoise(CARRIER_REGIONS * TH_MAC_HALF)).then(function (r) { return r !== "fail"; });
           var id = "t" + i; i++;
-          return one(id, thNoise(TH_CHUNK)).then(function (r) { if (r === "fail") return false; if (r === "seen") return true; mine.push(id); return next(); });
+          return one(id, thNoise(TH_CHUNK)).then(function (r) { if (r === "fail") return false; if (r === "seen") return true; return next(); });
         }
-        /* Склад не завёлся — заведённые части уходят, пока печатей нет (их нет — склада нет ни у кого):
-           недозаведённый склад не держит место, которое нужно замку дальше — хвосту поворота и конвертам.
-           Иначе остаток места зависел бы от того, где встала стена браузера (one-door-things-check, раздел 9). */
-        function undo() {
-          if (!mine.length) return Promise.resolve(false);
-          return new Promise(function (resolve) {
-            var tx;
-            try { tx = db.transaction(CARRIER_STORE, "readwrite"); } catch (e) { resolve(false); return; }
-            var s = tx.objectStore(CARRIER_STORE), g = s.get(TH_MAC_ID);
-            g.onsuccess = function () { if (g.result && g.result.bytes) return; mine.forEach(function (id) { s["delete"](id); }); };
-            tx.oncomplete = function () { resolve(false); };
-            tx.onerror = function () { resolve(false); };
-            tx.onabort = function () { resolve(false); };
-          });
-        }
-        return next().then(function (okp) { return okp ? true : undo(); });
+        return next();
       }).then(function (okp) {
         /* Браузер не дал места (приватное окно, полный диск) — склада нет. */
         if (!okp) throw new Error("no-room");
@@ -6129,14 +6026,6 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     protectedKeys: protectedKeysNow,
     sealedNames: sealedNamesNow,
     neverLocked: function () { return VAULT_NEVER.slice(); },
-    /* Цена одной попытки сегодняшнего замка — без замка (D-588). Дверь у
-       всех на устройстве без мира тратит на неверное слово ровно столько же,
-       сколько запертое устройство: по времени ответа не узнать, есть ли мир. */
-    todayKdf: function (word) {
-      if (!vaultAvailable()) return Promise.resolve(null);
-      var salt = new Uint8Array(16); window.crypto.getRandomValues(salt);
-      return deriveKEK(String(word || ""), b64(salt), KDF1_ITER, KDF2_ITER, null, { m: A2_M, t: A2_T, p: A2_P }, true).then(function () { return null; }, function () { return null; });
-    },
     /* ── КОПИИ НАСЛЕДУЮТ ЗАМОК (D-172) ──────────────────────────────────
        Выгрузка профиля — открытый текст. Писать её в папку, пока человек
        запер систему, значило бы вынести наружу ровно то, что он спрятал:
@@ -7397,18 +7286,10 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      открытая посреди поворота (см. collect.lay в lock). */
   var pendDisk = new Map();
 
-  /* Настоящие руки хранилища — у Storage.prototype, а не у объекта: в
-     пространстве гостя (sysbaby.space=incognito) window.localStorage — фасад,
-     и его getItem зовёт rawStore.get, а тот — снова фасад: рекурсия без дна
-     (найдено при «Войти без слова», D-588). На настоящем Storage — родные
-     руки; на фасаде — его собственные. */
-  var SP = window.Storage && window.Storage.prototype;
-  var NG = SP && SP.getItem, NS = SP && SP.setItem, ND = SP && SP.removeItem;
-  function realStore(t) { return !!SP && t instanceof window.Storage; }
   var rawStore = {
-    get: function (k) { return realStore(this) ? NG.call(this, k) : this.getItem(k); },
-    set: function (k, v) { return realStore(this) ? NS.call(this, k, v) : this.setItem(k, v); },
-    del: function (k) { return realStore(this) ? ND.call(this, k) : this.removeItem(k); }
+    get: window.localStorage.getItem,
+    set: window.localStorage.setItem,
+    del: window.localStorage.removeItem
   };
   /* Проба места перед снятием (ROOM_KEY) пишется и стирается в одном шаге;
      оборвалось между ними — не лежать ей: её длина сказала бы размер

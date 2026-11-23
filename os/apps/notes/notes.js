@@ -12,10 +12,6 @@
 
   var KEY = "sysbaby.notes.v2";
   var LEGACY_KEY = "sysbaby.widget.notes";
-  /* СТОПКИ (D-888, архив «Инструменты стола»): имена стопок, которые человек
-     завёл сам; у записи — поле stack (id стопки). Не «папки»: стопка лежит на
-     столе, в неё кладут, из неё берут, убрать стопку — не стереть записи. */
-  var STACK_KEY = "sysbaby.notes.stacks";
 
   /* ── ХРАНИЛИЩЕ ЧЕРЕЗ СВОЙ ЯЩИК · D-242 ──────────────────────────────────
      Здесь стояли четыре своих обёртки над складом, и у каждой комнаты были
@@ -171,7 +167,7 @@
 
   /* ------------------------------------------------------------- helpers */
 
-  var ICON = sbZnak("notes");
+  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5h9.5L19 9v10.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1Z"/><path d="M14 4.5V9h4.5"/><path d="M7.5 12.5h8M7.5 16h5"/></svg>';
 
   function esc(value) {
     if (typeof window.escapeHtml === "function") return window.escapeHtml(value == null ? "" : String(value));
@@ -241,53 +237,11 @@
     try { return s.load() || []; } catch (err) { console.error("[notes] load failed", err); return []; }
   }
 
-  /* ── СТОПКИ (D-888) ──────────────────────────────────────────────────── */
-  function tt(key, vars) { return typeof window.sbToolT === "function" ? window.sbToolT(key, vars) : t(key, vars); }
-  function readStacks() {
-    var v = null; try { v = JSON.parse(dbGet(STACK_KEY) || "[]"); } catch (err) { v = null; }
-    return Array.isArray(v) ? v.filter(function (x) { return x && x.id && String(x.name || "").trim(); }) : [];
-  }
-  function writeStacks(list) { try { dbSet(STACK_KEY, JSON.stringify(list.slice(0, 40))); } catch (err) { console.error("[notes] stacks save failed", err); } }
-  function stackName(id) { var n = ""; readStacks().forEach(function (x) { if (x.id === id) n = x.name; }); return n; }
-  function voice(text) { try { if (window.sbVoice && window.sbVoice.say) window.sbVoice.say(text); } catch (err) { /* голос занят */ } }
-  function makeStack(name) {
-    name = String(name || "").replace(/\s+/g, " ").trim().slice(0, 24);
-    if (!name) return null;
-    var list = readStacks(), hit = null;
-    list.forEach(function (x) { if (x.name.toLowerCase() === name.toLowerCase()) hit = x; });
-    if (hit) return hit.id;
-    var id = "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-    list.push({ id: id, name: name }); writeStacks(list);
-    voice(tt("nt.stack.made", { name: name }));
-    return id;
-  }
-  function dropStack(id) {
-    writeStacks(readStacks().filter(function (x) { return x.id !== id; }));
-    var list = liveNotes(), touched = false;
-    list.forEach(function (n) { if (n && n.stack === id) { delete n.stack; touched = true; } });
-    if (touched) saveNotes(list);
-    voice(tt("nt.stack.dropped"));
-  }
-  function stacksMarkup(win) {
-    var list = readStacks(), cur = win._notesStack || "";
-    if (cur && !list.some(function (x) { return x.id === cur; })) cur = win._notesStack = "";
-    var chip = function (id, word) {
-      return '<button type="button" class="notes-stack' + (id === cur ? " on" : "") + '" data-stack="' + esc(id) + '" aria-pressed="' + (id === cur ? "true" : "false") + '" data-sb-userdata>' + esc(word) + "</button>";
-    };
-    return '<div class="notes-stacks" role="toolbar" aria-label="' + esc(tt("nt.stacks")) + '">' +
-      chip("", tt("nt.stack.all")) + list.map(function (x) { return chip(x.id, x.name); }).join("") +
-      '<button type="button" class="notes-stack add" id="notesStackNew" aria-label="' + esc(tt("nt.stack.new")) + '" title="' + esc(tt("nt.stack.new")) + '">' + sbZnak("plus") + "</button>" +
-      (cur ? '<button type="button" class="notes-stack drop" id="notesStackDrop">' + esc(tt("nt.stack.drop")) + "</button>" : "") +
-      '<input type="text" class="notes-stack-input" id="notesStackInput" maxlength="24" autocomplete="off" spellcheck="false" placeholder="' + esc(tt("nt.stack.ph")) + '" aria-label="' + esc(tt("nt.stack.ph")) + '" hidden>' +
-      "</div>";
-  }
-
   function sorted() {
     return liveNotes().slice().sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
   }
 
-  function filtered(list, q, stack) {
-    if (stack) list = list.filter(function (n) { return n.stack === stack; });
+  function filtered(list, q) {
     var needle = String(q || "").trim().toLowerCase();
     if (!needle) return list;
     return list.filter(function (n) {
@@ -332,23 +286,15 @@
          разом, и обе поверхности читают ОДНО И ТО ЖЕ, а не свои копии.
          Охраняется tools/note-due-check.mjs. */
       var due = window.sbNoteDue ? window.sbNoteDue(n.text, n.updatedAt) : null;
-      /* Повтор (D-887) читается из тех же слов и говорит о себе вместо срока. */
-      var rep = window.sbNoteRepeat ? window.sbNoteRepeat(n.text) : null;
-      if (rep) due = null;
-      var dueMark = rep
-        ? '<span class="notes-row-due repeat">' + esc(window.sbNoteRepeatLabel(rep)) + "</span>"
-        : due
+      var dueMark = due
         ? '<span class="notes-row-due' + (due.late ? " late" : (due.today ? " now" : "")) + '">' +
             esc(window.sbNoteDueLabel ? window.sbNoteDueLabel(due) : "") + "</span>"
         : "";
-      var isToday = !!(window.sbNoteToday && window.sbNoteToday.is(n));
-      if (isToday) dueMark = '<span class="notes-row-today" aria-label="' + esc(tt("nt.today")) + '">' + sbZnak("star") + "</span>" + dueMark;
       return '<div class="notes-row' + (n.id === activeId ? " active" : "") +
         (due && due.late ? " is-late" : (due && due.today ? " is-due" : "")) + '" data-id="' + esc(n.id) + '">' +
         /* Название и начало заметки — то, что написал сам посетитель. */
-        /* смайлик в списке — наш (шрифт SB Smile), чтец слышит имя чувства (D-945) */
-        '<div class="notes-row-title" data-sb-userdata>' + escSm(titleOf(n.text)) + "</div>" +
-        (preview ? '<div class="notes-row-prev" data-sb-userdata>' + escSm(preview) + "</div>" : "") +
+        '<div class="notes-row-title" data-sb-userdata>' + esc(titleOf(n.text)) + "</div>" +
+        (preview ? '<div class="notes-row-prev" data-sb-userdata>' + esc(preview) + "</div>" : "") +
         '<div class="notes-row-time">' + dueMark + esc(timeAgo(n.updatedAt)) + "</div>" +
         "</div>";
     }).join("") +
@@ -365,57 +311,29 @@
     var lines = String(note.text == null ? "" : note.text).split("\n");
     var title = lines[0] || "";
     var body = lines.slice(1).join("\n");
-    /* Главное сегодня (D-886) и стопка (D-888) — у самой записи, рядом с корзиной. */
-    var isToday = !!(window.sbNoteToday && window.sbNoteToday.is(note)), stacks = readStacks();
-    var todayBtn = window.sbNoteToday
-      ? '<button type="button" class="notes-today' + (isToday ? " on" : "") + '" id="notesToday" aria-pressed="' + (isToday ? "true" : "false") + '" aria-label="' + esc(tt("nt.today")) + '" title="' + esc(tt("nt.today")) + '">' + sbZnak("star") + "</button>"
-      : "";
-    var stackPick = stacks.length
-      ? '<select class="notes-stack-pick" id="notesStackPick" aria-label="' + esc(tt("nt.stack.put")) + '">' +
-          '<option value="">' + esc(tt("nt.stack.none")) + "</option>" +
-          stacks.map(function (x) { return '<option value="' + esc(x.id) + '"' + (note.stack === x.id ? " selected" : "") + ">" + esc(x.name) + "</option>"; }).join("") +
-        "</select>"
-      : "";
-    return '<div class="notes-editor-head">' + stackPick + todayBtn +
+    return '<div class="notes-editor-head">' +
       '<button type="button" class="notes-del" id="notesDelete" title="' + esc(t("nt.delete")) + '" aria-label="' + esc(t("nt.delete")) + '">' +
-      sbZnak("trash") + '</button>' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l1 12.2a1 1 0 0 0 1 .9h7a1 1 0 0 0 1-.9L17.5 7"/></svg></button>' +
       /* ПЕРЕДАТЬ В ДРУГУЮ КОМНАТУ (D-240). Список комнат не записан здесь:
          он спрашивается у ядра, и комната, научившаяся принимать записи,
          появится в нём сама. Если принять запись некому — кнопки нет: не
          предлагать того, чего не будет. Охраняется tools/hand-check.mjs. */
       /* ОБЩАЯ КНОПКА ПЕРЕДАЧИ (D-241). Разметка приходит из ядра: одна на
          все комнаты, иначе «один способ» становится тремя похожими. */
-      /* ОДНО МЕНЮ (D-943): кнопка записи открывает общее меню системы
-         (sbSmiles.menu) — своей палитры у Записей больше нет. */
-      (window.sbSmiles ? '<button type="button" class="notes-smile" id="notesSmile" title="' + esc(t("nt.smileHint")) + '" aria-label="' + esc(t("nt.smile")) + '" aria-haspopup="dialog" aria-expanded="false">' + window.sbSmiles.svg("happy", "small") + "</button>" : "") +
       (window.sbHand ? window.sbHand.menuHtml("запись", "notes") : "") +
       "</div>" +
       /* Копия говорит, откуда она и не устарела ли (D-267). */
       (note.source && window.sbHand && window.sbHand.sourceHtml ? window.sbHand.sourceHtml(note.source) : "") +
-      /* ОДИН ЛИСТ (D-820): заголовок и текст лежат в одной поверхности
-         .notes-sheet — одни края, один радиус, без шва; заголовок отделён
-         кеглем, весом и воздухом. */
-      '<div class="notes-sheet">' +
-      '<input type="text" class="notes-title" id="noteTitleInput" data-sm-key placeholder="' + esc(t("nt.ph.title")) + '" spellcheck="false" autocomplete="off" value="' + esc(title) + '">' +
+      '<input type="text" class="notes-title" id="noteTitleInput" placeholder="' + esc(t("nt.ph.title")) + '" spellcheck="false" autocomplete="off" value="' + esc(title) + '">' +
       /* The leading newline compensates for the one HTML parsing eats right
        * after <textarea>. Without it a note written as "Title\n\nbody" would
        * silently lose its blank line the next time it was edited. */
-      /* СМАЙЛИКИ (D-590, D-940…D-943). Запись остаётся текстом со знаком
-         смайлика; в поле знак рисует наш шрифт SB Smile — и при наборе, и в
-         покое; в покое поверх поля ещё и живой слой ядра (sbSmiles.field),
-         совпадающий с полем до точки. Стерегут tools/smiles-check.mjs и
-         tools/smiles-one-check.mjs. */
-      '<div class="notes-bodywrap">' +
-      '<textarea class="notes-body" id="noteBodyInput" data-sm-key autocomplete="off" placeholder="' + esc(t("nt.ph.body")) + '">\n' + esc(body) + "</textarea>" +
-      "</div></div>";
+      '<textarea class="notes-body" id="noteBodyInput" autocomplete="off" placeholder="' + esc(t("nt.ph.body")) + '">\n' + esc(body) + "</textarea>";
   }
 
   /* Запись как вещь: первая строка — имя, остальное — текст. Одна мерка и
      для передачи, и для ответа «какая вещь у меня сейчас» (D-267): две
      мерки разошлись бы, и копия считала бы себя устаревшей без причины. */
-  /* Текст строки списка: смайлик — с именем для чтеца (D-945). */
-  function escSm(x) { return window.sbSmiles && window.sbSmiles.html ? window.sbSmiles.html(x) : esc(x); }
-
   function noteThing(note) {
     var lines = String(note.text == null ? "" : note.text).split("\n");
     return { kind: "запись", name: (lines[0] || "").trim(),
@@ -435,7 +353,7 @@
     var all = sorted();
     if (all.length && !all.some(function (n) { return n.id === activeId; })) activeId = all[0].id;
     if (!all.length) activeId = null;
-    var rows = filtered(all, win._notesFilter, win._notesStack);
+    var rows = filtered(all, win._notesFilter);
     var active = null;
     all.forEach(function (n) { if (n.id === activeId) active = n; });
 
@@ -448,10 +366,9 @@
           '<div class="notes-side-top">' +
             '<input type="search" class="notes-search" id="notesSearch" placeholder="' + esc(t("nt.ph.search")) + '" autocomplete="off" spellcheck="false" value="' + esc(win._notesFilter) + '">' +
             '<button type="button" class="notes-add" id="notesAdd" title="' + esc(t("nt.new")) + '" aria-label="' + esc(t("nt.new")) + '">' +
-              sbZnak("plus") +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5.5v13M5.5 12h13"/></svg>' +
             "</button>" +
           "</div>" +
-          stacksMarkup(win) +
           '<div class="notes-list" id="notesList">' + listMarkup(rows, win) + "</div>" +
         "</aside>" +
         '<section class="notes-editor" id="notesEditor">' + editorMarkup(active) + "</section>" +
@@ -469,7 +386,7 @@
     /* Прокрутка человека переживает перерисовку — средство оболочки,
      общее для всех приложений (D-099). */
     var _sbKeep = window.sbKeepScroll ? window.sbKeepScroll(listEl.parentNode || listEl) : null;
-    listEl.innerHTML = listMarkup(filtered(sorted(), win._notesFilter || "", win._notesStack), win);
+    listEl.innerHTML = listMarkup(filtered(sorted(), win._notesFilter || ""), win);
     if (_sbKeep) _sbKeep();
     wireRows(win, listEl);
   }
@@ -511,54 +428,6 @@
 
     var del = host.querySelector("#notesDelete");
     if (del) del.addEventListener("click", function () { deleteActive(win); });
-
-    /* Главное сегодня — одно на день (core/noteplus.js); светится в середине стола. */
-    var todayB = host.querySelector("#notesToday");
-    if (todayB) todayB.addEventListener("click", function () {
-      var n = noteById(activeId); if (!n || !window.sbNoteToday) return;
-      window.sbNoteToday.set(n.id, !window.sbNoteToday.is(n));
-      render(win);
-    });
-    /* Стопки: выбрать — показать только её; «+» — новая; запись кладётся в стопку из своей шапки. */
-    var bar = host.querySelector(".notes-stacks");
-    if (bar) {
-      bar.addEventListener("click", function (ev) {
-        var b = ev.target.closest && ev.target.closest("button"); if (!b) return;
-        if (b.hasAttribute("data-stack")) { win._notesStack = b.getAttribute("data-stack"); win._notesShown = 0; render(win); return; }
-        if (b.id === "notesStackDrop" && win._notesStack) { dropStack(win._notesStack); win._notesStack = ""; render(win); return; }
-        if (b.id === "notesStackNew") {
-          var inp = bar.querySelector("#notesStackInput"); if (!inp) return;
-          inp.hidden = false; b.hidden = true;
-          try { inp.focus(); } catch (err) { /* ignore */ }
-        }
-      });
-      var sin = bar.querySelector("#notesStackInput");
-      if (sin) {
-        var fin = false;
-        var done = function (keep) {
-          if (fin) return; fin = true;
-          var id = keep ? makeStack(sin.value) : null;
-          if (id) {
-            win._notesStack = id;
-            /* открытая запись без стопки ложится в новую — так стопку и заводят: «эта — сюда» */
-            var list = liveNotes(); list.forEach(function (n) { if (n.id === activeId && !n.stack) n.stack = id; }); saveNotes(list);
-          }
-          render(win);
-        };
-        sin.addEventListener("keydown", function (ev) {
-          if (ev.key === "Enter") { ev.preventDefault(); done(true); }
-          if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); done(false); }
-        });
-        sin.addEventListener("blur", function () { if (!sin.hidden) done(!!sin.value.trim()); });
-      }
-    }
-    var pick = host.querySelector("#notesStackPick");
-    if (pick) pick.addEventListener("change", function () {
-      var list = liveNotes();
-      list.forEach(function (n) { if (n.id === activeId) { if (pick.value) n.stack = pick.value; else delete n.stack; } });
-      saveNotes(list);
-      render(win);
-    });
 
     /* Передача: комната говорит только, КАК собрать вещь (D-241). */
     if (window.sbHand) {
@@ -606,29 +475,6 @@
     }
     if (titleEl) titleEl.addEventListener("input", onEdit);
     if (bodyEl) bodyEl.addEventListener("input", onEdit);
-    if (bodyEl) wireSmiles(host, bodyEl, titleEl);
-  }
-
-  /* ── СМАЙЛИКИ В ЗАПИСИ (D-590 → D-943) ─────────────────────────────────
-     Палитра, вставка и живой вид — у ядра (core/smiles.js), одни на систему.
-     Здесь только: какое поле записи ждёт смайлик (последнее в фокусе —
-     название или текст) и кнопка, которая зовёт общее меню. */
-  function wireSmiles(host, bodyEl, titleEl) {
-    var S = window.sbSmiles;
-    if (!S || !S.menu) return;
-    var last = bodyEl;
-    [titleEl, bodyEl].forEach(function (el) {
-      if (!el) return;
-      S.field(el);
-      el.addEventListener("focus", function () { last = el; });
-    });
-    var btn = host.querySelector("#notesSmile");
-    if (!btn) return;
-    /* касание кнопки не уводит фокус из поля: клавиатура телефона не падает */
-    btn.addEventListener("pointerdown", function (ev) { if (document.activeElement === bodyEl || document.activeElement === titleEl) ev.preventDefault(); });
-    btn.addEventListener("click", function (ev) {
-      S.menu.toggle({ field: last, anchor: btn, keyboard: ev.detail === 0 });
-    });
   }
 
   function createNote(win) {
@@ -638,7 +484,6 @@
     /* Заголовок новой заметки — на языке того, кто её создал; дальше это
        его текст, и смена языка его не трогает. */
     var note = { id: s.uid(), text: t("nt.newNote") + "\n", pinned: false, updatedAt: Date.now() };
-    if (win && win._notesStack) note.stack = win._notesStack;   /* новая запись — в ту стопку, что открыта */
     list.unshift(note);
     activeId = note.id;
     saveNotes(list);
@@ -788,7 +633,7 @@
       needs: ["диск"],
       /* СВОИ МЕСТА НА ДИСКЕ (D-242). Чужих не берёт ни одного.
          Охраняется tools/room-rights-check.mjs. */
-      keeps: [KEY, LEGACY_KEY, STACK_KEY],
+      keeps: [KEY, LEGACY_KEY],
       /* ПРИЁМ ВЕЩЕЙ ИЗ ДРУГИХ КОМНАТ (D-240). Охраняется hand-check.mjs. */
       gives: ["запись"],
       takes: ["файл", "письмо", "запись"],
@@ -867,7 +712,7 @@
       label: "Scribble",
       color: "linear-gradient(160deg,#ffe08a 0%,#ffc24d 46%,#f59331 100%)",
       icon: ICON,
-      size: { w: 786, h: 554 },
+      size: { w: 680, h: 520 },
       deskPos: { x: 40, y: 260 },
       render: render
     });

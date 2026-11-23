@@ -165,33 +165,15 @@
 
      Охраняется tools/tap-belongs-check.mjs. */
   var DESK_IDS = { desktop: 1, sbIconLayer: 1, sbNoteLayer: 1, sbWidgetLayer: 1 };
-  function underBar(y) {
-    /* ПОЛОСА СВЕРХУ — МЕБЕЛЬ И ТАМ, ГДЕ ОНА ПРОПУСКАЕТ КАСАНИЕ (H4e2, D-1320): пустая середина полосы касаний не
-       ловит (themes.css), и палец проходил сквозь неё на стол. Пока полоса видна, её высота — не стол. */
-    var b = document.getElementById("topbar"); if (!b) return false;
-    var r = b.getBoundingClientRect(), cs = getComputedStyle(b);
-    return r.height > 0 && r.bottom > 0 && y >= r.top && y <= r.bottom && cs.visibility !== "hidden" && cs.display !== "none" && +cs.opacity > 0.05;
-  }
-  function ownTap(t, y) {
+  function ownTap(t) {
     if (!t || t.nodeType !== 1 || !t.closest) return false;
-    if (y != null && underBar(y)) return false;
     if (DESK_IDS[t.id]) return true;
     return !!t.closest(".wp-layer");
   }
 
   function suppressed() {
     var root = doc.documentElement;
-    /* «Угли» — чистый чёрный (D-631, основатель 09.11.2026): поле в них не
-       рисует ни плазмы, ни светлых пятен по углам; светит одно тлеющее
-       пятнышко (#sbSmoulder, os/core/shell.js). */
-    /* «Глубина» — вид четырёх тем (D-1080, пакет GLUBINA): пока её холст рисует
-       (#sbDepthField, core/depth.js), поле не рисует — его не видно. Без WebGL
-       глубины нет, и поле рисует как прежде. ОТКАТ: снять последнее условие. */
-    return root.getAttribute("data-theme") === "light" ||
-      root.getAttribute("data-wp-mood") === "ember" ||
-      !!(window.sbDepth && window.sbDepth.live && window.sbDepth.live()) ||
-      /* Тайник (бывшее Тепло, D-1229): фон — поле витрины (core/tainik.js), поле системы не рисует */
-      (!root.getAttribute("data-wp-mood") && !!window.sbTainik);
+    return root.getAttribute("data-theme") === "light" || root.classList.contains("sb-incognito");
   }
 
   /* Windows are frosted glass: backdrop-filter: blur(58px). A blurred backdrop
@@ -220,39 +202,13 @@
      Aurora were indistinguishable and the control looked dead. These are their
      own triples, named for what they are and matching the gradients beneath. */
   var MOOD_PALETTE = {
-    /* studio (Тепло) — the system's own room: dark-orange plasma with an orange ember
-       (D-730: ember was clay-salmon [198,92,56], 15°; now the seam of Warmth, 30°).
-       D-735 (основатель 11.11.2026, демо тем v8): графит [54,48,46]/[30,28,30] снят —
-       серый c0 в лентах плазмы растягивался ×7,4 в бледный розово-серый. Тогда стали
-       тёмно-оранжевые [92,47,12]/[40,21,6]: тон 26°, светлота прежняя (до D-824). */
-    /* D-824 «Мандарин» (основатель 11.11.2026, показ колориста, вариант 7): тон 24–26°,
-       хрома выше — уголь [114,48,3], тьма [41,18,2], свет [238,136,58]; была бурая
-       тройка [92,47,12]/[40,21,6]/[197,117,38]. ОТКАТ: вернуть прежнюю тройку. */
-    studio: [[114, 48, 3], [41, 18, 2], [238, 136, 58]],
+    /* studio — the system's own room: graphite plasma with a clay ember. The
+       environment stays achromatic; the seam is the only warmth in it. */
+    studio: [[54, 48, 46], [30, 28, 30], [198, 92, 56]],
     ocean:  [[58, 92, 226], [40, 66, 190], [86, 112, 238]],
     aurora: [[46, 214, 170], [64, 128, 236], [128, 92, 255]],
+    sunset: [[255, 138, 78], [214, 68, 122], [255, 96, 140]],
     mono:   [[176, 182, 198], [124, 130, 146], [208, 214, 226]]
-  };
-  /* ── ОСНОВА И ГОЛОВКА ТЕПЛА — ТЁПЛЫЕ · D-738 ─────────────────────────────
-     ПОВОД — основатель 11.11.2026, снимок с планшета: «в главной теме теперь
-     примеси зелёного, некрасиво». Верх и середина стола в Тепле уходили в
-     холодный сине-зелёный. Прибор (tools/teplo-warm-check.mjs) нашёл два
-     холодных слоя ПОД тёплой плазмой: основа холста #070a14 — ночная синева
-     (тон Oklab 269°), и читающая головка [143,168,242] — синяя полоса, что
-     проходит по столу раз в 46 с. Палитра D-735 тут ни при чём: она тёплая,
-     но её ленты узкие (n^12), а между ними видна основа. Жёлтый свет комнаты
-     (#sbMoodTint, тон +28°) поверх синей основы и давал «зелень» внизу.
-     Решение: у Тепла своя основа — тёплый тёмный графит (та же светлота) — и
-     головка цвета уголька. Остальные комнаты — прежние (у Океана ночь синяя
-     по замыслу). */
-  /* D-824 «Мандарин»: основа — угольно-апельсиновая #140902 (та же светлота, что
-     #0d0907, хрома выше), головка — свет Мандарина [249,177,118]. tail — кривая
-     хвостов лент [степень, зелёный, синий]: тусклое гаснет к тёмному быстрее
-     (степень .55 от яркости), а зелёный и синий каналы убывают ещё быстрее —
-     хвост остаётся оранжевым, а не уходит в бурую дымку. Только у Тепла.
-     ОТКАТ: base "#0d0907", head [236,160,92], без tail. */
-  var MOOD_GROUND = {
-    studio: { base: "#140902", head: [249, 177, 118], tail: [0.55, 0.97, 0.5] }
   };
 
   var Field = {
@@ -275,7 +231,6 @@
       if (this.cv) return;
       this.cv = q("#sbField");
       if (!this.cv) return;
-      dither();
       /* Холст отдаётся потоку ДО того, как его коснётся главный: у холста,
          у которого уже взяли рисование, отдать управление нельзя. */
       this.worker = offload(this);
@@ -334,7 +289,7 @@
            ВООБЩЕ. Один сторож на оба пути: он же закрывает и те два, о
            которых основатель не говорил. */
         if (self.parked || !self.on) return;
-        if (!ownTap(e.target, e.clientY)) return;
+        if (!ownTap(e.target)) return;
         self.touchCount++;
         self.waves.push({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight, t: 0 });
         if (self.waves.length > 3) self.waves.shift();
@@ -516,10 +471,6 @@
     },
 
     applyMood: function (mood) {
-      /* Комната могла сменить, живо ли поле вообще (Угли гасят его, D-631). */
-      var sup = suppressed();
-      if (this.cv && this.wasSup !== undefined && sup !== this.wasSup) this.setLevel(this.level);
-      this.wasSup = sup;
       /* ── ЖИВЫЕ КОМНАТЫ КРАСЯТ ФОН СВОИМ СВЕТОМ (D-159) ─────────────────
          Таблица ниже знает пять неподвижных комнат. Живые (суточная,
          светотерапия, праздник) в ней не значатся, и неизвестное имя молча
@@ -544,7 +495,6 @@
         try { p = window.sbRoomPalette(mood); } catch (err) { p = null; }
       }
       if (!p) p = MOOD_PALETTE.studio;
-      this.ground = MOOD_GROUND[mood] || null;      /* D-738 */
       this.publishLight(p);
       if (!this.pal || p === this.palTo) { this.palTo = p; return; }
       this.palTo = p;
@@ -803,14 +753,14 @@
       var P = { pw: pw, ph: ph, t: t, c0: c0.slice(), c2: c2.slice(), cxp: cxp, cyp: cyp, amp: amp, DR: DR,
         nw: nw, wx0: wx0, wy0: wy0, wa: wa, wt: wtArr(this.waves), warm: warm,
         nb: nb, bX: bX, bY: bY, bIR: new Float32Array(bIR), bA: bA, bCr: bCr, bCg: bCg, bCb: bCb,
-        hy: hy, hBand: hBand, hA: hA, hc: this.ground ? this.ground.head : null, gc: (this.ground && this.ground.tail) || null };
+        hy: hy, hBand: hBand, hA: hA };
       /* ── ПЛАЗМА СЧИТАЕТСЯ НЕ ЗДЕСЬ, ЕСЛИ ЕСТЬ ГДЕ (D-282) ────────────────
          Выше — лёгкое: сорок чисел кадра. Ниже — тяжёлое: сто шестьдесят
          тысяч точек. Где браузер умеет отдать холст потоку (OffscreenCanvas),
          точки считает и рисует свой поток, а главный — только посылает эти
          сорок чисел. Главный поток остаётся свободным для пальца. */
       if (this.worker) {
-        this.worker.postMessage({ type: "frame", P: P, base: this.base || (this.ground && this.ground.base) || "#070a14", blend: this.blend || "lighter" });
+        this.worker.postMessage({ type: "frame", P: P, base: this.base || "#070a14", blend: this.blend || "lighter" });
         /* Ступень качества судит по цене ТОЧЕК — её присылает поток. */
         return;
       }
@@ -820,7 +770,7 @@
       cx.globalCompositeOperation = "source-over";
       /* Основа и способ наложения — свои у отражения в Фонаре (D-281); у
          стола они всегда эти: тёмная ночь и свет, который прибавляется. */
-      cx.fillStyle = this.base || (this.ground && this.ground.base) || "#070a14";
+      cx.fillStyle = this.base || "#070a14";
       cx.fillRect(0, 0, W, H);
       cx.globalCompositeOperation = this.blend || "lighter";
       cx.drawImage(this.off, 0, 0, pw, ph, 0, 0, W, H);
@@ -848,19 +798,14 @@
     var pw = P.pw, ph = P.ph, t = P.t, c0 = P.c0, c2 = P.c2, cxp = P.cxp, cyp = P.cyp, amp = P.amp, DR = P.DR;
     var nw = P.nw, wx0 = P.wx0, wy0 = P.wy0, wa = P.wa, wt = P.wt, warm = P.warm;
     var nb = P.nb, bX = P.bX, bY = P.bY, bIR = P.bIR, bA = P.bA, bCr = P.bCr, bCg = P.bCg, bCb = P.bCb;
-    var hy = P.hy, hBand = P.hBand, hA = P.hA, hc = P.hc || [143, 168, 242];   /* головка: прежняя синяя; у Тепла своя (MOOD_GROUND, D-738) */
+    var hy = P.hy, hBand = P.hBand, hA = P.hA;
     seed = seed | 0;
     var idx = 0;
-    /* ЦЕЛОГО КОЛЬЦА НЕТ (D-611, основатель 04.11.2026: «чтобы никогда не появлялось полное кольцо»): у круговой волны
-       и у яркого фронта касания — мягкое угловое окно, медленно поворачивающееся (~5,5 мин на оборот): дуга сильна с
-       одной стороны и передаёт силу прямой волне той же скорости с другой (нормировано — яркость поля та же).
-       Стережёт tools/desk-items-check.mjs. */
-    var CA = s(t * 0.019 + 1.5708), SA = s(t * 0.019);
     for (var y = 0; y < ph; y++) {
       /* головка зависит только от строки — считается один раз на строку */
       var hd = y - hy, hAbs = hd < 0 ? -hd : hd, hw = 0;
       if (hAbs < hBand) hw = hA * (1 - hAbs / hBand);
-      var hR = hc[0] * hw, hG = hc[1] * hw, hB = hc[2] * hw;
+      var hR = 143 * hw, hG = 168 * hw, hB = 242 * hw;
 
       /* Вертикальная часть q² — одна на строку, а не на каждый пиксель.
          Пятну, не дотянувшемуся до строки, кладётся заведомо большое q²:
@@ -890,24 +835,23 @@
             var sh = s(front * 0.62);
             bend += sh * wa[wj] * fall;
             /* compressing the front raises brightness — a lens does this */
-            var ap0 = .5 + .5 * (ddy * CA - ddx * SA) / ((ddx < 0 ? -ddx : ddx) + (ddy < 0 ? -ddy : ddy) + 1), ap = ap0 * ap0 * (3 - 2 * ap0);
-            comp += (1 - Math.abs(front) / 4.6) * fall * (1 - wT / 2.4) * ap;
+            comp += (1 - Math.abs(front) / 4.6) * fall * (1 - wT / 2.4);
           }
         }
         var wx = x + s(y * 0.031 + t * 0.13) * 7.5 + bend;
         var wy = y + s(x * 0.028 - t * 0.11) * 7.5 + bend * 0.6;
-        var dx = wx - cxp, dy = wy - cyp, pr = (dx * CA + dy * SA) / ((dx < 0 ? -dx : dx) + (dy < 0 ? -dy : dy) + 1), am0 = .5 + .5 * pr, am = am0 * am0 * (3 - 2 * am0), bm = 1 - am, an = 1 / Math.sqrt(am * am + bm * bm);
+        var dx = wx - cxp, dy = wy - cyp;
         var v = s(wx * 0.0295 + t * 0.207)
           + s(wy * 0.0231 - t * 0.163)
           + s((wx + wy) * 0.0182 + t * 0.121)
-          + (am * s((dx * dx + dy * dy) * 0.00055 - t * 0.281) + bm * s((dx * 0.0262 - dy * 0.0201) - t * 0.281)) * an;
+          + s((dx * dx + dy * dy) * 0.00055 - t * 0.281);
         /* the same pattern, shifted in time and space by 1.988 */
         var ex = wx + DR, ey = wy + DR, tt = t - DR;
         var edx = ex - cxp, edy = ey - cyp;
         var v2 = s(ex * 0.0295 + tt * 0.207)
           + s(ey * 0.0231 - tt * 0.163)
           + s((ex + ey) * 0.0182 + tt * 0.121)
-          + (am * s((edx * edx + edy * edy) * 0.00055 - tt * 0.281) + bm * s((edx * 0.0262 - edy * 0.0201) - tt * 0.281)) * an;
+          + s((edx * edx + edy * edy) * 0.00055 - tt * 0.281);
         var n = ((v * 0.70 + v2 * 0.30) + 4) * 0.125;
         n = n * n; n = n * n; n = n * n * n;      /* ^12 — narrow ribbons on dark */
         if (comp > 0) n += comp * comp * 0.10;
@@ -917,40 +861,6 @@
         var g = (c0[1] * (1 - w2) + c2[1] * w2) * qq + 140 * n * warm * amp * 0.5;
         var b = (c0[2] * (1 - w2) + c2[2] * w2) * qq + 95 * n * warm * amp * 0.3;
 
-        /* СКЛАДКА НАЛОЖЕНИЯ · D-734 (основатель 11.11.2026, демо тем v8). Белый пучок давали не тела
-           света (их вклад ≤ 10 уровней из 255), а сама плазма: четыре волны суммы v иногда сходятся в
-           одном месте, сумма → 1, n^12 × 7,4 выходит в 5–7 раз выше 255 и обрезается в белое.
-           Сумма ограничивается ТОЛЬКО на пикселе, где ярчайший канал выше колена 120 (зелёный ×1,25:
-           на глаз он светлее); ниже — поле байт в байт как раньше. Выше колена ядро наложения гаснет
-           к 75, а кромка остаётся полукольцом (пик 240) с одной стороны — в том же медленно
-           поворачивающемся окне CA/SA (целого кольца нет, D-611); сторону даёт наклон плазмы
-           (производные тех же волн), он считается только выше колена. Цвет масштабируется целиком:
-           тон и насыщенность те же. Стережёт tools/field-beam-check.mjs (вырезает блок по меткам). */
-        var fg = g * 1.25, fm = r > fg ? (r > b ? r : b) : (fg > b ? fg : b);
-        if (fm > 120) {
-          var fR = s((dx * dx + dy * dy) * 0.00055 - t * 0.281 + 1.5708) * am * 0.0011, fL = s((dx * 0.0262 - dy * 0.0201) - t * 0.281 + 1.5708) * bm,
-              fc3 = 0.0182 * s((wx + wy) * 0.0182 + t * 0.121 + 1.5708),
-              fgx = 0.0295 * s(wx * 0.0295 + t * 0.207 + 1.5708) + fc3 + (fR * dx + 0.0262 * fL) * an,
-              fgy = 0.0231 * s(wy * 0.0231 - t * 0.163 + 1.5708) + fc3 + (fR * dy - 0.0201 * fL) * an,
-              fo = .5 - .5 * (fgx * CA + fgy * SA) / (Math.sqrt(fgx * fgx + fgy * fgy) + 1e-6), fw = fo * fo * (3 - 2 * fo),
-              fz = (fm - 120) / 326.194,
-              fk = (120 + 120 * fw * fz * Math.exp(1 - fz) - 45 * (1 - Math.exp(-fz * fz * 3))) / fm;
-          r *= fk; g *= fk; b *= fk;
-        }
-        /* /СКЛАДКА */
-
-        /* ХВОСТЫ ЛЕНТ ГАСНУТ БЫСТРЕЕ · D-824 (только у комнаты с tail — Тепло).
-           u — яркость пикселя от 0 до 1 (240 — полный свет): всё множится на u^.55,
-           зелёный ещё на (.97 + .03u), синий — на (.5 + .5u). Яркое ядро почти не
-           меняется, тусклый хвост темнеет и краснеет к оранжевому. */
-        if (P.gc) {
-          var gm = r > g ? (r > b ? r : b) : (g > b ? g : b);
-          if (gm > 0.5) {
-            var gu = gm / 240; if (gu > 1) gu = 1;
-            var gf = Math.pow(gu, P.gc[0]);
-            r *= gf; g *= gf * (P.gc[1] + (1 - P.gc[1]) * gu); b *= gf * (P.gc[2] + (1 - P.gc[2]) * gu);
-          }
-        }
         /* тела света — тот же аддитивный вклад, что давал lighter-градиент.
            Ни одного деления: вертикальная часть q² пришла из строки,
            горизонтальная умножается на готовый обратный квадрат радиуса. */
@@ -995,32 +905,6 @@
   /* Отдать холст потоку поля. Возвращает поток — или null, и тогда поле
      считается в главном потоке, как всегда. */
   var pixelAsks = {}, pixelSeq = 0;
-  /* ── ШУМ ПРОТИВ ЛЕСЕНКИ (Чистота, D-849) ───────────────────────────────
-     Поле на 8 битах: в тёмном шаг 1/255 на большом градиенте читается
-     ступенью. Поверх — неподвижная текстура 64×64: у каждого пикселя случайно
-     чуть светлее (белый, α .006 ≈ +1,4 уровня на тёмном) или чуть темнее
-     (чёрный, α .06 ≈ −1,2), четверть — без изменения. Средний сдвиг ≈ 0,
-     ступени растворяются. Рисуется ОДИН раз за сеанс: кадров не просит.
-     Генератор детерминированный (xorshift), чтобы снимки законов сходились. */
-  function dither() {
-    var host = q("#sbDither");
-    if (!host || host.style.backgroundImage) return;
-    try {
-      var N = 64, c = doc.createElement("canvas"); c.width = N; c.height = N;
-      var x = c.getContext("2d"), im = x.createImageData(N, N), d = im.data, h = 2463534242;
-      for (var i = 0; i < N * N; i++) {
-        h ^= h << 13; h ^= h >>> 17; h ^= h << 5;
-        var r = (h >>> 0) % 4, o = i * 4;
-        if (r === 0) continue;
-        var lit = r !== 3;
-        d[o] = d[o + 1] = d[o + 2] = lit ? 255 : 0;
-        d[o + 3] = lit ? 2 : 15;
-      }
-      x.putImageData(im, 0, 0);
-      host.style.backgroundImage = "url(" + c.toDataURL("image/png") + ")";
-    } catch (e) { /* без шума поле прежнее — не беда */ }
-  }
-
   function offload(F) {
     var cv = F.cv;
     if (!FIELD_SRC || typeof window.Worker !== "function" || typeof cv.transferControlToOffscreen !== "function" ||
@@ -1195,9 +1079,7 @@
   function occluded() {
     var cv = Field.cv;
     if (!cv) return false;
-    /* Рамка обоев — слой .wp-layer, а не сам холст: погашенный холст (display: none — Светлица, Затмение,
-       «глубина», D-1080) рамки не имеет, и стол под окном не парковался бы никогда. Слой — та же рамка. */
-    var f = (cv.parentNode && cv.parentNode.getBoundingClientRect ? cv.parentNode : cv).getBoundingClientRect();
+    var f = cv.getBoundingClientRect();
     if (!(f.width > 0 && f.height > 0)) return false;
     var tb = doc.getElementById("topbar");
     var deskTop = tb ? tb.getBoundingClientRect().bottom : f.top;

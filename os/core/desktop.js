@@ -574,36 +574,8 @@
       if (h === 24 && mi !== 0) continue;   /* 24:30 не существует */
       return { h: h, m: mi, endOfDay: h === 24, raw: m[2] + ":" + m[3] };
     }
-    return hourWords(src);
+    return null;
   };
-
-  /* ── ЧАС СЛОВАМИ (D-896, баг основателя 12.11, видео с планшета) ─────────
-     Человек пишет «25 ноября в 11», «в 11 часов утра», «завтра в 9»,
-     «в 7 вечера», «at 9 pm», «kell 9» — и это час, хотя двоеточия нет.
-     Границы: «в 11» — час только когда за числом нет другого слова (кроме
-     «час/часов/утра/дня/вечера/ночи», am/pm): «в 11 классе», «в 3 раза» —
-     не час; за числом не стоит «:» или цифра (иначе это «в 25:00», и его
-     разбор выше уже отверг); «дня/вечера» — после полудня, «ночи» у 12 — ноль.
-     Охраняется tools/notes-type-time-check.mjs. */
-  var HW = /(^|[\s,(])(?:в|во|at|kell)\s+(\d{1,2})(?:\s+(час(?:а|ов)?|o'clock))?(?:\s+(утра|дня|вечера|ночи|am|pm|hommikul|päeval|õhtul|öösel))?(?=$|[\s,.;!?)])/i;
-  var HW2 = /(^|[\s,(])(\d{1,2})\s+(час(?:а|ов)?)(?:\s+(утра|дня|вечера|ночи))?(?=$|[\s,.;!?)])/i;
-  var HW3 = /(^|[\s,(])(\d{1,2})\s*(am|pm)(?=$|[\s,.;!?)])/i;
-  function hourWords(src) {
-    var m = HW.exec(src), w;
-    if (m) {
-      var after = src.slice(m.index + m[0].length).replace(/^\s+/, "");
-      /* «в 11 классе» — за числом своё слово: это не час */
-      if (!m[3] && !m[4] && /^[A-Za-zА-Яа-яЁёÕÄÖÜõäöü]/.test(after)) m = null;
-    }
-    if (!m) m = HW2.exec(src);
-    if (!m) { var p = HW3.exec(src); if (p) m = [p[0], p[1], p[2], null, p[3]]; }
-    if (!m) return null;
-    var h = parseInt(m[2], 10); w = String(m[4] || "").toLowerCase();
-    if (h > 23) return null;
-    if ((w === "pm" || w === "дня" || w === "вечера" || w === "päeval" || w === "õhtul") && h < 12) h += 12;
-    if ((w === "am" || w === "ночи" || w === "öösel") && h === 12) h = 0;
-    return { h: h, m: 0, endOfDay: false, raw: m[0].replace(/^[\s,(]/, ""), words: true };
-  }
 
   /* День (sbNoteDue) плюс час (sbNoteHour) — названный МИГ. */
   window.sbNoteMoment = function (text, writtenAt, nowAt) {
@@ -687,14 +659,7 @@
     return !!host && !host.classList.contains("full");
   };
 
-  /* ОТКАТ: ЧИСЛО ОСТАЁТСЯ В ТЕКСТЕ — метка читается из текста, и вычеркнутое
-     число уносило с собой метку («25.11 11:00» становилось «25.11» без часа;
-     основатель, 12.11, видео с планшета: «время не вписывается / съедается»).
-     Решение D-896 отменяет D-196: текст заметки остаётся ровно набранным.
-     Слушатели blur остаются (вызов безвреден), прежний разбор — ниже, для
-     отката одной строкой. */
-  window.sbNoteStrip = function (text) { return String(text == null ? "" : text); };
-  window.sbNoteStripV94 = function (text) {
+  window.sbNoteStrip = function (text) {
     var out = String(text == null ? "" : text);
     if (window.sbNoteHour(out)) out = out.replace(TIME_LIT, "$1");
     if (window.sbNoteDue(out)) out = out.replace(DATE_LIT, "$1");
@@ -733,42 +698,12 @@
      is not does it walk outward in small steps until it finds room. The
      search is a spiral rather than a scan so the note lands near where the
      hand left it, not at the start of a row. */
-  /* ── СЕРЕДИНА — ДЛЯ «МЫСЛИ» (D-1020-CENTRE-KEPT, правило основателя 12.11.2026) ─────────
-     Система никогда не кладёт сама (приветствие, раскладка, перенос в кадр) заметку или вещь в
-     середину экрана: касание середины отдано «мысли», иначе человек учится жать в центр, а
-     открывается заметка. Геометрия — та же, что у касания (desktools inCenter): центр W/2, H·0,5,
-     радиус max(64, 0,17·min(W,H)); поле 12 px — запас на прижим к кадру. Рука вправе положить
-     заметку куда угодно: правило судит только места, которые выбирает система.
-     Охраняется tools/centre-for-thought-check.mjs. */
-  /* в координатах слоя заметок (он начинается под шапкой): place-координаты заметки — от него */
-  function centreZone() {
-    var W = window.innerWidth, H = window.innerHeight, L = notesLayer(), b = L ? L.getBoundingClientRect() : { left: 0, top: 0 };
-    return { x: W / 2 - b.left, y: H * 0.5 - b.top, r: Math.max(64, Math.min(W, H) * 0.17) };
-  }
-  function touchesCentre(px, py, w, h) {
-    var c = centreZone(), qx = Math.max(px, Math.min(c.x, px + w)), qy = Math.max(py, Math.min(c.y, py + h));
-    var d = c.r + 12;
-    return (c.x - qx) * (c.x - qx) + (c.y - qy) * (c.y - qy) < d * d;
-  }
-  window.sbCentreZone = centreZone;
-  window.sbTouchesCentre = touchesCentre;
-  /* место, оставленное рукой (перенос, касание пустого места), помечается hand: раскладка его не
-     судит по середине. Всё без пометки — место выбрала система. */
-  function markHand(id, el) {
-    if (el) el.setAttribute("data-hand", "1");
-    var S = window.sbNotesStore; if (!S || !id) return;
-    var all = S.load(), hit = false;
-    for (var i = 0; i < all.length; i++) if (all[i].id === id && !all[i].hand) { all[i].hand = true; hit = true; }
-    if (hit) S.save(all);
-  }
-
-  function noteSpotNear(x, y, w, h, exceptEl, keepCentre) {
+  function noteSpotNear(x, y, w, h, exceptEl) {
     var pad = 10;
     var maxX = Math.max(4, window.innerWidth - w - 4);
     var maxY = Math.max(48, window.innerHeight - h - 12);
     var others = (window.sbDesktopObstacles ? window.sbDesktopObstacles(exceptEl) : []);
     function free(px, py) {
-      if (keepCentre && touchesCentre(px, py, w, h)) return false;
       for (var i = 0; i < others.length; i++) {
         var o = others[i];
         if (!(px + w + pad <= o.x || o.x + o.w + pad <= px ||
@@ -778,23 +713,13 @@
     }
     var sx = clamp(Math.round(x), 4, maxX), sy = clamp(Math.round(y), 48, maxY);
     if (free(sx, sy)) return { x: sx, y: sy };
-    var step = 18, rings = keepCentre ? 40 : 14, squash = keepCentre ? 1 : 0.7;
-    for (var ring = 1; ring <= rings; ring++) {
+    var step = 18;
+    for (var ring = 1; ring <= 14; ring++) {
       for (var a = 0; a < 12; a++) {
         var ang = (a / 12) * Math.PI * 2;
         var px = clamp(Math.round(sx + Math.cos(ang) * ring * step), 4, maxX);
-        var py = clamp(Math.round(sy + Math.sin(ang) * ring * step * squash), 48, maxY);
+        var py = clamp(Math.round(sy + Math.sin(ang) * ring * step * 0.7), 48, maxY);
         if (free(px, py)) return { x: px, y: py };
-      }
-    }
-    /* места без помех нет — середина всё равно не отдаётся: только её и обходим */
-    if (keepCentre && touchesCentre(sx, sy, w, h)) {
-      for (var r2 = 1; r2 <= rings; r2++) {
-        for (var a2 = 0; a2 < 12; a2++) {
-          var g = (a2 / 12) * Math.PI * 2;
-          var qx = clamp(Math.round(sx + Math.cos(g) * r2 * step), 4, maxX), qy = clamp(Math.round(sy + Math.sin(g) * r2 * step), 48, maxY);
-          if (!touchesCentre(qx, qy, w, h)) return { x: qx, y: qy };
-        }
       }
     }
     return { x: sx, y: sy };
@@ -856,7 +781,6 @@
     el.setAttribute("data-id", rec.id);
     el.style.left = num(rec.x, 120) + "px";
     el.style.top = num(rec.y, 140) + "px";
-    if (rec.hand) el.setAttribute("data-hand", "1");
     /* ── ЗАМЕТКА — ЭТО ОКНО, У КОТОРОГО ЗАГОЛОВОК СВОЙ ПЕРВЫЙ РЯД (v64) ────
      *
      * ПОВОД, дословно от основателя 24.08.2026: «если начинаешь печатать
@@ -885,10 +809,10 @@
     el.innerHTML =
       '<div class="lights note-lights">' +
         '<button class="light close" type="button" aria-label="' + esc(tr("note.delete")) + '">' +
-          sbZnak("close") + '</button>' +
+          '<svg viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="m3.5 3.5 5 5m0-5-5 5"/></svg></button>' +
         '<button class="light max" type="button" aria-label="' + esc(tr("note.maximize")) + '">' +
-          sbZnak("max", "ic-max") +
-          sbZnak("min", "ic-min") + '</button>' +
+          '<svg class="ic-max" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M4.5 7.5 2.5 9.5M2.5 9.5V7M2.5 9.5H5M7.5 4.5 9.5 2.5M9.5 2.5V5M9.5 2.5H7"/></svg>' +
+          '<svg class="ic-min" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M3 6h6"/></svg></button>' +
       '</div>' +
       '<textarea class="note-text" rows="1" autocomplete="off" placeholder="' + esc(tr("note.placeholder")) + '" aria-label="' + esc(tr("note.aria")) + '"></textarea>' +
       '<textarea class="note-body" autocomplete="off" placeholder="' + esc(tr("note.bodyPlaceholder")) + '" aria-label="' + esc(tr("note.body")) + '"></textarea>' +
@@ -1208,7 +1132,6 @@
         }
         lightNote(el);
         if (window.sbPersistNotePosition) window.sbPersistNotePosition(rec.id, spot.x, spot.y);
-        markHand(rec.id, el);
       }
     }
     el.addEventListener("pointerup", endDrag);
@@ -1238,12 +1161,13 @@
     var armed = (mo && window.sbAlarms && !mo.late)
       ? !!window.sbAlarms.at(rec && rec.id, mo.at) : false;
     var canArm = !!(mo && window.sbAlarms && !mo.late);
-    var bell = sbZnak("bell", "note-bell");
+    var bell = '<svg class="note-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M6.3 16.5V11a5.7 5.7 0 0 1 11.4 0v5.5M4.8 16.8h14.4M10.2 19.4a1.9 1.9 0 0 0 3.6 0"/></svg>';
     var dueMark = (mo || due)
       ? (canArm ? '<button type="button" class="note-due' + state + (armed ? " armed" : "") +
                   '" data-arm="' + esc(String(mo.at)) + '" title="' + esc(tr("alarm.arm")) + '">'
                 : '<span class="note-due' + state + '">') +
-        sbZnak("clock") +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12.5" r="7.5"/><path d="M12 8.5v4.2l2.6 1.6"/></svg>' +
         esc(mo ? momentLabel(mo) : dueLabel(due)) + (armed ? bell : "") +
         (canArm ? "</button>" : "</span>")
       : "";
@@ -1555,7 +1479,6 @@
         if (!el || el.classList.contains("focused")) return;
         if (typeof el._sbAdopt === "function") el._sbAdopt(rec);
       });
-      fitDeskNotes();
       return;
     }
 
@@ -1567,72 +1490,7 @@
       if (back && back._sbSetFull) back._sbSetFull(true);
       else { fullNoteId = null; doc.documentElement.classList.remove("sb-note-full"); }
     }
-    fitDeskNotes();
-    setTimeout(fitDeskNotes, 300);   /* шрифт и рост заголовка улеглись — размеры заметок окончательные */
   }
-
-  /* ── ЗАМЕТКИ В КАДРЕ И НЕ ДРУГ НА ДРУГЕ (D-858-NOTES-IN-FRAME, глубокий аудит Б-12) ───────
-     Место заметки хранится в пикселях того экрана, где её положили: на телефоне она уезжала за
-     край (313…478 при ширине 390), на столе ложилась одна на другую. Показ — не хранение: при
-     раскладке каждая заметка встаёт в кадр с полем 16 px, а пересекающаяся — на ближайшее
-     свободное место против уже уложенных заметок. Записанное место не переписывается —
-     вернётся широкий экран, вернётся и место. Развёрнутую и ту, которую тянут, раскладка не
-     двигает; ту, в которой пишут, только возвращает в кадр. */
-  function fitDeskNotes() {
-    var host = notesLayer(); if (!host) return;
-    /* кадр — сам слой заметок (под шапкой), а не окно: низ заметки не уходит за край экрана на высоту шапки */
-    var W = host.clientWidth || window.innerWidth, H = host.clientHeight || window.innerHeight, M = 16, placed = [];
-    /* порядок раскладки: сперва места руки (они стоят), затем крупные — им труднее найти место в
-       обход середины на низком экране (844×390), мелкие найдут щель и после */
-    var list = Array.prototype.slice.call(host.querySelectorAll(".sticky-note")).map(function (el, i) {
-      return { el: el, i: i, hand: el.getAttribute("data-hand") === "1", a: (el.offsetWidth || 196) * (el.offsetHeight || 96) };
-    }).sort(function (p, q) { return (q.hand - p.hand) || (q.a - p.a) || (p.i - q.i); }).map(function (o) { return o.el; });
-    /* раскладка считает от ЗАПИСАННОГО места, а не от показанного: иначе каждый поворот экрана
-       сдвигал заметку от прошлого сдвига, и «вернётся широкий экран — вернётся и место» не сбывалось */
-    var home = {};
-    if (window.sbNotesStore) window.sbNotesStore.load().forEach(function (n) { if (isFinite(n.x) && isFinite(n.y)) home[n.id] = n; });
-    list.forEach(function (el) {
-      if (el.classList.contains("full") || el.classList.contains("dragging") || el.hidden) return;
-      var w = el.offsetWidth || 196, h = el.offsetHeight || 96;
-      var hm = el.classList.contains("focused") ? null : home[el.getAttribute("data-id")];
-      var x = hm ? +hm.x : parseFloat(el.style.left), y = hm ? +hm.y : parseFloat(el.style.top);
-      if (!isFinite(x) || !isFinite(y)) return;
-      var nx = clamp(x, M, Math.max(M, W - w - M)), ny = clamp(y, 52, Math.max(52, H - h - M));
-      var hit = function (px, py) {
-        for (var i = 0; i < placed.length; i++) {
-          var o = placed[i];
-          if (!(px + w + 12 <= o.x || o.x + o.w + 12 <= px || py + h + 12 <= o.y || o.y + o.h + 12 <= py)) return true;
-        }
-        return false;
-      };
-      /* место, которое выбирает система (прижим к кадру, уход от соседки, место без руки — приветствие,
-         заметка дня, заметка без места — и после поворота экрана), не бывает в середине (D-1020);
-         место, оставленное рукой и не тронутое раскладкой, — её право */
-      var moved = nx !== x || ny !== y, blocked = hit(nx, ny);
-      var sysPlaced = moved || el.getAttribute("data-hand") !== "1";
-      if ((blocked || (sysPlaced && touchesCentre(nx, ny, w, h))) && !el.classList.contains("focused")) {
-        var spot = null;
-        var bad = function (px, py) { return hit(px, py) || touchesCentre(px, py, w, h); };
-        for (var ring = 1; ring <= 40 && !spot; ring++) {
-          for (var k = 0; k < 16 && !spot; k++) {
-            var ang = (k / 16) * Math.PI * 2;
-            var px = clamp(Math.round(nx + Math.cos(ang) * ring * 18), M, Math.max(M, W - w - M));
-            var py = clamp(Math.round(ny + Math.sin(ang) * ring * 18), 52, Math.max(52, H - h - M));
-            if (!bad(px, py)) spot = { x: px, y: py };
-          }
-        }
-        if (spot) { nx = spot.x; ny = spot.y; }
-      }
-      if (el.style.left !== nx + "px") el.style.left = nx + "px";
-      if (el.style.top !== ny + "px") el.style.top = ny + "px";
-      placed.push({ x: nx, y: ny, w: w, h: h });
-    });
-  }
-  window.sbFitDeskNotes = fitDeskNotes;
-  /* поворот экрана приходит несколькими resize подряд, а слой под шапкой садится не сразу: ещё одна
-     раскладка, когда экран успокоился (D-1020) */
-  var fitTmo = 0;
-  window.addEventListener("resize", function () { fitDeskNotes(); clearTimeout(fitTmo); fitTmo = setTimeout(fitDeskNotes, 250); });
 
   function forceSaveNotes() {
     $$(".sticky-note").forEach(function (el) { if (typeof el._sbPersist === "function") el._sbPersist(); });
@@ -1648,7 +1506,7 @@
        as close to it as there is room for. A note that lands on top of an
        icon reads as a bug even when it is exactly where you clicked. */
     var spot = noteSpotNear(x, y, 196, 96, null);
-    var rec = { id: id, text: "", pinned: false, updatedAt: Date.now(), onDesktop: true, hand: true, x: spot.x, y: spot.y };
+    var rec = { id: id, text: "", pinned: false, updatedAt: Date.now(), onDesktop: true, x: spot.x, y: spot.y };
     var live = window.sbNotesStore.load();
     live.unshift(rec);
     window.sbNotesStore.save(live);
@@ -1675,8 +1533,7 @@
     invite.className = "note-invite";
     invite.style.left = clamp(x, 12, window.innerWidth - 190) + "px";
     invite.style.top = clamp(y, 60, window.innerHeight - 90) + "px";
-    /* точка света без знака «+» (D-852): знака нет в разметке, а не спрятан кеглем 0 (type-scale, доска H4) */
-    invite.innerHTML = '<span class="invite-plus" aria-hidden="true"></span><span class="invite-word">' + esc(tr("note.invite")) + "</span>";
+    invite.innerHTML = '<span class="invite-plus" aria-hidden="true">+</span><span class="invite-word">' + esc(tr("note.invite")) + "</span>";
     invite.setAttribute("role", "button");
     invite.setAttribute("tabindex", "0");
     invite.setAttribute("aria-label", esc(tr("note.inviteAria")));
@@ -1686,15 +1543,6 @@
        иначе оно осталось бы предметом из другой системы, случайно попавшим
        на этот стол. */
     lightNote(invite);
-    /* ТОЧКА СВЕТА С ПОДПИСЬЮ (D-852): приглашение теперь не карточка шириной
-       196, а точка 5 px и слова рядом — их длина зависит от языка. У правого
-       края точка с подписью сдвигается внутрь, а не уходит за экран. */
-    var inv0 = invite;
-    requestAnimationFrame(function () {
-      if (invite !== inv0) return;
-      var r = inv0.getBoundingClientRect(), over = r.right - (window.innerWidth - 10);
-      if (over > 0) inv0.style.left = Math.max(10, parseFloat(inv0.style.left) - over) + "px";
-    });
     var px = x, py = y;
     function accept(ev) {
       ev.stopPropagation();
@@ -1849,7 +1697,6 @@
           origins.forEach(function (o) {
             if (o.n.classList.contains("sticky-note") && window.sbPersistNotePosition) {
               window.sbPersistNotePosition(o.n.getAttribute("data-id"), o.n.offsetLeft, o.n.offsetTop);
-              markHand(o.n.getAttribute("data-id"), o.n);
             }
             if (o.n.classList.contains("desk-icon")) o.n.setAttribute("data-dragged", "1");
           });
@@ -1879,7 +1726,7 @@
     if (!host) return;
     host.innerHTML = items.map(function (it) {
       if (it === "-") return '<div class="ctx-sep"></div>';
-      return '<button class="ctx-item" type="button">' + esc(it.label) + (it.check ? '<span class="ctx-check">' + sbZnak("check") + "</span>" : "") + "</button>";
+      return '<button class="ctx-item" type="button">' + esc(it.label) + (it.check ? '<span class="ctx-check">✓</span>' : "") + "</button>";
     }).join("");
     host.removeAttribute("hidden");
     host.classList.add("open");
@@ -2003,61 +1850,22 @@
       var def = ((window.SysBaby && window.SysBaby.apps) || {})[id] || {};
       items = [
         { label: tr("menu.open", { app: appLabelOf(id) }), run: function () { if (window.toggleApp) window.toggleApp(id); } },
-        /* D-613: своё имя значка — только подпись значка */
-        { label: tr("menu.rename"), run: function () { renameIcon(target, id); } }
-      ].concat(window.sbIconName && window.sbIconName(id) ? [
-        { label: tr("menu.renameBack", { name: window.sbAppBaseLabel(id) }), run: function () { window.sbSetIconName(id, ""); } }
-      ] : []).concat([
         { label: tr("menu.removeIcon"), run: function () { if (window.sbSetIconHidden) window.sbSetIconHidden(id, true); } },
         "-",
         { label: tr("menu.manageDesktop"), run: function () { if (window.sbPanels && window.sbPanels.sbWidgetsOverlay) window.sbPanels.sbWidgetsOverlay.open(); } }
-      ]);
+      ];
     } else {
       items = desktopMenuItems(x, y);
     }
     buildMenu(items, x, y);
   }
 
-  /* Долгое касание значка (D-612) открывает то же меню, что правая кнопка. */
-  window.sbOpenIconMenu = function (node, x, y) { openMenu({ clientX: x, clientY: y, preventDefault: function () {}, stopPropagation: function () {} }, "icon", node); };
-  /* «Переименовать» (D-613): поле прямо на подписи значка; Enter или уход — сохранить, Escape — отменить. */
-  function renameIcon(node, id) {
-    var lbl = node && node.querySelector(".icon-label");
-    if (!lbl || node.querySelector("input.icon-rename")) return;
-    var inp = document.createElement("input");
-    inp.className = "icon-rename"; inp.type = "text"; inp.maxLength = 48; inp.autocomplete = "off"; inp.spellcheck = false;
-    /* в поле — ровно то, что стоит на подписи (D-621: строчная по умолчанию),
-       чтобы «Enter» без правки не превращал подпись в своё имя с прописной */
-    inp.value = (window.sbDeskLabel ? window.sbDeskLabel(id) : (window.sbAppLabel && window.sbAppLabel(id))) || "";
-    inp.setAttribute("aria-label", tr("menu.renameField", { name: window.sbAppBaseLabel ? window.sbAppBaseLabel(id) : id }));
-    lbl.hidden = true; lbl.after(inp); inp.focus(); inp.select();
-    var done = false;
-    function finish(keep) {
-      if (done) return; done = true;
-      var v = inp.value; inp.remove(); lbl.hidden = false;
-      if (keep && window.sbSetIconName) window.sbSetIconName(id, v);
-    }
-    ["pointerdown", "pointerup", "click", "contextmenu"].forEach(function (k) { inp.addEventListener(k, function (e) { e.stopPropagation(); }); });
-    inp.addEventListener("keydown", function (e) {
-      e.stopPropagation();
-      if (e.key === "Enter") { e.preventDefault(); finish(true); node.focus && node.focus({ preventScroll: true }); }
-      else if (e.key === "Escape") { e.preventDefault(); finish(false); node.focus && node.focus({ preventScroll: true }); }
-    });
-    inp.addEventListener("blur", function () { finish(true); });
-  }
-  window.sbRenameIcon = renameIcon;
-
   function wireContextMenus() {
     var scene = $("#desktop");
     if (scene) {
       scene.addEventListener("contextmenu", function (ev) {
         var t = ev.target;
-        if (t && t.closest && t.closest(".desk-icon")) {
-          var ic = t.closest(".desk-icon");
-          /* D-612: меню уже открыто долгим касанием — второй раз его не открывать */
-          if (ic.__sbLongPress && (window.performance || Date).now() - ic.__sbLongPress < 2000) { ev.preventDefault(); return; }
-          openMenu(ev, "icon", ic); return;
-        }
+        if (t && t.closest && t.closest(".desk-icon")) { openMenu(ev, "icon", t.closest(".desk-icon")); return; }
         if (t && t.closest && t.closest(".sb-widget")) return;    /* header handles its own */
         if (t && t.closest && t.closest(window.sbEmptyDesktopSkipSelector || ".window")) return;
         openMenu(ev, "desktop", null);
@@ -2114,14 +1922,6 @@
       if (window.sbContextMenuOpen()) { window.sbCloseContextMenu(); return; }
       var r = fab.getBoundingClientRect();
       buildMenu(desktopMenuItems(r.left, r.top - 12), r.left - 150, Math.max(60, r.top - 320));
-      /* меню «+» растёт из своей кнопки: низ меню — над кнопкой на 8 px, а не висит в 188 px над ней
-         (обход п.5, глубокий аудит; D-910) */
-      var m = menuHost();
-      if (m && m.classList.contains("open")) {
-        var mw = m.offsetWidth, mh = m.offsetHeight;
-        m.style.top = clamp(Math.round(r.top - mh - 8), 8, Math.max(8, window.innerHeight - mh - 8)) + "px";
-        m.style.left = clamp(Math.round(r.right - mw), 8, Math.max(8, window.innerWidth - mw - 8)) + "px";
-      }
     });
   }
 
@@ -2155,157 +1955,6 @@
     });
   }
 
-  /* ── ПРИВЕТСТВЕННАЯ ЗАМЕТКА · решение D-851 (основатель 10–11.11.2026) ──
-     После первого слова на столе одна НАСТОЯЩАЯ заметка — из того же
-     хранилища, её двигают, правят и убирают, как любую. Фраза — одна из
-     пяти (№1, 3, 8, 23, 9 plan/PRIVETSTVIE-FRAZY.md), под ней тихая строка
-     «коснитесь пустого места, чтобы оставить свою».
-     ПАМЯТЬ — слово мира (sbDB, под замком вместе с заметками):
-       pending — первое слово сказано, заметка ждёт, пока стол освободится
-                 (ни двери, ни занавеса, ни окна знакомства поверх);
-       shown   — лежит на столе как приветствие;
-       own     — фразу переписали: заметка стала своей, строка ушла;
-       gone    — убрали: больше не возвращается никогда.
-     Состояние пишется ДО заметки: прерванная запись даёт «gone», а не
-     вторую заметку. На воротах её не видно: заметки за дверью не читаются,
-     а сама фраза живёт только в записи мира.
-     Охраняется tools/welcome-note-once-check.mjs. */
-  var WELCOME_KEY = "sysbaby.welcome.v1";
-  var WELCOME_P = ["welcome.p1", "welcome.p3", "welcome.p8", "welcome.p23", "welcome.p9"];
-  function wT(k, v) { return window.sbDeskT ? window.sbDeskT(k, v) : tr(k, v); }
-  function wState() { var v = readJSON(WELCOME_KEY, null); return v && typeof v === "object" ? v : null; }
-  function wPut(v) { writeJSON(WELCOME_KEY, v); if (window.sbDB && window.sbDB.flushSync) window.sbDB.flushSync(); }
-  function wClosed() { return !!(window.sbDB && window.sbDB.closed && window.sbDB.closed()); }
-  /* Фраза на любом из языков системы — всё ещё приветствие. */
-  function wIsPhrase(t) {
-    t = String(t || "").trim();
-    if (!t) return true;
-    var D = window.sbDeskStrings || {}, out = false;
-    /* D-808: фраза с формами {V:ты|вы} — приветствие в любой из форм. */
-    var A = window.sbAddr;
-    Object.keys(D).forEach(function (l) { WELCOME_P.forEach(function (k) {
-      var raw = D[l] && D[l][k]; if (!raw) return;
-      if (raw === t || (A && A.fill && (A.fill(raw, { ty: "ty" }) === t || A.fill(raw, { ty: "vy" }) === t))) out = true;
-    }); });
-    WELCOME_P.forEach(function (k) { if (wT(k) === t) out = true; });
-    return out;
-  }
-  function wRec(id) {
-    if (!window.sbNotesStore) return null;
-    var all = window.sbNotesStore.load();
-    for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
-    return null;
-  }
-  function wDeskFree() {
-    if (wClosed() || !notesLayer() || !window.sbNotesStore) return false;
-    if (doc.getElementById("sbVaultGate") || doc.getElementById("sbCurtain")) return false;
-    var ow = window.openWindows || {};
-    if (ow.meet && !ow.meet.minimized) return false;
-    /* окно знакомства первого слова (П2) — сначала разговор, потом заметка */
-    if (doc.getElementById("sbMeetFirst") || doc.getElementById("sbMeetScrim")) return false;
-    return true;
-  }
-  var wTry = 0;
-  function wBirth() {
-    clearTimeout(wTry);
-    var st = wState();
-    if (!st || st.state !== "pending") return;
-    if (!wDeskFree()) { wTry = setTimeout(wBirth, 700); return; }
-    var S = window.sbNotesStore, id = S.uid();
-    var p = (st.p >= 0 && st.p < WELCOME_P.length) ? st.p : 0;
-    var vw = window.innerWidth, vh = window.innerHeight;
-    /* фраза длиннее обычной заметки: место считается по её будущей ширине (до 320), чтобы на телефоне она не ушла за край */
-    var wd = Math.min(NOTE_MAX_W, vw - 24);
-    /* середина отдана «мысли» (D-1020): место ищется в обход круга касания середины */
-    var spot = noteSpotNear(Math.round(Math.max(16, (vw - wd) / 2)), Math.round(Math.max(110, Math.min(vh * 0.36, vh - 320))), wd, 124, null, true);
-    spot.x = Math.max(16, Math.min(spot.x, vw - wd - 16));
-    wPut({ state: "shown", id: id, p: p, at: st.at || Date.now() });
-    var live = S.load();
-    live.unshift({ id: id, text: wT(WELCOME_P[p]), pinned: false, updatedAt: Date.now(), onDesktop: true, welcome: true, x: spot.x, y: spot.y });
-    S.save(live);
-    S.notify();
-    setTimeout(function () {
-      var el = $('#sbNoteLayer .sticky-note[data-id="' + id + '"]');
-      if (el && !reduced()) { el.classList.add("nv-born"); setTimeout(function () { el.classList.remove("nv-born"); }, 1000); }
-      wDress();
-    }, 40);
-  }
-  function wOwn(st) {
-    st.state = "own"; wPut(st);
-    var el = $('#sbNoteLayer .sticky-note[data-id="' + st.id + '"]');
-    if (el) { el.classList.remove("nv-welcome"); var h = el.querySelector(".nv-hint"); if (h) h.remove(); var t2 = el.querySelector(".note-text"); if (t2) autoGrow(t2); }
-  }
-  function wDress() {
-    var st = wState();
-    if (!st || st.state !== "shown" || wClosed()) return;
-    var el = $('#sbNoteLayer .sticky-note[data-id="' + st.id + '"]');
-    if (!el) return;
-    var ta = el.querySelector(".note-text");
-    /* язык сменили — приветствие говорит на новом, пока оно приветствие */
-    /* ОТКАТ: номер фразы приветствия из старой записи вне списка — берётся первая фраза; слов «из ниоткуда» не бывает. */
-    if (ta && !el.classList.contains("focused") && wIsPhrase(ta.value) && ta.value !== wT(WELCOME_P[st.p] || WELCOME_P[0])) {
-      var rec = wRec(st.id);
-      if (rec) {
-        var live = window.sbNotesStore.load();
-        live.forEach(function (n) { if (n.id === st.id) n.text = wT(WELCOME_P[st.p] || WELCOME_P[0]); });
-        window.sbNotesStore.save(live);
-        ta.value = wT(WELCOME_P[st.p] || WELCOME_P[0]);
-      }
-    }
-    el.classList.add("nv-welcome");
-    var hint = el.querySelector(".nv-hint");
-    if (!hint) {
-      hint = doc.createElement("div");
-      hint.className = "nv-hint";
-      hint.setAttribute("aria-hidden", "true");
-      var host = el.querySelector(".note-chip-host");
-      el.insertBefore(hint, host || null);
-    }
-    /* глагол по вводу (обход п.38): касание — «коснитесь», мышь — «нажмите» */
-    hint.textContent = wT(root.classList.contains("is-touch") ? "welcome.hint" : "welcome.hintPointer");
-    /* у приветствия шрифт чуть крупнее — размер заметки перемеряется тем же замером */
-    if (ta) autoGrow(ta);
-    if (ta && !ta._sbWelcome) {
-      ta._sbWelcome = 1;
-      ta.addEventListener("input", function () {
-        var s2 = wState();
-        if (!s2 || s2.state !== "shown" || s2.id !== st.id || wIsPhrase(ta.value)) return;
-        wOwn(s2);
-      });
-    }
-  }
-  function wWatch() {
-    var st = wState();
-    if (!st || wClosed()) return;
-    if (st.state === "pending") { wBirth(); return; }
-    if (st.state !== "shown" && st.state !== "own") return;
-    var rec = wRec(st.id);
-    if (!rec) { st.state = "gone"; wPut(st); return; }      /* убрали — больше не возвращается */
-    if (st.state === "shown" && !wIsPhrase(rec.text)) { wOwn(st); return; }
-    wDress();
-  }
-  window.addEventListener("sb:first-word", function (ev) {
-    if (wClosed()) return;
-    if (wState()) { wWatch(); return; }                       /* одна на мир: второе событие ничего не рождает */
-    var p = Math.floor(Math.random() * WELCOME_P.length);
-    wPut({ state: "pending", p: p, at: (ev && ev.detail && ev.detail.at) || Date.now() });
-    setTimeout(wBirth, 900);
-  });
-  function wInit() {
-    if (window.sbNotesStore) window.sbNotesStore.onChange(function () { setTimeout(wWatch, 0); });
-    var layer = notesLayer();
-    if (layer && window.MutationObserver) new MutationObserver(function () { wDress(); }).observe(layer, { childList: true });
-    if (window.sbBus && window.sbBus.on) window.sbBus.on("translate:done", function () { setTimeout(wDress, 0); });
-    window.addEventListener("sb:strings", wDress);
-    /* мир открыли дверью — дочитать, что ждало (pending после перезагрузки) */
-    var tries = 0, iv = setInterval(function () {
-      if (++tries > 600) { clearInterval(iv); return; }
-      if (wClosed() || doc.getElementById("sbVaultGate")) return;
-      clearInterval(iv); wWatch();
-    }, 500);
-  }
-  window.sbWelcomeNote = { state: function () { var s = wState(); return s ? { state: s.state, id: s.id, p: s.p } : null; } };
-
-  if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", function () { init(); wInit(); });
-  else { init(); wInit(); }
+  if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", init);
+  else init();
 })();

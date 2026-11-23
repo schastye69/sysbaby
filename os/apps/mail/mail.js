@@ -45,9 +45,7 @@
   var CHANNELS = ["Email", "Phone", "Telegram", "WhatsApp", "Signal", "URL", "Other"];
   function channelLabel(c) { return t("ml.channel." + String(c).toLowerCase()); }
 
-  /* Значок — знак малого набора «Свет внутри» (D-836): своего знака у почты нет,
-     её знак — «отправить» (D-1065). */
-  var ICON = sbZnak("send");
+  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="5.5" width="17.6" height="13" rx="2"/><path d="m3.8 7 8.2 5.6L20.2 7"/></svg>';
 
   /* Replay arrival schedule: message id -> minutes from 08:00. */
   var REPLAY_MINUTES = { 1: 55, 2: 130, 3: 0, 4: 330 };
@@ -69,11 +67,11 @@
 
 
   var FOLDERS = [
-    { id: "inbox", labelKey: "ml.folder.inbox", icon: sbZnak("download") },
-    { id: "starred", labelKey: "ml.folder.starred", icon: sbZnak("star") },
-    { id: "sent", labelKey: "ml.folder.sent", icon: sbZnak("send") },
-    { id: "drafts", labelKey: "ml.folder.drafts", icon: sbZnak("file") },
-    { id: "trash", labelKey: "ml.folder.trash", icon: sbZnak("trash") }
+    { id: "inbox", labelKey: "ml.folder.inbox", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13.5 6.2 6.2A1.4 1.4 0 0 1 7.5 5.2h9a1.4 1.4 0 0 1 1.3 1L20 13.5v4.3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4.3Z"/><path d="M4 13.5h4l1.2 2.2h5.6l1.2-2.2h4"/></svg>' },
+    { id: "starred", labelKey: "ml.folder.starred", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 4.8 2.3 4.7 5.2.8-3.8 3.6.9 5.1-4.6-2.4-4.6 2.4.9-5.1L4.5 10.3l5.2-.8L12 4.8Z"/></svg>' },
+    { id: "sent", labelKey: "ml.folder.sent", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4 4 10.4l6.3 2.4L20 4Z"/><path d="M20 4 13.4 20l-3.1-7.2L20 4Z"/></svg>' },
+    { id: "drafts", labelKey: "ml.folder.drafts", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5.2h9.5L19 9.6V19a.9.9 0 0 1-.9.9H5a.9.9 0 0 1-.9-.9V6.1A.9.9 0 0 1 5 5.2Z"/><path d="M14.5 5.2v4.4H19"/></svg>' },
+    { id: "trash", labelKey: "ml.folder.trash", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l1 12.2a1 1 0 0 0 1 .9h7a1 1 0 0 0 1-.9L17.5 7"/></svg>' }
   ];
 
   /* -------------------------------------------------------------- helpers */
@@ -363,7 +361,7 @@
 
   function starMarkup(m) {
     return '<button type="button" class="ml-star' + (m.starred ? " on" : "") + '" data-star="' + m.id + '" title="' + esc(m.starred ? t("ml.unstar") : t("ml.star")) + '" aria-label="' + esc(t("ml.star")) + '">' +
-      sbZnak("star") + '</button>';
+      '<svg viewBox="0 0 24 24" fill="' + (m.starred ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="m12 4.8 2.3 4.7 5.2.8-3.8 3.6.9 5.1-4.6-2.4-4.6 2.4.9-5.1L4.5 10.3l5.2-.8L12 4.8Z"/></svg></button>';
   }
 
   function deliveryTag(m, folder) {
@@ -428,7 +426,7 @@
         '<span class="ml-link-kind">' + esc(linkKindLabel(link.kind)) + "</span>" +
         '<span class="ml-link-text"><span class="ml-link-title">' + esc(link.title || "") + "</span>" +
           '<span class="ml-link-sub">' + esc(live ? t("ml.link.openNow") : (link.sub || "")) + "</span></span>" +
-        '<span class="ml-link-mark">' + (live ? '<i class="ml-live-dot"></i>' : "›") + "</span>" +
+        '<span class="ml-link-mark">' + (live ? '<i class="ml-live-dot"></i>' : "→") + "</span>" +
       "</button>";
     }).join("");
     return '<div class="ml-connected"><div class="ml-connected-head">' + esc(t("ml.connected")) + "</div>" +
@@ -512,7 +510,7 @@
 
     return '<div class="ml-compose">' +
       '<div class="ml-compose-head"><span id="mlComposeFrom">' + esc(t("ml.compose.from", { addr: myAddress() })) + "</span>" +
-        '<button type="button" class="ml-compose-x" id="mlComposeClose" title="' + esc(t("ml.compose.close")) + '" aria-label="' + esc(t("ml.compose.close")) + '">' + sbZnak("close") + '</button></div>' +
+        '<button type="button" class="ml-compose-x" id="mlComposeClose" title="' + esc(t("ml.compose.close")) + '" aria-label="' + esc(t("ml.compose.close")) + '">×</button></div>' +
       /* Two kinds of letter, and the interface never lets them blur:
          one truly leaves, one truly stays. */
       '<div class="ml-mode">' +
@@ -922,7 +920,7 @@
     if (navigator.onLine === false) { fail(t("ml.fail.offline")); return; }
 
     var fd = new FormData();
-    fd.append("_subject", "sys.baby personal world letter — " + (fields.subject.trim() || "(no subject)"));
+    fd.append("_subject", "sys.baby private OS letter — " + (fields.subject.trim() || "(no subject)"));
     fd.append("_template", "table");
     fd.append("_captcha", "false");
     /* Ниже — не интерфейс, а полезная нагрузка письма к нам в почту.
@@ -932,7 +930,7 @@
     fd.append("Preferred reply channel", fields.channel || "(not specified)");
     fd.append("Reply contact", fields.contact.trim() || "(not provided)");
     fd.append("Sender profile", myAddress());
-    fd.append("Origin", "Letters · sys.baby personal world");
+    fd.append("Origin", "Letters · sys.baby private OS");
 
     fetch(RELAY, { method: "POST", body: fd, headers: { Accept: "application/json" } })
       .then(function (response) {

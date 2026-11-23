@@ -49,36 +49,10 @@
   }
   window.sbCloseAllPanels = closeAll;
 
-  /* последний ввод — клавиатура? (для рамки фокуса окна аккаунта, D-620) */
-  var kbdLast = false;
-  doc.addEventListener("keydown", function (ev) { if (ev.key === "Tab" || ev.key === "Enter" || ev.key === " " || /^Arrow/.test(ev.key)) kbdLast = true; }, true);
-  doc.addEventListener("pointerdown", function () { kbdLast = false; }, true);
-  /* ── ПОДНОС У СВОЕЙ КНОПКИ (Чистота, D-847-TRAY-AT-BUTTON) ──────────────
-     Выпуск и ключница были модалкой по центру — вуаль, размытие, серая плита
-     с чертой. Теперь это поднос --tray5 под своей кнопкой в шапке (как меню
-     языка): стол виден, касание мимо подноса его закрывает. */
-  var TRAY_AT = { sbNotifOverlay: "sbBell", sbAccountOverlay: "sbTopIdentity" };
-  function placeTray(overlay, anchorId) {
-    var a = doc.getElementById(anchorId), p = overlay.querySelector(".panel");
-    if (!a || !p) return;
-    var r = a.getBoundingClientRect(), W = window.innerWidth, gap = 8;
-    var w = Math.min(p.offsetWidth || 420, W - 24);
-    var x = Math.round(r.left + r.width / 2 - w / 2);
-    p.style.left = Math.max(12, Math.min(x, W - w - 12)) + "px";
-    p.style.top = Math.round(r.bottom + gap) + "px";
-  }
   window.sbRegisterPanel = function (overlayId, closeBtnId, onOpen) {
     var overlay = doc.getElementById(overlayId);
     if (!overlay) return null;                      /* guarded degradation */
     var lastFocus = null;
-    var trayAt = TRAY_AT[overlayId] || null;
-    if (trayAt) overlay.classList.add("is-tray");
-    function outside(ev) {
-      var t = ev.target;
-      if (!t || !t.closest) return;
-      if (t.closest("#" + overlayId + " .panel") || t.closest("#" + trayAt)) return;
-      close();
-    }
 
     function isOpen() { return overlay.classList.contains("open"); }
     function open() {
@@ -90,22 +64,14 @@
       overlay.classList.add("open");
       overlay.removeAttribute("hidden");
       if (typeof onOpen === "function") { try { onOpen(); } catch (e) { if (window.console) console.error("[panel] " + overlayId, e); } }
-      if (trayAt) {
-        placeTray(overlay, trayAt);
-        setTimeout(function () { doc.addEventListener("pointerdown", outside, true); }, 0);
-      }
       var btn = closeBtnId ? doc.getElementById(closeBtnId) : null;
-      /* Окно аккаунта (D-620): фокус встаёт на ✕, но рамка фокуса видна только
-         при навигации клавиатурой — открытие касанием или из кода её не рисует. */
-      var quiet = overlayId === "sbAccountOverlay" && !kbdLast;
-      if (btn) { try { btn.focus(quiet ? { focusVisible: false } : undefined); } catch (e) { /* ignore */ } }
+      if (btn) { try { btn.focus(); } catch (e) { /* ignore */ } }
       if (window.sbBus) window.sbBus.emit("panel:open", { id: overlayId });
     }
     function close() {
       if (!isOpen()) return;
       overlay.classList.remove("open");
       overlay.setAttribute("hidden", "");
-      if (trayAt) doc.removeEventListener("pointerdown", outside, true);
       if (typeof api.onClose === "function") { try { api.onClose(); } catch (e) { /* ignore */ } }
       if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) { /* ignore */ } }
       lastFocus = null;
@@ -399,14 +365,11 @@
   });
   if (timePanel) {
     window.sbPanels = window.sbPanels || {};
-    /* ПРЕЖНИЙ КАЛЕНДАРЬ ВЫКЛЮЧЕН (сборка H4, D-853): касание времени ведёт в
-       панель часов core/clock.js (sbClock), и она же отвечает тем, кто зовёт
-       sbPanels.sbTimeOverlay.open(). Здесь остаётся только запас — если
-       панели часов в странице нет, касание открывает прежний календарь. */
     var btn = doc.getElementById("sbClockBtn");
-    if (btn) btn.addEventListener("click", function () { if (!window.sbClock) timePanel.open(); });
+    if (btn) btn.addEventListener("click", function () { timePanel.open(); });
+    /* Пока панель открыта, крупное время идёт: стоящие часы в окне «время» —
+       это ровно та ложь, ради которой окно и открывают. */
     setInterval(function () {
-      if (window.sbClock) return;
       var ov = doc.getElementById("sbTimeOverlay");
       if (ov && ov.classList.contains("open")) paintTime();
     }, 1000);
@@ -416,7 +379,7 @@
     var body = panelBody("sbShortcutsOverlay");
     if (!body) return;
     var rows = SHORTCUT_ROWS.map(function (r) {
-      return '<div class="kv-row"><kbd>' + esc(window.sbKeys ? window.sbKeys(r[0]) : r[0]) + "</kbd><span>" + esc(tr(r[1])) + "</span></div>";
+      return '<div class="kv-row"><kbd>' + esc(r[0]) + "</kbd><span>" + esc(tr(r[1])) + "</span></div>";
     }).join("");
     var appRows = "";
     var map = window.sbAppShortcuts || {};
@@ -455,24 +418,7 @@
   }
   function notifSave(list) { writeJSON(NOTIF_KEY, list.slice(0, 30)); }
 
-  /* важное, которого ещё не коснулись, считается, пока его не прочитали (D-814) */
-  /* ИЗВЕЩЕНИЕ НА ЭКРАНЕ КОЛОКОЛЬЧИК НЕ СЧИТАЕТ (H4e, D-1304; основатель 15.11.2026, демо стола): пока строка
-     видна, она сама и есть извещение — то же число в колокольчике было бы вторым показом одного и того же.
-     Ушла непрочитанной (сама, смахнули, Esc) — встаёт в колокольчик; прочли касанием или кнопкой — отмечена. */
-  var ONSCREEN = {};
-  window.sbNotifLive = function (id, on, read) {
-    if (!id) return;
-    if (on) { ONSCREEN[id] = 1; paintBell(); return; }
-    delete ONSCREEN[id];
-    if (read) {
-      var list = notifList(), hit = false;
-      list.forEach(function (n) { if (n.id === id && !n.safe) { n.seen = true; hit = true; } });
-      if (hit) notifSave(list);
-    }
-    paintBell();
-    if (notifPanel && notifPanel.isOpen()) paintNotifPanel();
-  };
-  function unseenCount() { return notifList().filter(function (n) { return !ONSCREEN[n.id] && (!n.seen || (n.safe && !n.read)); }).length; }
+  function unseenCount() { return notifList().filter(function (n) { return !n.seen; }).length; }
   function paintBell() {
     var badge = $("#sbBellBadge");
     if (!badge) return;
@@ -504,25 +450,8 @@
   function recordToast(node) {
     var kind = node.getAttribute("data-kind") || "confirm";
     if (kind !== "event") return;
-    /* голос уже записал сам — с ключами слов и пометкой важного (D-813) */
-    if (node.hasAttribute("data-voice-logged") || node.hasAttribute("data-voice-warm")) return;
-    var id = record({ title: node.getAttribute("data-title") || "", text: node.getAttribute("data-text") || "" });
-    /* D-1304: пока плашка на экране — не в счёт; кнопка плашки — прочитано */
-    if (id && node.isConnected) {
-      node.setAttribute("data-notif-id", id); window.sbNotifLive(id, true);
-      node.addEventListener("click", function (ev) { if (ev.target && ev.target.closest && ev.target.closest("button") && !ev.target.closest(".toast-close, [data-close]")) node.setAttribute("data-notif-read", "1"); }, true);
-    }
-  }
-  /* ── ВЕЧЕРНИЙ ВЫПУСК (D-813, v178-H4a) ────────────────────────────────
-     Решение основателя 11.11.2026: колокольчик — «вечерний выпуск», журнал
-     всего, что голос дома сказал по делу. Событие, пришедшее само, и важное
-     для безопасности — строка выпуска; ответ на своё же нажатие — нет
-     (v47.3); тёплые слова голоса сюда не приходят и не хранятся нигде.
-     Строка помнит ключи своих слов (tk/xk): смена языка перерисовывает её.
-     Важное (safe) остаётся непрочитанным, пока его не коснулись. Голос пишет
-     сюда сам (sbNotifRecord) — и тогда, когда «Не беспокоить» его заглушило. */
-  function record(e) {
-    var title = String(e.title == null ? "" : e.title), text = String(e.text == null ? "" : e.text);
+    var title = node.getAttribute("data-title") || "";
+    var text = node.getAttribute("data-text") || "";
     var list = notifList();
     var same = null;
     for (var i = 0; i < list.length; i++) {
@@ -543,38 +472,11 @@
         seen: false
       });
     }
-    var row = list[0];
-    if (e.safe) { row.safe = true; row.read = false; row.seen = false; }
-    if (e.tk) row.tk = e.tk;
-    if (e.xk) row.xk = e.xk;
     notifSave(list);
     paintBell();
     if (notifPanel && notifPanel.isOpen()) paintNotifPanel();
-    return row.id;
-  }
-  window.sbNotifRecord = function (e) { return e ? record(e) : null; };
-  window.sbNotifRead = function (id) {
-    var list = notifList(), hit = false;
-    list.forEach(function (n) { if (n.id === id) { n.read = true; n.seen = true; hit = true; } });
-    if (hit) { notifSave(list); paintBell(); if (notifPanel && notifPanel.isOpen()) paintNotifPanel(); }
-    return hit;
-  };
-  window.sbNotifList = function () { return notifList().map(function (n) { return { id: n.id, title: said(n, "title"), text: said(n, "text"), ts: n.ts, seen: !!n.seen, safe: !!n.safe, read: !!n.read }; }); };
-  /* строка на языке, который сейчас: из ключа, если голос его знал */
-  function said(n, f) {
-    var k = f === "title" ? n.tk : n.xk;
-    if (k && k.k) { var v = tr(k.k, k.v || undefined); if (v && v !== k.k) return v; }
-    return n[f];
   }
 
-  /* колокольчик зовётся «вечерний выпуск» (решение основателя 11.11.2026) — на любом языке */
-  function bellName() {
-    var head = $("#sbNotifTitle");
-    if (head && head.getAttribute("data-i18n") !== "voice.bell") head.setAttribute("data-i18n", "voice.bell");
-    if (head) head.textContent = tr("voice.bell");
-  }
-  bellName();
-  if (window.sbBus && window.sbBus.on) window.sbBus.on("translate:done", function () { bellName(); if (notifPanel && notifPanel.isOpen()) paintNotifPanel(); });
   function observeToasts() {
     var host = $("#toastLayer");
     if (!host || !window.MutationObserver) return;
@@ -582,10 +484,6 @@
       records.forEach(function (r) {
         Array.prototype.forEach.call(r.addedNodes, function (n) {
           if (n.nodeType === 1 && n.classList && n.classList.contains("toast")) recordToast(n);
-        });
-        /* D-1304: плашка ушла — непрочитанная встаёт в колокольчик */
-        Array.prototype.forEach.call(r.removedNodes, function (n) {
-          if (n.nodeType === 1 && n.getAttribute && n.getAttribute("data-notif-id")) window.sbNotifLive(n.getAttribute("data-notif-id"), false, n.getAttribute("data-notif-read") === "1");
         });
       });
     });
@@ -596,29 +494,19 @@
     var body = panelBody("sbNotifOverlay");
     if (!body) return;
     var list = notifList();
-    bellName();
-    /* пояснение о выпуске — под тихим словом «как это устроено», а не каждый раз под списком (обход п.28, D-913) */
-    var foot = '<details class="sb-more sbv-more"><summary>' + esc(tr("voice.bellMore")) + '</summary><p class="panel-copy dim sbv-foot">' + esc(tr("voice.bellFoot")) + "</p></details>";
     if (!list.length) {
-      /* Пусто — один вид пустых экранов (обход п.29): знак колокольчика и одна
-         строка; пояснение о выпуске — только когда в нём что-то есть. */
-      body.innerHTML = '<div class="panel-scroll"><p class="panel-empty panel-empty-znak">' + sbZnak("bell") + "<span>" + esc(tr("p.noNotifications")) + "</span></p></div>";
+      body.innerHTML = '<div class="panel-scroll"><p class="panel-empty">' + esc(tr("p.noNotifications")) + '</p></div>';
       return;
     }
     body.innerHTML = '<div class="panel-scroll">' + list.map(function (n) {
-      var unread = n.safe && !n.read;
-      return '<div class="notif-row' + (n.safe ? " sbv-safe" : "") + (unread ? " sbv-unread" : "") + '" data-id="' + esc(n.id) + '">' +
-        '<div class="notif-main"><div class="notif-title">' + esc(said(n, "title")) + "</div>" +
-        '<div class="notif-text">' + esc(said(n, "text")) + (unread ? " · " + esc(tr("voice.unread")) : "") + "</div></div>" +
+      return '<div class="notif-row" data-id="' + esc(n.id) + '">' +
+        '<div class="notif-main"><div class="notif-title">' + esc(n.title) + "</div>" +
+        '<div class="notif-text">' + esc(n.text) + "</div></div>" +
         '<div class="notif-time">' + esc(timeAgo(n.ts)) + "</div>" +
-        (unread ? '<button class="btn tiny sbv-read" type="button" data-read="' + esc(n.id) + '">' + esc(tr("voice.read")) + "</button>" : "") +
-        '<button class="notif-x" type="button" aria-label="' + esc(tr("p.dismiss")) + '">' + sbZnak("close") + '</button></div>';
-    }).join("") + foot + "</div>" +
+        '<button class="notif-x" type="button" aria-label="' + esc(tr("p.dismiss")) + '">✕</button></div>';
+    }).join("") + "</div>" +
       '<div class="panel-foot"><button class="btn ghost" type="button" id="sbNotifClear">' + esc(tr("p.clearAll")) + '</button></div>';
 
-    $$(".sbv-read", body).forEach(function (b) {
-      b.addEventListener("click", function (ev) { ev.stopPropagation(); window.sbNotifRead(b.getAttribute("data-read")); });
-    });
     $$(".notif-row", body).forEach(function (row) {
       row.addEventListener("click", function () {
         var id = row.getAttribute("data-id");
@@ -654,7 +542,7 @@
         '<span class="task-name">' + esc(appTitle(id)) + "</span>" +
         '<span class="task-sub">' + esc(tr("p.openNow")) + '</span>' +
         '<button class="btn tiny" type="button" data-act="focus">' + esc(tr("p.focus")) + '</button>' +
-        '<button class="task-x" type="button" data-act="close" aria-label="' + esc(tr("p.close")) + '">' + sbZnak("close") + '</button></div>';
+        '<button class="task-x" type="button" data-act="close" aria-label="' + esc(tr("p.close")) + '">✕</button></div>';
     }).join("") : '<p class="panel-empty">' + esc(tr("p.noWindows")) + '</p>';
 
     var recent = readJSON(RECENT_KEY, []);
@@ -863,7 +751,7 @@
           '<span class="task-name">' + esc(L.name) + "</span>" +
           '<span class="task-sub">' + esc(tr("p.windowsCount", { n: (L.windows || []).length })) + esc(timeAgo(L.ts)) + "</span>" +
           '<button class="btn tiny" type="button" data-act="restore">' + esc(tr("p.restore")) + '</button>' +
-          '<button class="task-x" type="button" data-act="del" aria-label="' + esc(tr("p.delete")) + '">' + sbZnak("close") + '</button></div>';
+          '<button class="task-x" type="button" data-act="del" aria-label="' + esc(tr("p.delete")) + '">✕</button></div>';
       }).join("") : '<p class="panel-empty">' + esc(tr("p.noLayouts")) + "</p>") + "</div>" +
       '<div class="panel-foot"><span class="foot-note">' + esc(tr("p.layoutsNote")) + '</span>' +
       '<button class="btn" type="button" id="sbLayoutSave">' + esc(tr("p.saveCurrent")) + '</button></div>';
@@ -1222,12 +1110,7 @@
       if (Date.now() - Math.max(last, heard) >= m * 60000) shut();
     }
     setInterval(check, 15000);
-    /* Срок проверяется в миг возвращения (D-592): скрытой вкладке браузер
-       душит таймеры, и опрос мог не прийти. Возврат из «заморозки» и из
-       кеша страницы — тоже возвращение. Стережёт tools/idle-lock-check.mjs. */
     doc.addEventListener("visibilitychange", function () { if (doc.visibilityState === "visible") check(); });
-    doc.addEventListener("resume", check);
-    window.addEventListener("pageshow", check);
     window.sbIdleLock = {
       minutes: minutes,
       set: function (m) {
@@ -1262,12 +1145,8 @@
   function cipherLine() {
     var c = window.sbVault && window.sbVault.cipher ? window.sbVault.cipher() : null;
     if (!c) return "";
-    /* Подписи строк — из словаря на языке окна (D-692); имена алгоритмов —
-       имена собственные и стоят как есть. Прежде вся опись была английской
-       («padding 256 B») и в русском окне читалась непереведённой. */
-    return [tr("lock.cipher.ciphers", { v: (c.ciphers || []).join("  ›  ") }), c.mac ? tr("lock.cipher.mac", { v: c.mac }) : "",
-      tr("lock.cipher.kdf", { v: (c.kdf || []).join("  ›  ") }),
-      tr("lock.cipher.pad", { n: c.pad || 256 }), c.names ? tr("lock.cipher.names", { v: c.names }) : ""]
+    return [(c.ciphers || []).join("  →  "), c.mac, (c.kdf || []).join("  →  "),
+      "padding " + (c.pad || 256) + " B", c.names ? "names " + c.names : ""]
       .filter(Boolean).join("\n");
   }
 
@@ -1330,10 +1209,7 @@
     if (h.synced === false) return tr("lock.hwOnDevice");
     return tr("lock.hwOn");
   }
-  /* mode (D-637): "settings" — замок целиком без форм ключей (они под
-     планкой ключницы); "password" | "spare" | "device" | "duress" — форма
-     одного ключа для раскрытия под планкой; без mode — всё, как прежде. */
-  function lockSection(mode) {
+  function lockSection() {
     var V = window.sbVault;
     if (!V) return "";
     if (!V.available()) {
@@ -1342,7 +1218,7 @@
          даёт вовсе (D-178). Молчание оставило бы человека думать, что замок
          сломан, — а он просто не может здесь существовать. */
       return '<h4 class="panel-sub">' + esc(tr("lock.title")) + "</h4>" +
-        '<p class="sb-note lock-insecure">' + esc(tr("lock.insecure")) + "</p>";
+        '<p class="lock-warn">' + esc(tr("lock.insecure")) + "</p>";
     }
     var locked = V.isLocked();
     var head = '<h4 class="panel-sub">' + esc(tr("lock.title")) + "</h4>" +
@@ -1384,58 +1260,6 @@
             '<button type="button" class="btn ghost" id="sbLockSpareSave">' + esc(tr("lock.spareSave")) + "</button></div>" +
         "</div>"
       : "";
-    var setForm = '<div class="lock-field">' +
-          '<input type="password" id="sbLockP1" autocomplete="new-password" placeholder="' + esc(tr("lock.new")) + '" aria-label="' + esc(tr("lock.new")) + '">' +
-          '<input type="password" id="sbLockP2" autocomplete="new-password" placeholder="' + esc(tr("lock.again")) + '" aria-label="' + esc(tr("lock.again")) + '">' +
-        "</div>" +
-        /* ── ФРАЗА И ЧЕСТНАЯ ЦЕНА КОРОТКОГО СЛОВА (D-309) ───────────────────── */
-        (V.phrase ? '<p class="panel-copy dim">' + esc(tr("lock.phraseHint")) + "</p>" +
-          '<div class="lock-acts"><button type="button" class="btn ghost" id="sbLockPhrase">' + esc(tr("lock.phrase")) + "</button></div>" +
-          '<p class="lock-phrase" id="sbLockPhraseOut" hidden data-sb-nolang></p>' : "") +
-        '<p class="lock-warn" id="sbLockWeak" hidden>' + esc(tr("lock.weakWarn")) + "</p>" +
-        '<div class="lock-acts">' +
-          '<button type="button" class="btn primary" id="sbLockDo">' + esc(tr("lock.set")) + "</button>" +
-          '<button type="button" class="btn ghost" id="sbLockDoAnyway" hidden>' + esc(tr("lock.setAnyway")) + "</button>" +
-        "</div>";
-    var curField = '<div class="lock-field">' +
-          '<input type="password" id="sbLockCur" autocomplete="current-password" placeholder="' + esc(tr("lock.old")) + '" aria-label="' + esc(tr("lock.old")) + '">' +
-          (mode == null || mode === "password" ? '<input type="password" id="sbLockNew" autocomplete="new-password" hidden placeholder="' + esc(tr("lock.new")) + '" aria-label="' + esc(tr("lock.new")) + '">' : "") +
-        "</div>";
-    var duressField = '<div class="lock-field">' +
-          '<input type="password" id="sbLockDuress" autocomplete="new-password" hidden placeholder="' + esc(tr("lock.duressField")) + '" aria-label="' + esc(tr("lock.duressField")) + '">' +
-        "</div>";
-    var hwBlock = V.hwState ? '<h4 class="panel-sub">' + esc(tr("lock.hw")) + "</h4>" +
-          '<p class="panel-copy dim">' + esc(tr("lock.hwWhat")) + "</p>" +
-          '<p class="panel-copy" id="sbLockHwState">' + esc(hwStateLine(V)) + "</p>" : "";
-    var weakOld = V.strengthen && V.strong && !V.strong();
-    var btn = function (id, key, cls) { return '<button type="button" class="btn ' + (cls || "ghost") + '" id="' + id + '">' + esc(tr(key)) + "</button>"; };
-    var hwBtns = (V.hwState && V.hwState().can && !V.hwState().on ? btn("sbLockHwAdd", "lock.hwAdd") : "") +
-          (V.hwState && V.hwState().on ? btn("sbLockHwOff", "lock.hwOff") : "");
-    /* ── ФОРМА ОДНОГО КЛЮЧА ПОД ПЛАНКОЙ (D-637) ────────────────────────────
-       Без замка ключ вешается только после пароля — у каждого крючка та же
-       форма нового слова. С замком у каждого ключа своя форма. Форма мешочка
-       одна и та же при любом состоянии замка: ни одной надписи о том,
-       заведено ли тревожное слово, — те же поля и те же кнопки. */
-    if (mode && mode !== "settings") {
-      if (!locked) return setForm;
-      if (mode === "password") return curField + keyRow + '<div class="lock-acts">' + btn("sbLockChange", "lock.change") + "</div>";
-      if (mode === "spare") return curField + keyRow + '<div class="lock-acts">' + btn("sbLockSpare", "lock.spare") + "</div>" + spareRow;
-      if (mode === "device") return hwBlock + curField + keyRow + (hwBtns ? '<div class="lock-acts">' + hwBtns + "</div>" : "");
-      if (mode === "duress") return curField + duressField + keyRow +
-        '<p class="panel-copy dim">' + esc(tr("lock.duressWhat")) + "</p>" +
-        '<p class="panel-copy dim">' + esc(tr("lock.duressCant")) + "</p>" +
-        '<div class="lock-acts">' + btn("sbLockDuressSet", "lock.duress") + btn("sbLockDuressOff", "lock.duressOff") + "</div>";
-      return "";
-    }
-    if (mode === "settings") {
-      return head + (locked
-        ? curField + keyRow +
-          (weakOld ? '<p class="panel-copy dim" id="sbLockStrongWhat">' + esc(tr("lock.strongWhat")) + "</p>" : "") +
-          idleRow() +
-          '<p class="panel-copy dim" id="sbLockRemoveWhat">' + esc(tr("lock.removeWhat")) + "</p>" +
-          '<div class="lock-acts">' + (weakOld ? btn("sbLockStrong", "lock.strong") : "") + btn("sbLockRemove", "lock.remove") + btn("sbLockNow", "lock.now", "primary") + "</div>"
-        : setForm);
-    }
     return head + (locked
       ? '<div class="lock-field">' +
           '<input type="password" id="sbLockCur" autocomplete="current-password" placeholder="' + esc(tr("lock.old")) + '" aria-label="' + esc(tr("lock.old")) + '">' +
@@ -1619,7 +1443,7 @@
         curEl.value = "";
         if (dField) { dField.value = ""; dField.hidden = true; }
         if (window.showToast) window.showToast(tr("lock.title"), tr("lock.strongDone"), "");
-        accountRefresh();
+        accountBody();
       }, function (e) { busy(false); say(e && e.message === "nolocks" ? tr("lock.noLocks") : e && e.message === "duress-wrong" ? tr("lock.duressWrong") : tr("lock.failed")); });
     });
     /* Привязать и отвязать ключ устройства — тем же порядком, что усиление:
@@ -1640,7 +1464,7 @@
           curEl.value = "";
           if (dField) { dField.value = ""; dField.hidden = true; }
           if (window.showToast) window.showToast(tr("lock.hw"), tr(doneKey), "");
-          accountRefresh();
+          accountBody();
         }, function (e) {
           busy(false);
           var m = e && e.message;
@@ -1671,7 +1495,7 @@
         busy(false);
         if (!okp) { say(tr("lock.wrong")); return; }
         if (window.showToast) window.showToast(tr("lock.title"), tr("lock.removed"), "");
-        accountRefresh();
+        accountBody();
         if (window.sbPaintIris) window.sbPaintIris();
       }, function (e) { busy(false); say(tr(e && e.message === "nolocks" ? "lock.noLocks" : e && e.message === "room" ? "lock.removeRoom" : "lock.failed")); });
     });
@@ -1751,11 +1575,6 @@
        уходит к двери после того, как раскрытое убрано и буфер со скопированным
        паролем очищен (D-360). */
     if (nowBtn) nowBtn.addEventListener("click", function () {
-      /* Окно Настроек, открытое ради «Ключей и замка» (D-637), уходит вместе с
-         сеансом: эстафета не переносит его через дверь и не пишет за него. */
-      if (nowBtn.closest && nowBtn.closest('.window[data-app="settings"]') && window.closeWindow) {
-        try { window.closeWindow("settings"); } catch (e) { /* ignore */ }
-      }
       /* Комнаты убирают своё в этот же такт, весть уходит следом; соседние
          закрываются немедля, эта — когда буфер ответил (или правда прочитана). */
       window.sbSessionClose(function () { window.location.reload(); });
@@ -1819,7 +1638,7 @@
     function say(m) { if (err) err.textContent = m || ""; }
     var pick = body.querySelector("#sbBkPick");
     if (pick && B) pick.addEventListener("click", function () {
-      B.chooseFolder().then(function () { accountRefresh(); }, function (e) {
+      B.chooseFolder().then(function () { accountBody(); }, function (e) {
         if (e && e.name === "AbortError") return;      /* человек передумал — не ошибка */
         say(String((e && e.message) || e));
       });
@@ -1830,7 +1649,7 @@
       toggle.disabled = true;
       B.setOn(next).then(function (okp) {
         if (!okp) say(tr("bk.needFolder"));
-        accountRefresh();
+        accountBody();
       });
     });
     var now = body.querySelector("#sbBkNow");
@@ -1839,242 +1658,9 @@
       B.saveNow().then(function (r) {
         if (r && r.error) say(String(r.error));
         else if (r && r.skipped === "permission") say(tr("bk.permission"));
-        accountRefresh();
+        accountBody();
       });
     });
-  }
-
-  /* ОТКАТ: Чистота А (D-836) заменила ключницу нитью света и четырьмя знаками
-     в лунках; основатель 12.11.2026 вернул объёмную ключницу как ритуал —
-     перекладина, воронёные ключи, сливовый бархатный мешочек (D-828-KEY-RACK-RITUAL:
-     ключница — исключение-ритуал из закона «знаки одной семьи»). Рисунок и цвета —
-     прежние, из сборки v178-H4a (D-620, D-635); колорист готовит варианты цвета
-     отдельно. Слова под планкой — по-прежнему языком «Чистоты» (D-837). */
-  /* ── КЛЮЧНИЦА «ТЁМНЫЙ МЕТАЛЛ» · решение D-620 (основатель 09.11.2026) ──────
-     Утверждено по klyuchi4/u4.png и u2.png: воронёные ключи на тёмной планке,
-     ушки разные, чтобы ключи не путались, — трилистник (пароль), кольцо (код
-     восстановления), квадрат (ключ устройства), сердце (тревожное слово).
-     Свечения в ушках нет: сигнал один — ключ висит = сделано; тень формы и
-     «+» по центру ушка = нет, и касание ведёт к добавлению. Ниже — «Запереть
-     сейчас», «Уйти…»; Ковчег и «как устроен шифр» — в «Настройках».
-     ТРЕВОЖНОЕ СЛОВО НЕ ВЫДАЁТ СЕБЯ И ЗДЕСЬ. Окно не знает и не показывает,
-     заведено ли второе слово (см. lockSection: «панель, умеющая показать
-     „тревожное слово установлено“, сама и есть утечка»). Поэтому его место
-     всегда одно и то же — тень сердца с «+» и строка «не показывается»,
-     при любом состоянии замка. Охраняется tools/klyuchnica-check.mjs. */
-  var KR_BOW = {
-    tre: "M0 -34 C9 -34 15 -27 14 -19 C22 -21 30 -14 28 -5 C27 3 19 7 12 5 C14 13 8 20 0 20 C-8 20 -14 13 -12 5 C-19 7 -27 3 -28 -5 C-30 -14 -22 -21 -14 -19 C-15 -27 -9 -34 0 -34 Z M0 -24 a5 5 0 1 0 .1 0 Z M-16 -8 a4.5 4.5 0 1 0 .1 0 Z M16 -8 a4.5 4.5 0 1 0 .1 0 Z M0 -5 a6 6 0 1 0 .1 0 Z",
-    ring: "M0 -32 a26 26 0 1 1 -.1 0 Z M0 -20 a14 14 0 1 0 .1 0 Z",
-    sq: "M-17 -29 h34 a6 6 0 0 1 6 6 v34 a6 6 0 0 1 -6 6 h-34 a6 6 0 0 1 -6 -6 v-34 a6 6 0 0 1 6 -6 Z M-8 -14 h16 v16 h-16 Z",
-    heart: "M0 22 C-34 2 -28 -32 -8 -30 C-3 -30 0 -25 0 -22 C0 -25 3 -30 8 -30 C28 -32 34 2 0 22 Z M0 -14 a6 6 0 1 0 .1 0 Z"
-  };
-  var KR_X = [64, 186, 308, 430];
-  function krKey(bow) {
-    var m = "url(#krIron)";
-    return '<g filter="url(#krMetal)"><path fill-rule="evenodd" fill="' + m + '" d="' + bow + '"/>' +
-      '<path fill="' + m + '" d="M-9 22 h18 a3 3 0 0 1 3 3 v3 a3 3 0 0 1 -3 3 h-18 a3 3 0 0 1 -3 -3 v-3 a3 3 0 0 1 3 -3 Z"/>' +
-      '<path fill="' + m + '" d="M-6 32 h12 v4 h-12 Z M-8 37 h16 a2 2 0 0 1 0 5 h-16 a2 2 0 0 1 0 -5 Z"/>' +
-      '<path fill="' + m + '" d="M-4.5 42 h9 v108 a4.5 4.5 0 0 1 -9 0 Z"/>' +
-      '<path fill="' + m + '" d="M4 118 h16 v6 h-7 v5 h10 v7 h-6 v5 h8 v8 h-21 Z"/>' +
-      '<path d="M-1.2 46 v98" stroke="#000" stroke-opacity=".35" stroke-width="1.1"/></g>';
-  }
-  function krHook(x) {
-    return '<g transform="translate(' + x + ',30)"><circle r="6.5" fill="url(#krRail)"/><circle r="2" fill="#000" opacity=".4"/>' +
-      '<path d="M0 4 C0 20 3 26 11 24 C15 23 16 19 15 15" stroke="url(#krRail)" stroke-width="4.2" fill="none" stroke-linecap="round"/></g>';
-  }
-  function krHang(x, rot, bow) {
-    return '<g class="kr-key" transform="translate(' + (x + 12) + ',53) rotate(' + rot + ')">' +
-      '<circle r="10" fill="none" stroke="url(#krIron)" stroke-width="2.6"/>' +
-      '<circle r="10" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width=".8" transform="translate(-.8,-.8)"/>' +
-      '<g transform="translate(0,44) scale(.92)">' + krKey(bow) + "</g></g>";
-  }
-  function krGhost(x, bow, cy) {
-    var outline = bow.split(/\s+M/)[0];
-    return '<g class="kr-ghost" transform="translate(' + (x + 12) + ',97) scale(.92)" opacity=".5">' +
-      '<path fill-rule="evenodd" d="' + outline + '" fill="#000" opacity=".25"/>' +
-      '<path d="M-4.5 42 h9 v108 a4.5 4.5 0 0 1 -9 0 Z" fill="#000" opacity=".2"/>' +
-      '<path fill-rule="evenodd" d="' + outline + '" fill="none" stroke="#f0dbe8" stroke-opacity=".5" stroke-width="1.3" stroke-dasharray="3 4"/>' +
-      '<g class="kr-plus" transform="translate(0,' + cy + ')" stroke="#ffb36b" stroke-width="2.2" stroke-linecap="round"><line x1="-7" y1="0" x2="7" y2="0"/><line x1="0" y1="-7" x2="0" y2="7"/></g></g>';
-  }
-  /* ── ТРЕВОЖНОЕ СЛОВО — СЛИВОВЫЙ БАРХАТНЫЙ МЕШОЧЕК НА ШНУРКЕ · решение D-635 ──
-     Основатель 09.11.2026: на 4-м крючке — мешочек «бархат на шнурке»
-     (вариант 1), цвет — сливовый (оригинал; оранжевый — «похож на
-     коричневый дешёвый мешочек»). Мешочек всегда один и тот же до байта:
-     по нему не узнать, заведено ли слово (правило lockSection). Рисунок —
-     scratchpad meshochek/gen.js, p1. Охраняется tools/klyuchnica-check.mjs. */
-  function krPouch(x, rot) {
-    var body = "M-8 2 C-12 12 -29 30 -32 62 C-35 98 -24 125 1 126 C26 125 36 98 33 62 C30 30 12 12 8 2 Z";
-    var frill = "M-8 1 C-12 -2 -17 -6 -16 -13 C-12 -10 -8 -15 -3 -12 C0 -16 4 -15 6 -11 C10 -14 15 -10 17 -12 C17 -5 12 -2 8 1 Z";
-    var y0 = -10;
-    var inner = '<defs><clipPath id="krPc1"><path d="' + body + '"/></clipPath><clipPath id="krPc1f"><path d="' + frill + '"/></clipPath></defs>' +
-      '<g filter="url(#krCord)"><path d="M-3 ' + y0 + " C-7 " + (y0 - 12) + " -7 -41 0 -41.5 C7 -41 7 " + (y0 - 12) + " 3 " + y0 + '" fill="none" stroke="url(#krCordG)" stroke-width="2.6" stroke-linecap="round"/></g>' +
-      '<g filter="url(#krVelvet)"><path d="' + frill + '" fill="url(#krPlum)"/><path d="' + body + '" fill="url(#krPlum)"/></g>' +
-      '<g clip-path="url(#krPc1f)" filter="url(#krSoft1)"><path d="M-3 -12 L-2 0 M6 -11 L3 0" stroke="#0a0308" stroke-opacity=".55" stroke-width="1.4"/></g>' +
-      '<g clip-path="url(#krPc1)"><g fill="none" stroke-linecap="round">' +
-        '<path d="M-3 8 C-10 34 -17 70 -14 122 M6 8 C11 40 16 76 12 124 M1 10 C4 50 26 80 24 116" stroke="#070205" stroke-opacity=".62" stroke-width="7" filter="url(#krSoft)"/>' +
-        '<path d="M-6 9 C-13 36 -21 74 -19 116" stroke="#d08cbc" stroke-opacity=".13" stroke-width="3" filter="url(#krSoft)"/>' +
-        '<path d="M-12 30 C-24 50 -30 80 -28 104" stroke="#d08cbc" stroke-opacity=".08" stroke-width="5" filter="url(#krSoft)"/>' +
-        '<path d="' + body + '" stroke="#c07aae" stroke-opacity=".2" stroke-width="2.4" filter="url(#krSoft1)"/></g></g>' +
-      '<g filter="url(#krCord)" fill="none" stroke-linecap="round">' +
-        '<path d="M-10 1.5 C-4 4.5 4 4.5 10 1.5" stroke="url(#krCordG)" stroke-width="3.2"/>' +
-        '<path d="M-10 -1.2 C-4 1.4 4 1.4 10 -1.2" stroke="url(#krCordG)" stroke-width="2.6"/>' +
-        '<path d="M8.5 2 C15 9 17 22 13.5 36" stroke="url(#krCordG)" stroke-width="2.3"/>' +
-        '<path d="M9 3 C19 11 23 27 21 44" stroke="url(#krCordG)" stroke-width="2.3"/></g>' +
-      '<g filter="url(#krMetal)"><rect x="11" y="34" width="5" height="11" rx="2.5" fill="url(#krIron)" transform="rotate(-12 13.5 39)"/><rect x="18.6" y="42" width="5" height="11" rx="2.5" fill="url(#krIron)" transform="rotate(-4 21 47)"/></g>';
-    return '<g class="kr-pouch" transform="translate(' + (x + 12) + ',53) rotate(' + rot + ')">' +
-      '<circle r="10" fill="none" stroke="url(#krIron)" stroke-width="2.6"/>' +
-      '<circle r="10" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width=".8" transform="translate(-.8,-.8)"/>' +
-      '<g transform="translate(0,44) scale(.92)">' + inner + "</g></g>";
-  }
-  function krSvg(slots) {
-    var defs = '<defs>' +
-      '<filter id="krMetal" x="-40%" y="-10%" width="180%" height="130%">' +
-        '<feGaussianBlur in="SourceAlpha" stdDeviation="1.3" result="b"/>' +
-        '<feSpecularLighting in="b" surfaceScale="3.6" specularConstant="1.25" specularExponent="34" lighting-color="#fff4e0" result="s"><fePointLight x="-80" y="-160" z="160"/></feSpecularLighting>' +
-        '<feComposite in="s" in2="SourceAlpha" operator="in" result="sp"/>' +
-        '<feDiffuseLighting in="b" surfaceScale="2.4" diffuseConstant="0.9" lighting-color="#ffffff" result="d"><feDistantLight azimuth="235" elevation="48"/></feDiffuseLighting>' +
-        '<feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.15" k2="0.15" k3="0" k4="0" result="dl"/>' +
-        '<feComposite in="dl" in2="sp" operator="arithmetic" k1="0" k2="1" k3="0.9" k4="0" result="lit"/>' +
-        '<feComposite in="lit" in2="SourceAlpha" operator="in" result="lit2"/>' +
-        '<feOffset in="SourceAlpha" dx="7" dy="12" result="o"/><feGaussianBlur in="o" stdDeviation="5" result="ob"/>' +
-        '<feColorMatrix in="ob" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .66 0" result="sh"/>' +
-        '<feMerge><feMergeNode in="sh"/><feMergeNode in="lit2"/></feMerge></filter>' +
-      '<linearGradient id="krIron" x1="0" y1="0" x2="1" y2=".3"><stop offset="0" stop-color="#7d7a86"/><stop offset=".3" stop-color="#3a3842"/><stop offset=".6" stop-color="#1c1b21"/><stop offset=".85" stop-color="#2c2a33"/><stop offset="1" stop-color="#6a6774"/></linearGradient>' +
-      '<linearGradient id="krRail" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a8794"/><stop offset=".4" stop-color="#34323b"/><stop offset="1" stop-color="#121116"/></linearGradient>' +
-'<filter id="krVelvet" x="-45%" y="-15%" width="190%" height="140%">' +
-        '<feGaussianBlur in="SourceAlpha" stdDeviation="3.2" result="b"/>' +
-        '<feDiffuseLighting in="b" surfaceScale="5" diffuseConstant="1" lighting-color="#ffffff" result="d"><feDistantLight azimuth="235" elevation="50"/></feDiffuseLighting>' +
-        '<feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.0" k2="0.04" k3="0" k4="0" result="dl"/>' +
-        '<feSpecularLighting in="b" surfaceScale="4" specularConstant="0.3" specularExponent="16" lighting-color="#fff4e0" result="s"><fePointLight x="-80" y="-160" z="160"/></feSpecularLighting>' +
-        '<feComposite in="s" in2="SourceAlpha" operator="in" result="sp"/>' +
-        '<feComposite in="dl" in2="sp" operator="arithmetic" k1="0" k2="1" k3=".55" k4="0" result="lit"/>' +
-        '<feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="7" result="n"/>' +
-        '<feColorMatrix in="n" type="matrix" values=".33 .33 .33 0 0 .33 .33 .33 0 0 .33 .33 .33 0 0 0 0 0 0 1" result="ng"/>' +
-        '<feComposite in="lit" in2="ng" operator="arithmetic" k1="0" k2="1" k3="0.035" k4="-0.0175" result="gr"/>' +
-        '<feComposite in="gr" in2="SourceAlpha" operator="in" result="lit2"/>' +
-        '<feOffset in="SourceAlpha" dx="7" dy="12" result="o"/><feGaussianBlur in="o" stdDeviation="5" result="ob"/>' +
-        '<feColorMatrix in="ob" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .66 0" result="sh"/>' +
-        '<feMerge><feMergeNode in="sh"/><feMergeNode in="lit2"/></feMerge></filter>' +
-      '<filter id="krCord" x="-45%" y="-15%" width="190%" height="140%">' +
-        '<feGaussianBlur in="SourceAlpha" stdDeviation="0.9" result="b"/>' +
-        '<feDiffuseLighting in="b" surfaceScale="5" diffuseConstant="1" lighting-color="#ffffff" result="d"><feDistantLight azimuth="235" elevation="50"/></feDiffuseLighting>' +
-        '<feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.0" k2="0.04" k3="0" k4="0" result="dl"/>' +
-        '<feSpecularLighting in="b" surfaceScale="4" specularConstant="0.5" specularExponent="14" lighting-color="#fff4e0" result="s"><fePointLight x="-80" y="-160" z="160"/></feSpecularLighting>' +
-        '<feComposite in="s" in2="SourceAlpha" operator="in" result="sp"/>' +
-        '<feComposite in="dl" in2="sp" operator="arithmetic" k1="0" k2="1" k3=".55" k4="0" result="lit"/>' +
-        '<feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="7" result="n"/>' +
-        '<feColorMatrix in="n" type="matrix" values=".33 .33 .33 0 0 .33 .33 .33 0 0 .33 .33 .33 0 0 0 0 0 0 1" result="ng"/>' +
-        '<feComposite in="lit" in2="ng" operator="arithmetic" k1="0" k2="1" k3="0.05" k4="-0.025" result="gr"/>' +
-        '<feComposite in="gr" in2="SourceAlpha" operator="in" result="lit2"/>' +
-        '<feOffset in="SourceAlpha" dx="7" dy="12" result="o"/><feGaussianBlur in="o" stdDeviation="5" result="ob"/>' +
-        '<feColorMatrix in="ob" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .66 0" result="sh"/>' +
-        '<feMerge><feMergeNode in="sh"/><feMergeNode in="lit2"/></feMerge></filter>' +
-      '<filter id="krSoft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.6"/></filter>' +
-      '<filter id="krSoft1" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation=".7"/></filter>' +
-      '<radialGradient id="krPlum" cx="36%" cy="42%" r="70%"><stop offset="0" stop-color="#5c1d4a"/><stop offset=".5" stop-color="#34102b"/><stop offset="1" stop-color="#14050e"/></radialGradient>' +
-      '<linearGradient id="krCordG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5a4a58"/><stop offset="1" stop-color="#241c25"/></linearGradient>' +
-      '<radialGradient id="krPool" cx="50%" cy="10%" r="75%"><stop offset="0" stop-color="#ffb36b" stop-opacity=".14"/><stop offset="1" stop-color="#ffb36b" stop-opacity="0"/></radialGradient>' +
-      "</defs>";
-    var out = '<svg class="kr-svg" viewBox="0 0 516 262" aria-hidden="true" focusable="false">' + defs +
-      '<ellipse cx="258" cy="150" rx="250" ry="150" fill="url(#krPool)"/>' +
-      '<g><rect x="30" y="22" width="456" height="11" rx="5.5" fill="url(#krRail)"/><rect x="34" y="23.5" width="448" height="2.6" rx="1.3" fill="#fff" opacity=".25"/>' +
-      '<circle cx="30" cy="27.5" r="9" fill="url(#krRail)"/><circle cx="486" cy="27.5" r="9" fill="url(#krRail)"/>' +
-      '<circle cx="27" cy="24.5" r="3" fill="#fff" opacity=".35"/><circle cx="483" cy="24.5" r="3" fill="#fff" opacity=".35"/></g>';
-    KR_X.forEach(function (x) { out += krHook(x); });
-    slots.forEach(function (k, i) {
-      if (k.secret) { out += krPouch(KR_X[i], k.rot); return; }
-      out += k.has ? krHang(KR_X[i], k.rot, KR_BOW[k.bow]) : krGhost(KR_X[i], KR_BOW[k.bow], k.cy);
-    });
-    return out + "</svg>";
-  }
-  /* Что висит — спрашивается у замка открытого сеанса, а не помнится окном. */
-  function krSlots() {
-    var V = window.sbVault;
-    var locked = false, spare = false, hw = false;
-    try {
-      locked = !!(V && V.available() && V.isLocked());
-      spare = !!(locked && V.recoveryState && (V.recoveryState() || {}).at);
-      hw = !!(locked && V.hwState && (V.hwState() || {}).on);
-    } catch (e) { locked = false; spare = false; hw = false; }
-    return [
-      { id: "password", bow: "tre", rot: -5, cy: -6, has: locked, name: tr("acc.k.password"), go: locked ? "#sbLockChange, #sbLockCur" : "#sbLockP1" },
-      { id: "spare", bow: "ring", rot: 4, cy: -6, has: spare, name: tr("lock.spare"), go: locked ? "#sbLockSpare" : "#sbLockP1" },
-      { id: "device", bow: "sq", rot: -3, cy: -6, has: hw, name: tr("lock.hw"), go: locked ? "#sbLockHwAdd, #sbLockHwState" : "#sbLockP1" },
-      { id: "duress", bow: "heart", rot: 5, cy: -3, has: false, secret: true, name: tr("lock.duress"), go: locked ? "#sbLockDuressSet" : "#sbLockP1" }
-    ];
-  }
-  function krMark() {
-    return '<svg class="acc-mark" viewBox="0 0 100 100" aria-hidden="true"><path class="sb-hs" d="M26.04 10.06H69.97V30.03H36.96A6.93 6.93 0 0 0 30.03 36.96V69.97H10.06V26.04A15.98 15.98 0 0 1 26.04 10.06Z"/>' +
-      '<path class="sb-hb" d="M73.96 89.94H30.03V69.97H63.04A6.93 6.93 0 0 0 69.97 63.04V30.03H89.94V73.96A15.98 15.98 0 0 1 73.96 89.94Z"/></svg>';
-  }
-  function keyRack() {
-    var slots = krSlots();
-    var V = window.sbVault;
-    var locked = false;
-    try { locked = !!(V && V.available() && V.isLocked()); } catch (e) { locked = false; }
-    var cols = slots.map(function (k) {
-      var state = k.secret ? tr("acc.k.secret") : (k.has ? tr("acc.k.here") : tr("acc.k.hang"));
-      return '<button type="button" class="kr-col' + (k.has ? " has" : " empty") + (k.secret ? " secret" : "") + '" data-key="' + k.id + '" data-go="' + esc(k.go) + '"' +
-        ' aria-expanded="false" aria-controls="sbKrFold" aria-label="' + esc(k.name + " — " + state) + '"><span class="kr-name">' + esc(k.name) + '</span><span class="kr-state">' + esc(state) + "</span></button>";
-    }).join("");
-    /* Под планкой — раскрытие одного ключа (D-637): касание ключа открывает
-       ровно его форму, повторное — сворачивает; открыто одно за раз. */
-    return '<div class="key-rack" id="sbKeyRack">' + krSvg(slots) + '<div class="kr-cols">' + cols + "</div></div>" +
-      '<div class="kr-fold" id="sbKrFold" hidden></div>' +
-      '<div class="acc-acts kr-acts">' +
-        (locked ? '<button type="button" class="btn primary wide kr-lock" id="sbAccLockNow">' + esc(tr("lock.now")) + "</button>" : "") +
-        '<button type="button" class="btn ghost wide kr-leave" id="sbAccLeaveMore">' + esc(tr("acc.leaveMore")) + "</button>" +
-      "</div>" +
-      '<p class="kr-more">' + esc(tr("acc.inSettings")) + ' <button type="button" class="btn link kr-settings" id="sbAccToSettings">' + esc(tr("acc.inSettingsLink")) + "</button></p>";
-  }
-  function wireKeyRack(body) {
-    body.querySelectorAll(".kr-col").forEach(function (b) {
-      b.addEventListener("click", function () { krFold(body, b.getAttribute("data-key")); });
-    });
-    var lockNow = body.querySelector("#sbAccLockNow");
-    /* «Запереть сейчас» — то же действие, что в Настройках (D-359, D-360). */
-    if (lockNow) lockNow.addEventListener("click", function () {
-      var V = window.sbVault;
-      window.sbSessionClose(function () { window.location.reload(); });
-      if (V && V.shutAll) { try { V.shutAll(); } catch (e) { /* ignore */ } }
-    });
-    var leaveMore = body.querySelector("#sbAccLeaveMore");
-    if (leaveMore) leaveMore.addEventListener("click", function () { accountGo("#sbAccLeave"); });
-    var toSettings = body.querySelector("#sbAccToSettings");
-    if (toSettings) toSettings.addEventListener("click", function () {
-      if (accountPanel && accountPanel.close) accountPanel.close();
-      var openIt = window.sbOpenApp || window.toggleApp;
-      if (typeof openIt === "function") openIt("settings");
-      setTimeout(function () {
-        var tab = doc.querySelector('.window[data-app="settings"] [data-section="privacy"]');
-        if (tab) tab.click();
-      }, 260);
-    });
-  }
-  /* Ключ ведёт к своему месту в окне: первое найденное по списку прокручивается
-     в середину и получает фокус. */
-  /* Раскрыть под планкой форму ключа; тот же ключ ещё раз — свернуть. */
-  function krFold(body, key) {
-    var fold = body.querySelector("#sbKrFold");
-    if (!fold) return;
-    var open = fold.getAttribute("data-key");
-    body.querySelectorAll(".kr-col").forEach(function (c) { c.classList.remove("open"); c.setAttribute("aria-expanded", "false"); });
-    if (open === key && !fold.hidden) { fold.hidden = true; fold.removeAttribute("data-key"); fold.innerHTML = ""; return; }
-    fold.setAttribute("data-key", key);
-    fold.innerHTML = lockSection(key) + '<p class="panel-err" id="sbAccErr" role="alert"></p>';
-    fold.hidden = false;
-    var col = body.querySelector('.kr-col[data-key="' + key + '"]');
-    if (col) { col.classList.add("open"); col.setAttribute("aria-expanded", "true"); }
-    wireLockBody(fold);
-    var first = fold.querySelector("input:not([hidden]):not([type=file])");
-    if (first) { try { first.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
-  }
-  window.sbKeyRackFold = function (key) { var b = panelBody("sbAccountOverlay"); if (b) krFold(b, key); };
-  /* Подробности живут в Настройках → «Ключи и замок» (D-637): ключ ведёт
-     туда, окно ключницы закрывается. */
-  function accountGo(selectors) {
-    if (accountPanel && accountPanel.close) accountPanel.close();
-    window.sbOpenAccountAt(selectors);
   }
 
   /* ── ОКНО ЦЕЛИКОМ ───────────────────────────────────────────────────────── */
@@ -2092,102 +1678,39 @@
       if (window.sbChest) { gift.title = window.sbChest.title() || ""; gift.sigil = window.sbChest.sigil() || ""; gift.serial = window.sbChest.serial() || ""; }
     } catch (e) { gift = { title: "", sigil: "", serial: "" }; }
     var who = '<div class="acc-who">' +
-      (gift.sigil ? '<span class="acc-sigil" aria-hidden="true">' + gift.sigil + "</span>" : krMark()) +
+      (gift.sigil ? '<span class="acc-sigil" aria-hidden="true">' + gift.sigil + "</span>" : '<span class="acc-dot" aria-hidden="true"></span>') +
       '<span class="acc-who-text"><b>' + esc(name || tr("acc.guest")) + "</b>" +
       (gift.title ? '<span class="acc-who-sub acc-title">' + esc(gift.title) + "</span>" : "") +
       (gift.serial ? '<span class="acc-who-sub acc-serial" data-sb-nolang>' + esc(gift.serial) + "</span>" : "") +
       "</span></div>";
 
-    /* ── ОКНО — ТОЛЬКО КЛЮЧНИЦА · решение D-637 (основатель 09.11.2026) ─────
-       По D-620 в окне «Аккаунт» остаются имя, ключница с крючками, «Запереть
-       сейчас», «Уйти…» и строка «Ковчег и как устроен шифр — в Настройках».
-       Всё прежнее — имя в системе, замок, коды, копии, уход и стирание — живёт
-       в Настройках → «Ключи и замок» теми же узлами и той же разводкой
-       (accountDetails). Ничего не потеряно, только переехало.
-       Охраняется tools/klyuchnica-check.mjs. */
-    body.innerHTML = '<div class="panel-scroll">' + who + keyRack() + "</div>";
-    wireKeyRack(body);
-    if (window.sbPaintIris) window.sbPaintIris();
-  }
-  /* Подробности учётной записи — в любом хозяине (Настройки → «Ключи и замок»). */
-  var detailsSaid = "";
-  function accountDetails(host) {
-    if (!host) return;
-    /* Раскрытый ключ под планкой сворачивается: те же поля не стоят дважды. */
-    var rf = doc.getElementById("sbKrFold");
-    if (rf) { rf.hidden = true; rf.innerHTML = ""; rf.removeAttribute("data-key"); }
-    var parts = accountBodyParts();
-    /* Сказанное не стирается перерисовкой: если раздел встал заново (замок
-       встал, окно Настроек перерисовалось), строка ответа остаётся. */
-    var oldErr = host.querySelector("#sbAccErr");
-    var said = oldErr ? oldErr.textContent : detailsSaid;
-    host.innerHTML = '<div id="sbAccountDetails" class="acc-details">' +
-      '<div class="acc-sec acc-detail">' + parts.field + "</div>" +
-      /* Замок целиком — и формы ключей тоже (D-637: «каждая функция доступна
-         в Настройках»); под планкой ключницы — те же формы по одной. */
-      '<div class="acc-sec">' + lockSection() + "</div>" +
-      '<div class="acc-sec">' + backupSection() + "</div>" +
-      '<div class="acc-sec">' + parts.leaving + "</div>" +
-      '<p class="panel-err" id="sbAccErr" role="alert"></p>' +
-      "</div>";
-    var box = host.querySelector("#sbAccountDetails");
-    var ne = box.querySelector("#sbAccErr");
-    if (ne) {
-      if (said) ne.textContent = said;
-      /* Последнее сказанное помнится модулем: раздел могут перерисовать
-         целиком (смена языка при постановке замка перерисовывает Настройки). */
-      detailsSaid = ne.textContent;
-      new MutationObserver(function () {
-        detailsSaid = ne.textContent;
-        /* Ответ пришёл в прежний, уже перерисованный раздел (обещание замка
-           дошло позже) — он переносится в тот, что сейчас на экране. */
-        if (!ne.isConnected) {
-          var live = doc.querySelector("#sbAccountDetails #sbAccErr");
-          if (live && live !== ne && live.textContent !== detailsSaid) live.textContent = detailsSaid;
-        }
-      }).observe(ne, { childList: true, characterData: true, subtree: true });
-    }
-    wireAccountBody(box);
-    wireLockBody(box);
-    wireBackupBody(box);
-    if (window.sbPaintIris) window.sbPaintIris();
-  }
-  window.sbAccountDetails = accountDetails;
-  function leavingHtml() {
-    return       '<h4 class="panel-sub">' + esc(tr("acc.leave")) + "</h4>" +
+    var field =
+      '<label class="acc-field"><span class="acc-label">' + esc(tr("acc.name")) + "</span>" +
+      '<input type="text" id="sbAccName" maxlength="18" autocomplete="username" autocapitalize="off" spellcheck="false" value="' + esc(name) + '">' +
+      "</label>" +
+      '<p class="panel-copy dim">' + esc(tr("acc.nameSub")) + "</p>" +
+      '<div class="acc-acts"><button type="button" class="btn ghost" id="sbAccSave">' + esc(tr("acc.save")) + "</button></div>";
+
+    var leaving =
+      '<h4 class="panel-sub">' + esc(tr("acc.leave")) + "</h4>" +
       '<p class="panel-copy">' + esc(tr("acc.leaveSub")) + "</p>" +
       '<div class="acc-acts"><button type="button" class="btn primary wide" id="sbAccLeave">' + esc(tr("acc.leave")) + "</button></div>" +
       '<p class="panel-copy dim">' + esc(tr("acc.wipeSub")) + "</p>" +
       '<div class="acc-acts"><button type="button" class="btn ghost danger" id="sbAccWipe">' + esc(tr("acc.wipe")) + "</button></div>" +
       '<p class="acc-truth">' + esc(tr("acc.truth")) + "</p>" +
       '<div class="acc-acts"><button type="button" class="btn link" id="sbAccSignOut">' + esc(tr("acc.signout")) + "</button></div>";
-  }
 
-  /* Части подробностей строятся тем же кодом, что и прежде; окно ключницы
-     их не показывает. */
-  function accountBodyParts() {
-    var name = (window.sbGetUsername ? window.sbGetUsername() : "") || "";
-    /* пустое имя — пустое поле с «гость» подсказкой; предел — как у хранения, 24 (D-1000) */
-    var guestPh = window.sbGuestWord ? window.sbGuestWord() : "";
-    if (window.sbUsernameStored && !window.sbUsernameStored()) name = "";
-    return {
-      field: '<label class="acc-field"><span class="acc-label">' + esc(tr("acc.name")) + "</span>" +
-        '<input type="text" id="sbAccName" maxlength="24" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="' + esc(guestPh) + '" value="' + esc(name) + '">' +
-        "</label>" +
-        '<p class="panel-copy dim">' + esc(tr("acc.nameSub")) + "</p>" +
-        '<div class="acc-acts"><button type="button" class="btn ghost" id="sbAccSave">' + esc(tr("acc.save")) + "</button></div>",
-      leaving: leavingHtml()
-    };
+    body.innerHTML = '<div class="panel-scroll">' + who + field +
+      '<div class="acc-sec">' + lockSection() + "</div>" +
+      '<div class="acc-sec">' + backupSection() + "</div>" +
+      '<div class="acc-sec">' + leaving + "</div>" +
+      '<p class="panel-err" id="sbAccErr" role="alert"></p>' +
+      "</div>";
+    wireAccountBody(body);
+    wireLockBody(body);
+    wireBackupBody(body);
+    if (window.sbPaintIris) window.sbPaintIris();
   }
-  /* Перерисовать то, что сейчас на экране: окно ключницы, если открыто, и
-     подробности в Настройках, если они стоят. */
-  function accountRefresh() {
-    var o = doc.getElementById("sbAccountOverlay");
-    if (o && o.classList.contains("open")) accountBody();
-    var d = doc.getElementById("sbAccountDetails");
-    if (d && d.parentNode) accountDetails(d.parentNode);
-  }
-  window.sbAccountRefresh = accountRefresh;
 
   function wireAccountBody(body) {
     var err = body.querySelector("#sbAccErr");
@@ -2200,7 +1723,7 @@
         if (String(input.value || "").trim().length < 2) { say(tr("acc.nameSub")); return; }
         if (window.sbSetUsername) window.sbSetUsername(input.value);
         say(tr("acc.saved"));
-        accountRefresh();
+        accountBody();
       });
       input.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); save.click(); } });
     }
@@ -2286,43 +1809,15 @@
   /* Открыть окно Учётной записи НА НУЖНОМ МЕСТЕ: первое из найденного по
      списку селекторов прокручивается в середину и получает фокус. Этим зовут
      «Поставить сейчас» и строки «Замок» и «Копии» в Настройках (D-305). */
-  /* Подробности учётной записи — в Настройках → «Ключи и замок» (D-637).
-     Обещание: исполняется, когда раздел стоит на экране. */
-  window.sbOpenAccountDetails = function () {
-    detailsSaid = "";   /* новое открытие — новый разговор */
-    return new Promise(function (res) {
-      var openIt = window.sbOpenApp || window.toggleApp;
-      var win = doc.querySelector('.window[data-app="settings"]');
-      if (!win && typeof openIt === "function") openIt("settings");
-      var tries = 0;
-      /* Уже стоят — перерисовать по нынешнему состоянию замка (как прежнее
-         открытие окна перерисовывало его). */
-      var stood = doc.getElementById("sbAccountDetails");
-      if (stood && stood.parentNode) accountDetails(stood.parentNode);
-      (function wait() {
-        var w = doc.querySelector('.window[data-app="settings"]');
-        var tab = w && w.querySelector('[data-section="account"]');
-        if (tab && !w.querySelector("#sbAccountDetails")) tab.click();
-        var d = doc.getElementById("sbAccountDetails");
-        /* «Стоит на экране» — значит и окно долетело (D-693): пока на нём
-           класс opening, оно ещё едет, и то, что позвавший найдёт в разделе,
-           через миг окажется на 20 px в стороне — палец или мышь, нацеленные
-           на «Запереть всё», попадали в пустой стол («Стол убран»), и
-           «всё равно» не появлялась вовсе. */
-        if (d && !(w && w.classList.contains("opening"))) { if (window.focusWindow) { try { window.focusWindow("settings"); } catch (e) { /* ignore */ } } res(d); return; }
-        if (++tries > 60) { res(null); return; }
-        setTimeout(wait, 60);
-      })();
-    });
-  };
   window.sbOpenAccountAt = function (selectors) {
-    return window.sbOpenAccountDetails().then(function (host) {
-      if (!host) return;
+    if (!window.sbOpenAccountPanel) return;
+    window.sbOpenAccountPanel();
+    setTimeout(function () {
       var el = null, list = String(selectors || "").split(","), i;
-      for (i = 0; i < list.length && !el; i++) el = host.querySelector(list[i].trim());
+      for (i = 0; i < list.length && !el; i++) el = doc.querySelector(list[i].trim());
       if (!el) return;
       try { el.scrollIntoView({ block: "center" }); if (el.focus) el.focus(); } catch (e) { /* ignore */ }
-    });
+    }, 360);
   };
 
   /* ── «НУЖЕН ЗАМОК» ВЕДЁТ К ЗАМКУ (D-317) ────────────────────────────────
@@ -2336,7 +1831,8 @@
      kind "open" — подпись «Открыть замок» (как строка «Замок» в Настройках):
      для случая, когда замок есть, но в нём надо что-то поменять.
      Охраняется tools/lock-call-check.mjs. */
-  var LOCK_GLYPH = sbZnak("vault");
+  var LOCK_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+    '<rect x="5" y="10.5" width="14" height="9.5" rx="2.2"/><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"/></svg>';
   window.sbLockCallHtml = function (kind) {
     var label = kind === "open" ? tr("set.privacy.lockOpen") : tr("lock.call");
     return '<button type="button" class="sb-lock-call" data-sb-lock-call>' +
@@ -2357,10 +1853,7 @@
   function knockWhen(ts) {
     var l = window.sbLang ? window.sbLang() : "en";
     var d = new Date(ts), now = new Date();
-    /* D-1352: «недавно» — по давности (12 ч), а не по календарному дню: стук перед полуночью, увиденный после неё в одной
-       системе и до неё в другой, назывался разными словами («23:59» и «18 нояб., 23:59») — тревожная система выдавала
-       себя (knock-check п.4). Давний стук — с датой, как было. */
-    var same = now - d >= 0 && now - d < 12 * 3600 * 1000;
+    var same = d.toDateString() === now.toDateString();
     try {
       return same ? d.toLocaleTimeString(l === "ee" ? "et" : l, { hour: "2-digit", minute: "2-digit" })
         : d.toLocaleString(l === "ee" ? "et" : l, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -2375,9 +1868,7 @@
     K.fresh().then(function (fresh) {
       if (!fresh.length) return;
       var shown = fresh.slice(-3).map(knockWhen).join(", ");
-      var h = window.showToast ? window.showToast(tr("knock.title"), tr("knock.body", { n: fresh.length, when: shown }), "", true, "", "event") : null;
-      /* голос говорит о стуке своей фразой; «на людях» — без времени (D-816) */
-      if (h && window.sbVoice && window.sbVoice.retell) window.sbVoice.retell(h, function () { return window.sbVoice.form("voice.knock", { n: fresh.length, when: shown }); }, "knock", { sticky: true });
+      if (window.showToast) window.showToast(tr("knock.title"), tr("knock.body", { n: fresh.length, when: shown }), "", true, "", "event");
       K.seen();
     });
   }

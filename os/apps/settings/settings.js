@@ -9,7 +9,7 @@
 (function () {
   "use strict";
 
-  var ICON = sbZnak("settings");
+  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><path d="M19.2 14.2a1.5 1.5 0 0 0 .3 1.65l.06.06a1.8 1.8 0 1 1-2.55 2.55l-.06-.06a1.5 1.5 0 0 0-1.65-.3 1.5 1.5 0 0 0-.9 1.37V20a1.8 1.8 0 0 1-3.6 0v-.1a1.5 1.5 0 0 0-.98-1.37 1.5 1.5 0 0 0-1.65.3l-.06.06A1.8 1.8 0 1 1 4.56 16.3l.06-.06a1.5 1.5 0 0 0 .3-1.65 1.5 1.5 0 0 0-1.37-.9H3a1.8 1.8 0 0 1 0-3.6h.1a1.5 1.5 0 0 0 1.37-.98 1.5 1.5 0 0 0-.3-1.65l-.06-.06A1.8 1.8 0 1 1 6.66 4.85l.06.06a1.5 1.5 0 0 0 1.65.3H8.5a1.5 1.5 0 0 0 .9-1.37V3a1.8 1.8 0 0 1 3.6 0v.1a1.5 1.5 0 0 0 .9 1.37 1.5 1.5 0 0 0 1.65-.3l.06-.06a1.8 1.8 0 1 1 2.55 2.55l-.06.06a1.5 1.5 0 0 0-.3 1.65v.08a1.5 1.5 0 0 0 1.37.9H21a1.8 1.8 0 0 1 0 3.6h-.1a1.5 1.5 0 0 0-1.37.9Z"/></svg>';
 
   var AUTHED_KEY = "sysbaby.authed";                 // raw localStorage
 
@@ -21,27 +21,13 @@
      лету видят ключ и не видят литерал. Ярлык раздела — labelKey, а не
      label, чтобы «Appearance» физически негде было написать. */
   var SECTIONS = [
-    { id: "general", labelKey: "set.tab.general", icon: sbZnak("user") },
-    /* «Знакомство» (D-835, архив «Дом — мой»; основатель 10.11, демо dom-moy-A
-       сцена 6): что дом узнал о человеке, смена ответов, «пройти разговор
-       заново», «на людях» и вид «времени на столе». Знание — у core/meet.js
-       (sbAddr, sbMeet); раздел — только двери к нему. */
-    { id: "meet", labelKey: "set.tab.meet", icon: sbZnak("people") },
-    { id: "appearance", labelKey: "set.tab.appearance", icon: sbZnak("appearance") },
-    { id: "sound", labelKey: "set.tab.sound", icon: sbZnak("sound") },
-    { id: "desktop", labelKey: "set.tab.desktop", icon: sbZnak("desktop") },
-    /* «Ключи и замок» (D-637): всё, что было под ключницей в окне «Аккаунт»
-       и не относится к самим ключам, — имя в системе, замок целиком с
-       самозапиранием, копии, уход и стирание. Узлы и разводку строит ядро
-       (sbAccountDetails), раздел — только место. */
-    { id: "account", labelKey: "set.tab.account", icon: sbZnak("keys") },
-    { id: "privacy", labelKey: "set.tab.privacy", icon: sbZnak("shield") },
-    { id: "advanced", labelKey: "set.tab.advanced", icon: sbZnak("sliders") },
-    /* «Наружу» — не приложение, а раздел Настроек (D-723, основатель
-       03–04.11, восстановлено 10.11): что и куда выходит из дома. Разметку
-       строит сама комната (sbOutwardRender), раздел — только место. */
-    { id: "outward", labelKey: "set.tab.outward", icon: sbZnak("outward") },
-    { id: "about", labelKey: "set.tab.about", icon: sbZnak("info") }
+    { id: "general", labelKey: "set.tab.general", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8.4" r="3.2"/><path d="M5.2 19.4a6.8 6.8 0 0 1 13.6 0"/></svg>' },
+    { id: "appearance", labelKey: "set.tab.appearance", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="7.8"/><path d="M12 4.2v15.6"/></svg>' },
+    { id: "sound", labelKey: "set.tab.sound", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 9.5h3l4-3.2v11.4l-4-3.2h-3Z"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6"/></svg>' },
+    { id: "desktop", labelKey: "set.tab.desktop", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.4" y="5" width="17.2" height="11.4" rx="2"/><path d="M8 19.6h8"/></svg>' },
+    { id: "privacy", labelKey: "set.tab.privacy", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.8 5.4 6.4v5c0 4.2 2.8 7.6 6.6 8.8 3.8-1.2 6.6-4.6 6.6-8.8v-5L12 3.8Z"/></svg>' },
+    { id: "advanced", labelKey: "set.tab.advanced", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 7.5h14M5 12h14M5 16.5h14"/><circle cx="9" cy="7.5" r="1.6"/><circle cx="15" cy="16.5" r="1.6"/></svg>' },
+    { id: "about", labelKey: "set.tab.about", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="7.8"/><path d="M12 11v5.2M12 8.1v.1"/></svg>' }
   ];
 
   /* -------------------------------------------------------------- helpers */
@@ -132,8 +118,7 @@
       if (!label.id) label.id = "stRowLabel" + (++rowSeq);
       row.querySelectorAll(".st-row-control button, .st-row-control input, .st-row-control select, .st-row-control textarea").forEach(function (c) {
         if (c.hasAttribute("aria-label") || c.hasAttribute("aria-labelledby")) return;
-        /* слова тумблера «да · нет» спрятаны от чтеца (aria-hidden) — имя ему даёт строка */
-        if (c.tagName === "BUTTON" && c.getAttribute("role") !== "switch" && String(c.textContent || "").trim()) return;
+        if (c.tagName === "BUTTON" && String(c.textContent || "").trim()) return;
         c.setAttribute("aria-labelledby", label.id);
       });
     });
@@ -141,12 +126,7 @@
 
   function switchMarkup(key) {
     var on = toggleState(key);
-    return '<button type="button" class="st-switch' + (on ? " on" : "") + '" role="switch" aria-checked="' + (on ? "true" : "false") + '" data-toggle="' + esc(key) + '">' + switchWords() + "</button>";
-  }
-  /* Тумблер — пара слов «да · нет» в кромке света (Чистота Б, D-840-WORDS-SWITCHES):
-     кнопка, её роль и aria-checked прежние; выбранное слово горит. */
-  function switchWords() {
-    return '<span class="st-sw-yes" aria-hidden="true">' + esc(t("set.switch.on")) + '</span><span class="st-sw-no" aria-hidden="true">' + esc(t("set.switch.off")) + "</span>";
+    return '<button type="button" class="st-switch' + (on ? " on" : "") + '" role="switch" aria-checked="' + (on ? "true" : "false") + '" data-toggle="' + esc(key) + '"><i></i></button>';
   }
 
   /* ------------------------------------------------------------- sections */
@@ -158,52 +138,29 @@
     return "en";
   }
 
-  /* Касательный ввод: нет мыши-указателя или стоит отметка касания ядра. */
-  function touchInput() {
-    var r = document.documentElement;
-    if (r.getAttribute("data-input") === "touch" || r.classList.contains("is-touch")) return true;
-    return !!(window.matchMedia && window.matchMedia("(any-pointer: coarse)").matches && !window.matchMedia("(pointer: fine)").matches);
-  }
-
   function generalMarkup() {
-    /* Пустое имя — пустое поле, а «гость» на языке человека — подсказкой поля
-       (D-1000-NAME-FIELD-HONEST): в поле не стоит слово, которое человек не набирал. */
-    var name = "", guestPh = "";
+    var name = "guest";
     if (typeof window.sbGetUsername === "function") {
-      try { name = window.sbGetUsername() || ""; } catch (err) { console.error("[settings] username read failed", err); }
-    }
-    if (typeof window.sbGuestWord === "function") {
-      guestPh = window.sbGuestWord();
-      if (name === guestPh && typeof window.sbUsernameStored === "function" && !window.sbUsernameStored()) name = "";
+      try { name = window.sbGetUsername() || "guest"; } catch (err) { console.error("[settings] username read failed", err); }
     }
     var langNow = currentLang();
-    /* Языки — один вид везде (обход п.19): «eesti · english · русский», строчными,
-       каждое имя на своём языке, порядок как в шапке. Выбор — словами со светом;
-       сам список остаётся в разметке (его читают законы) и получает значение. */
-    var langs = [{ code: "ee", label: "eesti" }, { code: "en", label: "english" }, { code: "ru", label: "русский" }];
+    var langs = [{ code: "en", label: "English" }, { code: "ru", label: "Русский" }, { code: "ee", label: "Eesti" }];
     var options = langs.map(function (l) {
       return '<option value="' + esc(l.code) + '"' + (l.code === langNow ? " selected" : "") + ">" + esc(l.label) + "</option>";
-    }).join("");
-    var words = langs.map(function (l) {
-      var on = l.code === langNow;
-      return '<button type="button" class="st-seg' + (on ? " active" : "") + '" data-lang-pick="' + esc(l.code) + '" lang="' + (l.code === "ee" ? "et" : l.code) + '" aria-pressed="' + (on ? "true" : "false") + '">' + esc(l.label) + "</button>";
     }).join("");
     return '<h2 class="st-title">' + esc(t("set.tab.general")) + "</h2>" +
       installRow() +
       rowMarkup(esc(t("set.general.identity")),
-        /* «Письма» ушли в Разговор (tekst.md п.10): подпись больше не перечисляет комнаты. */
-        esc(t("set.general.identitySub")),
-        '<span class="st-username"><input type="text" id="stUsername" maxlength="24" spellcheck="false" autocomplete="off" placeholder="' + esc(guestPh) + '" value="' + esc(name) + '">' +
-          '<span class="st-saved" id="stUsernameSaved">' + esc(t("set.general.saved")) + "</span></span>") +
+        esc(t("set.general.identitySub", { mail: appName("mail"), messenger: appName("messenger") })),
+        '<span class="st-username"><input type="text" id="stUsername" maxlength="18" spellcheck="false" autocomplete="off" value="' + esc(name) + '">' +
+          '<span class="st-suffix">.sys.baby</span><span class="st-saved" id="stUsernameSaved">' + esc(t("set.general.saved")) + "</span></span>") +
       rowMarkup(esc(t("set.general.language")), esc(t("set.general.languageSub")),
         /* Имена языков — каждое на своём языке, по всеобщему обычаю: человек,
            не читающий по-русски, ищет слово «English», а не «Английский».
            Это единственное место, где кириллица на английском экране
            законна, и оно объявлено вне языка (D-253). */
-        '<span class="st-segment" role="group" aria-label="' + esc(t("set.general.language")) + '" data-sb-nolang>' + words + "</span>" +
-        '<select class="st-select st-select-quiet" id="stLang" data-sb-nolang tabindex="-1" aria-hidden="true">' + options + "</select>") +
-      /* Клавиш на касании нет — и обещания клавиш тоже (Чистота Б, п.6). */
-      '<div class="st-note"><p>' + esc(t(touchInput() ? "set.general.noteTouch" : "set.general.note")) + "</p></div>";
+        '<select class="st-select" id="stLang" data-sb-nolang>' + options + "</select>") +
+      '<div class="st-note"><p>' + esc(t("set.general.note")) + "</p></div>";
   }
 
   /* ── РЯД КРАСОК СНЯТ ЦЕЛИКОМ (D-141) ───────────────────────────────────
@@ -254,21 +211,6 @@
       '<span class="st-segment" id="stThemeRow">' + seg + "</span>");
   }
 
-  /* ── ВИД ПУЛЬТА · D-742 (основатель 11.11.2026, «ПУЛЬТ в H3c») ─────────
-     «Крупные числа» — по умолчанию, «Световод» (жила, D-619) — по выбору.
-     Знание одно — sbGetPultView на ядре; здесь только дверь к нему.
-     Охраняется tools/pult-krupno-check.mjs. */
-  function pultRowMarkup() {
-    if (typeof window.sbGetPultView !== "function") return "";
-    var now = window.sbGetPultView();
-    var seg = [["krupno", t("set.appearance.pult.krupno")], ["svetovod", t("set.appearance.pult.svetovod")]].map(function (p) {
-      var id = p[0], on = id === now;
-      return '<button type="button" class="st-seg' + (on ? " active" : "") + '" data-pult-view="' + id + '" aria-pressed="' + (on ? "true" : "false") + '">' + esc(p[1]) + "</button>";
-    }).join("");
-    return rowMarkup(esc(t("set.appearance.pult")), esc(t("set.appearance.pultSub")),
-      '<span class="st-segment" id="stPultRow" role="group" aria-label="' + esc(t("set.appearance.pult")) + '">' + seg + "</span>");
-  }
-
   function appearanceMarkup() {
     /* РЯДА КРАСОК ЗДЕСЬ БОЛЬШЕ НЕТ (D-141). Шов приходит от обоев: выбор
        комнаты и есть выбор цвета. Пока выборов было два, они могли встать в
@@ -282,18 +224,23 @@
          печатает английское m.name, иначе два места назвали бы одно разными
          словами. Выбор обоев теперь — единственный выбор цвета в системе:
          шов приходит отсюда же (D-141). */
-      /* светлый режим — имена двойников эталона Светлицы (D-1323): Светлица, Зенит, Берег, Лазурь */
-      var lightK = (window.sbGetTheme ? window.sbGetTheme() : document.documentElement.getAttribute("data-theme")) === "light" ? "mood.light." + m.id : "";   /* выбранная тема, а не атрибут: ставни надевают её кадром позже */
-      var moodName = lightK && t(lightK) !== lightK ? t(lightK) : t("mood." + m.id);
+      var moodName = t("mood." + m.id);
       if (moodName === "mood." + m.id) moodName = m.name || m.label || m.id;
       /* Суточное настроение помечено тем же знаком, что и суточная краска:
          дуга, обошедшая круг. Человек, однажды узнавший этот знак на шве,
          узнаёт его и здесь — и не читает второго пояснения. И оно светится
          цветом ТЕКУЩЕГО часа: среди пяти ровных чипов один живой. */
-      /* Плашки тем — нейтральные, как сегменты «Синтеза» (D-634, основатель
-         09.11.2026: разноцветные «выглядят несерьёзно»): свет своего часа
-         живая тема на плашке больше не несёт, знак суточной остаётся. */
       var live = "";
+      var read = m.session ? window.sbTherapyForTime : window.sbWallpaperForTime;
+      if (m.drift && typeof read === "function") {
+        try {
+          var w = read();
+          /* Надпись по свету часа — цветом поля (D-324), чип — веществом этой
+             комнаты: углями или глиной (sbMoodChipLight, D-325). */
+          var pv = window.sbMoodChipLight ? window.sbMoodChipLight(w) : { a1: w.c1, a2: w.c2 };
+          live = ' style="background:linear-gradient(135deg,' + esc(pv.a1) + ',' + esc(pv.a2) + ');border-color:transparent;color:var(--on-accent)"';
+        } catch (err) { console.error("[settings] mood preview failed", err); }
+      }
       var mk = m.session ? " is-session" : (m.drift ? " is-drift" : "");
       return '<button type="button" class="st-chip' + (m.id === mood ? " active" : "") + mk + '" data-mood="' + esc(m.id) + '"' + live + ">" + esc(moodName) + "</button>";
     }).join("");
@@ -318,7 +265,6 @@
            строку карточки на планшете и даже на столе, — они переносятся под
            описание, слева направо, а не уезжают за правую кромку. */
         '<span class="st-chips st-chips-wide">' + (moodChips || '<span class="st-muted">' + esc(t("set.appearance.moodNone")) + "</span>") + "</span>") +
-      pultRowMarkup() +
       rowMarkup(esc(t("set.appearance.brightness")), esc(t("set.appearance.brightnessSub")),
         /* Ползунок собственной постройки (D-162): здесь только место под него,
            узлы строит sbSlider при разводке — родного поля в системе больше нет. */
@@ -352,9 +298,7 @@
       rowMarkup(esc(t("set.sound.system")), esc(t("set.sound.systemSub")), switchMarkup("sound")) +
       rowMarkup(esc(t("set.sound.volume")), esc(t("set.sound.volumeSub")),
         '<span class="st-range-host" id="stVolume" data-range="volume" data-value="' + volume + '"></span>') +
-      rowMarkup(esc(t("set.sound.dnd")), esc(t("set.sound.dndSub")), switchMarkup("dnd")) +
-      /* Шёпот: имя собеседника в голосе — только по руке человека, выключено с рождения (D-1414). */
-      (window.sbShepotRoom ? rowMarkup(esc(t("sh.set.name")), esc(t("sh.set.nameSub")), switchMarkup("shepotName")) : "");
+      rowMarkup(esc(t("set.sound.dnd")), esc(t("set.sound.dndSub")), switchMarkup("dnd"));
   }
 
   function desktopMarkup() {
@@ -363,9 +307,9 @@
       /* Единственный выключатель системы, за которым стоит выход наружу
          (D-198, слой 3). Он выключен по умолчанию, и подпись рядом говорит
          ровно это, а не «улучшить уведомления». */
-      rowMarkup(esc(t("set.desktop.wake")), esc(t("set.desktop.wakeSub")), switchMarkup("wakeOutside"));
-      /* «Выровнять виджеты» снята (обход п.68): виджетов на столе нет — строка
-         обещала то, чего не бывает. Вернётся вместе с виджетами. */
+      rowMarkup(esc(t("set.desktop.wake")), esc(t("set.desktop.wakeSub")), switchMarkup("wakeOutside")) +
+      rowMarkup(esc(t("set.desktop.tidy")), esc(t("set.desktop.tidySub")),
+        '<button type="button" class="st-btn" id="stTidy">' + esc(t("set.desktop.tidyBtn")) + "</button>");
   }
 
   function profilesApi() { return window.sbProfiles || null; }
@@ -458,47 +402,6 @@
         '<button type="button" class="st-btn" id="stCopiesOpen">' + esc(t("set.privacy.copiesOpen")) + "</button>") + "</div>";
   }
 
-  /* ── ДВЕРЬ НАСОВСЕМ (D-607) ───────────────────────────────────────────
-     Основатель 04.11.2026: у ворот смотреть можно любую дверь, насовсем она
-     меняется здесь. У двери по умолчанию — пометка «по умолчанию». Выбор
-     другой двери один раз честно говорит цену: ворота будут встречать ею, и
-     внимательный посторонний догадается, что за ней кто-то живёт. Запись
-     одна — sysbaby.door, открытая (VAULT_NEVER); пишет её оболочка
-     (событие sysbaby:door-choice — имени про двери на window нет,
-     two-doors-check). У гостя выбора нет: его пространство не своё.
-     Стережёт tools/door-switch-check.mjs. */
-  function doorAsk(set) {
-    var d = { set: set || "" };
-    try { document.dispatchEvent(new CustomEvent("sysbaby:door-choice", { detail: d })); } catch (e) { /* нет событий — нет и выбора */ }
-    if (!d.answered) return null;
-    return { def: d.def, now: d.now, ok: d.ok === true, doors: function () { return d.doors; }, get: function () { return d.now; } };
-  }
-  function doorRowMarkup() {
-    var D = doorAsk();
-    if (!D) return "";
-    /* Дверь одна — выбирать нечего: строки нет (D-739, Собор и Свет временно сняты). */
-    if (D.doors().length < 2) return "";
-    var now = D.get();
-    if (window.sbIncognitoActive) {
-      return rowMarkup(esc(t("set.privacy.door")), esc(t("set.privacy.doorSub")),
-        '<span class="st-muted" id="stDoorRow">' + esc(t("lock.door." + now)) + "</span>");
-    }
-    var seg = [D.def].concat(D.doors().filter(function (n) { return n !== D.def; })).map(function (n) {
-      var on = n === now;
-      return '<button type="button" class="st-seg' + (on ? " active" : "") + '" data-door-pick="' + esc(n) + '" aria-pressed="' + (on ? "true" : "false") + '">' +
-        esc(t("lock.door." + n)) + (n === D.def ? ' <span class="st-door-def">· ' + esc(t("set.door.default")) + "</span>" : "") + "</button>";
-    }).join("");
-    return rowMarkup(esc(t("set.privacy.door")), esc(t("set.privacy.doorSub")),
-      '<span class="st-segment" id="stDoorRow" role="group" aria-label="' + esc(t("set.privacy.door")) + '">' + seg + "</span>") +
-      '<div class="st-card st-door-warn" id="stDoorWarn" role="alertdialog" aria-labelledby="stDoorWarnText" hidden>' +
-        '<p id="stDoorWarnText">' + esc(t("set.door.warn")) + "</p>" +
-        '<div class="st-actions">' +
-          '<button type="button" class="st-btn" id="stDoorAnyway">' + esc(t("set.door.anyway")) + "</button>" +
-          '<button type="button" class="st-btn primary" id="stDoorKeep">' + esc(t("set.door.keep")) + "</button>" +
-        "</div>" +
-      "</div>";
-  }
-
   function privacyMarkup() {
     var api = profilesApi();
     var currentProfileId = "local";
@@ -513,7 +416,7 @@
        который удалял чужой. Основатель: «посторонний даже не мог подозревать
        существует ли вообще аккаунт». Теперь строка говорит правду о том, как
        открыть другую систему: выйти к двери и назвать её имя и пароль. */
-    var signedIn = currentProfileId !== "local" && window.sbGetUsername ? window.sbGetUsername() : t("set.privacy.guest");
+    var signedIn = currentProfileId !== "local" && window.sbGetUsername ? window.sbGetUsername() + ".sys.baby" : t("set.privacy.guest");
 
     /* Почта аккаунта — данные посетителя: data-sb-userdata говорит закону
        покрытия, что эту строку переводить нечем и не нужно. */
@@ -521,7 +424,6 @@
       rowMarkup(esc(t("set.privacy.signedIn")), '<span data-sb-userdata>' + esc(signedIn) + "</span>",
         '<button type="button" class="st-btn danger" id="stSignOut">' + esc(t("set.privacy.signOut")) + "</button>") +
       reachMarkup() +
-      doorRowMarkup() +
       rowMarkup(esc(t("set.privacy.profiles")),
         esc(t("set.privacy.profilesSub")),
         '<button type="button" class="st-btn" id="stToDoor">' + esc(t("set.privacy.toDoor")) + "</button>") +
@@ -566,8 +468,11 @@
   function aboutMarkup() {
     /* ОТКАТ: печати сборки ещё нет — имя системы у ядра, иначе само слово. */
     var build = (window.sbBuild && window.sbBuild.name) || "sys.baby";
+    var registered = null, launchable = null;
     try {
       if (window.sbBuild && typeof window.sbBuild.stamp === "function") build = window.sbBuild.stamp();
+      if (window.SysBaby && window.SysBaby.order) registered = window.SysBaby.order.length;
+      if (typeof window.sbLaunchableApps === "function") launchable = window.sbLaunchableApps().length;
     } catch (err) { console.error("[settings] about read failed", err); }
 
     var keyCount = 0;
@@ -602,13 +507,15 @@
 
     var rows = [
       [t("set.about.build"), esc(build)],
+      [t("set.about.apps"), registered != null
+        ? esc(t("set.about.appsValue", { registered: registered, launchable: launchable }))
+        : esc(t("set.about.appsNA"))],
       [t("set.about.madeOf"), esc(t("set.about.madeOfValue"))],
       [t("set.about.runsOn"), esc(t("set.about.runsOnValue"))],
-      /* Сколько занято — одно место, Приватность (обход п.60); здесь — только своё. */
-      [t("set.about.data"), esc(t("set.about.dataValue", { count: keyCount }))],
+      [t("set.about.data"), esc(t("set.about.dataValue", { count: keyCount })) + " · <span id='stAboutStorage'>" + esc(t("set.storage.measuring")) + "</span>"],
       [t("set.about.network"), esc(t("set.about.networkValue"))],
       /* Языки называют себя на себе — это не перевод, а имена собственные. */
-      [t("set.about.languages"), "eesti · english · русский"]
+      [t("set.about.languages"), "English · Русский · Eesti"]
     ].map(function (pair) {
       return '<div class="st-spec"><span>' + esc(pair[0]) + "</span><span>" + pair[1] + "</span></div>";
     }).join("");
@@ -651,8 +558,6 @@
            данные»). Теперь называет то, что есть, и имя комнаты спрашивает у
            системы. Охраняется tools/retired-words-check.mjs (D-278). */
         "<p>" + esc(t("set.about.whoBody", { build: appName("build") })) + "</p>" +
-        /* D-615: здесь — один из двух входов в build (второй — поиск по слову «build») */
-        '<div class="st-actions"><button type="button" class="st-btn" id="stOpenBuild">' + esc(t("set.about.openBuild")) + "</button></div>" +
       "</div>" +
       '<div class="st-card" id="stDoor">' +
         "<h3>" + esc(t("set.about.doorTitle")) + "</h3>" +
@@ -679,89 +584,13 @@
     return "—";
   }
 
-  /* ── ЗНАКОМСТВО · D-835 ─────────────────────────────────────────────────
-     Ответы знакомства меняются здесь и становятся «задано здесь»; образец
-     фразы показывает, как дом теперь скажет. Вопросы, которых в языке нет
-     (ты/вы и род в EN, род и «она/он» в ET), здесь не показываются: их нет и
-     в разговоре. Охраняется tools/settings-meet-check.mjs. */
-  var MEET_ROWS = { ru: { ty: 1, rod: 1, dom: 1 }, ee: { ty: 1 }, en: {} };
-  function meetMarkup() {
-    var A = window.sbAddr;
-    if (!A) return '<h2 class="st-title">' + esc(t("set.tab.meet")) + "</h2>";
-    var p = A.get(), lang = currentLang(), rows = MEET_ROWS[lang] || {};
-    function stat(k) {
-      /* ОТКАТ: ответа на вопрос знакомства ещё нет — «none», строка показывает «не сказано», ничего не выдумывая. */
-      var h = p.how[k] || "none";
-      return '<span class="st-meet-q' + (h === "none" ? " open" : "") + '">' + esc(t("set.meet.st." + h)) + "</span>";
-    }
-    function seg(k, opts, now) {
-      return '<span class="st-segment" role="group" aria-label="' + esc(t("set.meet." + (k === "ty" ? "addr" : k))) + '">' + opts.map(function (o) {
-        var on = o[0] === now;
-        return '<button type="button" class="st-seg' + (on ? " active" : "") + '" aria-pressed="' + (on ? "true" : "false") + '" data-meet="' + k + '" data-v="' + o[0] + '">' + esc(t(o[1])) + "</button>";
-      }).join("") + "</span>";
-    }
-    var open = [];
-    if (rows.ty && p.how.ty === "none") open.push(t("set.meet.open.addr"));
-    if (rows.rod && p.how.rod === "none") open.push(t("set.meet.open.rod"));
-    if (rows.dom && p.how.dom === "none") open.push(t("set.meet.open.dom"));
-    var sample = A.t("meet.sample.resume") + (lang === "en" ? "" : " · " + A.t("meet.thanks"));
-    return '<h2 class="st-title">' + esc(t("set.tab.meet")) + "</h2>" +
-      '<div id="stMeet" class="st-meet">' +
-      '<div class="st-group">' +
-      rowMarkup(esc(t("set.meet.name")), p.name ? "" : '<span class="st-meet-q open">' + esc(t("set.meet.namePh")) + "</span>",
-        '<input type="text" class="st-meet-input" id="stMeetName" maxlength="24" spellcheck="false" autocomplete="off" placeholder="' + esc(t("set.meet.namePh")) + '" value="' + esc(p.name) + '" aria-label="' + esc(t("set.meet.name")) + '">') +
-      (rows.ty ? rowMarkup(esc(t("set.meet.addr")), stat("ty"), seg("ty", [["vy", "set.meet.addr.optVy"], ["ty", "set.meet.addr.optTy"]], p.ans.ty || "vy")) : "") +
-      (rows.rod ? rowMarkup(esc(t("set.meet.rod")), stat("rod") + " · " + esc(t("set.meet.rodSub")), seg("rod", [["none", "set.meet.rod.none"], ["m", "set.meet.rod.m"], ["f", "set.meet.rod.f"]], p.ans.rod || "none")) : "") +
-      (rows.dom ? rowMarkup(esc(t("set.meet.dom")), stat("dom"), seg("dom", [["dom", "set.meet.dom.dom"], ["she", "set.meet.dom.she"], ["he", "set.meet.dom.he"]], p.ans.dom || "dom")) : "") +
-      rowMarkup(esc(t("set.meet.sys")), esc(t("set.meet.sysSub")),
-        '<input type="text" class="st-meet-input" id="stMeetSys" maxlength="24" spellcheck="false" autocomplete="off" value="' + esc(p.sys) + '" aria-label="' + esc(t("set.meet.sys")) + '">') +
-      "</div>" +
-      '<div class="st-note"><p class="st-meet-sample">' + esc(t("set.meet.sample")) + ' <b id="stMeetSample">«' + esc(sample) + "»</b></p>" +
-      (open.length ? '<p class="st-meet-sample">' + esc(t("set.meet.open", { list: open.join(", ") })) + "</p>" : "") + "</div>" +
-      (rows.ty || rows.rod || rows.dom ? '<button type="button" class="st-btn st-meet-again" id="stMeetAgain">' + esc(t("set.meet.again")) + "</button>" : "") +
-      '<h3 class="st-subtitle">' + esc(t("set.meet.pubTitle")) + "</h3>" +
-      '<div class="st-group">' + rowMarkup(esc(t("set.meet.pub")), esc(t("set.meet.pubSub")),
-        '<button type="button" class="st-switch' + (p.pub ? " on" : "") + '" role="switch" aria-checked="' + (p.pub ? "true" : "false") + '" id="stMeetPub" aria-label="' + esc(t("set.meet.pub")) + '">' + switchWords() + "</button>") + "</div>" +
-      '<div class="st-note"><p>' + esc(t("set.meet.note")) + "</p></div>" +
-      "</div>";
-  }
-
-  function wireMeet(win, host) {
-    var pane = host.querySelector("#stMeet"), A = window.sbAddr;
-    if (!pane || !A) return;
-    pane.querySelectorAll("[data-meet]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var patch = {}; patch[b.getAttribute("data-meet")] = b.getAttribute("data-v");
-        A.set(patch); render(win);
-      });
-    });
-    [["#stMeetName", "name"], ["#stMeetSys", "sys"]].forEach(function (f) {
-      var i = pane.querySelector(f[0]); if (!i) return;
-      var put = function () { var patch = {}; patch[f[1]] = i.value; if (String(A.get()[f[1]]) !== String(i.value).trim()) { A.set(patch); render(win); } };
-      i.addEventListener("change", put);
-      i.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); put(); } });
-    });
-    var pub = pane.querySelector("#stMeetPub");
-    if (pub) pub.addEventListener("click", function () { A.set({ pub: !A.pub() }); render(win); });
-    var again = pane.querySelector("#stMeetAgain");
-    if (again) again.addEventListener("click", function () {
-      if (window.closeWindow) window.closeWindow("settings");
-      if (window.sbMeet) window.sbMeet.again();
-    });
-  }
-
   var RENDERERS = {
     general: generalMarkup,
-    meet: meetMarkup,
     appearance: appearanceMarkup,
-    account: function () { return '<h2 class="st-title">' + esc(t("set.tab.account")) + '</h2><div class="st-account" id="stAccountHost"></div>' +
-      /* D-1261: бывшее приложение «Замок» — прибор, показывающий настоящий диск, — раскрывается здесь */
-      (window.sbVaultRoom ? '<details class="st-vaultroom" id="stVaultRoom"><summary>' + esc(window.sbVaultRoom.title()) + '</summary><div id="stVaultHost"></div></details>' : ""); },
     sound: soundMarkup,
     desktop: desktopMarkup,
     privacy: privacyMarkup,
     advanced: advancedMarkup,
-    outward: function () { return '<div class="st-outward" id="stOutwardHost"></div>'; },
     about: aboutMarkup
   };
 
@@ -810,16 +639,6 @@
         '<section class="st-pane">' + RENDERERS[section]() + "</section>" +
       "</div>";
 
-    groupRows(host);
-    if (section === "account" && typeof window.sbAccountDetails === "function") window.sbAccountDetails(host.querySelector("#stAccountHost"));
-    if (section === "account" && window.sbVaultRoom) {
-      var vr = host.querySelector("#stVaultRoom"), vh = host.querySelector("#stVaultHost");
-      if (vr && vh) {
-        var vfill = function () { var fresh = vh.cloneNode(false); vh.parentNode.replaceChild(fresh, vh); vh = fresh; if (vr.open) window.sbVaultRoom.render(vh); else vh.innerHTML = ""; win._stVaultOpen = vr.open; };
-        vr.open = !!win._stVaultOpen; vr.addEventListener("toggle", vfill); vfill();
-      }
-    }
-    if (section === "outward" && typeof window.sbOutwardRender === "function") window.sbOutwardRender(host.querySelector("#stOutwardHost"));
     if (_sbKeep) _sbKeep();
 
     nameRowControls(host);
@@ -828,20 +647,7 @@
        первого касания не случается. */
     if (window.sbPaintAllRanges) window.sbPaintAllRanges(host);
     if (section === "privacy") measureStorage(win, "#stStorage");
-  }
-
-  /* Строки раздела — одной карточкой (D-634): соседние .st-row собираются
-     в .st-group, между ними — волосок. */
-  function groupRows(host) {
-    var pane = host.querySelector(".st-pane");
-    if (!pane) return;
-    var kids = Array.prototype.slice.call(pane.children), group = null;
-    kids.forEach(function (el) {
-      if (el.classList.contains("st-row")) {
-        if (!group) { group = document.createElement("div"); group.className = "st-group"; pane.insertBefore(group, el); }
-        group.appendChild(el);
-      } else group = null;
-    });
+    if (section === "about") measureStorage(win, "#stAboutStorage");
   }
 
   /* --------------------------------------------------------------- wiring */
@@ -862,12 +668,10 @@
       });
     });
 
-    var openBuild = host.querySelector("#stOpenBuild");
-    if (openBuild) openBuild.addEventListener("click", function () { if (window.toggleApp) window.toggleApp("build"); });
     wireGeneral(win, host);
-    wireMeet(win, host);
     wireAppearance(win, host);
     wireSound(win, host);
+    wireDesktop(win, host);
     wirePrivacy(win, host);
     wireAdvanced(win, host);
   }
@@ -882,9 +686,7 @@
    * source of that very event), and repaints collapse to one per frame. */
   var SECTION_KINDS = {
     general: { lang: 1 },
-    meet: {},
-    appearance: { mood: 1, brightness: 1, toggle: 1, side: 1, fullscreen: 1, pult: 1 },
-    account: {},
+    appearance: { mood: 1, brightness: 1, toggle: 1, side: 1, fullscreen: 1 },
     sound: { toggle: 1, volume: 1 },
     desktop: { toggle: 1 },
     privacy: { toggle: 1 },
@@ -917,16 +719,6 @@
     });
   }
   document.addEventListener("sysbaby:setting-changed", liveSync);
-  /* Знакомство изменилось в разговоре (ответ словом, касание стола) — открытый
-     раздел «Знакомство» перерисовывается тем же кадром. Поле, в котором
-     человек печатает, не выхватывается. */
-  window.addEventListener("sb:addr", function () {
-    var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("settings") : null;
-    if (!win || !bodyOf(win) || win._settingsSection !== "meet") return;
-    var a = document.activeElement;
-    if (a && bodyOf(win).contains(a) && a.tagName === "INPUT") return;
-    requestAnimationFrame(function () { render(win); });
-  });
 
   function wireGeneral(win, host) {
     var inst = host.querySelector("#stInstall");
@@ -936,13 +728,6 @@
       });
     }
     var langSel = host.querySelector("#stLang");
-    if (langSel) host.querySelectorAll("[data-lang-pick]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        if (langSel.value === b.getAttribute("data-lang-pick")) return;
-        langSel.value = b.getAttribute("data-lang-pick");
-        langSel.dispatchEvent(new Event("change", { bubbles: true }));
-      });
-    });
     if (langSel) {
       langSel.addEventListener("change", function () {
         if (typeof window.sbSetLang !== "function") return;
@@ -955,44 +740,17 @@
     if (!input) return;
     var savedTag = host.querySelector("#stUsernameSaved");
     var timer = null;
-    /* ШИРИНА ПО ИМЕНИ (D-1349): поле не уже 116 px и раздвигается под имя (или подсказку), пока хватает карточки —
-       дальше его держит max-width: 100% (settings.css), и только тогда «…» */
-    var fitCv = null;
-    function fitName() {
-      try {
-        var cs = getComputedStyle(input), txt = input.value || input.placeholder || "";
-        fitCv = fitCv || document.createElement("canvas");
-        var g = fitCv.getContext("2d"); g.font = cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
-        var w = g.measureText(txt).width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth) + 4;
-        input.style.width = Math.ceil(Math.max(116, w)) + "px";
-      } catch (e) { /* ширина по умолчанию — 116 px */ }
-    }
-    fitName();
-    /* шрифт ещё грузится — перемерить, когда догрузится; document.fonts.ready не спрашиваем: его геттер дорог на каждом
-       открытии окна (open-cost-check) */
-    if (document.fonts && document.fonts.status !== "loaded" && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", fitName, { once: true });
-    input.addEventListener("input", fitName);
-    input.addEventListener("blur", function () { setTimeout(fitName, 0); });
 
-    /* ПОКА ЧЕЛОВЕК ПЕЧАТАЕТ — ПУСТОЕ ОСТАЁТСЯ ПУСТЫМ · D-722 (основатель
-       10.11.2026): стёрли имя до пусто — «guest» не возвращается, пока он
-       в поле; только когда ушёл из поля пустым (blur, Enter).
-       Охраняется tools/name-typing-check.mjs. */
-    function commit(typing) {
+    function commit() {
       if (timer) { clearTimeout(timer); timer = null; }
       if (typeof window.sbSetUsername !== "function") return;
-      if (typing === true && !String(input.value || "").replace(/[^\p{L}\p{M}\p{N}_.\-]/gu, "")) return;
       var applied;
       try { applied = window.sbSetUsername(input.value); }
       catch (err) { console.error("[settings] username write failed", err); return; }
       if (typeof applied !== "string" && typeof window.sbGetUsername === "function") {
         try { applied = window.sbGetUsername(); } catch (err) { console.error("[settings] username read failed", err); }
       }
-      /* Пока человек печатает, поле не переписывается (D-1000): иначе пробел между
-         «Анна» и «Мария» снимался обрезкой краёв через полсекунды паузы — и имя
-         склеивалось молча. Как сохранено — видно, когда он ушёл из поля. */
-      if (typeof applied === "string" && typing !== true) input.value = applied === (window.sbGuestWord ? window.sbGuestWord() : "") && window.sbUsernameStored && !window.sbUsernameStored() ? "" : applied;
-      fitName();
+      if (typeof applied === "string") input.value = applied;
       if (savedTag) {
         savedTag.classList.add("show");
         setTimeout(function () { savedTag.classList.remove("show"); }, 1400);
@@ -1001,7 +759,7 @@
 
     input.addEventListener("input", function () {
       if (timer) clearTimeout(timer);
-      timer = setTimeout(function () { commit(true); }, 500);
+      timer = setTimeout(commit, 500);
     });
     input.addEventListener("keydown", function (ev) {
       if (ev.key !== "Enter") return;
@@ -1009,7 +767,7 @@
       commit();
       input.blur();
     });
-    input.addEventListener("blur", function () { commit(false); });
+    input.addEventListener("blur", commit);
   }
 
   function wireAppearance(win, host) {
@@ -1042,15 +800,6 @@
           if (kind === "volume") { if (window.sbSetNotifVolume) window.sbSetNotifVolume(v / 100); }
           else if (window.sbSetBrightness) window.sbSetBrightness(v);
         }
-      });
-    });
-
-    host.querySelectorAll("[data-pult-view]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        if (typeof window.sbSetPultView !== "function") return;
-        try { window.sbSetPultView(btn.getAttribute("data-pult-view")); }
-        catch (err) { console.error("[settings] pult view failed", err); }
-        render(win);
       });
     });
 
@@ -1097,6 +846,16 @@
     });
   }
 
+  function wireDesktop(win, host) {
+    var tidy = host.querySelector("#stTidy");
+    if (!tidy) return;
+    tidy.addEventListener("click", function () {
+      if (typeof window.sbTidyWidgets !== "function") return;
+      try { window.sbTidyWidgets(); } catch (err) { console.error("[settings] tidy failed", err); }
+      toast(t("set.desktop.tidyDoneTitle"), t("set.desktop.tidyDoneBody"));
+    });
+  }
+
   function wireAdvanced(win, host) {
     var diag = host.querySelector("#stDiag");
     if (diag) {
@@ -1126,20 +885,6 @@
   /* -------------------------------------------------------------- privacy */
 
   function wirePrivacy(win, host) {
-    /* Дверь (D-607): своя дверь по умолчанию — сразу; другая — после одного честного вопроса. */
-    var doorWarn = host.querySelector("#stDoorWarn"), doorWant = "";
-    host.querySelectorAll("[data-door-pick]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var D = doorAsk(), n = btn.getAttribute("data-door-pick");
-        if (!D || n === D.get()) return;
-        if (n === D.def || D.get() !== D.def) { doorAsk(n); render(win); return; }
-        doorWant = n;
-        if (doorWarn) { doorWarn.hidden = false; var k = doorWarn.querySelector("#stDoorKeep"); if (k) k.focus(); }
-      });
-    });
-    var doorAnyway = host.querySelector("#stDoorAnyway"), doorKeep = host.querySelector("#stDoorKeep");
-    if (doorAnyway) doorAnyway.addEventListener("click", function () { if (doorWant) doorAsk(doorWant); doorWant = ""; render(win); });
-    if (doorKeep) doorKeep.addEventListener("click", function () { doorWant = ""; if (doorWarn) doorWarn.hidden = true; render(win); });
     /* Замок и копии (D-305): строка ведёт к настоящему управлению. */
     var lockOpen = host.querySelector("#stLockOpen");
     if (lockOpen) lockOpen.addEventListener("click", function () {
@@ -1569,9 +1314,7 @@
       /* МЕСТО ДЛЯ ЭСТАФЕТЫ (D-290): открытый раздел. */
       where: function () {
         var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("settings") : null;
-        /* «Ключи и замок» (D-637) эстафетой не переносится: поля слов и
-           ухода не встают сами при следующем входе. */
-        return win && win._settingsSection && win._settingsSection !== "general" && win._settingsSection !== "account" ? { section: win._settingsSection } : null;
+        return win && win._settingsSection && win._settingsSection !== "general" ? { section: win._settingsSection } : null;
       },
       resume: function (win, place) {
         if (!win || !place || !RENDERERS[place.section]) return false;
@@ -1599,7 +1342,7 @@
       label: "Pulse",
       color: "linear-gradient(160deg,#a6aab3 0%,#70737d 48%,#3a3c44 100%)",
       icon: ICON,
-      size: { w: 786, h: 572 },
+      size: { w: 620, h: 520 },
       deskPos: { x: 240, y: 40 },
       /* Окно перерисовывается при смене языка. Единственное поле ввода —
          имя пользователя — читается из хранилища, так что перерисовка

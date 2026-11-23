@@ -165,12 +165,6 @@
           if (!may(key, true)) { deny(roomId, key, "запись"); return false; }
           return rawRemove(key, where(key));
         },
-        /* то, что лежит на диске сейчас, мимо памяти вкладки (D-1329) — то же право, что у чтения */
-        peek: function (key) {
-          if (!may(key, false)) { deny(roomId, key, "чтение"); return null; }
-          if (where(key) || !window.sbDB || !window.sbDB.peek) return rawGet(key, where(key));
-          return window.sbDB.peek(key);
-        },
         flush: function () {
           try { if (window.sbDB && window.sbDB.flushSync) window.sbDB.flushSync(); }
           catch (e) { /* сброс на диск — не условие работы комнаты */ }

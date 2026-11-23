@@ -192,11 +192,7 @@
       var build = window.sbBuild ? window.sbBuild.stamp() : "sys.baby core";
       var reg = (window.SysBaby && window.SysBaby.order) ? window.SysBaby.order.length : 0;
       var launch = window.sbLaunchableApps ? window.sbLaunchableApps().length : 0;
-      /* Печать сборки и счёт окон — двумя строками: с именем «personal world»
-         (D-614) одна строка на 84 знака переносилась в окне по умолчанию
-         (line-measure-check). Слова те же. */
-      write(build, "term-dim");
-      write(reg + " windows registered, " + launch + " launchable.", "term-dim");
+      write(build + " · " + reg + " windows registered, " + launch + " launchable.", "term-dim");
       /* Подаренное приветствие — по имени и со счётом дней (D-255). */
       var hello = "";
       try { hello = window.sbChest && window.sbChest.word ? window.sbChest.word("greeting") : ""; } catch (e) { hello = ""; }
@@ -536,7 +532,7 @@
           history.slice(0, 12).forEach(function (h, i) { write(pad(String(i + 1), 4) + h, "term-dim"); });
           return;
         case "whoami":
-          write(window.sbGetUsername ? window.sbGetUsername() : "guest");   /* без «.sys.baby» (D-594) */
+          write((window.sbGetUsername ? window.sbGetUsername() : "guest") + ".sys.baby");
           return;
         case "clear":
           out.innerHTML = "";
@@ -714,7 +710,7 @@
         ee: { title: "Terminal", label: "Terminal" }
       },
       color: "linear-gradient(160deg,#3ad0a8 0%,#22a884 55%,#128063 100%)",
-      icon: sbZnak("desktop"),
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m7 9 3 3-3 3M13 15h4"/></svg>',
       /* ОКНО ШИРЕ СВОИХ ПЕРВЫХ СЛОВ (D-231). При 560 лента выходила 530px,
          а собственная вторая строка приветствия — 71 знак моноширинного
          набора, то есть ~533px, — переносилась на ТРИ строки в первый же
@@ -722,10 +718,6 @@
          Охраняется tools/line-measure-check.mjs. */
       size: { w: 660, h: 420 },
       deskPos: { x: 200, y: 320 },
-      /* СКРЫТ ФЛАГОМ, ДАННЫЕ ЦЕЛЫ · D-723 (основатель 03–04.11, PLAN этап 0). */
-      hidden: true,
-      why: "why.terminal",
-      offDesk: "отложено решением",
       render: function (win) {
         var body = win.el.querySelector(".window-body");
         if (!body) return;
