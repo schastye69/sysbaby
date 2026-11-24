@@ -40,10 +40,8 @@
   "use strict";
 
   var doc = document;
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
-    '<path d="M3.2 13.4h17.6l-2.1 4.3a2.2 2.2 0 0 1-2 1.3H7.3a2.2 2.2 0 0 1-2-1.3z"/>' +
-    '<path d="M7.2 13.4V9.2h9.6v4.2"/><path d="M10.2 9.2V6.6h3.6v2.6"/>' +
-    '<path d="M2.6 21.2c1.3 0 1.3-.8 2.6-.8s1.3.8 2.6.8 1.3-.8 2.6-.8 1.3.8 2.6.8 1.3-.8 2.6-.8 1.3.8 2.6.8 1.3-.8 2.6-.8"/></svg>';
+  /* Чистота А: знака этой комнаты в малом наборе нет — значок не рисуется, остаётся слово (имя комнаты). */
+  var ICON = "";
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -71,7 +69,7 @@
       ],
       whyNot: "If you work from one device every day and have a network, you do not need the ark on those days. It is insurance, and a way to move.",
       buildH: "A clean ark",
-      buildP: "Every room, the Lantern, the Lock, the Keys — the whole system as it is right now. None of your things are in it: you can give it to anyone.",
+      buildP: "Every room, Help, the Lock, the Keys — the whole system as it is right now. None of your things are in it: you can give it to anyone.",
       buildGo: "Build the ark",
       cargoH: "With your things",
       cargoP: "The same — plus your notes, letters and keys inside, sealed with the lock's word. Without the word the file is just the system: your things cannot be read.",
@@ -133,7 +131,7 @@
       ],
       whyNot: "Если вы каждый день работаете с одного устройства и сеть есть, ковчег вам в эти дни не нужен. Он — страховка и способ переезда.",
       buildH: "Чистый ковчег",
-      buildP: "Все комнаты, Фонарь, Замок, Ключи — вся система, как она есть сейчас. Ваших вещей в нём нет: его можно отдать кому угодно.",
+      buildP: "Все комнаты, Помощь, Замок, Ключи — вся система, как она есть сейчас. Ваших вещей в нём нет: его можно отдать кому угодно.",
       buildGo: "Собрать ковчег",
       cargoH: "С вашими вещами",
       cargoP: "То же — и ваши записи, письма, ключи внутри, запечатанные словом замка. Без слова файл — просто система: вещи в нём не читаются.",
@@ -195,7 +193,7 @@
       ],
       whyNot: "Kui töötad iga päev ühest seadmest ja võrk on olemas, pole laeva neil päevadel vaja. See on kindlustus ja viis kolida.",
       buildH: "Puhas laev",
-      buildP: "Kõik toad, Latern, Lukk, Võtmed — kogu süsteem sellisena, nagu see praegu on. Sinu asju selles ei ole: seda võib anda kellele tahes.",
+      buildP: "Kõik toad, Abi, Lukk, Võtmed — kogu süsteem sellisena, nagu see praegu on. Sinu asju selles ei ole: seda võib anda kellele tahes.",
       buildGo: "Pane laev kokku",
       cargoH: "Sinu asjadega",
       cargoP: "Sama — ja sinu märkmed, kirjad ja võtmed sees, pitseeritud luku sõnaga. Ilma sõnata on fail lihtsalt süsteem: asju sealt lugeda ei saa.",
@@ -265,9 +263,11 @@
      Документ берётся ИСХОДНИКОМ (тем, что прислал сервер или сохранил
      работник), а не снимком живого экрана: живой экран уже весь переписан
      окнами. Каждый скрипт и стиль по адресу заменяется им самим. Больше
-     ничего в документе не трогается, кроме трёх вещей, названных поимённо:
+     ничего в документе не трогается, кроме вещей, названных поимённо:
      метка ковчега первым скриптом, манифест (у файла нет адреса, ставить
-     его как приложение некуда) и груз перед концом тела. */
+     его как приложение некуда), груз перед концом тела и шрифт голоса
+     (D-823): его опись rel="sb-precache" получает data:-адрес, предзагрузка
+     шрифта снимается — у файла сети нет (доска H4, ark-check). */
   var TAG_RE = /<script\b[^>]*\bsrc="([^"]+)"[^>]*>\s*<\/script>|<link\b[^>]*>/gi;
 
   function stampNow() {
@@ -301,6 +301,19 @@
       return r.text();
     });
   }
+  /* Шрифт голоса (D-823) едет в файле data:-адресом — байт в байт; у файла нет адреса, откуда его взять. */
+  function getData(url) {
+    return fetch(url, { credentials: "same-origin" }).then(function (r) {
+      if (!r.ok) throw new Error(String(r.status));
+      return r.arrayBuffer();
+    }).then(function (buf) {
+      var b = new Uint8Array(buf), s = "";
+      for (var i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+      return "data:font/woff2;base64," + btoa(s);
+    });
+  }
+  var PRECACHE_RE = new RegExp('\\brel="sb-' + 'precache"', "i");
+  var PRELOAD_FONT_RE = new RegExp('\\brel="pre' + 'load"[^>]*\\bas="font"|\\bas="font"[^>]*\\brel="pre' + 'load"', "i");
 
   /* Ссылки наружу считаются ПО ГОТОВОМУ ФАЙЛУ: разметка без кода и без
      стилей — на src/href ресурсов; стили — на url(). Код не считается: он
@@ -337,6 +350,12 @@
         if (u && urls.indexOf(u) === -1) urls.push(u);
         return m;
       });
+      var fonts = [], fontData = {};
+      html.replace(/<link\b[^>]*>/gi, function (m) {
+        var h = hrefOf(m);
+        if (PRECACHE_RE.test(m) && /\.woff2$/i.test(h) && fonts.indexOf(h) === -1) fonts.push(h);
+        return m;
+      });
       var got = {}, done = 0;
       if (progress) progress(0, urls.length);
       return Promise.all(urls.map(function (u) {
@@ -344,13 +363,22 @@
           got[u] = t; done++;
           if (progress) progress(done, urls.length);
         }, function () { var e = new Error(u); e.code = "fetch"; e.what = u; throw e; });
-      })).then(function () {
+      }).concat(fonts.map(function (u) {
+        return getData(new URL(u, docUrl).href).then(function (d) { fontData[u] = d; },
+          function () { var e = new Error(u); e.code = "fetch"; e.what = u; throw e; });
+      }))).then(function () {
         var files = 0;
         var out = html.replace(TAG_RE, function (m, src) {
           if (src) { files++; return '<script data-ark-file="' + esc(src) + '">' + jsSafe(got[src]) + "\n<\/script>"; }
           if (isSheet(m)) { var h = hrefOf(m); files++; return '<style data-ark-file="' + esc(h) + '">' + cssSafe(got[h]) + "<\/style>"; }
           /* У файла нет адреса — ставить его приложением некуда. */
           if (MANIFEST_RE.test(m)) return "";
+          /* Предзагрузка шрифта — подсказка сети; у файла сети нет. Опись шрифта — тот же шрифт data:-адресом. */
+          if (PRELOAD_FONT_RE.test(m)) return "";
+          var fh = hrefOf(m);
+          /* Опись офлайна (наборы смайликов, оверлей-страница) — это адреса для сети; у файла сети нет, ссылка наружу была бы лишней (D-1280). */
+          if (PRECACHE_RE.test(m) && !/\.woff2$/i.test(fh)) return "";
+          if (PRECACHE_RE.test(m) && fontData[fh]) return m.replace('href="' + fh + '"', 'href="' + fontData[fh] + '"');
           return m;
         });
         var meta = { v: 1, build: stamp, built: new Date().toISOString(), files: files, cargo: !!cargoText };

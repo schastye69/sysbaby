@@ -20,6 +20,8 @@
   transition: background var(--t-touch) var(--ease-move), color var(--t-touch) var(--ease-move);
 }
 .br-btn svg { width: 18px; height: 18px; }
+/* «обновить» — слово, а не знак (Чистота А: знака в малом наборе нет): кнопка по слову, не квадрат (shape-integrity) */
+.br-btn.br-again { width: auto; min-width: 38px; padding: 0 10px; }
 /* Отключённое затихает словом ядра (D-340). */
 .br-btn[disabled] { pointer-events: none; }
 @media (hover: hover) { :where(html:not([data-input="touch"])) .br-btn:hover { background: var(--glass); color: var(--ink); } }
@@ -44,10 +46,10 @@
 .br-empty-title { font-size: var(--f-lead); font-weight: var(--w-strong); color: var(--ink); margin: 6px 0 0; }
 .br-empty-sub { font-size: var(--f-ui); color: var(--ink-3); margin: 0; max-width: 44ch; line-height: var(--lh-read); }
 .br-marks { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 52ch; }
-.br-marks-head { width: 100%; font-size: var(--f-meta); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ink-3); margin-bottom: 2px; }
+.br-marks-head { width: 100%; font-size: var(--f-meta); letter-spacing: var(--track-caps); text-transform: none; color: var(--ink-3); margin-bottom: 2px; }
 .br-mark-item {
   padding: 7px 12px; border-radius: var(--r-pill); border: 1px solid var(--line);
-  background: rgba(var(--film-rgb), .04); color: var(--ink-2); font-size: 12.5px;
+  background: rgba(var(--film-rgb), .04); color: var(--ink-2); font-size: var(--f-ui);   /* ступень шкалы (было 12,5; глубокий аудит Б-32) */
   max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 @media (hover: hover) { :where(html:not([data-input="touch"])) .br-mark-item:hover { background: var(--glass); color: var(--ink); } }

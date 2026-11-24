@@ -8,23 +8,31 @@
   color: var(--ink);
 }
 
+/* Окно «Синтеза» (D-634): прозрачный сайдбар 208 px, у выбранного
+   разговора — оранжевая полоска. Охраняется tools/okna-sintez-check.mjs. */
 .mg-side {
-  width: 230px;
-  flex: 0 0 230px;
+  width: 208px;
+  flex: 0 0 208px;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-right: 1px solid var(--hairline, rgba(var(--film-rgb), .09));
-  background: rgba(var(--film-rgb), .02);
+  border-right: 0;
+  box-shadow: inset -1px 0 0 var(--line);
+  background: transparent;
 }
 
 .mg-side-top {
   display: flex;
   gap: 7px;
   align-items: center;
-  padding: 10px;
+  /* Поле поиска — одно поле системы (D-819, отступ подсказки 12 px): по
+     бокам ряда 8, а не 10, чтобы «Search conversations» помещалось целиком
+     в колонне 208 px (placeholder-fits). */
+  padding: 10px 8px;
   border-bottom: 1px solid rgba(var(--film-rgb), .07);
 }
+/* переписок нет — поиска нет (обход п.52): один «+» в ряду стоит по центру, как и пустой экран под ним (room-center, D-273) */
+.mg-side-top:has(.mg-side-gap) { justify-content: center; }
 
 .mg-input {
   flex: 1;
@@ -67,7 +75,7 @@
   :where(html:not([data-input="touch"])) .mg-newbtn:hover, :where(html:not([data-input="touch"])) .mg-attach-btn:hover { background: rgba(var(--film-rgb), .13); }
 }
 .mg-newbtn svg, .mg-attach-btn svg, .mg-send svg { width: 16px; height: 16px; }
-.mg-send { background: var(--accent); border-color: transparent; color: var(--on-accent); }
+.mg-send { background: var(--lamp5-bg); border: 0; box-shadow: var(--lamp5-edge); color: var(--lamp5-ink); }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал. Повод — снимок основателя
@@ -135,7 +143,8 @@
 @media (hover: hover) {
   :where(html:not([data-input="touch"])) .mg-convo:hover { background: rgba(var(--film-rgb), .05); }
 }
-.mg-convo.active { background: rgba(var(--film-rgb), .1); border-color: rgba(var(--film-rgb), .12); }
+.mg-convo.active { background: var(--side-on); border-color: transparent; }
+.mg-convo.active::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; border-radius: var(--r-pill); background: var(--accent); }
 .mg-convo.muted { opacity: .55; }
 
 .mg-avatar-wrap { position: relative; flex: 0 0 auto; display: inline-flex; }
@@ -492,7 +501,7 @@
 
 @media (max-width: 620px) {
   .app-msgr { flex-direction: column; }
-  .mg-side { width: auto; flex: 0 0 40%; border-right: 0; border-bottom: 1px solid rgba(var(--film-rgb), .09); }
+  .mg-side { width: auto; flex: 0 0 40%; border-right: 0; box-shadow: none; border-bottom: 1px solid rgba(var(--film-rgb), .09); }
 }
 
 /* v21 — the honest way out: thread → real studio letter */
@@ -521,7 +530,7 @@
 .mg-seal-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .mg-seal-row .mg-input { flex: 1 1 180px; min-width: 0; }
 .mg-seal-text {
-  width: 100%; min-height: 68px; resize: vertical; padding: 8px 10px; box-sizing: border-box;
+  width: 100%; min-height: 68px; resize: none; padding: 8px 10px; box-sizing: border-box;
   font-family: var(--mono); font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-2); overflow-wrap: anywhere;
   background: rgba(var(--shade-rgb), calc(.18 * var(--sink-k))); border: 1px solid var(--line); border-radius: var(--r-ctrl);
 }

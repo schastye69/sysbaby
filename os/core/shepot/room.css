@@ -1,0 +1,55 @@
+/* sys.baby OS — core/shepot/room.css · ШЁПОТ В КОМНАТЕ ПЕРЕПИСКИ (D-1405)
+   Своих величин здесь нет: радиус, кегль и чернила — из шкал системы. Код QR стоит на белом
+   поле с тёмным рисунком в любой теме: иначе чужая камера его не прочтёт. */
+.sh-qr {
+  align-self: center;
+  width: min(200px, 100%);
+  /* своя краска: код QR чужая камера читает только тёмным по белому, в любой теме */ background: #fff;
+  border-radius: var(--r-ctrl);
+  line-height: 0;
+}
+.sh-qr svg { display: block; width: 100%; height: auto; border-radius: var(--r-ctrl); }
+.sh-words { margin: 0; font-size: var(--f-title); line-height: var(--lh-read); color: var(--ink); overflow-wrap: anywhere; }
+.sh-men { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-2); }
+.sh-men li[data-open="0"] { color: var(--ink-3); }
+.sh-honest { color: var(--ink-2); }
+.sh-new { margin: 0 0 6px; }
+.sh-panels { flex: 0 1 auto; min-height: 0; overflow: auto; padding-bottom: 8px; }
+/* Форма нового разговора с Шёпотом выше прежней: в узкой колонне она прокручивается сама, а на
+   телефоне колонна списка на это время берёт столько высоты, сколько форме нужно. */
+.mg-newform:has(.sh-new) { min-height: 0; overflow: auto; }
+@media (max-width: 620px) {
+  .mg-side:has(.sh-new) { flex: 0 1 auto; max-height: 78%; }
+}
+/* «В пути / дошло» — правда о письме: её видно всегда, а не только под указателем. */
+.mg-msg.sh-own .mg-meta { opacity: 1; }
+/* Слова сверки стоят без плашки: ни рамки, ни подложки (решение основателя 17.11, п.3). */
+.sh-check { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 12px 12px 0; text-align: center; }
+.sh-label { margin: 0; font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-3); }
+
+/* ПИСЬМО И ПОЛЕ ШЁПОТА — СВОИ (решение основателя 18.11). Письмо — не залитый пузырь, а лист стекла со швом:
+   у своего письма шов тёплый и стоит справа, у чужого — тихая черта слева. Свет — только у нового письма.
+   Поле письма — поле системы как оно есть (плёнка и тонкая рамка, D-819): оно уже своё и одно на все окна. */
+.mg-msg.sh-letter .mg-bubble {
+  border: 0;
+  border-radius: var(--r-ctrl);
+  color: var(--ink);
+  background-color: transparent;
+  background-image: linear-gradient(180deg, transparent, rgba(var(--edge-rgb), .55) 22%, rgba(var(--edge-rgb), .55) 78%, transparent), linear-gradient(180deg, rgba(var(--film-rgb), .055), rgba(var(--film-rgb), .025));
+  background-repeat: no-repeat;
+  background-size: 1px 100%, 100% 100%;
+  background-position: left center, center;
+}
+.mg-msg.sh-letter.mine .mg-bubble {
+  color: var(--ink);
+  background-color: transparent;
+  background-image: linear-gradient(180deg, transparent, var(--door-thread) 18%, var(--door-thread) 82%, transparent), linear-gradient(180deg, rgba(var(--film-rgb), .055), rgba(var(--film-rgb), .025));
+  background-size: 1.5px 100%, 100% 100%;
+  background-position: right center, center;
+}
+.mg-msg.sh-letter.sh-fresh .mg-bubble {
+  background-image: linear-gradient(180deg, transparent, var(--door-thread) 18%, var(--door-thread) 82%, transparent), var(--lamp5-bg);
+  background-size: 1.5px 100%, 100% 100%;
+  box-shadow: var(--lamp5-edge);
+}
+.sh-guest { margin: 0 12px 6px; text-align: center; }

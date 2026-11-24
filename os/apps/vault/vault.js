@@ -27,8 +27,6 @@
   "use strict";
 
   var doc = document;
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
-    '<circle cx="12" cy="12" r="8.4"/><path d="M12 3.6v3.2M12 17.2v3.2M20.4 12h-3.2M6.8 12H3.6"/><circle cx="12" cy="12" r="3.1"/></svg>';
 
   /* ЗДЕСЬ СТОЯЛО var PREFIX = приставка конвертов замка — объявленное и НИ
      РАЗУ НЕ ИСПОЛЬЗОВАННОЕ (D-242). Имя claimило место на диске, которого
@@ -530,16 +528,13 @@
     });
   }
 
-  if (typeof window.registerApp === "function") {
-    window.registerApp("vault", {
-      title: UI.en.title,
-      label: UI.en.label,
-      i18n: { ru: { title: UI.ru.title, label: UI.ru.label }, ee: { title: UI.ee.title, label: UI.ee.label } },
-      color: "linear-gradient(160deg,#c9b6ff 0%,#6d54c8 52%,#241a4d 100%)",
-      icon: ICON,
-      size: { w: 760, h: 700 },
-      retranslate: true,
-      render: render
-    });
-  }
+  /* D-1261: «Замок» больше не приложение (нет значка, полки, окна). Тот же прибор
+     живёт в Настройках → «ключи и замок» (раскрывающийся блок): рисует render(host)
+     в любой узел, сам себя гасит, когда узел ушёл из документа. */
+  window.sbVaultRoom = {
+    /* Дверь названа хозяином (D-1282): Настройки зовут её, комнаты-приложения у «Замка» больше нет. */
+    opens: ["sbVaultRoom"],
+    title: function () { return T().title; },
+    render: function (host) { if (host) render(host); }
+  };
 })();

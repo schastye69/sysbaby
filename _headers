@@ -5,7 +5,7 @@
   X-Frame-Options: SAMEORIGIN
   Cross-Origin-Opener-Policy: same-origin
   Permissions-Policy: geolocation=(self), microphone=(), camera=(), payment=(), usb=()
-  Content-Security-Policy: default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self' 'sha256-KLgka53EhYPF+HaG9e5tC3nE/SnHlIUSNh7ion9cs9s=' 'sha256-vg6aV2t99APTVsX/8Hw8iQDfdrqyBnd2yCcVdAsgrgo=' 'sha256-sVl2MuYBpbtepCnHSocU9Remo90bUQbIIFEhNJIz1oA=' 'sha256-AAQ1tKtJsAvEXSIUC8Odu1/zc7olTsnLljadz2xoIKw=' 'sha256-WqVQaIynO6yiFcl8Cgiv88+It47nLjSeSc5cqgZZtDs='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' blob:; worker-src 'self'; connect-src 'self' https://duckduckgo.com https://formsubmit.co; form-action 'self' https://duckduckgo.com https://formsubmit.co; frame-src 'self' https:; frame-ancestors 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self' 'sha256-KLgka53EhYPF+HaG9e5tC3nE/SnHlIUSNh7ion9cs9s=' 'sha256-vg6aV2t99APTVsX/8Hw8iQDfdrqyBnd2yCcVdAsgrgo=' 'sha256-sVl2MuYBpbtepCnHSocU9Remo90bUQbIIFEhNJIz1oA=' 'sha256-nIaQRFm+jWwFx4ipsD2ABZnGrs1p44Xxs3thFI70XXU=' 'sha256-mEy14hk/SFRm0mmKfa4nYQPEWdLpzNeaJXnzRPPsYwM=' 'sha256-+Fi/d0kvkN1EucepbC+Po45pvnWuVPwWgeNPfT+jgYI=' 'sha256-3UbGlf+rim423DBwlqEyqkMEge2jVF+lKYX9/0mcv2E=' 'sha256-Pf0J/E3CGkRt7ihNDPpC2KQYpJ55m9GfBuFvwrZ37P0=' 'sha256-PM8v+4t4yDD8nnzPi5aifotSGtyVniGrWzBP8l8Fndw=' 'sha256-6b12PNXjS4o84cn+awIQBDRXQdt4VEseDXzWPzIv8wU=' 'sha256-7ETzg1LBFg7uXxgrqSh1+iCKGCOsQSad58/nojNGuOU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' blob:; worker-src 'self'; connect-src 'self' https://duckduckgo.com https://formsubmit.co wss://relay.dwadziesciajeden.pl wss://nos.lol wss://relay.primal.net wss://relay.snort.social wss://relay.nostr.wirednet.jp; form-action 'self' https://duckduckgo.com https://formsubmit.co; frame-src 'self' https:; frame-ancestors 'self'; upgrade-insecure-requests
 
 # Документ всегда свежий: в нём метка сборки, и он маленький.
 /
@@ -37,12 +37,19 @@
 # вернувшегося посетителя целый год. Правило стоит ВЫШЕ них: при
 # слиянии правил no-cache требует сверки, при первом совпадении
 # побеждает оно. Строгость (CSP) из /* лежит на гостях так же.
+# ── СТРОГАЯ CSP ГОСТЯ (D-827): адреса у системы и гостей один, поэтому
+# у гостя своя строка строгости поверх общей (браузер исполняет обе):
+# по умолчанию ничего, скрипт только свой (тег с integrity — ворота),
+# без рамок, объектов и <base>. Стили встроенные можно: это не код.
 /kahjuabi24/*
   Cache-Control: no-cache
+  Content-Security-Policy: default-src 'none'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self'; manifest-src 'self'; connect-src 'self' https://duckduckgo.com https://formsubmit.co; form-action 'self' https://duckduckgo.com https://formsubmit.co; frame-src 'self'; frame-ancestors 'self'
 /vlana/*
   Cache-Control: no-cache
+  Content-Security-Policy: default-src 'none'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self'; manifest-src 'self'; connect-src 'self' https://duckduckgo.com https://formsubmit.co; form-action 'self' https://duckduckgo.com https://formsubmit.co; frame-src 'self'; frame-ancestors 'self'
 /livingisrael/*
   Cache-Control: no-cache
+  Content-Security-Policy: default-src 'none'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self'; manifest-src 'self'; connect-src 'self' https://duckduckgo.com https://formsubmit.co; form-action 'self' https://duckduckgo.com https://formsubmit.co; frame-src 'self'; frame-ancestors 'self'
 
 # Части несут номер сборки в адресе — их можно держать вечно.
 /*.js

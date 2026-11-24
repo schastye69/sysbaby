@@ -1,0 +1,265 @@
+/* sys.baby OS — core/desktools.css
+ * ИНСТРУМЕНТЫ В ЦЕНТРЕ СТОЛА (D-880…D-886). Ни стекла, ни рамок, ни шапок:
+ * свет изнутри и строчные слова. Цвет — свет темы, тот же, что у времени
+ * на столе (--dt-c — сердцевина, --dt-g — ореол; их ставит desktools.js из
+ * sbDeskTime.pal()). Вид — тот же выбор человека: data-view="line" —
+ * линии света (тонкое перо с ореолом), data-view="dust" — пыль света
+ * (знаки, набранные точками). Наведение — только у мыши (hover: hover).
+ * «Меньше движения» — без переходов. */
+
+#sbDeskTools {
+  --dt-c: 255, 236, 212; --dt-g: 255, 166, 90; --dt-k: 60px; --dt-hd: 84px; --dt-top: 30vh; --dt-line-h: 44px; --dt-cap: 56px;
+  position: fixed; inset: 0; z-index: var(--z-guide, 40); pointer-events: none;
+  font-family: var(--font); text-transform: lowercase;   /* один шрифт — Nunito «SB Voice» (D-829); Inter снят */
+}
+#sbDeskTools .dt-block {
+  position: absolute; left: 50%; top: var(--dt-top); transform: translateX(-50%);
+  width: min(calc(100vw - 32px), max(calc(var(--dt-k) * 4 + 24px), 320px));
+  padding-top: calc(var(--dt-hd) + var(--dt-cap));
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  pointer-events: auto; opacity: 0; animation: dt-in .42s var(--ease-enter) forwards;
+  max-height: var(--dt-maxh, none); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;   /* не уходит под «+» и за край (D-876) */
+}
+#sbDeskTools .dt-block::-webkit-scrollbar { display: none; }
+#sbDeskTools .dt-block[hidden] { display: none; }
+@keyframes dt-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* касание по цифрам счётчика — +1: прозрачная клавиша над рядом света */
+#sbDeskTools .dt-hit {
+  position: absolute; left: 0; right: 0; top: 0; height: calc(var(--dt-hd) + var(--dt-cap));
+  background: transparent; border: 0; padding: 0; cursor: pointer; border-radius: var(--r-pill);   /* угол — слово шкалы (radius-scale, H4b); было 28 px */ -webkit-tap-highlight-color: transparent;
+}
+#sbDeskTools .dt-hit[hidden] { display: none; }
+#sbDeskTools .dt-hit:focus-visible { outline: 1px solid rgba(var(--dt-c), .35); outline-offset: -6px; }
+
+/* строка «мысль — или счёт»: свет без поля — ни заливки, ни черты */
+#sbDeskTools .dt-linebox { position: relative; width: 100%; display: flex; align-items: center; }
+#sbDeskTools .dt-linebox[hidden] { display: none; }
+#sbDeskTools .dt-line {
+  flex: 1; min-width: 0; height: var(--dt-line-h); padding: 0 40px; margin: 0;
+  background: transparent; border: 0; border-radius: 0; outline: none; box-shadow: none; appearance: none; -webkit-appearance: none;
+  text-align: center; text-transform: none; color: rgba(var(--dt-c), .94);
+  font: var(--w-text) clamp(var(--f-title), calc(var(--dt-hd) * .28), var(--f-figure))/var(--lh-ui) var(--font); letter-spacing: 0;   /* строка 20 на телефоне … 28 на столе (шкала, D-829) */
+  text-shadow: 0 0 6px rgba(var(--dt-g), .55), 0 0 18px rgba(var(--dt-g), .28);
+  caret-color: rgba(var(--dt-c), .95);
+}
+#sbDeskTools .dt-line::placeholder { color: rgba(var(--dt-c), .62);   /* тихое слово ≥ 4,5:1 (D-829) */ text-shadow: 0 0 10px rgba(var(--dt-g), .25); text-transform: lowercase; }
+/* счёт рисуется светом на холсте времени — сама строка молчит глазами, но не для чтеца */
+#sbDeskTools[data-tool="calc"][data-kind="math"] .dt-line { color: transparent; text-shadow: none; caret-color: transparent; }   /* только расчёт: в мысли цифры — текст */
+#sbDeskTools .dt-mic {
+  position: absolute; right: 4px; top: 50%; width: 36px; height: 36px; margin-top: -18px; border: 0; padding: 0; border-radius: var(--r-round);
+  background: transparent; cursor: pointer; display: grid; place-items: center;
+}
+#sbDeskTools .dt-mic[hidden] { display: none; }
+#sbDeskTools .dt-mic-dot { width: 7px; height: 7px; border-radius: var(--r-round); background: rgba(var(--dt-c), .7); box-shadow: 0 0 10px rgba(var(--dt-g), .7); transition: transform var(--t-move) var(--ease-move), box-shadow var(--t-move) var(--ease-move); }
+#sbDeskTools .dt-mic.on .dt-mic-dot { transform: scale(1.7); box-shadow: 0 0 18px rgba(var(--dt-g), .95); }
+#sbDeskTools .dt-mic:focus-visible { outline: 1px solid rgba(var(--dt-c), .5); }
+
+/* клавиши из света — на фоне: не плитки, а знаки с ореолом */
+#sbDeskTools .dt-keys {
+  display: grid; grid-template-columns: repeat(4, var(--dt-k)); gap: 8px; justify-content: center;
+  transition: opacity var(--t-move) var(--ease-enter), visibility var(--t-move) var(--ease-move);   /* шкала скоростей (было .32 с; duration-scale, H4b) */
+}
+#sbDeskTools .dt-keys[hidden] { display: none; }
+#sbDeskTools .dt-keys.dim { opacity: 0; visibility: hidden; }
+#sbDeskTools .dt-key {
+  position: relative; width: var(--dt-k); height: var(--dt-k); padding: 0; border: 0; border-radius: var(--r-round); background: transparent; cursor: pointer;
+  color: rgba(var(--dt-c), .8); font: var(--w-thin) clamp(var(--f-title), calc(var(--dt-k) * .44), var(--f-figure))/var(--lh-one) var(--font);
+  text-shadow: 0 0 6px rgba(var(--dt-g), .55), 0 0 20px rgba(var(--dt-g), .28);
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+/* текучий кегль слова на клавише, потолок — ступень (type-scale, H4b); было calc(var(--dt-k) * .22) */
+#sbDeskTools .dt-key.word { font-size: clamp(var(--f-meta), calc(var(--dt-k) * .22), var(--f-lead)); font-weight: var(--w-text); letter-spacing: 0; }
+#sbDeskTools .dt-key.eq { color: rgba(var(--dt-c), .96); }
+#sbDeskTools .dt-key::before {
+  content: ""; position: absolute; inset: 14%; border-radius: var(--r-round); pointer-events: none;
+  background: radial-gradient(circle, rgba(var(--dt-g), .16), rgba(var(--dt-g), 0) 70%); opacity: 0; transition: opacity var(--t-touch) var(--ease-move);
+}
+#sbDeskTools .dt-key:active::before { opacity: 1; }
+@media (hover: hover) { :where(html:not([data-input="touch"])) #sbDeskTools .dt-key:hover::before { opacity: .7; } }
+#sbDeskTools .dt-key:focus-visible { outline: 1px solid rgba(var(--dt-c), .5); outline-offset: -8px; }
+
+/* ПЫЛЬ — ТОЛЬКО У КРУПНОГО (D-1240, основатель 14.11: «в инструментах не нужно выбор пыль или линии света»).
+   Выбора «линии · пыль» в инструментах нет (он только в Настройках, по умолчанию «линии»). Клавиши, слова,
+   действия, подсказки и подписи — всегда чёткий текст цвета «линий»; пылью рисуются только крупные цифры
+   и строка света на холсте. */
+
+/* слова инструментов и действий — строчные, светом; нажатое — ярче, без плашки */
+#sbDeskTools .dt-tray, #sbDeskTools .dt-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; }
+#sbDeskTools .dt-pane { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+#sbDeskTools .dt-pane[hidden] { display: none; }
+#sbDeskTools .dt-word {
+  min-height: 40px; padding: 0 4px; border: 0; background: transparent; cursor: pointer;
+  color: rgba(var(--dt-c), .66); font: var(--w-text) var(--f-ui)/var(--lh-one) var(--font); letter-spacing: 0; text-transform: lowercase;   /* строчные без разрядки, 13, ≥ 4,5:1 (Чистота Б, D-829) */
+  text-shadow: 0 0 10px rgba(var(--dt-g), .22); transition: color var(--t-touch) var(--ease-move), text-shadow var(--t-touch) var(--ease-move);
+}
+#sbDeskTools .dt-word.on, #sbDeskTools .dt-word[aria-pressed="true"], #sbDeskTools .dt-word.lamp { color: rgba(var(--dt-c), .95); text-shadow: 0 0 8px rgba(var(--dt-g), .6), 0 0 22px rgba(var(--dt-g), .3); }
+@media (hover: hover) { :where(html:not([data-input="touch"])) #sbDeskTools .dt-word:hover { color: rgba(var(--dt-c), .85); } }
+#sbDeskTools .dt-word:focus-visible { outline: 1px solid rgba(var(--dt-c), .45); outline-offset: 2px; border-radius: var(--r-ctrl); }
+
+/* поля ожидания и города: тоже свет, не стекло */
+#sbDeskTools .dt-field {
+  min-width: 0; width: min(100%, 260px); height: 40px; padding: 0 8px; border: 0; border-radius: 0; background: transparent; outline: none; box-shadow: none;
+  color: rgba(var(--dt-c), .92); font: var(--w-text) var(--f-lead)/var(--lh-ui) var(--font); text-align: center; text-transform: none;
+  text-shadow: 0 0 8px rgba(var(--dt-g), .4); caret-color: rgba(var(--dt-c), .95); color-scheme: dark;
+}
+#sbDeskTools .dt-field::placeholder { color: rgba(var(--dt-c), .62); }
+/* поле на касании не мельче 16 px — иначе iOS увеличивает страницу (D-829) */
+html.is-touch #sbDeskTools .dt-field { font-size: max(16px, var(--f-lead)); }
+#sbDeskTools .dt-field:focus-visible { text-shadow: 0 0 10px rgba(var(--dt-g), .7); }
+#sbDeskTools .dt-date { width: auto; }
+#sbDeskTools .dt-hint { margin: 0; max-width: 34ch; text-align: center; color: rgba(var(--dt-c), .62); font: var(--w-text) var(--f-ui)/var(--lh-read) var(--font); letter-spacing: 0; text-transform: none; }
+
+/* главное сегодня: касание по свету открывает запись */
+#sbDeskTools .dt-today { position: absolute; border: 0; padding: 0; background: transparent; cursor: pointer; pointer-events: auto; border-radius: var(--r-card); -webkit-tap-highlight-color: transparent; }
+#sbDeskTools .dt-today[hidden] { display: none; }
+#sbDeskTools .dt-today:focus-visible { outline: 1px solid rgba(var(--dt-c), .45); outline-offset: 2px; }
+
+#sbDeskTools .dt-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+/* Ветка Светлицы (тёплые чернила) — в словаре ядра core.css, «ИНСТРУМЕНТЫ СТОЛА · СВЕТЛИЦА» (paint-tokens, H4b). */
+
+@media (prefers-reduced-motion: reduce) {
+  #sbDeskTools .dt-block { animation: none; opacity: 1; }
+  #sbDeskTools .dt-keys, #sbDeskTools .dt-word, #sbDeskTools .dt-key::before, #sbDeskTools .dt-mic-dot { transition: none; }
+}
+html[data-motion="reduced"] #sbDeskTools .dt-block { animation: none; opacity: 1; }
+html[data-motion="reduced"] #sbDeskTools .dt-keys, html[data-motion="reduced"] #sbDeskTools .dt-word { transition: none; }
+
+/* ── тихие слова внизу инструмента: закрепить · закрыть (D-890, D-1240) ── */
+#sbDeskTools .dt-foot { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0 18px; margin-top: -4px; }
+#sbDeskTools .dt-dot { color: rgba(var(--dt-c), .4); font-size: var(--f-ui); }   /* было 12 px; ступень шкалы (type-scale, H4b) */
+#sbDeskTools .dt-quiet {
+  min-height: 32px; padding: 0 2px; border: 0; background: transparent; cursor: pointer; text-transform: lowercase;
+  color: rgba(var(--dt-c), .62); font: var(--w-text) var(--f-ui)/var(--lh-one) var(--font); letter-spacing: 0; transition: color var(--t-touch) var(--ease-move);   /* тихое слово ≥ 4,5:1 (было .36 — 3:1; D-829) */
+}
+#sbDeskTools .dt-quiet[hidden] { display: none; }
+#sbDeskTools .dt-quiet.on, #sbDeskTools .dt-quiet[aria-pressed="true"] { color: rgba(var(--dt-c), .78); text-shadow: 0 0 8px rgba(var(--dt-g), .4); }
+@media (hover: hover) { :where(html:not([data-input="touch"])) #sbDeskTools .dt-quiet:hover { color: rgba(var(--dt-c), .7); } }
+#sbDeskTools .dt-quiet:focus-visible { outline: 1px solid rgba(var(--dt-c), .4); outline-offset: 2px; border-radius: var(--r-ctrl); }
+
+/* ── тихий шум: нить громкости и световой знак, что звучит (D-892) ── */
+#sbDeskTools .dt-thread { width: min(100%, 240px); height: 28px; margin: 0; background: transparent; appearance: none; -webkit-appearance: none; cursor: pointer; }
+#sbDeskTools .dt-thread::-webkit-slider-runnable-track { height: 1px; background: rgba(var(--dt-c), .45); box-shadow: 0 0 6px rgba(var(--dt-g), .5); }
+#sbDeskTools .dt-thread::-moz-range-track { height: 1px; background: rgba(var(--dt-c), .45); }
+#sbDeskTools .dt-thread::-webkit-slider-thumb { -webkit-appearance: none; width: 9px; height: 9px; margin-top: -4px; border: 0; border-radius: var(--r-round); background: rgba(var(--dt-c), .95); box-shadow: 0 0 10px rgba(var(--dt-g), .8); }
+#sbDeskTools .dt-thread::-moz-range-thumb { width: 9px; height: 9px; border: 0; border-radius: var(--r-round); background: rgba(var(--dt-c), .95); box-shadow: 0 0 10px rgba(var(--dt-g), .8); }
+#sbDeskTools .dt-thread:focus-visible { outline: 1px solid rgba(var(--dt-c), .4); outline-offset: 4px; }
+#sbDeskTools .dt-sound {
+  position: absolute; left: 50%; width: 40px; height: 40px; margin-left: -20px; padding: 0; border: 0; border-radius: var(--r-round);
+  background: transparent; cursor: pointer; pointer-events: auto; display: grid; place-items: center; -webkit-tap-highlight-color: transparent;
+}
+#sbDeskTools .dt-sound[hidden] { display: none; }
+#sbDeskTools .dt-sound-dot { width: 6px; height: 6px; border-radius: var(--r-round); background: rgba(var(--dt-c), .8); box-shadow: 0 0 12px rgba(var(--dt-g), .8); animation: dt-hum 4.8s ease-in-out infinite; }
+@keyframes dt-hum { 0%, 100% { transform: scale(1); opacity: .55; } 50% { transform: scale(1.8); opacity: 1; } }
+#sbDeskTools .dt-sound:focus-visible { outline: 1px solid rgba(var(--dt-c), .4); }
+#sbDeskTools .dt-moon { width: 44px; height: 44px; flex: 0 0 auto; }
+@media (prefers-reduced-motion: reduce) { #sbDeskTools .dt-sound-dot { animation: none; opacity: .85; } }
+html[data-motion="reduced"] #sbDeskTools .dt-sound-dot { animation: none; opacity: .85; }
+
+/* ── «инструменты» в пульте (D-899): знак малого набора и слово — в обоих видах ── */
+/* D-1344 (основатель 18.11): «инструменты» в строке пульта — на той же базовой линии и той же высоты, что соседи:
+   знак — строчный, внутри строки, а не гибкий блок, который поднимал слово и растил кнопку на 3,5 px */
+#sbControlCenter .cc-tools-in { display: inline; }
+#sbControlCenter .cc-tools .sb-znak { display: inline-block; width: 15px; height: 15px; margin-right: 8px; vertical-align: -2px; line-height: 0; opacity: .8; }
+#sbControlCenter.krupno #sbCcTools { order: 7; flex: 0 0 auto; font-size: var(--f-read); }
+#sbControlCenter.krupno #sbCcTools::after { content: "·" / ""; display: inline-block; padding: 0 .45em; color: var(--kn-dim); text-shadow: none; font-weight: var(--w-text); }
+
+/* ── закрыть для чтеца и клавиатуры: не видна, пока на ней нет фокуса (D-900) ── */
+#sbDeskTools .dt-close {
+  position: absolute; top: 0; right: 0; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  border: 0; background: transparent; color: rgba(var(--dt-c), .85); font: var(--w-text) var(--f-ui)/var(--lh-one) var(--font); cursor: pointer;
+}
+#sbDeskTools .dt-close:focus-visible { width: auto; height: 32px; padding: 0 8px; clip-path: none; outline: 1px solid rgba(var(--dt-c), .45); border-radius: var(--r-ctrl); }
+/* ── история — тихая колонка над словами внизу (D-901) ── */
+#sbDeskTools .dt-hist { display: flex; flex-direction: column; align-items: center; gap: 0; }
+#sbDeskTools .dt-hist[hidden] { display: none; }
+#sbDeskTools .dt-histrow { min-height: 28px; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+/* ── экранная клавиатура поднята: клавиши света уходят, печатает она ── */
+#sbDeskTools.kb .dt-keys, #sbDeskTools.kb .dt-tray, #sbDeskTools.kb .dt-foot, #sbDeskTools.kb .dt-hist { display: none; }
+
+/* подсказка строки гаснет сразу при фокусе — её не надо стирать (основатель 12.11) */
+#sbDeskTools .dt-line:focus::placeholder, #sbDeskTools .dt-field:focus::placeholder { color: transparent; text-shadow: none; }
+/* клавиатура поднята над серединой — «+» не ложится на строку (глубокий аудит Б-58, D-876) */
+html.sb-kb #sbFab { visibility: hidden; }
+
+/* ── телефон на боку (html.is-short, D-1023-TOOLS-LANDSCAPE): две колонки, значки отходят, как под листом окна ── */
+html.sb-tools-wide #sbIconLayer { opacity: 0; visibility: hidden; transition: opacity var(--t-move) var(--ease-move), visibility 0s var(--ease-move) var(--t-move); }
+#sbDeskTools.land .dt-block { left: calc(50% + 8px); transform: none; width: calc(50% - 24px); padding-top: 0; gap: 8px; }
+#sbDeskTools.land .dt-pane { gap: 6px; }
+#sbDeskTools.land .dt-linebox { position: fixed; left: 16px; top: var(--dt-ltop); width: calc(50% - 24px); }
+#sbDeskTools.land .dt-hit { position: fixed; left: 16px; top: var(--dt-htop); width: calc(50% - 24px); right: auto; }
+
+/* ---- D-1262: таймер · секундомер · будильник — режимы ряда ---- */
+#sbDeskTools .dt-ico { width: 15px; height: 15px; margin-right: 5px; vertical-align: -2px; flex: none; shape-rendering: geometricPrecision; filter: none; }
+#sbDeskTools .dt-word { white-space: nowrap; }
+#sbDeskTools .dt-laps { min-height: 0; font: var(--w-text) var(--f-ui)/var(--lh-one) var(--font); color: rgba(var(--dt-c), .78); white-space: pre; }
+#sbDeskTools .dt-laps:empty { display: none; }
+#sbDeskTools .dt-time { width: 7.2em; text-align: center; }
+/* D-1287: два ровных ряда по центру (6 + 5) на любой ширине; на телефоне знак над словом, без прокрутки */
+#sbDeskTools .dt-tray .dt-br { flex-basis: 100%; height: 0; }
+/* узкий столбец (телефон и половина экрана лёжа): шесть в ряд, знак над словом, низкая строка — блок не растёт */
+@media (max-width: 700px) {
+  #sbDeskTools .dt-tray { flex-wrap: wrap; justify-content: center; gap: 2px 0; max-width: 100%; overflow: visible; }
+  #sbDeskTools .dt-tray > .dt-word { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: calc((100% - 2px) / 6); min-width: 0; min-height: 40px; padding: 0; font-size: var(--f-meta); text-align: center; }
+  #sbDeskTools .dt-tray > .dt-word .dt-ico { width: 18px; height: 18px; margin: 0; }
+  /* второй ряд стоит места: на телефоне блок собран плотнее, чтобы будильник и таймер оставались в одном экране */
+  #sbDeskTools .dt-tray { gap: 0; }
+  #sbDeskTools .dt-tray > .dt-word { min-height: 36px; }
+  #sbDeskTools .dt-block { gap: 8px; }
+  #sbDeskTools .dt-pane { gap: 6px; }
+  #sbDeskTools:is([data-tool="alarm"], [data-tool="timer"], [data-tool="stopwatch"]) .dt-block { gap: 4px; }
+  #sbDeskTools:is([data-tool="alarm"], [data-tool="timer"], [data-tool="stopwatch"]) .dt-pane { gap: 2px; }
+}
+#sbDeskTools.land .dt-tray { flex-wrap: wrap; justify-content: center; gap: 0; max-width: 100%; overflow: visible; }
+#sbDeskTools.land .dt-tray > .dt-word { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: calc((100% - 2px) / 6); min-width: 0; min-height: 36px; padding: 0; font-size: var(--f-meta); text-align: center; }
+#sbDeskTools.land .dt-tray > .dt-word .dt-ico { width: 18px; height: 18px; margin: 0; }
+
+/* ── H4e: меню прячется, когда выбран инструмент; вернуть его — ручка «инструменты» внизу (D-1301, D-1302) ── */
+#sbDeskTools .dt-tray[hidden], #sbDeskTools .dt-foot[hidden] { display: none; }
+/* закреплённое — точка света под словом ряда */
+#sbDeskTools .dt-tray > .dt-word.pinned { position: relative; }
+#sbDeskTools .dt-tray > .dt-word.pinned::after { content: ""; position: absolute; left: 50%; bottom: 3px; width: 4px; height: 4px; margin-left: -2px; border-radius: var(--r-round); background: rgba(var(--dt-c), .9); box-shadow: 0 0 6px rgba(var(--dt-g), .9); }
+
+/* ── H4e: касание часов (закреплённого) — прозрачная кнопка над его светом (D-1300) ── */
+/* касание пальцем проходит сквозь кнопку на сам стол (рябь поля, свет касания темы) и открывает часы через общий
+   обработчик касания стола (inPinned); кнопка остаётся для клавиатуры и чтеца */
+#sbDeskTools .dt-pinhit { position: absolute; border: 0; padding: 0; background: transparent; cursor: pointer; pointer-events: none; border-radius: var(--r-card); -webkit-tap-highlight-color: transparent; }
+#sbDeskTools .dt-pinhit[hidden] { display: none; }
+#sbDeskTools .dt-pinhit:focus-visible { outline: 1px solid rgba(var(--dt-c), .45); outline-offset: 2px; }
+
+/* ── H4e: ручка «инструменты» у нижнего края, в ряд с «+» (D-1302) ── */
+#sbDeskTools .dt-handle {
+  position: absolute; left: 50%; transform: translate(-50%, -50%); height: 36px; padding: 0 14px 0 12px; border-radius: var(--r-pill);
+  display: inline-flex; align-items: center; gap: 8px; pointer-events: auto; cursor: pointer;
+  /* плашка ручки — тоном ореола темы, а не нейтральной вуалью: в Тепле тьма цветная, не бурая (D-824, teplo-mandarin) */
+  border: 1px solid rgba(var(--dt-g), .22); background: rgba(var(--dt-g), .08); color: rgba(var(--dt-g), .95);
+  font: var(--w-text) var(--f-ui)/var(--lh-one) var(--font); text-transform: lowercase; letter-spacing: 0; -webkit-tap-highlight-color: transparent;
+  transition: background var(--t-touch) var(--ease-move), border-color var(--t-touch) var(--ease-move), opacity var(--t-move) var(--ease-move);
+}
+#sbDeskTools .dt-handle[hidden] { display: none; }
+#sbDeskTools .dt-dots { display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; flex: none; }
+#sbDeskTools .dt-dots i { width: 4px; height: 4px; border-radius: var(--r-round); background: rgba(var(--dt-g), .95); box-shadow: 0 0 5px rgba(var(--dt-g), .5); transition: transform var(--t-move) var(--ease-move); }
+#sbDeskTools .dt-chev { width: 12px; height: 12px; flex: none; fill: none; stroke: rgba(var(--dt-g), .9); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--t-move) var(--ease-move); }
+#sbDeskTools .dt-handle.open { background: rgba(var(--dt-g), .14); border-color: rgba(var(--dt-g), .4); }
+#sbDeskTools .dt-handle.open .dt-chev { transform: rotate(180deg); }
+#sbDeskTools .dt-handle.open .dt-dots i:nth-child(odd) { transform: scale(.6); }
+#sbDeskTools .dt-handle:focus-visible { outline: 1px solid rgba(var(--dt-c), .5); outline-offset: 2px; }
+/* пока говорит голос, его строка — внизу посередине: ручка поднимается над ней и остаётся под пальцем */
+#sbDeskTools .dt-handle { transition: background var(--t-touch) var(--ease-move), border-color var(--t-touch) var(--ease-move), opacity var(--t-move) var(--ease-move), top var(--t-move) var(--ease-move); }
+html:has(#sbVoiceShade.on) #sbDeskTools .dt-handle { margin-top: -76px; }
+html.sb-kb #sbDeskTools .dt-handle { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { #sbDeskTools .dt-handle, #sbDeskTools .dt-chev, #sbDeskTools .dt-dots i { transition: none; } }
+html[data-motion="reduced"] #sbDeskTools .dt-handle, html[data-motion="reduced"] #sbDeskTools .dt-chev { transition: none; }
+
+/* ── H4e: бейдж идущего таймера в шапке — только когда самого таймера на столе не видно (D-1303) ── */
+#sbClockBtn .tb-run { display: inline-flex; align-items: center; gap: 5px; margin-right: 9px; color: var(--ink); font-variant-numeric: tabular-nums; }
+#sbClockBtn .tb-run[hidden] { display: none; }
+#sbClockBtn .tb-run svg { width: 13px; height: 13px; fill: rgb(var(--accent-rgb)); flex: none; }
+.tb-clock .tb-time[hidden] { display: none; }
+/* ── H4e: голос слушает — светится только черта пульта в шапке, стол спокоен (D-1305) ── */
+html.sb-listening #sbCcTrigger { border-color: rgba(var(--accent-rgb), .55); animation: dt-listen 1.7s ease-in-out infinite; }
+html.sb-listening #sbCcTrigger .ember-bar { filter: drop-shadow(0 0 5px rgba(var(--accent-rgb), .9)); }
+@keyframes dt-listen { 0%, 100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0), 0 0 10px rgba(var(--accent-rgb), .2); } 50% { box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .13), 0 0 24px rgba(var(--accent-rgb), .45); } }
+@media (prefers-reduced-motion: reduce) { html.sb-listening #sbCcTrigger { animation: none; box-shadow: 0 0 0 2px rgba(var(--accent-rgb), .3); } }
+html[data-motion="reduced"].sb-listening #sbCcTrigger { animation: none; box-shadow: 0 0 0 2px rgba(var(--accent-rgb), .3); }

@@ -15,7 +15,6 @@
   border-radius: var(--r-card); border: 1px solid var(--line); background: var(--glass);
 }
 .ak-card.cargo { border-color: var(--accent-ring); background: var(--glass-tint); }
-.ak-copy { border-left: 2px solid var(--accent-ring); }
 .ak-card-h { margin: 0; font-size: var(--f-lead); font-weight: var(--w-strong); color: var(--ink); }
 .ak-card-p { margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); flex: 1 1 auto; }
 
@@ -24,7 +23,7 @@
   color: var(--ink); background: var(--accent-soft); border: 1px solid var(--accent-ring); border-radius: var(--r-ctrl);
   font-variant-numeric: tabular-nums;
 }
-.ak-btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; color: var(--on-accent); }
+.ak-btn.primary { background: var(--lamp5-bg); border: 0; box-shadow: var(--lamp5-edge); color: var(--lamp5-ink); }
 .ak-btn.ghost { background: transparent; border-color: var(--line-2); color: var(--ink-2); font-weight: var(--w-text); }
 /* Покой отключённой кнопки — одним словом ядра (--rest, D-340): button:disabled в core.css. */
 .ak-btn:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
@@ -43,11 +42,11 @@
   border-radius: var(--r-card); border: 1px solid color-mix(in srgb, var(--good) 45%, transparent);
   background: color-mix(in srgb, var(--good) 9%, transparent);
 }
-.ak-done-h { margin: 0; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ok-ink); font-weight: var(--w-strong); }
+.ak-done-h { margin: 0; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: none; color: var(--ok-ink); font-weight: var(--w-strong); }
 .ak-done-line { margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .ak-done-where { margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2); }
 
-.ak-sub { margin: 0 0 8px; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ink-3); font-weight: var(--w-strong); }
+.ak-sub { margin: 0 0 8px; font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: none; color: var(--ink-3); font-weight: var(--w-strong); }
 .ak-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .ak-chip {
   font-size: var(--f-meta); padding: 4px 10px; border-radius: var(--r-pill);

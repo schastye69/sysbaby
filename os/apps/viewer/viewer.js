@@ -20,14 +20,14 @@
   "use strict";
 
   var doc = document;
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var ICON = sbZnak("eye");
 
   var KIND_SVG = {
-    image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></svg>',
-    doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/><path d="M8 12.5h7M8 15.5h7M8 18h4"/></svg>',
-    sound: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.5h3l4-3v11l-4-3H5z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.8a7.5 7.5 0 0 1 0 10.4"/></svg>',
-    film: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M10 9.5l5 2.5-5 2.5z"/></svg>',
-    thing: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/></svg>'
+    image: sbZnak("image"),
+    doc: sbZnak("doc"),
+    sound: sbZnak("sound"),
+    film: sbZnak("film"),
+    thing: sbZnak("file")
   };
 
   function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
@@ -106,7 +106,7 @@
             esc(t("fv.thingKind", { kind: kindWord(current.kind), size: weigh(current.size) })) +
           "</div>" +
           '<button type="button" class="vw-save" id="vwSave">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v10M8.2 11l3.8 3.8L15.8 11M5 18.5h14"/></svg>' +
+            sbZnak("download") +
             "<span>" + esc(t("fv.thingSave")) + "</span></button>" +
         "</div>" +
       "</div>";

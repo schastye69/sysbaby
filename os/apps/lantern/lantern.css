@@ -6,16 +6,15 @@
    ширины колонки комнат и не дальше. Охраняется room-center-check. */
 .lt-wrap { padding: 4px var(--pad-room) 18px; width: 100%; max-width: var(--room-col); margin-inline: auto; }
 .lt-head { padding: 2px 2px 10px; }
-.lt-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: var(--w-strong); letter-spacing: var(--track-tight); }
+/* Заголовок «Фонарь» повторял шапку окна (обход п.55): остаётся для чтеца. */
+.lt-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
 .lt-lead { margin: 0 0 10px; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2); }
 .lt-warn {
   margin: 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-2);
-  padding: 10px 12px; border-radius: var(--r-ctrl);
-  background: rgba(var(--bad-rgb), .07); border: 1px solid rgba(var(--bad-rgb), .22);
 }
 .lt-group {
   margin: 20px 2px 8px; font-size: var(--f-meta); font-weight: var(--w-strong);
-  text-transform: uppercase; letter-spacing: var(--track-caps); color: var(--ink-3);
+  text-transform: none; letter-spacing: var(--track-caps); color: var(--ink-3);
 }
 .lt-cards { display: flex; flex-direction: column; gap: 10px; }
 .lt-card {
@@ -30,7 +29,7 @@
 .lt-steps li { font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink); }
 .lt-steps li::marker { color: var(--accent-ink); font-variant-numeric: tabular-nums; }
 .lt-src { margin: 10px 0 0; font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-3); overflow-wrap: anywhere; }
-.lt-src a { color: var(--ink-3); text-decoration: underline; text-underline-offset: 2px; }
+.lt-src a { color: var(--ink-3); text-decoration: none; }
 /* Наведение — это про мышь. На устройстве без мыши :hover включается по
    касанию и держится до следующего касания где-нибудь ещё: человек видит
    предмет в состоянии, которого не выбирал (общее правило системы,
@@ -39,7 +38,6 @@
   :where(html:not([data-input="touch"])) .lt-src a:hover { color: var(--accent-ink); }
 }
 @media (max-width: 520px) {
-  .lt-title { font-size: var(--f-title); }
   .lt-steps li { font-size: var(--f-read); }
 }
 
@@ -89,7 +87,7 @@
 }
 .lt-ask-out:empty { display: none; }
 .lt-ask-out { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
-.lt-ask-cap { margin: 4px 0 0; font-size: var(--f-meta); font-weight: var(--w-strong); text-transform: uppercase; letter-spacing: var(--track-caps); color: var(--ink-3); }
+.lt-ask-cap { margin: 4px 0 0; font-size: var(--f-meta); font-weight: var(--w-strong); text-transform: none; letter-spacing: var(--track-caps); color: var(--ink-3); }
 .lt-ask-hit {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left;
   font: inherit; cursor: pointer; color: var(--ink);
@@ -107,8 +105,6 @@
 /* Честный промах: сказано, что не нашёл, и назван 112. Полка ниже. */
 .lt-ask-none {
   margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2);
-  padding: 10px 12px; border-radius: var(--r-ctrl);
-  background: rgba(var(--bad-rgb), .07); border: 1px solid rgba(var(--bad-rgb), .22);
 }
 
 /* Открытая беда ЗАМЕНЯЕТ полку, а не ложится поверх: никакой глубины здесь
@@ -119,21 +115,23 @@
 .lt-wrap.is-open .lt-cards { display: none; }
 .lt-open {
   display: flex; flex-direction: column; gap: 12px;
-  min-height: 68vh; padding: 2px 2px 8px; cursor: pointer;
+  padding: 2px 2px 8px; cursor: pointer;
 }
 .lt-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+/* «назад» — слово без рамки; «дальше» — светильник сразу под текстом шага (Чистота А). */
 .lt-back, .lt-small, .lt-big {
   font: inherit; cursor: pointer; border-radius: var(--r-ctrl);
-  border: 1px solid var(--line); background: rgba(var(--film-rgb), .04); color: var(--ink);
+  border: 0; background: none; color: var(--ink);
 }
 .lt-back, .lt-small { font-size: var(--f-read); padding: 7px 12px; color: var(--ink-2); }
 .lt-count { font-size: var(--f-ui); color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.lt-open-title { margin: 0; font-size: var(--f-lead); font-weight: var(--w-strong); color: var(--ink-3); letter-spacing: var(--track-caps); text-transform: uppercase; }
+.lt-open-title { margin: 0; font-size: var(--f-lead); font-weight: var(--w-strong); color: var(--ink-3); letter-spacing: var(--track-caps); text-transform: none; }
 /* Один шаг — и он крупный. Это главная строка приложения. */
 .lt-step { margin: 0; font-size: var(--f-title); line-height: var(--lh-ui); font-weight: var(--w-strong); color: var(--ink); text-wrap: pretty; }
-.lt-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; }
-.lt-big { font-size: var(--f-lead); font-weight: var(--w-strong); padding: 13px 20px; }
-.lt-big.next { background: var(--accent-soft); border-color: var(--accent-ring); }
+.lt-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.lt-big { font-size: var(--f-ui); font-weight: var(--w-strong); padding: 9px 18px; min-height: 40px; }
+.lt-big.next { position: relative; overflow: hidden; border-radius: var(--r-lamp); background: var(--lamp5-bg); box-shadow: var(--lamp5-edge); color: var(--lamp5-ink); }
+.lt-big.next::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: 0; height: 1px; pointer-events: none; background: linear-gradient(90deg, transparent, var(--door-thread), transparent); opacity: .8; }
 .lt-tap { margin: 0; font-size: var(--f-meta); color: var(--ink-3); text-align: center; }
 
 /* ── ПРИБОРЫ ─────────────────────────────────────────────────────────────── */

@@ -38,9 +38,8 @@
   var root = doc.documentElement;
   var STORE_KEY = "sysbaby.chest.v1";
   var DAY = 24 * 3600 * 1000;
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
-    '<path d="M3.5 10.5V18a1.5 1.5 0 0 0 1.5 1.5h14A1.5 1.5 0 0 0 20.5 18v-7.5"/>' +
-    '<path d="M3.5 10.5V9a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v1.5z"/><path d="M10.5 10.5v3h3v-3"/></svg>';
+  /* Чистота А: знака этой комнаты в малом наборе нет — значок не рисуется, остаётся слово (имя комнаты). */
+  var ICON = "";
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -843,13 +842,14 @@
     var st = state();
     if (!st.night || !st.night.dayRoom) return;
     var inEmber = typeof window.sbGetWallpaperMood === "function" && window.sbGetWallpaperMood() === "ember";
-    /* ПЕРВОЕ УТРО: не рывком. Двадцать минут — Суточная комната (её утренний
-       свет и есть рассвет), приветствие по имени и по дню, потом своя. */
+    /* ПЕРВОЕ УТРО: приветствие по имени и по дню — и сразу своя комната.
+       Суточная комната (Дневной свет) снята (D-871): включать её значит
+       уронить стол в Тепло и не вернуть свою (сборка H4). */
     if (inEmber && kindGranted("morning") && !st.morning) {
       var mins = morningMinutes();
       st.morning = { dayRoom: st.night.dayRoom, until: Date.now() + mins * 60000 };
       st.night = null; save();
-      window.sbSetWallpaperMood("daylight");
+      window.sbSetWallpaperMood(st.morning.dayRoom);
       if (window.showToast) window.showToast(fmt(T().morningTitle, { name: username() }), fmt(T().morningLine, { n: daysKept(), m: mins }), ICON, true, "", "event");
       return;
     }
@@ -861,7 +861,7 @@
     var st = state();
     if (!st.morning) return;
     if (Date.now() < st.morning.until) return;
-    if (typeof window.sbGetWallpaperMood === "function" && window.sbGetWallpaperMood() === "daylight" && st.morning.dayRoom) window.sbSetWallpaperMood(st.morning.dayRoom);
+    /* своя комната уже стоит с утра (D-871: Дневного света нет) — только отметка */
     st.morning = null; save();
   }
   setInterval(function () { try { nightTick(); morningTick(); refreshCountdowns(); focusTick(); traceTick(); guestTick(); milestoneTick(); } catch (e) { /* ignore */ } }, 60000);
@@ -1843,6 +1843,10 @@
       color: "linear-gradient(160deg,#f2c777 0%,#d9973a 52%,#8a5a1c 100%)",
       icon: ICON,
       size: { w: 640, h: 700 },
+      /* СКРЫТ ФЛАГОМ, ДАННЫЕ ЦЕЛЫ · D-723 (основатель 03–04.11, PLAN этап 0). */
+      hidden: true,
+      why: "why.chest",
+      offDesk: "отложено решением",
       retranslate: true,
       render: render
     });

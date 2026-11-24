@@ -11,17 +11,16 @@
    колонок: одна ширина, одна ось. Охраняется room-center-check. */
 .ky-wrap { padding: 4px var(--pad-room) 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; width: 100%; max-width: var(--room-col); margin-inline: auto; }
 .ky-head { padding: 2px 2px 2px; }
-.ky-title { margin: 0 0 6px; font-size: var(--f-title); font-weight: var(--w-strong); letter-spacing: var(--track-tight); }
+/* Заголовок повторял шапку окна (Чистота Б): остаётся для чтеца. */
+.ky-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
 .ky-lead { margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink-2); }
 .ky-need {
   margin: 10px 0 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink);
-  padding: 10px 12px; border-radius: var(--r-ctrl);
-  background: var(--accent-soft); border: 1px solid var(--accent-ring);
   display: flex; flex-direction: column;
 }
 .ky-need-p { margin: 0; }
-/* Кнопка ядра на подложке того же тона: ей нужна своя граница (D-317). */
-.ky-need .sb-lock-call { background: var(--glass); margin-top: 9px; }
+/* Кнопка ядра в подносе — слово без рамки (Чистота А; была своя граница D-317). */
+.ky-need .sb-lock-call { margin-top: 9px; }
 
 .ky-bar { display: flex; gap: 8px; align-items: center; }
 .ky-search {
@@ -48,7 +47,7 @@
 .ky-row { padding: 13px 14px; border-radius: var(--r-card); background: rgba(var(--film-rgb), .028); border: 1px solid var(--line); }
 .ky-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .ky-place { margin: 0; font-size: var(--f-lead); font-weight: var(--w-strong); color: var(--ink); overflow-wrap: anywhere; }
-.ky-kind { font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.ky-kind { font-size: var(--f-micro); letter-spacing: var(--track-caps); text-transform: none; color: var(--ink-3); white-space: nowrap; }
 .ky-kind.derived { color: var(--accent-ink); }
 .ky-login { margin: 4px 0 0; font-size: var(--f-ui); color: var(--ink-2); overflow-wrap: anywhere; }
 /* Пароль показывается ТОЛЬКО через набор моноширинных знаков: так глаз
@@ -70,15 +69,14 @@
   :where(html:not([data-input="touch"])) .ky-acts button:hover { border-color: var(--accent-ring); color: var(--ink); }
 }
 .ky-empty { margin: 8px 2px; font-size: var(--f-read); color: var(--ink-3); }
+/* узкий экран: колонка Ключей по центру окна — текст и ряд «новое место», как всё содержимое комнаты (D-273, основатель 05.11) */
+@media (max-width: 560px) { .ky-wrap { text-align: center; } .ky-bar { justify-content: center; } .ky-need .sb-lock-call { margin-inline: auto; } }
 .ky-honest {
   margin: 6px 0 0; font-size: var(--f-ui); line-height: var(--lh-read); color: var(--ink-3);
-  padding: 11px 13px; border-radius: var(--r-ctrl);
-  border: 1px solid var(--line); background: rgba(var(--film-rgb), .02);
 }
 .ky-say { margin: 0; font-size: var(--f-ui); color: var(--accent-ink); min-height: 1.3em; }
 
 /* Цена одной попытки — измеренная, а не обещанная. */
-.ky-cost { padding: 13px 14px; border-radius: var(--r-card); border: 1px solid var(--accent-ring); background: var(--accent-soft); }
 .ky-cost h3 { margin: 0 0 7px; font-size: var(--f-read); font-weight: var(--w-strong); color: var(--ink); }
 .ky-cost-line { margin: 0; font-size: var(--f-read); line-height: var(--lh-read); color: var(--ink); min-height: 1.5em; }
 .ky-cost-line button {

@@ -17,10 +17,10 @@
   var KEY_V2 = "sysbaby.messenger.v2";
   var KEY_V1 = "sysbaby.messenger.v1";
 
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.4A1.9 1.9 0 0 1 6.4 4.5h11.2a1.9 1.9 0 0 1 1.9 1.9v7.4a1.9 1.9 0 0 1-1.9 1.9H9.8L5.6 19.3a.6.6 0 0 1-1-.47V15.7a1.9 1.9 0 0 1-.1-.6V6.4Z"/></svg>';
-  var PAPERCLIP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18.5 11.3 12 17.8a4 4 0 0 1-5.7-5.7l7-7a2.7 2.7 0 0 1 3.8 3.8l-7 7a1.3 1.3 0 0 1-1.9-1.9l6.3-6.3"/></svg>';
-  var FILE_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.6h7.2L18 8.4v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/><path d="M13.2 3.6v4.8H18"/></svg>';
-  var GROUP_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9.5" r="3"/><path d="M3.8 19a5.2 5.2 0 0 1 10.4 0"/><path d="M16 7.1a2.9 2.9 0 0 1 0 5.6M17.4 19a5.2 5.2 0 0 0-2-4.1"/></svg>';
+  var ICON = sbZnak("messenger");
+  var PAPERCLIP = sbZnak("clip");
+  var FILE_GLYPH = sbZnak("file");
+  var GROUP_GLYPH = sbZnak("people");
 
   var PALETTE = ["#0a84ff", "#ff9500", "#30d158", "#ff375f", "#5e5ce6", "#ffd60a", "#64d2ff", "#bf5af2"];
   var REACTIONS = ["👍", "❤️", "😂", "😮", "😢"];
@@ -61,7 +61,7 @@
     return window.sbRights
       ? window.sbRights.box("messenger")
       : { get: function () { return null; }, set: function () { return false; },
-          remove: function () { return false; }, flush: function () { } };
+          remove: function () { return false; }, peek: function () { return null; }, flush: function () { } };
   }
   function dbGet(key) { return box().get(key); }
   /* ── ЭПОХА ХРАНИЛИЩА (D-274) ──────────────────────────────────────────
@@ -87,6 +87,37 @@
   }
 
   function bodyOf(win) { return win && win.el ? win.el.querySelector(".window-body") : null; }
+
+  /* ── ШЁПОТ (D-1405) ───────────────────────────────────────────────────
+     ПОВОД — задание основателя 17.11.2026: переписка 1:1 через сторонних
+     почтальонов, приглашение по QR или «Передать», сверка четырьмя словами.
+     Вся работа Шёпота живёт в core/shepot/ (ядро, почта, мост room.js);
+     комната только зовёт мост в нескольких местах и отдаёт ему свой ящик.
+     Разговор Шёпота — обычная запись переписки с полем shepot. */
+  function whisper() { return window.sbShepotRoom && window.sbShepotRoom.there ? window.sbShepotRoom : null; }
+  function isWhisper(c) { var w = whisper(); return !!(w && w.is(c)); }
+  var whisperApi = {
+    convos: function () { ensureLoaded(); return convos; },
+    active: function () { return activeId; },
+    write: function () { return write(); },
+    flush: function () { dbFlush(); },
+    render: function (win) { render(win); },
+    add: function (name, rec) {
+      ensureLoaded();
+      var c = { id: Date.now(), name: name, initials: initialsOf(name), color: colorFor(name), unread: false, muted: false,
+        isGroup: false, members: [], online: false, messages: [], shepot: rec };
+      convos.unshift(c); activeId = c.id; return c;
+    },
+    remove: function (c) {
+      forgetWhisper(c);
+      var w = whisper(); if (w) w.forget(c);
+      convos = convos.filter(function (x) { return x !== c; });
+      if (String(activeId) === String(c.id)) activeId = convos.length ? convos[0].id : null;
+      write();
+      var win = typeof window.getOpenWindow === "function" ? window.getOpenWindow("messenger") : null;
+      if (win) render(win);
+    }
+  };
 
   function uid() { return "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
@@ -246,9 +277,33 @@
     } catch (err) { console.error("[messenger] corrupt conversation JSON", err); return null; }
   }
 
+  /* ── ДВЕ ВКЛАДКИ ОДНОГО ПРОФИЛЯ НЕ ЗАТИРАЮТ ШЁПОТ ДРУГ ДРУГА (H4e3, D-1329) ───────────────────────────
+     Переписка пишет весь список разговоров одним ключом, а склад держит копию в памяти вкладки и о записи другой
+     вкладки не узнаёт. На устройстве без мира (там писатель не один) вторая вкладка, записав свой список, стирала
+     разговор Шёпота первой — вместе с его ключами (замер: общее хранилище — 3 из 3 потеряны). Поэтому перед записью
+     список сливается со свежим с диска: разговор Шёпота, которого у этой вкладки нет, сохраняется; если он есть у
+     обеих — остаётся тот, чьи ключи новее (rec.at из post.js), — откат ключей сломал бы разговор навсегда. Удалённое
+     человеком в этой вкладке назад не возвращается (gone). */
+  var gone = {};
+  function forgetWhisper(c) { if (c && c.shepot && c.shepot.id) gone[c.shepot.id] = 1; }
+  function mergeDisk() {
+    var raw = null, b = box();
+    try { raw = b.peek ? b.peek(KEY_V3) : null; } catch (e) { raw = null; }
+    var disk = parseList(raw); if (!disk || !convos) return;
+    disk.forEach(function (d) {
+      if (!d || !d.shepot || !d.shepot.id || gone[d.shepot.id]) return;
+      var i, at = -1;
+      for (i = 0; i < convos.length; i++) if (convos[i] && convos[i].shepot && convos[i].shepot.id === d.shepot.id) { at = i; break; }
+      if (at === -1) convos.push(d);
+      /* ОТКАТ: записи без rec.at (до D-1329) считаются самыми старыми — 0: новее их любая запись с меткой. */
+      else if ((d.shepot.at || 0) > (convos[at].shepot.at || 0)) convos[at] = d;
+    });
+  }
+
   function write() {
     /* Копия из другой эпохи не пишется никогда: она легла бы поверх настоящей памяти (D-274). */
     if (convosEpoch !== epochNow()) return false;
+    try { mergeDisk(); } catch (e) { /* список на диске не читается — пишем свой, как прежде */ }
     try {
       dbSet(KEY_V3, JSON.stringify(convos));
       return true;
@@ -325,7 +380,7 @@
 
   function lastLine(c) {
     var messages = c.messages || [];
-    if (!messages.length) return t("mg.noMessages");
+    if (!messages.length) return isWhisper(c) ? whisper().empty(true) : t("mg.noMessages");
     var last = messages[messages.length - 1];
     if (last.type === "file") return "📎 " + (last.fileName || "");
     return last.text || "";
@@ -348,11 +403,11 @@
       '<span class="mg-convo-actions">' +
         '<button type="button" class="mg-mini" data-mute="' + esc(c.id) + '" title="' + esc(c.muted ? t("mg.unmute") : t("mg.mute")) + '" aria-label="' + esc(c.muted ? t("mg.unmute") : t("mg.mute")) + '">' +
           (c.muted
-            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 9.5h3l4-3.2v11.4l-4-3.2h-3Z"/><path d="m15 9.5 4.5 5M19.5 9.5 15 14.5"/></svg>'
-            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 9.5h3l4-3.2v11.4l-4-3.2h-3Z"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6"/></svg>') +
+            ? sbZnak("mute")
+            : sbZnak("sound")) +
         "</button>" +
         '<button type="button" class="mg-mini danger" data-del-convo="' + esc(c.id) + '" title="' + esc(t("mg.delete")) + '" aria-label="' + esc(t("mg.deleteConvo")) + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l1 12.2a1 1 0 0 0 1 .9h7a1 1 0 0 0 1-.9L17.5 7"/></svg>' +
+          sbZnak("trash") +
         "</button>" +
       "</span>" +
     "</div>";
@@ -362,6 +417,8 @@
     if (!win._msgrNewOpen) return "";
     var tab = win._msgrNewTab === "group" ? "group" : "direct";
     return '<div class="mg-newform">' +
+      /* Шёпот — первым: в узкой колонне и на телефоне его кнопки видны без прокрутки (D-1405). */
+      (whisper() ? whisper().newForm(win) : "") +
       '<div class="mg-tabs">' +
         '<button type="button" class="mg-tab' + (tab === "direct" ? " active" : "") + '" data-tab="direct">' + esc(t("mg.tab.direct")) + "</button>" +
         '<button type="button" class="mg-tab' + (tab === "group" ? " active" : "") + '" data-tab="group">' + esc(t("mg.tab.group")) + "</button>" +
@@ -387,20 +444,21 @@
       inner = '<div class="mg-text" data-sb-userdata>' + esc(m.text || "") + "</div>";
     }
     var seen = mine && isLastOwn && m.seen === true;
-    return '<div class="mg-msg' + (mine ? " mine" : " theirs") + '" data-msg="' + esc(m.id) + '">' +
+    return '<div class="mg-msg' + (mine ? " mine" : " theirs") + (m.sh ? " sh-letter" : "") + (m.sh && mine ? " sh-own" : "") + (m.sh && !mine && whisper() && whisper().fresh(m) ? " sh-fresh" : "") + '" data-msg="' + esc(m.id) + '">' +
       (!mine && c.isGroup && m.senderName ? '<div class="mg-sender" data-sb-userdata>' + esc(m.senderName) + "</div>" : "") +
       '<div class="mg-bubble' + (m.type === "file" ? " file" : "") + '">' + inner +
         (m.reaction ? '<span class="mg-reaction">' + esc(m.reaction) + "</span>" : "") +
       "</div>" +
       '<div class="mg-meta">' +
         "<span>" + esc(clockOf(m.ts)) + (m.edited ? " · " + esc(t("mg.edited")) : "") +
-          (m.sealedIn || m.sealedOut ? " · " + esc(t("mg.sealedTag")) : "") + "</span>" +
+          (m.sealedIn || m.sealedOut ? " · " + esc(t("mg.sealedTag")) : "") + (m.sh && whisper() ? whisper().meta(m) : "") + "</span>" +
         (mine && c.pact && m.type !== "file"
           ? '<button type="button" class="mg-meta-btn mg-seal-btn" data-seal="' + esc(m.id) + '" title="' + esc(t("mg.sealTitle")) + '">' + esc(t("mg.seal")) + "</button>" : "") +
         (seen ? "<span>· " + esc(t("mg.seen")) + "</span>" : "") +
-        '<button type="button" class="mg-meta-btn" data-react="' + esc(m.id) + '" title="' + esc(t("mg.react")) + '" aria-label="' + esc(t("mg.react")) + '">🙂</button>' +
+        /* Отметка — местная: собеседнику Шёпота она не уйдёт, поэтому там её нет. */
+        (m.sh ? "" : '<button type="button" class="mg-meta-btn" data-react="' + esc(m.id) + '" title="' + esc(t("mg.react")) + '" aria-label="' + esc(t("mg.react")) + '">🙂</button>') +
         '<button type="button" class="mg-meta-btn" data-del-msg="' + esc(m.id) + '" title="' + esc(t("mg.delMsg")) + '" aria-label="' + esc(t("mg.delMsg")) + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5.2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l1 12.2a1 1 0 0 0 1 .9h7a1 1 0 0 0 1-.9L17.5 7"/></svg>' +
+          sbZnak("trash") +
         "</button>" +
       "</div>" +
     "</div>";
@@ -408,7 +466,7 @@
 
   function threadMarkup(win, c) {
     if (!c) {
-      return '<div class="mg-thread-empty"><div class="mg-glyph">' + ICON + "</div><p>" + esc(t("mg.selectConvo")) + "</p></div>";
+      return '<div class="mg-thread-empty"><div class="mg-glyph">' + ICON + "</div><p>" + esc(t(convos.length ? "mg.selectConvo" : "mg.listEmpty")) + "</p></div>";
     }
     var messages = c.messages || [];
     var lastOwnId = null;
@@ -422,34 +480,38 @@
     });
 
     var firstWord = String(c.name || "").trim().split(/\s+/)[0] || "";
+    var shep = isWhisper(c) ? whisper() : null;
 
     return '<header class="mg-head">' +
         '<span class="mg-avatar-wrap">' + avatarMarkup(c, "big") + "</span>" +
         '<span class="mg-head-text">' +
           '<button type="button" class="mg-head-name" id="mgContact" data-sb-userdata title="' + esc(t("mg.contactTitle")) + '">' + esc(c.name) + "</button>" +
-          (c.isGroup && c.members.length
+          (shep
+            ? '<span class="mg-head-members" id="shHead">' + esc(shep.headNote(c)) + "</span>"
+            : c.isGroup && c.members.length
             ? '<span class="mg-head-members" data-sb-userdata>' + esc(c.members.join(", ")) + "</span>"
             : '<span class="mg-head-members">' + esc(t("mg.localNote")) + "</span>") +
         "</span>" +
         /* The one honest way out of a local room: turn the thread into a real
            letter. Whisper thinks, Letters speaks — that is the difference. */
+        (shep ? shep.headButtons(win) :
         '<button type="button" class="mg-to-letter" id="mgPactBtn" aria-expanded="' + (win._mgPactOpen ? "true" : "false") + '">' + esc(c.pact ? t("mg.pactSet") : t("mg.pact")) + "</button>" +
-        '<button type="button" class="mg-to-letter" id="mgToLetter" title="' + esc(t("mg.toLetterTitle")) + '">' + esc(t("mg.toLetter")) + "</button>" +
+        '<button type="button" class="mg-to-letter" id="mgToLetter" title="' + esc(t("mg.toLetterTitle")) + '">' + esc(t("mg.toLetter")) + "</button>") +
       "</header>" +
-      sealPanels(win, c) +
-      '<div class="mg-messages" id="mgMessages">' + (out.length ? out.join("") : '<div class="mg-thread-empty"><p>' + esc(t("mg.noMessages")) + "</p></div>") + "</div>" +
-      attachMarkup(win) +
+      (shep ? shep.panels(win, c) : sealPanels(win, c)) +
+      '<div class="mg-messages" id="mgMessages">' + (out.length ? out.join("") : '<div class="mg-thread-empty"><p>' + esc(shep ? shep.empty(false) : t("mg.noMessages")) + "</p></div>") + "</div>" +
+      (shep ? shep.inputRow(win, c) : attachMarkup(win) +
       '<div class="mg-inputrow">' +
         '<button type="button" class="mg-attach-btn" id="mgPaste" title="' + esc(t("mg.paste")) + '" aria-label="' + esc(t("mg.paste")) + '" aria-expanded="' + (win._mgPasteOpen ? "true" : "false") + '">' + SEAL_GLYPH + "</button>" +
         '<button type="button" class="mg-attach-btn" id="mgAttach" title="' + esc(t("mg.attach", { files: appName("files") })) + '" aria-label="' + esc(t("mg.attach", { files: appName("files") })) + '">' + PAPERCLIP + "</button>" +
         '<input type="text" id="msgrInput" class="mg-input flat" placeholder="' + esc(t("mg.ph.message", { name: firstWord })) + '" autocomplete="off">' +
         '<button type="button" class="mg-send" id="mgSend" title="' + esc(t("mg.send")) + '" aria-label="' + esc(t("mg.send")) + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4 4 10.4l6.3 2.4L20 4Z"/><path d="M20 4 13.4 20l-3.1-7.2L20 4Z"/></svg>' +
+          sbZnak("send") +
         "</button>" +
-      "</div>";
+      "</div>");
   }
 
-  var SEAL_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7.5h15v10a1.5 1.5 0 0 1-1.5 1.5H6a1.5 1.5 0 0 1-1.5-1.5v-10Z"/><path d="m4.5 7.5 7.5 6 7.5-6"/><circle cx="12" cy="16" r="1.4"/></svg>';
+  var SEAL_GLYPH = sbZnak("seal");
   /* Три тихие панели запечатанной переписки: общее слово, выданная печать,
      вставка полученной. Каждая открывается касанием и не висит без дела. */
   function sealPanels(win, c) {
@@ -517,6 +579,11 @@
     var host = bodyOf(win);
     if (!host) return;
     ensureLoaded();
+    if (whisper()) {
+      whisper().sync(whisperApi);
+      /* Приглашение пришло ссылкой — форма входа открыта сразу, один раз. */
+      if (whisper().handed() && !win._shHanded) { win._shHanded = true; win._msgrNewOpen = true; win._msgrNewTab = "direct"; }
+    }
     if (typeof win._msgrFilter !== "string") win._msgrFilter = "";
 
     var needle = win._msgrFilter.trim().toLowerCase();
@@ -530,15 +597,16 @@
       '<div class="app-msgr">' +
         '<aside class="mg-side">' +
           '<div class="mg-side-top">' +
-            '<input type="search" id="mgSearch" class="mg-input" placeholder="' + esc(t("mg.search")) + '" autocomplete="off" value="' + esc(win._msgrFilter) + '">' +
+            /* Пока переписок нет — поиска нет, и пустой экран говорит один раз (обход п.52). */
+            (convos.length || needle ? '<input type="search" id="mgSearch" class="mg-input" placeholder="' + esc(t("mg.search")) + '" autocomplete="off" value="' + esc(win._msgrFilter) + '">' : '<span class="mg-side-gap"></span>') +
             '<button type="button" class="mg-newbtn" id="mgNew" title="' + esc(t("mg.new")) + '" aria-label="' + esc(t("mg.new")) + '">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5.5v13M5.5 12h13"/></svg></button>' +
+              sbZnak("plus") + '</button>' +
           "</div>" +
           newFormMarkup(win) +
           '<div class="mg-list">' +
             (list.length
               ? list.map(convoRowMarkup).join("")
-              : '<div class="mg-list-empty">' + esc(needle ? t("mg.listEmptySearch", { q: win._msgrFilter.trim() }) : t("mg.listEmpty")) + "</div>") +
+              : (needle ? '<div class="mg-list-empty">' + esc(t("mg.listEmptySearch", { q: win._msgrFilter.trim() })) + "</div>" : "")) +
           "</div>" +
         "</aside>" +
         '<section class="mg-thread">' + threadMarkup(win, active) + "</section>" +
@@ -557,6 +625,7 @@
   /* --------------------------------------------------------------- wiring */
 
   function wire(win, host) {
+    if (whisper()) whisper().wire(win, host, byId(activeId));
     var search = host.querySelector("#mgSearch");
     if (search) {
       search.addEventListener("input", function () {
@@ -615,8 +684,9 @@
         var c = byId(btn.getAttribute("data-del-convo"));
         if (!c) return;
         /* Вопрос своим голосом (D-335), а не плашкой браузера. */
-        window.sbAsk({ question: t("mg.confirm.delConvo", { name: c.name }), ok: t("ask.delete"), danger: true }).then(function (yes) {
+        window.sbAsk({ question: isWhisper(c) ? t("sh.del.what") : t("mg.confirm.delConvo", { name: c.name }), ok: t("ask.delete"), danger: true }).then(function (yes) {
           if (!yes) return;
+          if (isWhisper(c)) { forgetWhisper(c); whisper().forget(c); }
           var wasActive = String(c.id) === String(activeId);
           convos = convos.filter(function (x) { return String(x.id) !== String(c.id); });
           if (wasActive) activeId = convos.length ? convos[0].id : null;
@@ -772,7 +842,8 @@
     host.querySelectorAll(".mg-msg.mine .mg-bubble:not(.file)").forEach(function (bubble) {
       bubble.addEventListener("dblclick", function () {
         var wrap = bubble.closest(".mg-msg");
-        if (wrap) beginEdit(win, wrap.getAttribute("data-msg"), bubble);
+        /* Письмо Шёпота уже ушло собеседнику: править его здесь значило бы показывать не то, что он получил. */
+        if (wrap && !isWhisper(byId(activeId))) beginEdit(win, wrap.getAttribute("data-msg"), bubble);
       });
     });
   }
@@ -830,6 +901,10 @@
     var c = byId(activeId);
     var value = String(text == null ? "" : text).trim();
     if (!c || !value) return;
+    if (isWhisper(c)) {
+      if (whisper().send(win, c, value)) { var field = bodyOf(win) && bodyOf(win).querySelector("#msgrInput"); if (field) field.value = ""; render(win); }
+      return;
+    }
     c.messages.push({ id: uid(), from: "me", text: value, ts: Date.now(), seen: false, edited: false, reaction: null });
     write();
     var input = bodyOf(win) && bodyOf(win).querySelector("#msgrInput");
@@ -1072,7 +1147,7 @@
          работу, стоит на столе. Снять снова — строкой hidden: true. */
       title: "Whisper",
       i18n: {
-        ru: { title: "Разговор", label: "Разговор" },
+        ru: { title: "Шёпот", label: "Шёпот" },
         ee: { title: "Sosin", label: "Sosin" },
       },
       label: "Whisper",

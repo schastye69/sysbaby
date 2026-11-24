@@ -37,7 +37,7 @@
 
   var UI = {
     en: {
-      row: "Friction ledger", rowSub: "Off unless you turn it on. The system notices only two things about rooms — a window closed right after opening, a room not opened for a month — and suggests moving its icon into {echoes}. Nothing about what is inside, nothing is sent; it lives under the lock.",
+      row: "notice where it is awkward", rowSub: "Off unless you turn it on. The system notices only two things about rooms — a window closed right after opening, a room not opened for a month — and suggests moving its icon into {echoes}. Nothing about what is inside, nothing is sent; it lives under the lock.",
       counts: "Noticed: {opens} openings, {quick} closed at once.",
       erase: "Erase the ledger", erased: "The ledger is erased", erasedBody: "Nothing about rooms is kept any more.",
       quick: "“{app}” was closed right after opening {quick} times out of {opens}. Perhaps its icon is in the way — move it into {echoes}?",
@@ -46,7 +46,7 @@
       done: "“{app}” is in {echoes}", doneBody: "It’s waiting there — restore it anytime."
     },
     ru: {
-      row: "Журнал трения", rowSub: "Выключен, пока вы его не включите. Система замечает о комнатах только две вещи — окно, закрытое сразу после открытия, и комнату, которую не открывали месяц, — и предлагает перенести её значок в «{echoes}». Ничего о содержимом, ничего не уходит; лежит под замком.",
+      row: "замечать, где неудобно", rowSub: "Выключен, пока вы его не включите. Система замечает о комнатах только две вещи — окно, закрытое сразу после открытия, и комнату, которую не открывали месяц, — и предлагает перенести её значок в «{echoes}». Ничего о содержимом, ничего не уходит; лежит под замком.",
       counts: "Замечено: открытий {opens}, закрыто сразу {quick}.",
       erase: "Стереть журнал", erased: "Журнал стёрт", erasedBody: "О комнатах больше ничего не хранится.",
       quick: "«{app}» закрыли сразу после открытия {quick} раз из {opens}. Может, значок мешает — перенести его в «{echoes}»?",
@@ -55,7 +55,7 @@
       done: "«{app}» теперь в «{echoes}»", doneBody: "Оно там и ждёт — вернуть можно в любой момент."
     },
     ee: {
-      row: "Hõõrdumise logi", rowSub: "Väljas, kuni te selle sisse lülitate. Süsteem märkab tubade kohta ainult kahte asja — kohe pärast avamist suletud akent ja tuba, mida pole kuu aega avatud, — ning pakub selle ikooni viia rakendusse {echoes}. Sisust mitte midagi, midagi ei saadeta; asub luku all.",
+      row: "märka, kus on ebamugav", rowSub: "Väljas, kuni te selle sisse lülitate. Süsteem märkab tubade kohta ainult kahte asja — kohe pärast avamist suletud akent ja tuba, mida pole kuu aega avatud, — ning pakub selle ikooni viia rakendusse {echoes}. Sisust mitte midagi, midagi ei saadeta; asub luku all.",
       counts: "Märgatud: avamisi {opens}, kohe suletud {quick}.",
       erase: "Kustuta logi", erased: "Logi on kustutatud", erasedBody: "Tubade kohta ei hoita enam midagi.",
       quick: "„{app}“ suleti kohe pärast avamist {quick} korda {opens}-st. Võib-olla ikoon segab — viia see rakendusse {echoes}?",

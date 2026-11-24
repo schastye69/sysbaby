@@ -1,7 +1,7 @@
 {
-  "name": "sys.baby private OS",
+  "name": "sys.baby personal world",
   "short_name": "sys.baby",
-  "description": "A private OS in your browser: nothing you make leaves your device in readable form.",
+  "description": "A personal world in your browser: nothing you make leaves your device in readable form.",
   "id": "./",
   "start_url": "./",
   "scope": "./",

@@ -24,8 +24,8 @@
 .ch-chest[data-just="1"] .ch-glow { opacity: 1; }
 .ch-say { margin: 0; font-size: var(--f-read); color: var(--ink-2); text-align: center; max-width: 52ch; }
 .ch-open {
-  padding: 11px 22px; font-size: var(--f-lead); font-weight: var(--w-strong); color: var(--on-accent);
-  background: linear-gradient(135deg, var(--accent), var(--accent-2)); border: 0; border-radius: var(--r-pill); cursor: pointer;
+  padding: 11px 22px; font-size: var(--f-lead); font-weight: var(--w-strong);
+  background: var(--lamp5-bg); box-shadow: var(--lamp5-edge); color: var(--lamp5-ink); border: 0; border-radius: var(--r-pill); cursor: pointer;
   transition: transform var(--t-touch) var(--ease-move), box-shadow var(--t-touch) var(--ease-move);
 }
 .ch-open:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 3px; }
@@ -36,7 +36,7 @@
 @keyframes ch-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 html[data-motion="reduced"] .ch-prize.fresh { animation: none; }
 html[data-motion="reduced"] .ch-lid { transition: none; }
-.ch-prize-k { margin: 0; font-size: var(--f-meta); text-transform: uppercase; letter-spacing: var(--track-caps); color: var(--ink-3); }
+.ch-prize-k { margin: 0; font-size: var(--f-meta); text-transform: none; letter-spacing: var(--track-caps); color: var(--ink-3); }
 .ch-prize-title { margin: 0; font-size: var(--f-title); font-weight: var(--w-strong); }
 .ch-prize-what { margin: 0; font-size: var(--f-read); color: var(--ink-2); line-height: var(--lh-read); max-width: 60ch; }
 .ch-prize-line { margin: 4px 0 0; font-size: var(--f-read); color: var(--ink); font-weight: var(--w-strong); }
@@ -53,13 +53,13 @@ html[data-motion="reduced"] .ch-lid { transition: none; }
 .ch-echo-k, .ch-letter-k { margin: 0; font-size: var(--f-meta); color: var(--ink-3); }
 .ch-echo { margin: 0; font-size: var(--f-lead); line-height: var(--lh-read); color: var(--ink); font-style: italic; }
 .ch-echo-none { font-style: normal; font-size: var(--f-read); color: var(--ink-2); }
-.ch-letter textarea { width: 100%; padding: 10px 12px; font: inherit; font-size: var(--f-read); color: var(--ink); background: rgba(var(--film-rgb), .04); border: 1px solid var(--line); border-radius: var(--r-ctrl); resize: vertical; }
+.ch-letter textarea { width: 100%; padding: 10px 12px; font: inherit; font-size: var(--f-read); color: var(--ink); background: rgba(var(--film-rgb), .04); border: 1px solid var(--line); border-radius: var(--r-ctrl); resize: none; }
 .ch-letter textarea:focus { outline: none; border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-soft); }
-.ch-seal { align-self: flex-start; padding: 8px 16px; font-size: var(--f-ui); font-weight: var(--w-strong); border-radius: var(--r-pill); border: 0; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.ch-seal { align-self: flex-start; padding: 8px 16px; font-size: var(--f-ui); font-weight: var(--w-strong); border-radius: var(--r-pill); border: 0; background: var(--lamp5-bg); box-shadow: var(--lamp5-edge); color: var(--lamp5-ink); cursor: pointer; }
 .ch-seal:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 3px; }
 
 .ch-shelf { display: flex; flex-direction: column; gap: 8px; }
-.ch-shelf-title { margin: 0; font-size: var(--f-meta); text-transform: uppercase; letter-spacing: var(--track-caps); color: var(--ink-3); }
+.ch-shelf-title { margin: 0; font-size: var(--f-meta); text-transform: none; letter-spacing: var(--track-caps); color: var(--ink-3); }
 .ch-shelf ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
 .ch-item { display: grid; grid-template-columns: 64px 1fr auto; gap: 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: var(--f-read); }
 .ch-item-day { color: var(--ink-3); font-size: var(--f-meta); font-variant-numeric: tabular-nums; }
@@ -114,7 +114,7 @@ html[data-sigil="on"] .sticky-note::after {
 .sb-saver-in { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
 .sb-saver-time { font-size: var(--f-hero); font-weight: var(--w-strong); letter-spacing: var(--track-air); font-variant-numeric: tabular-nums; }
 .sb-saver-date { font-size: var(--f-read); color: var(--ink-2); }
-.sb-saver-name { font-size: var(--f-meta); color: var(--ink-3); letter-spacing: var(--track-caps); text-transform: uppercase; }
+.sb-saver-name { font-size: var(--f-meta); color: var(--ink-3); letter-spacing: var(--track-caps); text-transform: none; }
 html[data-motion="reduced"] #sbSaver { transition: none; }
 
 /* ── один фокус, чистый лист, в этот день, мой расклад ─────────────────── */
@@ -163,7 +163,7 @@ html[data-motion="reduced"] #sbGuest, html[data-motion="reduced"] #sbDayTrace { 
 #chRain[data-on="1"] { background: color-mix(in oklab, var(--accent) 22%, transparent); }
 .ch-first-born { margin: 0; font-size: var(--f-read); color: var(--ink); }
 .ch-first-when { margin: 0; font-size: var(--f-meta); color: var(--ink-3); }
-.ch-first-note { margin: 0; padding: 8px 12px; border-left: 2px solid var(--accent); font-size: var(--f-read); color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ch-first-note { margin: 0; font-size: var(--f-read); color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
 .ch-map-grid { display: flex; flex-wrap: wrap; gap: 4px; }
 .ch-map-dot { width: 10px; height: 10px; border-radius: var(--r-round); background: color-mix(in oklab, var(--ink) 12%, transparent); }
 .ch-map-dot.on { background: var(--accent); }
@@ -176,7 +176,7 @@ html[data-motion="reduced"] #sbGuest, html[data-motion="reduced"] #sbDayTrace { 
 .sb-breath-in { display: flex; flex-direction: column; align-items: center; gap: 22px; text-align: center; }
 .sb-breath-ring { width: 120px; height: 120px; border-radius: var(--r-round); background: color-mix(in oklab, var(--accent) 55%, transparent); box-shadow: 0 0 60px color-mix(in oklab, var(--accent) 35%, transparent); animation: sb-breath 16s ease-in-out infinite; }
 .sb-breath-phase { margin: 0; font-size: var(--f-title); font-weight: var(--w-strong); letter-spacing: var(--track-caps); min-height: 1.4em; }
-.sb-breath-left { margin: 0; font-size: var(--f-micro); color: var(--ink-3); letter-spacing: var(--track-caps); text-transform: uppercase; }
+.sb-breath-left { margin: 0; font-size: var(--f-micro); color: var(--ink-3); letter-spacing: var(--track-caps); text-transform: none; }
 /* Дыхание фона: четыре фазы по четверти круга — вдох, задержка, выдох, пауза. */
 @keyframes sb-breath {
   0% { transform: scale(1); }

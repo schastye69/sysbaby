@@ -46,6 +46,7 @@
         sub: appLabel(id),
         color: def.color || "",
         icon: def.icon || "",
+        znak: window.sbZnakIds && window.sbZnakIds().indexOf(id) !== -1 ? id : "",
         run: function () { if (window.toggleApp) window.toggleApp(id); }
       });
     });
@@ -151,10 +152,16 @@
       return;
     }
     list.innerHTML = items.map(function (a, i) {
+      /* Палитра говорит языком «Чистоты» (глубокий аудит Б-11, D-878): знак набора без цветной плитки,
+         подзаголовок — только когда он говорит новое (не «хранилище / хранилище»); строка поиска, оставшаяся
+         одна, говорит «ничего нет — искать везде». */
+      var sub = a.sub && String(a.sub).toLowerCase() !== String(a.title).toLowerCase() ? a.sub : "";
+      if (a.raw && items.length === 1) sub = tr("k.empty") + " \u2014 " + tr("k.everywhere");
+      var znak = a.znak && window.sbZnak ? window.sbZnak(a.znak) : (a.icon || "");
       return '<li class="cmdk-item' + (i === 0 ? " active" : "") + '" data-i="' + i + '" role="option">' +
-        '<span class="cmdk-tile" style="background:' + esc(a.color) + '">' + (a.icon || "") + "</span>" +
+        '<span class="cmdk-tile">' + znak + "</span>" +
         '<span class="cmdk-text"><span class="cmdk-title">' + esc(a.title) + "</span>" +
-        (a.sub ? '<span class="cmdk-sub">' + esc(a.sub) + "</span>" : "") + "</span></li>";
+        (sub ? '<span class="cmdk-sub">' + esc(sub) + "</span>" : "") + "</span></li>";
     }).join("");
     Array.prototype.forEach.call(list.querySelectorAll(".cmdk-item"), function (li) {
       li.addEventListener("pointerenter", function () { setActive(Number(li.getAttribute("data-i"))); });

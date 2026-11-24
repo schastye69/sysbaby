@@ -36,13 +36,14 @@
   "use strict";
 
   var doc = document;
-  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5.5l10-2v12"/><circle cx="6.6" cy="18" r="2.6"/><circle cx="16.6" cy="15.5" r="2.6"/></svg>';
+  /* Чистота А: знака этой комнаты в малом наборе нет — значок не рисуется, остаётся слово (имя комнаты). */
+  var ICON = "";
   var I = {
     prev: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5h2.2v13H7zM19 5.8v12.4L10.4 12z"/></svg>',
     next: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.8 5.5H17v13h-2.2zM5 5.8 13.6 12 5 18.2z"/></svg>',
     play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.8 19.4 12 7 19.2z"/></svg>',
     pause: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.2v14H7zM13.8 5H17v14h-3.2z"/></svg>',
-    folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a1.5 1.5 0 0 1 1.5-1.5h3.6l1.8 2.2h8.1a1.5 1.5 0 0 1 1.5 1.5v8.3a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>'
+    folder: sbZnak("folder")
   };
 
   function t(key, vars) { return typeof window.sbT === "function" ? window.sbT(key, vars) : key; }
