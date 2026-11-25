@@ -363,9 +363,23 @@
       /* Единственный выключатель системы, за которым стоит выход наружу
          (D-198, слой 3). Он выключен по умолчанию, и подпись рядом говорит
          ровно это, а не «улучшить уведомления». */
-      rowMarkup(esc(t("set.desktop.wake")), esc(t("set.desktop.wakeSub")), switchMarkup("wakeOutside"));
+      rowMarkup(esc(t("set.desktop.wake")), esc(t("set.desktop.wakeSub")), switchMarkup("wakeOutside")) +
+      desksMarkup();
       /* «Выровнять виджеты» снята (обход п.68): виджетов на столе нет — строка
          обещала то, чего не бывает. Вернётся вместе с виджетами. */
+  }
+
+  /* СТОЛЫ (D-1358, основатель 23.11.2026): список столов — перейти, переименовать, порядок, «новый стол»;
+     те же действия, что у звезды шкалы, в «+» и в пульте (core/desks.js). «Убрать» — следующим шагом. */
+  function desksMarkup() {
+    var D = window.sbDesks; if (!D || !D.list) return "";
+    var W = D.words, b = function (act, i, word, on) { return on ? '<button type="button" class="st-btn" data-desk-act="' + act + '" data-desk="' + i + '">' + esc(word) + "</button>" : ""; };
+    return '<h3 class="st-subtitle">' + esc(W("desks.list")) + "</h3>" +
+      D.list().map(function (d) {
+        return rowMarkup(esc(d.name), d.tools ? esc(W("desks.listSub")) : "",
+          '<span class="st-desk-acts">' + b("go", d.i, W("desks.go"), !d.cur) + b("rename", d.i, W("desks.rename"), d.rename) + b("up", d.i, W("desks.up"), d.up) + b("down", d.i, W("desks.down"), d.down) + b("remove", d.i, W("desks.remove"), d.remove) + "</span>");
+      }).join("") +
+      rowMarkup(esc(W(D.full() ? "desks.full" : "desks.new")), "", '<button type="button" class="st-btn primary" data-desk-act="new" data-desk="-1" aria-label="' + esc(W("desks.new")) + '"' + (D.full() ? " disabled" : "") + ">+</button>");
   }
 
   function profilesApi() { return window.sbProfiles || null; }
@@ -864,6 +878,12 @@
 
     var openBuild = host.querySelector("#stOpenBuild");
     if (openBuild) openBuild.addEventListener("click", function () { if (window.toggleApp) window.toggleApp("build"); });
+    host.querySelectorAll("[data-desk-act]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (!window.sbDesks) return;
+        window.sbDesks.act(btn.getAttribute("data-desk-act"), +btn.getAttribute("data-desk")).then(function () { render(win); });
+      });
+    });
     wireGeneral(win, host);
     wireMeet(win, host);
     wireAppearance(win, host);
@@ -932,7 +952,10 @@
     var inst = host.querySelector("#stInstall");
     if (inst && window.sbInstall) {
       inst.addEventListener("click", function () {
-        Promise.resolve(window.sbInstall.go()).then(function () { render(win); }, function () { render(win); });
+        /* «След» (D-1363): кнопка ждёт ответа браузера — ожидание названо aria-busy */
+        inst.setAttribute("aria-busy", "true");
+        var back = function () { inst.removeAttribute("aria-busy"); render(win); };
+        Promise.resolve(window.sbInstall.go()).then(back, back);
       });
     }
     var langSel = host.querySelector("#stLang");

@@ -367,6 +367,42 @@ window.SB_OUTWARD = {
       }
     },
     {
+      "id": "birth-video",
+      "title": {
+        "ru": "«Рождение» — ролик и кадр на воротах",
+        "en": "“Birth” — the clip and the still at the gate",
+        "ee": "«Sünd» — klipp ja kaader väravas"
+      },
+      "where": [
+        "os/core/birth.js:44",
+        "os/core/birth.js:59"
+      ],
+      "side": "self",
+      "byHand": false,
+      "host": "",
+      "noToggleWhy": {
+        "ru": "Выключателя нет: это файлы самой системы — ролик «Рождение» и его неподвижный кадр из папки core/birth с того же адреса. Тише его делает уже существующий выбор «меньше движения»: тогда берётся только кадр, без ролика. Чужих хозяев здесь нет.",
+        "en": "There is no switch: these are the system's own files — the “Birth” clip and its still frame from the core/birth folder at the same address. The existing “less motion” choice already makes it quieter: then only the still is taken, without the clip. No outside owners here.",
+        "ee": "Lülitit pole: need on süsteemi enda failid — klipp «Sünd» ja selle liikumatu kaader kaustast core/birth samalt aadressilt. Juba olemasolev valik «vähem liikumist» teeb selle vaiksemaks: siis võetakse ainult kaader, ilma klipita. Võõraid omanikke siin pole."
+      },
+      "what": {
+        "ru": "Пока ворота думают при регистрации, входе и переезде дома, система берёт свой ролик «Рождение» и его кадр — с того же адреса, что и вся система. Ничего не уходит: только забирается своё.",
+        "en": "While the gate is thinking at sign-up, sign-in and a home move, the system takes its own “Birth” clip and its still — from the same address as the whole system. Nothing leaves: it only fetches its own.",
+        "ee": "Kuni värav mõtleb registreerimisel, sisenemisel ja kodu kolimisel, võtab süsteem oma klipi «Sünd» ja selle kaadri — samalt aadressilt kui kogu süsteem. Midagi ei lähe välja: ainult oma tuuakse ära."
+      },
+      "who": {
+        "ru": "Тот, кто держит sys.baby, и посредник сети — или никто, если файлы уже в запасе. Ни одного чужого хозяина.",
+        "en": "Whoever hosts sys.baby, and the network intermediary — or nobody, if the files are already in reserve. Not a single outside owner.",
+        "ee": "See, kes sys.baby-d hoiab, ja võrgu vahendaja — või mitte keegi, kui failid on juba varus. Mitte ühtegi võõrast omanikku."
+      },
+      "default": "on",
+      "defaultWhy": {
+        "ru": "Свой адрес, чужих хозяев нет; выключателя нет — см. причину рядом.",
+        "en": "On by default: our own address, no outside owners; there is no switch — see the reason beside it.",
+        "ee": "Vaikimisi sees: oma aadress, võõraid omanikke pole; lülitit pole — vaata põhjust kõrval."
+      }
+    },
+    {
       "id": "shepot-postman-1",
       "title": {
         "ru": "Шёпот — почтальон relay.dwadziesciajeden.pl",

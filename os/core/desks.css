@@ -1,0 +1,92 @@
+/* sys.baby OS — core/desks.css · несколько столов и стол инструментов (D-1358, D-1359).
+   Шкала столов, вуаль и имя стола — числа показа zvezdy-temy6.html (блок «шкала столов — созвездие»);
+   цвет — свет середины темы (sbDeskTime.pal(): --sbd-c, --sbd-g). На столе показа всё в единицах 1280×800 /
+   390×844 — здесь тот же масштаб (--sbd-k). */
+#sbDesksFx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: var(--z-flat); pointer-events: none; }
+#sbDesks { position: fixed; inset: 0; z-index: calc(var(--z-desk) + 10); pointer-events: none; }
+#sbDesks.on { pointer-events: auto; }
+/* в покое пустые слои во весь экран не стоят на экране (core/desks.js: run): перехватчик — только на столе инструментов,
+   занавес, имя и звёздное поле — только на время своих анимаций */
+#sbDesks:not(.on), #sbDesksFx:not([data-sbd-run]), #sbDesksVeil:not([data-sbd-run]), #sbDesksTitle:not([data-sbd-run]) { visibility: hidden; }
+#sbDesks .sbd-desk { position: absolute; inset: 0; visibility: hidden; pointer-events: none; }
+#sbDesks .sbd-desk.on { visibility: visible; }
+#sbDesksVeil { position: fixed; inset: 0; z-index: calc(var(--z-window) - 1); pointer-events: none; }
+#sbDesksVeil > div { position: absolute; inset: 0; opacity: 0; }
+#sbDesksVeil .veil { /* своя краска: занавес перелёта — тьма показа zvezdy-temy6, чёрная в любой теме: стол уходит в глубину */ background: #000; }
+#sbDesksVeil .breath { /* своя краска: дыхание — свет середины темы (--sbd-c); числа в var() — свет Студии, пока середина темы не пришла */ background: radial-gradient(70% 60% at 50% 52%, rgba(var(--sbd-c, 255, 232, 210), .075), rgba(var(--sbd-c, 255, 232, 210), .025) 55%, rgba(0, 0, 0, 0) 80%); }
+#sbDesksTitle { --sbd-k: 1; position: fixed; left: 0; right: 0; text-align: center; pointer-events: none; opacity: 0; z-index: calc(var(--z-window) - 1); font-family: var(--font); }
+#sbDesksTitle b { display: block; font-weight: var(--w-thin); font-size: calc(var(--f-figure) * var(--sbd-k)); letter-spacing: var(--track-air); /* своя краска: имя стола — свет середины темы (--sbd-c); числа в var() — свет Студии, пока середина не пришла */ color: rgba(var(--sbd-c, 247, 244, 240), .95); /* своя краска: ореол имени — свет темы (--sbd-g), числа — запас Студии */ text-shadow: 0 0 24px rgba(var(--sbd-g, 236, 153, 85), .5); }
+#sbDesksTitle i { display: block; font-style: normal; font-size: calc(var(--f-ui) * var(--sbd-k)); letter-spacing: var(--track-air); /* своя краска: подпись имени — свет середины темы, числа — запас Студии */ color: rgba(var(--sbd-c, 247, 244, 240), .58); margin-top: calc(8px * var(--sbd-k)); }
+
+/* что видно: первый стол — свой, стол инструментов — свой, прочие — пустые (D-1359: на первом столе инструментов нет) */
+/* пометки на самих слоях (core/desks.js), не класс корня — смена стола не пересчитывает стили всего документа */
+:is(#sbIconLayer, #sbWidgetLayer, #sbDeskTime)[data-sbd-off] { visibility: hidden; }
+/* заметки — по своим столам: видимость задаёт core/desks.js (#sbDesksNotes) */
+#sbDeskTools[data-sbd-away] :is(.dt-pinhit, .dt-today, .dt-sound) { visibility: hidden; }
+#sbDeskTools[data-sbd-flight] * { pointer-events: none !important; }
+
+/* ── шкала столов — созвездие: крупные звёзды, тихая нить света, искра в полёте ── */
+#sbDesksGauge {
+  --sbd-k: 1;
+  position: fixed; right: 8px; top: 50%; transform: translateY(-50%) scale(var(--sbd-k)); transform-origin: 100% 50%;
+  width: 56px; display: flex; flex-direction: column-reverse; align-items: center; gap: 14px; z-index: var(--z-float); transition: opacity var(--t-scene) var(--ease-enter);
+}
+#sbDesksGauge.p { right: 2px; gap: 12px; }
+#sbDesksGauge.off, html.has-windows #sbDesksGauge, html.sb-kb #sbDesksGauge { opacity: 0; pointer-events: none; }
+#sbDesksGauge .thr { position: absolute; left: 50%; width: 1.5px; margin-left: -.75px; border-radius: var(--r-round); pointer-events: none; background: linear-gradient(180deg, rgba(var(--sbd-g), 0), rgba(var(--sbd-g), .24) 22%, rgba(var(--sbd-c), .28) 50%, rgba(var(--sbd-g), .24) 78%, rgba(var(--sbd-g), 0)); box-shadow: 0 0 6px rgba(var(--sbd-g), .18); }
+#sbDesksGauge button { position: relative; z-index: 1; width: 56px; height: 56px; border: 0; background: transparent; cursor: pointer; padding: 0; border-radius: var(--r-round); display: grid; place-items: center; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#sbDesksGauge button:focus-visible { outline: 1px solid rgba(var(--sbd-g), .7); outline-offset: -4px; }
+#sbDesksGauge .st { position: relative; width: 44px; height: 44px; display: grid; place-items: center; pointer-events: none; }
+#sbDesksGauge .cr { position: relative; width: 12px; height: 12px; border-radius: var(--r-round); /* своя краска: белая сердцевина звезды шкалы — свет показа, тема красит только её ореол (--sbd-c, --sbd-g) */ background: radial-gradient(circle, rgba(255, 255, 255, .95) 0, rgba(var(--sbd-c), .92) 34%, rgba(var(--sbd-g), .6) 68%, rgba(var(--sbd-g), 0) 100%); box-shadow: 0 0 8px 1px rgba(var(--sbd-g), .32); opacity: .58; transition: width var(--t-drift) var(--ease-enter), height var(--t-drift) var(--ease-enter), opacity var(--t-scene) var(--ease-move), transform var(--t-move) var(--ease-enter), box-shadow var(--t-drift) var(--ease-move); }
+#sbDesksGauge .hl { position: absolute; inset: -4px; border-radius: var(--r-round); background: radial-gradient(circle, rgba(var(--sbd-g), .46) 0, rgba(var(--sbd-g), .17) 36%, rgba(var(--sbd-g), 0) 68%); opacity: 0; transform: scale(.4); transition: opacity var(--t-rise) var(--ease-enter), transform var(--t-rise) var(--ease-enter); }
+#sbDesksGauge button.cur .cr { width: 18px; height: 18px; opacity: 1; /* своя краска: белая искра нынешней звезды — свет показа, ореол — свет темы */ box-shadow: 0 0 14px 3px rgba(var(--sbd-g), .6), 0 0 3px 1px rgba(255, 255, 255, .75); }
+#sbDesksGauge button.cur .hl { opacity: 1; transform: scale(1); animation: sbd-gbr 4.4s var(--ease-move) infinite; }
+@keyframes sbd-gbr { 0%, 100% { transform: scale(.84); opacity: .68; } 50% { transform: scale(1.16); opacity: 1; } }
+#sbDesksGauge button.tap .cr { opacity: 1; transform: scale(1.25); }
+#sbDesksGauge .nm { position: absolute; right: 100%; top: 50%; transform: translate(8px, -50%); opacity: 0; transition: opacity var(--t-move) var(--ease-move), transform var(--t-move) var(--ease-enter); pointer-events: none; white-space: nowrap; font: 400 16px/1 var(--font); color: rgba(var(--sbd-c), .94); /* своя краска: тьма под именем звезды — как в показе, чтобы имя читалось над любыми обоями */ text-shadow: 0 1px 10px rgba(0, 0, 0, .95), 0 0 16px rgba(var(--sbd-g), .4); }
+#sbDesksGauge button.show .nm { opacity: 1; transform: translate(0, -50%); }
+@media (hover: hover) and (pointer: fine) { :where(html:not([data-input="touch"])) #sbDesksGauge button:hover .cr { opacity: 1; transform: scale(1.25); } :where(html:not([data-input="touch"])) #sbDesksGauge button:hover .nm { opacity: 1; transform: translate(0, -50%); } }
+#sbDesksGauge .spk, #sbDesksGauge .blm { position: absolute; left: 50%; top: 0; z-index: 2; border-radius: var(--r-round); opacity: 0; pointer-events: none; }
+#sbDesksGauge .spk { width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; /* своя краска: искра в полёте белая, как в показе; цвет темы — в её ореоле */ background: #fff; box-shadow: 0 0 5px 2px rgba(var(--sbd-c), .9), 0 0 16px 5px rgba(var(--sbd-g), .5); }
+#sbDesksGauge .blm { width: 64px; height: 64px; margin: -32px 0 0 -32px; /* своя краска: белая сердцевина вспышки — свет показа, края — свет темы */ background: radial-gradient(circle, rgba(255, 255, 255, .5) 0, rgba(var(--sbd-c), .3) 20%, rgba(var(--sbd-g), .12) 46%, rgba(var(--sbd-g), 0) 70%); }
+/* D-1359: последняя звезда — стол инструментов, свой знак: шесть точек прежней ручки «инструменты» */
+#sbDesksGauge .sbd-sign { position: relative; display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; opacity: .62; transition: opacity var(--t-scene) var(--ease-move), transform var(--t-move) var(--ease-enter); }
+#sbDesksGauge .sbd-sign i { width: 4px; height: 4px; border-radius: var(--r-round); background: rgba(var(--sbd-c), .92); box-shadow: 0 0 5px rgba(var(--sbd-g), .55); }
+#sbDesksGauge button.cur .sbd-sign { opacity: 1; transform: scale(1.18); }
+#sbDesksGauge button.cur .sbd-sign i { /* своя краска: белая искра знака нынешнего стола — свет показа, ореол — свет темы */ box-shadow: 0 0 8px 1px rgba(var(--sbd-g), .75), 0 0 2px rgba(255, 255, 255, .7); }
+#sbDesksGauge button.tap .sbd-sign { opacity: 1; transform: scale(1.25); }
+@media (hover: hover) and (pointer: fine) { :where(html:not([data-input="touch"])) #sbDesksGauge button:hover .sbd-sign { opacity: 1; transform: scale(1.25); } }
+@media (prefers-reduced-motion: reduce) { #sbDesksGauge *, #sbDesksGauge { transition: none !important; animation: none !important; } }
+html[data-motion="reduced"] #sbDesksGauge, html[data-motion="reduced"] #sbDesksGauge * { transition: none !important; animation: none !important; }
+
+/* «столов уже три» в меню «+» — недоступно, как в показе */
+#sbCtxMenu .ctx-item[disabled] { opacity: .45; cursor: default; pointer-events: none; }
+
+/* пульт: строка «стол: Главный · Работа · +» — словами, без плашек */
+#sbCcDesks { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 6px; }
+#sbCcDesks .cc-desks-l { margin-right: 2px; }
+#sbCcDesks button { border: 0; background: transparent; color: inherit; font: inherit; padding: 6px 2px; min-height: 32px; cursor: pointer; border-radius: var(--r-ctrl); }
+#sbCcDesks button[aria-current="true"] { color: rgb(var(--accent-rgb)); }
+#sbCcDesks button:focus-visible { outline: 1px solid rgba(var(--accent-rgb), .6); outline-offset: 1px; }
+/* Настройки → «док и рабочий стол»: список столов (действия — обычные кнопки настроек) */
+.app-settings .st-pane > .st-subtitle { margin: 22px 0 8px; font-size: var(--f-ui); font-weight: var(--w-strong); color: var(--ink-2); }
+.app-settings .st-desk-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+/* слабое устройство, только на время перелёта (core/desks.js, data-sbd-lite): стекло значков и заметок не перемывается
+   под масштабом каждый кадр — его место на 1,5 с держит их заливка; в покое и на обычном устройстве вид прежний */
+:is(#sbIconLayer[data-sbd-lite] .icon-tile, #sbIconLayer[data-sbd-lite] .icon-capsule, #sbNoteLayer[data-sbd-lite] .sticky-note) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+
+/* заметки чужого стола (core/desks.js, data-sbd-hide) */
+#sbNoteLayer > .sticky-note[data-sbd-hide] { visibility: hidden !important; pointer-events: none !important; }
+
+
+/* слабое устройство: стол инструментов (его ряд) и первый стол держатся нарисованными своими композиторными слоями;
+   переход между ними — только прозрачность и касания (core/desks.js, core/desktools.js: data-sbd-arm, data-sbd-dim) */
+#sbDeskTools .dt-tray[data-sbd-arm], :is(#sbIconLayer, #sbWidgetLayer, #sbNoteLayer)[data-sbd-arm] { will-change: opacity; contain: strict; transition: opacity var(--t-touch) var(--ease-move); }
+#sbDeskTools .dt-tray[data-sbd-arm] { will-change: opacity, scale; transform-origin: 50% 100%; transition: opacity var(--t-touch) var(--ease-move), scale var(--t-touch) var(--ease-move); }
+#sbDeskTools .dt-tray[data-sbd-arm][data-sbd-dim] { scale: 1 0 !important; }
+#sbDeskTools .dt-tray[data-sbd-dim], :is(#sbIconLayer, #sbWidgetLayer, #sbNoteLayer)[data-sbd-dim] { opacity: 0 !important; }
+/* касания погашенного (pointer-events здесь не меняется: свойство наследуется, и его смена на слое пересчитывала бы
+   каждый значок и заметку): первого стола — принимает перехватчик стола инструментов (#sbDesks.on, выше слоёв), ряда — inert
+   (core/desktools.js, dimTray). Правила «[data-sbd-dim] *» здесь нет и быть не должно: набор пересчёта браузер держит по
+   имени пометки, и любое «… [data-sbd-dim] *» пересчитывало стили всего поддерева слоёв значков и заметок ровно в кадре
+   смены стола (замер ×4: 20–26 мс) */

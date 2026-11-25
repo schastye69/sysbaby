@@ -854,6 +854,8 @@
     var el = doc.createElement("div");
     el.className = "sticky-note";
     el.setAttribute("data-id", rec.id);
+    /* стол заметки (D-1358): своё — у своих столов, без отметки — первый стол */
+    el.setAttribute("data-desk", rec.desk || "main");
     el.style.left = num(rec.x, 120) + "px";
     el.style.top = num(rec.y, 140) + "px";
     if (rec.hand) el.setAttribute("data-hand", "1");
@@ -947,7 +949,9 @@
       }
       if (!found) {
         var np = notePos(el) || { x: num(rec.x, 120), y: num(rec.y, 140) };
-        live.unshift({ id: rec.id, text: value, pinned: false, updatedAt: Date.now(), onDesktop: true, x: np.x, y: np.y });
+        var nr = { id: rec.id, text: value, pinned: false, updatedAt: Date.now(), onDesktop: true, x: np.x, y: np.y };
+        if (rec.desk) nr.desk = rec.desk;
+        live.unshift(nr);
       }
       if (window.sbNotesStore) window.sbNotesStore.save(live);
     }
@@ -1318,9 +1322,27 @@
     return box;
   }
 
+  /* «След» (D-1363): пока правленая заметка уходит в носитель, она ждёт — ожидание названо aria-busy, и по её
+     кромке бежит искра; печать легла (vault:sealed) или запись не ушла (12 с) — ожидание снимается. */
+  var sealingEl = null, sealingT = 0;
+  function sealingOff() {
+    clearTimeout(sealingT); sealingT = 0;
+    if (sealingEl) { sealingEl.removeAttribute("aria-busy"); sealingEl = null; }
+  }
+  if (window.sbBus && window.sbBus.on) {
+    window.sbBus.on("vault:sealing", function (d) {
+      if (!d || !d.keys || d.keys.indexOf(NOTES_KEY) < 0 || !lastTouched) return;
+      var el = doc.querySelector('.sticky-note[data-id="' + String(lastTouched).replace(/"/g, '\\"') + '"]');
+      if (!el) return;
+      if (sealingEl && sealingEl !== el) sealingEl.removeAttribute("aria-busy");
+      sealingEl = el; el.setAttribute("aria-busy", "true");
+      clearTimeout(sealingT); sealingT = setTimeout(sealingOff, 12000);
+    });
+  }
   if (window.sbBus && window.sbBus.on) {
     window.sbBus.on("vault:sealed", function (d) {
       if (!d || d.key !== NOTES_KEY) return;
+      sealingOff();
       try {
         var env = window.sbSeals && window.sbSeals.bytes(d.name);
         if (env) stampSeal(env);
@@ -1649,6 +1671,8 @@
        icon reads as a bug even when it is exactly where you clicked. */
     var spot = noteSpotNear(x, y, 196, 96, null);
     var rec = { id: id, text: "", pinned: false, updatedAt: Date.now(), onDesktop: true, hand: true, x: spot.x, y: spot.y };
+    /* заметка ложится на тот стол, где её попросили (D-1358) */
+    var dk = window.sbDesks && window.sbDesks.curId ? window.sbDesks.curId() : null; if (dk) rec.desk = dk;
     var live = window.sbNotesStore.load();
     live.unshift(rec);
     window.sbNotesStore.save(live);
@@ -1864,6 +1888,8 @@
   /* ================================================== context menus §4.5 */
   var menuEl = null;
   window.sbContextMenuOpen = function () { return !!(menuEl && menuEl.classList.contains("open")); };
+  /* общее меню для чужих модулей (столы, D-1358): те же пункты и тот же вид, что у «+» */
+  window.sbMenu = function (items, x, y) { buildMenu(items, x, y); };
   window.sbCloseContextMenu = function () {
     if (menuEl) { menuEl.classList.remove("open"); menuEl.setAttribute("hidden", ""); menuEl.innerHTML = ""; }
   };
@@ -1879,7 +1905,7 @@
     if (!host) return;
     host.innerHTML = items.map(function (it) {
       if (it === "-") return '<div class="ctx-sep"></div>';
-      return '<button class="ctx-item" type="button">' + esc(it.label) + (it.check ? '<span class="ctx-check">' + sbZnak("check") + "</span>" : "") + "</button>";
+      return '<button class="ctx-item" type="button"' + (it.disabled ? " disabled" : "") + ">" + esc(it.label) + (it.check ? '<span class="ctx-check">' + sbZnak("check") + "</span>" : "") + "</button>";
     }).join("");
     host.removeAttribute("hidden");
     host.classList.add("open");
@@ -1926,8 +1952,14 @@
     var items = [
       /* НА СТОЛ. Единственное, что стол умеет без всякого повода, и ради чего
          кнопку чаще всего и нажимают. */
-      { label: tr("menu.newNote"), run: function () { createNoteAt(x, y); } }
+      /* заметка ложится на первый стол: с другого стола — сначала туда (D-1358) */
+      { label: tr("menu.newNote"), run: function () { if (window.sbDesks && window.sbDesks.onTools()) window.sbDesks.go(0); createNoteAt(x, y); } }
     ];
+    /* НЕСКОЛЬКО СТОЛОВ (D-1358, показ zvezdy-temy6): «новый стол»; на третьем — «столов уже три», недоступно */
+    if (window.sbDesks) {
+      var full = window.sbDesks.full();
+      items.push({ label: window.sbDesks.words(full ? "desks.full" : "desks.new"), disabled: full, run: function () { window.sbDesks.add(); } });
+    }
     if (typeof window.sbVaultBring === "function") {
       items.push({ label: tr("menu.bringThing"), run: function () {
         var inp = doc.createElement("input");

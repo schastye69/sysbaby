@@ -1325,6 +1325,8 @@
     if (out) out.innerHTML = whereHtml(t);
     var go = doc.querySelector('.window[data-app="lantern"] [data-where="go"]');
     if (go) go.textContent = whereFix && !whereFix.err ? t.whereAgain : t.whereGo;
+    /* «След» (D-1363): пока устройство ищет место — ожидание названо aria-busy, по кромке кнопки бежит искра */
+    if (go) { if (whereBusy) go.setAttribute("aria-busy", "true"); else go.removeAttribute("aria-busy"); }
     var cp = doc.querySelector('.window[data-app="lantern"] [data-where="copy"]');
     if (cp) cp.addEventListener("click", function () { copyWhere(cp, t); });
   }
@@ -1547,7 +1549,7 @@
         "</div>";
     } else if (c.tool && c.tool.kind === "where") {
       tool = '<div class="lt-tool lt-where" data-tool="where">' +
-        '<button type="button" class="lt-big" data-where="go">' + esc(whereFix ? t.whereAgain : t.whereGo) + "</button>" +
+        '<button type="button" class="lt-big" data-where="go"' + (whereBusy ? ' aria-busy="true"' : "") + ">" + esc(whereFix ? t.whereAgain : t.whereGo) + "</button>" +
         '<div class="lt-where-out" role="status" aria-live="polite">' + whereHtml(t) + "</div>" +
         '<p class="lt-tool-note">' + esc(t.whereNote) + "</p>" +
         "</div>";

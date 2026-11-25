@@ -244,6 +244,29 @@
     "</div>";
   }
 
+  /* ── УБРАННЫЕ СТОЛЫ (D-1358, основатель: вариант «А») ────────────────────
+     Стол лежит здесь ЦЕЛИКОМ одной строкой «Стол «Работа» — 5 заметок»: его заметки отдельно не показываются
+     (их нет среди удалённых заметок — они в записи стола, core/desks.js). Открыть — видно, что внутри; вернуть
+     можно весь стол (на прежнее место, со всем) или одну заметку. Своего хранилища у Эха по-прежнему нет. */
+  function removedDesks() {
+    try { return (window.sbDesks && window.sbDesks.removed && window.sbDesks.removed()) || []; }
+    catch (err) { console.error("[echoes] removed desks failed", err); return []; }
+  }
+  function deskRowMarkup(d) {
+    var W = window.sbDesks.words, fade = fadeOf(d.at);
+    return '<details class="ec-row ec-desk" data-desk="' + esc(d.id) + '" style="opacity:' + (1 - fade * 0.5).toFixed(3) + '">' +
+      '<summary class="ec-desk-sum">' + waveMarkup({ app: "desktop" }, fade) +
+        '<span class="ec-row-text"><span class="ec-snippet">' + esc(d.line) + "</span>" +
+        '<span class="ec-time">' + esc(timeAgo(d.at)) + "</span></span>" +
+        '<span class="ec-actions"><button type="button" class="ec-btn" data-restore-desk="' + esc(d.id) + '">' + esc(W("desks.restoreDesk")) + "</button></span>" +
+      "</summary>" +
+      d.notes.map(function (x) {
+        return '<div class="ec-row ec-desk-note"><span class="ec-row-text"><span class="ec-snippet" data-sb-userdata>' + esc(snippetOf(x.text)) + "</span></span>" +
+          '<span class="ec-actions"><button type="button" class="ec-btn" data-restore-desk-note="' + esc(x.id) + '" data-of="' + esc(d.id) + '">' + esc(t("ec.restore")) + "</button></span></div>";
+      }).join("") +
+    "</details>";
+  }
+
   function render(win) {
     var host = bodyOf(win);
     if (!host) return;
@@ -251,15 +274,17 @@
     var apps = hiddenApps();
     var parts = hiddenParts();
     var files = deletedFiles();
+    var desks = removedDesks();
 
     var markup;
-    if (!echoes.length && !apps.length && !parts.length && !files.length) {
+    if (!echoes.length && !apps.length && !parts.length && !files.length && !desks.length) {
       markup = '<div class="ec-empty">' +
         '<div class="ec-empty-glyph">' + ICON + "</div>" +
         '<p class="ec-empty-title">' + esc(t("ec.empty.title")) + "</p>" +
       "</div>";
     } else {
       markup = "";
+      if (desks.length) markup += desks.map(deskRowMarkup).join("");
       if (echoes.length) {
         markup += '<div class="ec-head">' +
           "<span>" + esc(t(({ one: "ec.count.one", few: "ec.count.few", many: "ec.count.many" })[countForm(echoes.length)], { n: echoes.length })) + "</span>" +
@@ -287,6 +312,21 @@
   }
 
   function wire(win, host, echoCount) {
+    host.querySelectorAll("[data-restore-desk]").forEach(function (btn) {
+      btn.addEventListener("click", function (ev) {
+        ev.preventDefault(); ev.stopPropagation();
+        if (window.sbDesks && window.sbDesks.restore(btn.getAttribute("data-restore-desk"))) toast(t("ec.toast.restoredTitle"), t("ec.toast.restoredBody"));
+        render(win);
+      });
+    });
+    host.querySelectorAll("[data-restore-desk-note]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (window.sbDesks && window.sbDesks.restoreNote(btn.getAttribute("data-of"), btn.getAttribute("data-restore-desk-note"))) toast(t("ec.toast.restoredTitle"), t("ec.toast.restoredBody"));
+        var open = {}; host.querySelectorAll("details[open]").forEach(function (d) { open[d.getAttribute("data-desk")] = 1; });
+        render(win);
+        host.querySelectorAll("details[data-desk]").forEach(function (d) { if (open[d.getAttribute("data-desk")]) d.open = true; });
+      });
+    });
     host.querySelectorAll("[data-restore-file]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         try { if (window.sbFilesRestore) window.sbFilesRestore(btn.getAttribute("data-restore-file")); }
@@ -384,6 +424,7 @@
     window.sbBus.on("icon:visibility", refreshOpen);
     window.sbBus.on("part:visibility", refreshOpen);
   }
+  window.addEventListener("sb:desks", refreshOpen);
 
   /* ------------------------------------------------- opt-in trace seeding */
 

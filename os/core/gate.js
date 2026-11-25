@@ -202,7 +202,9 @@
     cv.style.display = "";
     var fireOn = !window.__sbInvBlank;   /* D-704: огонь — у всех трёх дверей */
     if (!fireOn || t - lastFire >= 33 || t < activeUntil) { lastFire = t; render(t); }
-    if (t < activeUntil || (fireOn && !RM)) raf = requestAnimationFrame(frame);
+    /* D-1356: act() внутри кадра уже мог попросить следующий — второй цикл кадров не заводится (было: два цикла, каждый
+       кадр рисовался дважды) */
+    if (!raf && (t < activeUntil || (fireOn && !RM))) raf = requestAnimationFrame(frame);
   }
 
   /* ── «Живой огонь» · «Дальше» — ported from inversiya/ogon-var-src.html (FIRE.far, fireStep, sparks, fireRender, the

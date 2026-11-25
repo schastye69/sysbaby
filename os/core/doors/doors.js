@@ -207,6 +207,8 @@
       },
       focus: function (on) { if (!gone && got.api.focus) got.api.focus(!!on); },
       press: function () { if (!gone && got.api.press) got.api.press(); },
+      /* D-1356: нажатие — сцене два лёгких кадра, чтобы отклик ворот не ждал тяжёлого кадра. */
+      quiet: function () { if (!gone && got.api.quiet) got.api.quiet(); },
       hold: function (on) { if (gone) return; host.setAttribute("data-held", on ? "1" : "0"); if (got.api.hold) got.api.hold(!!on); },
       line: function () { return gone ? null : got.kit.lineY; },
       need: function (n) { if (gone) return; got.kit.need = n; if (got.api.need) got.api.need(n); },
@@ -227,7 +229,9 @@
           if (fired) return;
           fired = true;
           if (!gone) setState("open");
-          if (done) done();
+          /* D-1356: стол встаёт своей задачей, не в кадре сцены — кадр и раскладка стола не складываются в одну
+             долгую задачу на слабом телефоне. */
+          if (done) window.setTimeout(done, 0);
         }
         if (gone) { finish(); return; }
         window.clearTimeout(calm);

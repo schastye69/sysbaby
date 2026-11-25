@@ -122,6 +122,8 @@ function kick() { if (loopOn || !on()) return; loopOn = true; last = performance
 function frame(ts) {
   loopOn = false;
   if (!running || !on()) return;
+  /* пауза на время смены стола на слабом устройстве (core/desks.js, ~0,2 с): кадр не рисуется, вид — тот же */
+  const hold = window.sbFramesHeld ? window.sbFramesHeld() : 0; if (hold > 0) { setTimeout(kick, hold + 1); return; }
   if (!drawn) { readColors(); sizeCanvases(); drawBG(); drawn = true; }
   if (parked()) { setTimeout(kick, 1000); return; }
   if (!RM) { loopOn = true; requestAnimationFrame(frame); }

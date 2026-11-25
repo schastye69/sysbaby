@@ -5786,12 +5786,16 @@
     if (window.ResizeObserver) { var boxEl = gate.querySelector(".vg-box"); if (boxEl) new ResizeObserver(function () { placeCluster(); }).observe(boxEl); }
     if (window.visualViewport) { window.visualViewport.addEventListener("resize", placeCluster); window.visualViewport.addEventListener("scroll", placeCluster); }
     mountDoor();
+    /* D-1362: пока ворота думают (vg-work — вход, первое слово, переезд, код), поверх них идёт «Рождение» (core/birth.js);
+       оно ничего не ждёт и ничего не держит — только заполняет то же самое ожидание. */
+    try { if (window.sbBirth) window.sbBirth.watch(gate); } catch (e) { /* без слоя ворота те же */ }
     function tryOpen() {
       if (busy) return;
       busy = true;
       errEl.hidden = true;
       /* С нажатия вид двери не меняется: решение «3D или картина» — только до него. */
       if (door && door.press) door.press();
+      if (door && door.quiet) door.quiet();
       /* ── ЗАДЕРЖКА ПОКАЗАНА ТЕМ, ЧЕМ ОНА ЕСТЬ (D-182) ────────────────────
          Растяжка пароля считается от полусекунды до двух с половиной — это
          цена, которую платит тот, кто станет пароль угадывать. Обычная
@@ -5990,6 +5994,26 @@
       }, 40);
       return sh;
     }
+    /* ── ОТВЕТ ОКНА ПЕРВОГО СЛОВА — В ОДНУ И ТУ ЖЕ МИНУТУ (D-1357) ────────────
+       Основатель 22.11.2026: «Сказать первое слово» там, где мир есть, и регистрация на пустом устройстве — одинаковое
+       время. Оба пути делают одну и ту же работу (firstBurn), а ответ показывается ровно в назначенную минуту. Минута
+       назначается ДО нажатия, в миг открытия окна, по скорости самого устройства (замер главного потока: 48 ×
+       getRandomValues по 64 КиБ, середина семи) — и только по ней: ни мир, ни слово её не меняют. Работа дольше минуты
+       (очень медленное устройство) — ответ на ближайшей следующей ступени FIRST_STEP. */
+    var FIRST_AT = [[1.6, 7500], [8, 18000], [Infinity, 30000]], FIRST_STEP = 6000, firstAt = 7500;
+    function firstSpeed() {
+      var u = new Uint8Array(65536), ms = [], k, i, t;
+      try {
+        for (k = 0; k < 7; k++) { t = performance.now(); for (i = 0; i < 48; i++) window.crypto.getRandomValues(u); ms.push(performance.now() - t); }
+      } catch (e) { return 1; }
+      ms.sort(function (a, b) { return a - b; });
+      return ms[3];
+    }
+    function firstPad(t0) {
+      var spent = performance.now() - t0, at = firstAt;
+      if (spent > at) at += Math.ceil((spent - at) / FIRST_STEP) * FIRST_STEP;
+      return new Promise(function (ok) { setTimeout(ok, Math.max(0, at - spent)); });
+    }
     function strengthText(w) {
       var V = window.sbVault;
       if (!w) return "";
@@ -6017,6 +6041,10 @@
         '<p class="vg-sheet-meta vg-busy" id="sbFirstBusy" role="status" aria-live="polite" hidden></p>' +
         '<div class="vg-sheet-acts"><button type="button" class="main" id="sbFirstGo">' + escapeHtml(gateText("lock.menu.first")) + '</button><button type="button" data-sheet-x>' + escapeHtml(gateText("lock.notNow")) + "</button></div>");
       var w1 = s.querySelector("#sbFirstWord"), w2 = s.querySelector("#sbFirstWord2"), st = s.querySelector("#sbFirstStrength"), er = s.querySelector("#sbFirstErr");
+      /* D-1357: минута ответа — по скорости устройства, до нажатия. */
+      (function () { var sp = firstSpeed(); for (var q = 0; q < FIRST_AT.length; q++) if (sp < FIRST_AT[q][0]) { firstAt = FIRST_AT[q][1]; break; } })();
+      /* D-1356: пока пишется слово — замер устройства и поток склада готовятся (одинаково с миром и без). */
+      try { if (window.sbVault && window.sbVault.warm) window.sbVault.warm(); } catch (e) { /* без подготовки — поворот сделает сам */ }
       w1.addEventListener("input", function () { st.textContent = strengthText(w1.value); });
       s.querySelector("#sbFirstNoSave").addEventListener("click", function () {
         var on = this.getAttribute("aria-pressed") !== "true";
@@ -6036,6 +6064,8 @@
         if (String(w).length < 4) { say("lock.first.short"); return; }
         if (w !== w2.value) { say("lock.mismatch"); return; }
         going = true;
+        var pressAt = performance.now();
+        if (door && door.quiet) door.quiet();
         busy(true);
         gate.classList.add("vg-work");
         /* Мир здесь уже есть: второго мира ячейки носителя не держат (D-351), и
@@ -6043,16 +6073,27 @@
            чем отвечает запирание пустого устройства (две растяжки слова).
            Ни слова о том, что мир есть: см. «Шифр 09.11» в STATUS. */
         if (window.sbVault.isLocked()) {
-          var V0 = window.sbVault, burn = function () { return V0.todayKdf ? V0.todayKdf(w).catch(function () { return null; }) : Promise.resolve(null); };
-          burn().then(burn).then(function () { going = false; gate.classList.remove("vg-work"); say("lock.first.fail"); });
+          /* D-1356: две растяжки той же цены, что у поворота пустого устройства (замер этого сеанса). */
+          var V0 = window.sbVault, burn2 = V0.firstBurn ? function () { return V0.firstBurn(w).catch(function () { return null; }); }
+            : function () { var b = function () { return V0.todayKdf ? V0.todayKdf(w).catch(function () { return null; }) : Promise.resolve(null); }; return b().then(b); };
+          burn2().then(function () { return firstPad(pressAt); }).then(function () { going = false; gate.classList.remove("vg-work"); say("lock.first.fail"); });
           return;
         }
         /* Замок закрывает сеанс — мир тут же открывается тем же словом. */
+        var padded = function (f) { return function (v) { return firstPad(pressAt).then(function () { return f(v); }); }; };
+        /* D-1357: всё, что стоит времени (язык двери, вопрос о месте на диске), — до ступени; после неё — только
+           показать ответ, синхронно, как показывает отказ. */
+        var quota = null;   /* { q } */
         window.sbVault.lock(w).then(function () { return window.sbVault.unlock(w); }).then(function (okp) {
+          if (okp) {
+            try { localStorage.setItem("sysbaby.authed", "1"); } catch (e) { /* ignore */ }
+            adoptDoorLangIfNone();
+            return guardQuota().then(function (q) { quota = { q: q }; return okp; });
+          }
+          return okp;
+        }).then(padded(function (okp) {
           gate.classList.remove("vg-work");
           if (!okp) { going = false; say("lock.first.fail"); return; }
-          try { localStorage.setItem("sysbaby.authed", "1"); } catch (e) { /* ignore */ }
-          adoptDoorLangIfNone();
           s.close();
           worldGuard(function () {
             openedGate();
@@ -6062,8 +6103,8 @@
             var fwLang = gateLang();
             try { fwLang = localStorage.getItem("sysbaby.i18n.lang") || fwLang; } catch (e) { /* язык двери */ }
             sbEvent("sb:first-word", { at: window.sbFirstWordAt, lang: fwLang });
-          });
-        }, function () { going = false; gate.classList.remove("vg-work"); say("lock.first.fail"); });
+          }, quota);
+        }), padded(function () { going = false; gate.classList.remove("vg-work"); say("lock.first.fail"); }));
       }
       s.querySelector("#sbFirstGo").addEventListener("click", go);
       [w1, w2].forEach(function (x) { x.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); go(); } }); });
@@ -6104,10 +6145,14 @@
        — только когда браузер дал сайту крошечное хранилище. «Сделать код» —
        стол и сразу окно замка у кода; «Войти» — стол. Охраняется
        tools/world-guard-check.mjs. */
-    function worldGuard(done) {
+    function guardQuota() {
+      return navigator.storage && navigator.storage.estimate ? navigator.storage.estimate().then(function (e) { return e && e.quota; }, function () { return null; }) : Promise.resolve(null);
+    }
+    /* known — { q } уже спрошенный объём (D-1357): лист встаёт в той же задаче, без ожидания. */
+    function worldGuard(done, known) {
       var ua = navigator.userAgent || "";
       var safari = /safari/i.test(ua) && !/chrome|chromium|crios|fxios|android|edg/i.test(ua);
-      var est = navigator.storage && navigator.storage.estimate ? navigator.storage.estimate().then(function (e) { return e && e.quota; }, function () { return null; }) : Promise.resolve(null);
+      var est = known ? { then: function (f) { f(known.q); } } : guardQuota();
       est.then(function (quota) {
         var priv = typeof quota === "number" && quota > 0 && quota < 300 * 1048576;
         var s = sheet(gateText("lock.guard.title"),
@@ -6159,9 +6204,13 @@
         if (window.visualViewport) { window.visualViewport.removeEventListener("resize", placeCluster); window.visualViewport.removeEventListener("scroll", placeCluster); }
         if (door) { door.destroy(); door = null; }
         if (gate.parentNode) gate.remove();
-        onDone();
-        /* Дверь ушла — слышат те, кто ждал её ухода (build, имя на панели). */
-        try { doc.dispatchEvent(new CustomEvent("sysbaby:door-gone")); } catch (e) { /* ignore */ }
+        /* D-1356: занавес и стол — следующей задачей: уход ворот и первая раскладка стола не складываются в одну
+           долгую задачу на слабом телефоне. */
+        setTimeout(function () {
+          onDone();
+          /* Дверь ушла — слышат те, кто ждал её ухода (build, имя на панели). */
+          try { doc.dispatchEvent(new CustomEvent("sysbaby:door-gone")); } catch (e) { /* ignore */ }
+        }, 0);
       };
       setTimeout(function () { iris = true; go(); }, 980);
       gate.addEventListener("transitionend", function (ev) { if (ev.propertyName === "transform") { iris = true; go(); } });
@@ -6237,7 +6286,9 @@
     if (typeof window.sbSetBrightness === "function" && typeof window.sbGetBrightness === "function") {
       try { window.sbSetBrightness(window.sbGetBrightness()); } catch (e) { /* ignore */ }
     }
-    if (typeof window.sbApplyLang === "function") { try { window.sbApplyLang(); } catch (e) { /* ignore */ } }
+    /* D-1356: язык (перевод и перестройка стола) — следующей задачей: вид и язык не складываются в одну долгую
+       задачу на слабом телефоне. */
+    if (typeof window.sbApplyLang === "function") setTimeout(function () { try { window.sbApplyLang(); } catch (e) { /* ignore */ } }, 0);
   };
 
   /* ---- cinematic curtain ---- */

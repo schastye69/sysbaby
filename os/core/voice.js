@@ -506,6 +506,8 @@
   }
   function frame(now) {
     raf = 0; if (!cx) return;
+    /* пауза на время смены стола на слабом устройстве (core/desks.js, ~0,2 с); время фразы — по часам, ничего не теряется */
+    var hold = window.sbFramesHeld ? window.sbFramesHeld() : 0; if (hold > 0) { setTimeout(kick, hold + 1); return; }
     var dt = last ? Math.min(rested ? REST / 1000 + 0.1 : 0.05, Math.max(0, (now - last) / 1000)) : 1 / 60; last = now; rested = false;
     var t0 = performance.now(), a0 = E.skyA;
     var busy = step(dt); draw();
@@ -776,9 +778,6 @@
     for (var i = 0; i < list.length; i++) {
       var e = list[i];
       if (e === shade || e === cv || (layer && layer.contains(e))) continue;
-      /* ручка «инструменты ⌃» (H4e, D-1302) стоит в ряду голоса только до фразы: с первым словом она уступает
-         и поднимается над небом голоса (desktools.css) — неба не гасит */
-      if (e.closest && e.closest("#sbDeskTools .dt-handle")) continue;
       if (e === root || e === doc.body) return false;
       return !(desk && desk.contains(e));
     }

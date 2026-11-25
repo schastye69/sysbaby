@@ -87,6 +87,8 @@
   function frame(now) {
     raf = 0;
     if (!cv) return;
+    /* пауза на время смены стола на слабом устройстве (core/desks.js, ~0,2 с): кромка стоит, вид тот же */
+    var hold = window.sbFramesHeld ? window.sbFramesHeld() : 0; if (hold > 0) { setTimeout(kick, hold + 1); return; }
     if (!on()) {
       if (dirty) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); dirty = false; }
       if (gate()) setTimeout(kick, 500);      /* ворота уйдут — кромка вернётся */

@@ -8,6 +8,7 @@
   "use strict";
   var D = {
     en: {
+      "lock.birth.done": "ready",
       "welcome.p1": "Hello. This home is yours now — make yourself comfortable.",
       "welcome.p3": "Whatever you write here stays with you alone.",
       "welcome.p8": "The first note is ours. All the others will be yours.",
@@ -65,6 +66,7 @@
       "desk.t.time": "it is time"
     },
     ru: {
+      "lock.birth.done": "готово",
       "welcome.p1": "{V:Привет. Этот дом теперь твой — располагайся.|Здравствуйте. Этот дом теперь ваш — располагайтесь.}",
       "welcome.p3": "Всё, что {V:ты здесь напишешь|вы здесь напишете}, останется только у {V:тебя|вас}.",
       "welcome.p8": "Первая заметка — наша. Все остальные будут {V:твоими|вашими}.",
@@ -122,6 +124,7 @@
       "desk.t.time": "пора"
     },
     ee: {
+      "lock.birth.done": "valmis",
       "welcome.p1": "Tere. See kodu on nüüd teie oma — tundke end mugavalt.",
       "welcome.p3": "Kõik, mis te siia kirjutate, jääb ainult teile.",
       "welcome.p8": "Esimene märge on meie oma. Kõik ülejäänud on teie omad.",

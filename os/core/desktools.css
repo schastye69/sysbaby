@@ -228,29 +228,27 @@ html.sb-tools-wide #sbIconLayer { opacity: 0; visibility: hidden; transition: op
 #sbDeskTools .dt-pinhit[hidden] { display: none; }
 #sbDeskTools .dt-pinhit:focus-visible { outline: 1px solid rgba(var(--dt-c), .45); outline-offset: 2px; }
 
-/* ── H4e: ручка «инструменты» у нижнего края, в ряд с «+» (D-1302) ── */
-#sbDeskTools .dt-handle {
-  position: absolute; left: 50%; transform: translate(-50%, -50%); height: 36px; padding: 0 14px 0 12px; border-radius: var(--r-pill);
-  display: inline-flex; align-items: center; gap: 8px; pointer-events: auto; cursor: pointer;
-  /* плашка ручки — тоном ореола темы, а не нейтральной вуалью: в Тепле тьма цветная, не бурая (D-824, teplo-mandarin) */
-  border: 1px solid rgba(var(--dt-g), .22); background: rgba(var(--dt-g), .08); color: rgba(var(--dt-g), .95);
-  font: var(--w-text) var(--f-ui)/var(--lh-one) var(--font); text-transform: lowercase; letter-spacing: 0; -webkit-tap-highlight-color: transparent;
-  transition: background var(--t-touch) var(--ease-move), border-color var(--t-touch) var(--ease-move), opacity var(--t-move) var(--ease-move);
+/* ── D-1359: стол инструментов — ручки «инструменты» на первом столе нет; ряд раскрыт у нижнего края своего стола,
+   в полный размер ряда показа zvezdy-temy6 (широкий: до 900 px, слова 15, знаки 17, по 15 px с боков; телефон — знак
+   над словом, 62 × 52, знаки 21, между рядами 12). Свет выбранного — над рядом. ── */
+#sbDeskTools.dt-desk > .dt-tray {
+  position: absolute; left: 50%; bottom: var(--dt-tray-b, 76px); transform: translateX(-50%);
+  width: min(calc(100vw - 32px), 900px); gap: 2px 0; pointer-events: auto; opacity: 0; animation: dt-in .42s var(--ease-enter) forwards;
 }
-#sbDeskTools .dt-handle[hidden] { display: none; }
-#sbDeskTools .dt-dots { display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; flex: none; }
-#sbDeskTools .dt-dots i { width: 4px; height: 4px; border-radius: var(--r-round); background: rgba(var(--dt-g), .95); box-shadow: 0 0 5px rgba(var(--dt-g), .5); transition: transform var(--t-move) var(--ease-move); }
-#sbDeskTools .dt-chev { width: 12px; height: 12px; flex: none; fill: none; stroke: rgba(var(--dt-g), .9); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--t-move) var(--ease-move); }
-#sbDeskTools .dt-handle.open { background: rgba(var(--dt-g), .14); border-color: rgba(var(--dt-g), .4); }
-#sbDeskTools .dt-handle.open .dt-chev { transform: rotate(180deg); }
-#sbDeskTools .dt-handle.open .dt-dots i:nth-child(odd) { transform: scale(.6); }
-#sbDeskTools .dt-handle:focus-visible { outline: 1px solid rgba(var(--dt-c), .5); outline-offset: 2px; }
-/* пока говорит голос, его строка — внизу посередине: ручка поднимается над ней и остаётся под пальцем */
-#sbDeskTools .dt-handle { transition: background var(--t-touch) var(--ease-move), border-color var(--t-touch) var(--ease-move), opacity var(--t-move) var(--ease-move), top var(--t-move) var(--ease-move); }
-html:has(#sbVoiceShade.on) #sbDeskTools .dt-handle { margin-top: -76px; }
-html.sb-kb #sbDeskTools .dt-handle { visibility: hidden; }
-@media (prefers-reduced-motion: reduce) { #sbDeskTools .dt-handle, #sbDeskTools .dt-chev, #sbDeskTools .dt-dots i { transition: none; } }
-html[data-motion="reduced"] #sbDeskTools .dt-handle, html[data-motion="reduced"] #sbDeskTools .dt-chev { transition: none; }
+#sbDeskTools.dt-desk > .dt-tray > .dt-word { display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin: 0 15px; min-height: 40px; padding: 0; font-size: var(--f-lead); }
+#sbDeskTools.dt-desk > .dt-tray > .dt-word .dt-ico { width: 17px; height: 17px; margin: 0; }
+@media (max-width: 700px) {
+  #sbDeskTools.dt-desk > .dt-tray { width: min(calc(100vw - 16px), 372px); gap: 12px 0; }
+  /* узкий телефон (360): шесть в ряд — ширина слова не больше шестой части ряда, как масштаб показа (372 × 360/390) */
+  #sbDeskTools.dt-desk > .dt-tray > .dt-word { flex-direction: column; gap: 5px; width: min(62px, calc((100vw - 16px) / 6)); min-height: 52px; margin: 0; font-size: min(var(--f-micro), 2.82vw); letter-spacing: var(--track-tight); }
+  #sbDeskTools.dt-desk > .dt-tray > .dt-word .dt-ico { width: min(21px, 5.38vw); height: min(21px, 5.38vw); }
+  #sbDeskTools.dt-desk > .dt-tray > .dt-word.pinned::after { bottom: -1px; }
+}
+/* пока говорит голос, его строка — внизу посередине: ряд поднимается над ней (как прежде ручка) */
+html:has(#sbVoiceShade.on) #sbDeskTools.dt-desk > .dt-tray { margin-bottom: 76px; }
+#sbDeskTools.dt-desk > .dt-tray { transition: margin-bottom var(--t-move) var(--ease-move); }
+@media (prefers-reduced-motion: reduce) { #sbDeskTools.dt-desk > .dt-tray { animation: none; opacity: 1; } }
+html[data-motion="reduced"] #sbDeskTools.dt-desk > .dt-tray { animation: none; opacity: 1; }
 
 /* ── H4e: бейдж идущего таймера в шапке — только когда самого таймера на столе не видно (D-1303) ── */
 #sbClockBtn .tb-run { display: inline-flex; align-items: center; gap: 5px; margin-right: 9px; color: var(--ink); font-variant-numeric: tabular-nums; }

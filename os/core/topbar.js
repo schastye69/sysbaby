@@ -587,8 +587,8 @@
        одним взглядом вверх, а на каком он языке — только у нас. */
     var narrow = window.innerWidth < 480;
     /* НЕ ПОКАЗЫВАТЬ ОДНО И ТО ЖЕ ДВАЖДЫ (H4e, D-1300; основатель 15.11.2026: «гениальное решение»): пока часы
-       стоят на столе (html.sb-desk-clock ставит core/desktools.js), в шапке только дата; часы убрали — время вернулось. */
-    var deskClock = doc.documentElement.classList.contains("sb-desk-clock");
+       стоят на столе (#topbar.sb-desk-clock ставит core/desktools.js), в шапке только дата; часы убрали — время вернулось. */
+    var tbE = doc.getElementById("topbar"), deskClock = !!(tbE && tbE.classList.contains("sb-desk-clock"));
     var opts = window.innerWidth < 560 ? { day: "numeric", month: "short" } : { weekday: "short", day: "numeric", month: "short" };
     var dateStr = narrow && !deskClock ? "" : d.toLocaleDateString(localeFor(), opts);
     /* ЧАСЫ БЕЗ СЕКУНД (D-609, основатель 04.11.2026: «Секунды убираем, конечно»): в верхней панели — часы и

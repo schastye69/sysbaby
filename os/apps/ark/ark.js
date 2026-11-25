@@ -506,7 +506,7 @@
         '<section class="ak-card">' +
           '<h2 class="ak-card-h">' + esc(t.buildH) + "</h2>" +
           '<p class="ak-card-p">' + esc(t.buildP) + "</p>" +
-          '<button type="button" class="ak-btn primary" data-ark="build"' + (b ? " disabled" : "") + ">" +
+          '<button type="button" class="ak-btn primary" data-ark="build"' + (b ? " disabled" : "") + (busy === "build" ? ' aria-busy="true"' : "") + ">" +
             esc(busy === "build" && progress ? progress : t.buildGo) + "</button>" +
           /* Итог встаёт там, куда человек смотрел, нажимая: под своей кнопкой. */
           (last && !last.cargo ? doneHtml(t) : "") +
@@ -514,7 +514,7 @@
         '<section class="ak-card cargo">' +
           '<h2 class="ak-card-h">' + esc(t.cargoH) + "</h2>" +
           '<p class="ak-card-p">' + esc(t.cargoP) + "</p>" +
-          '<button type="button" class="ak-btn" data-ark="cargo"' + (cargoOff || b ? " disabled" : "") + ">" +
+          '<button type="button" class="ak-btn" data-ark="cargo"' + (cargoOff || b ? " disabled" : "") + (busy === "cargo" ? ' aria-busy="true"' : "") + ">" +
             esc(busy === "cargo" && progress ? progress : t.cargoGo) + "</button>" +
           /* Причина — и сразу дорога к замку, одна на всю систему (D-317):
              кнопку отдаёт ядро, нажатие ведёт ядро. */
@@ -545,7 +545,7 @@
         '<p class="ak-card-p">' + esc(t.cargoIn) + "</p>" +
         '<form class="ak-unpack" id="akForm" autocomplete="off">' +
           '<input type="password" id="akWord" class="ak-word" autocomplete="current-password" aria-label="' + esc(t.word) + '" placeholder="' + esc(t.word) + '"' + (busy ? " disabled" : "") + ">" +
-          '<button type="submit" class="ak-btn primary" id="akUnpack"' + (busy ? " disabled" : "") + ">" + esc(busy === "unpack" ? t.unpacking : t.unpack) + "</button>" +
+          '<button type="submit" class="ak-btn primary" id="akUnpack"' + (busy ? " disabled" : "") + (busy === "unpack" ? ' aria-busy="true"' : "") + ">" + esc(busy === "unpack" ? t.unpacking : t.unpack) + "</button>" +
           '<button type="button" class="ak-btn ghost" id="akLater"' + (busy ? " disabled" : "") + ">" + esc(t.later) + "</button>" +
         "</form>" +
         '<p class="ak-err" role="alert">' + esc(err) + "</p>" +
@@ -584,7 +584,7 @@
     var tick = function (n, total) {
       progress = fill(t.working, { n: n, total: total });
       var btn = doc.querySelector('.window[data-app="ark"] [data-ark="' + busy + '"]');
-      if (btn) btn.textContent = progress;
+      if (btn) { btn.textContent = progress; if (total) btn.setAttribute("data-sled-p", String(n / total)); }   /* «След» (D-1363): дуга — честный ход сборки */
     };
     var sealed = withCargo
       ? (window.sbAskPresence ? window.sbAskPresence() : Promise.resolve(true)).then(function (okp) {

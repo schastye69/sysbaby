@@ -5,6 +5,10 @@
  * Loaded FIRST (in <head>), before every other module. */
 (function () {
   "use strict";
+  /* Поток склада (D-1356) — файл рядом с этим, с той же меткой сборки. В ковчеге
+     адреса нет: склад заводится здесь же, кусками с передышкой. */
+  var FILL_SRC = "";
+  try { var selfSrc = document.currentScript && document.currentScript.src; if (selfSrc && /\/store\.js(\?|$)/.test(selfSrc)) FILL_SRC = selfSrc.replace(/\/store\.js(\?|$)/, "/fill.js$1"); } catch (e) { /* ковчег */ }
 
   /* ---------------------------------------------------------------- 0. raw */
   /* Grab the native storage object once, before the incognito facade may
@@ -667,6 +671,7 @@
 
   /* ------------------------------------------------ 6. IndexedDB mirror §1.4 */
   var idbPromise = null;
+  var IDB_VERSION = 6;
   function idb(forErase) {
     if (window.sbIncognitoActive) return Promise.resolve(null);
     /* Замок исчез (или появился) под вкладкой — базы она не открывает (и не
@@ -700,7 +705,7 @@
       /* Версия 6 (A1 разбора границ): те же ворота против сборки до A1 —
          она без Web Locks ставила и поворачивала замок сравнением-и-заменой,
          а эта в браузере без них общего не пишет вовсе. */
-      try { req = window.indexedDB.open("sysbaby", 6); } catch (e) { resolve(null); return; }
+      try { req = window.indexedDB.open("sysbaby", IDB_VERSION); } catch (e) { resolve(null); return; }
       if (!req) { resolve(null); return; }
       req.onupgradeneeded = function () {
         var db = req.result;
@@ -4852,12 +4857,17 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     thOnOpen(ks, vaultRole !== 0);
     bumpEpoch("open");
     if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:change", { locked: true, open: true });
-    if (typeof window.sbApplyStoredAppearance === "function") {
-      try { window.sbApplyStoredAppearance(); } catch (e) { /* ignore */ }
-    }
-    if (typeof window.sbNotesStore === "object" && window.sbNotesStore.notify) {
-      try { window.sbNotesStore.notify(); } catch (e) { /* ignore */ }
-    }
+    /* D-1356: вид мира (тема, язык, раскладка стола) — следующей задачей: открытие мира и перестройка стола не
+       складываются в одну долгую задачу на слабом телефоне. Мир уже открыт; стол ещё за дверью. */
+    yieldTask().then(function () {
+      if (!vaultOpen || vaultKeys !== ks) return;
+      if (typeof window.sbApplyStoredAppearance === "function") {
+        try { window.sbApplyStoredAppearance(); } catch (e) { /* ignore */ }
+      }
+      if (typeof window.sbNotesStore === "object" && window.sbNotesStore.notify) {
+        try { window.sbNotesStore.notify(); } catch (e) { /* ignore */ }
+      }
+    });
     return true;
   }
   /* Довести переезд: свои прежние конверты — в пустышки, запись замка — без
@@ -5208,6 +5218,8 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     var changed = Array.from(carrierChanged);
     carrierChanged.clear();
     changed.forEach(function (k) { carrierInflight.add(k); });
+    /* «След» (D-1363): запись ушла в носитель — стол знает, что она в пути (только имена ключей, как у vault:sealed) */
+    if (window.sbBus && window.sbBus.emit) window.sbBus.emit("vault:sealing", { keys: changed.slice() });
     var settle = function () { changed.forEach(function (k) { carrierInflight.delete(k); }); carrierPendingSeal = null; };
     /* Не записалось по сбою носителя — изменения возвращаются в очередь и
        пробуются позже. Отказ «отстал» — не сбой: повтора нет. */
@@ -5498,6 +5510,10 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      32 (HMAC-SHA-256), блок CTR — 16 байт: в части 65536 блоков. */
   var TH_NONCE = 16, TH_TAG = 32, TH_BLOCKS = TH_CHUNK / 16;
   var TH_MAC_HALF = TH_NONCE + TH_HALF_CHUNKS * TH_TAG, TH_MAC_ID = "tmac";
+  /* ПОСТОЯННАЯ (D-1356): в очереди потока — 8 частей; кладётся в транзакцию по 4
+     части за шаг — копия 4 МиБ занимает главный поток на миллисекунды, а не
+     половина (128 МиБ) — на полсекунды одним куском. */
+  var TH_PAR = 8, TH_PUT_STEP = 4;
   var thK = null;        /* { ctr, mac } открытого мира — неизвлекаемые */
   var thState = null;    /* { r, nonce, dir } — последняя прочитанная опись своей половины */
   var thWhy = null;      /* почему склад не принял последнюю вещь: full | closed | nostore | incognito | frozen | fail */
@@ -5527,11 +5543,44 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     for (k = 15; k >= 8; k--) { v = c[k] + (add % 256); c[k] = v % 256; add = Math.floor(add / 256) + Math.floor(v / 256); }
     return c;
   }
-  function thTagInput(nonce, i, ct) {
+  function thTagHead(nonce, i) {
     var head = new Uint8Array(TH_NONCE + 4);
     head.set(nonce, 0);
     head[16] = (i >>> 24) & 255; head[17] = (i >>> 16) & 255; head[18] = (i >>> 8) & 255; head[19] = i & 255;
-    return cat(head, ct);
+    return head;
+  }
+  function thTagInput(nonce, i, ct) { return cat(thTagHead(nonce, i), ct); }
+  /* Шифр и печать одной части (D-1356). В Chromium AES-CTR над мебибайтом
+     считается в самом вызове — в главном потоке. Поэтому шифр — в потоке склада:
+     тот же ключ (неизвлекаемый, поток получает его копией объекта, не байтами),
+     тот же счётчик. Печать (HMAC) ставит только страница — под правом писателя,
+     своей задачей (один писатель, D-353). Нет потока — всё здесь, каждая часть
+     своей задачей. */
+  function thSealChunk(k, nonce, j, plain, zero, pad) {
+    var counter = thCounter(nonce, j), head = thTagHead(nonce, j);
+    var here = function () {
+      return yieldTask().then(function () {
+        return window.crypto.subtle.encrypt({ name: "AES-CTR", counter: counter, length: 64 }, k.ctr, plain);
+      }).then(function (ct) {
+        return yieldTask().then(function () { return window.crypto.subtle.sign("HMAC", k.mac, cat(head, new Uint8Array(ct))); })
+          .then(function (tag) { plain.fill(0); return { ct: ct, tag: new Uint8Array(tag) }; });
+      }, function (e) { plain.fill(0); throw e; });
+    };
+    var n = j % FILL_POOL;
+    if (!fillWorkerGet(n)) return here();
+    var copy = zero ? null : plain.slice(0);
+    /* Склад мира: поток только шифрует; печать — здесь, в странице, под правом писателя (D-353: печатает один
+       писатель). Пустой ход окна первого слова (pad, D-1357) — своя выбрасываемая база «sysbaby-pad» с ключами этой
+       минуты: в ней нет мира, печатать там нечего охранять, и поток делает ту же работу, что делал до этого. */
+    return fillAsk(pad ? { op: "padseal", ctr: k.ctr, mac: k.mac, counter: counter, head: head, plain: copy ? copy.buffer : null, size: plain.length }
+      : { op: "seal", ctr: k.ctr, counter: counter, plain: copy ? copy.buffer : null, size: plain.length }, copy ? [copy.buffer] : [], n).then(function (d) {
+      if (!d || !d.ok || !d.ct) return here();
+      if (pad) { if (!d.tag) return here(); plain.fill(0); return { ct: d.ct, tag: new Uint8Array(d.tag) }; }
+      plain.fill(0);
+      var ct = d.ct;
+      return yieldTask().then(function () { return window.crypto.subtle.sign("HMAC", k.mac, cat(head, new Uint8Array(ct))); })
+        .then(function (tag) { return { ct: ct, tag: new Uint8Array(tag) }; });
+    });
   }
   function thMacRead() {
     return idbGet(CARRIER_STORE, TH_MAC_ID).then(function (m) {
@@ -5543,8 +5592,98 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      транзакцией, и каждая сперва спрашивает, нет ли уже печатей (их кладёт
      последней та, что завела склад): заведённый склад не перепишется шумом
      поверх чужой записи. Печати — последними. */
+  /* ── СКЛАД ЗАВОДИТСЯ РЯДОМ С РАСТЯЖКОЙ, НЕ ПОСЛЕ НЕЁ (D-1356) ─────────────
+     Основатель 22.11.2026: «чтобы было быстро И безопасно». Шум склада ключей не
+     требует, поэтому поворот ключа просит его СРАЗУ (lock → thEnsure), пока слово
+     растягивается, а сам шум кладёт поток core/fill.js — главный поток в это
+     время только дышит. Правила те же, что были здесь: часть за частью, каждая
+     своей транзакцией и после вопроса о печатях; печати — последними; не
+     завёлся — заведённое уходит. Одна заводка на вкладку: второй вопрос ждёт
+     первую. Стол по-прежнему ждёт склада (thAtLock): мир не открывается, пока
+     склад не лёг, и ничто на экране не говорит, что он заводится. */
+  var thFillP = null, thFillMine = null, fillWorker = null, fillSeq = 0, fillWait = {};
+  /* Поворот ключа не состоялся, а склад он уже завёл (замка нет ни у кого) —
+     заведённое уходит: без замка на диске не остаётся склада, как и прежде. */
+  function thUnfill() {
+    var p = thFillP || Promise.resolve();
+    return p.then(null, function () {}).then(function () {
+      var mine = thFillMine;
+      thFillMine = null;
+      if (!mine || !mine.length || lockRecord()) return false;
+      return idb().then(function (db) {
+        if (!db) return false;
+        return new Promise(function (resolve) {
+          var tx;
+          try { tx = db.transaction(CARRIER_STORE, "readwrite"); } catch (e) { resolve(false); return; }
+          var s = tx.objectStore(CARRIER_STORE);
+          if (!lockRecord()) { mine.forEach(function (id) { s["delete"](id); }); s["delete"](TH_MAC_ID); }
+          tx.oncomplete = function () { resolve(true); };
+          tx.onerror = function () { resolve(false); };
+          tx.onabort = function () { resolve(false); };
+        });
+      });
+    });
+  }
+  /* Два потока из одного файла: первый заводит склад и шифрует, второй — только
+     шифрует (половина частей); шифр и печать каждой части от этого не меняются. */
+  var FILL_POOL = 2;
+  function fillWorkerGet(n) {
+    n = n || 0;
+    if (fillWorker === false) return false;
+    if (!fillWorker) fillWorker = [];
+    if (fillWorker[n] !== undefined) return fillWorker[n];
+    if (!FILL_SRC || typeof Worker !== "function") { fillWorker = false; return false; }
+    var w;
+    try {
+      w = new Worker(FILL_SRC);
+      w.onmessage = function (ev) {
+        var d = ev.data || {}, f = fillWait[d.id];
+        if (!f) return;
+        delete fillWait[d.id];
+        f.cb(d);
+      };
+      w.onerror = function () {
+        /* Поток не поднялся — то же дело сделается здесь, тем же порядком. */
+        Object.keys(fillWait).forEach(function (k) { var f = fillWait[k]; if (f.n === n) { delete fillWait[k]; f.cb({ ok: false, err: "worker" }); } });
+        if (fillWorker) fillWorker[n] = false;
+      };
+    } catch (e) { w = false; }
+    fillWorker[n] = w;
+    return w;
+  }
+  function fillAsk(msg, transfer, n) {
+    n = n || 0;
+    var w = fillWorkerGet(n);
+    if (!w) return Promise.resolve({ ok: false, err: "worker" });
+    return new Promise(function (resolve) {
+      var id = ++fillSeq;
+      msg.id = id;
+      fillWait[id] = { n: n, cb: resolve };
+      try { w.postMessage(msg, transfer || []); } catch (e) { delete fillWait[id]; resolve({ ok: false, err: "worker" }); }
+    });
+  }
   function thEnsure() {
     if (carrierStale) return Promise.reject(new Error("frozen"));
+    if (thFillP) return thFillP;
+    var p = thEnsureNow();
+    thFillP = p;
+    var done = function () { if (thFillP === p) thFillP = null; };
+    p.then(done, done);
+    return p;
+  }
+  /* Главный поток не держит ни одной задачи дольше кадра: передышка между
+     частями — новой задачей (MessageChannel: без зажима таймеров фоновой вкладки). */
+  var yieldCh = null, yieldQ = [];
+  function yieldTask() {
+    return new Promise(function (ok) {
+      try {
+        if (!yieldCh) { yieldCh = new MessageChannel(); yieldCh.port1.onmessage = function () { var f = yieldQ.shift(); if (f) f(); }; }
+        yieldQ.push(ok); yieldCh.port2.postMessage(0);
+      } catch (e) { setTimeout(ok, 0); }
+    });
+  }
+  var yieldFrame = yieldTask;
+  function thEnsureNow() {
     return thMacRead().then(function (mac) {
       if (mac) return true;
       return idb().then(function (db) {
@@ -5566,7 +5705,16 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         function next() {
           if (i >= TH_CHUNKS) return one(TH_MAC_ID, thNoise(CARRIER_REGIONS * TH_MAC_HALF)).then(function (r) { return r !== "fail"; });
           var id = "t" + i; i++;
-          return one(id, thNoise(TH_CHUNK)).then(function (r) { if (r === "fail") return false; if (r === "seen") return true; mine.push(id); return next(); });
+          return one(id, thNoise(TH_CHUNK)).then(function (r) { if (r === "fail") return false; if (r === "seen") return true; mine.push(id); return yieldFrame().then(next); });
+        }
+        /* Сначала — поток (тот же порядок, та же база); не вышло — здесь. */
+        function viaWorker() {
+          return fillAsk({ op: "fill", db: "sysbaby", version: IDB_VERSION, store: CARRIER_STORE, macId: TH_MAC_ID, prefix: "t",
+            chunks: TH_CHUNKS, chunk: TH_CHUNK, macLen: CARRIER_REGIONS * TH_MAC_HALF }).then(function (d) {
+            if (!d || !d.ok) return null;
+            if (Array.isArray(d.mine)) mine = d.mine.slice();
+            return d.r !== "fail";
+          });
         }
         /* Склад не завёлся — заведённые части уходят, пока печатей нет (их нет — склада нет ни у кого):
            недозаведённый склад не держит место, которое нужно замку дальше — хвосту поворота и конвертам.
@@ -5583,7 +5731,10 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             tx.onabort = function () { resolve(false); };
           });
         }
-        return next().then(function (okp) { return okp ? true : undo(); });
+        return viaWorker().then(function (w) { return w === null ? next() : w; }).then(function (okp) {
+          if (okp && mine.length) thFillMine = mine.slice();
+          return okp ? true : undo();
+        });
       }).then(function (okp) {
         /* Браузер не дал места (приватное окно, полный диск) — склада нет. */
         if (!okp) throw new Error("no-room");
@@ -5690,13 +5841,20 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   function thBuild(st, plan, nonce) {
     var out = { buf: new Uint8Array(TH_CHUNK), pos: 0, j: 0, cts: [], tags: [] };
     var cache = { i: -1, p: null };
-    function flush() {
+    /* Части шифруются в потоке склада (D-1356), по TH_PAR в очереди: главный
+       только раздаёт части. Каждая часть — та же: свой счётчик, своя печать. В
+       памяти разом — не больше TH_PAR открытых частей. */
+    var jobs = [];
+    function settle() { var all = jobs; jobs = []; return Promise.all(all); }
+    /* Окно: ждётся старейшая часть, а не вся четвёрка — очередь потока не пустеет. */
+    function slide() { return jobs.shift(); }
+    function flush(zero) {
       var plain = out.buf, j = out.j++;
       out.buf = new Uint8Array(TH_CHUNK); out.pos = 0;
-      return window.crypto.subtle.encrypt({ name: "AES-CTR", counter: thCounter(nonce, j), length: 64 }, st.k.ctr, plain).then(function (ct) {
-        out.cts[j] = ct;
-        return window.crypto.subtle.sign("HMAC", st.k.mac, thTagInput(nonce, j, new Uint8Array(ct)));
-      }).then(function (tag) { out.tags[j] = new Uint8Array(tag); plain.fill(0); });
+      var jb = thSealChunk(st.k, nonce, j, plain, zero, st.pad).then(function (r) { out.cts[j] = r.ct; out.tags[j] = r.tag; });
+      jb.then(null, function () { /* ответит settle или slide */ });
+      jobs.push(jb);
+      return jobs.length >= TH_PAR ? slide() : Promise.resolve();
     }
     function put(bytes) {
       var off = 0;
@@ -5740,11 +5898,66 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       chain = chain.then(function () { return it.blob ? putBlob(it.blob) : putOld(it); });
     });
     return chain.then(function () {
-      function rest() { return out.j < TH_HALF_CHUNKS ? flush().then(rest) : Promise.resolve(); }
+      /* Остаток половины — нули: часть, в которую ничего не легло, поток берёт
+         нулевой сам, без копии через границу потока. */
+      function rest() { return out.j < TH_HALF_CHUNKS ? flush(out.pos === 0).then(rest) : settle(); }
       return rest();
     }).then(function () { if (cache.p) cache.p.fill(0); out.buf = null; return out; });
   }
   /* Половина и печати — одной транзакцией; метка сверяется внутри неё. */
+  /* ── ПУСТОЙ ХОД ОКНА ПЕРВОГО СЛОВА (D-1357) ─────────────────────────────
+     Отдельная база той же формы, что склад: в неё кладётся ровно то, что кладёт поворот ключа пустого устройства, и
+     она стирается. Ключи — неизвлекаемые ключи этой минуты (WebCrypto), шифр — тот же thBuild. */
+  var PAD_DB = "sysbaby-pad";
+  function padOpen() {
+    return new Promise(function (resolve) {
+      var del;
+      try { del = window.indexedDB.deleteDatabase(PAD_DB); } catch (e) { resolve(null); return; }
+      var go = function () {
+        var req;
+        try { req = window.indexedDB.open(PAD_DB, 1); } catch (e) { resolve(null); return; }
+        req.onupgradeneeded = function () { try { req.result.createObjectStore(CARRIER_STORE, { keyPath: "id" }); } catch (e) { /* ignore */ } };
+        req.onsuccess = function () { var db = req.result; try { db.onversionchange = function () { try { db.close(); } catch (e) { /* ignore */ } }; } catch (e) { /* ignore */ } resolve(db); };
+        req.onerror = function () { resolve(null); };
+        req.onblocked = function () { resolve(null); };
+      };
+      del.onsuccess = go; del.onerror = go; del.onblocked = go;
+    });
+  }
+  function padDrop(db) {
+    try { if (db) db.close(); } catch (e) { /* ignore */ }
+    try { window.indexedDB.deleteDatabase(PAD_DB); } catch (e) { /* ignore */ }
+  }
+  function padHalf(db) {
+    var subtle = window.crypto.subtle;
+    return Promise.all([
+      subtle.generateKey({ name: "AES-CTR", length: 256 }, false, ["encrypt", "decrypt"]),
+      subtle.generateKey({ name: "HMAC", hash: "SHA-256", length: 256 }, false, ["sign", "verify"])
+    ]).then(function (k) {
+      var plan = thLayout([], 0); plan.items = [];
+      var nonce = randBytes(TH_NONCE);
+      return thBuild({ k: { ctr: k[0], mac: k[1] }, pad: true }, plan, nonce).then(function (out) {
+        if (!db) return null;
+        return new Promise(function (resolve) {
+          var tx;
+          try { tx = db.transaction(CARRIER_STORE, "readwrite"); } catch (e) { resolve(null); return; }
+          var st = tx.objectStore(CARRIER_STORE), mac = new Uint8Array(CARRIER_REGIONS * TH_MAC_HALF), j = 0;
+          var g = st.get(TH_MAC_ID);
+          g.onsuccess = function () {
+            var more = function () {
+              var end = Math.min(TH_HALF_CHUNKS, j + TH_PUT_STEP), last = null;
+              for (; j < end; j++) last = st.put({ id: thId(0, j), bytes: out.cts[j] });
+              if (j < TH_HALF_CHUNKS) last.onsuccess = more;
+              else st.put({ id: TH_MAC_ID, bytes: mac.buffer });
+            };
+            more();
+          };
+          tx.oncomplete = function () { out.cts = null; resolve(null); };
+          tx.onerror = tx.onabort = function () { out.cts = null; resolve(null); };
+        });
+      });
+    });
+  }
   function thCommit(st, nonce, out) {
     if (carrierStale) return Promise.reject(new Error("frozen"));
     return idb().then(function (db) {
@@ -5778,11 +5991,19 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           }
           var mac = new Uint8Array(cur), j;
           mac.set(nonce, base);
-          for (j = 0; j < TH_HALF_CHUNKS; j++) {
-            mac.set(out.tags[j], base + TH_NONCE + j * TH_TAG);
-            s.put({ id: thId(st.r, j), bytes: out.cts[j] });
-          }
-          s.put({ id: TH_MAC_ID, bytes: mac.buffer });
+          for (j = 0; j < TH_HALF_CHUNKS; j++) mac.set(out.tags[j], base + TH_NONCE + j * TH_TAG);
+          /* Та же одна транзакция, но части кладутся шагами по TH_PUT_STEP:
+             следующий шаг — из ответа предыдущего, транзакция живёт всё это
+             время, и печати ложатся последними, как прежде (D-1356). */
+          j = 0;
+          var more = function () {
+            if (stale) return;
+            var end = Math.min(TH_HALF_CHUNKS, j + TH_PUT_STEP), last = null;
+            for (; j < end; j++) last = s.put({ id: thId(st.r, j), bytes: out.cts[j] });
+            if (j < TH_HALF_CHUNKS) last.onsuccess = more;
+            else s.put({ id: TH_MAC_ID, bytes: mac.buffer });
+          };
+          more();
         };
         tx.oncomplete = function () { carrierTell(); resolve(true); };
         tx.onabort = function () { if (stale) resolve(false); else reject(tx.error || new Error("abort")); };
@@ -5999,11 +6220,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   /* Поворот ключа: открытые вещи — в половину главного мира, сколько
      поместится; остальные — конвертами, и это сказано вслух. Вызывается,
      пока мастер ещё в памяти сеанса (до закрытия). */
-  function thAtLock(ks) {
+  function thAtLock(ks, pre) {
     thK = null; thState = null;
     if (carrierStale) return Promise.resolve(null);
     return thingsQueue(function () {
-      return thEnsure().then(function () { return idbAll("things"); }).then(function (list) {
+      return (pre || thEnsure()).then(function () { return idbAll("things"); }).then(function (list) {
         var plain = list.filter(function (rec) { return rec && !rec.sealed && rec.blob; })
           .map(function (rec) { return { id: rec.id, blob: rec.blob, name: rec.name, mime: rec.mime, size: rec.size || rec.blob.size || 0, at: rec.at || 0, rec: rec }; });
         plain.sort(function (a, b) { return (a.at || 0) - (b.at || 0); });
@@ -6132,6 +6353,38 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     /* Цена одной попытки сегодняшнего замка — без замка (D-588). Дверь у
        всех на устройстве без мира тратит на неверное слово ровно столько же,
        сколько запертое устройство: по времени ответа не узнать, есть ли мир. */
+    /* ── ОКНО ПЕРВОГО СЛОВА ГОТОВИТСЯ ЗАРАНЕЕ (D-1356) ─────────────────────
+       Окно открыто — человек ещё пишет слово, а система уже меряет устройство
+       (calibrateCost, один раз за сеанс) и поднимает поток склада. Одинаково на
+       любом устройстве, с миром и без: ни строки, ни запроса наружу. Цена
+       растяжки та же — замер тот же, только раньше. */
+    warm: function () {
+      fillWorkerGet(0); fillWorkerGet(1);
+      if (vaultAvailable()) calibrateCost().then(null, function () { /* замер повторит поворот */ });
+      return true;
+    },
+    /* Ответ окна первого слова там, где мир уже есть (D-588 → D-1356 → D-1357): две
+       растяжки ТОЙ ЖЕ цены, что у поворота ключа пустого устройства (замер этого
+       сеанса), — время ответа не говорит, есть ли здесь мир. */
+    firstBurn: function (word) {
+      if (!vaultAvailable()) return Promise.resolve(null);
+      var one = function (cost) {
+        var salt = new Uint8Array(32); window.crypto.getRandomValues(salt);
+        return deriveKEK(String(word || ""), b64(salt), cost.it1, cost.it2, null, cost.a2, true).then(function () { return null; }, function () { return null; });
+      };
+      /* D-1357: тот же путь, что у поворота пустого устройства, той же работой: [растяжка ‖ поток кладёт 256 МиБ шума]
+         → два потока шифруют половину (128 частей) → она кладётся одной транзакцией шагами → растяжка. Всё — в
+         отдельную пустую базу «sysbaby-pad», которая стирается тут же: склад мира не трогается. */
+      return calibrateCost().then(function (cost) {
+        return padOpen().then(function (db) {
+          var fill = db ? fillAsk({ op: "fill", db: PAD_DB, version: 1, store: CARRIER_STORE, macId: TH_MAC_ID, prefix: "t",
+            chunks: TH_CHUNKS, chunk: TH_CHUNK, macLen: CARRIER_REGIONS * TH_MAC_HALF }) : Promise.resolve(null);
+          return Promise.all([one(cost), fill]).then(function () { return padHalf(db); }).then(null, function () { return null; })
+            .then(function () { return one(cost); })
+            .then(function () { padDrop(db); return null; }, function () { padDrop(db); return null; });
+        });
+      }, function () { return null; });
+    },
     todayKdf: function (word) {
       if (!vaultAvailable()) return Promise.resolve(null);
       var salt = new Uint8Array(16); window.crypto.getRandomValues(salt);
@@ -6176,7 +6429,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       turning = true;
       /* laid — запись замка легла (Р-A5.2): после неё отказ «ничего не
          изменено» — неправда. sealedWith — ключи мира нового замка. */
-      var laid = false, sealedWith = null, sealedKvNow = null;
+      var laid = false, sealedWith = null, sealedKvNow = null, thPre = null;
       /* Сеанс поворота закрывается: ключи выброшены, память пуста. */
       var shut = function () {
         cache.clear();
@@ -6281,6 +6534,9 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
            неё — в pending (хвост поворота, см. sealTail). */
         sealing = true;
         pending.clear();
+        /* Склад — сразу, рядом с растяжкой (D-1356): шум ключей не требует. */
+        thPre = thEnsure();
+        thPre.then(null, function () { /* ответит thAtLock */ });
       }).then(function () {
         /* Сбор — в тишине: остальные вкладки замолкают перед самым сбором,
            после растяжки (см. «ПОВОРОТ КЛЮЧА — В ТИШИНЕ»). */
@@ -6347,7 +6603,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           /* Вещи уходят в склад носителя ТЕМ ЖЕ поворотом ключа (D-352; не
              поместившееся — конвертами, D-265), и старые открытые снимки
              вычищаются: замок держит весь диск. */
-          return thAtLock(sealedWith).then(function () { return purgeDiskLeaks(); });
+          return thAtLock(sealedWith, thPre).then(function () { return purgeDiskLeaks(); });
         }).then(function () {
           /* Хвост поворота: что система записала после записи замка (уже
              только в память, pending), — в свою ячейку, пока не опустеет. */
@@ -6359,10 +6615,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           shut();
           return true;
         });
-      }).then(function (r) { turning = false; writerDrop(); return r; }, function (e) {
+      }).then(function (r) { turning = false; thFillMine = null; writerDrop(); return r; }, function (e) {
         turning = false;
         /* Запись замка легла — не «не вышло» (Р-A5.2): см. keepOpen. */
-        if (laid) return keepOpen(e);
+        if (laid) { thFillMine = null; return keepOpen(e); }
+        if (thPre) thUnfill();
         /* Поворот не состоялся: накопленное за него ложится открытым, как
            легло бы без поворота, — если замка так и нет (своей записи замка
            нет — значит, и ячеек этой вкладки нет). */

@@ -446,7 +446,8 @@
     var seen = mine && isLastOwn && m.seen === true;
     return '<div class="mg-msg' + (mine ? " mine" : " theirs") + (m.sh ? " sh-letter" : "") + (m.sh && mine ? " sh-own" : "") + (m.sh && !mine && whisper() && whisper().fresh(m) ? " sh-fresh" : "") + '" data-msg="' + esc(m.id) + '">' +
       (!mine && c.isGroup && m.senderName ? '<div class="mg-sender" data-sb-userdata>' + esc(m.senderName) + "</div>" : "") +
-      '<div class="mg-bubble' + (m.type === "file" ? " file" : "") + '">' + inner +
+      /* письмо Шёпота в пути — по кромке пузыря бежит «След» (D-1363): ожидание названо aria-busy */
+      '<div class="mg-bubble' + (m.type === "file" ? " file" : "") + '"' + (m.sh && mine && !m.shDone ? ' aria-busy="true"' : "") + ">" + inner +
         (m.reaction ? '<span class="mg-reaction">' + esc(m.reaction) + "</span>" : "") +
       "</div>" +
       '<div class="mg-meta">' +

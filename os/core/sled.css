@@ -1,0 +1,4 @@
+/* «След» (D-1363-INNER-LOADING-TRACE, core/sled.js): холст над вещью, которая ждёт. Экран не затемняется,
+   касаний не ловит, под воротами и «Рождением». */
+#sbSled { position: fixed; left: 0; top: 0; width: 0; height: 0; z-index: calc(var(--z-door) - 1); pointer-events: none; }
+#sbSled .sb-sled { position: fixed; left: 0; top: 0; pointer-events: none; will-change: transform; }

@@ -242,8 +242,11 @@ html.sb-fullscreen-window #topbar#topbar, html.sb-fullscreen-window #topbar#topb
 #topbar .tb-left { min-width: 0; flex: 1 1 auto; }
 @media (max-width: 600px) {
   #topbar .tb-clock .tb-date { display: none; }
-  #topbar .tb-seq { display: flex; }
 }
+/* ОТКРЫТОЕ — В ОДНОМ МЕСТЕ (D-1361, основатель 23.11.2026): на малом экране (телефон — is-compact, граница системы D-636:
+   уже 720 px или телефон на боку) открытые приложения — только на полке внизу; на большом — только в верхней панели
+   (полки там нет, D-636). Без дублей. Охраняется tools/open-apps-one-place-check.mjs. */
+html.is-compact #topbar .tb-seq { display: none; }
 
 /* телефон: дата прячется, знаки помещаются в одну строку. Имя остаётся: это кнопка аккаунта и «тихий жар»
    замка (D-617, quiet-heat-check) — единственный вход в аккаунт; на узком экране оно сжимается многоточием. */
@@ -326,7 +329,7 @@ html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) {
 }
 /* H4e (D-1300): часы на столе — в шапке только дата, и на телефоне тоже (время уже на столе) */
 @media (max-width: 600px) {
-  html.sb-desk-clock #topbar#topbar .tb-clock .tb-date { display: inline; }
+  #topbar.sb-desk-clock#topbar .tb-clock .tb-date { display: inline; }
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
@@ -424,9 +427,5 @@ html.sb-tw #sbVoiceDoor .sb-door-glow { visibility: hidden; }
 /* днём звёзд не видно: «небо голоса» (звёзды поверх стола) в светлых темах не показывается — на светлом это тёмные точки */
 html.sb-tw #sbVoiceSky { visibility: hidden !important; }
 
-/* ручка «инструменты» в Светлице: на светлом молоке — тёмные чернила и плотная подложка, а не бледный акцент */
-html.sb-tw[data-sb-tw="svetlica"] #sbDeskTools .dt-handle { color: rgb(var(--tw-ink-rgb)); background: rgba(var(--tw-pane), .78); border-color: rgba(var(--tw-acc-rgb), .38); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
-html.sb-tw[data-sb-tw="svetlica"] #sbDeskTools .dt-dots i { background: rgb(var(--tw-acc-rgb)); box-shadow: none; }
-html.sb-tw[data-sb-tw="svetlica"] #sbDeskTools .dt-chev { stroke: rgb(var(--tw-acc-rgb)); }
 /* без WebGL (D-1331, os/core/svetlica.js): небо двойника — ровный переход от стены темы к полу, без шейдера */
 html.sb-tw.sb-tw-nogl #sbLightSky { background: linear-gradient(180deg, rgb(var(--tw-wall)), rgb(var(--tw-floor))); }

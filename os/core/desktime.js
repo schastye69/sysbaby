@@ -338,7 +338,9 @@
     stop: function () { mode = null; pausedAt = null; endAt = null; clearTimeout(tmo); kick(); emit("stop"); },
     info: function () { var v = vnow(); return { mode: mode, v: v, total: total, label: label, paused: pausedAt != null, done: !!(mode && mode !== "stopwatch" && v >= total) }; },
     setCx: function (x) { var nx = x == null ? null : Math.round(x); if (nx === cxT) return; cxT = nx; posY = null; kick(); },
-    setCy: function (y) { var c = capY(); cyT = y == null ? Math.round(H * 0.5) : Math.min(Math.round(y), c); kick(); },
+    /* без скольжения — сразу на место (слабое устройство после смены стола, D-1360): скольжение — кадр за кадром */
+    snap: function () { if (cyT != null) { cyC = cyT; posY = null; kick(); } },
+    setCy: function (y) { var c = capY(); cyT = y == null ? Math.round(H * 0.5) : Math.min(Math.round(y), c); if (window.sbDesks && window.sbDesks.weak && window.sbDesks.weak()) { cyC = cyT; posY = null; } kick(); },
     rect: function () { return cv ? cv.getBoundingClientRect() : null; },
     frames: function () { return painted; },
     on: function (f) { if (typeof f === "function") listeners.push(f); },

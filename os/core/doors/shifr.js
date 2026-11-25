@@ -977,7 +977,9 @@ function avalanche(t) {
   if (TM.wave === 'calm') { ripples.push({ t0: t + 0.03, r0: S ? R * 0.9 : 0, v: R * 2.2, w: 0.4, tint: 0, flip: true, done: -1, rmax: R * 2.7 }); return; }
   ripples.push({ t0: t + 0.03, r0: S ? R * 0.9 : 0, v: Math.max(vw, vh) * 1.05, w: 0.75, tint: 0, flip: true, done: -1 });
 }
+let lastCost = 0, polSkip = false, quietN = 0;
 function frame(now) {
+  const f0 = performance.now();
   running = false;
   if (held || kit.dead()) return;
   if (BUILD) { loop(); return; } // D-603: no frames while the scene is being built
@@ -1018,20 +1020,35 @@ function frame(now) {
   ripples = ripples.filter((w) => w.done < (w.rmax ? w.rmax + 20 : Math.hypot(vw, vh) + 40));
   spinFrame(dt);
   // cells in motion cool down and are redrawn; only they cost anything
-  if (act.length) {
-    const k = Math.exp(-dt / 0.55), keep = [];
-    for (const i of act) {
+  /* D-1356: кадр не держит главный поток дольше ACT_BUDGET мс. Обычное устройство укладывается целиком — вид тот же;
+     на слабом телефоне то, что не уложилось, остывает и перерисовывается следующим кадром: волна идёт медленнее,
+     а нажатие и ответ двери не ждут её. */
+  if (act.length && !quietN) {
+    const k = Math.exp(-dt / 0.55), keep = [], a0 = performance.now();
+    let n = 0;
+    for (; n < act.length; n++) {
+      if ((n & 63) === 63 && performance.now() - a0 > ACT_BUDGET) break;
+      const i = act[n];
       LUM[i] *= k;
       if (LUM[i] < 0.012) { LUM[i] = 0; inAct[i] = 0; redrawCell(i); } else { redrawCell(i); keep.push(i); }
     }
+    for (; n < act.length; n++) keep.push(act[n]);
     act = keep;
   }
   if (P.emblem) emblemFrame(t, dt);
   if (opening) stepOpen(t);
   drawBlock(t);
-  if (POL.on) POL.frame();
+  /* D-1356: на слабом телефоне (прошлый кадр дольше SLOW_FRAME мс) отражение в плите обновляется через кадр, а пока
+     сцена гаснет при открытии — стоит, как есть: один кадр не складывает в себя всю сцену; на обычном устройстве —
+     каждый кадр, как было. */
+  if (POL.on && !quietN && (lastCost < SLOW_FRAME || (!opening && (polSkip = !polSkip)))) POL.frame();
+  if (quietN) quietN--;
+  lastCost = performance.now() - f0;
   loop();
 }
+/* ПОСТОЯННАЯ (D-1356): 12 мс на перерисовку клеток в кадре — обычное устройство в неё укладывается;
+   неуложившееся ждёт следующего кадра (16 мс) — глазу не видно. */
+const ACT_BUDGET = 12, SLOW_FRAME = 40;
 function loop() { if (!running && !held && !kit.dead()) { running = true; requestAnimationFrame(frame); } }
 
 // ---------- the field's rings turn, slower than the wheels: all, a few, or like gears ----------
@@ -1115,6 +1132,9 @@ return {
   },
   focus(on) { focusOn = !!on; loop(); },
   need(n) { NEED = n; if (!held) layout(); },
+  /* D-1356: нажатие «открыть» или «первое слово» — два кадра сцена не перерисовывает отражение и клетки (они ждут
+     третьего): первый кадр после нажатия лёгкий, и отклик ворот виден сразу, на любом телефоне. Глазу — 30 мс покоя. */
+  quiet() { quietN = 2; },
   hold(on) {
     held = !!on; // while the key turns, the scene draws nothing: its frames must cost the key nothing
     if (!held) { last = 0; loop(); }
