@@ -358,7 +358,7 @@ const portrait = () => innerWidth < 700;
 const hzFrac = () => portrait() ? 0.66 : 0.64;   /* как горизонт «зеркала» Авроры (depth.js) */
 function size() {
   W = innerWidth; H = innerHeight;
-  K = Math.min(1, Math.sqrt(1.6e6 / Math.max(1, W * H))) * 0.7;   /* свет гладкий: холст мельче экрана, сверху зерно */
+  K = Math.min(1, Math.sqrt(1.6e6 / Math.max(1, W * H))) * 0.7 * kScale;   /* свет гладкий: холст мельче экрана, сверху зерно */
   sky.width = Math.max(2, Math.round(W * K)); sky.height = Math.max(2, Math.round(H * K));
   const kd = Math.min(devicePixelRatio || 1, 1.5);
   hz.width = Math.round(W * kd); hz.height = Math.round(H * kd); hz._k = kd;
@@ -465,7 +465,23 @@ function tapLevel(t) {   /* Зенит: касание — светлеет са
 let lastT = 0;
 const REST = 500;   /* как depth.js REST (field-idle, field-cadence) */
 const WATER = 40;   /* вода Берега в покое (D-1348) */
+/* ДОРОГОЙ КАДР — МЕЛЬЧЕ ХОЛСТ (аудит оболочки H4e4, п.6: на 1440 переход ко второй светлой теме «зависал» больше минуты).
+   Причина: небо двойника — шейдер на холсте .7 экрана (на 1440 — 1008×630), а шов смены темы считает в каждой точке ДВЕ
+   темы и идёт без паузы между кадрами; на программной графике (без GPU) кадр шёл ~1 с и держал страницу. Теперь кадр,
+   опоздавший больше чем на SLOW мс, уменьшает холст неба (не ниже K_MIN от прежнего): свет гладкий и так (сверху зерно),
+   а страница отвечает. На обычном GPU кадр — единицы мс, и холст не меняется. */
+const SLOW = 250, K_MIN = .2;
+let kScale = 1, due = 0;
 function frame(now) {
+  /* цена кадра шейдера ложится не на сам вызов, а на следующую отрисовку: меряем опоздание кадра против назначенного */
+  const late = due ? performance.now() - due : 0;
+  /* мельче — только на время шва (дорог именно он); шов прошёл — холст снова полный, и покой выглядит одинаково
+     на любом устройстве (закон no-hard-edges: шум не рвётся между путями отрисовки) */
+  if (gl && tw && seam && late > SLOW && kScale > K_MIN) { kScale = Math.max(K_MIN, kScale * .7); size(); }
+  else if (!seam && kScale !== 1) { kScale = 1; size(); }
+  frameBody(now);
+}
+function frameBody(now) {
   const want = twinNow();
   if (want !== tw) setTwin(want, false);
   if (!tw || doc.hidden || root.classList.contains("wp-parked")) return;
@@ -503,6 +519,7 @@ function kick(delay) {
   if (raf && !(resting && delay < REST)) return;
   if (raf) { clearTimeout(raf); raf = 0; }
   resting = delay >= REST;
+  due = performance.now() + delay + 34;   /* ПОСТОЯННАЯ: 34 мс — два кадра 60 Гц на сам requestAnimationFrame */
   raf = setTimeout(() => { resting = false; raf = requestAnimationFrame(loop) || 1; }, delay);
 }
 /* ── ШОВ СМЕНЫ ТЕМЫ — КАК У ОЧАГА (H4e3, D-1334): depth.js startSeam/stepSeam один в один — то же начало (последнее касание
@@ -536,7 +553,10 @@ function setTwin(v, draw) {
   if (v) root.setAttribute("data-sb-tw", v); else root.removeAttribute("data-sb-tw");
   if (was && v && was !== v) startSeam(was, v); else { seam = null; root.classList.remove("sb-tw-seam"); }   /* кромка — цветом уже новой темы */
   lastHz = 0; taps = [];
-  if (v && draw !== false) { frame(performance.now()); kick(); }
+  /* вход в светлую тему из тёмной: первый кадр неба — следующим кадром страницы, а не в том же шаге, что смена темы
+     (на устройстве без GPU он стоит до секунды — и держал смену цвета всего стола, pold-quiet-contrast); смена
+     двойника внутри светлых — по-прежнему сразу (шов). */
+  if (v && draw !== false) { if (!was) kick(0); else { frame(performance.now()); kick(); } }
 }
 function mount() {
   const layer = doc.querySelector(".wp-layer"); if (!layer) return false;

@@ -285,7 +285,16 @@
       thanks().then(function () { soon(600); });
     }, 300);
   }
-  function thanks() { busy = true; var h = speak(tr("meet.thanks"), { warm: true }); return Promise.resolve(h && h.done).then(function () { busy = false; }, function () { busy = false; }); }
+  function thanks() { busy = true; var h = speak(tr("meet.thanks"), { warm: true }); return Promise.resolve(h && h.done).then(offHint, offHint); }
+  /* ГОЛОС МОЖНО ВЫКЛЮЧИТЬ (D-1441, основатель 25.11): после знакомства — одна тёплая фраза, в выбранном обращении,
+     один раз на мир: голос включён с рождения, а выключатель — в Настройках, «Звук». */
+  function offHint() {
+    var p = prof();
+    if (p.voiceHint) { busy = false; return; }
+    p.voiceHint = true; save();
+    speak(tr("home.voiceOffHint"), { warm: true });   /* не ждём: следующий вопрос встанет в очередь голоса за этой фразой */
+    busy = false;
+  }
   /* Касание пустого стола вместо ответа: «вы», без рода, «просто дом»; больше не спрашивает. */
   function desk(q) {
     if (q.done || Q !== q || Date.now() - q.t0 < 350) return false;

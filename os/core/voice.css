@@ -23,7 +23,8 @@
      линию речи над полосой проигрывателя (min(...) равен нулю, пока её нет).
      Над полкой голос встаёт только для фразы, которая ждёт ответа; короткой
      фразе полка уступает место сама (core.css, html.sb-dock-yield). */
-  --voice-floor: max(8px, env(safe-area-inset-bottom, 0px), min(var(--desk-row-b), var(--player-row, 0px) * 1000));
+  /* пол 11 px (было 8; основатель 25.11: «варианты ответа не прилипают к нижнему краю») — с запасом под верх закона voice-bottom (4…12 px) */
+  --voice-floor: max(11px, env(safe-area-inset-bottom, 0px), min(var(--desk-row-b), var(--player-row, 0px) * 1000));
 }
 
 /* ── место: тот же слой речи, что был у извещений (v66) ── */
@@ -102,13 +103,15 @@ html.sb-voice-over-dock #toastLayer.sb-voice-layer { bottom: var(--desk-row-b); 
 #sbVoiceLight { position: fixed; left: 0; top: 0; z-index: var(--z-speech, 90); pointer-events: none; }
 /* небо голоса (D-823): дальний слой — туманность и мелкие звёзды; рисуется один раз,
    поднимается с фразой и растворяется вместе с ней (прозрачность и сдвиг ставит voice.js) */
-#sbVoiceSky { position: fixed; left: 0; top: 0; z-index: var(--z-speech, 90); pointer-events: none; opacity: 0; will-change: opacity, transform; }
+/* НЕБО ГОЛОСА — ПОД ОКНАМИ (D-1441; основатель 24.11.2026: «свечение ложится на окна — на окна не пускать»): небо стоит
+   над столом и значками, но ниже слоя окон (#windowLayer, ступень --z-desk); фраза, её свет и сумрак — по-прежнему над всем.
+   ОТКАТ: z-index: var(--z-speech, 90). */
+#sbVoiceSky { position: fixed; left: 0; top: 0; z-index: var(--z-lift); pointer-events: none; opacity: 0; will-change: opacity, transform; }
 /* окно во весь экран (D-1316): небо голоса — туманность и звёзды над всем экраном — не ложится на окно, иначе оно
    выглядит прозрачным, а текст окна висит на «поле». Фраза, её свет и сумрак под ней остаются — голос слышен и читается. */
 html.sb-fullscreen-window #sbVoiceSky { visibility: hidden; }
-/* низ неба гаснет к самому низу экрана (D-1314): холст стоит на 16 px ниже экрана и плывёт на ±5 px — маска кончается
-   за 22 px до его низа, и туманность не красит пол страницы у края (без тёплой ступеньки) */
-#sbVoiceSky { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 110px), rgba(0, 0, 0, .98) calc(100% - 102px), rgba(0, 0, 0, .91) calc(100% - 94px), rgba(0, 0, 0, .82) calc(100% - 86px), rgba(0, 0, 0, .70) calc(100% - 78px), rgba(0, 0, 0, .57) calc(100% - 70px), rgba(0, 0, 0, .43) calc(100% - 62px), rgba(0, 0, 0, .30) calc(100% - 54px), rgba(0, 0, 0, .18) calc(100% - 46px), rgba(0, 0, 0, .09) calc(100% - 38px), rgba(0, 0, 0, .02) calc(100% - 30px), transparent calc(100% - 22px)); mask-image: linear-gradient(180deg, #000 calc(100% - 110px), rgba(0, 0, 0, .98) calc(100% - 102px), rgba(0, 0, 0, .91) calc(100% - 94px), rgba(0, 0, 0, .82) calc(100% - 86px), rgba(0, 0, 0, .70) calc(100% - 78px), rgba(0, 0, 0, .57) calc(100% - 70px), rgba(0, 0, 0, .43) calc(100% - 62px), rgba(0, 0, 0, .30) calc(100% - 54px), rgba(0, 0, 0, .18) calc(100% - 46px), rgba(0, 0, 0, .09) calc(100% - 38px), rgba(0, 0, 0, .02) calc(100% - 30px), transparent calc(100% - 22px)); }
+/* маска неба: от середины строки голоса (--sbv-sky-line) ровно (по прямой — без ступени у пола) гаснет к самому низу экрана (--sbv-sky-cut) — свет на строке, у пола — пол (D-1441, D-1314) */
+#sbVoiceSky { -webkit-mask-image: linear-gradient(180deg, #000 calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0), rgba(0, 0, 0, 0.90) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.1), rgba(0, 0, 0, 0.80) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.2), rgba(0, 0, 0, 0.70) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.3), rgba(0, 0, 0, 0.60) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.4), rgba(0, 0, 0, 0.50) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.5), rgba(0, 0, 0, 0.40) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.6), rgba(0, 0, 0, 0.30) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.7), rgba(0, 0, 0, 0.20) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.8), rgba(0, 0, 0, 0.10) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.9), transparent var(--sbv-sky-cut, calc(100% - 22px))); mask-image: linear-gradient(180deg, #000 calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0), rgba(0, 0, 0, 0.90) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.1), rgba(0, 0, 0, 0.80) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.2), rgba(0, 0, 0, 0.70) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.3), rgba(0, 0, 0, 0.60) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.4), rgba(0, 0, 0, 0.50) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.5), rgba(0, 0, 0, 0.40) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.6), rgba(0, 0, 0, 0.30) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.7), rgba(0, 0, 0, 0.20) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.8), rgba(0, 0, 0, 0.10) calc(var(--sbv-sky-line, calc(100% - 110px)) - 24px + (var(--sbv-sky-cut, calc(100% - 22px)) - var(--sbv-sky-line, calc(100% - 110px)) + 24px) * 0.9), transparent var(--sbv-sky-cut, calc(100% - 22px))); }
 /* тень и свечение под фразой: без стекла (backdrop-filter над живым полем дорог).
    ── СВЕЧЕНИЕ ШИРЕ СЛОВ · D-807 ─────────────────────────────────────────
    Повод — тот же снимок: «свечение под ней короче слов». Был круг
@@ -170,3 +173,12 @@ html.sb-fullscreen-window #sbVoiceSky { visibility: hidden; }
 html[data-motion="reduced"] .toast.sb-voice .toast-action.sb-vb::after, html[data-motion="reduced"] #desktop.sb-knock .sb-door-glow { animation: none !important; }
 html[data-motion="reduced"] #sbVoiceShade, html[data-motion="reduced"] #sbVoiceDoor { transition: none !important; }
 html[data-motion="reduced"] #sbVoiceSky { display: none; }
+/* НАД ОКНОМ — КОМПАКТНАЯ СТРОКА (основатель 25.11): ни широкого сумрака, ни света пятном — аккуратная подложка точно по
+   строке, цвета меню темы, с тонкой кромкой; читается в любой из восьми тем (чернила фразы — свои у темы). Место ставит
+   placeShade() (voice.js, класс pill). */
+#sbVoiceShade.pill {
+  -webkit-mask-image: none; mask-image: none;
+  border-radius: var(--r-card);
+  background: color-mix(in srgb, var(--menu-bg) 94%, transparent);
+  box-shadow: inset 0 0 0 1px rgba(var(--edge-rgb), .14), 0 10px 30px -12px rgba(var(--shade-rgb), .6);
+}

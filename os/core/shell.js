@@ -3389,7 +3389,22 @@
 
   /* topbar auto-hide while a window is maximized (desktop only) */
   var peekTimer = null;
+  /* КНОПКА «РАЗВЕРНУТЬ» ГОВОРИТ, ЧТО СДЕЛАЕТ (основатель 25.11.2026): круг тот же — окно → на весь стол → во весь экран →
+     прежний размер; знак и подпись — по шагу: «развернуть окно» (знак развернуть), «во весь экран» (тот же знак, повёрнут),
+     «вернуть размер» (знак возврата). Перекрашивается там же, где меняется состояние окна (updateTopbarAutoHide). */
+  function paintMaxKeys() {
+    Object.keys(openWindows).forEach(function (id) {
+      var w = openWindows[id], b = w && w.el && w.el.querySelector(".light.max"); if (!b) return;
+      var step = w.el.classList.contains("fullscreen") ? "full" : w.maximized ? "maxd" : "norm";
+      if (b.getAttribute("data-step") === step) return;
+      b.setAttribute("data-step", step);
+      b.innerHTML = step === "full" ? sbZnak("ret") : sbZnak("max", step === "maxd" ? "sb-znak-turn" : "");
+      var word = tr(step === "full" ? "win.restoreSize" : step === "maxd" ? "win.fullscreen" : "win.maximize");
+      b.setAttribute("aria-label", word); b.title = word;
+    });
+  }
   function updateTopbarAutoHide() {
+    paintMaxKeys();
     var bar = $("#topbar");
     if (!bar) return;
     /* Only fullscreen hides the bar. Maximised windows now sit below it, so
@@ -4777,7 +4792,9 @@
     if (exposeOn) { ev.preventDefault(); toggleExpose(false); return; }
     if (window.sbContextMenuOpen && window.sbContextMenuOpen()) { ev.preventDefault(); window.sbCloseContextMenu(); return; }
     if (window.sbControlCenterOpen && window.sbControlCenterOpen()) { ev.preventDefault(); window.sbCloseControlCenter(); return; }
-    if (window.sbNoteInviteOpen && window.sbNoteInviteOpen()) { ev.preventDefault(); window.sbCloseNoteInvite(); return; }
+    /* приглашение к заметке — одно Esc на одно дело: дальше событие не идёт (на столе инструментов они остаются открытыми,
+       выбранный инструмент и часы — на месте) */
+    if (window.sbNoteInviteOpen && window.sbNoteInviteOpen()) { ev.preventDefault(); ev.stopImmediatePropagation(); window.sbCloseNoteInvite(); return; }
     var ae = doc.activeElement;
     if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable)) return;
     if (focusedId && openWindows[focusedId]) { ev.preventDefault(); closeWindow(focusedId); }
@@ -4905,7 +4922,7 @@
      подпись, стол и есть система. */
   var SENTENCE_1 = "only you and your system, baby";
   /* Шифр 09.11.2026, решение основателя: слоган на занавесе — слово в слово тот, что в воротах (.vg-claim), на всех
-     языках одинаковый (не переводится, как и там). Строка входа и прощание (sbLoginLine) — прежние. */
+     языках одинаковый (не переводится, как и там; D-1433 подтвердил: фирменная фраза всегда по-английски). Строка входа и прощание (sbLoginLine) — прежние. */
   var CURTAIN_LINE = "only you and your encrypted system, baby.";
   /* ── СТРОКА ВХОДА И ПРОЩАНИЕ СПРАШИВАЮТСЯ У СУНДУКА (D-255) ─────────────
      Подаренное слово кончается именем человека, а не «baby». Пока не
@@ -4919,7 +4936,8 @@
   window.sbFarewellLine = function () {
     var w = "";
     try { w = window.sbChest && window.sbChest.word ? window.sbChest.word("farewell") : ""; } catch (e) { w = ""; }
-    return w || "The system sleeps when you do, baby.";
+    /* D-1433 (основатель 25.11.2026): фирменное прощание — всегда по-английски, строчными, шрифтом интерфейса */
+    return w || "locked. only you can open this system, baby.";
   };
 
   function padCenter(text) {
@@ -5268,7 +5286,9 @@
            пароле. Здесь — одна строка, и она правда по построению: наружу
            действительно не уходит ничего.
            Строка НЕ ПЕРЕВОДИТСЯ, как и «only you and your system, baby» на
-           входе: это один голос системы, а не подпись к кнопке. */
+           входе: это один голос системы, а не подпись к кнопке. D-1433
+           (основатель 25.11.2026, уточнение терминов): фирменный слоган —
+           всегда по-английски, но в фирменном стиле интерфейса (gate.css). */
         '<input type="password" id="sbVaultPass" autocomplete="current-password" data-gk-ph="lock.ask" data-gk-aria="lock.ask" ' +
           'aria-label="' + escapeHtml(gateText("lock.ask")) + '" placeholder="' + escapeHtml(gateText("lock.ask")) + '">' +
         /* Шифр 09.11.2026, решение основателя (после демо 3): ответ ворот («это слово не открывает») — сразу под полем, над
@@ -5786,13 +5806,41 @@
     if (window.ResizeObserver) { var boxEl = gate.querySelector(".vg-box"); if (boxEl) new ResizeObserver(function () { placeCluster(); }).observe(boxEl); }
     if (window.visualViewport) { window.visualViewport.addEventListener("resize", placeCluster); window.visualViewport.addEventListener("scroll", placeCluster); }
     mountDoor();
+    /* D-1425: поток растяжки — сразу с воротами, до покоя сцены (слово растягивается ещё у двери). */
+    try { if (window.sbArgon2 && window.sbArgon2.warm) window.sbArgon2.warm(); } catch (e) { /* поднимется при первой растяжке */ }
     /* D-1362: пока ворота думают (vg-work — вход, первое слово, переезд, код), поверх них идёт «Рождение» (core/birth.js);
        оно ничего не ждёт и ничего не держит — только заполняет то же самое ожидание. */
     try { if (window.sbBirth) window.sbBirth.watch(gate); } catch (e) { /* без слоя ворота те же */ }
+    /* ── СЛОВО РАСТЯГИВАЕТСЯ, ПОКА ЧЕЛОВЕК ЕЩЁ У ДВЕРИ (D-1425) ──────────────
+       Человек ввёл слово и остановился (или менеджер паролей вставил его целиком) — замок растягивает его
+       заранее (sbVault.prepare); нажатие «открыть» начинает растяжку сразу, пока кнопка ещё смыкается. Ответ
+       двери — как прежде, только после нажатия и смыкания. Одинаково с миром и без (store.js prepare), и не
+       там, где нужен файл второго ключа или ключ устройства: их тайна — только в жесте.
+       ПОСТОЯННАЯ: 0,7 с тишины после последнего знака — слово дописано (между знаками набора — десятые доли). */
+    var PREP_IDLE_MS = 700, prepTimer = 0, prepLen = 0;
+    function prepWord(now) {
+      clearTimeout(prepTimer); prepTimer = 0;
+      try {
+        var V = window.sbVault, kf = gate.querySelector("#sbVaultKey");
+        if (!V || !V.prepare || (kf && kf.files && kf.files.length) || (V.hwState && V.hwState().on)) return;
+        V.prepare(field.value, !!now);
+      } catch (e) { /* без растяжки заранее — дверь посчитает сама */ }
+    }
+    field.addEventListener("input", function () {
+      /* вставка или менеджер паролей — слово целиком в пустое поле; набор на медленном телефоне склеивает знаки, но
+         не начинается с полного слова */
+      var n = field.value.length, jump = prepLen === 0 && n >= 4;
+      prepLen = n;
+      clearTimeout(prepTimer); prepTimer = 0;
+      if (n < 4 || busy) return;
+      if (jump) prepWord(false); else prepTimer = setTimeout(function () { if (!busy) prepWord(false); }, PREP_IDLE_MS);
+    });
     function tryOpen() {
       if (busy) return;
       busy = true;
       errEl.hidden = true;
+      /* D-1425: растяжка — с нажатия, а не с конца смыкания; ответ — как прежде, после смыкания. */
+      prepWord(true); prepLen = 0;
       /* С нажатия вид двери не меняется: решение «3D или картина» — только до него. */
       if (door && door.press) door.press();
       if (door && door.quiet) door.quiet();
@@ -5944,7 +5992,10 @@
       var old = gate.querySelector(".vg-sheet");
       if (old) { if (old.close) old.close(); else old.remove(); }
       var sh = doc.createElement("div");
-      sh.className = "vg-sheet";
+      /* D-1433 (основатель 25.11.2026): вопрос-подтверждение — диалог: плотная плита, дверь под ним приглушена
+         (opts.dialog). Кнопки «свернуть/развернуть» остаются: их требует door-for-all-check (D-588, «три кнопки
+         системы» у «Войти без слова») — снять их значит спорить с законом, решает основатель. */
+      sh.className = "vg-sheet" + (opts.dialog ? " vg-dialog" : "");
       sh.innerHTML = '<div class="vg-win" role="dialog" aria-modal="true" aria-label="' + escapeHtml(title) + '">' +
         '<header class="titlebar vg-win-bar">' +
           '<div class="lights">' +
@@ -5963,7 +6014,8 @@
       var close = function () { doc.removeEventListener("keydown", onEsc, true); if (opts.onClose) { try { opts.onClose(); } catch (e) { /* ignore */ } opts.onClose = null; } if (sh.parentNode) sh.remove(); try { field.focus(); } catch (e) { /* ignore */ } };
       doc.addEventListener("keydown", onEsc, true);
       sh.addEventListener("click", function (ev) { if (!opts.locked && (ev.target === sh || (ev.target.closest && ev.target.closest("[data-sheet-x]")))) close(); });
-      sh.querySelector(".light.max").addEventListener("click", function () { win.classList.toggle("maximized"); dx = dy = 0; win.style.transform = ""; });
+      var maxBtn = sh.querySelector(".light.max");
+      if (maxBtn) maxBtn.addEventListener("click", function () { win.classList.toggle("maximized"); dx = dy = 0; win.style.transform = ""; });
       /* перенос за полосу — по всему экрану, полоса не уходит за край */
       var dx = 0, dy = 0, drag = null;
       function clampMove(nx, ny) {
@@ -5990,7 +6042,7 @@
       setTimeout(function () {
         var a = doc.activeElement;
         if (a && sh.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
-        try { (first || sh.querySelector(".light.max")).focus(); } catch (e) { /* ignore */ }
+        try { (first || sh.querySelector(".light.max, .light.close")).focus(); } catch (e) { /* ignore */ }
       }, 40);
       return sh;
     }
@@ -6000,7 +6052,12 @@
        назначается ДО нажатия, в миг открытия окна, по скорости самого устройства (замер главного потока: 48 ×
        getRandomValues по 64 КиБ, середина семи) — и только по ней: ни мир, ни слово её не меняют. Работа дольше минуты
        (очень медленное устройство) — ответ на ближайшей следующей ступени FIRST_STEP. */
-    var FIRST_AT = [[1.6, 7500], [8, 18000], [Infinity, 30000]], FIRST_STEP = 6000, firstAt = 7500;
+    /* D-1425: поворот ключа пустого устройства растягивает слово один раз, а не два (lockOpen), и мир, который уже есть,
+       тратит одну растяжку (firstBurn). Быстрая ступень — на 1,5 с раньше (7,5 → 6 с): там вторая растяжка и была
+       остатком пути (замер H4e2: открытие 1,7 с из 7,5 с). Медленные ступени (18 и 30 с) — прежние: на телефоне ×4
+       путь и с одной растяжкой 15–17 с, и ступень 14 с переводила бы его на следующую (20 с). Минута по-прежнему
+       назначается до нажатия, только по скорости устройства, одна для обоих путей. */
+    var FIRST_AT = [[1.6, 6000], [8, 18000], [Infinity, 30000]], FIRST_STEP = 6000, firstAt = 6000;
     function firstSpeed() {
       var u = new Uint8Array(65536), ms = [], k, i, t;
       try {
@@ -6081,10 +6138,13 @@
         }
         /* Замок закрывает сеанс — мир тут же открывается тем же словом. */
         var padded = function (f) { return function (v) { return firstPad(pressAt).then(function () { return f(v); }); }; };
+        /* D-1425: вход сразу за поворотом ключа — его же ключами, без второй растяжки того же слова. */
+        var lockOpen = window.sbVault.lockOpen ? function () { return window.sbVault.lockOpen(w); }
+          : function () { return window.sbVault.lock(w).then(function () { return window.sbVault.unlock(w); }); };
         /* D-1357: всё, что стоит времени (язык двери, вопрос о месте на диске), — до ступени; после неё — только
            показать ответ, синхронно, как показывает отказ. */
         var quota = null;   /* { q } */
-        window.sbVault.lock(w).then(function () { return window.sbVault.unlock(w); }).then(function (okp) {
+        lockOpen().then(function (okp) {
           if (okp) {
             try { localStorage.setItem("sysbaby.authed", "1"); } catch (e) { /* ignore */ }
             adoptDoorLangIfNone();
@@ -6112,7 +6172,7 @@
     gate.querySelector("#sbVaultGuest").addEventListener("click", function () {
       var s = sheet(gateText("lock.guest.title"),
         "<p>" + escapeHtml(gateText("lock.guest.body")) + "</p>" +
-        '<div class="vg-sheet-acts"><button type="button" class="main" id="sbGuestGo">' + escapeHtml(gateText("lock.guest.go")) + '</button><button type="button" data-sheet-x>' + escapeHtml(gateText("lock.notNow")) + "</button></div>");
+        '<div class="vg-sheet-acts"><button type="button" class="main" id="sbGuestGo">' + escapeHtml(gateText("lock.guest.go")) + '</button><button type="button" data-sheet-x>' + escapeHtml(gateText("lock.notNow")) + "</button></div>", { dialog: true });
       s.querySelector("#sbGuestGo").addEventListener("click", function () {
         /* Гость — в пространство без следа: свой отсек хранилища, который
            уходит вместе с вкладкой (§1.3). Одинаково на устройстве с миром и

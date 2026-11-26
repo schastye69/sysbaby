@@ -82,6 +82,9 @@ html[data-motion="reduced"] #sbDesksGauge, html[data-motion="reduced"] #sbDesksG
 /* слабое устройство: стол инструментов (его ряд) и первый стол держатся нарисованными своими композиторными слоями;
    переход между ними — только прозрачность и касания (core/desks.js, core/desktools.js: data-sbd-arm, data-sbd-dim) */
 #sbDeskTools .dt-tray[data-sbd-arm], :is(#sbIconLayer, #sbWidgetLayer, #sbNoteLayer)[data-sbd-arm] { will-change: opacity; contain: strict; transition: opacity var(--t-touch) var(--ease-move); }
+/* ряд, собранный заранее, меняет раскладку с поворотом телефона (на боку — сетка): высота по содержимому, без size/paint-
+   сдерживания — иначе слова за пределом запомненной высоты обрезались бы и касание проходило бы сквозь них */
+#sbDeskTools .dt-tray[data-sbd-arm] { contain: layout style; }
 #sbDeskTools .dt-tray[data-sbd-arm] { will-change: opacity, scale; transform-origin: 50% 100%; transition: opacity var(--t-touch) var(--ease-move), scale var(--t-touch) var(--ease-move); }
 #sbDeskTools .dt-tray[data-sbd-arm][data-sbd-dim] { scale: 1 0 !important; }
 #sbDeskTools .dt-tray[data-sbd-dim], :is(#sbIconLayer, #sbWidgetLayer, #sbNoteLayer)[data-sbd-dim] { opacity: 0 !important; }
@@ -90,3 +93,10 @@ html[data-motion="reduced"] #sbDesksGauge, html[data-motion="reduced"] #sbDesksG
    (core/desktools.js, dimTray). Правила «[data-sbd-dim] *» здесь нет и быть не должно: набор пересчёта браузер держит по
    имени пометки, и любое «… [data-sbd-dim] *» пересчитывало стили всего поддерева слоёв значков и заметок ровно в кадре
    смены стола (замер ×4: 20–26 мс) */
+
+/* перелёт на композиторе (core/desks.js, compField): глубины звёздного поля нарисованы заранее и только растут от середины
+   и гаснут; в покое не стоят на экране */
+#desktop > .sbd-fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: var(--z-flat); pointer-events: none; transform-origin: 50% 52%; will-change: transform, opacity; opacity: 0; }
+#desktop > .sbd-fx.bloom { will-change: opacity; }
+#desktop > .sbd-fx:not([data-sbd-run]) { visibility: hidden; }
+#sbDesksFx { transform-origin: 50% 52%; }

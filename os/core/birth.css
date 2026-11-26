@@ -4,10 +4,17 @@
   transition: opacity var(--t-scene) var(--ease-enter), visibility 0s var(--ease-move) var(--t-scene); contain: strict; background: transparent; }
 #sbBirth.on { opacity: 1; visibility: visible; transition: opacity var(--t-scene) var(--ease-enter), visibility 0s var(--ease-move); }
 #sbBirth.out { opacity: 0; visibility: visible; transition: opacity var(--t-scene) var(--ease-move), visibility 0s var(--ease-move) var(--t-scene); }
+/* отказ (D-1425): слой снимается в том же кадре, без таяния поверх ответа двери */
+#sbBirth.cut { opacity: 0; visibility: hidden; transition: none; }
 #sbBirth .sbb-dim { position: absolute; inset: 0; /* своя краска: тьма эталона Г5 под роликом «Рождение» — ворота темы не носят (D-700), подложка одна во всех темах */ background: radial-gradient(120% 90% at 50% 45%, rgba(4, 3, 4, .8), rgba(2, 1, 2, .9)); }
 #sbBirth .sbb-v, #sbBirth .sbb-still { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
 #sbBirth .sbb-v.on, #sbBirth .sbb-still.on { opacity: 1; }
 #sbBirth .sbb-still { transition: opacity var(--t-drift) var(--ease-move); }
+/* Живой рисунок (D-1430-BIRTH-LIVE, core/birth-live.js): тьма эталона Г5 легче — окно и дверь чуть видны под диском;
+   свет ядра — пятно, меняется только прозрачность; холст во весь слой. */
+#sbBirth.sbb-live .sbb-dim { /* своя краска: тьма эталона Г5 (#ldDim) — ворота темы не носят (D-700) */ background: radial-gradient(120% 90% at 50% 45%, rgba(8, 5, 8, .58), rgba(3, 2, 4, .8)); }
+#sbBirth .sbb-spill { position: absolute; inset: 0; opacity: 0; }
+#sbBirth .sbb-cv { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 /* «готово» — не в кадре (решение основателя); для экранного чтения — скрытый живой статус */
 .sbb-say { position: fixed; left: 0; top: 0; width: 1px; height: 1px; margin: 0; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 html[data-motion="reduced"] #sbBirth, html[data-motion="reduced"] #sbBirth .sbb-still { transition: none; }

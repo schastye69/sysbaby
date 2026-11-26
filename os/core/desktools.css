@@ -238,15 +238,16 @@ html.sb-tools-wide #sbIconLayer { opacity: 0; visibility: hidden; transition: op
 #sbDeskTools.dt-desk > .dt-tray > .dt-word { display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin: 0 15px; min-height: 40px; padding: 0; font-size: var(--f-lead); }
 #sbDeskTools.dt-desk > .dt-tray > .dt-word .dt-ico { width: 17px; height: 17px; margin: 0; }
 @media (max-width: 700px) {
-  #sbDeskTools.dt-desk > .dt-tray { width: min(calc(100vw - 16px), 372px); gap: 12px 0; }
-  /* узкий телефон (360): шесть в ряд — ширина слова не больше шестой части ряда, как масштаб показа (372 × 360/390) */
-  #sbDeskTools.dt-desk > .dt-tray > .dt-word { flex-direction: column; gap: 5px; width: min(62px, calc((100vw - 16px) / 6)); min-height: 52px; margin: 0; font-size: min(var(--f-micro), 2.82vw); letter-spacing: var(--track-tight); }
+  #sbDeskTools.dt-desk > .dt-tray { width: min(calc(100vw - 16px), 372px); gap: 12px 0; justify-content: space-between; }
+  /* узкий телефон (360): шесть в ряд. Ширина слова — по самому слову, а не шестая часть ряда (D-1422: «секундомер» шире
+     шестой части и слипался с «будильником» — «секундомербудильник»); оба ряда — от края до края, просвет между словами
+     не меньше 4 px */
+  #sbDeskTools.dt-desk > .dt-tray > .dt-word { flex-direction: column; gap: 5px; width: auto; flex: 0 1 auto; padding: 0 2px; min-width: 44px; min-height: 52px; margin: 0; font-size: min(var(--f-micro), 2.82vw); letter-spacing: var(--track-tight); }
   #sbDeskTools.dt-desk > .dt-tray > .dt-word .dt-ico { width: min(21px, 5.38vw); height: min(21px, 5.38vw); }
   #sbDeskTools.dt-desk > .dt-tray > .dt-word.pinned::after { bottom: -1px; }
 }
-/* пока говорит голос, его строка — внизу посередине: ряд поднимается над ней (как прежде ручка) */
-html:has(#sbVoiceShade.on) #sbDeskTools.dt-desk > .dt-tray { margin-bottom: 76px; }
-#sbDeskTools.dt-desk > .dt-tray { transition: margin-bottom var(--t-move) var(--ease-move); }
+/* D-1422 (осмотр H4e4, п.10: ряд прыгал 652→728→736): ряд стола инструментов стоит на месте и когда говорит голос — фраза
+   ложится своей тенью поверх ряда на свои секунды, ряд под ней не уезжает. ОТКАТ: margin-bottom 76px при #sbVoiceShade.on */
 @media (prefers-reduced-motion: reduce) { #sbDeskTools.dt-desk > .dt-tray { animation: none; opacity: 1; } }
 html[data-motion="reduced"] #sbDeskTools.dt-desk > .dt-tray { animation: none; opacity: 1; }
 
@@ -261,3 +262,18 @@ html.sb-listening #sbCcTrigger .ember-bar { filter: drop-shadow(0 0 5px rgba(var
 @keyframes dt-listen { 0%, 100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0), 0 0 10px rgba(var(--accent-rgb), .2); } 50% { box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .13), 0 0 24px rgba(var(--accent-rgb), .45); } }
 @media (prefers-reduced-motion: reduce) { html.sb-listening #sbCcTrigger { animation: none; box-shadow: 0 0 0 2px rgba(var(--accent-rgb), .3); } }
 html[data-motion="reduced"].sb-listening #sbCcTrigger { animation: none; box-shadow: 0 0 0 2px rgba(var(--accent-rgb), .3); }
+
+/* ── D-1422: стол инструментов — одна сетка (core/desktools.js: layout, .dt-grid). Строка мысли и счёта стоит НА месте
+   главной цифры (свет середины рисует счёт там же); у мысли — заметное поле: тонкая черта света под строкой, подсказка
+   крупно. Своей строки под цифрами нет — клавиши расчёта и панели инструментов начинаются на одной высоте. ── */
+#sbDeskTools.dt-grid:not(.kb) .dt-linebox { position: absolute; left: 0; right: 0; top: 0; height: var(--dt-hd); justify-content: center; }
+#sbDeskTools.dt-grid:not(.kb) .dt-line { height: var(--dt-hd); max-width: min(100%, 520px); margin: 0 auto; }
+#sbDeskTools.dt-grid[data-tool="line"] .dt-line { border-bottom: 1px solid rgba(var(--dt-c), .34); box-shadow: 0 10px 18px -16px rgba(var(--dt-g), .9); }
+#sbDeskTools.dt-grid[data-tool="line"] .dt-line:not(:focus)::placeholder { color: rgba(var(--dt-c), .72); }
+#sbDeskTools.dt-grid .dt-pane { gap: 16px; }
+@media (max-height: 760px) { #sbDeskTools.dt-grid .dt-pane { gap: 10px; } }
+/* стол инструментов на боку (осмотр H4e4, п.1: ряд рассыпался сеткой поверх шапки, у расчёта не было видно 1, 2, 3, 0, =):
+   ряд — низ левой колонки, шесть в ряд, знак над словом; свет — над ним; клавиши и панель — правая колонка */
+html.is-short #sbDeskTools.dt-desk > .dt-tray { left: 25%; width: calc(50% - 24px); max-width: none; gap: 6px 0; flex-wrap: wrap; justify-content: center; }
+html.is-short #sbDeskTools.dt-desk > .dt-tray > .dt-word { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: calc((100% - 2px) / 6); min-width: 0; min-height: 40px; margin: 0; padding: 0; font-size: var(--f-micro); letter-spacing: var(--track-tight); }
+html.is-short #sbDeskTools.dt-desk > .dt-tray > .dt-word .dt-ico { width: 18px; height: 18px; margin: 0; }

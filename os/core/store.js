@@ -1671,16 +1671,16 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
   /* Итог растяжки байтами — для двух ключей из одного счёта (D-351): ключа
      прежних дверей (AES-GCM, переезд) и ключа щели слова в носителе. Байты
      живут один шаг: вызывающий обнуляет их сразу после импорта. */
-  function deriveWordBits(password, saltB64, it1, it2, fsec, a2) {
-    return deriveKEK(password, saltB64, it1, it2, fsec, a2, true).then(function (bits) {
+  function deriveWordBits(password, saltB64, it1, it2, fsec, a2, quiet) {
+    return (quiet ? deriveKEKTurn : deriveKEK)(password, saltB64, it1, it2, fsec, a2, true).then(function (bits) {
       var out = new Uint8Array(bits);
       if (bits instanceof Uint8Array) bits.fill(0);
       return out;
     });
   }
-  function deriveWordKeys(password, saltB64, it1, it2, fsec, a2) {
+  function deriveWordKeys(password, saltB64, it1, it2, fsec, a2, quiet) {
     var subtle = window.crypto.subtle;
-    return deriveWordBits(password, saltB64, it1, it2, fsec, a2).then(function (bits) {
+    return deriveWordBits(password, saltB64, it1, it2, fsec, a2, quiet).then(function (bits) {
       return Promise.all([
         subtle.importKey("raw", bits, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]),
         slotKeyFrom(bits, "sys.baby/carrier/word/v1")
@@ -1738,6 +1738,108 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             return asBits ? prk : subtle.importKey("raw", prk, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
           });
       });
+  }
+
+  /* ── СЛОВО РАСТЯГИВАЕТСЯ, ПОКА ЧЕЛОВЕК ЕЩЁ У ДВЕРИ (D-1425) ──────────────
+     Основатель 25.11.2026: вход и регистрация слишком медленные — «срочно»; ускорить, не ослабляя защиты.
+     Цена растяжки, соль, алгоритмы — те же; меняется только МИГ, когда она начинается. Слово введено и
+     человек остановился (или нажал «открыть», а кнопка ещё смыкается) — растяжка этого слова идёт сразу, а
+     ответ двери — как прежде, только после нажатия и смыкания. Одна растяжка за раз, одна в памяти вкладки:
+     другое слово, вход, запирание или минута без нажатия — она забыта. На устройстве без мира считается
+     то же, что посчитала бы дверь (todayKdf той же цены), — ворота с миром и без ведут себя одинаково.
+     Не считается заранее, где нужен файл второго ключа или ключ устройства: их тайна — только в жесте.
+     Ключи — те же неизвлекаемые ключи двери; байты растяжки обнуляются, как всегда. Этим же местом поворот
+     ключа первого слова передаёт свои ключи сразу следующему входу (lockOpen): вторая растяжка того же
+     слова той же солью давала то же число и стоила секунды. */
+  /* ПОСТОЯННАЯ: минута — сколько посчитанное заранее ждёт нажатия; дольше человек у двери не стоит. */
+  var PREP_LIVE_MS = 60000;
+  var prep = null, prepRun = null, prepNext = null;
+  function prepId(saltB64, cost) { return String(saltB64) + "|" + cost[0] + "|" + cost[1] + "|" + (cost[2] ? a2Label(cost[2]) : "-"); }
+  function prepDrop(x) {
+    if (!prep || (x && prep !== x)) return;
+    clearTimeout(prep.timer);
+    prep = null;
+  }
+  function prepSet(word, id, p) {
+    prepDrop();
+    var x = { word: word, id: id, p: p, timer: 0 };
+    x.timer = setTimeout(function () { prepDrop(x); }, PREP_LIVE_MS);
+    prep = x;
+    p.then(null, function () { prepDrop(x); });
+    return x;
+  }
+  /* Посчитанное заранее берётся один раз и только тем же словом той же цены; иначе — забыто. Ответ —
+     обещание: { p } — растяжка, которая уже идёт, или null (считать как обычно). */
+  function prepTake(word, id) {
+    var take = function () {
+      var x = prep;
+      if (!x) return null;
+      prepDrop(x);
+      return x.word === word && x.id === id ? { p: x.p } : null;
+    };
+    prepNext = null;
+    var r = prepRun;
+    /* растяжка этого слова только собирается (носитель читается) — подождать её, а не начинать вторую */
+    if (r && r.word === word && !(prep && prep.word === word)) return r.plan.then(take, take);
+    return Promise.resolve(take());
+  }
+  /* Ответ ждёт посчитанного заранее — и всё это время ключ «поворачивается» (сцена стоит), как при растяжке. */
+  function prepWait(p) {
+    keyTurn(1);
+    return p.then(function (v) { keyTurn(-1); return v; }, function (e) { keyTurn(-1); throw e; });
+  }
+  /* Что посчитать для слова: ключи слова этого замка (та же цена и соль, что возьмёт дверь, — из носителя,
+     если он их несёт) или, без мира, растяжку сегодняшней цены. */
+  function prepPlan(word) {
+    var rec = lockRecord();
+    if (!rec) return Promise.resolve({ id: "today", run: function () { return todayRun(word, true); } });
+    if (rec.v === 1 || carrierStale) return Promise.resolve(null);
+    var known = carrierSize(rec), legacyRec = !known && !!(rec.doors || rec.wrap);
+    return (known || legacyRec ? carrierRead() : Promise.resolve(null)).then(function (c) {
+      var eff = known || ownCarrierOf(rec, c) ? withParams(rec, c && c.params) : rec;
+      if (factorOf(eff) || hwOf(eff)) return null;
+      var cost = costOf(eff), salt = saltOf(eff);
+      return { id: prepId(salt, cost), run: function () { return deriveWordKeys(word, salt, cost[0], cost[1], null, cost[2], true); } };
+    });
+  }
+  function prepKick() {
+    if (prepRun || prepNext === null) return;
+    var word = prepNext;
+    prepNext = null;
+    var r = { word: word, plan: null };
+    r.plan = prepPlan(word).then(function (plan) {
+      if (!plan || prepRun !== r || (prep && prep.word === word && prep.id === plan.id)) return null;
+      return prepSet(word, plan.id, plan.run());
+    }).then(null, function () { return null; });
+    prepRun = r;
+    var done = function () { if (prepRun === r) { prepRun = null; prepKick(); } };
+    r.plan.then(function (x) { return x ? x.p : null; }).then(done, done);
+  }
+  function prepare(word, now) {
+    word = String(word || "");
+    if (word.length < 4 || !vaultAvailable()) { prepNext = null; return false; }
+    var going = (prep && prep.word === word) || (prepRun && prepRun.word === word);
+    /* это слово уже считается (или собирается считаться) — второй раз не начинается */
+    if (going) prepNext = null;
+    else {
+      prepNext = word;
+      /* Нажатие ждать не заставляет: прежнее ещё считается — новое начинается сразу. */
+      if (now) prepRun = null;
+      prepKick();
+    }
+    /* С нажатия ключ «поворачивается» (vault:turning, сцена стоит), как при растяжке после нажатия: кадры
+       сцены не отнимают у растяжки время. До нажатия — человек ещё пишет, сцена живёт. */
+    if (now) {
+      var hold = function (p) { keyTurn(1); p.then(function () { keyTurn(-1); }, function () { keyTurn(-1); }); };
+      if (prep && prep.word === word) hold(prep.p);
+      else if (prepRun && prepRun.word === word) prepRun.plan.then(function (x) { if (x && x.word === word) hold(x.p); });
+    }
+    return true;
+  }
+  /* Растяжка сегодняшней цены случайной солью — ответ устройства без мира (D-588). */
+  function todayRun(word, quiet) {
+    var salt = new Uint8Array(16); window.crypto.getRandomValues(salt);
+    return (quiet ? deriveKEKTurn : deriveKEK)(String(word || ""), b64(salt), KDF1_ITER, KDF2_ITER, null, { m: A2_M, t: A2_T, p: A2_P }, true).then(function () { return null; }, function () { return null; });
   }
 
   /* Тайна второго ключа — это НЕ сам файл: SHA-256 от его байтов вместе с
@@ -3856,7 +3958,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
       eff = known || ownCarrierOf(rec, c) ? withParams(rec, c && c.params) : rec;
       var cost = costOf(eff);
       return factorFor(eff, fileBytes).then(function (fsec) {
-        return deriveWordKeys(password, saltOf(eff), cost[0], cost[1], fsec, cost[2]);
+        /* Слово уже растянуто, пока человек был у двери (D-1425): то же слово, та же цена и соль. */
+        var derive = function () { return deriveWordKeys(password, saltOf(eff), cost[0], cost[1], fsec, cost[2]); };
+        return prepTake(fsec ? null : String(password), fsec ? null : prepId(saltOf(eff), cost)).then(function (pre) {
+          return pre ? prepWait(pre.p).then(null, derive) : derive();
+        });
       });
     }).then(function (k) {
       keys = k;
@@ -4063,7 +4169,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
      носитель, затем запись замка, и лишь потом стираются открытые копии.
      В записи замка нет дверей и нет запасной двери: её форма одна и та же
      со вторым словом и без. */
-  function buildLock(password, pairs, keepMaster, duressPassword, factorFile) {
+  function buildLock(password, pairs, keepMaster, duressPassword, factorFile, keepWord) {
     var salt = new Uint8Array(32);
     var master = keepMaster ? new Uint8Array(keepMaster) : new Uint8Array(32);
     window.crypto.getRandomValues(salt);
@@ -4082,7 +4188,11 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
            удвоили бы её на слабом телефоне. */
         return deriveWordKeys(password, saltB64, cost.it1, cost.it2, fsec, a2).then(function (k0) {
           return (duressPassword ? deriveWordKeys(duressPassword, saltB64, cost.it1, cost.it2, fsec, a2) : Promise.resolve(null))
-            .then(function (k1) { return [k0, k1]; });
+            .then(function (k1) {
+              /* Ключи слова — следующему входу того же сеанса (lockOpen, D-1425), без второй растяжки. */
+              if (keepWord && !fsec) { keepWord.id = prepId(saltB64, [cost.it1, cost.it2, a2]); keepWord.keys = k0; }
+              return [k0, k1];
+            });
         }).then(function (wk) {
           /* Сбор — после растяжки (разбор №5): тишина соседей при повороте
              ключа объявляется перед самым сбором, и упавшая растяжка никого
@@ -6197,7 +6307,18 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
               return thRewrite(vaultDoor, { legacy: 1 });
             });
           }
-          return thRewrite(vaultDoor, { extra: cands, legacyIfAll: true }).then(function (res) {
+          /* Открытая вещь прежнего выпуска запечатывается НА МЕСТЕ сразу, до переезда в склад: переезд
+             перешифровывает весь склад и на медленном устройстве идёт секунды — всё это время вещь лежала
+             бы открытой (whole-disk, п.3б). В памяти у переезда остаётся её открытая копия (c.rec). */
+          var sealedNow = {};
+          return cands.reduce(function (chain, c) {
+            return chain.then(function () {
+              if (!c.rec || c.rec.sealed || !c.rec.blob) return null;
+              return thingToSealed(ks, c.rec).then(function (s) { return idbPut("things", s); }).then(function () { sealedNow[c.id] = true; });
+            });
+          }, Promise.resolve()).then(function () {
+            return thRewrite(vaultDoor, { extra: cands, legacyIfAll: true });
+          }).then(function (res) {
             var left = cands.filter(function (c) { return res.moved.indexOf(c.id) === -1; });
             var swap = cands.filter(function (c) { return res.moved.indexOf(c.id) !== -1; });
             return swap.reduce(function (chain, c) {
@@ -6205,7 +6326,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
             }, Promise.resolve()).then(function () {
               /* Не поместившиеся открытые — запечатываются, как прежде (D-265). */
               return left.reduce(function (chain, c) {
-                return chain.then(function () { if (c.rec.sealed) return null; return thingToSealed(ks, c.rec).then(function (s) { return idbPut("things", s); }); });
+                return chain.then(function () { if (c.rec.sealed || sealedNow[c.id]) return null; return thingToSealed(ks, c.rec).then(function (s) { return idbPut("things", s); }); });
               }, Promise.resolve());
             }).then(function () { surfaceThingsLeft(left.length); });
           });
@@ -6379,17 +6500,33 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
         return padOpen().then(function (db) {
           var fill = db ? fillAsk({ op: "fill", db: PAD_DB, version: 1, store: CARRIER_STORE, macId: TH_MAC_ID, prefix: "t",
             chunks: TH_CHUNKS, chunk: TH_CHUNK, macLen: CARRIER_REGIONS * TH_MAC_HALF }) : Promise.resolve(null);
+          /* D-1425: поворот ключа пустого устройства больше не растягивает слово второй раз (lockOpen) — и здесь
+             растяжка одна. */
           return Promise.all([one(cost), fill]).then(function () { return padHalf(db); }).then(null, function () { return null; })
-            .then(function () { return one(cost); })
             .then(function () { padDrop(db); return null; }, function () { padDrop(db); return null; });
         });
       }, function () { return null; });
     },
     todayKdf: function (word) {
       if (!vaultAvailable()) return Promise.resolve(null);
-      var salt = new Uint8Array(16); window.crypto.getRandomValues(salt);
-      return deriveKEK(String(word || ""), b64(salt), KDF1_ITER, KDF2_ITER, null, { m: A2_M, t: A2_T, p: A2_P }, true).then(function () { return null; }, function () { return null; });
+      /* Посчитано, пока человек был у двери (D-1425), — то же слово той же ценой. */
+      return prepTake(String(word || ""), "today").then(function (pre) {
+        return pre ? prepWait(pre.p).then(function () { return null; }, function () { return null; }) : todayRun(word, false);
+      });
     },
+    /* D-1425: дверь просит растянуть слово заранее — ответ всё равно только после нажатия. */
+    prepare: function (word, now) { try { return prepare(word, now); } catch (e) { return false; } },
+    /* D-1425: первое слово — замок и сразу вход тем же словом, ключами того же поворота. */
+    lockOpen: function (password) {
+      var keep = {};
+      var settle = function () { prepDrop(); if (keep.held && !vaultOpen) writerDrop(); keep.held = false; };
+      return window.sbVault.lock(password, null, null, keep).then(function () {
+        if (keep.keys) prepSet(String(password), keep.id, Promise.resolve(keep.keys));
+        keep.keys = null;
+        return window.sbVault.unlock(password);
+      }).then(function (v) { settle(); return v; }, function (e) { keep.keys = null; settle(); throw e; });
+    },
+
     /* ── КОПИИ НАСЛЕДУЮТ ЗАМОК (D-172) ──────────────────────────────────
        Выгрузка профиля — открытый текст. Писать её в папку, пока человек
        запер систему, значило бы вынести наружу ровно то, что он спрятал:
@@ -6416,7 +6553,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
     /* Повернуть ключ. Слова уходят в ячейку носителя, открытые значения стираются из
        хранилища и из памяти разом: оставить их «на всякий случай» значило бы
        не запереть ничего. */
-    lock: function (password, duressPassword, secondKeyFile) {
+    lock: function (password, duressPassword, secondKeyFile, keepWord) {
       var nl = noLocksRefusal(); if (nl) return nl;   /* без Web Locks — отказ, записи нет (A1) */
       if (carrierStale) return Promise.reject(new Error("frozen"));   /* замёрзшая вкладка не пишет (D-353) */
       if (!vaultAvailable()) return Promise.reject(new Error("no-subtle"));
@@ -6598,7 +6735,7 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           return null;
         };
         collect.laid = function () { laid = true; };
-        return buildLock(password, collect, null, duressPassword, secondKeyFile).then(function (ks) {
+        return buildLock(password, collect, null, duressPassword, secondKeyFile, keepWord).then(function (ks) {
           sealedWith = ks;
           /* Вещи уходят в склад носителя ТЕМ ЖЕ поворотом ключа (D-352; не
              поместившееся — конвертами, D-265), и старые открытые снимки
@@ -6615,7 +6752,13 @@ var KDF1_ITER = 1500000;             /* PBKDF2-HMAC-SHA-512 — OWASP */
           shut();
           return true;
         });
-      }).then(function (r) { turning = false; thFillMine = null; writerDrop(); return r; }, function (e) {
+      }).then(function (r) {
+        turning = false; thFillMine = null;
+        /* D-1425: вход тем же словом идёт следом (lockOpen) — право писателя переходит к нему, не отпускаясь
+           между поворотом и входом (иначе отпускание не успело бы, и вход открыл бы мир только на чтение). */
+        if (keepWord && keepWord.keys) keepWord.held = true; else writerDrop();
+        return r;
+      }, function (e) {
         turning = false;
         /* Запись замка легла — не «не вышло» (Р-A5.2): см. keepOpen. */
         if (laid) { thFillMine = null; return keepOpen(e); }

@@ -63,7 +63,10 @@
     o = o && typeof o === "object" ? o : {};
     if (typeof o.count !== "number") o.count = 0;
     /* H4e (D-1300): по умолчанию на столе — «время» (часы и солнце без касаний); снятая булавка пишется null */
-    if (!Object.prototype.hasOwnProperty.call(o, "pin")) o.pin = "time";
+    /* ЗАКРЕПЛЁННОЕ — ПО СТОЛАМ (основатель 25.11.2026): «закрепить» — единственный путь инструмента на стол; само ничего не
+       перепрыгивает. pins = { id стола: инструмент }; по умолчанию не закреплено ничего (часы живут на столе инструментов).
+       Прежняя одна булавка (pin, по умолчанию «время» на первом столе) больше не читается. */
+    if (!o.pins || typeof o.pins !== "object") o.pins = {};
     return o;
   }
   function writeS(o) { try { if (window.sbDB && !(window.sbDB.closed && window.sbDB.closed())) window.sbDB.set(KEY, JSON.stringify(o)); } catch (e) { /* закрыто — останется в памяти до двери */ } }
@@ -189,6 +192,9 @@
     ["#dock", "#sbFab"].forEach(function (q) { var e = doc.querySelector(q); if (!e) return; var r = e.getBoundingClientRect(); if (r.width && r.height && r.top > H * 0.5) low = Math.min(low, r.top - Hd * 1.6); });
     return Math.round(Math.min(Math.max(H * 0.5, iconsBottom() + 12 + Hd * 0.6), Math.max(low, H * 0.3)));
   }
+  /* воздух над цифрами на столе инструментов — от высоты экрана, один для всех инструментов (телефон 664 — 8 px, планшет
+     1080 — 110 px, не больше 160) */
+  function figPad() { return Math.round(Math.max(8, Math.min(160, (window.innerHeight - 640) * 0.25))); }
   var L = { gy: 0 };
   function layout() {
     if (!ov || !DT) return;
@@ -197,18 +203,26 @@
     var showKeys = tool === "calc" && !keys.hidden;
     /* под цифрами света: одна подпись у строки счёта, две — у счётчика, ожидания и города */
     var lineH = Math.max(44, Math.round(Hd * 0.5)), capH = lineish() ? 56 : 84;
+    /* СТОЛ ИНСТРУМЕНТОВ — ОДНА СЕТКА (D-1422, основатель 25.11.2026: «всё в одинаковом масштабе, аккуратно и симметрично»):
+       у всех двенадцати главная цифра или фигура одного размера (Hd) и на одной высоте (figTop от шапки, не от инструмента);
+       строка мысли и счёта встаёт НА место цифр (своей строки под ними нет), подписи — одной высоты места (capH), ряд стоит
+       на месте; всё — по середине. Переключение инструментов не сдвигает ни ряд, ни ось. */
+    var grid = deskOn && tray && !tray.hidden && !root.classList.contains("is-short");
+    if (grid) { capH = lineish() ? 56 : 96; lineH = 0; }
     var keysH = showKeys ? 5 * k + 4 * 8 : 0, paneH = !lineish() ? pane.offsetHeight || 60 : 0;
     var footH = 34, room = H - 76 - safeTop();   /* 76 — низ у голоса */
     if (deskOn && tray && !tray.hidden) { paintTray(); var tr0 = tray.getBoundingClientRect(); if (tr0.height) room = Math.min(room, Math.round(tr0.top - 12) - safeTop()); }
-    var B = Hd + capH + (lineish() ? lineH + 14 : 0) + keysH + paneH + 18 + 40 + footH;
+    if (grid) room -= figPad();
+    var B = Hd + capH + (lineish() && lineH ? lineH + 14 : 0) + keysH + paneH + (grid ? 14 : 18 + 40) + footH;
     /* не помещается под значками — клавиши мельчают (не мельче 36 px), а не залезают на значки */
-    while (showKeys && B > room && k > 36) { k -= 2; keysH = 5 * k + 4 * 8; B = Hd + capH + lineH + 14 + keysH + 18 + 40 + footH; }
+    while (showKeys && B > room && k > 36) { k -= 2; keysH = 5 * k + 4 * 8; B = Hd + capH + (lineH ? lineH + 14 : 0) + keysH + (grid ? 14 : 18 + 40) + footH; }
     var top = Math.max(safeTop(), Math.round(H * 0.47 - B / 2));
     /* Низ инструмента — над голосом И над «+» и полкой (глубокий аудит Б-18, D-876): на 390 слова «шум»,
        «закрыть» садились под круг «+», «линии · пыль» уходили за нижний край. Не помещается — блок
        поднимается к шапке, а остаток прокручивается внутри, а не прячется. */
     var lowEdge = H - 76;
     ["#sbFab", "#dock"].forEach(function (q) { var e = doc.querySelector(q); if (!e) return; var r = e.getBoundingClientRect(); if (r.width && r.height && r.top > H * 0.5) lowEdge = Math.min(lowEdge, r.top - 12); });
+    var lowEdge0 = lowEdge;   /* на боку ряд стоит в левой колонке — правой (клавиши, панель) он не мешает */
     /* D-1359: на столе инструментов низ блока — над раскрытым рядом */
     if (deskOn && tray && !tray.hidden) { paintTray(); var trc = tray.getBoundingClientRect(); if (trc.height) lowEdge = Math.min(lowEdge, Math.round(trc.top - 12)); }
     if (top + B > lowEdge) top = Math.max(safeTop(), lowEdge - B);
@@ -219,6 +233,9 @@
       var anc = freeCy() - Math.round(Hd / 2);
       if (anc >= safeTop() && anc + Hd + capH + footH <= lowEdge) top = anc;
     }
+    /* одна сетка: верх цифр — от шапки, один для всех инструментов и для покоя ряда (часы) */
+    if (grid) top = safeTop() + figPad();
+    ov.classList.toggle("dt-grid", grid);
     ov.style.setProperty("--dt-maxh", Math.max(160, lowEdge - top) + "px");
     /* ЭКРАННАЯ КЛАВИАТУРА (D-900): видимая часть экрана — visualViewport; поднялась
        клавиатура — клавиши света уходят (печатает она), а строка встаёт над ней,
@@ -228,7 +245,7 @@
     rootCls("sb-kb", kb);   /* клавиатура поднята — «+» уходит, пока печатают (глубокий аудит Б-58, D-876) */
     if (kb) {
       var tb = doc.getElementById("topbar"), tr = tb ? tb.getBoundingClientRect().bottom : 0;
-      var need = Hd + capH + (lineish() ? lineH : paneH) + 12;
+      var need = Hd + capH + (lineish() ? Math.max(44, Math.round(Hd * 0.5)) : paneH) + 12;   /* в сетке своей строки нет (lineH 0), над клавиатурой — есть */
       top = Math.max(Math.round((vv ? vv.offsetTop : 0) + tr + 6), Math.round(vb - need));
     }
     L.gy = top + Math.round(Hd / 2); L.gx = Math.round(W / 2);
@@ -243,11 +260,13 @@
     if (land) {
       var tb2 = doc.getElementById("topbar"), t0 = Math.round((tb2 ? tb2.getBoundingClientRect().bottom : 44) + 10);
       var avail = Math.max(120, lowEdge - t0), lightH = Hd + capH + (lineish() ? lineH + 14 : 0);
+      /* стол инструментов на боку: слева — свет над рядом (ряд — низ левой колонки), справа — клавиши и панель до «+» */
+      var availR = deskOn ? Math.max(120, lowEdge0 - t0) : avail;
       top = t0;
       L.gx = Math.round(W / 4 + 4);
       L.gy = t0 + Math.max(0, Math.round((avail - lightH) / 2)) + Math.round(Hd / 2);
-      while (showKeys && 5 * k + 4 * 8 > avail && k > 36) k -= 2;
-      ov.style.setProperty("--dt-maxh", avail + "px");
+      while (showKeys && 5 * k + 4 * 8 > availR && k > 36) k -= 2;
+      ov.style.setProperty("--dt-maxh", availR + "px");
       ov.style.setProperty("--dt-ltop", (L.gy - Math.round(Hd / 2) + Hd + capH) + "px");
       ov.style.setProperty("--dt-htop", (L.gy - Math.round(Hd / 2)) + "px");
     }
@@ -255,7 +274,7 @@
     ov.style.setProperty("--dt-k", k + "px");
     ov.style.setProperty("--dt-hd", Hd + "px");
     ov.style.setProperty("--dt-top", top + "px");
-    ov.style.setProperty("--dt-line-h", lineH + "px");
+    ov.style.setProperty("--dt-line-h", Math.max(44, Math.round(Hd * 0.5)) + "px");
     ov.style.setProperty("--dt-cap", capH + "px");
     DT.setCy(L.gy);
   }
@@ -288,11 +307,17 @@
       menuBlock(); ov.classList.add("on"); ov.setAttribute("data-tool", "menu");
       line.value = draft; draft = "";   /* недописанная мысль ждёт в строке, как и на обычном пути */
       dimTray(false, true);
-      setTimeout(function () { if (open && deskOn && blk.hidden) blk.hidden = false; }, 240);
+      /* D-1421/D-1422: покой стола инструментов — закреплённые часы на месте сетки, сразу (как в setMenu) */
+      deskOn = true; layout();
+      DT.mute(false);
+      if (!DT.info().mode) pinnedShow(REST); else DT.hide();
+      minuteTick(function () { return open && !picked && !DT.info().mode; });
+      if (blk.hidden) blk.hidden = false;   /* блок пуст (menuBlock) — показ дешёвый, в ответе на касание, а не посреди перелёта */
       try { window.dispatchEvent(new CustomEvent("sb:desktools", { detail: { open: true, by: by } })); } catch (e) { /* старый браузер */ }
       return true;
     }
     open = true; by = how || "touch"; justEq = false;
+    DT.mute(false);   /* инструменты открыты здесь — их свет и идущее время видны (убраны — решает showPinned) */
     paint(); hideToday();
     blk.hidden = false; ov.classList.add("on");
     line.value = draft; draft = "";
@@ -307,7 +332,7 @@
       if (want && TOOLS.indexOf(want) >= 0) { setTool(want, true); keys.hidden = want !== "calc"; layout(); update(); }
       else { setMenu(); layout(); }
     } else {
-      var first = by === "pin" ? (want || pinnedNow() || "time") : by === "key" ? "calc" : by === "pult" ? (readS().last || "line") : "line";
+      var first = by === "pin" ? (want || pinnedNow() || REST) : by === "key" ? "calc" : by === "pult" ? (readS().last || "line") : "line";
       if (TOOLS.indexOf(first) < 0) first = "line";
       setTool(first, true);
       keys.hidden = first !== "calc" || by === "key";
@@ -328,14 +353,22 @@
     ov.querySelector(".dt-linebox").hidden = true; keys.hidden = true; pane.hidden = true; pane.innerHTML = ""; hit.hidden = true;
     tray.hidden = false; foot.hidden = true;
     var hl = ov.querySelector(".dt-hist"); if (hl) hl.hidden = true;
-    [].forEach.call(tray.querySelectorAll(".dt-word"), function (b) { var on = b.dataset.tool === pinnedNow(); b.setAttribute("aria-pressed", "false"); b.classList.remove("on"); b.classList.toggle("pinned", on); });
+    [].forEach.call(tray.querySelectorAll(".dt-word"), function (b) { var on = b.dataset.tool === pinOf("main"); b.setAttribute("aria-pressed", "false"); b.classList.remove("on"); b.classList.toggle("pinned", on); });
     if (doc.activeElement && ov.contains(doc.activeElement) && true) { try { doc.activeElement.blur(); } catch (e) { /* фокус не обязателен */ } }
-    var p = pinnedNow(); if (p && !DT.info().mode) pinnedShow(p); else DT.hide();
+    /* покой стола инструментов — его часы (REST), сменой минуты вместе с шапкой; идущее время важнее */
+    DT.mute(false);
+    if (!DT.info().mode) pinnedShow(REST); else DT.hide();
+    minuteTick(function () { return open && !picked && !DT.info().mode; });
     announce(T("dt.tray.aria"));
   }
-  function pinnedNow() { var p = readS().pin; return p && PINNABLE[p] ? p : null; }
+  var REST = "time";   /* покой стола инструментов — крупные часы с подписью солнца (D-1421) */
+  function deskIdNow() { return window.sbDesks && window.sbDesks.idOf ? window.sbDesks.idOf(window.sbDesks.at()) : "main"; }
+  function pinOf(id) { var p = (readS().pins || {})[id]; return p && PINNABLE[p] ? p : null; }
+  /* закреплённое на ЭТОМ столе (на столе инструментов своих булавок нет — там покой ряда) */
+  function pinnedNow() { var id = deskIdNow(); return id === "tools" ? null : pinOf(id); }
+  function setPin(id, t) { var s = readS(); s.pins = s.pins || {}; if (t && PINNABLE[t]) s.pins[id] = t; else delete s.pins[id]; writeS(s); }
   /* свет середины сейчас — закреплённый (D-1341, D-1350): выбран он сам или открыт ряд инструментов (ничего не выбрано) */
-  function pinnedLit() { var p = pinnedNow(); return !!p && !DT.info().mode && (!picked || tool === p); }
+  function pinnedLit() { return deskOn && !DT.info().mode && (!picked || tool === REST); }
   /* D-1358 (скорость): уход со стола инструментов с открытым рядом — «мягко»: инструменты убраны сразу (isOpen — нет),
      а разборка разметки — в простое, когда стол уже ушёл (свет середины тот же — закреплённые часы) */
   var softPending = false;
@@ -366,7 +399,8 @@
   function closeTools(keepDraft) {
     if (!open) return;
     if (openPending) { openPending = false; open = false; deskOn = false; picked = false; try { window.dispatchEvent(new CustomEvent("sb:desktools", { detail: { open: false } })); } catch (e) { /* старый браузер */ } return; }
-    var keepLit = pinnedLit();
+    /* свет остаётся, если это закреплённое на первом столе (Esc со стола инструментов ведёт туда) — не гаснет и не вычерчивается заново */
+    var pinDest = deskOn ? pinOf("main") : pinnedNow(), keepLit = pinnedLit() || (picked && !!pinDest && tool === pinDest && !DT.info().mode);
     open = false;
     if (keepDraft !== false && (tool === "line" || !lineish(tool)) && !answered && line.value.trim()) draft = line.value;   /* открыт был не расчёт: в строке — недописанная мысль (её не трогали) */
     else if (heldDraft) draft = heldDraft;
@@ -539,7 +573,9 @@
       if (!quiet) {
         layout(); update();
         /* мысль — фокус сразу; расчёт касанием — без системной клавиатуры: клавиши света уже здесь */
-        if (t === "line" || !root.classList.contains("is-touch")) { try { line.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
+        /* D-1422: на столе инструментов касанием клавиатура не выскакивает сама — поле на виду, касание поля её зовёт
+           (иначе пустой экран с курсором и клавиатура поверх поля и ряда) */
+        if ((t === "line" && !(deskOn && root.classList.contains("is-touch"))) || !root.classList.contains("is-touch")) { try { line.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
       }
       return;
     }
@@ -554,6 +590,9 @@
     else if (TIMEISH[t]) paneTime(t);
     layout();
     trayToActive();
+    /* клавиатурой и мышью — сразу в поле инструмента (осмотр H4e4, п.14: после «города» фокус оставался на ряду); пальцем —
+       нет: системная клавиатура не выскакивает сама */
+    if (!quiet && (t === "city" || t === "sun" || t === "wait") && !root.classList.contains("is-touch")) { var f0 = pane.querySelector("input.dt-field"); if (f0) { try { f0.focus({ preventScroll: true }); } catch (e) { /* фокус не обязателен */ } } }
   }
   function btnW(data, word, extra) { return '<button type="button" class="dt-word' + (extra || "") + '" ' + data + ">" + esc(word) + "</button>"; }
 
@@ -640,34 +679,45 @@
     var row = sunCity(); if (!row || !window.sbSky) return "";
     var S0 = window.sbSky.sun(window.sbSky.cityNoon(row[0], now), row[4], row[5]);
     if (S0.polar) return "\u2600 " + T(S0.polar === "day" ? "dt.sun.polarDay" : "dt.sun.polarNight");
-    if (now < S0.rise) return "\u2600 " + T("dt.time.rise", { t: hm0(S0.rise), d: durWord(S0.rise - now) });
-    if (now < S0.set) return "\u2600 " + T("dt.time.set", { t: hm0(S0.set), d: durWord(S0.set - now) });
+    /* восход и закат — часами САМОГО города, как в инструменте «солнце» (hmIn): было часами устройства (hm0), и у устройства
+       с поясом UTC (строгая приватность браузера) под часами стояло «восход 6:39», а в «солнце» — «8:37 (Таллин)» */
+    if (now < S0.rise) return "\u2600 " + T("dt.time.rise", { t: hmIn(row[0], S0.rise), d: durWord(S0.rise - now) });
+    if (now < S0.set) return "\u2600 " + T("dt.time.set", { t: hmIn(row[0], S0.set), d: durWord(S0.set - now) });
     var S1 = window.sbSky.sun(window.sbSky.cityNoon(row[0], now + DAY), row[4], row[5]);
     if (S1.polar || !S1.rise) return "";
-    return "\u2600 " + T("dt.time.rise", { t: hm0(S1.rise), d: durWord(S1.rise - now) });
+    return "\u2600 " + T("dt.time.rise", { t: hmIn(row[0], S1.rise), d: durWord(S1.rise - now) });
   }
   var clockPaint = null;
-  function showTime() {
+  function showTime(once) {
     var now = Date.now(), str = hm0(now), sub = sunLine(now);
     clockPaint = { str: str, label: sub };
-    DT.show({ str: str, label: sub, sub: "" });
+    DT.show({ str: str, label: sub, sub: "", now: !!once });
     announce(T("dt.time.aria", { t: str }) + (sub ? ". " + sub.replace("\u2600 ", "") : ""));
     syncTopClock();
   }
   function paneTime0() {
     pane.innerHTML = "";
-    showTime();
-    cityTick = setInterval(function () { if (open && tool === "time") showTime(); }, 10000);
+    showTime(true);
+    minuteTick(function () { return open && tool === "time"; });
+  }
+  /* часы светом сменяют минуту в ту же секунду, что и время в шапке (было «раз в 10 с» — на столе 17:29 при шапке 17:30):
+     будильник — к началу следующей минуты, дальше — каждую минуту; cityTick держит его, чтобы снять там же, где прежде */
+  function minuteTick(still) {
+    clearTimeout(cityTick);
+    var step = function () { cityTick = setTimeout(function () { if (!still()) { cityTick = 0; return; } showTime(); step(); }, 60000 - Date.now() % 60000 + 30); };
+    step();
   }
   /* «не показывать одно и то же дважды» (основатель 15.11): часы на столе — в шапке только дата; убрали — время вернулось */
   function clockOnDesk() {
+    /* D-1421 (основатель 25.11.2026): время в верхней панели видно всегда — шапка больше не прячет его, когда на столе часы;
+       крупные часы живут на столе инструментов. Ответ остаётся для законов: «часы светом стоят на столе сейчас» */
     var t = DT && DT.tool();
     /* часы на столе видны, только когда стол открыт: окно (на телефоне — лист во весь экран), ворота, панель —
        и время возвращается в шапку (основатель 15.11: «время в панели на телефоне не убирать» — часов телефона не видно) */
     return !!(t && clockPaint && t.str === clockPaint.str && t.label === clockPaint.label && !(DT.info().mode) && !visibleWindows() && !deskBusy());
   }
   function syncTopClock() {
-    var on = clockOnDesk();
+    var on = false;   /* D-1421: шапка не прячет время ни при каких часах на столе (плашка не меняет ширину, соседи не дёргаются) */
     /* пометка — на шапке, а не на <html>: класс корня пересчитывал стили всего документа и будил наблюдателей корня
        (замер ×4 при смене стола, D-1358) */
     var tb = doc.getElementById("topbar"); if (!tb) return;
@@ -675,7 +725,8 @@
   }
 
   /* счётчик: касание = +1 */
-  function showCount(n, first) { DT.show({ str: String(n).replace("-", "−"), label: T("dt.count.label"), sub: first ? T("dt.count.tap") + " \u00b7 " + T("dt.count.long") : "" }); }
+  /* подсказка — словами устройства (осмотр H4e4, п.15): пальцем — «касание», мышью — «щелчок» */
+  function showCount(n, first) { var tch = root.classList.contains("is-touch"); DT.show({ str: String(n).replace("-", "−"), label: T("dt.count.label"), sub: first ? T(tch ? "dt.count.tap" : "dt.count.click") + " \u00b7 " + T(tch ? "dt.count.long" : "dt.count.longClick") : "" }); }
   function paneCount() {
     var s = readS();
     pane.innerHTML = '<div class="dt-row">' + btnW('data-c="minus" aria-label="' + esc(T("dt.key.minus")) + ' 1"', T("dt.count.minus")) + btnW('data-c="reset"', T("dt.count.reset")) + "</div>";
@@ -795,11 +846,14 @@
   }
   function showSun() {
     var row = sunCity(); if (!row || !window.sbSky) { DT.hide(); return; }
-    var D = window.sbSky.day(row, Date.now()), t = D.today, mo = T("dt.moon." + D.moon.phase), lbl, str, sub;
+    /* после заката «солнце» показывает ГРЯДУЩИЙ день (как строка под часами — следующий восход): иначе под часами «восход
+       8:39» (завтра), а здесь «восход 8:37» (сегодняшний, уже прошедший) — противоречие (косяк 9, 24.11). Слово «завтра» */
+    var now0 = Date.now(), D0 = window.sbSky.day(row, now0), next = !D0.today.polar && now0 > D0.today.set;
+    var D = next ? window.sbSky.day(row, now0 + DAY) : D0, t = D.today, mo = T("dt.moon." + D.moon.phase), lbl, str, sub;
     if (t.polar) { str = ""; lbl = nameOf(row); sub = T(t.polar === "day" ? "dt.sun.polarDay" : "dt.sun.polarNight") + " \u00b7 " + mo; }
     else {
       var L = Math.round(t.len / 60000); str = Math.floor(L / 60) + ":" + two(L % 60);
-      lbl = nameOf(row) + " \u00b7 " + T("dt.sun.rise", { t: hmIn(row[0], t.rise) }) + " \u00b7 " + T("dt.sun.set", { t: hmIn(row[0], t.set) });
+      lbl = nameOf(row) + " \u00b7 " + (next ? T("dt.sun.tomorrow") + " \u00b7 " : "") + T("dt.sun.rise", { t: hmIn(row[0], t.rise) }) + " \u00b7 " + T("dt.sun.set", { t: hmIn(row[0], t.set) });
       var dm = Math.round(D.delta / 60000);
       /* крупное «7:56» — долгота дня, а не время: вторая подпись называет его словами (глубокий аудит Б-17, D-869) */
       sub = T("dt.sun.len", { h: Math.floor(L / 60), m: L % 60 }) + " \u00b7 " + (dm === 0 ? T("dt.sun.same") : T(dm > 0 ? "dt.sun.longer" : "dt.sun.shorter", { m: Math.abs(dm) })) + " \u00b7 " + mo;
@@ -813,7 +867,10 @@
     var c = pane && pane.querySelector(".dt-moon"); if (!c || !DT) return;
     var dpr = Math.min(2, window.devicePixelRatio || 1), S = 44, x = c.getContext("2d"), P = DT.pal();
     c.width = S * dpr; c.height = S * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, S, S);
-    var r = 15, cx = S / 2, cy = S / 2, core = "rgba(" + P.c.join(","), glow = "rgba(" + P.g.join(",");
+    /* светлая тема: сердцевина света — тёмные чернила (INK), и полная луна выходила тёмным диском (осмотр H4e4, п.12);
+       освещённая часть луны — всегда свет (ореол темы), тень — чернила тише */
+    var lightT = root.getAttribute("data-theme") === "light";
+    var r = 15, cx = S / 2, cy = S / 2, core = "rgba(" + (lightT ? P.g : P.c).join(","), glow = "rgba(" + (lightT ? P.c : P.g).join(",");
     x.fillStyle = glow + ",0.10)"; x.beginPath(); x.arc(cx, cy, r, 0, 6.283); x.fill();
     /* терминатор — эллипс с полуосью r·cos(2πf) */
     var f = m.frac, k = Math.cos(2 * Math.PI * f), right = m.waxing;
@@ -873,7 +930,8 @@
   /* ---------- закрепить (D-890): инструмент остаётся на столе тем же слоем ---------- */
   function paintFoot() {
     if (!foot) return;
-    var pb = foot.querySelector(".dt-pin"), pinned = readS().pin === tool;
+    /* «закрепить на столе» — на первый стол (единственный путь инструмента туда, основатель 25.11.2026) */
+    var pb = foot.querySelector(".dt-pin"), pinned = pinOf("main") === tool;
     pb.hidden = !PINNABLE[tool];
     pb.textContent = T(pinned ? "dt.unpin" : "dt.pin");   /* D-1301: одна булавка — «закрепить на столе» / «убрать со стола»; «закрыть» — ручка, Esc, касание мимо */
     pb.setAttribute("aria-pressed", pinned ? "true" : "false");
@@ -895,13 +953,13 @@
   }
   function togglePin() {
     if (!PINNABLE[tool]) return;
-    var s = readS(), on = s.pin !== tool;
-    s.pin = on ? tool : null; writeS(s);
+    var on = pinOf("main") !== tool;
+    setPin("main", on ? tool : null);
     say(T(on ? "dt.pin.on" : "dt.pin.off"));
     paintFoot(); syncTopClock();
   }
   function pinnedShow(p) {
-    if (p === "time") showTime();
+    if (p === "time") showTime(true);
     else if (p === "count") showCount(readS().count, false);
     else if (p === "wait") showWait();
     else if (p === "city") showCity();
@@ -916,18 +974,26 @@
   function showPinned() {
     clearInterval(pinTick); pinTick = 0;
     if (open || !DT) { paintPinHit(); syncTopClock(); return; }
-    var p = pinnedNow();
+    /* стол инструментов (инструменты убраны) — свет середины его покоя, идущее время на нём видно */
+    if (onToolsDesk()) { DT.mute(false); pinRect = null; paintPinHit(); syncTopClock(); return; }
+    var p = pinnedNow(), run = DT.info().mode;
+    /* НИЧЕГО НЕ ПЕРЕПРЫГИВАЕТ (основатель 25.11.2026): на этом столе видно только закреплённое на нём. Идущий таймер,
+       секундомер, будильник без булавки здесь не рисуются (идут дальше; срок — звуком и уведомлением, core/alarm.js);
+       закреплён сам этот режим — виден он, идущий */
+    DT.mute(!(p && run && p === run));
     /* под окном закреплённого не видно — и свет его не рисуется: сквозь стекло окна (.98) яркие линии часов
        читались бы пятном в теле окна (window-one-glass п.4); окна ушли — часы вернулись */
     covered = coveredNow();
-    if (covered && p) { if (DT.tool() && !DT.info().mode) DT.hide(); pinRect = null; paintPinHit(); syncTopClock(); setTimeout(function () { paintToday(true); }, 0); return; }
-    if (!p) { if (DT.tool() && !DT.info().mode) DT.hide(); pinRect = null; paintPinHit(); syncTopClock(); return; }
-    if (DT.info().mode) { DT.hide(); paintPinHit(); syncTopClock(); return; }
-    DT.setCy(freeCy()); pinnedShow(p);
+    if (covered && p) { if (DT.tool()) DT.hide(); pinRect = null; paintPinHit(); syncTopClock(); setTimeout(function () { paintToday(true); }, 0); return; }
+    if (!p) { if (DT.tool()) DT.hide(); pinRect = null; paintPinHit(); syncTopClock(); return; }
+    DT.setCy(freeCy());
+    if (run && p === run) DT.hide(); else pinnedShow(p);
     setTimeout(function () { paintToday(true); }, 0);   /* главное сегодня встаёт над вернувшимся закреплённым */
-    if (p === "city" || p === "sun" || p === "wait" || p === "time") pinTick = setInterval(function () { if (!open && !doc.hidden && !DT.info().mode && !coveredNow()) { pinnedShow(p); paintPinHit(); } }, p === "time" ? 10000 : p === "city" ? 15000 : 60000);
+    if (p === "city" || p === "sun" || p === "wait") pinTick = setInterval(function () { if (!open && !doc.hidden && !coveredNow()) { pinnedShow(p); paintPinHit(); } }, p === "city" ? 15000 : 60000);
+    if (p === "time") minuteTick(function () { return !open && pinnedNow() === "time" && !coveredNow() && !doc.hidden; });
     paintPinHit(); syncTopClock();
   }
+
   /* стол закрыт для закреплённого: окно на виду или заметка легла на его место — заметка важнее (пустой стол — для
      заметок), а свет под стеклом заметки мешал бы читать её слова (note-contrast) */
   function coveredNow() {
@@ -946,7 +1012,8 @@
   function paintPinHit() {
     if (!pinHit) return;
     /* идущий таймер, секундомер или будильник на столе — тоже «закреплённое»: касание открывает его режим */
-    var run = DT && DT.info().mode, p = run || pinnedNow(), t = run ? { str: "0:00", label: "", sub: "" } : DT && DT.tool();
+    /* касание закреплённого — его инструмент; идущее время — только если закреплён сам этот режим (иначе на столе его нет) */
+    var p0 = pinnedNow(), run = DT && DT.info().mode && DT.info().mode === p0 ? p0 : null, p = run || p0, t = run ? { str: "0:00", label: "", sub: "" } : DT && DT.tool();
     if (open || !p || !t || deskBusy() || visibleWindows() || awayDesk()) { pinHit.hidden = true; pinRect = null; return; }
     var W = window.innerWidth, Hd = DT.Hd(), cy = freeCy(), w = Math.min(W - 32, Math.max(Hd * 3.4, 220)), top = Math.round(cy - Hd * 0.75), h = Math.round(Hd * 1.5 + (t.label ? 40 : 0) + (t.sub ? 24 : 0));
     pinRect = { x: Math.round(W / 2 - w / 2), y: top, w: Math.round(w), h: h };
@@ -980,16 +1047,24 @@
     armed = true;
     {
       ov.classList.add("dt-desk"); if (tray.parentNode !== ov) ov.insertBefore(tray, ov.querySelector(".dt-sound"));
-      [].forEach.call(tray.querySelectorAll(".dt-word"), function (b) { b.setAttribute("aria-pressed", "false"); b.classList.remove("on"); b.classList.toggle("pinned", b.dataset.tool === pinnedNow()); });
+      [].forEach.call(tray.querySelectorAll(".dt-word"), function (b) { b.setAttribute("aria-pressed", "false"); b.classList.remove("on"); b.classList.toggle("pinned", b.dataset.tool === pinOf("main")); });
       dimTray(true); tray.hidden = false;
       menuBlock();
     }
     paint(); paintTray();
-    tray.style.height = Math.ceil(tray.getBoundingClientRect().height || tray.offsetHeight) + "px";
     tray.setAttribute("data-sbd-arm", "");
+    warmRest();
     return true;
   }
   /* блок света в состоянии ряда: строки, клавиш, панели, подножия нет — свет середины один (закреплённое) */
+  /* часы покоя стола инструментов — знаки и подпись солнца в кэше света заранее (в простое, раз в минуту) */
+  var warmT = 0;
+  function warmRest() {
+    clearTimeout(warmT);
+    var go = function () { if (!open && DT && DT.warm) { var now = Date.now(); DT.warm(hm0(now) + "0123456789:", sunLine(now)); DT.warm(hm0(now + 60000), sunLine(now + 60000)); } };
+    if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 2000 }); else setTimeout(go, 60);
+    warmT = setTimeout(warmRest, 60000 - Date.now() % 60000 + 500);
+  }
   function menuBlock() {
     var lb = ov.querySelector(".dt-linebox"); if (lb && !lb.hidden) lb.hidden = true;
     [keys, pane, foot, hit].forEach(function (e) { if (e && !e.hidden) e.hidden = true; });
@@ -1073,6 +1148,11 @@
       cx = L.gx; cy = L.gy + Math.round(DT.Hd() * 0.4);
       var tb3 = doc.getElementById("topbar"), t3 = tb3 ? tb3.getBoundingClientRect().bottom : 44;
       bR = Math.max(44, Math.min(bR, Math.floor(W / 4) - 28, Math.floor(Math.min(cy - t3, H - 16 - cy)) - 8));
+    } else if (ov && ov.classList.contains("dt-grid")) {
+      /* D-1422: на столе инструментов круг вдоха — главная фигура: на месте цифр и их подписи (одна высота для всех), текст
+         подсказки — под ним, а не внутри круга */
+      var zt = L.gy - Math.round(DT.Hd() / 2), zh = DT.Hd() + 96;
+      bR = Math.max(36, Math.round(zh / 2) - 6); cy = zt + Math.round(zh / 2); cx = W / 2;
     } else if (ib && free > 0) { bR = Math.max(44, Math.min(bR, Math.floor((free - 24) / 2))); cy = Math.max(cy, ib + bR + 12); }
     var S = bR * 2 + 40; bcv.width = Math.round(S * dpr); bcv.height = Math.round(S * dpr); bcv.style.width = S + "px"; bcv.style.height = S + "px";
     bcv.style.transform = "translate3d(" + Math.round(cx - S / 2) + "px," + Math.round(cy - S / 2) + "px,0)";
@@ -1082,7 +1162,7 @@
     var t = performance.now() - bt0, ph = breathPhase(t);
     if (ph.end) {
       var al = 1 - sm(ph.e / B_END); drawBreath(0, T("dt.breath.end"), al);
-      if (ph.e < B_END) braf = requestAnimationFrame(breathFrame); else { stopBreath(); announce(T("dt.breath.end")); setTool("line"); }
+      if (ph.e < B_END) braf = requestAnimationFrame(breathFrame); else { stopBreath(); announce(T("dt.breath.end")); afterBreath(); }
       return;
     }
     var w = T("dt.breath." + ph.w); if (w !== bWord) { bWord = w; }
@@ -1092,7 +1172,7 @@
   /* «меньше движения»: свет не растёт — меняются только слова, по одной перерисовке на смену */
   function breathStill() {
     var t = performance.now() - bt0, ph = breathPhase(t);
-    if (ph.end) { drawBreath(0.6, T("dt.breath.end"), 1); bTmo = setTimeout(function () { stopBreath(); setTool("line"); }, B_END); return; }
+    if (ph.end) { drawBreath(0.6, T("dt.breath.end"), 1); bTmo = setTimeout(function () { stopBreath(); afterBreath(); }, B_END); return; }
     drawBreath(0.6, T("dt.breath." + ph.w), 1);
     var cyc = B_IN + B_HOLD + B_OUT, u = t % cyc, nextIn = u < B_IN ? B_IN - u : u < B_IN + B_HOLD ? B_IN + B_HOLD - u : cyc - u;
     bTmo = setTimeout(breathStill, Math.max(30, nextIn + 10));
@@ -1104,6 +1184,8 @@
     announce(T("dt.breath.aria"));
     if (reduced()) breathStill(); else braf = requestAnimationFrame(breathFrame);
   }
+  /* дыхание кончилось или «хватит» (осмотр H4e4, п.6): на столе инструментов — назад к ряду и часам, а не в пустую мысль */
+  function afterBreath() { if (deskOn && open) { setMenu(); layout(); } else setTool("line"); }
   function stopBreath() {
     if (braf) cancelAnimationFrame(braf); braf = 0; clearTimeout(bTmo); bTmo = 0;
     if (bctx) { bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.clearRect(0, 0, bcv.width, bcv.height); }
@@ -1124,7 +1206,8 @@
     if (!DT || !todayBtn) return;
     var N = window.sbNoteToday ? window.sbNoteToday.get() : null, info = DT.info();
     var restPin = !open && !!pinnedNow() && !!DT.tool();   /* H4e: закреплённое (часы) на столе — главное сегодня встаёт над ним */
-    if (!N || open || deskBusy() || (DT.tool() && !restPin)) { hideToday(); return; }
+    /* D-1445: на столе инструментов главное сегодня не светится — там свои инструменты; оно живёт на первом столе */
+    if (!N || open || deskBusy() || onToolsDesk() || (DT.tool() && !restPin)) { hideToday(); return; }
     if (!todayCanvas()) return;
     var txt = String(N.text || "").split("\n").filter(function (l) { return l.trim(); })[0] || "";
     txt = txt.trim(); if (txt.length > 46) txt = txt.slice(0, 45).trim() + "…";
@@ -1189,6 +1272,7 @@
   }
   /* D-1358: на другом столе (свой стол 2–3 или стол инструментов) середина первого стола не отвечает */
   function awayDesk() { return !!(window.sbDesks && window.sbDesks.at() !== 0); }
+  function onToolsDesk() { return !!(window.sbDesks && window.sbDesks.onTools && window.sbDesks.onTools()); }
   function deskTarget(t) {
     if (!t || !t.closest || !t.closest("#desktop")) return false;
     return !t.closest(window.sbEmptyDesktopSkipSelector || ".window");
@@ -1240,9 +1324,11 @@
       if (b.dataset.c === "plus" || b.dataset.c === "minus") count(b.dataset.c === "plus" ? 1 : -1);
       /* сброс — только после вопроса голосом: случайное касание не стирает счёт */
       if (b.dataset.c === "reset") say(T("dt.count.ask") + " [" + T("dt.count.yes") + "] [" + T("dt.count.no") + "]", { on: function (w, i) { if (i === 0) count(0); } });
-      if (b.dataset.b === "stop") { stopBreath(); setTool("line"); }
+      if (b.dataset.b === "stop") { stopBreath(); afterBreath(); }
       if (b.dataset.w2 === "forget") { var s = readS(); delete s.wait; writeS(s); paneWait(); }
-      if (b.dataset.w2 === "done") closeTools(false);
+      /* «готово» (осмотр H4e4, п.7): на столе инструментов — инструмент остаётся на виду со своим итогом (было: инструменты
+         убирались и стол уходил на первый — итог пропадал); вне его — как прежде, убрать */
+      if (b.dataset.w2 === "done") { if (deskOn) { if (doc.activeElement && ov.contains(doc.activeElement)) { try { doc.activeElement.blur(); } catch (e) { /* фокус не обязателен */ } } if (tool === "wait") showWait(); else if (tool === "city") showCity(); else if (tool === "sun") showSun(); } else closeTools(false); }
       if (b.dataset.snd && window.sbNoise) {
         if (!window.sbNoise.play(b.dataset.snd)) say(T("dt.noise.mute"));
         /* честно, один раз: на телефоне браузер в фоне может приглушить звук */
@@ -1319,6 +1405,13 @@
       ev.stopPropagation(); ev.preventDefault();
       openTools("pin", pinHit && pinHit.dataset.tool);
     }, true);
+    /* ВЕРНУЛСЯ К ИНСТРУМЕНТУ — ПРИГЛАШЕНИЕ УШЛО (D-1445): касание пустого места при набранной строке позвало заметку,
+       а человек продолжил счёт — висящее приглашение снимается, и следующее касание мимо снова зовёт заметку, а не гасит
+       старое. ОТКАТ: убрать этот слушатель — приглашение уходит само через 5 с. */
+    doc.addEventListener("pointerdown", function (ev) {
+      if (!open || !ov.contains(ev.target)) return;
+      if (window.sbNoteInviteOpen && window.sbNoteInviteOpen() && window.sbCloseNoteInvite) window.sbCloseNoteInvite();
+    }, true);
     /* касание мимо — убрать; само это касание не зовёт приглашение к заметке */
     doc.addEventListener("pointerdown", function (ev) {
       if (!open) return;
@@ -1336,7 +1429,11 @@
     }, true);
     /* Esc — убрать, раньше общего порядка Esc: окно под инструментами не закрывается */
     doc.addEventListener("keydown", function (ev) {
-      if (open && ev.key === "Escape") { ev.preventDefault(); ev.stopImmediatePropagation(); closeTools(); }
+      if (!open || ev.key !== "Escape") return;
+      /* сначала — приглашение к заметке (касание пустого места на столе инструментов): Esc убирает только его, инструмент и
+         часы остаются, где были */
+      if (window.sbNoteInviteOpen && window.sbNoteInviteOpen()) { ev.preventDefault(); ev.stopImmediatePropagation(); if (window.sbCloseNoteInvite) window.sbCloseNoteInvite(); return; }
+      ev.preventDefault(); ev.stopImmediatePropagation(); closeTools();
     }, true);
     /* НАБОР НА ПУСТОМ СТОЛЕ — СТРОКА МЫСЛИ (основатель 12.11): любой знак, цифра тоже —
        сам расчёт не открывается никогда; «расчёт» с клавишами света — только словом.
@@ -1389,7 +1486,7 @@
     window.addEventListener("sb:theme", function () { paint(); paintToday(true); });
     /* D-1358: перелёт между столами кончился — место закреплённого считается заново по столу в покое (во время перелёта
        значки первого стола растянуты, и свободная середина под ними мерилась бы неверно) */
-    window.addEventListener("sb:desk", function () { if (!open) showPinned(); else if (!(armed && deskOn && !picked)) layout(); paintPinHit(); });
+    window.addEventListener("sb:desk", function () { if (!open) showPinned(); else if (!(armed && deskOn && !picked)) layout(); paintPinHit(); paintToday(true); });
     window.addEventListener("sb:desktime", function () { setTimeout(function () { paint(); paintToday(true); }, 0); });
     window.addEventListener("sb:today", function () { paintToday(true); });
     if (window.sbNotesStore) window.sbNotesStore.onChange(function () { setTimeout(paintToday, 0); [80, 400].forEach(function (ms) { setTimeout(function () { if (!open && coveredNow() !== covered) showPinned(); }, ms); }); });
@@ -1397,7 +1494,7 @@
     DT.on(function (ev) {
       if (ev === "start" || ev === "stop" || ev === "gone" || ev === "tool-off" || ev === "tool-yield") setTimeout(function () { paintToday(true); }, 0);
       /* пошло время — закреплённый молчит; время ушло — закреплённый вернулся */
-      if (ev === "start" && !open && pinnedNow()) DT.hide();
+      if ((ev === "start" || ev === "stop" || ev === "gone") && !open) showPinned();
       if ((ev === "stop" || ev === "gone") && !open) setTimeout(showPinned, 0);
       if (ev === "variant" || ev === "mood") { paint(); paintToday(true); if (tool === "sun" && open) showSun(); }
     });
@@ -1439,7 +1536,11 @@
     open: function (how, t) { return openTools(how || "pointer", t); },
     menu: function () { if (open) { setMenu(); layout(); } return open && !picked; },
     /* закрепить инструмент или снять булавку (null) — тот же путь, что булавка внутри инструмента */
-    pin: function (t) { var s0 = readS(); s0.pin = t && PINNABLE[t] ? t : null; writeS(s0); if (open) paintFoot(); else showPinned(); syncTopClock(); return pinnedNow(); },
+    /* закрепить: на первый стол (кнопка «закрепить на столе» у инструментов) или на указанный стол (меню стола
+       «добавить инструмент», основатель 25.11.2026); пусто — снять */
+    pin: function (t, id) { setPin(id || "main", t && PINNABLE[t] ? t : null); if (open) paintFoot(); else showPinned(); syncTopClock(); return pinOf(id || "main"); },
+    pinHere: function (t) { var id = deskIdNow(); if (id === "tools") return null; setPin(id, t && PINNABLE[t] ? t : null); if (!open) showPinned(); say(T(t ? "dt.pin.on" : "dt.pin.off")); return pinOf(id); },
+    pinnable: function () { return TOOLS.filter(function (t) { return PINNABLE[t]; }).map(function (t) { return { tool: t, word: toolWord(t) }; }); },
     picked: function () { return open && picked; },
     close: function () { closeTools(); },
     /* D-1359: стол инструментов (core/desks.js) — открыть ряд в полный размер (или сразу инструмент t) и убрать */

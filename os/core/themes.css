@@ -320,16 +320,14 @@ html[data-theme="light"]:not(.sb-incognito):not(:has(#sbVaultGate)) body { --sb-
  * плотная (window-one-glass: ≥ .97, без ступеней). Только Тайник; Океан, Аврора, Затмение, Светлица — прежние.
  * ОТКАТ: снять этот блок — окна снова из света поля и Мандарина (D-743/D-809/D-824). */
 html:not([data-wp-mood]):not([data-theme="light"]):not(.sb-incognito) {
-  --win-pane-1: rgb(38, 34, 31);
-  --win-pane-2: rgb(29, 26, 23);
+  /* ЦВЕТ ОКОН B (D-1440): тело окна Тайника — тьма быстрого меню (#140A05…#1E110A), а не серое стекло D-1299.
+     ОТКАТ: rgb(38, 34, 31) и rgb(29, 26, 23). */
+  --win-pane-1: rgb(21, 10, 6);
+  --win-pane-2: rgb(17, 8, 4);
   --bg-elev: #1b1816;
   --menu-bg: #1f1c1a;
   --well-rgb: 20, 18, 16;
   --voice: rgba(22, 20, 18, .94);
-}
-/* H4e (D-1300): часы на столе — в шапке только дата, и на телефоне тоже (время уже на столе) */
-@media (max-width: 600px) {
-  #topbar.sb-desk-clock#topbar .tb-clock .tb-date { display: inline; }
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
@@ -398,7 +396,9 @@ html.sb-tw[data-sb-tw="svetlica"] {
 }
 /* Зенит — светлое золото полудня (двойник Затмения: тот же диск, но солнце в полную силу) */
 html.sb-tw[data-sb-tw="zenit"] {
-  --tw-wall: 238, 226, 196; --tw-floor: 225, 206, 165; --tw-pane: 241, 231, 205; --tw-pane-2: 234, 222, 192; --tw-tile: 255, 249, 228; --tw-shade: 100, 72, 10;
+  /* Зенит — золотистее «Окна» (аудит оболочки H4e4, п.13: «Окно» ≈ «Зенит»): стена и стекло на тон в золото.
+     ОТКАТ: 238,226,196 · 225,206,165 · 241,231,205 · 234,222,192. */
+  --tw-wall: 243, 230, 178; --tw-floor: 230, 207, 142; --tw-pane: 246, 236, 198; --tw-pane-2: 239, 226, 180; --tw-tile: 255, 249, 228; --tw-shade: 100, 72, 10;
   --tw-ink-rgb: 42, 33, 14; --tw-acc: #946112; --tw-acc-rgb: 148, 97, 18;
   --tw-g1: #8a5c10; --tw-g2: #6c4608; --tw-g3: #a87a26; --tw-g4: #d6ae5e;
 }
@@ -429,3 +429,38 @@ html.sb-tw #sbVoiceSky { visibility: hidden !important; }
 
 /* без WebGL (D-1331, os/core/svetlica.js): небо двойника — ровный переход от стены темы к полу, без шейдера */
 html.sb-tw.sb-tw-nogl #sbLightSky { background: linear-gradient(180deg, rgb(var(--tw-wall)), rgb(var(--tw-floor))); }
+
+/* ── ЦВЕТ ОКОН B · D-1440 (основатель 24.11.2026, ~13:20: «серый выбивается из дизайна») ─────────────────────
+ * Окна — в цвет быстрого меню: тёмно-тёплая тьма (в Тайнике ≈ #140A05, сверху чуть светлее ≈ #1E110A) и тонкая
+ * тёплая кромка. В каждой тёмной теме — тьма её быстрого меню (Затмение — угольная, Океан — глубокая синяя, Аврора —
+ * сине-бирюзовая), кромка — акцентом темы. Светлица и её двойники не тронуты (там окна светлые), гость-инкогнито — прежний.
+ * «Сверху светлее» — внутренний свет у верхнего края окна (тень inset в --win-shadow), а не перелив в теле:
+ * тело окна остаётся ровной заливкой ≥ .97 без ступеней (D-809, window-one-glass).
+ * ОТКАТ: снять этот блок и вернуть два числа Тайника выше. */
+html[data-wp-mood="ocean"]:not([data-theme="light"]):not(.sb-incognito) {
+  --win-pane-1: rgb(14, 20, 34);
+  --win-pane-2: rgb(10, 15, 27);
+}
+html[data-wp-mood="aurora"]:not([data-theme="light"]):not(.sb-incognito) {
+  /* Аврора — лилово-индиговая тьма своего поля (тон 220–290°, D-875), не синяя Океана (аудит оболочки H4e4, п.13:
+     «Аврора = Океан по окну»): у Океана тон ≈ 222°, у Авроры ≈ 250°. */
+  --win-pane-1: rgb(17, 14, 31);
+  --win-pane-2: rgb(13, 10, 24);
+}
+html:is([data-wp-mood="ember"], [data-wp-mood="eclipse"]):not([data-theme="light"]):not(.sb-incognito) {
+  --win-pane-1: rgb(21, 13, 9);
+  --win-pane-2: rgb(16, 10, 6);
+}
+html:not([data-theme="light"]):not(.sb-incognito) {
+  --win-edge: rgba(var(--edge-rgb), .16);   /* тёплое молоко кромки, не краска шва: оранжевой рамки у окна нет (D-634, okna-sintez) */
+  --win-shadow: inset 0 44px 40px -30px rgba(var(--edge-rgb), .05), 0 1px 2px rgba(0, 0, 0, .4), 0 24px 64px -16px rgba(0, 0, 0, .8);
+}
+
+/* ── ТЕМА ДОХОДИТ ДО ИМЕНИ И ЗНАЧКА СМАЙЛИКА · аудит оболочки H4e4, п.13 ──────────────────────────────────────────
+ * Имя в шапке светилось огнём очага (оранжевым) и в Океане, Авроре, Береге, Лазури — теперь светом своей темы.
+ * Значок смайлика (перламутр почти белый) на светлом стекле терялся — в светлых темах у него тихий контур чернилами темы.
+ * ОТКАТ: снять этот блок. */
+html[data-wp-mood="ocean"]:not([data-theme="light"]) { --name-heat: #d8ecff; --heat-rgb: var(--accent-rgb); }
+html[data-wp-mood="aurora"]:not([data-theme="light"]) { --name-heat: #e4defc; --heat-rgb: var(--accent-rgb); }
+html.sb-tw:is([data-sb-tw="bereg"], [data-sb-tw="lazur"]) { --name-heat: var(--tw-acc); --heat-rgb: var(--tw-acc-rgb); }
+html.sb-tw :is(#notesSmile, .sb-sm-key, #shrSmile) svg.sb-sm { filter: drop-shadow(0 0 .6px rgba(var(--tw-ink-rgb), .7)) drop-shadow(0 1px 1.5px rgba(var(--tw-ink-rgb), .3)); }

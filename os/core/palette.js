@@ -61,7 +61,8 @@
        translated text too — otherwise a Russian visitor types Russian and the
        Russian row does not come back. */
     var themeTitle = tr("k.switchTo", { mode: tr(next === "light" ? "k.light" : "k.dark") });
-    out.push({
+    /* гость — всегда в тёмной комнате (D-326; осмотр H4e4, п.13): переключатель светлой ему не предлагается */
+    if (!window.sbIncognitoActive) out.push({
       key: themeTitle + " " + tr("k.toggleAppearance"),
       title: themeTitle,
       sub: tr("k.toggleAppearance"),

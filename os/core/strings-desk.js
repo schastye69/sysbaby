@@ -16,6 +16,14 @@
       "welcome.p9": "No hurry. This home is not going anywhere.",
       "welcome.hint": "touch an empty spot to leave your own",
 
+      /* столы и окно (основатель 25.11.2026) */
+      "menu.addTool": "add a tool",
+      "desks.toolsBack": "bring back the tools",
+      "desks.hideGauge": "Hide the desk scale",
+      "desks.hideGaugeSub": "The stars on the right are not shown — nobody sees there are other desks. Switch desks from the control panel or with the ↑ ↓ keys",
+      "desks.listSub2": "The tools desk — its sign stays with any name; removed, it rests in Echoes",
+      "win.fullscreen": "Full screen",
+      "win.restoreSize": "Restore size",
       "clock.aria": "Clock and calendar",
       "clock.close": "Close",
       "clock.tab.cal": "calendar",
@@ -74,6 +82,14 @@
       "welcome.p9": "Не {V:спеши|спешите}. Дом никуда не денется.",
       "welcome.hint": "{V:коснись|коснитесь} пустого места, чтобы оставить свою",
 
+      /* столы и окно (основатель 25.11.2026) */
+      "menu.addTool": "добавить инструмент",
+      "desks.toolsBack": "вернуть инструменты",
+      "desks.hideGauge": "Скрыть шкалу столов",
+      "desks.hideGaugeSub": "Звёзды справа не видны — никто не узнает, что столов больше одного. Переход — из быстрого меню или клавишами ↑ ↓",
+      "desks.listSub2": "Стол инструментов — его знак остаётся при любом имени; убранный, он отдыхает в Эхо",
+      "win.fullscreen": "Во весь экран",
+      "win.restoreSize": "Вернуть размер",
       "clock.aria": "Часы и календарь",
       "clock.close": "Закрыть",
       "clock.tab.cal": "календарь",
@@ -132,6 +148,14 @@
       "welcome.p9": "Ärge kiirustage. Kodu ei lähe kuhugi.",
       "welcome.hint": "puudutage tühja kohta, et jätta oma märge",
 
+      /* lauad ja aken (asutaja 25.11.2026) */
+      "menu.addTool": "lisa tööriist",
+      "desks.toolsBack": "too tööriistad tagasi",
+      "desks.hideGauge": "Peida laudade skaala",
+      "desks.hideGaugeSub": "Tähti paremal ei näidata — keegi ei näe, et laudu on rohkem kui üks. Lauda vaheta kiirmenüüst või klahvidega ↑ ↓",
+      "desks.listSub2": "Tööriistade laud — selle märk jääb iga nimega; eemaldatuna puhkab see Kajades",
+      "win.fullscreen": "Täisekraan",
+      "win.restoreSize": "Taasta suurus",
       "clock.aria": "Kell ja kalender",
       "clock.close": "Sulge",
       "clock.tab.cal": "kalender",

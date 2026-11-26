@@ -1729,7 +1729,7 @@
     invite.addEventListener("keydown", function (ev) {
       if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); accept(ev); }
     });
-    setTimeout(closeInvite, isTouch() ? 5000 : 4200);
+    setTimeout(function () { if (invite === inv0) closeInvite(); }, isTouch() ? 5000 : 4200);   /* только своё: срок прежнего приглашения не гасит новое */
   }
 
   /* ── ПУСТОЕ МЕСТО СТОЛА = «ПОКАЖИ СТОЛ» (v47) ───────────────────────────
@@ -1903,6 +1903,7 @@
   function buildMenu(items, x, y) {
     var host = menuHost();
     if (!host) return;
+    items = items.filter(Boolean);   /* пункт, которого здесь нет (null), — просто не показан */
     host.innerHTML = items.map(function (it) {
       if (it === "-") return '<div class="ctx-sep"></div>';
       return '<button class="ctx-item" type="button"' + (it.disabled ? " disabled" : "") + ">" + esc(it.label) + (it.check ? '<span class="ctx-check">' + sbZnak("check") + "</span>" : "") + "</button>";
@@ -1952,9 +1953,20 @@
     var items = [
       /* НА СТОЛ. Единственное, что стол умеет без всякого повода, и ради чего
          кнопку чаще всего и нажимают. */
-      /* заметка ложится на первый стол: с другого стола — сначала туда (D-1358) */
-      { label: tr("menu.newNote"), run: function () { if (window.sbDesks && window.sbDesks.onTools()) window.sbDesks.go(0); createNoteAt(x, y); } }
+      /* заметка ложится на тот стол, где её попросили — стол инструментов тоже (основатель 25.11.2026) */
+      { label: tr("menu.newNote"), run: function () { createNoteAt(x, y); } }
     ];
+    /* «ДОБАВИТЬ ИНСТРУМЕНТ» (основатель 25.11.2026): выбрать, какой инструмент закрепить на ЭТОМ столе; закреплённый —
+       отмечен, выбрать его ещё раз — снять. На столе инструментов не нужно: там весь ряд. Только где есть мышь («правой кнопкой мыши»): на телефоне
+       меню «+» короче шести, а закрепить можно в самом инструменте */
+    var DTo = window.sbDeskTools;
+    if (DTo && DTo.pinHere && DTo.pinnable && window.matchMedia && window.matchMedia("(pointer: fine)").matches && !(window.sbDesks && window.sbDesks.onTools && window.sbDesks.onTools())) {
+      items.push({ label: tr("menu.addTool"), run: function () {
+        var now = DTo.pinned ? DTo.pinned() : null;
+        var list = DTo.pinnable().map(function (o) { return { label: o.word, check: o.tool === now, run: function () { DTo.pinHere(o.tool === now ? null : o.tool); } }; });
+        setTimeout(function () { buildMenu(list, x, y); }, 0);
+      } });
+    }
     /* НЕСКОЛЬКО СТОЛОВ (D-1358, показ zvezdy-temy6): «новый стол»; на третьем — «столов уже три», недоступно */
     if (window.sbDesks) {
       var full = window.sbDesks.full();
@@ -2027,7 +2039,8 @@
         } },
         { label: tr("menu.hideWidget"), run: function () { if (window.sbSetWidgetHidden) window.sbSetWidgetHidden(target.getAttribute("data-widget"), true); } },
         "-",
-        { label: tr("menu.toggleTheme"), run: function () { if (window.setTheme) window.setTheme(window.sbGetTheme() === "light" ? "dark" : "light"); } },
+        /* гость — всегда в тёмной комнате (D-326; осмотр H4e4, п.13): переключатель, который ничего не делает, гостю не показан */
+        window.sbIncognitoActive ? null : { label: tr("menu.toggleTheme"), run: function () { if (window.setTheme) window.setTheme(window.sbGetTheme() === "light" ? "dark" : "light"); } },
         { label: tr("menu.shortcuts"), run: function () { if (window.sbPanels && window.sbPanels.sbShortcutsOverlay) window.sbPanels.sbShortcutsOverlay.open(); } }
       ];
     } else if (kind === "icon") {

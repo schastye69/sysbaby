@@ -213,7 +213,8 @@
         : "") +
     "</div>";
   }
-  function headNote(c) { return lineOn ? t("sh.head.on", { n: upCount(), all: P.POSTMEN.length }) : t("sh.head.off"); }
+  /* «на связи» — только когда хоть один почтальон ответил; при 0 из 5 честно «подключается» (аудит H4e4, п.6) */
+  function headNote(c) { var n = upCount(); return lineOn ? (n ? t("sh.head.on", { n: n, all: P.POSTMEN.length }) : t("sh.head.wait", { all: P.POSTMEN.length })) : t("sh.head.off"); }
   function headButtons(win) {
     return '<button type="button" class="mg-to-letter" id="shLink" aria-expanded="' + (win._shLinkOpen ? "true" : "false") + '">' + esc(t("sh.link")) + "</button>" +
       '<button type="button" class="mg-to-letter" id="shLine" aria-pressed="' + (lineOn ? "true" : "false") + '">' + esc(t(lineOn ? "sh.line.off" : "sh.line.on")) + "</button>";

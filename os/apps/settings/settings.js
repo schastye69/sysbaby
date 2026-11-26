@@ -353,6 +353,8 @@
       rowMarkup(esc(t("set.sound.volume")), esc(t("set.sound.volumeSub")),
         '<span class="st-range-host" id="stVolume" data-range="volume" data-value="' + volume + '"></span>') +
       rowMarkup(esc(t("set.sound.dnd")), esc(t("set.sound.dndSub")), switchMarkup("dnd")) +
+      /* Голос системы можно выключить совсем (D-1441): тихие фразы уходят в колокольчик, вопросы и важное остаются. */
+      rowMarkup(esc(t("set.voiceOff")), esc(t("set.voiceOffSub")), switchMarkup("voiceOff")) +
       /* Шёпот: имя собеседника в голосе — только по руке человека, выключено с рождения (D-1414). */
       (window.sbShepotRoom ? rowMarkup(esc(t("sh.set.name")), esc(t("sh.set.nameSub")), switchMarkup("shepotName")) : "");
   }
@@ -376,10 +378,14 @@
     var W = D.words, b = function (act, i, word, on) { return on ? '<button type="button" class="st-btn" data-desk-act="' + act + '" data-desk="' + i + '">' + esc(word) + "</button>" : ""; };
     return '<h3 class="st-subtitle">' + esc(W("desks.list")) + "</h3>" +
       D.list().map(function (d) {
-        return rowMarkup(esc(d.name), d.tools ? esc(W("desks.listSub")) : "",
+        return rowMarkup(esc(d.name), d.tools ? esc(W("desks.listSub2")) : "",
           '<span class="st-desk-acts">' + b("go", d.i, W("desks.go"), !d.cur) + b("rename", d.i, W("desks.rename"), d.rename) + b("up", d.i, W("desks.up"), d.up) + b("down", d.i, W("desks.down"), d.down) + b("remove", d.i, W("desks.remove"), d.remove) + "</span>");
       }).join("") +
-      rowMarkup(esc(W(D.full() ? "desks.full" : "desks.new")), "", '<button type="button" class="st-btn primary" data-desk-act="new" data-desk="-1" aria-label="' + esc(W("desks.new")) + '"' + (D.full() ? " disabled" : "") + ">+</button>");
+      rowMarkup(esc(W(D.full() ? "desks.full" : "desks.new")), "", '<button type="button" class="st-btn primary" data-desk-act="new" data-desk="-1" aria-label="' + esc(W("desks.new")) + '"' + (D.full() ? " disabled" : "") + ">+</button>") +
+      /* стол инструментов в Эхо — вернуть отсюда (основатель 25.11.2026) */
+      (D.toolsGone && D.toolsGone() ? rowMarkup(esc(W("desks.toolsBack")), "", '<button type="button" class="st-btn" data-desk-act="toolsBack" data-desk="-1">' + esc(W("desks.toolsBack")) + "</button>") : "") +
+      /* «скрыть шкалу столов» (основатель 25.11.2026): никто не видит, что столов больше одного */
+      (D.gaugeHidden ? rowMarkup(esc(W("desks.hideGauge")), esc(W("desks.hideGaugeSub")), '<button type="button" class="st-switch' + (D.gaugeHidden() ? " on" : "") + '" role="switch" aria-checked="' + (D.gaugeHidden() ? "true" : "false") + '" data-desk-act="gauge" data-desk="-1">' + switchWords() + "</button>") : "");
   }
 
   function profilesApi() { return window.sbProfiles || null; }

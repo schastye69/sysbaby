@@ -282,11 +282,20 @@
     var BW = ph ? 600 : Math.min(1400, w * 0.81 + 120), BH = ph ? 440 : 460, kx = ph ? 1 : BW / 1400, ky = SH / BH, bx = (w - BW) / 2 + (ph ? 0 : 50 * kx);
     var fs = sky; fs.width = Math.round((w + pad * 2) * d); fs.height = Math.round((SH + pad * 2) * d);
     fs.style.width = (w + pad * 2) + "px"; fs.style.height = (SH + pad * 2) + "px"; fs.style.left = -pad + "px"; fs.style.top = (innerHeight - SH - pad) + "px";
+    /* СВЕЧЕНИЕ — НА СТРОКЕ ФРАЗЫ (D-1441; основатель 24.11.2026: «тёплое свечение стоит на 50–70 px выше строки»).
+       Средний центр пяти пятен (по их силе) переносится на середину строки голоса (E.skyLine — её мерит шаг кадра),
+       а маска неба гаснет от строки к самому низу экрана (--sbv-sky-line → --sbv-sky-cut, voice.css): у пола — пол.
+       ОТКАТ: shift = 0 и прежняя маска «110 px от низа холста». */
+    var wsum = 0, ysum = 0;
+    GEO.forEach(function (g, k) { var a0 = o.neb[k][1]; wsum += a0; ysum += a0 * ((g[1] + g[3] / 2) * ky + pad); });
+    var lineY = E.skyLine != null ? E.skyLine - (innerHeight - SH - pad) : null, shift = lineY != null ? lineY - ysum / wsum : 0;
+    fs.style.setProperty("--sbv-sky-line", Math.round(lineY != null ? lineY : SH + pad - 110) + "px");
+    fs.style.setProperty("--sbv-sky-cut", Math.round(SH + pad - 4) + "px");   /* чуть над низом: холст плывёт на ±5 px, а у пола — пол (floor-seam) */
     var fx = fs.getContext("2d"); fx.setTransform(1, 0, 0, 1, 0, 0); fx.clearRect(0, 0, fs.width, fs.height); fx.setTransform(d, 0, 0, d, 0, 0);
     fx.save(); fx.globalCompositeOperation = o.light ? "source-over" : "screen";
     GEO.forEach(function (g, k) {
-      var nb = o.neb[k], c = nb[0], a = Math.min(1, nb[1] * 1.35 * o.nebA), cxx = bx + (g[0] + g[2] / 2) * kx + pad, cyy = (g[1] + g[3] / 2) * ky + pad;
-      fx.save(); fx.translate(cxx, cyy); fx.scale(g[2] * kx / 2, g[3] * ky / 2);
+      var nb = o.neb[k], c = nb[0], a = Math.min(1, nb[1] * 1.35 * o.nebA) * (lineY != null ? .4 : 1)   /* у самого низа экрана свет тише: от строки до пола без ступени (D-1441) */, cxx = bx + (g[0] + g[2] / 2) * kx + pad, cyy = (g[1] + g[3] / 2) * ky + pad + shift;
+      fx.save(); fx.translate(cxx, cyy); fx.scale(g[2] * kx / 2, g[3] * ky / 2 * (lineY != null ? 1.5 : 1));   /* на строке пятна выше и мягче: спад к полу пологий */
       var gr = fx.createRadialGradient(0, 0, 0, 0, 0, 1);
       gr.addColorStop(0, rgba(c, a)); gr.addColorStop(0.35, rgba(c, a * 0.72)); gr.addColorStop(0.7, rgba(c, a * 0.25)); gr.addColorStop(1, rgba(c, 0));
       fx.fillStyle = gr; fx.beginPath(); fx.arc(0, 0, 1, 0, TAU); fx.fill(); fx.restore();
@@ -559,7 +568,11 @@
     }
     E.lingers = E.lingers.filter(function (p) { if (T > p.t0) { p.x += p.vx * dt; p.y += p.vy * dt; } return T < p.t0 + p.life; });
     if (E.old && T > E.old.t0 + E.old.fd + 0.05) E.old = null;
-    /* шаг неба на своём холсте: плывёт и гаснет стилем */
+    /* шаг неба на своём холсте: плывёт и гаснет стилем; середина строки сдвинулась — туманность переносится на неё (D-1441) */
+    if (sky && ph && ph.rect && band.w && E.skyPh !== ph) {   /* раз на фразу: перерисовка неба посреди подъёма стоила бы кадров */
+      E.skyPh = ph; var lc = band.top + (ph.rect.y + ph.rect.h / 2) / dpr;
+      if (E.skyLine == null || Math.abs(lc - E.skyLine) > 3) { E.skyLine = lc; buildSky(); }
+    }
     if (sky) {
       var fin = sm(a), ddx = Math.sin(T * TAU / 70) * 16 + Math.sin(T * TAU / 47) * 1.1, ddy = Math.cos(T * TAU / 90) * 5 + (1 - a) * 36;
       var op = (fin * sm(E.starK)).toFixed(3); if (sky.style.opacity !== op) sky.style.opacity = op;
@@ -589,6 +602,13 @@
       }
       E.near.forEach(function (p) { x.globalAlpha = p.a * fin * (0.8 + 0.2 * Math.sin(T * 0.2 + p.ph)); x.drawImage(p.s, (p.x + ox * 1.3) * d - p.s.width / 2, (p.y + oy * 1.3 + (1 - a) * 30 + so) * d - p.s.height / 2); });
       x.globalAlpha = 1; x.globalCompositeOperation = "source-over";
+      /* НА ОКНА НЕ ПУСКАТЬ (D-1441): звёзды и пылинки неба не ложатся на стекло открытых окон — там их стирает
+         прямоугольник окна. Буквы фразы и пыль, из которой они собираются, рисуются ниже и остаются. */
+      var OW = window.openWindows || {};
+      x.globalCompositeOperation = "destination-out";
+      for (var wid in OW) { var ww = OW[wid]; if (!ww || ww.minimized || !ww.el || !ww.el.isConnected) continue;
+        var wr = ww.el.getBoundingClientRect(); if (wr.width > 0 && wr.height > 0) x.fillRect(wr.left * d, (wr.top - band.top) * d, wr.width * d, wr.height * d); }
+      x.globalCompositeOperation = "source-over";
     }
     for (var li = 0; li < E.lingers.length && !fullWin; li++) { var lp = E.lingers[li]; if (T < lp.t0) continue; var u = (T - lp.t0) / lp.life; x.globalAlpha = 0.55 * Math.sin(Math.PI * u) * Math.max(fin, 0.3) * q0; x.drawImage(lp.s, lp.x * d - lp.s.width / 2, lp.y * d - lp.s.height / 2); }
     x.globalAlpha = 1;
@@ -703,6 +723,9 @@
     if (p.field && p.field.parentNode) p.field.parentNode.removeChild(p.field);
     line.innerHTML = "";
     line.style.fontSize = px() + "px";
+    /* ТИРЕ НЕ НАЧИНАЕТ СТРОКУ (основатель 25.11: «тире в начале строки убрать»): тире держится за слово перед ним
+       неразрывным пробелом — перенос идёт после тире, а не перед ним. Для чтеца и диктора текст прежний (p.plain). */
+    s = s.replace(/ ([—–]) /g, "\u00a0$1 ");
     var chars = [], parts = s.split(/(\[[^\]]+\])/), bi = 0;
     function word(host, w, isB) {
       w.split(/( )/).forEach(function (piece) {
@@ -750,8 +773,14 @@
   function placeShade(p) {
     var r = p.lineRect; if (!r) return;
     var cs = getComputedStyle(shade), fx = parseFloat(cs.getPropertyValue("--sbv-px")) || 56, fy = parseFloat(cs.getPropertyValue("--sbv-py")) || 26;
-    var px0 = SH_M + fx, py0 = 6 + fy;
-    shade.style.left = Math.round(r.left - px0) + "px"; shade.style.width = Math.round(r.width + 2 * px0) + "px";
+    /* НАД ОКНОМ — КОМПАКТНО (основатель 25.11: «на пустом столе голос в полном формате; когда открыто окно — компактная
+       строка поверх окон, без пятна»): над окном вместо широкого сумрака со светом — аккуратная подложка по строке. */
+    var onWin = overWindow(r);
+    shade.classList.toggle("pill", onWin);
+    var px0 = onWin ? 16 : SH_M + fx, py0 = onWin ? 8 : 6 + fy;
+    var sl = r.left - px0, sw = r.width + 2 * px0;
+    if (onWin) { var m0 = 6; if (sl < m0) { sw -= m0 - sl; sl = m0; } if (sl + sw > innerWidth - m0) sw = innerWidth - m0 - sl; }   /* подложка — в пределах экрана */
+    shade.style.left = Math.round(sl) + "px"; shade.style.width = Math.round(sw) + "px";
     shade.style.top = Math.round(r.top - py0) + "px"; shade.style.height = Math.round(r.height + 2 * py0) + "px";
     /* низ экрана — пол страницы (D-1314): свет под фразой гаснет к самому низу, где его отмеряет --sbv-cut (от верха поля до низа экрана) */
     shade.style.setProperty("--sbv-cut", Math.round(window.innerHeight - (r.top - py0)) + "px");
@@ -1024,7 +1053,7 @@
   var TIPK = "sysbaby.voice.swipeTip", tipSaid = false;
   function swipeTip(p) {
     /* только у фразы, которая простояла свой срок (смахнувший уже знает); не у подсказок стола и знакомства */
-    if (tipSaid || p.tip || p.ask || p.sticky || p.quiet || p.warm || p.hold === Infinity || wordsIn(p.plain) < 9 || p.el.hasAttribute("data-tip") || queue.length) return;
+    if (tipSaid || p.tip || p.ask || p.sticky || p.quiet || p.warm || p.hold === Infinity || wordsIn(p.plain) < 9 || p.el.hasAttribute("data-tip") || p.el.hasAttribute("data-tip-id") || queue.length) return;   /* data-tip-id — подсказка стола (topbar.js); длинная tip.privacy (D-1434) иначе звала смахивание вторым словом */
     try { if (localStorage.getItem(TIPK)) { tipSaid = true; return; } } catch (e) { /* хранилище закрыто — скажем, но только в этот раз */ }
     tipSaid = true;
     try { localStorage.setItem(TIPK, "1"); } catch (e) { /* метку не положить — подсказка всё равно одна за сеанс */ }
@@ -1095,6 +1124,14 @@
       var hh = { el: t, gone: false, h: null, dismiss: function () { hh.gone = true; if (hh.h && hh.h.dismiss) hh.h.dismiss(); } };
       (function wait() { if (hh.gone) return; if (gated()) { setTimeout(wait, 250); return; } hh.h = take(t, ttl); })();
       return hh;
+    }
+    if (off()) {   /* голос выключен: тихое извещение — сразу в колокольчик; вопрос и важное — звучат */
+      var c1 = t.classList;
+      if (!(c1.contains("toast-warn") || c1.contains("toast-ask") || c1.contains("toast-standing") || t.querySelector(".toast-action"))) {
+        var tt0 = t.querySelector(".toast-title"), tx0 = t.querySelector(".toast-text");
+        quietly(t.getAttribute("data-title") || (tt0 ? tt0.textContent : ""), t.getAttribute("data-text") || (tx0 ? tx0.textContent : ""), t.getAttribute("data-kind") || "event", t.className);
+        return null;
+      }
     }
     var p = build(t, ttl);
     if (p.sticky) p.ttl = Infinity;
@@ -1169,9 +1206,14 @@
   }
 
   /* ── своя фраза (знакомство, тёплые слова, законы) ─────────────────── */
+  /* ГОЛОС ВЫКЛЮЧЕН (D-1441, основатель 25.11: «в настройках — выключить голос совсем»): фразы без вопроса не появляются,
+     событие ложится в колокольчик; вопрос (слова-кнопки), предупреждение и важное остаются — без них дом не может
+     спросить и не может предупредить. Выключатель — Настройки, ключ voiceOff. */
+  function off() { try { return !!(window.sbGetControlToggle && window.sbGetControlToggle("voiceOff")); } catch (e) { return false; /* ОТКАТ: не спросить — голос говорит, как прежде */ } }
   function say(text, opt) {
     opt = opt || {};
     if (!mount() || gated()) return null;
+    if (off() && !opt.urgent && !opt.sticky && !/\[[^\]]+\]/.test(opt.key ? form(opt.key, opt.vars) : String(text || ""))) { quietly(opt.key ? form(opt.key, opt.vars).replace(/[\[\]]/g, "") : text, "", opt.kind === "event" ? "event" : "", ""); return null; }
     var keyed = !!opt.key;
     if (keyed) text = form(opt.key, opt.vars);
     text = String(text == null ? "" : text);
@@ -1265,8 +1307,10 @@
     if (dk && typeof MutationObserver === "function") new MutationObserver(function () { if (cur && !cur.gone) dockSet(cur); })
       .observe(dk, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] });
     /* тема сменилась — цвета пыли и неба из её токенов */
+    /* и двойник светлой темы надет (data-sb-tw ставит svetlica.js после смены темы): без этого пыль фразы в «Окне» брала
+       акцент светлой темы до двойника — зелёный (аудит оболочки H4e4, п.13) */
     if (typeof MutationObserver === "function") new MutationObserver(function () { setTimeout(repaint, 30); })
-      .observe(root, { attributes: true, attributeFilter: ["data-theme", "data-wp-mood"] });
+      .observe(root, { attributes: true, attributeFilter: ["data-theme", "data-wp-mood", "data-sb-tw"] });
     if (mq.addEventListener) mq.addEventListener("change", function () { if (cur) resay(cur, true); });
     window.addEventListener("sb:say", function (e) {   /* чужой пакет хочет сказать (П2, П3) */
       var d = e && e.detail; if (!d || d.source === "voice" || d.source === "toast") return;

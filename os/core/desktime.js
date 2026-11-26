@@ -97,7 +97,7 @@
   var total = 0, label = "", vBase = 0, rBase = 0, endAt = null, lastKey = "", pausedAt = null, painted = 0;
   var cxT = null, cyT = null, cyC = null, cyDrawn = null, lastT = 0, CW = 0, CH = 0, CY = 0, posY = null;
   /* слой инструмента (D-880): { str, prev, t0, label, sub } — или null */
-  var tool = null, toolTmo = 0;
+  var tool = null, toolTmo = 0, muted = false;
   function vnow() { return pausedAt != null ? pausedAt : vBase + (performance.now() - rBase); }
   function begin(m, tot, lbl, elapsed) {
     mode = m; total = tot || 0; label = lbl || ""; vBase = elapsed || 0; rBase = performance.now(); endAt = null; pausedAt = null; lastKey = "";
@@ -235,6 +235,21 @@
     /* по горизонтали — середина стола, а у телефона на боку — середина левой колонки (setCx, POLISH-C D-1023) */
     var px = Math.round((cxT == null ? W / 2 : cxT) - CW / 2), py = Math.round(cyC - CY), pk = px + "," + py;
     if (pk !== posY) { posY = pk; cv.style.transform = "translate3d(" + px + "px," + py + "px,0)"; }
+    /* НЕМОЙ СВЕТ (основатель 25.11.2026: «ничего само не перепрыгивает»): на столе, где идущий режим не закреплён, его
+       цифры не рисуются — время идёт, срок наступает («done» — звон и уведомление, core/alarm.js), но свет середины молчит
+       или показывает закреплённое там (core/desktools.js: mute) */
+    if (muted && mode) {
+      var mv = vnow(), mst = state(mv);
+      if (mst.done) {
+        if (endAt == null) { endAt = now - (mv - total); emit("done"); }
+        if (now - endAt > 13000) { mode = null; emit("gone"); }
+      }
+      if (mode && pausedAt == null) { clearTimeout(tmo); tmo = setTimeout(kick, mst.done ? Math.max(16, 13000 - (now - endAt) + 4) : Math.max(16, (1000 - mv % 1000) + 4)); }
+      if (tool) { frameTool(now, rm, moving); return; }
+      if (cyDrawn !== -1) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); cyDrawn = -1; lastKey = ""; painted++; }
+      if (moving) kick();
+      return;
+    }
     if (tool) {
       /* время важнее инструмента: дошедший таймер или будильник снимает слой */
       if (mode && mode !== "stopwatch" && pausedAt == null && vnow() >= total) { tool = null; lastKey = ""; emit("tool-yield"); }
@@ -281,7 +296,7 @@
   function frameTool(now, rm, moving) {
     var e = rm ? 1 : cl((now - tool.t0) / 800), busy = e < 1;
     runLine = "";
-    if (mode) {
+    if (mode && !muted) {
       var rv = vnow(), sec = mode === "stopwatch" ? Math.floor(rv / 1000) : Math.ceil(Math.max(0, total - rv) / 1000);
       runLine = T(mode === "timer" ? "desk.t.timer" : mode === "stopwatch" ? "desk.t.sw" : "desk.t.alarm") + " " + fmt(sec) + (pausedAt != null ? " \u00b7 " + T("desk.t.paused") : "");
     }
@@ -348,9 +363,15 @@
     show: function (o) {
       o = o || {}; var str = fit(o.str || ""), now = performance.now();
       if (tool && tool.str === str && tool.label === (o.label || "") && tool.sub === (o.sub || "")) return str;
-      tool = { str: str, prev: tool ? tool.str : "", t0: tool && tool.str === str ? tool.t0 - 1e4 : now, label: o.label || "", sub: o.sub || "" };
+      /* o.now — сразу, без вычерчивания (D-1422: часы на столе инструментов видны в тот же миг, как стол пришёл) */
+      tool = { str: str, prev: tool ? tool.str : "", t0: (tool && tool.str === str) || o.now ? now - 1e4 : now, label: o.label || "", sub: o.sub || "" };
       lastKey = ""; kick(); emit("tool"); return str;
     },
+    mute: function (on) { on = !!on; if (on === muted) return; muted = on; lastKey = ""; cyDrawn = null; kick(); },
+    muted: function () { return muted; },
+    /* заранее, в простое: знаки и подпись будущего света рисуются в кэш, чтобы приход на стол инструментов не рисовал их
+       в кадрах перелёта (D-1360) — только переносил готовое */
+    warm: function (str, label) { if (!cv) return; buildGlyphs(); String(str || "").split("").forEach(function (ch) { if (G[ch] && ch !== " ") { glyph("lineFull", ch); glyph("lineGlow", ch); } }); if (label) capCanvas(label); sprite(); },
     hide: function () { if (!tool) return; tool = null; clearTimeout(toolTmo); lastKey = ""; kick(); emit("tool-off"); },
     tool: function () { return tool ? { str: tool.str, label: tool.label, sub: tool.sub } : null; },
     fit: function (s) { return fit(s); },

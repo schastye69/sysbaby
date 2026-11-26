@@ -1,0 +1,161 @@
+/* sys.baby OS — core/shepot/ryadom.css · ШЁПОТ «РЯДОМ» (D-1435…D-1438, утверждённое демо К3а)
+   Разговор Шёпота — сцена: за письмами в темноте живая тень собеседника (лицом к вам, свет только по краю),
+   письма стоят по середине и чуть наклонены к тому, кто сказал; под именем — строка присутствия, в ней всегда
+   ровно одна надпись (tools/shepot-presence-one-check.mjs). Письмо остаётся листом стекла со швом (D-1416).
+   Своих величин здесь нет: углы, кегли, времена, кривые и глубина — из шкал системы; краска — слова тем. */
+
+.mg-thread.shr { position: relative; isolation: isolate; overflow: hidden;
+  background: radial-gradient(70% 55% at 50% 38%, rgba(var(--accent-rgb), .045), transparent 72%), linear-gradient(180deg, rgba(var(--veil-rgb), .5), rgba(var(--veil-rgb), .82)); }
+.shr-slot { position: absolute; inset: 0; z-index: var(--z-flat); pointer-events: none; overflow: hidden; }
+.mg-thread.shr > :not(.shr-slot):not(.shr-sheet) { position: relative; z-index: var(--z-inside); }
+
+/* сцена и тень: двигается только обёртка (transform, opacity) — её ведёт ryadom.js */
+.shr-stage { position: absolute; inset: 0; }
+.shr-body { position: absolute; left: 50%; bottom: -6%; height: min(96%, 640px); aspect-ratio: 3 / 4; transform: translateX(-50%); }
+.shr-lean, .shr-breath { position: absolute; inset: 0; transform-origin: 50% 100%; }
+.shr-lean { opacity: .45; transition: transform var(--t-rise) var(--ease-enter), opacity var(--t-rise) var(--ease-enter); will-change: transform, opacity; }
+/* дыхание: вдох короче выдоха, плечи чуть поднимаются — только transform, на композиторе */
+.shr-breath { animation: shrBreath 4.3s ease-in-out infinite; will-change: transform; }
+@keyframes shrBreath { 0%, 100% { transform: none; } 38% { transform: translateY(-3px) scale(1, 1.006); } 86% { transform: translateY(-.4px); } }
+.shr-body canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.shr-glow { transition: opacity var(--t-rise) var(--ease-enter); will-change: opacity; }
+.shr-vig { position: absolute; inset: 0; background: radial-gradient(115% 92% at 50% 44%, transparent 46%, rgba(var(--veil-rgb), .8)); }
+@media (min-width: 900px) { .shr-body { left: 64%; } }
+
+/* шапка: без кружка с буквами — имя и строка присутствия */
+.mg-thread.shr .mg-head { border-bottom: 0; background: linear-gradient(180deg, rgba(var(--veil-rgb), .55), transparent); }
+.mg-thread.shr .mg-head .mg-avatar-wrap { display: none; }
+.mg-thread.shr .mg-head-text { flex: 1; }
+
+/* СТРОКА ПРИСУТСТВИЯ — ОДНА НАДПИСЬ. Сменяются только прямые дети: старая уходит вверх и гаснет, новая
+   проявляется снизу чуть позже. Вложенное (.lit) — в потоке своей надписи, не поверх соседней. */
+.shr-pres { position: relative; display: block; height: calc(var(--f-meta) * var(--lh-read)); overflow: hidden; }
+.shr-pres > .shr-say { position: absolute; left: 0; top: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: opacity var(--t-drift) var(--ease-enter), transform var(--t-drift) var(--ease-enter); }
+.shr-pres > .shr-say:not(.out):not(.pre) { transition-delay: var(--t-touch); }
+.shr-pres > .shr-say.out { opacity: 0; transform: translateY(-8px); transition-duration: var(--t-move); }
+.shr-pres > .shr-say.pre { opacity: 0; transform: translateY(8px); }
+.shr-pres .lit { position: static; color: var(--accent-ink); }
+.shr-pres > .shr-say[data-was]::before { content: attr(data-was); }
+
+/* кнопки шапки и поля — тихие круги */
+.shr-hbtn, .shr-cbtn { flex: none; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border: 0; border-radius: var(--r-round);
+  background: transparent; color: var(--ink-3); cursor: pointer; transition: color var(--t-touch) var(--ease-move), background var(--t-touch) var(--ease-move); }
+.shr-hbtn svg, .shr-cbtn .shr-ic { width: 18px; height: 18px; }
+.shr-cbtn svg.sb-sm { width: 26px; height: 26px; }
+.shr-cbtn:disabled { opacity: .4; cursor: default; }
+.shr-hbtn[aria-expanded="true"], .shr-cbtn[aria-expanded="true"] { color: var(--ink); background: rgba(var(--film-rgb), .08); }
+.shr-hbtn:focus-visible, .shr-cbtn:focus-visible, .shr-voice:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  :where(html:not([data-input="touch"])) .shr-hbtn:hover, :where(html:not([data-input="touch"])) .shr-cbtn:not(:disabled):hover { color: var(--ink); background: rgba(var(--film-rgb), .06); }
+}
+
+/* письма — по середине, чуть к тому, кто сказал; чужое — светлее и с тёплым отсветом */
+.mg-thread.shr .mg-messages { align-items: center; padding: 16px 28px 12px; gap: 10px; scrollbar-width: none; }
+.mg-thread.shr .mg-messages::-webkit-scrollbar { display: none; }
+.mg-thread.shr .mg-msg { max-width: min(470px, 86%); align-self: center; align-items: center; text-align: center; }
+.mg-thread.shr .mg-msg.theirs { transform: translateX(-6%); }
+.mg-thread.shr .mg-msg.mine { transform: translateX(6%); }
+.mg-thread.shr .mg-msg .mg-bubble { font-size: var(--f-lead); line-height: var(--lh-read); padding: 6px 14px; }
+.mg-thread.shr .mg-msg.theirs .mg-text { text-shadow: 0 0 22px rgba(var(--accent-rgb), .26), 0 1px 12px rgba(var(--veil-rgb), .9); }
+.mg-thread.shr .mg-msg.mine .mg-text { color: var(--ink-2); text-shadow: 0 1px 12px rgba(var(--veil-rgb), .9); }
+.mg-thread.shr .mg-meta { justify-content: center; }
+.mg-thread.shr .mg-day span { background: transparent; }
+
+/* голосовое письмо: волна и длительность; при прослушивании волна светлеет в такт звуку */
+.shr-voice { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; padding: 4px 0; text-shadow: none !important; }
+.shr-vw { position: relative; width: 150px; height: 24px; flex: none; overflow: hidden; }
+.shr-vb { position: absolute; inset: 0; display: flex; align-items: center; gap: 2px; }
+.shr-vb i { flex: 1; height: 100%; border-radius: var(--r-pill); background: rgba(var(--film-rgb), .32); transform-origin: 50% 50%; }
+.shr-vh { position: absolute; inset: 0; overflow: hidden; transform: translateX(-100%); }
+.shr-vh .shr-vb { transform: translateX(100%); }
+.shr-vh .shr-vb i { background: var(--accent); }
+.shr-vd { font-size: var(--f-meta); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+/* смайлик письмом — без подложки: он сам свет */
+.mg-thread.shr .mg-msg .mg-text svg.sb-sm { overflow: visible; }
+
+/* поле письма: смайлики слева, голос справа; запись — волна поверх поля */
+.mg-thread.shr .mg-inputrow { position: relative; border-top: 0; gap: 4px; background: linear-gradient(0deg, rgba(var(--veil-rgb), .6), transparent); }
+/* углы окна держат ручки размера (на касании — 36 px): кнопки поля стоят внутри, не под ручкой */
+.window:not(.maximized):not(.fullscreen) .mg-thread.shr .mg-inputrow { padding-left: 20px; padding-right: 20px; }
+@media (pointer: coarse) { .window:not(.maximized):not(.fullscreen) .mg-thread.shr .mg-inputrow { padding-left: 38px; padding-right: 38px; } }
+.shr-mw { position: absolute; left: 50%; top: 2px; display: flex; gap: 2px; transform: translateX(-50%); opacity: 0; transition: opacity var(--t-move) var(--ease-move); }
+.shr-mw b { width: 2px; height: 7px; border-radius: var(--r-pill); background: var(--accent); transform: scaleY(.3); }
+#shrMic { position: relative; }
+.shr-recording #shrMic { color: var(--accent); }
+.shr-recording #shrMic .shr-mw { opacity: 1; }
+.shr-recording #shrMic .shr-mw b { animation: shrMw .9s ease-in-out infinite; }
+.shr-recording #shrMic .shr-mw b:nth-child(2) { animation-delay: .2s; }
+.shr-recording #shrMic .shr-mw b:nth-child(3) { animation-delay: .45s; }
+@keyframes shrMw { 50% { transform: scaleY(1); } }
+.shr-rec { position: absolute; left: 52px; right: 96px; top: 50%; height: 38px; transform: translateY(-50%); display: none; align-items: center; gap: 10px; color: var(--accent); }
+.shr-recording .shr-rec { display: flex; }
+.shr-recording #msgrInput, .shr-recording #shrSmile { visibility: hidden; }
+.shr-rcx { width: 30px; height: 30px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: var(--r-round); background: transparent; color: var(--ink-3); cursor: pointer; }
+.shr-rcx svg { width: 14px; height: 14px; }
+.shr-rwc { flex: 1; min-width: 60px; height: 26px; }
+.shr-rt { font-size: var(--f-meta); font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.shr-rh { font-size: var(--f-meta); color: var(--ink-3); white-space: nowrap; }
+
+/* листы смайликов и «позвать» — тёмные листки в цвет комнаты */
+.shr-smenu, .shr-sheet { position: absolute; z-index: var(--z-lift); border-radius: var(--r-card); background: var(--menu-bg);
+  box-shadow: inset 0 0 0 1px rgba(var(--edge-rgb), .12), 0 24px 50px -20px rgba(var(--shade-rgb), .7); }
+.shr-smenu { left: 8px; bottom: calc(100% + 6px); padding: 8px; }
+.shr-sm-grid { display: grid; grid-template-columns: repeat(4, 48px); gap: 4px; }
+.shr-sm-grid button { width: 48px; height: 48px; padding: 2px; border: 0; border-radius: var(--r-ctrl); background: transparent; display: grid; place-items: center; cursor: pointer; touch-action: manipulation; }
+.shr-sm-grid svg.sb-sm.big { width: 44px; height: 44px; margin: 0; }
+.shr-sm-sizes { display: grid; grid-template-columns: repeat(4, 48px); gap: 4px; margin-top: 6px; padding-top: 2px; border-top: 1px solid rgba(var(--edge-rgb), .1); }
+.shr-sm-sizes button { width: 48px; height: 44px; display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; }
+.shr-zc { display: block; border-radius: var(--r-round); border: 1.5px solid currentColor; opacity: .55; }
+.shr-sm-sizes button[aria-checked="true"] .shr-zc { background: var(--accent); border-color: var(--accent); opacity: 1; }
+.shr-zc-s { width: 8px; height: 8px; } .shr-zc-m { width: 13px; height: 13px; } .shr-zc-l { width: 19px; height: 19px; } .shr-zc-h { width: 26px; height: 26px; }
+.shr-sheet { right: 12px; top: 56px; width: min(260px, calc(100% - 24px)); padding: 10px; }
+.shr-sh-t { margin: 2px 6px 8px; font-size: var(--f-meta); color: var(--ink-3); }
+.shr-sheet button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 8px; border: 0; border-radius: var(--r-ctrl); background: transparent;
+  font: inherit; font-size: var(--f-ui); color: var(--ink-2); text-align: left; cursor: pointer; }
+.shr-sheet button i { width: 8px; height: 8px; flex: none; border-radius: var(--r-round); background: rgba(var(--accent-rgb), .6); }
+.shr-sheet button i.shr-new { background: transparent; box-shadow: inset 0 0 0 1px var(--accent); }
+.shr-sh-say { margin: 6px 8px 2px; font-size: var(--f-meta); line-height: var(--lh-read); color: var(--ink-2); }
+.shr-sh-say:empty { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  :where(html:not([data-input="touch"])) .shr-sm-grid button:hover, :where(html:not([data-input="touch"])) .shr-sheet button:hover { background: rgba(var(--film-rgb), .06); }
+}
+
+/* телефон: колонна разговоров уже — сцене больше места */
+@media (max-width: 620px) {
+  .app-msgr.shr-room .mg-side { flex-basis: 24%; }
+  .mg-thread.shr .mg-messages { padding: 12px 18px 10px; }
+  .shr-rh { display: none; }
+  .shr-rec { right: 84px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shr-pres > .shr-say, .shr-lean, .shr-glow { transition: none; }
+  .shr-breath { animation: none; }
+  .shr-recording #shrMic .shr-mw b { animation: none; }
+}
+
+/* ── АУДИТ H4e4, п.6 и п.10: место переписке, приглашение в пределах окна, статус целиком ── */
+.mg-thread.shr .sh-panels { max-height: 52%; flex: 0 1 auto; }
+.mg-thread.shr .mg-seal-panel { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.mg-thread.shr .mg-seal-text { max-width: 100%; overflow-wrap: anywhere; word-break: break-all; }
+.mg-thread.shr .sh-qr { width: min(200px, 100%, 30vh); }
+.mg-start-note { margin: 6px 2px 0; }
+.mg-thread.shr .mg-inputrow #msgrInput { min-width: 0; }
+@media (max-width: 620px) {
+  .mg-thread.shr .mg-head { flex-wrap: wrap; row-gap: 4px; }
+  .mg-thread.shr .mg-head-text { flex: 1 1 100%; }
+  .mg-thread.shr .mg-head .mg-to-letter { margin-left: 0; }
+  .mg-thread.shr #shrInvite { margin-left: auto; }
+  .mg-thread.shr .sh-panels { max-height: 40%; }
+}
+
+/* части голосового, которые ещё в пути, не показываются: письмо соберётся целиком (ryadom.js gather) */
+.mg-thread.shr .mg-msg:has(.shr-part) { display: none; }
+.shr-voice-coming { color: var(--ink-3); font-size: var(--f-ui); }
+/* письмо одним смайликом — без листа стекла: смайлик сам свет (как в демо К3а) */
+.mg-thread.shr .mg-bubble:has(> .shr-sm-only) { background: none; box-shadow: none; }
+html[data-motion="reduced"] .shr-breath { animation: none; }
+html[data-motion="reduced"] :is(.shr-lean, .shr-glow) { transition: none; }
+/* приглашение ждёт: писем ещё нет, место отдано панели — код QR и «Скопировать ссылку» видны целиком (аудит H4e4, п.6) */
+.mg-thread.shr .sh-panels:has(#shInvPanel) { max-height: 74%; }

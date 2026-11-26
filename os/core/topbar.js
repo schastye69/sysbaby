@@ -221,6 +221,14 @@
       var v = window.sbT(n.getAttribute("data-i18n-ph"));
       if (v) n.setAttribute("placeholder", v);
     });
+    /* Заголовок вкладки и описание страницы — имя и описание «твой личный дом» на языке человека (D-1433, основатель
+       25.11.2026: «„your private home“ — описание, переводится: в „что это“ и в заголовке страницы»). */
+    var home = window.sbT("page.home");
+    if (home && home !== "page.home") {
+      try { document.title = "sys.baby personal world — " + home; } catch (e) { /* заголовок не пишется */ }
+      var md = doc.querySelector('meta[name="description"]');
+      if (md) md.setAttribute("content", "sys.baby personal world — " + home);
+    }
     /* The status strip is painted from live values, not from markup, so it
        has to be repainted rather than translated in place. */
     paintNet();
@@ -588,7 +596,10 @@
     var narrow = window.innerWidth < 480;
     /* НЕ ПОКАЗЫВАТЬ ОДНО И ТО ЖЕ ДВАЖДЫ (H4e, D-1300; основатель 15.11.2026: «гениальное решение»): пока часы
        стоят на столе (#topbar.sb-desk-clock ставит core/desktools.js), в шапке только дата; часы убрали — время вернулось. */
-    var tbE = doc.getElementById("topbar"), deskClock = !!(tbE && tbE.classList.contains("sb-desk-clock"));
+    /* D-1421 (основатель 25.11.2026): крупное время ушло со стола на стол инструментов, а время в шапке видно ВСЕГДА —
+       не прячется, когда на столе часы; плашка не меняет ширину и не дёргает соседей. Пометка sb-desk-clock больше не
+       ставится; ОТКАТ: вернуть чтение #topbar.sb-desk-clock. */
+    var deskClock = false;
     var opts = window.innerWidth < 560 ? { day: "numeric", month: "short" } : { weekday: "short", day: "numeric", month: "short" };
     var dateStr = narrow && !deskClock ? "" : d.toLocaleDateString(localeFor(), opts);
     /* ЧАСЫ БЕЗ СЕКУНД (D-609, основатель 04.11.2026: «Секунды убираем, конечно»): в верхней панели — часы и
@@ -841,7 +852,10 @@
   /* ПОКА ШЁПОТ НА СВЯЗИ, ЭТИ СЛОВА — НЕПРАВДА (D-1408, решение основателя 17.11.2026, п.9: «Пока Шёпот на
      связи, эта фраза не звучит: тогда она неправда»). Подсказка «Всё остаётся здесь — ничего не покидает эту
      сессию» не говорится, пока запечатанные капли уходят почтальонам, и умолкает, если звучала в миг выхода
-     на связь. Выученной она при этом не считается. Охраняется tools/shepot-wire-check.mjs. */
+     на связь. Выученной она при этом не считается. Охраняется tools/shepot-wire-check.mjs.
+     D-1434 (основатель 25.11.2026, «переписываем честно»): сами слова подсказки теперь правда при любом состоянии —
+     «всё хранится на этом устройстве; наружу уходят только капли Шёпота и то, что вы сами отправляете» (tip.privacy,
+     core/strings-chistota.js); молчание на связи оставлено, его требует закон. */
   function whisperOnLine() { try { return !!(window.sbShepotRoom && window.sbShepotRoom.on && window.sbShepotRoom.on()); } catch (e) { return false; } }
   if (window.sbBus && typeof window.sbBus.on === "function") {
     window.sbBus.on("shepot:line", function (e) { if (e && e.on && currentTip && currentTip.id === "privacy" && tipHandle) tipHandle.dismiss(); });

@@ -1398,7 +1398,7 @@
     if (!kindGranted("word", "word", kind)) return "";
     var name = username();
     if (kind === "tagline") return "only you and your system, " + name;
-    if (kind === "farewell") return "The system sleeps when you do, " + name + ".";
+    if (kind === "farewell") return "locked. only you can open this system, " + name + ".";   /* фирменное прощание D-1433; подарок — имя вместо «baby» */
     if (kind === "greeting") return "day " + daysKept() + " with " + name + ". " + state().opened.length + " chests opened.";
     return "";
   }

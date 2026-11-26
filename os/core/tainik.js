@@ -160,7 +160,7 @@ function draw(dt) {
   const L = S.lamp; L.a += (L.aT - L.a) * (1 - Math.exp(-dt * 4));
   if (L.a > .02 && LG && !RM) {
     g.fillStyle = "rgb(255,236,214)"; const R2 = 150 * 150, c0 = Math.max(0, ((L.x - 150) / LGS) | 0), c1 = Math.min(LGc - 1, ((L.x + 150) / LGS) | 0), r0 = Math.max(0, ((L.y - 150) / LGS) | 0), r1 = Math.min(LGr - 1, ((L.y + 150) / LGS) | 0);
-    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) { const arr = LG[r * LGc + c]; for (let q = 0; q < arr.length; q++) { const j = arr[q], X = BGP[j], Y = BGP[j + 1], d2 = (X - L.x) ** 2 + (Y - L.y) ** 2; if (d2 < R2) { g.globalAlpha = (1 - d2 / R2) * .42 * L.a; g.fillRect(X, Y, 2, 2); } } }
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) { const arr = LG[r * LGc + c]; for (let q = 0; q < arr.length; q++) { const j = arr[q], X = BGP[j], Y = BGP[j + 1], d2 = (X - L.x) ** 2 + (Y - L.y) ** 2; if (d2 < R2 && !kept(X, Y)) { g.globalAlpha = (1 - d2 / R2) * .42 * L.a; g.fillRect(X, Y, 2, 2); } } }
     g.globalAlpha = 1;
   }
   // пыль по корзинам: 4 цвета × 6 ступеней яркости
@@ -172,10 +172,32 @@ function draw(dt) {
 }
 /* фонарь: касание и мышь освещают поле печатей и закручивают пыль (витрина, без изменений) */
 /* лампа светит только над полем: рука над окном не просвечивает его стекло (window-one-glass-check) */
-const lampMove = (e) => { if (e.target && e.target.closest && e.target.closest(".window")) { S.lamp.aT = 0; return; } S.lamp.x = e.clientX; S.lamp.y = e.clientY; S.lamp.aT = 1; if (RM) return; };
+/* ЧТО ФОНАРЬ НЕ ТРОГАЕТ (косяк 3, проход 24.11: «облако точечных знаков после касания держится 20+ с и ложится на цифры,
+   текст, значки»): над вещами стола (значки, заметки, инструменты, шапка, док, шкала столов) и на столе инструментов фонарь
+   не светит; печати под светом середины (часы, цифры инструмента) и под значками не проявляются (KEEP — их места, снятые в
+   миг касания); касание пальцем гаснет и тогда, когда браузер отдал жест прокрутке (pointercancel), и не дольше LAMP_TOUCH_MS
+   после касания без движения — фонарь пальца не остаётся висеть. */
+const THINGS = ".window, .desk-icon, .sticky-note, .note-invite, #topbar, #dock, #sbFab, #sbDesksGauge, #sbDeskTools .dt-block, #sbDeskTools .dt-tray, #sbCtxMenu, #toastLayer, .panel-overlay";
+const LAMP_TOUCH_MS = 900;
+let KEEP = [], lampT = 0, keepAt = -1e9;
+function keepOut() {
+  keepAt = performance.now(); KEEP = [];
+  const add = (el, pad) => { if (!el) return; const r = el.getBoundingClientRect(); if (r.width && r.height) KEEP.push([r.left - pad, r.top - pad, r.right + pad, r.bottom + pad]); };
+  document.querySelectorAll("#sbIconLayer .desk-icon, #sbNoteLayer .sticky-note").forEach((el) => add(el, 6));
+  const dt = window.sbDeskTime; if (dt && (dt.tool() || dt.info().mode)) { add(document.getElementById("sbDeskTime"), 0); }
+}
+const kept = (X, Y) => { for (let k = 0; k < KEEP.length; k++) { const q = KEEP[k]; if (X >= q[0] && X <= q[2] && Y >= q[1] && Y <= q[3]) return true; } return false; };
+const lampMove = (e) => {
+  const t = e.target;
+  if ((t && t.closest && t.closest(THINGS)) || (window.sbDesks && window.sbDesks.onTools && window.sbDesks.onTools())) { S.lamp.aT = 0; return; }
+  if (performance.now() - keepAt > 400) keepOut();
+  S.lamp.x = e.clientX; S.lamp.y = e.clientY; S.lamp.aT = 1;
+  if (e.pointerType !== "mouse") { clearTimeout(lampT); lampT = setTimeout(() => { S.lamp.aT = 0; }, LAMP_TOUCH_MS); }
+};
 addEventListener("pointermove", (e) => { if (e.pointerType === "mouse" || e.buttons) lampMove(e); }, { passive: true });
-addEventListener("pointerdown", lampMove, { passive: true });
+addEventListener("pointerdown", (e) => { keepAt = -1e9; lampMove(e); }, { passive: true });
 addEventListener("pointerup", (e) => { if (e.pointerType !== "mouse") S.lamp.aT = 0; }, { passive: true });
+addEventListener("pointercancel", () => { S.lamp.aT = 0; }, { passive: true });
 document.addEventListener("mouseleave", () => { S.lamp.aT = 0; });
 let rzT = 0;
 addEventListener("resize", () => { clearTimeout(rzT); rzT = setTimeout(() => { if (!on()) { drawn = false; return; } sizeCanvases(); drawBG(); if (RM) frame(performance.now()); }, 120); });

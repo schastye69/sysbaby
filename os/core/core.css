@@ -1774,7 +1774,7 @@ html[data-motion="reduced"] .cur-cell.settle { animation: none !important; }
    личности. То же правило, что у входа и занавеса: знак, акцент, без подложки. */
 .farewell-mark { width: 44px; height: 44px; color: var(--accent); }
 .farewell-mark svg { width: 100%; height: 100%; display: block; }
-.farewell-line { font-family: var(--mono); font-size: var(--f-read); letter-spacing: var(--track-air); }
+.farewell-line { /* фирменное прощание — шрифтом интерфейса, не моноширинным (D-1433) */ font-family: var(--font); font-size: var(--f-read); letter-spacing: 0; text-transform: lowercase; }
 #sbBootFail {
   position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: var(--z-player);
   padding: 14px 16px; border-radius: var(--r-card); white-space: pre-wrap;
@@ -2484,6 +2484,24 @@ html[data-theme="light"] #sbControlCenter.krupno {
 #sbControlCenter.krupno .sv-head :is(.cc-v, .cc-line) { font-size: inherit; font-weight: var(--w-text); color: var(--kn-mid); letter-spacing: 0; text-transform: lowercase; }
 #sbControlCenter.krupno .kn-charge { margin-right: .3em; color: var(--kn-mid); }
 #sbControlCenter.krupno .sv-choice:has(#sbCcLang) { order: 11; flex: 0 0 auto; margin: 22px 0 0 auto; padding-left: 12px; }
+/* ── БЫСТРОЕ МЕНЮ НА ТЕЛЕФОНЕ — КОМПАКТНЕЕ · D-1431-PULT-COMPACT-PHONE (основатель 25.11.2026) ──────────────────────
+   На iPhone 13 (390×844, в Safari видно ≈ 390×664) «выйти, тихо» уходило под строку голоса внизу. Слова, числа и порядок
+   прежние; на малом экране сжат только воздух между группами, а сам пульт кончается над строкой голоса (её пол
+   --voice-floor и две строки фразы). «выйти, тихо» стоит раньше строки «в сети · язык» — при совсем малой высоте
+   прокручивается подвал, а не выход. */
+html.is-compact #sbControlCenter.krupno {
+  padding: 16px 20px 12px;
+  max-height: calc(100vh - var(--topbar-box, 44px) - 16px - var(--voice-floor, 8px) - 3.4em);
+  max-height: calc(100dvh - var(--topbar-box, 44px) - 16px - var(--voice-floor, 8px) - 3.4em);
+}
+html.is-compact #sbControlCenter.krupno .sv-lab { margin-top: 4px; }
+html.is-compact #sbControlCenter.krupno .kn-hint { margin-top: 10px; }
+html.is-compact #sbControlCenter.krupno .sv-rows { margin-top: 2px; }
+html.is-compact #sbControlCenter.krupno .sv-stops { margin-top: 4px; }
+html.is-compact #sbControlCenter.krupno #sbCcThemeBlock { margin-top: 4px; }
+html.is-compact #sbControlCenter.krupno .sv-choice:has(#sbCcSide) { margin: 0 0 4px; }
+html.is-compact #sbControlCenter.krupno .sv-head { margin-top: 10px; }
+html.is-compact #sbControlCenter.krupno .sv-choice:has(#sbCcLang) { margin-top: 10px; }
 
 /* ============================================================== desktop §4 */
 #desktop { position: fixed; inset: 0; z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) var(--ease-enter); }
@@ -3793,6 +3811,9 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .kr-acts { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 14px; margin-top: 14px; }
 .kr-more { margin: 12px 0 4px; text-align: center; font-size: var(--f-ui); color: var(--ink-3); }
 .kr-more .kr-settings { display: inline; padding: 0; min-height: 0; font-size: var(--f-ui); text-decoration: none; color: var(--ink); background: none; border: 0; }
+/* выход из системы в ключнице (D-1432): тихая строка под «в настройках», тем же видом */
+.kr-out { margin: 4px 0 2px; text-align: center; }
+.kr-out .kr-signout { display: inline-flex; align-items: center; padding: 0 12px; min-height: 44px; font-size: var(--f-ui); text-decoration: none; color: var(--ink-2); background: none; border: 0; }
 .acc-detail { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
 .acc-sigil { width: 28px; height: 28px; flex: none; color: var(--accent); }
 .acc-sigil svg { width: 100%; height: 100%; display: block; }
@@ -5072,6 +5093,8 @@ svg.sb-znak.sb-znak-app { color: var(--glyph-2); }
 .sb-word { font-size: var(--f-ui); color: inherit; }
 /* шапка окна: × − ⤢ одной высоты, 12 px, тихие, без рамок */
 .light svg.sb-znak { width: 12px; height: 12px; }
+/* «во весь экран» — знак «развернуть», повёрнутый на четверть (shell.js: paintMaxKeys) */
+.light svg.sb-znak.sb-znak-turn { transform: rotate(90deg); }
 .window .light { color: var(--ink-3); }
 @media (hover: hover) {
   :where(html:not([data-input="touch"])) .window .light:hover { color: var(--ink); }

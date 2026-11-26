@@ -227,8 +227,9 @@
     ["W", "sc.openWindows"],
     ["E", "sc.expose"],
     ["↑ / ↓", "sc.terminal"],
-    ["tap + tap", "sc.note"],
-    ["right-click", "sc.deskMenu"]
+    /* жест, а не клавиша, — словом на языке человека (осмотр H4e4 п.13): «@ключ» читается из словаря */
+    ["@sc.k.tapTwice", "sc.note"],
+    ["@sc.k.rightClick", "sc.deskMenu"]
   ];
 
   /* ── ВРЕМЯ И КАЛЕНДАРЬ (D-135) ────────────────────────────────────────
@@ -416,7 +417,7 @@
     var body = panelBody("sbShortcutsOverlay");
     if (!body) return;
     var rows = SHORTCUT_ROWS.map(function (r) {
-      return '<div class="kv-row"><kbd>' + esc(window.sbKeys ? window.sbKeys(r[0]) : r[0]) + "</kbd><span>" + esc(tr(r[1])) + "</span></div>";
+      return '<div class="kv-row"><kbd>' + esc(r[0].charAt(0) === "@" ? tr(r[0].slice(1)) : (window.sbKeys ? window.sbKeys(r[0]) : r[0])) + "</kbd><span>" + esc(tr(r[1])) + "</span></div>";
     }).join("");
     var appRows = "";
     var map = window.sbAppShortcuts || {};
@@ -2025,7 +2026,11 @@
         (locked ? '<button type="button" class="btn primary wide kr-lock" id="sbAccLockNow">' + esc(tr("lock.now")) + "</button>" : "") +
         '<button type="button" class="btn ghost wide kr-leave" id="sbAccLeaveMore">' + esc(tr("acc.leaveMore")) + "</button>" +
       "</div>" +
-      '<p class="kr-more">' + esc(tr("acc.inSettings")) + ' <button type="button" class="btn link kr-settings" id="sbAccToSettings">' + esc(tr("acc.inSettingsLink")) + "</button></p>";
+      '<p class="kr-more">' + esc(tr("acc.inSettings")) + ' <button type="button" class="btn link kr-settings" id="sbAccToSettings">' + esc(tr("acc.inSettingsLink")) + "</button></p>" +
+      /* D-1432-KEYRACK-SIGNOUT (основатель 25.11.2026): из ключницы можно выйти из системы — тот же выход и то же слово,
+         что в быстром меню (cc.signout, topbar.js #sbCcSignOut → sbSignOut). Отдельной строкой под «в настройках»,
+         не в ряду «запереть сейчас · уйти» (klyuchnica-check п.9 судит этот ряд). */
+      '<p class="kr-out"><button type="button" class="btn link kr-signout" id="sbAccRackSignOut">' + esc(tr("cc.signout")) + "</button></p>";
   }
   function wireKeyRack(body) {
     body.querySelectorAll(".kr-col").forEach(function (b) {
@@ -2037,6 +2042,11 @@
       var V = window.sbVault;
       window.sbSessionClose(function () { window.location.reload(); });
       if (V && V.shutAll) { try { V.shutAll(); } catch (e) { /* ignore */ } }
+    });
+    var rackOut = body.querySelector("#sbAccRackSignOut");
+    if (rackOut) rackOut.addEventListener("click", function () {
+      if (accountPanel && accountPanel.close) accountPanel.close();
+      if (window.sbSignOut) window.sbSignOut();
     });
     var leaveMore = body.querySelector("#sbAccLeaveMore");
     if (leaveMore) leaveMore.addEventListener("click", function () { accountGo("#sbAccLeave"); });

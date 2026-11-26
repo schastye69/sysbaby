@@ -95,6 +95,8 @@
      комната только зовёт мост в нескольких местах и отдаёт ему свой ящик.
      Разговор Шёпота — обычная запись переписки с полем shepot. */
   function whisper() { return window.sbShepotRoom && window.sbShepotRoom.there ? window.sbShepotRoom : null; }
+  /* Шёпот «Рядом» (D-1435, core/shepot/ryadom.js): сцена с тенью, строка присутствия, голосовые и смайлики. */
+  function ryadom() { return window.sbShepotRyadom || null; }
   function isWhisper(c) { var w = whisper(); return !!(w && w.is(c)); }
   var whisperApi = {
     convos: function () { ensureLoaded(); return convos; },
@@ -383,6 +385,7 @@
     if (!messages.length) return isWhisper(c) ? whisper().empty(true) : t("mg.noMessages");
     var last = messages[messages.length - 1];
     if (last.type === "file") return "📎 " + (last.fileName || "");
+    if (ryadom() && ryadom().isVoice(last.text)) return ryadom().label(last.text) || "";
     return last.text || "";
   }
 
@@ -428,6 +431,8 @@
         : '<input type="text" id="mgNewGroup" class="mg-input" maxlength="40" placeholder="' + esc(t("mg.ph.groupName")) + '" autocomplete="off">' +
           '<input type="text" id="mgNewMembers" class="mg-input" maxlength="120" placeholder="' + esc(t("mg.ph.members")) + '" autocomplete="off">') +
       '<button type="button" class="mg-start" id="mgStart">' + esc(t("mg.start")) + "</button>" +
+      /* «Начать» — честно: такая переписка живёт только здесь; с человеком — через приглашение Шёпота (аудит H4e4, п.7) */
+      (tab === "direct" && whisper() ? '<p class="mg-seal-what mg-start-note">' + esc(t("shr.start.note")) + "</p>" : "") +
     "</div>";
   }
 
@@ -440,6 +445,8 @@
     if (m.type === "file") {
       inner = '<button type="button" class="mg-file-chip" data-file="' + esc(m.id) + '">' + FILE_GLYPH +
         '<span data-sb-userdata>' + esc(m.fileName || "") + "</span></button>";
+    } else if (m.sh && ryadom()) {
+      inner = ryadom().inner(m);
     } else {
       inner = '<div class="mg-text" data-sb-userdata>' + esc(m.text || "") + "</div>";
     }
@@ -458,7 +465,7 @@
         (seen ? "<span>· " + esc(t("mg.seen")) + "</span>" : "") +
         /* Отметка — местная: собеседнику Шёпота она не уйдёт, поэтому там её нет. */
         (m.sh ? "" : '<button type="button" class="mg-meta-btn" data-react="' + esc(m.id) + '" title="' + esc(t("mg.react")) + '" aria-label="' + esc(t("mg.react")) + '">🙂</button>') +
-        '<button type="button" class="mg-meta-btn" data-del-msg="' + esc(m.id) + '" title="' + esc(t("mg.delMsg")) + '" aria-label="' + esc(t("mg.delMsg")) + '">' +
+        '<button type="button" class="mg-meta-btn" data-del-msg="' + esc(m.id) + '" title="' + esc(t(m.sh ? "shr.delLetter" : "mg.delMsg")) + '" aria-label="' + esc(t(m.sh ? "shr.delLetter" : "mg.delMsg")) + '">' +
           sbZnak("trash") +
         "</button>" +
       "</div>" +
@@ -483,12 +490,13 @@
     var firstWord = String(c.name || "").trim().split(/\s+/)[0] || "";
     var shep = isWhisper(c) ? whisper() : null;
 
-    return '<header class="mg-head">' +
+    return (shep && ryadom() ? '<div class="shr-slot" aria-hidden="true"></div>' : "") +
+      '<header class="mg-head">' +
         '<span class="mg-avatar-wrap">' + avatarMarkup(c, "big") + "</span>" +
         '<span class="mg-head-text">' +
           '<button type="button" class="mg-head-name" id="mgContact" data-sb-userdata title="' + esc(t("mg.contactTitle")) + '">' + esc(c.name) + "</button>" +
           (shep
-            ? '<span class="mg-head-members" id="shHead">' + esc(shep.headNote(c)) + "</span>"
+            ? '<span class="mg-head-members" id="shHead"><span class="shr-say">' + esc(shep.headNote(c)) + "</span></span>"
             : c.isGroup && c.members.length
             ? '<span class="mg-head-members" data-sb-userdata>' + esc(c.members.join(", ")) + "</span>"
             : '<span class="mg-head-members">' + esc(t("mg.localNote")) + "</span>") +
@@ -504,7 +512,7 @@
       (shep ? shep.inputRow(win, c) : attachMarkup(win) +
       '<div class="mg-inputrow">' +
         '<button type="button" class="mg-attach-btn" id="mgPaste" title="' + esc(t("mg.paste")) + '" aria-label="' + esc(t("mg.paste")) + '" aria-expanded="' + (win._mgPasteOpen ? "true" : "false") + '">' + SEAL_GLYPH + "</button>" +
-        '<button type="button" class="mg-attach-btn" id="mgAttach" title="' + esc(t("mg.attach", { files: appName("files") })) + '" aria-label="' + esc(t("mg.attach", { files: appName("files") })) + '">' + PAPERCLIP + "</button>" +
+        '<button type="button" class="mg-attach-btn" id="mgAttach" title="' + esc(t("shr.attach", { files: appName("files") })) + '" aria-label="' + esc(t("shr.attach", { files: appName("files") })) + '">' + PAPERCLIP + "</button>" +
         '<input type="text" id="msgrInput" class="mg-input flat" placeholder="' + esc(t("mg.ph.message", { name: firstWord })) + '" autocomplete="off">' +
         '<button type="button" class="mg-send" id="mgSend" title="' + esc(t("mg.send")) + '" aria-label="' + esc(t("mg.send")) + '">' +
           sbZnak("send") +
@@ -615,6 +623,7 @@
     if (_sbKeep) _sbKeep();
 
     wire(win, host);
+    if (ryadom()) { if (active && isWhisper(active)) ryadom().mount(win, host, active, { render: function () { render(win); }, write: function () { return write(); }, convos: function () { return convos; } }); else ryadom().leave(win); }
     scrollThread(host);
   }
 

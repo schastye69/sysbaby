@@ -182,14 +182,25 @@
 
   /* ---------- запись будильника системы ---------- */
   function A() { return window.sbAlarms || null; }
-  function forget() {
+  /* БУДИЛЬНИК НЕ СНИМАЕТСЯ МОЛЧА (осмотр H4e4, п.4): запись будильника — своя (alarmCur), отдельно от таймера (cur). Запуск
+     таймера или секундомера занимает свет середины, но будильник остаётся записью будильника системы и зазвонит в свой срок;
+     свет середины освободился — будильник снова виден (alarmBack). Снимает его только «выключить» будильника. */
+  var alarmCur = null;
+  function forget(which) {
+    if (which === "alarm") { if (alarmCur && A()) { try { A().clear("clock:alarm", alarmCur.at); } catch (e) { /* запись уже снята */ } } alarmCur = null; return; }
     if (cur && A()) { try { A().clear("clock:" + cur.kind, cur.at); } catch (e) { /* запись уже снята */ } }
     cur = null;
   }
   function remember(kind, at, say) {
-    forget();
-    cur = { kind: kind, at: at };
-    if (A()) { try { A().set("clock:" + kind, at, say || ""); } catch (e) { cur = { kind: kind, at: at, mem: true }; } }
+    var al = kind === "alarm";
+    forget(al ? "alarm" : undefined);
+    var rec = { kind: kind, at: at };
+    if (A()) { try { A().set("clock:" + kind, at, say || ""); } catch (e) { rec.mem = true; } }
+    if (al) alarmCur = rec; else cur = rec;
+  }
+  function alarmBack() {
+    var now = Date.now();
+    if (alarmCur && alarmCur.at > now && !DT.info().mode) { var d = new Date(alarmCur.at); alarmAt = d; DT.alarm(alarmCur.at - now, hm(d)); }
   }
   function startTimer(ms, name) { DT.timer(ms, name); remember("timer", Date.now() + ms, name); }
   function stopAll() { forget(); DT.stop(); }
@@ -239,7 +250,8 @@
     if (t === "on") { var r = DT.info(); DT.resume(); remember("timer", Date.now() + Math.max(0, r.total - r.v), r.label); }
     if (s === "pause") DT.pause();
     if (s === "on") DT.resume();
-    if (t === "stop" || s === "stop" || a2 === "stop") { stopAll(); if (s) laps = []; if (a2) alarmAt = null; }
+    if (t === "stop" || s === "stop") { stopAll(); if (s) laps = []; alarmBack(); }
+    if (a2 === "stop") { forget("alarm"); if (DT.info().mode === "alarm") DT.stop(); alarmAt = null; }
     if (s === "go") { laps = []; forget(); DT.stopwatch(); }
     if (s === "lap") laps.push(i.v);
     if (a) {
@@ -256,9 +268,10 @@
   function onDone() {
     /* срок известен точно — звенеть в него, а не в шаг проверки будильника */
     var i = DT.info();
-    if (cur && (i.mode === "timer" || i.mode === "alarm") && A() && A().ringNow) {
-      try { A().ringNow("clock:" + cur.kind, cur.at); } catch (e) { /* звук не дался — отчёт слоя 2 */ }
-      cur = null;
+    var rec = i.mode === "alarm" ? alarmCur : i.mode === "timer" ? cur : null;
+    if (rec && A() && A().ringNow) {
+      try { A().ringNow("clock:" + rec.kind, rec.at); } catch (e) { /* звук не дался — отчёт слоя 2 */ }
+      if (rec === alarmCur) alarmCur = null; else cur = null;
     }
     if (panel) { paintTimer(); paintSW(); paintAlarm(); paintRun(); }
   }
@@ -267,11 +280,10 @@
     if (!A() || !A().clock) return;
     var now = Date.now();
     A().clock().forEach(function (r) {
-      if (r.at <= now || cur) return;
+      if (r.at <= now) return;
       var kind = r.note === "clock:timer" ? "timer" : "alarm", tot = Math.max(1000, r.at - (r.setAt || now)), el = now - (r.setAt || now);
-      cur = { kind: kind, at: r.at };
-      if (kind === "timer") { timerName = r.say || ""; DT.timer(tot, timerName, el); }
-      else { alarmAt = new Date(r.at); DT.alarm(tot, r.say || hm(alarmAt), el); }
+      if (kind === "timer") { if (cur) return; cur = { kind: kind, at: r.at }; timerName = r.say || ""; DT.timer(tot, timerName, el); }
+      else { if (alarmCur) return; alarmCur = { kind: kind, at: r.at }; alarmAt = new Date(r.at); if (!DT.info().mode || DT.info().mode === "alarm") DT.alarm(tot, r.say || hm(alarmAt), el); }
     });
   }
 
@@ -324,7 +336,7 @@
     if (window.sbBus && window.sbBus.on) window.sbBus.on("translate:done", relang);
     window.addEventListener("sb:strings", relang);
     if (window.sbNotesStore) window.sbNotesStore.onChange(function () { if (api.isOpen() && tab === "cal") paintCal(); });
-    DT.on(function (ev) { if (ev === "done") onDone(); if (ev === "gone" || ev === "stop") { if (api.isOpen()) { paintTimer(); paintSW(); paintAlarm(); paintRun(); } } });
+    DT.on(function (ev) { if (ev === "done") onDone(); if (ev === "gone") setTimeout(alarmBack, 0); if (ev === "gone" || ev === "stop") { if (api.isOpen()) { paintTimer(); paintSW(); paintAlarm(); paintRun(); } } });
     /* часы панели — каждую секунду; секундомер на своей вкладке — десятыми */
     setInterval(function () { if (!api.isOpen()) return; paintClock(); paintRun(); var i = DT.info(); if (i.mode === "timer") paintTimer(); if (tab === "alarm") paintAlarm(); }, 1000);
     setInterval(function () { if (api.isOpen() && tab === "sw" && DT.info().mode === "stopwatch") paintSW(); }, 100);

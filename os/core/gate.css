@@ -19,7 +19,7 @@ html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu-br:nth-of-type(2)::before{c
 /* Шифр 09.11.2026: «какая дверь ваша?» — своей строкой, без точки-разделителя в конце строки над ней (как в утверждённой демо — строки без висячей точки) */
 html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu-br:nth-of-type(4){flex-basis:100%;height:0;overflow:hidden}
 html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-menu-br:nth-of-type(4)::before{content:none}
-html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-claim{font:italic 400 12.5px/1.4 Georgia,serif;/* своя краска: вход и дверь тёмные в обеих темах */ color:rgba(236,234,245,.5);margin:2px 0 0;white-space:normal;letter-spacing:0}
+html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-claim{/* слоган — шрифтом всего интерфейса, не курсивом Georgia (D-1433) */ font:var(--w-text) var(--f-meta)/var(--lh-read) var(--font);/* своя краска: вход и дверь тёмные в обеих темах */ color:rgba(236,234,245,.5);margin:2px 0 0;white-space:normal;letter-spacing:0}
 html.sb-vvod-itog #sbVaultGate.vg-has-scene .vg-claim br{display:inline}
 /* ── D-603: поле слова по двери (основатель: «Поле для ввода сделать менее тёмным… в Соборе сильно бросается в глаза»).
    Шифр и Свет: светлее, чуть светящееся стекло с ободком в цвете двери; Собор: спокойнее, ближе к сиреневому камню нефа,
@@ -220,6 +220,9 @@ html #sbVaultGate .vg-win-body h2::first-letter{text-transform:lowercase}
 #sbVaultGate .vg-win .win-name{font-size:var(--f-read);line-height:var(--lh-read);font-weight:var(--w-strong);letter-spacing:var(--track-tight);/* своя краска: окно двери тёмное в обеих темах */ color:#f3f1ee}
 #sbVaultGate .vg-win-body{padding:6px 20px 20px}
 #sbVaultGate .vg-sheet{transition:background-color var(--t-touch) var(--ease-move)}
+/* D-1433 (основатель 25.11.2026): «войти без слова» — диалог: плотная плита (дверь не просвечивает), дверь под ним приглушена; три кнопки полосы остаются (door-for-all-check, D-588) */
+#sbVaultGate .vg-sheet.vg-dialog{/* своя краска: приглушение сцены двери под диалогом, тёмной в обеих темах */ background:rgba(0,0,0,.72)}
+#sbVaultGate .vg-dialog .vg-win{/* своя краска: плотная плита диалога на сцене двери, тёмной в обеих темах */ background:rgb(22,18,20);-webkit-backdrop-filter:none;backdrop-filter:none}
 #sbVaultGate .vg-box,#sbVaultGate .vg-langs,#sbVaultGate .vg-doors{transition:opacity var(--t-touch) var(--ease-move)}
 #sbVaultGate:has(> .vg-sheet) .vg-box,#sbVaultGate:has(> .vg-sheet) .vg-langs,#sbVaultGate:has(> .vg-sheet) .vg-doors{opacity:.08}
 

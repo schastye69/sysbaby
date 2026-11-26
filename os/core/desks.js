@@ -22,7 +22,10 @@
  * инструменты в полный размер, а на первом столе они места больше не занимают: ручки «инструменты» внизу нет
  * (без дублей). Путь к ним — последняя звезда шкалы справа, отмеченная своим знаком (шесть точек ручки).
  * Про большие экраны основатель не уверен — по умолчанию стол инструментов при любой ширине (TOOLS_FROM_W).
- * Часы на первом столе стоят (desk-clock-still).
+ * D-1421 (основатель 25.11.2026): крупное время с подписью солнца — на столе инструментов (его покой — ряд и часы); на
+ * первом столе — только значки и заметки. Часы на столе инструментов стоят (desk-clock-still).
+ * D-1420 (основатель 25.11.2026): «Звёзды» — на всех устройствах; касание пальцем и слабое устройство — перелёт на
+ * композиторе (compField: заранее нарисованные глубины, только transform/opacity, без размытия).
  *
  * Где что: первый стол — сам стол системы (#sbIconLayer, #sbWidgetLayer, #sbNoteLayer и закреплённый свет
  * #sbDeskTime); свои столы 2–3 — пустые слои #sbDesks (показ своих вещей на них не задаёт); стол инструментов —
@@ -63,7 +66,9 @@
   function T_(k, v) { return T(k, v); }
   function T(k, v) {
     var l = typeof window.sbLang === "function" ? window.sbLang() : "en"; l = WORDS[l] ? l : "en";
-    var s = String(WORDS[l][k] || WORDS.en[k] || k);
+    /* новые слова столов (25.11.2026) — в core/strings-desk.js (общий словарь sbT), здесь — прежние.
+       ОТКАТ: слова нет ни здесь, ни в общем словаре (словарь ещё не пришёл) — виден сам ключ, а не пустое место */
+    var s = String(WORDS[l][k] || WORDS.en[k] || (typeof window.sbT === "function" ? window.sbT(k) : k));
     return v ? s.replace(/\{(\w+)\}/g, function (m, x) { return Object.prototype.hasOwnProperty.call(v, x) ? String(v[x]) : m; }) : s;
   }
 
@@ -84,26 +89,33 @@
   var gauge = null, fx = null, veil = null, breathEl = null, title = null, box = null, own = [];
   /* имена своих столов (null — имя по умолчанию); стол инструментов имени не меняет */
   var names = [], ids = ["main"], removed = [];
+  /* СТОЛ ИНСТРУМЕНТОВ — ТОЖЕ СТОЛ (основатель 25.11.2026): его можно переименовать (знак звезды остаётся) и убрать в Эхо, как
+     свой стол (вариант «А»; системный — развеять нельзя, только вернуть: «вернуть инструменты» в пульте). Шкалу можно скрыть
+     (Настройки) — тогда на экране не видно, что столов больше одного. Система помнит, на каком столе её оставили (savedAt). */
+  var toolsGone = false, toolsName = null, hideG = false, savedAt = null, loaded = false;
   function readNames() {
     var o = null; try { o = JSON.parse((window.sbDB && window.sbDB.get(KEY)) || "null"); } catch (e) { o = null; }
     names = o && Array.isArray(o.names) ? o.names.slice(0, MAX).map(function (x) { return typeof x === "string" && x.trim() ? x.trim().slice(0, 40) : null; }) : [];
     ids = o && Array.isArray(o.ids) ? o.ids.slice(0, MAX).map(function (x) { return typeof x === "string" ? x.replace(/[^\w-]/g, "").slice(0, 24) : ""; }) : []; ids[0] = "main";
     /* убранные столы — целиком, с заметками (в Эхо одной строкой; D-1358, вариант основателя «А») */
     removed = o && Array.isArray(o.removed) ? o.removed.filter(function (r) { return r && r.id && Array.isArray(r.notes); }) : [];
+    if (o) loaded = true;
+    toolsGone = !!(o && o.toolsGone); toolsName = o && typeof o.toolsName === "string" && o.toolsName.trim() ? o.toolsName.trim().slice(0, 40) : null;
+    hideG = !!(o && o.hideGauge); savedAt = o && typeof o.at === "string" ? o.at.replace(/[^\w-]/g, "").slice(0, 24) : null;
   }
   function newId() { return "d" + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36); }
   function readN() { var o = null; try { o = JSON.parse((window.sbDB && window.sbDB.get(KEY)) || "null"); } catch (e) { o = null; } var k = o && +o.n; return k >= 1 && k <= MAX ? Math.round(k) : 1; }
-  function writeN() { try { if (window.sbDB && !(window.sbDB.closed && window.sbDB.closed())) window.sbDB.set(KEY, JSON.stringify({ n: n, names: names, ids: ids, removed: removed })); } catch (e) { /* закрыто — останется до двери */ } }
+  function writeN() { try { if (window.sbDB && !(window.sbDB.closed && window.sbDB.closed())) window.sbDB.set(KEY, JSON.stringify({ n: n, names: names, ids: ids, removed: removed, toolsGone: toolsGone, toolsName: toolsName, hideGauge: hideG, at: idOf(cur) })); } catch (e) { /* закрыто — останется до двери */ } }
   /* ширина окна — запомненная до следующего resize: чтение innerWidth после правки DOM заставляет браузер пересчитать
      стили и раскладку; в цикле шкалы (total()/toolsAt() на каждой звезде) это было 4–6 пересчётов прямо в ответе на
      «новый стол / убрать / вернуть» (×4, профиль: ~20 мс из 25) */
   var vwC = 0;
   window.addEventListener("resize", function () { vwC = 0; }, true);
-  function toolsOn() { return (vwC || (vwC = window.innerWidth)) >= TOOLS_FROM_W; }
+  function toolsOn() { return !toolsGone && (vwC || (vwC = window.innerWidth)) >= TOOLS_FROM_W; }
   function total() { return n + (toolsOn() ? 1 : 0); }
   function toolsAt() { return toolsOn() ? n : -1; }
   /* ОТКАТ: стол, которому человек не дал имени (names[i] пусто), зовётся своим словом по номеру — «Работа», «Третий» */
-  function nameOf(i) { return i === toolsAt() ? T("desks.tools") : names[i] || T("desks.n" + i); }
+  function nameOf(i) { return i === toolsAt() ? toolsName || T("desks.tools") : names[i] || T("desks.n" + i); }
 
   /* ---------- раскладка показа: «d» — от 1280×800, «p» — телефон (уже 700) ---------- */
   var M = "d", sc = 1, W = 0, H = 0;
@@ -124,7 +136,9 @@
     if (i === 0) {
       var els = ["sbIconLayer", "sbWidgetLayer"].map(function (id) { return doc.getElementById(id); }).filter(Boolean);
       var items = [].slice.call(doc.querySelectorAll("#sbIconLayer .desk-icon")).filter(function (e) { var r = e.getBoundingClientRect(); return r.width && r.height && r.bottom > 0 && r.top < H; });
-      return { di: 0, els: els, items: items.map(function (e) { var r = e.getBoundingClientRect(); return { el: e, cx: r.left + r.width / 2, cy: r.top + r.height / 2 }; }), notes: notesOf(0), dt: true };
+      /* D-1421: крупные часы — на столе инструментов; свет середины первого стола — только идущий таймер/секундомер/будильник */
+      var lit = !!(window.sbDeskTime && window.sbDeskTime.info && window.sbDeskTime.info().mode);
+      return { di: 0, els: els, items: items.map(function (e) { var r = e.getBoundingClientRect(); return { el: e, cx: r.left + r.width / 2, cy: r.top + r.height / 2 }; }), notes: notesOf(0), dt: lit };
     }
     if (i === toolsAt()) return { di: i, els: [OV()].filter(Boolean), items: [], notes: [], dt: true };
     return { di: i, els: [own[i - 1]].filter(Boolean), items: [], notes: notesOf(i), dt: false };
@@ -132,7 +146,8 @@
   /* ЗАМЕТКИ ПО СТОЛАМ (D-1358): у каждой заметки свой стол (data-desk; без отметки — первый). Слой заметок один — видно
      только заметки столов из набора (в покое — нынешний, в перелёте — оба). */
   /* ОТКАТ: стол без записанного id (старая запись до D-1358) — «-», ничей: его заметки не приписываются чужому столу */
-  function idOf(i) { return i === 0 ? "main" : i === toolsAt() ? "-" : ids[i] || "-"; }
+  /* стол инструментов — свой id «tools»: на нём тоже живут заметки (касание пустого места — заметка, основатель 25.11.2026) */
+  function idOf(i) { return i === 0 ? "main" : i === toolsAt() ? "tools" : ids[i] || "-"; }
   function notesOf(i) {
     var id = idOf(i);
     return [].slice.call(doc.querySelectorAll("#sbNoteLayer .sticky-note")).filter(function (e) { return (e.getAttribute("data-desk") || "main") === id; })
@@ -168,14 +183,14 @@
     var o = OV(); if (o) mark(o, "data-sbd-flight", on);
     ["sbIconLayer", "sbNoteLayer"].forEach(function (id) { mark(doc.getElementById(id), "data-sbd-lite", !!lite); });
   }
-  /* слабое устройство: первый стол на столе инструментов не прячется видимостью, а гаснет своим слоем (data-sbd-dim) */
-  var armedMain = false;
-  function armMain() {
-    if (armedMain) return;
-    /* только в покое, на первом столе, инструменты убраны — иначе позже */
-    if (busy || cur !== 0 || !window.sbDeskTools || !window.sbDeskTools.arm || !window.sbDeskTools.arm()) { setTimeout(function () { idle(armMain, 1500); }, 2000); return; }
-    armedMain = true;
-    ["sbIconLayer", "sbWidgetLayer", "sbNoteLayer"].forEach(function (id) { mark(doc.getElementById(id), "data-sbd-arm", true); });
+  var armedMain = false;   /* первый стол больше не гаснет своим слоем (data-sbd-dim): в перелёте его несёт масштаб и прозрачность */
+  /* перелёт на композиторе: ряд стола инструментов собран заранее, в простое (sbDeskTools.arm — ряд стоит на своём месте
+     прозрачным своим слоем); приход на стол инструментов только проявляет его — ни одной перестройки в кадрах перелёта */
+  function armTools() {
+    if (!useComp() || reduced()) return;
+    if (busy || cur !== 0 || !window.sbDeskTools || !window.sbDeskTools.arm || !window.sbDeskTools.arm()) {
+      if (!(window.sbDeskTools && window.sbDeskTools.armed && window.sbDeskTools.armed())) setTimeout(function () { idle(armTools, 1500); }, 2000);
+    }
   }
   function settle() {
     var armT = armedMain && cur === toolsAt();
@@ -183,7 +198,10 @@
     shown.main = cur === 0 || armT; shown.tools = cur === toolsAt(); paintShown();
     for (var i = 1; i < total(); i++) if (i !== toolsAt() && own[i - 1]) own[i - 1].classList.toggle("on", i === cur);
     /* своим столам касание достаётся столу системы (заметки); перехватчик — только у стола инструментов */
-    if (box) box.classList.toggle("on", cur === toolsAt());
+    /* перехватчика касаний на столе инструментов больше нет: касание мимо инструментов — пустое место стола, и оно, как на
+       любом столе, предлагает заметку (desktop.js); в перелёте перехватчик стоит (go) */
+    if (box) box.classList.remove("on");
+    if (built) saveAtLater();
     showNotes(armT ? ["main"] : [idOf(cur)]);
   }
 
@@ -201,7 +219,8 @@
       (function (b) { var tt = 0; b.addEventListener("pointerdown", function () { b.classList.add("tap", "show"); clearTimeout(tt); tt = setTimeout(function () { b.classList.remove("tap", "show"); }, 1500); }); })(b);
       gauge.appendChild(b);
     }
-    gauge.classList.toggle("off", total() < 2);
+    /* один стол — шкалы нет; «скрыть шкалу» (Настройки) — тоже нет, переходы — пульт и клавиши */
+    gauge.classList.toggle("off", total() < 2 || hideG);
     gaugeMark();
     /* нить созвездия: звёзды стоят столбцом с постоянным шагом, верхняя — у края шкалы; шаг и край меряются один раз
        (на сборке и после resize), дальше нить считается без чтения раскладки — ответ на «новый стол / убрать / вернуть»
@@ -235,32 +254,31 @@
     }, d0 + Dt * .88);
   }
 
-  /* ---------- СЛАБОЕ УСТРОЙСТВО (основатель 23.11.2026: «скорость на слабых устройствах, нигде без задержек») ----------
-     Слабым устройство считается по своим же кадрам: медиана кадра стола в покое (замер один раз, в простое) или
-     медиана кадра прошлого перелёта длиннее WEAK_MS. Тогда перелёт «Звёзды» легче — частиц втрое меньше, холст звёзд
-     в половину разрешения, без размытия слоёв и без масштаба/яркости фона (их место держит вуаль). На обычном
-     устройстве вид не меняется ни в чём. Поле звёзд готовится заранее, в простое. */
-  var WEAK_MS = 24, weak = false, lastFlight = 0;
+  /* ---------- СЛАБОЕ УСТРОЙСТВО (основатель 23.11.2026: «скорость на слабых устройствах, нигде без задержек»;
+     25.11.2026: «не слабые устройства» — прежний признак считал слабым почти любой телефон и планшет) ----------
+     Слабым устройство считается только по-настоящему: (1) чистая работа процессора в простое (медиана семи проб) дольше
+     BENCH_MS — проба без чтения холста (на телефоне чтение пикселей ждёт видеочип и мерило не процессор, а обмен с ним);
+     (2) кадр стола в покое длиннее IDLE_MS (меньше 25 кадров в секунду: экран, ограниченный 30 Гц, — 33 мс — не слабость);
+     (3) прошлый перелёт добавил к обычному кадру больше FLIGHT_ADD_MS — ровно мера закона D-1360.
+     Слабое устройство летит ТЕМ ЖЕ перелётом «Звёзды» на композиторе (compField), только звёзд в 2,5 раза меньше (одна глубина) и вещи стола
+     уходят вместе со столом, а не каждая своим слоем. */
+  var BENCH_MS = 4.5, IDLE_MS = 40, FLIGHT_ADD_MS = 20, weak = false, lastFlight = 0, idleCad = 16.7;
   function med(a) { var d = a.slice(1).map(function (x, i) { return x - a[i]; }).sort(function (x, y) { return x - y; }); return d.length ? d[d.length >> 1] : 0; }
-  function setWeak(v) { if (v && !weak) { weak = true; fxSize(); pool = null; idle(armMain, 1500); } }
-  /* замер в простое: кадры покоя и небольшая работа холста (как кадр звёзд) — по одной пробе в простое, медиана из семи;
-     дольше BENCH_MS — устройство слабое (обычный стол — около 3 мс) */
-  var BENCH_MS = 6.5;
+  function setWeak(v) { if (v && !weak) { weak = true; pool = null; comp = null; idle(compPrep, 1500); idle(armTools, 3000); } }
+  /* проба в простое: только процессор (синусы и случайные числа), без холста; обычная машина — около 2 мс */
   function bench() {
-    var t = performance.now(), c = doc.createElement("canvas"); c.width = 320; c.height = 200; var x = c.getContext("2d"), sp = starSpr("255,246,236"), q = 0;
-    for (var i = 0; i < 20000; i++) q += Math.sin(i) * Math.random();
-    for (var j = 0; j < 400; j++) x.drawImage(sp, (j * 37) % 320, (j * 53) % 200, 6, 6);
-    x.getImageData(0, 0, 1, 1); return performance.now() - t + (q > 1e9 ? 1 : 0);
+    var t = performance.now(), q = 0;
+    for (var i = 0; i < 60000; i++) q += Math.sin(i) * Math.random();
+    return performance.now() - t + (q > 1e9 ? 1 : 0);
   }
   function probe() {
-    var a = [], k = function (t) { a.push(t); if (a.length < 24) requestAnimationFrame(k); else setWeak(med(a) > WEAK_MS); };
+    var a = [], k = function (t) { a.push(t); if (a.length < 24) requestAnimationFrame(k); else { idleCad = Math.max(1, med(a)); setWeak(idleCad > IDLE_MS); } };
     requestAnimationFrame(k);
     var b = [], step = function () { b.push(bench()); if (b.length < 7) idle(step, 800); else { b.sort(function (p, q) { return p - q; }); setWeak(b[3] > BENCH_MS); } };
     idle(step, 800);
   }
-  /* кадры перелёта: медленные — значит, и следующий перелёт облегчить */
-  function watchFlight() { var a = [], on = true, k = function (t) { a.push(t); if (on) requestAnimationFrame(k); }; requestAnimationFrame(k); return function () { on = false; lastFlight = med(a); setWeak(lastFlight > WEAK_MS + 6); }; }
-  function idle(fn, ms) { if (window.requestIdleCallback) requestIdleCallback(fn, { timeout: ms || 1500 }); else setTimeout(fn, 60); }
+  /* кадры перелёта: перелёт добавил к обычному кадру больше FLIGHT_ADD_MS — следующий перелёт облегчить */
+  function watchFlight() { var a = [], on = true, k = function (t) { a.push(t); if (on) requestAnimationFrame(k); }; requestAnimationFrame(k); return function () { on = false; lastFlight = med(a); setWeak(lastFlight > Math.max(idleCad, 16.7) + FLIGHT_ADD_MS); }; }
   var pool = null;
   function makePool() {
     var Wd = W / sc, Hd = H / sc, N = (M === "p" ? 520 : 900), TN = TH().tint, ps = [];
@@ -268,7 +286,77 @@
     for (var i = 0; i < N; i++) { var r3 = Math.pow(Math.random(), 3); ps.push({ x: (Math.random() * 2 - 1) * Wd * 1.15, y: (Math.random() * 2 - 1) * Hd * 1.15, z: 40 + Math.random() * 2600, r: .55 + r3 * 1.7, b: .45 + Math.random() * .55, s: starSpr(TN[Math.random() < .55 ? 0 : (Math.random() * 4) | 0]) }); }
     pool = { ps: ps, key: M + W + "x" + H + TN[0] + weak };
   }
-  function fxSize() { if (!fx) return; var dpr = Math.min(3, window.devicePixelRatio || 1) * (weak ? .5 : 1); fx.width = Math.round(W * dpr); fx.height = Math.round(H * dpr); FX.k = dpr; }
+  function idle(fn, ms) { if (window.requestIdleCallback) requestIdleCallback(fn, { timeout: ms || 1500 }); else setTimeout(fn, 60); }
+  /* холст звёзд: живой перелёт — во всё разрешение экрана; перелёт на композиторе — заранее нарисованный (compPrep) */
+  function fxSize() { if (!fx) return; if (useComp()) { comp = null; idle(compPrep, 1500); return; } var dpr = Math.min(3, window.devicePixelRatio || 1); fx.width = Math.round(W * dpr); fx.height = Math.round(H * dpr); FX.k = dpr; }
+
+  /* ---------- ПЕРЕЛЁТ НА КОМПОЗИТОРЕ (основатель 25.11.2026: «Звёзды» на всех устройствах) ----------
+     Телефон, планшет (касание пальцем) и слабое устройство летят тем же перелётом «в глубину», но дёшево: звёздное поле
+     нарисовано заранее, в простое, тремя глубинами (дальняя — сам #sbDesksFx, средняя, ближняя) и вспышкой света; в
+     перелёте ни один холст не перерисовывается — глубины только растут от середины (transform: scale) и гаснут (opacity),
+     каждая со своей скоростью — так и выходит параллакс показа: ближние звёзды несутся к краям, дальние едва плывут.
+     Путь камеры — та же «тяжёлая» кривая показа eio, выбранная по точкам (ключевые кадры; между ними — без своей кривой, по умолчанию анимации). Слои стола
+     — тот же масштаб и прозрачность показа, без размытия (filter: blur в кадрах нет); размытие держит вуаль. На столе
+     с мышью и обычным процессором — прежний живой перелёт показа без изменений. */
+  var coarse = window.matchMedia ? matchMedia("(pointer: coarse)") : { matches: false };
+  function useComp() { return weak || coarse.matches; }
+  var comp = null, compEls = null;
+  /* глубины: доля звёзд, размер, яркость, во сколько раз вырастает слой за перелёт */
+  var DEPTHS = [{ n: .5, r: [.6, 1.3], b: [.45, .95], grow: 1.35 }, { n: .32, r: [.7, 1.5], b: [.45, .9], grow: 2.2 }, { n: .18, r: [1, 2.1], b: [.6, 1], grow: 3.4 }];
+  function compCanvases() {
+    if (compEls && compEls[0].isConnected) return compEls;
+    var host = fx.parentNode, mk = function (cls) { var c = doc.createElement("canvas"); c.className = "sbd-fx " + cls; c.setAttribute("aria-hidden", "true"); return c; };
+    var bloom = mk("bloom"), mid = mk("mid"), near = mk("near");
+    host.insertBefore(bloom, fx); host.insertBefore(mid, fx.nextSibling); host.insertBefore(near, mid.nextSibling);
+    return (compEls = [bloom, fx, mid, near]);
+  }
+  function compPrep() {
+    if (!fx || !fx.parentNode || reduced() || !useComp()) return null;
+    var TN = TH().tint, BL = TH().bl, key = W + "x" + H + TN[0] + weak;
+    if (comp && comp.key === key) return comp;
+    var els = compCanvases(), dpr = Math.min(1.5, window.devicePixelRatio || 1);
+    /* холст не больше ~1,6 Мп: заранее нарисованные глубины держит видеопамять (планшет 1728×1080 — около 1×) */
+    var k = Math.max(.5, Math.min(weak ? Math.min(1, dpr) : dpr, Math.sqrt(1.6e6 / Math.max(1, W * H)))), N = Math.round((M === "p" ? 520 : 900) * (weak ? .4 : 1));
+    for (var d = 0; d < 3; d++) {
+      var c = els[d + 1], D = DEPTHS[d], x = c.getContext("2d"), n = Math.round(N * (weak ? (d ? 0 : 1) : D.n));
+      c.width = Math.round(W * k); c.height = Math.round(H * k); x.setTransform(k, 0, 0, k, 0, 0); x.clearRect(0, 0, W, H);
+      x.globalCompositeOperation = "lighter";
+      for (var i = 0; i < n; i++) {
+        var r = (D.r[0] + Math.pow(Math.random(), 3) * (D.r[1] - D.r[0])) * Math.max(1, sc), sz = r * 4.4;
+        x.globalAlpha = D.b[0] + Math.random() * (D.b[1] - D.b[0]);
+        x.drawImage(starSpr(TN[Math.random() < .55 ? 0 : (Math.random() * 4) | 0]), Math.random() * W - sz / 2, Math.random() * H - sz / 2, sz, sz);
+      }
+      x.globalAlpha = 1;
+    }
+    /* вспышка света на пике скорости (bloom показа) — малым холстом, растянутым композитором */
+    var bl = els[0], bw = 64, bh = Math.max(16, Math.round(64 * H / Math.max(1, W))), bx = bl.getContext("2d"), g = bx.createRadialGradient(bw / 2, bh * .52, 0, bw / 2, bh * .52, Math.max(bw, bh) * .75);
+    bl.width = bw; bl.height = bh; g.addColorStop(0, "rgba(" + BL[0] + ",1)"); g.addColorStop(.35, "rgba(" + BL[1] + ",.35)"); g.addColorStop(1, "rgba(" + BL[2] + ",0)");
+    bx.fillStyle = g; bx.fillRect(0, 0, bw, bh);
+    return (comp = { key: key, els: els });
+  }
+  /* камера: та же кривая eio, что у живого поля, — по точкам; глубина d растёт в grow раз (назад — наоборот) */
+  function compField(o) {
+    var C = compPrep(); if (!C) return [];
+    var out = [], TT = TH(), fw = o.dir > 0, P = 12;
+    C.els.forEach(function (e, i) { if (!weak || i === 1) e.setAttribute("data-sbd-run", ""); });
+    /* слабое устройство — одна глубина (дальняя, #sbDesksFx) без вспышки: один слой композитора вместо четырёх */
+    var nd = weak ? 1 : 3;
+    for (var d = 0; d < nd; d++) {
+      var g = DEPTHS[d].grow, kf = [];
+      for (var i = 0; i <= P; i++) {
+        var u = i / P, E = eio(u), s = fw ? 1 + (g - 1) * E : g - (g - 1) * E;
+        /* огибающая показа: свет набирается за первые 14 %, гаснет за последние 30 % (ближние гаснут раньше — улетели) */
+        var A = Math.min(1, u / .14) * Math.min(1, (1 - u) / (.3 + d * .08)) * (o.alpha || 1);
+        kf.push({ transform: "scale(" + s.toFixed(4) + ")", opacity: Math.max(0, Math.min(1, A)).toFixed(3) });
+      }
+      out.push(C.els[d + 1].animate(kf, { duration: o.T, fill: "forwards" }));
+    }
+    var bk = []; for (var j = 0; j <= P; j++) { var v = vel(j / P), A2 = Math.min(1, (j / P) / .14) * Math.min(1, (1 - j / P) / .3); bk.push({ opacity: (Math.min(1, (TT.bloom || .07) * 6) * v * A2).toFixed(3) }); }
+    if (!weak) out.push(C.els[0].animate(bk, { duration: o.T, fill: "forwards" }));
+    /* конец: глубины уже погасли (последний ключевой кадр — прозрачность 0) — снять пометку и анимации, если новых нет */
+    fin(out).then(function () { if (C.els[1].getAnimations().some(function (x) { return out.indexOf(x) < 0; })) return; C.els.forEach(function (e) { e.removeAttribute("data-sbd-run"); }); out.forEach(function (x) { try { x.cancel(); } catch (e) { /* уже снята */ } }); });
+    return out;
+  }
   /* сначала все чтения, потом все записи — без дёрганья раскладки на каждом слое */
   function origins(list) {
     var rs = list.map(function (el) { return el.id === "sbDeskTime" && el.parentNode ? el.parentNode.getBoundingClientRect() : el.getBoundingClientRect(); });
@@ -352,12 +440,16 @@
   /* уборка после перелёта — своих анимаций и точек масштаба; зовётся в простое, а не в кадре конца перелёта */
   function cleanAll(list, els) { (list || []).forEach(function (a) { try { a.cancel(); } catch (e) { /* уже снята */ } }); (els || []).forEach(function (e) { if (!busy || !e.getAnimations().length) e.style.transformOrigin = ""; }); }
   function vStars(A, B, dir, T, swap) {
-    var l = [], fw = dir > 0, TT = TH();
-    starfield({ dir: dir, T: T + 150, travel: 1500, bloom: TT.bloom, swell: TT.swell, alpha: TT.alpha });
+    var l = [], fw = dir > 0, TT = TH(), cm = useComp();
+    /* касание пальцем и слабое устройство — поле на композиторе (заранее нарисованное); мышь — живое поле показа */
+    if (cm) compField({ dir: dir, T: T + 150, alpha: TT.alpha }); else starfield({ dir: dir, T: T + 150, travel: 1500, bloom: TT.bloom, swell: TT.swell, alpha: TT.alpha });
     var KA = [{ scale: "1", filter: "blur(0px)", opacity: 1 }, { scale: String(fw ? 1.12 : .93), filter: "blur(1px)", opacity: .9, offset: .3 }, { scale: String(fw ? 1.9 : .5), filter: "blur(14px)", opacity: 0 }];
     var KB = [{ scale: String(fw ? .52 : 1.7), filter: "blur(9px)", opacity: 0 }, { filter: "blur(4px)", opacity: .55, offset: .35 }, { scale: String(fw ? 1.012 : .992), filter: "blur(1.2px)", opacity: 1, offset: .72 }, { scale: "1", filter: "blur(0px)", opacity: 1 }];
-    /* слабое устройство: размытие больших слоёв — самая дорогая часть кадра; без него — только масштаб и прозрачность */
-    if (weak) [KA, KB].forEach(function (K) { K.forEach(function (f) { delete f.filter; }); });
+    /* перелёт на композиторе: размытие больших слоёв — самая дорогая часть кадра; без него — только масштаб и прозрачность */
+    if (cm) [KA, KB].forEach(function (K) { K.forEach(function (f) { delete f.filter; }); });
+    /* слабое устройство: та же глубина, короче ход — уходящий стол растёт до 1,3 (а не 1,9), приходящий выплывает с 0,8:
+       растр слоя под наибольший масштаб анимации — в 2 раза меньше точек, кадр композитора короче */
+    if (weak) { KA[KA.length - 1].scale = String(fw ? 1.3 : .8); KB[0].scale = String(fw ? .8 : 1.25); }
     var dt0 = DTc();
     origins(A.els.concat(B.els, (A.notes || []).map(function (it) { return it.el; }), (B.notes || []).map(function (it) { return it.el; }), dt0 && (A.dt || B.dt) ? [dt0] : []));
     A.els.forEach(function (e) { touched.push(e); l.push(anim(e, KA, { duration: T * .62, easing: EIN })); });
@@ -378,19 +470,23 @@
           { scale: KB[0].scale, filter: KB[0].filter, opacity: 0, offset: .6 }, { filter: KB[1].filter, opacity: .55, offset: .71 }, { scale: KB[2].scale, filter: KB[2].filter, opacity: 1, offset: .87 }, KB[3]], { duration: T * 1.02 }));
         setTimeout(swap, T * .62);
       } else if (A.dt) { l.push(anim(dt, KA, { duration: T * .62, easing: EIN })); swap(); }
-      else { swap(); l.push(anim(dt, KB, { duration: T * .62, delay: T * .4, easing: EOUT })); }
+      /* к столу инструментов с первого (на нём часов больше нет, D-1421): стол собран заранее — проявляется в ответе на касание;
+         не собран — следующей задачей после первого кадра. Свет середины выплывает с задержкой T·0,4 — он уже нарисован */
+      else { if (window.sbDeskTools && window.sbDeskTools.armed && window.sbDeskTools.armed()) swap(); else later(swap); l.push(anim(dt, KB, { duration: T * .62, delay: T * .4, easing: EOUT })); }
     } else swap();
     var wp = doc.querySelector("#desktop > .wp-layer");
-    if (wp && !weak) { touched.push(wp); wp.style.transformOrigin = "50% 55%"; anim(wp, [{ scale: "1", filter: "brightness(1)" }, { scale: String(fw ? 1.1 : .96), filter: "brightness(" + (TT.dim || .72) + ")", offset: .45 }, { scale: "1", filter: "brightness(1)" }], { duration: T + 100, easing: EM(), fill: "none" }); }
-    run(veil.parentNode, anim(veil, [{ opacity: 0 }, { opacity: weak ? Math.min(.6, TT.veil + (1 - (TT.dim || .72)) * .5) : TT.veil, offset: .5 }, { opacity: 0 }], { duration: T, easing: EM(), fill: "none" }));
-    run(breathEl.parentNode, anim(breathEl, [{ opacity: 0 }, { opacity: 1, offset: .35 }, { opacity: 0 }], { duration: 900, delay: T * .78, easing: EM(), fill: "none" }));
+    /* фон «дышит» масштабом и яркостью; на композиторе — только масштабом (яркость держит вуаль), на слабом — не дышит */
+    if (wp && !weak) { touched.push(wp); wp.style.transformOrigin = "50% 55%"; anim(wp, cm ? [{ scale: "1" }, { scale: String(fw ? 1.1 : .96), offset: .45 }, { scale: "1" }] : [{ scale: "1", filter: "brightness(1)" }, { scale: String(fw ? 1.1 : .96), filter: "brightness(" + (TT.dim || .72) + ")", offset: .45 }, { scale: "1", filter: "brightness(1)" }], { duration: T + 100, easing: EM(), fill: "none" }); }
+    run(veil.parentNode, anim(veil, [{ opacity: 0 }, { opacity: cm ? Math.min(.6, TT.veil + (1 - (TT.dim || .72)) * .5) : TT.veil, offset: .5 }, { opacity: 0 }], { duration: T, easing: EM(), fill: "none" }));
+    /* вздох света — ещё один слой во весь экран; слабому устройству его не смешивать в каждом кадре (вуаль уже даёт свет) */
+    if (!weak) run(breathEl.parentNode, anim(breathEl, [{ opacity: 0 }, { opacity: 1, offset: .35 }, { opacity: 0 }], { duration: 900, delay: T * .78, easing: EM(), fill: "none" }));
     showTitle(cur, T * .5);
     return l;
   }
   function showTitle(i, delay) {
     title.querySelector("b").textContent = nameOf(i); title.querySelector("i").textContent = T("desks.of", { i: i + 1, n: total() });
     var K = [{ opacity: 0, transform: "translateY(12px)", filter: "blur(6px)" }, { opacity: 1, transform: "none", filter: "blur(0)", offset: .25 }, { opacity: 1, offset: .7 }, { opacity: 0, transform: "translateY(-8px)", filter: "blur(4px)" }];
-    if (weak) K.forEach(function (f) { delete f.filter; });
+    if (useComp()) K.forEach(function (f) { delete f.filter; });
     run(title, anim(title, K, { duration: 1700, delay: delay || 0, easing: EE(), fill: "none" }));
   }
   function bump(d) {
@@ -404,23 +500,32 @@
   function go(to, opt) {
     opt = opt || {};
     if (busy || !built) return false;
+    atDone = true;   /* человек сам выбрал стол — запомненный при входе больше не подставляется */
     if (to < 0 || to >= total()) { bump(to < 0 ? -1 : 1); return false; }
     if (to === cur) { if (to === toolsAt() && opt.tool && window.sbDeskTools) window.sbDeskTools.tool(opt.tool); return true; }
-    if (weak && !reduced()) return goLite(to, opt);
-    busy = true; flightMarks(true, weak);
+    busy = true; flightMarks(true, useComp());
+    /* приглашение к заметке принадлежит столу, где его позвали: стол сменился — приглашение уходит */
+    if (window.sbCloseNoteInvite) { try { window.sbCloseNoteInvite(); } catch (e) { /* приглашения нет */ } }
+    /* перелёт на композиторе: фон (поле темы, голос, глубина) не рисует кадров, пока летят звёзды — главный поток свободен */
+    if (useComp() && !reduced()) holdFrames(1450 + 200);
     if (window.sbCloseContextMenu) { try { window.sbCloseContextMenu(); } catch (e) { /* меню и так закрыто */ } }
     var from = cur, dir = to > from ? 1 : -1, tools = toolsAt();
     /* открытое на первом столе (выбранный инструмент, строка мысли) убирается до перелёта, как в показе — setOpen(false) */
     if (from === 0 && window.sbDeskTools && window.sbDeskTools.isOpen()) window.sbDeskTools.close();
     var A = layerOf(from), B = layerOf(to);
     cur = to; gaugeFly(from, to);
+    /* последний стол — сразу, следующей задачей (не в кадре ответа): закрыли вкладку посреди перелёта — откроется там, куда летели */
+    later(function () { if (loaded || atDone) writeN(); });
     showFor(to, true); if (box) box.classList.add("on"); showNotes([idOf(from), idOf(to)]);
     /* стол инструментов: ряд встаёт на своё место заранее, пока стол ещё прозрачен (одна тяжёлая перестройка — не в середине перелёта) */
-    if (to === tools && window.sbDeskTools && window.sbDeskTools.prep && !weak) window.sbDeskTools.prep(true);
+    if (to === tools && window.sbDeskTools && window.sbDeskTools.prep && !weak) later(function () { if (busy && cur === tools) window.sbDeskTools.prep(true); });
     /* слабое устройство: стол инструментов собирается сразу, пока он прозрачен (ряд, свет — те же закреплённые часы); в середине
        перелёта — только выбор названного инструмента. Уходя — инструменты убираются «мягко»: разборка в простое после перелёта */
     var early = weak && to === tools && window.sbDeskTools && !reduced();
-    if (early) window.sbDeskTools.desk(true);
+    /* стол инструментов собран заранее (ряд — sbDeskTools.arm, часы — кэш света): проявить его — в ответе на касание (≤ 100 мс),
+       а не в кадрах перелёта; не собран — следующей задачей */
+    var armedT = !!(window.sbDeskTools && window.sbDeskTools.armed && window.sbDeskTools.armed());
+    if (early) { if (armedT) window.sbDeskTools.desk(true); else later(function () { if (busy && cur === tools) window.sbDeskTools.desk(true); }); }
     var swap = function () {
       if (to === tools && window.sbDeskTools) { if (early) { if (opt.tool) window.sbDeskTools.tool(opt.tool); } else window.sbDeskTools.desk(true, opt.tool); }
       if (from === tools && window.sbDeskTools) window.sbDeskTools.desk(false, null, !reduced());
@@ -429,9 +534,10 @@
     /* конец перелёта: снять анимации и классы одной записью; слушатели «стол сменился» — следующей задачей, не в этом кадре */
     /* конец перелёта: в кадре — только пометки «что видно»; снять анимации (их конечное состояние то же, что после снятия:
        уходящий стол уже скрыт, пришедший — на месте) и вернуть стекло — в простое */
-    var done = function (myAnims, myEls) { fw0(); busy = false; settle(); idle(function () { cleanAll(myAnims, myEls); }, 250); var o = OV(); if (o) mark(o, "data-sbd-flight", false);
+    var done = function (myAnims, myEls) { fw0(); busy = false; settle();
+      /* свет середины нового стола — его закреплённое или ничего (core/desktools.js: showPinned по «sb:desk») */ idle(function () { cleanAll(myAnims, myEls); }, 250); var o = OV(); if (o) mark(o, "data-sbd-flight", false);
       /* стекло значков возвращается в простое — не в кадре конца перелёта */
-      if (weak) idle(function () { if (!busy) flightMarks(false, false); }, 400);
+      if (useComp()) idle(function () { if (!busy) flightMarks(false, false); }, 400);
       later(function () { try { window.dispatchEvent(new CustomEvent("sb:desk", { detail: { at: cur, tools: cur === tools } })); } catch (e) { /* старый браузер */ } }); };
     var l;
     if (reduced()) {
@@ -447,57 +553,14 @@
     return true;
   }
 
-  /* ---------- ПЕРЕЛЁТ НА СЛАБОМ УСТРОЙСТВЕ (основатель 23.11.2026: «скорость на слабых устройствах»; D-1360) ----------
-     Движется ОДИН слой: занавес перелёта (#sbDesksVeil) — тьма и заранее нарисованное (в простое) звёздное поле, которое
-     уходит «в глубину» масштабом. Только transform и opacity, will-change — на время перелёта; холст звёзд не
-     перерисовывается ни разу за перелёт. Столы не анимируются: под самым плотным занавесом один стол сменяется другим
-     (пометки видимости). Стол инструментов открывается сразу после перелёта — ответ на касание ни в одном кадре не
-     ждёт сборки ряда. На обычном устройстве — прежний перелёт «Звёзды» без изменений. */
-  var LITE_MS = 200, holdUntil = 0;
-  /* ФОН НА ПАУЗЕ НА ВРЕМЯ СМЕНЫ СТОЛА (слабое устройство): поле и кромка темы, голос и глубина не рисуют кадров
-     смену стола и один кадр после; затем идут дальше. В покое вид не меняется. */
+  var holdUntil = 0;
+  /* ФОН НА ПАУЗЕ НА ВРЕМЯ СМЕНЫ СТОЛА (перелёт на композиторе): поле и кромка темы, голос и глубина не рисуют кадров
+     время перелёта; затем идут дальше. В покое вид не меняется. */
   window.sbFramesHeld = function () { return Math.max(0, holdUntil - performance.now()); };
   function holdFrames(ms) {
     holdUntil = performance.now() + ms;
     if (window.sbDepth && window.sbDepth.hold) { window.sbDepth.hold(true); setTimeout(function () { if (performance.now() >= holdUntil - 1 && window.sbDepth) window.sbDepth.hold(false); }, ms); }
   }
-  function goLite(to, opt) {
-    /* СЛАБОЕ УСТРОЙСТВО (координатор по решению основателя 23.11.2026, последний шаг): короткое растворение ОДНОГО слоя —
-       занавес (#sbDesksVeil) только по прозрачности, на композиторе, ~200 мс; ни transform, ни перерисовки, ни звёзд, ни
-       искры шкалы. Под самым плотным занавесом стол сменяется пометками видимости. На обычном устройстве — прежний перелёт.
-       (Мгновенное переключение проверено и оставлено не было: кадр смены без занавеса тяжелее — 76–77 из 82 против 79–80.) */
-    var tools0 = toolsAt();
-    /* первый стол ⇄ стол инструментов: оба уже нарисованы своими слоями — только прозрачность (переход .2 с в CSS) */
-    if (armedMain && ((cur === 0 && to === tools0) || (cur === tools0 && to === 0))) {
-      busy = true; holdFrames(LITE_MS + 50);
-      if (window.sbCloseContextMenu) { try { window.sbCloseContextMenu(); } catch (e) { /* меню и так закрыто */ } }
-      var f0 = cur;
-      if (f0 === 0 && window.sbDeskTools && window.sbDeskTools.isOpen()) window.sbDeskTools.close();
-      cur = to; gaugeMark(); settle();
-      if (f0 === tools0 && window.sbDeskTools) window.sbDeskTools.desk(false, null, true);
-      if (to === tools0 && window.sbDeskTools) window.sbDeskTools.desk(true, opt.tool, true);
-      /* «стол сменился» (свет середины, «главное сегодня») — в простое: в кадрах смены только прозрачность */
-      setTimeout(function () { busy = false; idle(function () { try { window.dispatchEvent(new CustomEvent("sb:desk", { detail: { at: cur, tools: cur === tools0 } })); } catch (e) { /* старый браузер */ } }, 600); }, LITE_MS + 20);
-      return true;
-    }
-    busy = true; holdFrames(LITE_MS + 50);
-    if (window.sbCloseContextMenu) { try { window.sbCloseContextMenu(); } catch (e) { /* меню и так закрыто */ } }
-    var from = cur, tools = toolsAt(), T = LITE_MS, TT = TH();
-    if (from === 0 && window.sbDeskTools && window.sbDeskTools.isOpen()) window.sbDeskTools.close();
-    cur = to; gaugeMark();
-    var dark = Math.min(.94, TT.veil + .5);
-    var a = run(veil.parentNode, veil.animate([{ opacity: 0 }, { opacity: dark, offset: .5 }, { opacity: 0 }], { duration: T, easing: EM() }));
-    setTimeout(function () { settle(); if (box) box.classList.toggle("on", to === tools); }, T * .5);
-    a.finished.catch(function () { /* снято */ }).then(function () {
-      busy = false; settle();
-      var o0 = OV(); if (o0) mark(o0, "data-sbd-flight", false);
-      if (from === tools && window.sbDeskTools) window.sbDeskTools.desk(false, null, true);
-      if (to === tools && window.sbDeskTools) window.sbDeskTools.desk(true, opt.tool, true);
-      later(function () { try { window.dispatchEvent(new CustomEvent("sb:desk", { detail: { at: cur, tools: cur === tools } })); } catch (e) { /* старый браузер */ } });
-    });
-    return true;
-  }
-
   function add() {
     if (n >= MAX) return false;
     n++; names[n - 1] = null; ids[n - 1] = newId(); gaugeBuild();   /* ответ — новая звезда; запись и остальное — следом */
@@ -583,10 +646,14 @@
     title = doc.createElement("div"); title.id = "sbDesksTitle"; title.setAttribute("aria-hidden", "true"); title.innerHTML = "<b></b><i></i>"; doc.body.appendChild(title);
     gauge = doc.createElement("nav"); gauge.id = "sbDesksGauge"; gauge.className = "off"; doc.body.appendChild(gauge);
     n = readN(); readNames(); buildOwn(); fit(); built = true;
-    gaugeBuild(); settle(); wire(); paintPult();
-    setTimeout(function () { idle(function () { probe(); idle(makePool); }); }, 3000);
+    gaugeBuild(); settle(); wire(); paintPult(); restoreAt();
+    /* поле звёзд готовится заранее, в простое: живому перелёту — частицы, перелёту на композиторе — нарисованные глубины */
+    setTimeout(function () { idle(function () { probe(); idle(function () { if (useComp()) { compPrep(); idle(armTools, 1500); } else makePool(); }); }); }, 3000);
+    window.addEventListener("sb:theme", function () { comp = null; if (useComp()) setTimeout(function () { idle(compPrep, 1500); }, 600); });
     /* число столов — из хранилища: за дверью оно читается, когда хранилище открыто (первая минута) */
-    var k = 0, rd = setInterval(function () { if (++k > 30) { clearInterval(rd); return; } var m = readN(); if (m !== n && !busy) { n = Math.max(n, m); readNames(); buildOwn(); changed(); settle(); } }, 2000);
+    var k = 0, rd = setInterval(function () { if (++k > 30) { clearInterval(rd); return; } var m = readN(); if (m !== n && !busy) { n = Math.max(n, m); readNames(); buildOwn(); changed(); settle(); }
+      /* запись столов открылась позже (дверь): имя, судьба стола инструментов, шкала и последний стол — оттуда */
+      if (!atDone && !busy && cur === 0) { var g0 = toolsGone, h0 = hideG; readNames(); if (g0 !== toolsGone || h0 !== hideG) changed(); restoreAt(); } }, 2000);
   }
 
   /* ---------- УПРАВЛЕНИЕ СТОЛАМИ (основатель 23.11.2026): одни и те же действия из четырёх мест —
@@ -598,13 +665,16 @@
   function changedLater() { setTimeout(function () { paintPult(); try { window.dispatchEvent(new CustomEvent("sb:desks")); } catch (e) { /* старый браузер */ } }, 0); }
   function changed() { gaugeBuild(); setTimeout(function () { paintPult(); try { window.dispatchEvent(new CustomEvent("sb:desks")); } catch (e) { /* старый браузер */ } }, 0); }
   function own_(i) { return i >= 0 && i < total() && i !== toolsAt(); }
+  /* переименовать можно любой стол, стол инструментов тоже (его знак у звезды остаётся) */
+  function canRename(i) { return i >= 0 && i < total(); }
   function setName(i, v) {
-    if (!own_(i)) return false;
+    if (!canRename(i)) return false;
     v = String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, 40);
+    if (i === toolsAt()) { toolsName = v && v !== T("desks.tools") ? v : null; writeN(); changed(); return true; }
     names[i] = v && v !== T("desks.n" + i) ? v : null; writeN(); changed(); return true;
   }
   function rename(i) {
-    if (!own_(i) || !window.sbAsk) return Promise.resolve(false);
+    if (!canRename(i) || !window.sbAsk) return Promise.resolve(false);
     return window.sbAsk({ title: T("desks.nameAsk"), field: { value: nameOf(i) }, ok: T("desks.rename") }).then(function (v) { return v == null ? false : setName(i, v); });
   }
   /* порядок своих столов: первый (на нём значки) стоит первым; свой стол переезжает с именем и заметками */
@@ -617,7 +687,7 @@
     writeN(); changed(); settle(); return true;
   }
   function list() {
-    var out = []; for (var i = 0; i < total(); i++) out.push({ i: i, name: nameOf(i), tools: i === toolsAt(), cur: i === cur, rename: own_(i), remove: CAN_REMOVE && own_(i) && i > 0, up: i > 1 && i < n, down: i >= 1 && i < n - 1 });
+    var out = []; for (var i = 0; i < total(); i++) out.push({ i: i, name: nameOf(i), tools: i === toolsAt(), cur: i === cur, rename: canRename(i), remove: CAN_REMOVE && i > 0, up: i > 1 && i < n, down: i >= 1 && i < n - 1 });
     return out;
   }
   function act(a, i) {
@@ -627,6 +697,8 @@
     if (a === "up") return Promise.resolve(move(i, -1));
     if (a === "down") return Promise.resolve(move(i, 1));
     if (a === "remove") return Promise.resolve(remove(i));
+    if (a === "toolsBack") return Promise.resolve(restore("tools"));
+    if (a === "gauge") return Promise.resolve(setGaugeHidden(!hideG));
     return Promise.resolve(false);
   }
   /* ---------- УБРАТЬ СТОЛ (D-1358, основатель: вариант «А»): стол уходит в Эхо ЦЕЛИКОМ — имя, место в порядке и всё, что на
@@ -641,6 +713,7 @@
   function plural(k) { var L = typeof window.sbLang === "function" ? window.sbLang() : "en"; if (L !== "ru") return k === 1 ? "one" : "many"; return k % 10 === 1 && k % 100 !== 11 ? "one" : k % 10 >= 2 && k % 10 <= 4 && (k % 100 < 12 || k % 100 > 14) ? "few" : "many"; }
   function countWord(k) { return T("desks.notes." + plural(k), { n: k }); }
   function remove(i) {
+    if (i >= 1 && i === toolsAt() && !busy) return removeTools();
     if (!(i >= 1 && i < n) || busy) return false;
     /* ОТВЕТ — СРАЗУ, РАБОТА — ПОСЛЕ (скорость на слабом устройстве): в этом кадре — только шкала и что видно; заметки стола,
        запись в хранилище, пульт, Эхо и голос — следующей задачей после ответа */
@@ -661,6 +734,7 @@
   }
   function restore(rid) {
     var k = -1; removed.forEach(function (r, j) { if (r.id === rid) k = j; }); if (k < 0) return false;
+    if (removed[k].system) return restoreTools(k);
     if (n >= MAX) { if (window.sbVoice && window.sbVoice.say) window.sbVoice.say(T("desks.noRoom")); return false; }
     var rec = removed.splice(k, 1)[0], pos = Math.max(1, Math.min(rec.pos || 1, n));
     pinNames(); ids.splice(pos, 0, rec.id); names.splice(pos, 0, rec.custom || rec.name); n++;
@@ -674,6 +748,53 @@
     return true;
   }
   /* одна заметка из убранного стола: к своему столу, если он есть, иначе — на первый */
+  /* СТОЛ ИНСТРУМЕНТОВ — В ЭХО (основатель 25.11.2026): уходит целиком, со своими заметками и именем, одной строкой Эха;
+     системный — развеять нельзя, только вернуть (Эхо, голос, «вернуть инструменты» в пульте). Пока его нет, звезды нет,
+     и при одном своём столе шкала исчезает. */
+  function removeTools() {
+    var at = toolsAt(); if (at < 0) return false;
+    var S = notesStore(), mine = [];
+    var rec = { id: "tools", system: true, name: nameOf(at), custom: toolsName, pos: at, notes: mine, at: Date.now() };
+    removed = removed.filter(function (r) { return r.id !== "tools"; }); removed.unshift(rec);
+    var was = cur === at;
+    if (was && window.sbDeskTools) { try { window.sbDeskTools.desk(false, null, false); } catch (e) { /* инструменты и так убраны */ } }
+    toolsGone = true; if (cur >= total()) cur = total() - 1;
+    gaugeBuild(); settle();
+    later(function () {
+      if (S) { var rest = []; (S.load() || []).forEach(function (r) { if (r && r.desk === "tools") mine.push(r); else rest.push(r); }); if (mine.length) { S.save(rest); S.notify(); } }
+      writeN(); changedLater();
+      try { window.dispatchEvent(new CustomEvent("sb:desk", { detail: { at: cur, tools: false } })); } catch (e) { /* старый браузер */ }
+      later(function () { if (window.sbVoice && window.sbVoice.say) window.sbVoice.say(T("desks.removed", { name: rec.name, what: mine.length ? T("desks.withNotes", { n: countWord(mine.length) }) : T("desks.empty") }), { hold: 9000, on: function () { restore("tools"); } }); });
+    });
+    return true;
+  }
+  function restoreTools(k) {
+    var rec = removed.splice(k, 1)[0]; toolsGone = false; toolsName = rec.custom || null;
+    var S = notesStore();
+    gaugeBuild();
+    later(function () {
+      writeN(); settle(); changedLater();
+      if (S && rec.notes.length) { var live = S.load() || [], have = {}; live.forEach(function (r) { have[r.id] = 1; }); rec.notes.forEach(function (r) { if (!have[r.id]) live.push(r); }); S.save(live); S.notify(); }
+    });
+    return true;
+  }
+  function setGaugeHidden(v) { hideG = !!v; writeN(); gaugeBuild(); changedLater(); return true; }
+  /* последний стол — запись в простое после смены стола; при входе — тот же стол, без перелёта (restoreAt) */
+  var saveT = 0;
+  /* пока запись столов не прочитана (за дверью), последний стол не пишется: иначе пустая память затёрла бы имена и Эхо */
+  function saveAtLater() { if (!loaded && !atDone) return; clearTimeout(saveT); saveT = setTimeout(function () { idle(writeN, 2000); }, 600); }
+  var atDone = false;
+  function restoreAt() {
+    if (atDone || !savedAt || busy || cur !== 0) return;
+    var to = savedAt === "tools" ? toolsAt() : ids.indexOf(savedAt);
+    if (to <= 0 || to >= total()) return;
+    atDone = true; cur = to; settle(); gaugeMark();
+    var open0 = function () { if (cur === toolsAt() && !busy && window.sbDeskTools && !window.sbDeskTools.isOpen()) window.sbDeskTools.desk(true); };
+    open0();
+    /* вход ещё раскладывает стол (голос, приветствие, свет): если инструменты успели убрать — открыть их ещё раз, когда всё встало */
+    [1200, 3000].forEach(function (ms) { setTimeout(open0, ms); });
+    try { window.dispatchEvent(new CustomEvent("sb:desk", { detail: { at: cur, tools: cur === toolsAt() } })); } catch (e) { /* старый браузер */ }
+  }
   function restoreNote(rid, nid) {
     var rec = null; removed.forEach(function (r) { if (r.id === rid) rec = r; }); if (!rec) return false;
     var k = -1; rec.notes.forEach(function (x, j) { if (x.id === nid) k = j; }); if (k < 0) return false;
@@ -686,8 +807,8 @@
   function starMenu(i, x, y) {
     if (!window.sbMenu) return false;
     var items = [];
-    if (own_(i)) items.push({ label: T("desks.rename"), run: function () { rename(i); } });
-    if (CAN_REMOVE && own_(i) && i > 0) items.push({ label: T("desks.remove"), run: function () { remove(i); } });
+    if (canRename(i)) items.push({ label: T("desks.rename"), run: function () { rename(i); } });
+    if (CAN_REMOVE && i > 0) items.push({ label: T("desks.remove"), run: function () { remove(i); } });
     items.push({ label: T(n >= MAX ? "desks.full" : "desks.new"), disabled: n >= MAX, run: function () { add(); } });
     window.sbMenu(items, x, y); return true;
   }
@@ -701,6 +822,8 @@
     var h = '<span class="cc-desks-l">' + T("desks.line") + ":</span>";
     list().forEach(function (d, k) { h += (k ? '<span class="cc-desks-s" aria-hidden="true">·</span>' : "") + '<button type="button" data-act="go" data-i="' + d.i + '" aria-current="' + d.cur + '">' + d.name.replace(/[<&"]/g, "") + "</button>"; });
     if (n < MAX) h += '<span class="cc-desks-s" aria-hidden="true">·</span><button type="button" class="cc-desks-add" data-act="new" data-i="-1" aria-label="' + T("desks.new") + '">+</button>';
+    /* стол инструментов в Эхо — вернуть его отсюда одним касанием */
+    if (toolsGone) h += '<span class="cc-desks-s" aria-hidden="true">·</span><button type="button" data-act="toolsBack" data-i="-1">' + T("desks.toolsBack").replace(/[<&"]/g, "") + "</button>";
     row.innerHTML = h;
   }
 
@@ -726,11 +849,13 @@
     menu: function (i, x, y) { return starMenu(i, x, y); },
     /* для законов: облегчён ли перелёт на этом устройстве и медиана кадра прошлого перелёта */
     weak: function () { return weak; }, lastFlight: function () { return Math.round(lastFlight); },
-    curId: function () { return cur > 0 && cur < n ? ids[cur] : null; },
+    curId: function () { return cur > 0 && cur < n ? ids[cur] : cur > 0 && cur === toolsAt() ? "tools" : null; },
+    toolsGone: function () { return toolsGone; },
+    gaugeHidden: function (v) { if (v === undefined) return hideG; return setGaugeHidden(!!v); },
     idOf: function (i) { return idOf(i); },
     remove: function (i) { return remove(i); },
     /* для Эхо: убранные столы — одна строка на стол */
-    removed: function () { return removed.map(function (r) { return { id: r.id, name: r.name, at: r.at, count: r.notes.length, line: T("desks.echoLine", { name: r.name, n: countWord(r.notes.length) }), notes: r.notes.map(function (x) { return { id: x.id, text: x.text || "" }; }) }; }); },
+    removed: function () { return removed.map(function (r) { return { id: r.id, system: !!r.system, name: r.name, at: r.at, count: r.notes.length, line: T("desks.echoLine", { name: r.name, n: countWord(r.notes.length) }), notes: r.notes.map(function (x) { return { id: x.id, text: x.text || "" }; }) }; }); },
     restore: function (rid) { return restore(rid); },
     restoreNote: function (rid, nid) { return restoreNote(rid, nid); }
   };

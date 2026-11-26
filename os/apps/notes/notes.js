@@ -606,6 +606,15 @@
     }
     if (titleEl) titleEl.addEventListener("input", onEdit);
     if (bodyEl) bodyEl.addEventListener("input", onEdit);
+    /* Enter в названии — переход в текст (осмотр H4e4 п.5): название одной строкой, курсор встаёт в начало текста,
+       строки не склеиваются. Набор иероглифов (isComposing) Enter не перехватывает. */
+    if (titleEl && bodyEl) titleEl.addEventListener("keydown", function (ev) {
+      if (ev.key !== "Enter" || ev.isComposing || ev.shiftKey || ev.altKey || ev.ctrlKey || ev.metaKey) return;
+      ev.preventDefault();
+      try { bodyEl.focus(); bodyEl.setSelectionRange(0, 0); bodyEl.scrollTop = 0; } catch (e) { /* поле ушло */ }
+    });
+    /* длинное название вне фокуса читается с начала, а не обрезанным слева (осмотр H4e4 п.5, телефон) */
+    if (titleEl) titleEl.addEventListener("blur", function () { titleEl.scrollLeft = 0; });
     if (bodyEl) wireSmiles(host, bodyEl, titleEl);
   }
 
