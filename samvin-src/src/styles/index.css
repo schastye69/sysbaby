@@ -1,0 +1,15 @@
+/* app.<hash>.css: the first frame, the boot, CORE and the shared chrome. Each hall's own stylesheet (members, voyages,
+   archive, signal, insignia) ships separately and is fetched when the hall is first built (halls/hallCss.js). */
+@import "tokens.css";
+@import "fonts.css";
+@import "base.css";
+@import "chrome.css";
+@import "overlay.css";
+@import "navigator.css";
+@import "sheet.css";
+@import "key.css";
+@import "boot.css";
+@import "core.css";
+@import "secrets.css";
+@import "fx.css";
+@import "host.css";

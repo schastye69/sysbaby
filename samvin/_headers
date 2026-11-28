@@ -1,0 +1,25 @@
+# sam.vin — Cloudflare Pages headers. Generated from samvin-src/src/static/_headers by build.mjs.
+# Rules never overlap on Cache-Control (Cloudflare comma-joins duplicate values).
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+
+/
+  Cache-Control: no-store
+
+/index.html
+  Cache-Control: no-store
+
+/a/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/world.js
+  Cache-Control: no-cache
+
+/favicon.svg
+  Cache-Control: public, max-age=86400

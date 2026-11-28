@@ -1,0 +1,102 @@
+/* sam.vin — signal.css (WP8): SIGNAL «СВЯЗЬ» — the sky pad, the frequency dial, the inbox, ОТВЕТ РИСУНКОМ.
+   SPEC §6.5, §2.1–2.3 (palette, type classes, construction-drawing grammar), §2.8 (no cards, no glass, no glow boxes).
+   Every hairline is 1 px; ember only on lines ≤ 2 px, dots ≤ 6 px and LABEL text. */
+
+#halls .sg-root{position:absolute;inset:0;pointer-events:none}
+
+/* ── НЕБО — the pad ─────────────────────────────────────────────────────────────────────────────────────────── */
+.sg-pad-art,.sg-trace-art{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.sg-pad{position:absolute;left:0;top:0;pointer-events:none}
+.sg-pad__ring{fill:none;stroke:var(--slate);stroke-width:1px;stroke-opacity:.85;transition:stroke var(--d-240)}
+.sg-pad__marks{fill:none;stroke:var(--slate);stroke-width:1px;stroke-opacity:.85}
+.is-reply>.sg-pad-art .sg-pad__ring{stroke:var(--silver)}
+.sg-pad__label{position:absolute;left:0;top:0;white-space:nowrap;color:var(--pewter);transition:color var(--d-240)}
+.is-reply>.sg-pad__label{color:var(--white)}
+.sg-trace{fill:none;stroke-width:1.5px;stroke-linecap:round;opacity:0;
+  stroke:color-mix(in srgb,var(--slate) calc(var(--cool,0) * 100%),var(--white))}
+.sg-hot{stroke:var(--ember);stroke-width:2px;stroke-linecap:round;animation:sg-phos 300ms var(--ease-phosphor) both}
+.sg-hot.is-cold{animation:none}
+@keyframes sg-phos{from{stroke:var(--white)}to{stroke:var(--ember)}}
+.sg-fig{opacity:0}
+.sg-fig__path{fill:none;stroke:var(--ember);stroke-width:2px;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.sg-beam{fill:var(--white);opacity:0}
+.sg-glint{fill:none;stroke:var(--white);stroke-width:1px;stroke-linecap:round;opacity:0;transform-box:fill-box;transform-origin:center}
+.sg-glint.is-on{animation:sg-glint 4200ms var(--ease-reveal) both}
+@keyframes sg-glint{0%{opacity:0;transform:scale(.2)}8%{opacity:1;transform:scale(1.25)}30%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(.6)}}
+.sg-ghost{fill:none;stroke:var(--c-ghost-stroke);stroke-width:1px;stroke-linejoin:round;stroke-dasharray:1 1;stroke-dashoffset:1;opacity:0}
+.sg-ghost.is-on{animation:sg-ghost 2400ms var(--ease-reveal) both}
+.sg-ghost.is-on.is-still{stroke-dasharray:none;animation:sg-ghost-still 2400ms linear both}
+@keyframes sg-ghost{0%{stroke-dashoffset:1;opacity:1}50%{stroke-dashoffset:0;opacity:1}70%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+@keyframes sg-glint-rm{0%{opacity:0}5%{opacity:1}60%{opacity:.8}100%{opacity:0}}
+@keyframes sg-ghost-still{0%{opacity:0}10%{opacity:1}70%{opacity:1}100%{opacity:0}}
+
+/* ── ЧАСТОТА — the dial ─────────────────────────────────────────────────────────────────────────────────────── */
+.sg-dial{position:absolute;inset:0;pointer-events:none;outline:none}
+.sg-dial__svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
+.sg-dial__arc{fill:none;stroke:var(--silver);stroke-width:1px;opacity:.72}
+.sg-dial__hot{fill:none;stroke:var(--white);stroke-width:1px;opacity:0}
+.sg-dial__ticks{fill:none;stroke:var(--silver);stroke-width:1px;opacity:.38}
+.sg-dial__majors{fill:none;stroke:var(--silver);stroke-width:1px;opacity:.8}
+.sg-dial__hub{fill:none;stroke:var(--slate);stroke-width:1px}
+.sg-dial__needle{stroke:var(--ember);stroke-width:1px;stroke-linecap:square}
+.sg-dial__twin{fill:none;stroke:var(--ember);stroke-width:1px;opacity:0}
+.sg-dial.is-locked .sg-dial__arc{stroke:var(--white);opacity:.9}
+.sg-dial:focus-visible .sg-dial__arc{stroke:var(--white);opacity:1}
+.sg-dial__nums>span{position:absolute;left:0;top:0;white-space:nowrap}
+.sg-dial__read{position:absolute;left:0;top:0;text-align:right;white-space:nowrap}
+.sg-dial__read--centre{text-align:center;display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;column-gap:14px;width:max-content}
+.sg-dial__read--centre .sg-dial__value{margin:0}
+.sg-dial__read--centre .sg-dial__lock{flex-basis:100%;margin-top:0}
+.sg-dial__label{margin:0}
+.sg-dial__value{margin:6px 0 0;line-height:48px}
+.sg-dial__lock{margin:10px 0 0;color:var(--electrum);animation:sg-accept 3100ms linear both}
+@keyframes sg-accept{0%,80.6%{color:var(--electrum)}100%{color:var(--silver)}}
+
+/* ── ВХОДЯЩИЕ — the inbox (desktop: a left column under the datum; phone: the bottom sheet) ─────────────────── */
+.sg-inbox{position:relative}
+.sg-root>.sg-inbox{position:absolute;left:var(--margin);top:calc(var(--datum-y) + 36px);width:max-content;max-width:min(560px,calc(50vw - var(--margin)))}
+.sg-inbox__head{margin:0 0 10px;display:flex;gap:16px;align-items:baseline}
+.sg-inbox__new{color:var(--ember)}
+.sg-inbox__empty{margin:4px 0 0}
+.sg-list{list-style:none;margin:0;padding:0;max-height:calc(100vh - var(--datum-y) - 150px);overflow-y:auto;scrollbar-width:none;
+  pointer-events:auto;overscroll-behavior:contain}
+.sg-list::-webkit-scrollbar{display:none}
+.sg-list.is-cut{-webkit-mask-image:linear-gradient(to bottom,transparent 0,transparent 16px,#000 44px);mask-image:linear-gradient(to bottom,transparent 0,transparent 16px,#000 44px)}
+.sg-item{margin:0;padding:0}
+.sg-row{display:grid;grid-template-columns:40px 4.6em 6px minmax(0,1fr);align-items:center;column-gap:12px;width:100%;min-height:32px;
+  margin:0;padding:3px 0;border:0;background:none;color:var(--silver);text-align:left;cursor:pointer;font:inherit}
+.sg-row__date{color:var(--pewter)}
+.sg-row__from{color:var(--silver);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sg-row--night{grid-template-columns:40px max-content minmax(0,1fr)}
+.sg-row--night .sg-row__dot{display:none}
+.sg-row__dot{width:6px;height:6px;border-radius:50%;background:var(--ember);opacity:0}
+.sg-row__dot.is-on{opacity:1}
+.sg-row__text{max-width:34ch;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color var(--d-120)}
+.sg-row:hover .sg-row__text,.sg-row:focus-visible .sg-row__text,.sg-row.is-open .sg-row__text{color:var(--white)}
+.sg-row:hover .sg-row__from,.sg-row:focus-visible .sg-row__from{color:var(--white)}
+.sg-row--night .sg-row__from{color:var(--white)}
+.sg-act{display:flex;align-items:center;gap:20px;margin:0 0 6px calc(82px + 4.6em)}
+.sg-reply{display:inline-flex;align-items:center;gap:10px;min-height:var(--hit);padding:0;border:0;background:none;color:var(--silver);cursor:pointer}
+.sg-reply[hidden]{display:none}
+.sg-reply__art{width:48px;height:48px;flex:none;overflow:visible}
+.sg-reply__path{fill:none;stroke:var(--silver);stroke-width:1px;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.sg-reply__dot{fill:var(--white);opacity:0}
+.sg-reply.is-playing .sg-reply__dot{opacity:1}
+.sg-reply.is-playing .sg-reply__path,.sg-reply:hover .sg-reply__path,.sg-reply:focus-visible .sg-reply__path{stroke:var(--white)}
+
+/* Phone: the sheet holds the inbox; rows are ≥ 56 px hit rows. */
+.sg-inbox--peek{padding:10px 16px 0}
+.sg-inbox--peek .sg-list,.sg-inbox--sheet .sg-list{max-height:none;overflow:visible}
+.sg-inbox--sheet{padding:4px 16px 16px}
+.sg-inbox--sheet .sg-inbox__head{display:none}
+.sg-inbox--peek .sg-row,.sg-inbox--sheet .sg-row{min-height:56px;grid-template-columns:36px 4.2em 6px minmax(0,1fr);column-gap:10px}
+.sg-inbox--peek .sg-row--night,.sg-inbox--sheet .sg-row--night{grid-template-columns:36px max-content minmax(0,1fr)}
+.sg-inbox--peek .sg-row__text,.sg-inbox--sheet .sg-row__text{max-width:none}
+.sg-inbox--sheet .sg-act{margin-left:calc(72px + 4.2em)}
+.sg-inbox--sheet .sg-act .verb{min-height:var(--hit-row)}
+
+@media (prefers-reduced-motion:reduce){
+  .sg-hot{animation:none}
+  .sg-glint.is-on{animation:sg-glint-rm 4200ms linear both}
+  .sg-dial__lock{animation:none;color:var(--silver)}
+}
