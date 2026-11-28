@@ -12,6 +12,11 @@
   position: fixed; inset: 0; z-index: var(--z-guide, 40); pointer-events: none;
   font-family: var(--font); text-transform: lowercase;   /* один шрифт — Nunito «SB Voice» (D-829); Inter снят */
 }
+/* H4e6 (основатель 27.11.2026: «меню инструментов просвечивается сквозь окна»): слой стоит на --z-guide (40) — выше слоя окон
+   (#windowLayer, --z-desk 20), и ряд с клавишами рисовался поверх стекла окна. Пока открыто окно (html.has-windows, shell.js),
+   слой — сразу под окнами: окно закрывает всё, что под ним. Без окон порядок слоёв прежний (перелёт столов не дорожает).
+   ОТКАТ: снять правило. */
+html.has-windows #sbDeskTools { z-index: calc(var(--z-desk) - 1); }
 #sbDeskTools .dt-block {
   position: absolute; left: 50%; top: var(--dt-top); transform: translateX(-50%);
   width: min(calc(100vw - 32px), max(calc(var(--dt-k) * 4 + 24px), 320px));
@@ -64,12 +69,12 @@
 #sbDeskTools .dt-keys.dim { opacity: 0; visibility: hidden; }
 #sbDeskTools .dt-key {
   position: relative; width: var(--dt-k); height: var(--dt-k); padding: 0; border: 0; border-radius: var(--r-round); background: transparent; cursor: pointer;
-  color: rgba(var(--dt-c), .8); font: var(--w-thin) clamp(var(--f-title), calc(var(--dt-k) * .44), var(--f-figure))/var(--lh-one) var(--font);
+  color: rgba(var(--dt-c), .8); font: var(--w-thin) clamp(var(--f-title), calc(var(--dt-k) * .5), var(--f-hero))/var(--lh-one) var(--font);   /* H4e6: знак растёт с клавишей до --f-hero (было до --f-figure 28) */
   text-shadow: 0 0 6px rgba(var(--dt-g), .55), 0 0 20px rgba(var(--dt-g), .28);
   -webkit-tap-highlight-color: transparent; touch-action: manipulation;
 }
 /* текучий кегль слова на клавише, потолок — ступень (type-scale, H4b); было calc(var(--dt-k) * .22) */
-#sbDeskTools .dt-key.word { font-size: clamp(var(--f-meta), calc(var(--dt-k) * .22), var(--f-lead)); font-weight: var(--w-text); letter-spacing: 0; }
+#sbDeskTools .dt-key.word { font-size: clamp(var(--f-meta), calc(var(--dt-k) * .22), var(--f-title)); font-weight: var(--w-text); letter-spacing: 0; }
 #sbDeskTools .dt-key.eq { color: rgba(var(--dt-c), .96); }
 #sbDeskTools .dt-key::before {
   content: ""; position: absolute; inset: 14%; border-radius: var(--r-round); pointer-events: none;

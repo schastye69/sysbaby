@@ -32,7 +32,11 @@
       x.fillStyle = g; x.fillRect(0, 0, n, n); return c;
     }
     /* ЗНАКИ СТРОКИ — не слово: с холста знаков поля (как их видит человек) берутся место и цвет каждого знака. */
+    /* снимок знаков строки, сделанный в миг принятого слова (D-1447): рисунок встаёт позже, когда листа уже нет */
+    var SNAP = null;
+    function snap() { SNAP = null; SNAP = signs(); return SNAP.list.length; }
     function signs() {
+      if (SNAP) { var sn = SNAP; SNAP = null; return sn; }
       var list = Array.prototype.slice.call(document.querySelectorAll("#sbVaultGate .vg-wf-signs")), out = [], im = null, i;
       for (i = 0; i < list.length; i++) { var rr = list[i].getBoundingClientRect(); if (rr.width > 4 && rr.height > 4 && list[i].width > 0) { im = list[i]; if (list[i].closest(".vg-sheet")) break; } }
       if (!im) return { list: out };
@@ -55,7 +59,7 @@
       var c = rgb.split(",").map(Number), warm = [Math.round(c[0] * 0.55 + 255 * 0.45), Math.round(c[1] * 0.55 + 210 * 0.45), Math.round(c[2] * 0.55 + 160 * 0.45)].join(",");
       return (starCache[k] = { core: glow(6, "255,246,230", dpr, 0.35), halo: glow(26, warm, dpr, 0.07) });
     }
-    return { signs: signs, starSprites: starSprites, rng: rng, cl: cl, sm: sm, sm5: sm5, glow: glow };
+    return { signs: signs, snap: snap, starSprites: starSprites, rng: rng, cl: cl, sm: sm, sm5: sm5, glow: glow };
   })();
 
   /* ── GAL: спрайты пыли и ядра, знаки строки — молодые звёзды ── */
@@ -74,30 +78,41 @@
     var SPAN = 2.2, PATH = null;
     function path() { if (!PATH) { PATH = new Path2D(LOGO_W); PATH.addPath(new Path2D(LOGO_O)); } return PATH; }
     /* шум: бесшовный 256², четыре канала (облака, второе зерно, гребни, мелочь) */
-    var NZ = null, NS = 256;
-    function noise() {
-      if (NZ) return NZ;
+    var NZ = null, NS = 256, NZP = [], NZ_SPEC = [[11, 4, 6, false], [73, 8, 5, false], [191, 4, 5, true], [257, 32, 2, false]];
+    /* D-1447: шум считается полосами по BAND строк, каждая полоса — своя задача: на слабом телефоне (×6) ни одна задача
+       главного потока не длиннее 200 мс */
+    var BAND = 32, cur = null;
+    function lattice(seed, f) { var r = LD.rng(seed), a = new Float32Array(f * f); for (var i = 0; i < a.length; i++) a[i] = r(); return a; }
+    function noiseStep() {
+      if (NZ) return true;
       var N = NS;
-      function lattice(seed, f) { var r = LD.rng(seed), a = new Float32Array(f * f); for (var i = 0; i < a.length; i++) a[i] = r(); return a; }
-      function fbm(seed, f0, oct, ridge) {
-        var lats = [], f, k; for (k = 0, f = f0; k < oct; k++, f *= 2) lats.push([lattice(seed + k * 31, f), f]);
-        var a = new Float32Array(N * N), mn = 1e9, mx = -1e9;
-        for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) {
-          var s = 0, w = 1, tw = 0;
-          for (k = 0; k < oct; k++) {
-            var lat = lats[k][0], ff = lats[k][1], fx = x / N * ff, fy = y / N * ff, ix = Math.floor(fx), iy = Math.floor(fy), tx = fx - ix, ty = fy - iy;
-            tx = tx * tx * tx * (tx * (tx * 6 - 15) + 10); ty = ty * ty * ty * (ty * (ty * 6 - 15) + 10);
-            var x0 = ix % ff, y0 = iy % ff, x1 = (x0 + 1) % ff, y1 = (y0 + 1) % ff, A = lat[y0 * ff + x0], B = lat[y0 * ff + x1], Cc = lat[y1 * ff + x0], Dd = lat[y1 * ff + x1];
-            var v = A + (B - A) * tx + (Cc - A) * ty + (A - B - Cc + Dd) * tx * ty;
-            if (ridge) { v = 1 - Math.abs(v * 2 - 1); v *= v; }
-            s += v * w; tw += w; w *= 0.5;
-          }
-          s /= tw; a[y * N + x] = s; if (s < mn) mn = s; if (s > mx) mx = s;
-        }
-        for (var i = 0; i < a.length; i++) a[i] = (a[i] - mn) / (mx - mn);
-        return a;
+      if (!cur) {
+        var sp = NZ_SPEC[NZP.length], lats = [], f, k;
+        for (k = 0, f = sp[1]; k < sp[2]; k++, f *= 2) lats.push([lattice(sp[0] + k * 31, f), f]);
+        cur = { lats: lats, oct: sp[2], ridge: sp[3], a: new Float32Array(N * N), y: 0, mn: 1e9, mx: -1e9 };
       }
-      NZ = [fbm(11, 4, 6, false), fbm(73, 8, 5, false), fbm(191, 4, 5, true), fbm(257, 32, 2, false)];
+      var c = cur, a = c.a, y1 = Math.min(N, c.y + BAND);
+      for (var y = c.y; y < y1; y++) for (var x = 0; x < N; x++) {
+        var s = 0, w = 1, tw = 0;
+        for (var q = 0; q < c.oct; q++) {
+          var lat = c.lats[q][0], ff = c.lats[q][1], fx = x / N * ff, fy = y / N * ff, ix = Math.floor(fx), iy = Math.floor(fy), tx = fx - ix, ty = fy - iy;
+          tx = tx * tx * tx * (tx * (tx * 6 - 15) + 10); ty = ty * ty * ty * (ty * (ty * 6 - 15) + 10);
+          var x0 = ix % ff, y0 = iy % ff, x1 = (x0 + 1) % ff, yb = (y0 + 1) % ff, A = lat[y0 * ff + x0], B = lat[y0 * ff + x1], Cc = lat[yb * ff + x0], Dd = lat[yb * ff + x1];
+          var v = A + (B - A) * tx + (Cc - A) * ty + (A - B - Cc + Dd) * tx * ty;
+          if (c.ridge) { v = 1 - Math.abs(v * 2 - 1); v *= v; }
+          s += v * w; tw += w; w *= 0.5;
+        }
+        s /= tw; a[y * N + x] = s; if (s < c.mn) c.mn = s; if (s > c.mx) c.mx = s;
+      }
+      c.y = y1;
+      if (c.y < N) return false;
+      for (var i = 0; i < a.length; i++) a[i] = (a[i] - c.mn) / (c.mx - c.mn);
+      NZP.push(a); cur = null;
+      if (NZP.length === NZ_SPEC.length) NZ = NZP;
+      return !!NZ;
+    }
+    function noise() {
+      while (!NZ) noiseStep();
       return NZ;
     }
     function nz(a, x, y) {
@@ -107,26 +122,40 @@
       return A + (Cc - A) * fy;
     }
     /* знак: резкая маска и три степени рассеяния (белые; цвет — при рисовании) */
-    var SIGN = null;
-    function signImgs() {
-      if (SIGN) return SIGN;
-      var N = 512, k = N / SPAN / 100, o = (N - 100 * k) / 2;
-      var base = document.createElement("canvas"); base.width = base.height = N; var bx = base.getContext("2d"); bx.setTransform(k, 0, 0, k, o, o); bx.fillStyle = "#fff"; bx.fill(path());
-      var d = bx.getImageData(0, 0, N, N).data, src = new Float32Array(N * N);
-      for (var i = 0; i < N * N; i++) src[i] = d[i * 4 + 3] / 255;
-      function blur(r) {
-        var a = Float32Array.from(src), b = new Float32Array(N * N), pass, y, xx, s, w = r * 2 + 1;
-        for (pass = 0; pass < 3; pass++) {
-          for (y = 0; y < N; y++) { s = 0; for (xx = -r; xx <= r; xx++) s += a[y * N + Math.min(N - 1, Math.max(0, xx))]; for (xx = 0; xx < N; xx++) { b[y * N + xx] = s / w; s += a[y * N + Math.min(N - 1, xx + r + 1)] - a[y * N + Math.max(0, xx - r)]; } }
-          for (xx = 0; xx < N; xx++) { s = 0; for (y = -r; y <= r; y++) s += b[Math.min(N - 1, Math.max(0, y)) * N + xx]; for (y = 0; y < N; y++) { a[y * N + xx] = s / w; s += b[Math.min(N - 1, y + r + 1) * N + xx] - b[Math.max(0, y - r) * N + xx]; } }
-        }
-        var mx = 0; for (var j = 0; j < a.length; j++) if (a[j] > mx) mx = a[j];
-        var c = document.createElement("canvas"); c.width = c.height = N; var x = c.getContext("2d"), im = x.createImageData(N, N);
-        for (j = 0; j < a.length; j++) { im.data[j * 4] = im.data[j * 4 + 1] = im.data[j * 4 + 2] = 255; im.data[j * 4 + 3] = Math.round(Math.min(1, a[j] / mx * 1.08) * 255); }
-        x.putImageData(im, 0, 0); return c;
+    var SIGN = null, SIGNP = null, N = 512, src = null;
+    /* D-1447: маска и три рассеяния — по одному за задачу (signStep), как и шум */
+    /* по шагу за задачу: маска; затем у каждого из трёх рассеяний — три прохода окна и сборка картинки */
+    var BL = null, TINTS = [["A", "255,140,60"], ["A", "255,190,120"], ["B", "255,206,150"], ["G", "255,226,186"]], tintN = 0;
+    function signStep() {
+      if (SIGN) { if (tintN < TINTS.length) { tint(TINTS[tintN][0], TINTS[tintN][1]); tintN++; return false; } return true; }
+      if (!src) {
+        var k = N / SPAN / 100, o = (N - 100 * k) / 2;
+        var base = document.createElement("canvas"); base.width = base.height = N; var bx = base.getContext("2d"); bx.setTransform(k, 0, 0, k, o, o); bx.fillStyle = "#fff"; bx.fill(path());
+        var d = bx.getImageData(0, 0, N, N).data; src = new Float32Array(N * N);
+        for (var i = 0; i < N * N; i++) src[i] = d[i * 4 + 3] / 255;
+        SIGNP = [];
+        return false;
       }
-      SIGN = { G: blur(3), B: blur(10), A: blur(28), tints: {} };
+      if (!BL) BL = { r: [3, 10, 28][SIGNP.length], a: Float32Array.from(src), b: new Float32Array(N * N), pass: 0 };
+      if (BL.pass < 3) { blurPass(BL); BL.pass++; return false; }
+      SIGNP.push(blurImg(BL.a)); BL = null;
+      if (SIGNP.length === 3) { SIGN = { G: SIGNP[0], B: SIGNP[1], A: SIGNP[2], tints: {} }; src = null; }
+      return false;
+    }
+    function signImgs() {
+      while (!SIGN) signStep();
       return SIGN;
+    }
+    function blurPass(o) {
+      var a = o.a, b = o.b, r = o.r, y, xx, s, w = r * 2 + 1;
+      for (y = 0; y < N; y++) { s = 0; for (xx = -r; xx <= r; xx++) s += a[y * N + Math.min(N - 1, Math.max(0, xx))]; for (xx = 0; xx < N; xx++) { b[y * N + xx] = s / w; s += a[y * N + Math.min(N - 1, xx + r + 1)] - a[y * N + Math.max(0, xx - r)]; } }
+      for (xx = 0; xx < N; xx++) { s = 0; for (y = -r; y <= r; y++) s += b[Math.min(N - 1, Math.max(0, y)) * N + xx]; for (y = 0; y < N; y++) { a[y * N + xx] = s / w; s += b[Math.min(N - 1, y + r + 1) * N + xx] - b[Math.max(0, y - r) * N + xx]; } }
+    }
+    function blurImg(a) {
+      var mx = 0, j; for (j = 0; j < a.length; j++) if (a[j] > mx) mx = a[j];
+      var c = document.createElement("canvas"); c.width = c.height = N; var x = c.getContext("2d"), im = x.createImageData(N, N);
+      for (j = 0; j < a.length; j++) { im.data[j * 4] = im.data[j * 4 + 1] = im.data[j * 4 + 2] = 255; im.data[j * 4 + 3] = Math.round(Math.min(1, a[j] / mx * 1.08) * 255); }
+      x.putImageData(im, 0, 0); return c;
     }
     function tint(name, rgb) {
       var S = signImgs(), key = name + "|" + rgb; if (S.tints[key]) return S.tints[key];
@@ -187,7 +216,7 @@
       g.save(); g.globalCompositeOperation = "source-over"; g.globalAlpha = a; g.translate(bx.x - ox, bx.y - oy); g.fillStyle = GR.p; g.fillRect(ox, oy, bx.w, bx.h); g.restore();
     }
     function starfield(n, rnd) { var a = []; for (var i = 0; i < n; i++) { var w = rnd(); a.push({ x: rnd(), y: rnd(), s: 0.4 + Math.pow(rnd(), 3) * 1.6, a: 0.25 + rnd() * 0.6, tw: rnd() * 6.28, blue: w > 0.88 }); } return a; }
-    return { path: path, noise: noise, nz: nz, signImgs: signImgs, tint: tint, granule: granule, cam: cam, project: project, planeM: planeM, signM: signM, drawSignImg: drawSignImg, buf: buf, put: put, px4: px4, Adapt: Adapt, grain: grain, starfield: starfield };
+    return { path: path, noise: noise, noiseStep: noiseStep, signStep: signStep, nz: nz, signImgs: signImgs, tint: tint, granule: granule, cam: cam, project: project, planeM: planeM, signM: signM, drawSignImg: drawSignImg, buf: buf, put: put, px4: px4, Adapt: Adapt, grain: grain, starfield: starfield };
   })();
 
   /* ── LD_ANIM: Г5 «Рождение» — протозвёздный диск (эталон, без финала «готово») ── */
@@ -195,7 +224,7 @@
     var L_ = LD, V = VOL, sm = L_.sm, cl = L_.cl, RM = env.reduced, LITE = env.lite, rnd = L_.rng(55);
     var W = 0, H = 0, C = { x: 0, y: 0, r: 100 }, RR = 100, K = 100, D = 3.4, SW = 0.34;
     var AQ = null, BK = null, FR = null, Z = null, stars = [], hero = null, spr = null, jetS = null;
-    var spin = 0, bright = 0, rotS = -0.55, finRot = null, rings = [], fc = 0;
+    var spin = 0, bright = 0, rotS = -0.55, finRot = null, rings = [], fc = 0, f0 = 0;
     function build() {
       RR = Math.min(C.r * 1.6, W * 0.46, H * 0.5, C.y * 1.05); K = RR * D;
       Z = V.noise(); V.signImgs(); V.granule();
@@ -314,6 +343,8 @@
         if (fin < 0) rotS += dt * (RM ? 0.008 : 0.045); else { if (finRot === null) finRot = rotS; rotS = finRot * (1 - settle); }
         bright = 0.15 + 0.55 * c * heat + 0.3 * flash;
         var cm = V.cam(el, D), q = AQ.tick(dt);
+        /* D-1447: первые кадры — малым буфером (самые дорогие: всё заводится впервые; слой ещё только проявляется) */
+        if (f0 < 3) { q = Math.min(q, LITE ? 0.07 : 0.09); f0++; }
         var P = { H: 0.46 + (0.11 - 0.46) * c, S: 1.7 + (1.0 - 1.7) * c, Rs: 0.95 + (0.55 - 0.95) * c, spin: spin, heat: heat, kab: 0.55 * (1 - 0.5 * settle), jets: jets, form: form, flash: flash, acc: heat * (0.2 + 0.8 * c) * sm((p - 0.2) / 0.4) + (fin >= 0 ? 0.3 : 0) };
         /* мягкое (лучи по слоям) — самая дорогая часть кадра: на слабом устройстве или в тяжёлый кадр оно считается
            через кадр, а между — рисуется прежний буфер (газ движется медленно, глазу не видно) */
@@ -360,7 +391,7 @@
     var spill = document.createElement("div"); spill.className = "sbb-spill";
     var cv = document.createElement("canvas"); cv.className = "sbb-cv";
     layer.appendChild(spill); layer.appendChild(cv);
-    var g = cv.getContext("2d"), A = null, W = 0, H = 0, DPR = 1, RES = 1, C = { x: 0, y: 0, r: 100 };
+    var g = cv.getContext("2d"), A = null, W = 0, H = 0, DPR = 1, RES = 0.5, C = { x: 0, y: 0, r: 100 }, fastFor = 0, lowCap = false, last0 = false;
     var raf = 0, run = false, t0 = 0, last = 0, finAt = 0, pSm = 0, slowEma = 16, slowFor = 0, lastLight = -1;
     function center() { W = window.innerWidth; H = window.innerHeight; return { x: W / 2, y: H * (W < 700 ? 0.42 : 0.45), r: Math.min(W * 0.3, H * 0.22) }; }
     function size(rebuild) {
@@ -373,8 +404,15 @@
     function onResize() { if (A) size(true); }
     function draw(now) {
       var dt = last ? Math.min(0.1, (now - last) / 1000) : 0.016; last = now;
-      /* слабый кадр полсекунды подряд — плотность пикселей холста падает (до половины) */
-      if (dt < 0.09) { slowEma += (dt * 1000 - slowEma) * 0.08; slowFor = slowEma > 19 ? slowFor + dt : 0; if (slowFor > 0.5 && RES > 0.5) { RES = Math.max(0.5, RES * 0.8); slowFor = 0; slowEma = 16; size(false); } }
+      /* слабый кадр полсекунды подряд — плотность пикселей холста падает (до половины).
+         D-1447: рисунок встаёт с половинной плотностью (передача холста — самая дорогая часть кадра на слабом
+         устройстве, ×6 — до 150 мс на полной) и поднимает её, только пока кадры быстрые; очень долгий кадр — сразу вниз */
+      if (dt >= 0.09) { if (last0 && RES > 0.5) { RES = 0.5; size(false); } fastFor = 0; }
+      else { slowEma += (dt * 1000 - slowEma) * 0.08; slowFor = slowEma > 19 ? slowFor + dt : 0; fastFor = slowEma < 17 ? fastFor + dt : 0;
+        if (slowFor > 0.5 && RES > 0.5) { RES = Math.max(0.5, RES * 0.8); slowFor = 0; slowEma = 16; size(false); }
+        else if (fastFor > 0.4 && RES < 1 && !lowCap) { RES = Math.min(1, RES * 1.25); fastFor = 0; size(false); } }
+      if (RES <= 0.5 && dt >= 0.09) lowCap = true;
+      last0 = true;
       var t = (now - t0) / 1000, tp = reduced ? 0.6 : Math.min(0.985, 1 - Math.exp(-t / 2.2));
       pSm += (tp - pSm) * Math.min(1, dt * 3.2);
       var fin = finAt ? Math.min(1, (now - finAt) / 900) : -1;
@@ -400,9 +438,31 @@
     };
   }
   /* заранее, пока человек пишет слово: шум, знак, грануляция — в простое */
-  function warm() {
-    var go = function () { try { VOL.noise(); VOL.signImgs(); VOL.granule(); } catch (e) { /* позже, при старте */ } };
-    if (window.requestIdleCallback) window.requestIdleCallback(go, { timeout: 2500 }); else setTimeout(go, 400);
+  /* D-1447: прогрев — шагами, каждый своей задачей (четыре канала шума, маска, три рассеяния, грануляция): на слабом
+     телефоне ни одна задача главного потока не длиннее 200 мс (login-responsive-check). warm(then) — в простое;
+     then — когда всё готово; спешка (рисунок уже нужен) — следующий шаг сразу следующей задачей. */
+  var warmed = false, warming = false, waiters = [], hurry = false, busy = null;
+  /* пока ворота думают (растяжка, склад), прогрев стоит: ни одного шага на главном потоке, который делят с работой
+     замка, — иначе путь нового дома шёл бы дольше пути с домом, а время ответа обязано быть одним (D-1357) */
+  function step() {
+    try {
+      if (!VOL.noiseStep()) return false;
+      if (!VOL.signStep()) return false;
+      VOL.granule();
+    } catch (e) { /* позже, при старте */ }
+    return true;
   }
-  window.sbBirthLive = { mount: mount, warm: warm };
+  function next() {
+    if (!hurry && busy && busy()) { setTimeout(next, 250); return; }
+    if (step()) { warmed = true; warming = false; var w = waiters; waiters = []; w.forEach(function (f) { f(); }); return; }
+    if (!hurry && window.requestIdleCallback) window.requestIdleCallback(next, { timeout: 1500 }); else setTimeout(next, 0);
+  }
+  function warm(then, now) {
+    if (then) { if (warmed) { then(); return; } waiters.push(then); }
+    if (now) hurry = true;
+    if (warmed || warming) return;
+    warming = true;
+    if (!hurry && window.requestIdleCallback) window.requestIdleCallback(next, { timeout: 1500 }); else setTimeout(next, 0);
+  }
+  window.sbBirthLive = { mount: mount, warm: warm, pause: function (f) { busy = typeof f === "function" ? f : null; }, snap: function () { try { return LD.snap(); } catch (e) { return 0; } } };
 })();

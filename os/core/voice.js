@@ -924,8 +924,19 @@
     V.onReady = function () { ready(p); };
     if (p.typing) t.classList.add("sb-typing");
     else ready(p);
-    /* запас по часам — если кадров нет (вкладка в тени), сборка всё равно «кончилась» */
-    p.typT = setTimeout(function () { ready(p); }, Math.max(0, (V.tEnd - E.T) * 1000) + 120);
+    /* запас по часам — если кадров нет (вкладка в тени), сборка всё равно «кончилась».
+       H4e6 (основатель 27.11.2026: «Когда заходишь на страницу, текст голоса и пропадает»): на входе планшет занят,
+       кадры редкие, а шаг кадра ограничен — пыль собиралась дольше часов, запас объявлял фразу готовой, слова-кнопки
+       подчёркивались, а букв ещё не было, и касание по черте отпускало место невидимой фразы. Теперь, пока страница
+       видна и кадры идут, готовность приходит с буквами (V.onReady); запас по часам — только для скрытой вкладки, а если
+       кадры совсем встали (ещё 6 с), фраза встаёт целиком (finish). Касание во время сборки, как прежде, допечатывает. */
+    var typWait = 0;
+    p.typT = setTimeout(function typCheck() {
+      if (cur !== p || p.gone || p.readyDone) return;
+      if (!p.typing || doc.hidden) { ready(p); return; }
+      if ((typWait += 400) > 6000) { finish(); return; }
+      p.typT = setTimeout(typCheck, 400);
+    }, Math.max(0, (V.tEnd - E.T) * 1000) + 120);
     placeShade(p); shade.classList.add("on"); shade.classList.toggle("quiet", !!p.quiet);
     doorOn(p.kind === "event" && !p.quiet && !p.user, p.src === "knock");
     live.textContent = ""; var said = p.plain; setTimeout(function () { if (cur === p) live.textContent = said; }, 40);

@@ -686,6 +686,7 @@ html[data-theme="light"] {
   --accent-ink: var(--accent);
   --accent-ink-deep: color-mix(in oklab, var(--accent-ink) 85%, #000);   /* «ещё не спрошено» на стекле Настроек — мера 4.5 (light-contrast); раньше — ветка темы в settings.css */
   --danger: #b03a2e;
+  --danger-deep: color-mix(in oklab, var(--danger) 85%, #000);   /* «выйти» в Настройках на свету — мера 4.5 (light-contrast) */
   --warn: #8a6a00;
   --good: #2d7a52;
   --bad: #b3261e;
@@ -2502,6 +2503,29 @@ html.is-compact #sbControlCenter.krupno #sbCcThemeBlock { margin-top: 4px; }
 html.is-compact #sbControlCenter.krupno .sv-choice:has(#sbCcSide) { margin: 0 0 4px; }
 html.is-compact #sbControlCenter.krupno .sv-head { margin-top: 10px; }
 html.is-compact #sbControlCenter.krupno .sv-choice:has(#sbCcLang) { margin-top: 10px; }
+/* ── БЫСТРОЕ МЕНЮ — КОМПАКТНО НА ЛЮБОМ ЭКРАНЕ · H4e6 (основатель 27.11.2026: «Меню быстрого управления по-прежнему не
+   компактное. Боюсь представить, что будет на маленьких устройствах»). Слова, числа (≥ 30 px), порядок и все строки прежние
+   (pult-krupno); сжат воздух и ширина: плита уже (до 372 px, было 400), слова строк — ступенью чтения (13) в одну высоту строки
+   интерфейса, промежутки между группами — 4…10 px. На малом телефоне (≤ 380 px) плита — во всю ширину без полей стола.
+   ОТКАТ: снять этот блок. */
+#sbControlCenter.krupno { width: min(372px, calc(100vw - 20px)); padding: 16px 18px 12px; }
+#sbControlCenter.krupno .sv-lab { margin-top: 2px; }
+#sbControlCenter.krupno .sv-flow .sb-range { height: 20px; margin-top: 0; }
+#sbControlCenter.krupno .kn-hint { margin-top: 10px; }
+#sbControlCenter.krupno :is(.sv-rows, .sv-stops) { margin-top: 2px; font-size: var(--f-read); line-height: var(--lh-ui); }
+#sbControlCenter.krupno :is(.cc-toggle, .chip, .btn) { padding: 4px 0; }
+#sbControlCenter.krupno #sbCcThemeBlock { margin-top: 4px; }
+#sbControlCenter.krupno .sv-choice:has(#sbCcSide) { margin: 0 0 6px; }
+#sbControlCenter.krupno :is(#sbTipBulb, .sv-other > .sv-links:not(.kn-home), .sv-merge) { margin-top: 2px; }
+#sbControlCenter.krupno .sv-head, #sbControlCenter.krupno .sv-choice:has(#sbCcLang) { margin-top: 10px; }
+@media (max-width: 380px) { #sbControlCenter.krupno { width: auto; padding: 12px 14px 10px; } }
+/* слова пульта на пальце — 34 px (было 40, D-879-TOUCH-TARGETS): строка за строкой это давало +6 px на каждой из 12 строк;
+   поле касания по-прежнему выше видимого слова (13 px) больше чем вдвое. ОТКАТ: снять правило. */
+html.is-touch #sbControlCenter.krupno :is(.cc-toggle, .chip, .sv-more, .sv-links button) { min-height: 34px; }
+/* «свет» и «кнопки окон» — одной строкой, когда помещаются (иначе переносятся сами); «инструменты» — всегда с новой строки */
+#sbControlCenter.krupno #sbCcThemeBlock { flex: 0 1 auto; margin-right: 14px; }
+#sbControlCenter.krupno .sv-choice:has(#sbCcSide) { order: 5; flex: 0 1 auto; }
+#sbControlCenter.krupno .cc-grid::before { content: ""; order: 6; flex: 0 0 100%; height: 0; }
 
 /* ============================================================== desktop §4 */
 #desktop { position: fixed; inset: 0; z-index: var(--z-inside); opacity: 0; transition: opacity var(--t-scene) var(--ease-enter); }
@@ -4060,6 +4084,7 @@ html.sb-turbo .window, html.sb-turbo .dock-shelf, html.sb-turbo .desk-icon .icon
 .term-echo { color: var(--ink-3); }
 .term-dim { color: var(--ink-3); }
 .term-welcome { color: var(--accent-ink); }
+html[data-theme="light"] .term-welcome { color: var(--accent-ink-deep); }   /* мера 4.5 на светлом стекле (light-contrast) */
 .term-line { display: flex; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 .term-prompt { color: var(--accent-ink); }
 .term-input { flex: 1; background: none; border: 0; outline: none; font-family: var(--mono); font-size: var(--f-ui); }
@@ -5129,6 +5154,7 @@ svg.sb-znak.sb-znak-app { color: var(--glyph-2); }
 #windowLayer :is(.sb-lock-call, .sb-hand-btn, .st-btn, .lt-tb, .ky-acts button, .ky-cost button, .fv-tool):focus-visible { box-shadow: var(--brass); }
 /* опасное слово — тёплый красный, только цветом */
 #windowLayer#windowLayer :is(.ky-del, .btn.danger, .st-btn.danger), .panel .btn.danger { color: rgb(var(--danger-rgb)); }   /* сильнее слова без рамки */
+html[data-theme="light"] #windowLayer#windowLayer .st-btn.danger { color: var(--danger-deep); }   /* «выйти» на светлом стекле Настроек — мера 4.5 (light-contrast) */
 #windowLayer .lt-tb.night { color: var(--ink-2); border: 0; }
 #windowLayer :is(.lt-tb[aria-pressed="true"], .lt-tb.on) { color: var(--ink); }
 #windowLayer :is(button, [role=button]) svg.sb-znak:not(.light svg) { width: 16px; height: 16px; }

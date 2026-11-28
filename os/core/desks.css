@@ -34,7 +34,7 @@
 #sbDesksGauge.p { right: 2px; gap: 12px; }
 #sbDesksGauge.off, html.has-windows #sbDesksGauge, html.sb-kb #sbDesksGauge { opacity: 0; pointer-events: none; }
 #sbDesksGauge .thr { position: absolute; left: 50%; width: 1.5px; margin-left: -.75px; border-radius: var(--r-round); pointer-events: none; background: linear-gradient(180deg, rgba(var(--sbd-g), 0), rgba(var(--sbd-g), .24) 22%, rgba(var(--sbd-c), .28) 50%, rgba(var(--sbd-g), .24) 78%, rgba(var(--sbd-g), 0)); box-shadow: 0 0 6px rgba(var(--sbd-g), .18); }
-#sbDesksGauge button { position: relative; z-index: 1; width: 56px; height: 56px; border: 0; background: transparent; cursor: pointer; padding: 0; border-radius: var(--r-round); display: grid; place-items: center; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#sbDesksGauge button { position: relative; z-index: 1; width: 56px; height: 56px; border: 0; background: transparent; cursor: pointer; padding: 0; border-radius: var(--r-round); display: grid; place-items: center; touch-action: none;   /* H4e6: палец, чуть сдвинувшись, не начинает прокрутку (pointercancel) — касание звезды доходит (desks.js wire) */ -webkit-tap-highlight-color: transparent; }
 #sbDesksGauge button:focus-visible { outline: 1px solid rgba(var(--sbd-g), .7); outline-offset: -4px; }
 #sbDesksGauge .st { position: relative; width: 44px; height: 44px; display: grid; place-items: center; pointer-events: none; }
 #sbDesksGauge .cr { position: relative; width: 12px; height: 12px; border-radius: var(--r-round); /* своя краска: белая сердцевина звезды шкалы — свет показа, тема красит только её ореол (--sbd-c, --sbd-g) */ background: radial-gradient(circle, rgba(255, 255, 255, .95) 0, rgba(var(--sbd-c), .92) 34%, rgba(var(--sbd-g), .6) 68%, rgba(var(--sbd-g), 0) 100%); box-shadow: 0 0 8px 1px rgba(var(--sbd-g), .32); opacity: .58; transition: width var(--t-drift) var(--ease-enter), height var(--t-drift) var(--ease-enter), opacity var(--t-scene) var(--ease-move), transform var(--t-move) var(--ease-enter), box-shadow var(--t-drift) var(--ease-move); }
@@ -45,6 +45,9 @@
 #sbDesksGauge button.tap .cr { opacity: 1; transform: scale(1.25); }
 #sbDesksGauge .nm { position: absolute; right: 100%; top: 50%; transform: translate(8px, -50%); opacity: 0; transition: opacity var(--t-move) var(--ease-move), transform var(--t-move) var(--ease-enter); pointer-events: none; white-space: nowrap; font: 400 16px/1 var(--font); color: rgba(var(--sbd-c), .94); /* своя краска: тьма под именем звезды — как в показе, чтобы имя читалось над любыми обоями */ text-shadow: 0 1px 10px rgba(0, 0, 0, .95), 0 0 16px rgba(var(--sbd-g), .4); }
 #sbDesksGauge button.show .nm { opacity: 1; transform: translate(0, -50%); }
+/* H4e6: на узком экране имя у звезды стола инструментов не ложится на правый столбец клавиш расчёта (~1,7 с после перелёта);
+   имя стола и так показывает надпись перелёта (#sbDesksTitle). ОТКАТ: снять правило. */
+@media (max-width: 700px) { #sbDesksGauge button.tools.show .nm { opacity: 0; } }
 @media (hover: hover) and (pointer: fine) { :where(html:not([data-input="touch"])) #sbDesksGauge button:hover .cr { opacity: 1; transform: scale(1.25); } :where(html:not([data-input="touch"])) #sbDesksGauge button:hover .nm { opacity: 1; transform: translate(0, -50%); } }
 #sbDesksGauge .spk, #sbDesksGauge .blm { position: absolute; left: 50%; top: 0; z-index: 2; border-radius: var(--r-round); opacity: 0; pointer-events: none; }
 #sbDesksGauge .spk { width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; /* своя краска: искра в полёте белая, как в показе; цвет темы — в её ореоле */ background: #fff; box-shadow: 0 0 5px 2px rgba(var(--sbd-c), .9), 0 0 16px 5px rgba(var(--sbd-g), .5); }

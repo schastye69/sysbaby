@@ -953,7 +953,7 @@ function emblemFrame(t, dt) {
   rimBoost *= Math.exp(-dt / 0.9);
   if (opening) rimFlare = Math.min(1, rimFlare + dt * 3); else rimFlare *= Math.exp(-dt / 0.4);
   if (P.emblem === 'key') for (let i = 0; i < 256; i++) { if (KF[i] && t >= KF[i]) { KEY[i] = rb() & 1; KL[i] = 1; KF[i] = 0; } KL[i] *= Math.exp(-dt / 0.5); }
-  if (P.emblem === 'limb') for (const w of WH) { w.a += (w.ta - w.a) * Math.min(1, dt * (opening ? 5.2 : 14));   /* H4e D-1297: колёса доходят на место за короткое открытие */ for (let i = 0; i < w.n; i++) w.l[i] *= Math.exp(-dt / 0.5); }
+  if (P.emblem === 'limb') for (const w of WH) { w.a += (w.ta - w.a) * Math.min(1, dt * (opening ? 5.2 : 14));   /* H4e D-1297: колёса доходят на место за короткое открытие */ if (!opening) for (let i = 0; i < w.n; i++) w.l[i] *= Math.exp(-dt / 0.5); }   /* D-1448: при открытии закрашенные печати колёс не гаснут */
   if (P.emblem === 'sphere') {
     if (!RM) { yaw += dt * (0.13 + spin); spin *= Math.exp(-dt / 0.5); }
     for (let i = 0; i < SPN; i++) SPL[i] *= Math.exp(-dt / 0.6);
@@ -1024,7 +1024,7 @@ function frame(now) {
      на слабом телефоне то, что не уложилось, остывает и перерисовывается следующим кадром: волна идёт медленнее,
      а нажатие и ответ двери не ждут её. */
   if (act.length && !quietN) {
-    const k = Math.exp(-dt / 0.55), keep = [], a0 = performance.now();
+    const k = Math.exp(-dt / (opening ? OPEN_COOL : 0.55)), keep = [], a0 = performance.now();   /* D-1448: закрашенное при открытии держится до угасания */
     let n = 0;
     for (; n < act.length; n++) {
       if ((n & 63) === 63 && performance.now() - a0 > ACT_BUDGET) break;
@@ -1089,8 +1089,13 @@ function spinFrame(dt) {
 /* Основатель 16.11.2026: «анимация входа в сейф слишком долгая; НЕТ приближения в конце — прокрутилось и точка».
    Было: 14 раундов по 0,1 с, затем блок разлетался и колёса раздувались (≈ 2,6 с, приближение в конце).
    Стало: OPEN_ROUNDS раундов по OPEN_RD — колёса прокручиваются на место, затем сцена тихо гаснет на месте,
-   ничего не растёт и не разлетается (apart остаётся 0). ОТКАТ: вернуть 14 × 0,1 с и фазу apart (D-1297). */
-const OPEN_ROUNDS = 10, OPEN_RD = 0.08, OPEN_FADE = 0.42;
+   ничего не растёт и не разлетается (apart остаётся 0). ОТКАТ: вернуть 14 × 0,1 с и фазу apart (D-1297).
+   H4e6, D-1448 (основатель 27.11.2026): «при анимации входа абсолютно все шифры должны закрашиваться. Все круги … так, как
+   было раньше. Но раньше еще было приближение, а я говорил, что приближения не было». Раньше всё поле закрашивала волна от
+   центра (фаза apart: erase-волна по всей решётке) — вместе с раздуванием колёс. Теперь: волна закраски идёт от центра с
+   первого раунда и доходит до углов экрана к последнему (OPEN_ROUNDS × OPEN_RD); печати колёс закрашиваются по кругу,
+   раунд за раундом, все до одной; закрашенное не остывает до угасания (OPEN_COOL). Приближения нет: apart = 0. */
+const OPEN_ROUNDS = 10, OPEN_RD = 0.08, OPEN_FADE = 0.42, OPEN_COOL = 3;
 function stepOpen(t) {
   const o = opening, e = t - o.t0, RD = OPEN_RD, NR = OPEN_ROUNDS, n = Math.min(NR, Math.floor(e / RD) + 1);
   if (e < NR * RD) {
@@ -1099,6 +1104,8 @@ function stepOpen(t) {
       for (let r = 1; r < 4; r++) { const row = [0, 1, 2, 3].map((q) => [ST[r * 4 + q], SH[r * 4 + q]]); for (let q = 0; q < 4; q++) { ST[r * 4 + q] = row[(q + r) & 3][0]; SH[r * 4 + q] = row[(q + r) & 3][1]; } } // ShiftRows
       for (let k = 0; k < 16; k++) { if (rf() < 0.5) ST[k] = rbits(); SL[k] = Math.max(SL[k], 0.55); } // SubBytes
       colGlow[o.round & 3] = 1; // MixColumns
+      if (o.round === 1) ripples.push({ t0: t, r0: 0, v: Math.hypot(vw, vh) / (NR * RD - 0.04), w: 0.95, tint: 2, flip: false, done: -1 });   // D-1448: закраска всей решётки
+      for (const w of WH) { const upto = Math.ceil((o.round / NR) * w.n); for (let i = 0; i < upto; i++) w.l[i] = 1; }   // D-1448: все печати колёс
       if (o.round === Math.round(NR / 2) || o.round === NR) ripples.push({ t0: t, r0: R, v: Math.max(vw, vh) * 1.4, w: 0.8, tint: 2, flip: true, done: -1 });
     }
     const pr = (e % RD) / RD;
@@ -1106,7 +1113,7 @@ function stepOpen(t) {
   } else {
     for (let r = 0; r < 4; r++) rowShift[r] = 0;
     apart = 0;   // nothing grows, nothing flies apart: no zoom at the end
-    if (!o.fade) { o.fade = t; for (let k = 0; k < 16; k++) SL[k] = 1; root.style.transition = 'opacity ' + OPEN_FADE + 's ease'; root.style.opacity = '0'; }
+    if (!o.fade) { o.fade = t; for (let k = 0; k < 16; k++) SL[k] = 1; for (const w of WH) w.l.fill(1); root.style.transition = 'opacity ' + OPEN_FADE + 's ease'; root.style.opacity = '0'; }
     if (t - o.fade >= OPEN_FADE && !o.fired) { o.fired = 1; o.done && o.done(); }
   }
 }

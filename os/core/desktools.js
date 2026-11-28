@@ -199,7 +199,11 @@
   function layout() {
     if (!ov || !DT) return;
     var W = window.innerWidth, H = window.innerHeight, Hd = DT.Hd();
-    var k = Math.round(Math.max(44, Math.min(72, W / 7.4, H / 12.5)));
+    /* H4e6 (основатель 27.11.2026: «У калькулятора слишком маленькие кнопочки… Калькулятор делать просто крупным и по центру…
+       в полный размер… Но растягивать точно не надо»): клавиша — как у настоящего калькулятора, до 88 px (было до 72 и
+       W/7.4, H/12.5 — на планшете 56…58); пропорции сетки 4 × 5 и просветы прежние, ширина — по клавишам, не по столу.
+       Не помещается между цифрами и рядом — мельчает, как прежде (цикл ниже). */
+    var k = Math.round(Math.max(44, Math.min(88, W / 6.2, H / 9.2)));   /* W/6.2: на телефоне клавиши не заходят под шкалу столов справа */
     var showKeys = tool === "calc" && !keys.hidden;
     /* под цифрами света: одна подпись у строки счёта, две — у счётчика, ожидания и города */
     var lineH = Math.max(44, Math.round(Hd * 0.5)), capH = lineish() ? 56 : 84;
@@ -210,7 +214,8 @@
     var grid = deskOn && tray && !tray.hidden && !root.classList.contains("is-short");
     if (grid) { capH = lineish() ? 56 : 96; lineH = 0; }
     var keysH = showKeys ? 5 * k + 4 * 8 : 0, paneH = !lineish() ? pane.offsetHeight || 60 : 0;
-    var footH = 34, room = H - 76 - safeTop();   /* 76 — низ у голоса */
+    /* H4e6: пустые «тихие слова» (на столе инструментов их нет) места не берут — клавиши расчёта получают эти 34 px */
+    var footH = foot && !foot.hidden && foot.offsetHeight ? 34 : 0, room = H - 76 - safeTop();   /* 76 — низ у голоса */
     if (deskOn && tray && !tray.hidden) { paintTray(); var tr0 = tray.getBoundingClientRect(); if (tr0.height) room = Math.min(room, Math.round(tr0.top - 12) - safeTop()); }
     if (grid) room -= figPad();
     var B = Hd + capH + (lineish() && lineH ? lineH + 14 : 0) + keysH + paneH + (grid ? 14 : 18 + 40) + footH;

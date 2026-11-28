@@ -85,7 +85,7 @@
   function TH() { var m = window.sbGetWallpaperMood ? window.sbGetWallpaperMood() : "studio"; return THEMES[m] || THEMES.studio; }
 
   /* ---------- состояние ---------- */
-  var n = 1, cur = 0, busy = false, built = false;
+  var n = 1, cur = 0, busy = false, built = false, want = -1;
   var gauge = null, fx = null, veil = null, breathEl = null, title = null, box = null, own = [];
   /* имена своих столов (null — имя по умолчанию); стол инструментов имени не меняет */
   var names = [], ids = ["main"], removed = [];
@@ -499,7 +499,9 @@
   /* ---------- перейти ---------- */
   function go(to, opt) {
     opt = opt || {};
-    if (busy || !built) return false;
+    if (!built) return false;
+    if (busy) { if (opt.tap) want = to; return false; }
+    want = -1;
     atDone = true;   /* человек сам выбрал стол — запомненный при входе больше не подставляется */
     if (to < 0 || to >= total()) { bump(to < 0 ? -1 : 1); return false; }
     if (to === cur) { if (to === toolsAt() && opt.tool && window.sbDeskTools) window.sbDeskTools.tool(opt.tool); return true; }
@@ -535,6 +537,7 @@
     /* конец перелёта: в кадре — только пометки «что видно»; снять анимации (их конечное состояние то же, что после снятия:
        уходящий стол уже скрыт, пришедший — на месте) и вернуть стекло — в простое */
     var done = function (myAnims, myEls) { fw0(); busy = false; settle();
+      /* H4e6: звезду коснулись посреди перелёта — летим туда сразу после посадки (одно касание = один перелёт) */ if (want >= 0) { var w0 = want; want = -1; if (w0 !== cur) later(function () { go(w0); }); }
       /* свет середины нового стола — его закреплённое или ничего (core/desktools.js: showPinned по «sb:desk») */ idle(function () { cleanAll(myAnims, myEls); }, 250); var o = OV(); if (o) mark(o, "data-sbd-flight", false);
       /* стекло значков возвращается в простое — не в кадре конца перелёта */
       if (useComp()) idle(function () { if (!busy) flightMarks(false, false); }, 400);
@@ -595,13 +598,24 @@
   }
   var st = null;
   function wire() {
-    var lpT = 0, lpAt = 0;
-    gauge.addEventListener("click", function (ev) { var b = ev.target.closest && ev.target.closest("button[data-g]"); if (!b) return; ev.stopPropagation(); if (performance.now() - lpAt < 800) return; go(+b.dataset.g); });
+    var lpT = 0, lpAt = 0, tapAt = 0, pd = null;
+    /* ОДНО КАСАНИЕ — ОДИН ПЕРЕЛЁТ (H4e6, основатель 27.11.2026: «очень часто просто нажимаешь, и меню только подсвечивается,
+       но сам рабочий стол не переключается»): палец чуть сдвигался или click не приходил (браузер съедал его как начало
+       жеста), а касание посреди перелёта молча терялось. Теперь касание пальцем/пером звезды переключает стол на отпускании
+       (сдвиг до 24 px, короче долгого касания), а касание в перелёте — запоминается и исполняется после посадки.
+       Мышь — click, как прежде; click, пришедший следом за касанием, не повторяет перелёт. */
+    gauge.addEventListener("click", function (ev) { var b = ev.target.closest && ev.target.closest("button[data-g]"); if (!b) return; ev.stopPropagation(); if (performance.now() - lpAt < 800 || performance.now() - tapAt < 700) return; go(+b.dataset.g, { tap: true }); });
+    gauge.addEventListener("pointerup", function (ev) {
+      var d = pd; pd = null; if (!d || ev.pointerType === "mouse" || ev.pointerId !== d.id) return;
+      if (performance.now() - lpAt < 800 || Math.abs(ev.clientX - d.x) > 24 || Math.abs(ev.clientY - d.y) > 24) return;
+      tapAt = performance.now(); clearTimeout(lpT); go(d.g, { tap: true });
+    });
     /* правая кнопка / долгое касание звезды — меню стола */
     gauge.addEventListener("contextmenu", function (ev) { var b = ev.target.closest && ev.target.closest("button[data-g]"); if (!b) return; ev.preventDefault(); ev.stopPropagation(); var r = b.getBoundingClientRect(); starMenu(+b.dataset.g, Math.round(r.left - 190), Math.round(r.top)); });
     gauge.addEventListener("pointerdown", function (ev) { var b = ev.target.closest && ev.target.closest("button[data-g]"); if (!b || ev.pointerType === "mouse") return; clearTimeout(lpT);
+      pd = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, g: +b.dataset.g };
       lpT = setTimeout(function () { lpAt = performance.now(); var r = b.getBoundingClientRect(); starMenu(+b.dataset.g, Math.round(r.left - 190), Math.round(r.top)); }, 520); });
-    ["pointerup", "pointercancel", "pointerleave"].forEach(function (k) { gauge.addEventListener(k, function () { clearTimeout(lpT); }); });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function (k) { gauge.addEventListener(k, function () { clearTimeout(lpT); if (k === "pointercancel") pd = null; }); });
     doc.addEventListener("pointerdown", function (ev) { st = ev.pointerType === "touch" && onDesk(ev.target) ? { x: ev.clientX, y: ev.clientY, t: performance.now() } : null; }, true);
     doc.addEventListener("pointercancel", function () { st = null; }, true);
     doc.addEventListener("pointerup", function (ev) {

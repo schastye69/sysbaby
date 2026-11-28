@@ -47,13 +47,13 @@
      стало бы говорить (second-key-check, gate-truth-check). Замок говорит
      «ключ поворачивается» вестью vault:turning (store.js, deriveKEK); дверь
      в это время показывает работу диафрагмой, а сцена стоит. */
-  var held = false, hooked = false;
+  var held = false, hooked = false, resting = false;
   function hookBus() {
     if (hooked || !window.sbBus || !window.sbBus.on) return;
     hooked = true;
     window.sbBus.on("vault:turning", function (p) {
       held = !!(p && p.on);
-      if (current) current.hold(held);
+      if (current) current.hold(held || resting);
     });
   }
   /* Где лежат файлы сцен — у самого этого файла: дома os/core/doors/, на
@@ -259,7 +259,7 @@
     };
     current = h;
     hookBus();
-    if (held) h.hold(true);
+    if (held || resting) h.hold(true);
     return h;
   }
 
@@ -288,6 +288,9 @@
     prefer: function (name) { preferred = name === "sobor" || name === "porog" ? name : null; },
     mount: mount,
     current: function () { return current ? current.state() : null; },
+    /* D-1447: пока поверх ворот играет «Рождение» (core/birth.js), сцена под ним стоит, как при повороте ключа: кадры
+       слабого телефона уходят рисунку, а не сцене, которую почти не видно; снято — сцена идёт, если ключ не поворачивается */
+    rest: function (on) { resting = !!on; if (current) current.hold(resting || held); },
     live: function () { return alive; }
   };
 })();

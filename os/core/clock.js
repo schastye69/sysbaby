@@ -73,15 +73,23 @@
   /* ---------- место: под полосой, справа; время на столе — ниже панели ---------- */
   /* Не на телефоне панель встаёт под рядом значков (Чистота, D-845): зона значков
      неприкосновенна; низ ряда называет ядро (sbIconZoneBottom). */
+  /* H4e6 (основатель 27.11.2026: «окно календаря тоже должно прижиматься кверху, как и все остальные окна верхней панели»):
+     панель часов встаёт, как пульт (topbar.js placeControlCenter): верх — сразу под полосой и своей кнопкой (+6 px), правый
+     край — с тем же полем, что у полосы (от края экрана до её последней кнопки). Прежде на планшете и ПК она вставала под
+     рядом значков (D-845) — ниже всех окон шапки. ОТКАТ: вернуть max(…, sbIconZoneBottom + 12) и right 12 px. */
   function topY() {
-    var tb = doc.getElementById("topbar"); var r = tb ? tb.getBoundingClientRect() : null;
-    var y = Math.round((r && r.height ? r.bottom : 44) + 8);
-    if (!root.classList.contains("is-compact") && Number(window.sbIconZoneBottom) > 0) y = Math.max(y, Math.round(window.sbIconZoneBottom + 12));
-    return y;
+    var tb = doc.getElementById("topbar"), btn = doc.getElementById("sbClockBtn");
+    var r = tb ? tb.getBoundingClientRect() : null, b = btn ? btn.getBoundingClientRect() : null;
+    return Math.round(Math.max(r && r.height ? r.bottom : 44, b && b.height && window.innerWidth > 600 ? b.bottom : 0) + 6);
+  }
+  function rightM() {
+    var tb = doc.getElementById("topbar"), vw = window.innerWidth, edge = 0;
+    if (tb) Array.prototype.forEach.call(tb.querySelectorAll("button, a, .tb-btn, .tb-clock-btn, .tb-lang-now"), function (e) { var q = e.getBoundingClientRect(); if (q.width && q.height && q.right <= vw + 1) edge = Math.max(edge, q.right); });
+    return Math.max(6, Math.round(edge ? vw - edge : 10));
   }
   function layout() {
     var top = topY();
-    panel.style.top = top + "px";
+    panel.style.top = top + "px"; panel.style.right = rightM() + "px";
     panel.style.maxHeight = Math.max(260, window.innerHeight - top - 12) + "px";
     deskCy();
   }

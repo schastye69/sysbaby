@@ -6154,6 +6154,8 @@
         }).then(padded(function (okp) {
           gate.classList.remove("vg-work");
           if (!okp) { going = false; say("lock.first.fail"); return; }
+          /* D-1447: «Рождение» — только когда слово принято, после ступени равного времени, вместе с «Защитой мира» */
+          try { if (window.sbBirth && window.sbBirth.play) window.sbBirth.play(); } catch (e) { /* без слоя ворота те же */ }
           s.close();
           worldGuard(function () {
             openedGate();

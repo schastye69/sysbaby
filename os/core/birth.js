@@ -1,18 +1,17 @@
 /* sys.baby — «РОЖДЕНИЕ» НА ВОРОТАХ · решение D-1362-BIRTH-VIDEO.
  *
  * Основатель 23.11.2026 утвердил загрузку Г5 «Рождение» (эталон zagruzka-G5-ETALON.html) в виде заранее отрисованного
- * видео: отдельный слой поверх ворот, пока ворота думают, — при регистрации (первое слово), входе словом и переезде
- * (прежний пароль становится словом), а также при входе кодом восстановления. Видимого слова «готово» нет: для экранного
+ * видео: отдельный слой поверх ворот (с H4e6 — живой рисунок, только для нового дома, после принятого слова: D-1446/D-1447). Видимого слова «готово» нет: для экранного
  * чтения оно остаётся скрытым живым статусом и говорится только тогда, когда ворота и правда открылись.
  *
  * КАК УСТРОЕНО
- *   · Слой встаёт ровно тогда, когда ворота думают (класс vg-work на #sbVaultGate), и тает, когда перестали. Он
- *     ничего не ждёт и ничего не держит: ни одна строка входа его не дожидается, финала «готово» у видео нет — видео
- *     только заполняет ожидание (закон login-responsive-check и одна минута ответа D-1357 те же).
+ *   · Слой встаёт только для нового дома и только когда слово ПРИНЯТО (D-1447): shell.js зовёт sbBirth.play() в тот же
+ *     миг, когда встаёт «Защита мира»; рисунок играет PLAY_MS и тает. Ни одна строка входа его не дожидается, финала
+ *     «готово» нет (закон login-responsive-check и одна минута ответа D-1357 те же). Вход словом — без слоя (D-1446).
  *   · Видео — обычные файлы того же источника (core/birth/*.webm, запасной *.mp4 H.264): никаких blob-адресов и
  *     потоков (CSP media-src 'self' и так это позволяет). Вступление «рождение» → бесшовная петля, пока работа идёт.
  *   · Слой — сосед ворот в <body>, а не их часть: вес ворот (gate-weight-check) не растёт; заводится лениво, в простое
- *     после того, как ворота встали, и уходит вместе с ними.
+ *     после того, как открыт лист первого слова (D-1446), и уходит вместе с воротами.
  *   · Меньше движения (data-motion="reduced" или prefers-reduced-motion) — неподвижный кадр петли, видео не грузится.
  *   · Слабое устройство: видео не успело пойти за 1,5 с — до конца этого ожидания стоит тот же неподвижный кадр; ни
  *     холста, ни кадров главного потока — только прозрачность слоя.
@@ -20,8 +19,13 @@
  *
  * ЖИВОЙ РИСУНОК (D-1430-BIRTH-LIVE, основатель 25.11.2026): загрузка — живой рисунок по эталону Г5 (core/birth-live.js:
  * диск, знак из света, искры из строки слова, звёзды по кругу), без «готово» и без видео. Закон birth-video-check
- * (D-1362) требует в слое идущее видео — решение спорит с законом, решает основатель; до его слова живой вид включается
- * только явно: адрес с ?birth=live или html[data-birth="live"]. Сменить вид по умолчанию — одна строка MODE ниже. */
+ * (D-1362) требовал в слое идущее видео; 27.11.2026 основатель подтвердил эталон — закон переведён (D-1446), живой вид
+ * стал видом по умолчанию (строка MODE ниже; ?birth=live и html[data-birth="live"] по-прежнему его же и включают).
+ *
+ * H4e6 (D-1446-GATE-BIRTH-LIVE-NEW-HOME, основатель 27.11.2026): «при авторизации, когда нажимаешь «Войти», это видео не
+ * должно отображаться» и «сравни, какое я видео … утверждал, и то, что сейчас, по-прежнему все точно так же». Живой рисунок
+ * эталона Г5 — вид по умолчанию (MODE = "live"), видео не играет нигде; слой встаёт только для нового дома (лист первого
+ * слова). Вход словом и переезд прежнего замка — без слоя: ворота думают сами. */
 (function () {
   "use strict";
   var doc = document, root = doc.documentElement;
@@ -30,7 +34,10 @@
      путь от страницы, как прежде */
   var BASE = "core/birth/";
   try { var selfSrc = doc.currentScript && doc.currentScript.src; if (selfSrc) BASE = new URL("birth/", selfSrc).href; } catch (e) { /* старый браузер — путь от страницы */ }
-  var MODE = "video";
+  var MODE = "live";
+  /* D-1447: сколько играет рисунок после принятого слова — до собранного знака эталона (сжатие 1 − e^(−t/2,2) ≈ 0,85);
+     меньше движения — неподвижный кадр на миг сцены */
+  var PLAY_MS = 4200, PLAY_CALM_MS = 900;
   function liveWanted() {
     if (root.getAttribute("data-birth") === "live") return true;
     /* адрес чистится до первого кадра (index.html) — сказанное в нём хранит window.__sbEntry */
@@ -45,17 +52,19 @@
   function orient() { return window.innerWidth >= window.innerHeight ? "land" : "port"; }
 
   var gate = null, layer = null, still = null, say = null, vids = null, built = "", state = "idle", calmNow = false;
-  var hideTimer = 0, slowTimer = 0, obs = null, live = null, liveLoading = false;
+  var hideTimer = 0, slowTimer = 0, playTimer = 0, playWait = false, snapAsked = false, obs = null, live = null, liveLoading = false;
   /* живой рисунок подключён самой страницей (тег defer id="sbBirthLiveJs"): код в страницу сам себя
      не дописывает (закон no-foreign-code). Здесь — только дождаться его и прогреть один раз */
   var liveWarm = false;
+  /* D-1447: ворота думают — прогрев рисунка ждёт (birth-live.js pause) */
+  function gateBusy() { return !!(gate && gate.classList.contains("vg-work")); }
   function loadLive(then) {
-    if (window.sbBirthLive) { if (!liveWarm) { liveWarm = true; window.sbBirthLive.warm(); } then(); return; }
-    if (liveLoading) return;
+    if (window.sbBirthLive) { if (!liveWarm) { liveWarm = true; if (window.sbBirthLive.pause) window.sbBirthLive.pause(gateBusy); window.sbBirthLive.warm(); } then(); return; }
     var s = doc.getElementById("sbBirthLiveJs");
     if (!s) return;
+    if (liveLoading) { s.addEventListener("load", function () { if (window.sbBirthLive) then(); }); return; }
     liveLoading = true;
-    s.addEventListener("load", function () { liveLoading = false; if (window.sbBirthLive) { if (!liveWarm) { liveWarm = true; window.sbBirthLive.warm(); } then(); } });
+    s.addEventListener("load", function () { liveLoading = false; if (window.sbBirthLive) { if (!liveWarm) { liveWarm = true; if (window.sbBirthLive.pause) window.sbBirthLive.pause(gateBusy); window.sbBirthLive.warm(); } then(); } });
     s.addEventListener("error", function () { liveLoading = false; });
   }
 
@@ -72,8 +81,8 @@
   }
   /* Слой заводится один раз на ворота; видео — только когда движение разрешено. */
   function ensure() {
-    var o = orient(), calm = reduced(), isLive = liveWanted() && !!window.sbBirthLive;
-    var key = isLive ? "live" + (calm ? ":calm" : "") : o + (calm ? ":calm" : "");
+    var o = orient(), calm = reduced(), wantLive = liveWanted(), isLive = wantLive && !!window.sbBirthLive;
+    var key = isLive ? "live" + (calm ? ":calm" : "") : wantLive ? "wait" : o + (calm ? ":calm" : "");
     if (layer && built === key) return;
     drop();
     built = key;
@@ -87,6 +96,15 @@
       live = window.sbBirthLive.mount(layer, { reduced: calm });
       doc.body.appendChild(layer);
       ensureSay();
+      return;
+    }
+    if (wantLive) {
+      /* живой вид, а рисунок ещё не пришёл — одна тьма эталона, без ролика; пришёл — слой пересобирается живым */
+      layer.classList.add("sbb-live");
+      vids = null; still = null;
+      doc.body.appendChild(layer);
+      ensureSay();
+      loadLive(function () { if (state === "on" && built === "wait") { var was = layer; ensure(); if (layer !== was && layer) { live.start(); layer.classList.add("on"); layer.setAttribute("data-state", "on"); } } });
       return;
     }
     still = doc.createElement("img"); still.className = "sbb-still"; still.alt = ""; still.decoding = "async"; still.src = src(o + "-still.webp");
@@ -124,16 +142,26 @@
     if (still) still.classList.add("on");
     if (vids) { vids.intro.classList.remove("on"); vids.loop.classList.remove("on"); try { vids.intro.pause(); vids.loop.pause(); } catch (e) { /* стоит */ } }
   }
-  function start() {
+  /* D-1446: новый дом — открыт лист первого слова или нового слова по коду; «Войти» словом (и переезд) — без слоя */
+  function shown(id) {
+    var e = doc.getElementById(id);
+    if (!e || !e.getClientRects().length) return false;
+    for (var n = e; n && n.nodeType === 1; n = n.parentElement) { if (n.hidden) return false; var c = getComputedStyle(n); if (c.display === "none" || c.visibility === "hidden") return false; }
+    return true;
+  }
+  function newHome() { return shown("sbFirstWord") || shown("sbVaultNew"); }
+  function start(force) {
     if (state === "on") return;
+    if (!force && !newHome()) return;
+    clearTimeout(playTimer);
     clearTimeout(hideTimer);
     ensure();
-    state = "on"; calmNow = !vids && !live;
+    state = "on"; calmNow = !vids && !live && !!still;
     if (say) say.textContent = "";
     layer.classList.remove("out"); layer.classList.remove("cut");
-    if (live) live.start();
+    if (live) { live.start(); rest(true); }
     else if (calmNow) still.classList.add("on");
-    else {
+    else if (vids) {
       still.classList.remove("on");
       if ((vids.intro._broken && vids.loop._broken)) useStill();
       else {
@@ -171,10 +199,13 @@
       if (vids) { try { vids.intro.pause(); vids.loop.pause(); vids.intro.classList.remove("on"); vids.loop.classList.remove("on"); } catch (e) { /* стоит */ } }
       if (still) still.classList.remove("on");
       if (live) live.stop();
+      rest(false);
       calmNow = false;
       layer.classList.remove("out"); layer.classList.remove("cut");
     }, 700);
   }
+  /* D-1447: сцена двери под рисунком стоит (doors.js sbScenes.rest) — кадры слабого телефона уходят рисунку */
+  function rest(on) { try { if (window.sbScenes && window.sbScenes.rest) window.sbScenes.rest(on); } catch (e) { /* без сцены */ } }
   function gateWord(key) {
     var lang = (gate && gate.getAttribute("lang")) || "";
     var l = lang.indexOf("ru") === 0 ? "ru" : lang.indexOf("et") === 0 || lang.indexOf("ee") === 0 ? "ee" : lang ? "en" : "";
@@ -183,14 +214,14 @@
     return "";
   }
   function gone() {
-    clearTimeout(slowTimer); clearTimeout(hideTimer);
+    clearTimeout(slowTimer); clearTimeout(hideTimer); clearTimeout(playTimer); playWait = false;
     state = "idle";
     if (obs) { obs.disconnect(); obs = null; }
     gate = null;
     /* слой тает и уходит вместе с воротами; статус чтения живёт ещё миг, чтобы «готово» успело прозвучать */
     var l = layer, s = say, lv = live;
     layer = null; vids = null; still = null; built = ""; say = null; live = null;
-    if (lv) setTimeout(function () { lv.destroy(); }, 700);
+    if (lv) { setTimeout(function () { lv.destroy(); }, 700); rest(false); }
     /* снятие видео — в простое, не в задаче раскладки стола */
     if (l) { l.classList.remove("on"); l.classList.add("out"); setTimeout(function () { var rm = function () { if (l.parentNode) l.parentNode.removeChild(l); }; if (window.requestIdleCallback) window.requestIdleCallback(rm, { timeout: 3000 }); else rm(); }, 700); }
     if (s) setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 4000);
@@ -205,14 +236,46 @@
       obs = new MutationObserver(function () {
         if (!gate) return;
         if (!gate.isConnected) { gone(); return; }
-        if (gate.classList.contains("vg-work")) start(); else stop();
+        /* D-1447: знаки строки снимаются в простое, пока ворота думают над первым словом (на обоих путях одинаково:
+           и с домом, и без) — в миг ответа не делается ничего лишнего */
+        if (gate.classList.contains("vg-work") && !snapAsked && newHome() && window.sbBirthLive && window.sbBirthLive.snap) {
+          snapAsked = true;
+          var sn = function () { try { window.sbBirthLive.snap(); } catch (e) { /* без искр строки */ } };
+          if (window.requestIdleCallback) window.requestIdleCallback(sn, { timeout: 1500 }); else setTimeout(sn, 300);
+        } else if (!gate.classList.contains("vg-work")) snapAsked = false;
       });
       obs.observe(gate, { attributes: true, attributeFilter: ["class"] });
       doc.addEventListener("sysbaby:door-gone", function () { if (gate === g) gone(); }, { once: true });
       /* слой и видео — в простое, когда ворота уже стоят: загрузка не отнимает кадров у их появления */
       var warm = function () { if (gate === g && state === "idle") { if (liveWanted()) loadLive(function () { if (gate === g && state === "idle") ensure(); }); else ensure(); } };
-      if (window.requestIdleCallback) window.requestIdleCallback(warm, { timeout: 2500 }); else setTimeout(warm, 1200);
-      if (gate.classList.contains("vg-work")) start();
+      var later = function () { if (window.requestIdleCallback) window.requestIdleCallback(warm, { timeout: 2500 }); else setTimeout(warm, 1200); };
+      /* D-1446: слой нужен только новому дому — рисунок греется, когда открыт лист первого слова (пока человек пишет
+         слово), а не у каждой двери: вход словом не платит за него ни одной задачей главного потока */
+      var first = g.querySelector("#sbVaultFirst");
+      if (first) first.addEventListener("click", later, { once: true }); else later();
+    },
+    /* D-1447 (основатель 27.11.2026, запись 33b73e31…170811): слой встаёт только когда слово ПРИНЯТО — после ступени
+       равного времени, в тот же миг, когда встаёт «Защита мира» (shell.js, первое слово): ни во время растяжки, ни
+       перед отказом «Не получилось запереть…» (D-351) его нет — отказ виден сразу и не похож на поломку. Удача видна
+       и без слоя (дом открывается), поэтому слой ничего не выдаёт. Рисунок эталона играет PLAY_MS и тает; «Защита
+       мира» под ним уже стоит и нажимается сразу (слой нажатий не ловит). */
+    play: function () {
+      if (!gate || state === "on" || playWait || !newHome()) return;
+      var g0 = gate;
+      playWait = true;
+      var go = function () {
+        playWait = false;
+        if (gate !== g0 || state === "on") return;
+        start(true);
+        if (state !== "on") return;
+        clearTimeout(playTimer);
+        playTimer = setTimeout(stop, reduced() ? PLAY_CALM_MS : PLAY_MS);
+      };
+      /* ответ ворот («Защита мира») рисуется первым и в тот же миг, что отказ на устройстве с домом (D-1357): слой —
+         через два кадра, отдельной задачей, а недогретое рисунка догревается шагами, каждый своей задачей (≤ 200 мс ×6) */
+      requestAnimationFrame(function () { requestAnimationFrame(function () {
+        if (liveWanted() && window.sbBirthLive) window.sbBirthLive.warm(function () { setTimeout(go, 0); }, true); else setTimeout(go, 0);
+      }); });
     },
     state: function () { return { state: state, calm: calmNow, layer: !!layer, built: built, live: !!live }; }
   };
